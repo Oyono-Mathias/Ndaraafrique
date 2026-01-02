@@ -14,7 +14,6 @@ import {
   updateDoc,
   deleteDoc,
   getDocs,
-  orderBy,
   Query,
 } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
@@ -190,7 +189,7 @@ export default function AdminCoursesPage() {
   const [filter, setFilter] = useState<CourseStatusFilter>('Tous');
 
   const coursesQuery = useMemoFirebase(() => {
-    let q: Query = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    let q: Query = query(collection(db, 'courses'));
     if (filter !== 'Tous') {
       q = query(q, where('status', '==', filter));
     }
@@ -296,5 +295,3 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-
-    
