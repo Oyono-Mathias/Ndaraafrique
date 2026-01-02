@@ -25,6 +25,70 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, GripVertical, Trash2, ArrowLeft, Loader2, PlayCircle, Link as LinkIcon, ClockIcon } from 'lucide-react';
 import type { Course, Section as SectionType, Lecture as LectureType } from '@/lib/types';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import Plyr from 'plyr';
+import 'plyr/dist/plyr.css';
+import { useRef } from 'react';
+
+const VideoPlayer = ({ videoUrl }: { videoUrl?: string }) => {
+    const videoRef = useRef<HTMLVideoElement>(null);
+    const playerRef = useRef<Plyr | null>(null);
+
+    useEffect(() => {
+        if (videoRef.current) {
+            if (playerRef.current) {
+                playerRef.current.destroy();
+            }
+            playerRef.current = new Plyr(videoRef.current, {});
+        }
+
+        return () => {
+            if (playerRef.current) {
+                playerRef.current.destroy();
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (playerRef.current && videoUrl) {
+            try {
+                if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
+                    const videoIdMatch = videoUrl.match(/(?:v=|\/)([\w-]{11})(?:\?|&|#|$)/);
+                    const videoId = videoIdMatch ? videoIdMatch[1] : null;
+                    if (videoId) {
+                        playerRef.current.source = {
+                            type: 'video',
+                            sources: [{ src: videoId, provider: 'youtube' }],
+                        };
+                    }
+                } else {
+                     playerRef.current.source = {
+                        type: 'video',
+                        sources: [{ src: videoUrl, type: 'video/mp4' }],
+                    };
+                }
+            } catch (e) {
+                console.error("Invalid video URL for Plyr:", videoUrl, e);
+            }
+        }
+    }, [videoUrl]);
+    
+
+    if (!videoUrl) {
+        return (
+            <div className="aspect-video w-full bg-slate-900 flex items-center justify-center rounded-lg">
+                <p className="text-white">URL de la vidéo invalide ou manquante.</p>
+            </div>
+        );
+    }
+
+    return (
+       <div className="aspect-video w-full bg-black rounded-lg overflow-hidden video-wrapper shadow-2xl">
+         <video ref={videoRef} className="w-full h-full" preload="none" playsInline controls></video>
+       </div>
+    );
+};
 
 
 const lectureSchema = z.object({
@@ -57,6 +121,7 @@ export default function CourseContentPage() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [removedItems, setRemovedItems] = useState<{ sections: string[], lectures: string[] }>({ sections: [], lectures: [] });
+  const [previewingLesson, setPreviewingLesson] = useState<LectureType | null>(null);
   
   const courseRef = useMemoFirebase(() => doc(db, 'courses', courseId as string), [db, courseId]);
   const { data: course, isLoading: isCourseLoading } = useDoc<Course>(courseRef);
@@ -193,58 +258,72 @@ export default function CourseContentPage() {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-24 md:pb-8">
-          <Accordion type="multiple" defaultValue={sectionFields.map((s, i) => s.id || `new-${i}`)} className="space-y-4">
-            {sectionFields.map((section, sectionIndex) => (
-              <AccordionItem key={section.id || `new-${sectionIndex}`} value={section.id || `new-${sectionIndex}`} className="bg-white border border-gray-200/80 rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
-                 <div className="flex items-center px-4 hover:bg-gray-50/50">
-                    <GripVertical className="h-5 w-5 text-gray-400 mr-2 cursor-grab"/>
-                    <AccordionTrigger className="flex-1 py-4 text-base font-semibold text-gray-800 hover:no-underline">
-                      <FormField
-                          control={form.control}
-                          name={`sections.${sectionIndex}.title`}
-                          render={({ field }) => (
-                              <Input {...field} placeholder={`Section ${sectionIndex + 1}: Titre de la section`} className="text-base font-semibold border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent" />
-                          )}
-                      />
-                    </AccordionTrigger>
-                    <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveSection(sectionIndex)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
-                 </div>
+    <>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 pb-24 md:pb-8">
+            <Accordion type="multiple" defaultValue={sectionFields.map((s, i) => s.id || `new-${i}`)} className="space-y-4">
+              {sectionFields.map((section, sectionIndex) => (
+                <AccordionItem key={section.id || `new-${sectionIndex}`} value={section.id || `new-${sectionIndex}`} className="bg-white border border-gray-200/80 rounded-2xl shadow-sm overflow-hidden transition-shadow hover:shadow-md">
+                   <div className="flex items-center px-4 hover:bg-gray-50/50">
+                      <GripVertical className="h-5 w-5 text-gray-400 mr-2 cursor-grab"/>
+                      <AccordionTrigger className="flex-1 py-4 text-base font-semibold text-gray-800 hover:no-underline">
+                        <FormField
+                            control={form.control}
+                            name={`sections.${sectionIndex}.title`}
+                            render={({ field }) => (
+                                <Input {...field} placeholder={`Section ${sectionIndex + 1}: Titre de la section`} className="text-base font-semibold border-none focus-visible:ring-0 focus-visible:ring-offset-0 p-0 h-auto bg-transparent" />
+                            )}
+                        />
+                      </AccordionTrigger>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveSection(sectionIndex)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                   </div>
 
-                <AccordionContent className="border-t bg-slate-50/50 pt-4 px-4 pb-4">
-                  <LessonsArray sectionIndex={sectionIndex} form={form} />
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-        
-        <div className="text-center">
-           <Button
-              type="button"
-              variant="outline"
-              className="w-full border-dashed border-2 hover:bg-accent hover:border-solid"
-              size="lg"
-              onClick={() => appendSection({ title: `Nouvelle Section`, order: sectionFields.length, lectures: [] })}
-            >
-             <Plus className="h-4 w-4 mr-2" />
-              Ajouter une section
-          </Button>
-        </div>
+                  <AccordionContent className="border-t bg-slate-50/50 pt-4 px-4 pb-4">
+                    <LessonsArray sectionIndex={sectionIndex} form={form} onPreview={setPreviewingLesson} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          
+          <div className="text-center">
+             <Button
+                type="button"
+                variant="outline"
+                className="w-full border-dashed border-2 hover:bg-accent hover:border-solid"
+                size="lg"
+                onClick={() => appendSection({ title: `Nouvelle Section`, order: sectionFields.length, lectures: [] })}
+              >
+               <Plus className="h-4 w-4 mr-2" />
+                Ajouter une section
+            </Button>
+          </div>
 
-        {/* Sticky footer for mobile */}
-        <div className="fixed bottom-0 left-0 right-0 md:relative bg-white/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-none p-4 md:p-0 md:flex md:justify-end md:gap-4 z-50">
-           <Button type="submit" disabled={isSaving} className="w-full md:w-auto">
-              {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Enregistrer le programme
-          </Button>
-        </div>
-      </form>
-    </Form>
+          {/* Sticky footer for mobile */}
+          <div className="fixed bottom-0 left-0 right-0 md:relative bg-white/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-none p-4 md:p-0 md:flex md:justify-end md:gap-4 z-50">
+             <Button type="submit" disabled={isSaving} className="w-full md:w-auto">
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Enregistrer le programme
+            </Button>
+          </div>
+        </form>
+      </Form>
+
+      <Dialog open={!!previewingLesson} onOpenChange={(isOpen) => !isOpen && setPreviewingLesson(null)}>
+        <DialogContent className="max-w-4xl p-0 border-0">
+          <DialogHeader className="p-4">
+            <DialogTitle className="flex items-center justify-between">
+                <span>{previewingLesson?.title}</span>
+                {previewingLesson?.isFreePreview && <Badge variant="default" className="bg-green-600">Aperçu Gratuit</Badge>}
+            </DialogTitle>
+          </DialogHeader>
+          <VideoPlayer videoUrl={previewingLesson?.videoUrl} />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
-function LessonsArray({ sectionIndex, form }: { sectionIndex: number, form: any }) {
+function LessonsArray({ sectionIndex, form, onPreview }: { sectionIndex: number, form: any, onPreview: (lesson: LectureType) => void }) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: `sections.${sectionIndex}.lectures`,
@@ -262,7 +341,10 @@ function LessonsArray({ sectionIndex, form }: { sectionIndex: number, form: any 
                     name={`sections.${sectionIndex}.lectures.${lessonIndex}.title`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-gray-700 font-medium flex items-center gap-2"><PlayCircle className="h-4 w-4 text-gray-500" /> Leçon #{lessonIndex + 1}</FormLabel>
+                        <FormLabel className="text-gray-700 font-medium flex items-center justify-between">
+                            <span className="flex items-center gap-2"><PlayCircle className="h-4 w-4 text-gray-500" /> Leçon #{lessonIndex + 1}</span>
+                             <Button type="button" variant="outline" size="sm" onClick={() => onPreview(form.getValues(`sections.${sectionIndex}.lectures.${lessonIndex}`))}>Tester le lecteur</Button>
+                        </FormLabel>
                         <FormControl><Input placeholder="Ex: Introduction à la leçon" {...field} className="border-gray-200 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"/></FormControl>
                         <FormMessage />
                       </FormItem>
