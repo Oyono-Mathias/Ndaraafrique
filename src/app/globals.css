@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%; /* white */
+    --background-alt: 240 5.9% 97.5%; /* gray-50 */
+    --foreground: 224 71% 4%; /* slate-900 for text */
+    --card: 0 0% 100%; /* white */
+    --card-foreground: 224 71% 4%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 71% 4%;
+    --primary: 221 83% 53%; /* Deep Blue */
+    --primary-foreground: 0 0% 98%; /* white-ish */
+    --secondary: 215 28% 95%; /* light gray for accents */
+    --secondary-foreground: 224 71% 4%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 215 28% 95%; /* same as secondary */
+    --accent-foreground: 224 71% 4%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+    --radius: 1.5rem; /* increased from 0.8rem to 1.5rem for rounded-3xl effect */
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+
+    --plyr-color-main: hsl(var(--primary));
+  }
+
+  .dark {
+    --background: 224 71% 4%;
+    --background-alt: 224 71% 6%;
+    --foreground: 215 28% 95%;
+    --card: 224 71% 4%;
+    --card-foreground: 215 28% 95%;
+    --popover: 224 71% 4%;
+    --popover-foreground: 215 28% 95%;
+    --primary: 217 91% 60%;
+    --primary-foreground: 210 20% 98%;
+    --secondary: 215 28% 15%;
+    --secondary-foreground: 215 28% 95%;
+    --muted: 215 28% 15%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 215 28% 15%;
+    --accent-foreground: 215 28% 95%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 215 28% 95%;
+    --border: 215 28% 15%;
+    --input: 215 28% 15%;
+    --ring: 217 91% 60%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background-alt text-foreground;
+    font-family: 'Inter', sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .video-wrapper {
+    width: 100%;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  .glassmorphism {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+}
