@@ -27,6 +27,8 @@ const courseEditSchema = z.object({
   description: z.string().min(20, 'La description doit contenir au moins 20 caractères.'),
   category: z.string().min(3, 'La catégorie est requise.'),
   learningObjectives: z.array(z.object({ value: z.string().min(1, "L'objectif ne peut pas être vide.") })).optional(),
+  prerequisites: z.array(z.object({ value: z.string().min(1, "Le prérequis ne peut pas être vide.") })).optional(),
+  targetAudience: z.string().optional(),
 });
 
 type CourseEditFormValues = z.infer<typeof courseEditSchema>;
@@ -54,12 +56,19 @@ export default function EditCoursePage() {
       description: '',
       category: '',
       learningObjectives: [],
+      prerequisites: [],
+      targetAudience: '',
     },
   });
   
-  const { fields, append, remove } = useFieldArray({
+  const { fields: objectivesFields, append: appendObjective, remove: removeObjective } = useFieldArray({
     control: form.control,
     name: "learningObjectives",
+  });
+  
+  const { fields: prereqFields, append: appendPrereq, remove: removePrereq } = useFieldArray({
+    control: form.control,
+    name: "prerequisites",
   });
 
   useEffect(() => {
@@ -69,6 +78,8 @@ export default function EditCoursePage() {
         description: course.description,
         category: course.category,
         learningObjectives: course.learningObjectives?.map((obj: string) => ({ value: obj })) || [],
+        prerequisites: course.prerequisites?.map((pre: string) => ({ value: pre })) || [],
+        targetAudience: course.targetAudience,
       });
     }
   }, [course, form]);
@@ -110,7 +121,8 @@ export default function EditCoursePage() {
       const courseDocRef = doc(db, 'courses', courseId as string);
       const updatePayload = {
         ...data,
-        learningObjectives: data.learningObjectives?.map(obj => obj.value)
+        learningObjectives: data.learningObjectives?.map(obj => obj.value),
+        prerequisites: data.prerequisites?.map(pre => pre.value),
       };
       await updateDoc(courseDocRef, updatePayload);
       toast({
@@ -215,13 +227,13 @@ export default function EditCoursePage() {
           </CardContent>
         </Card>
         
-         <Card className="bg-white rounded-2xl shadow-sm border-gray-200/80 transition-shadow hover:shadow-md">
+        <Card className="bg-white rounded-2xl shadow-sm border-gray-200/80 transition-shadow hover:shadow-md">
           <CardHeader>
             <CardTitle className="text-xl">Objectifs Pédagogiques</CardTitle>
             <CardDescription>Que vont apprendre les étudiants dans ce cours ?</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 p-6">
-              {fields.map((field, index) => (
+              {objectivesFields.map((field, index) => (
                 <FormField
                   key={field.id}
                   control={form.control}
@@ -232,7 +244,7 @@ export default function EditCoursePage() {
                          <FormControl>
                           <Input {...field} placeholder={`Objectif #${index + 1}`} className="border-gray-200 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"/>
                         </FormControl>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeObjective(index)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Supprimer l'objectif</span>
                         </Button>
@@ -247,13 +259,68 @@ export default function EditCoursePage() {
                   variant="outline"
                   className="w-full border-dashed border-2 hover:bg-accent hover:border-solid"
                   size="sm"
-                  onClick={() => append({ value: "" })}
+                  onClick={() => appendObjective({ value: "" })}
                 >
                  <PlusCircle className="h-4 w-4 mr-2" />
                   Ajouter un objectif
               </Button>
           </CardContent>
         </Card>
+        
+        <Card className="bg-white rounded-2xl shadow-sm border-gray-200/80 transition-shadow hover:shadow-md">
+          <CardHeader>
+            <CardTitle className="text-xl">Prérequis</CardTitle>
+            <CardDescription>Quelles sont les connaissances nécessaires pour suivre ce cours ?</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 p-6">
+              {prereqFields.map((field, index) => (
+                <FormField
+                  key={field.id}
+                  control={form.control}
+                  name={`prerequisites.${index}.value`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <div className="flex items-center gap-2">
+                         <FormControl>
+                          <Input {...field} placeholder={`Prérequis #${index + 1}`} className="border-gray-200 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"/>
+                        </FormControl>
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removePrereq(index)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              ))}
+               <Button type="button" variant="outline" className="w-full border-dashed border-2 hover:bg-accent hover:border-solid" size="sm" onClick={() => appendPrereq({ value: "" })}>
+                 <PlusCircle className="h-4 w-4 mr-2" />
+                  Ajouter un prérequis
+              </Button>
+          </CardContent>
+        </Card>
+        
+        <Card className="bg-white rounded-2xl shadow-sm border-gray-200/80 transition-shadow hover:shadow-md">
+          <CardHeader>
+            <CardTitle className="text-xl">Public Cible</CardTitle>
+            <CardDescription>À qui s'adresse ce cours ?</CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <FormField
+              control={form.control}
+              name="targetAudience"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Textarea placeholder="Ex: Développeurs débutants, chefs de projet, étudiants en marketing..." {...field} rows={4} className="border-gray-200 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"/>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </CardContent>
+        </Card>
+
 
         {/* Sticky footer for mobile, regular for desktop */}
         <div className="fixed bottom-0 left-0 right-0 md:relative bg-white/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-none p-4 md:p-0 md:flex md:justify-end md:gap-4 z-50">
