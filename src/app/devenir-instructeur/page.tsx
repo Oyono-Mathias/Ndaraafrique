@@ -166,7 +166,7 @@ export default function BecomeInstructorPage() {
                                 <FileIcon className="h-5 w-5" />
                                 <span className="text-sm font-medium">{form.watch('verificationDoc').name}</span>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => field.onChange(null)}><X className="h-4 w-4"/></Button>
+                            <Button variant="ghost" size="icon" onClick={() => form.setValue('verificationDoc', new File([], ''))}><X className="h-4 w-4"/></Button>
                           </div>
                         )}
                       </div>
