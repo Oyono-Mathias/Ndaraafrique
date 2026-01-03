@@ -108,18 +108,18 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
     return (
         <Accordion type="multiple" className="w-full space-y-2">
             {sections.map((section, index) => (
-                <AccordionItem value={`item-${index}`} key={section.id} className="bg-slate-50 rounded-2xl border">
-                    <AccordionTrigger className="px-6 text-left hover:no-underline font-semibold text-lg"><h2>{section.title}</h2></AccordionTrigger>
+                <AccordionItem value={`item-${index}`} key={section.id} className="bg-slate-50 dark:bg-[#1e293b] rounded-2xl border dark:border-slate-700">
+                    <AccordionTrigger className="px-6 text-left hover:no-underline font-semibold text-lg text-slate-800 dark:text-white"><h2>{section.title}</h2></AccordionTrigger>
                     <AccordionContent className="px-6">
                         {lecturesLoading ? <Skeleton className="h-10 w-full" /> : (
                             <ul className="space-y-2">
                                 {(lecturesMap.get(section.id) || []).map(lecture => {
                                     const canPreview = lecture.isFreePreview || isEnrolled;
                                     return (
-                                        <li key={lecture.id} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-slate-100">
+                                        <li key={lecture.id} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/50">
                                             <div className="flex items-center">
                                                 {canPreview ? <PlayCircle className="h-4 w-4 mr-2 text-primary" /> : <Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
-                                                <span>{lecture.title}</span>
+                                                <span className="dark:text-slate-300">{lecture.title}</span>
                                                 {lecture.isFreePreview && <Badge variant="secondary" className="ml-2">Aperçu</Badge>}
                                             </div>
                                             <span className="text-xs text-muted-foreground">{lecture.duration ? `${lecture.duration} min` : ''}</span>
@@ -204,7 +204,7 @@ const ReviewsSection = ({ courseId }: { courseId: string }) => {
 
   return (
     <div className="space-y-8">
-        <h2 className="text-2xl font-bold">Avis des étudiants</h2>
+        <h2 className="text-2xl font-bold dark:text-white">Avis des étudiants</h2>
         {isLoading ? (
             <Skeleton className="h-48 w-full" />
         ) : reviewsWithUsers.length > 0 ? (
@@ -215,31 +215,31 @@ const ReviewsSection = ({ courseId }: { courseId: string }) => {
                     <span className="text-muted-foreground text-sm">({reviews.length} avis)</span>
                 </div>
                 {reviewsWithUsers.slice(0, 5).map(review => (
-                    <div key={review.id} className="flex gap-4 border-t pt-4">
+                    <div key={review.id} className="flex gap-4 border-t dark:border-slate-700 pt-4">
                         <Avatar>
                             <AvatarImage src={review.reviewerImage} />
                             <AvatarFallback>{review.reviewerName?.[0]}</AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="font-semibold">{review.reviewerName}</p>
+                            <p className="font-semibold dark:text-white">{review.reviewerName}</p>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                                 <StarRating rating={review.rating} size="sm" />
                                 <span>{review.createdAt ? format(review.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : ''}</span>
                             </div>
-                            <p className="text-sm">{review.comment}</p>
+                            <p className="text-sm dark:text-slate-300">{review.comment}</p>
                         </div>
                     </div>
                 ))}
             </div>
         ) : (
-            <div className="border rounded-2xl p-6 text-center text-muted-foreground">
+            <div className="border dark:border-slate-700 rounded-2xl p-6 text-center text-muted-foreground">
                 <p>Aucun avis pour ce cours pour le moment.</p>
             </div>
         )}
 
         {user && !hasReviewed && (
           <div className="pt-8">
-             <h3 className="text-xl font-bold mb-4">Laissez votre avis</h3>
+             <h3 className="text-xl font-bold mb-4 dark:text-white">Laissez votre avis</h3>
              <ReviewForm courseId={courseId} userId={user.uid} onReviewSubmit={() => setHasReviewed(true)} />
           </div>
         )}
@@ -289,7 +289,7 @@ const QASection = ({ courseId, instructorId }: { courseId: string, instructorId:
 
   return (
     <div className="space-y-8">
-      <h2 className="text-2xl font-bold">Questions à l'instructeur</h2>
+      <h2 className="text-2xl font-bold dark:text-white">Questions à l'instructeur</h2>
 
       <div className="space-y-4">
         <Textarea 
@@ -305,14 +305,14 @@ const QASection = ({ courseId, instructorId }: { courseId: string, instructorId:
       </div>
 
       <div className="space-y-4">
-        <h3 className="font-semibold">Questions récentes</h3>
+        <h3 className="font-semibold dark:text-white">Questions récentes</h3>
         {ticketsLoading ? (
           <Skeleton className="h-20 w-full" />
         ) : tickets && tickets.length > 0 ? (
           <div className="space-y-3">
             {tickets.map((ticket) => (
-              <Link key={ticket.id} href={`/questions-reponses/${ticket.id}`} className="block p-4 border rounded-2xl hover:bg-muted/50">
-                  <p className="font-semibold">{ticket.subject}</p>
+              <Link key={ticket.id} href={`/questions-reponses/${ticket.id}`} className="block p-4 border dark:border-slate-700 rounded-2xl hover:bg-muted/50 dark:hover:bg-slate-800/50">
+                  <p className="font-semibold dark:text-white">{ticket.subject}</p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Dernière activité il y a {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { locale: fr }) : 'un moment'}
                   </p>
@@ -320,7 +320,7 @@ const QASection = ({ courseId, instructorId }: { courseId: string, instructorId:
             ))}
           </div>
         ) : (
-          <div className="p-6 border-dashed border rounded-2xl text-center text-muted-foreground">
+          <div className="p-6 border-dashed border dark:border-slate-700 rounded-2xl text-center text-muted-foreground">
             <MessageSquare className="mx-auto h-8 w-8 mb-2"/>
             <p>Personne n'a encore posé de question pour ce cours. Soyez le premier !</p>
           </div>
@@ -498,7 +498,7 @@ export default function CourseDetailsClient() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <div className="bg-background-alt">
+      <div className="bg-background-alt dark:bg-background">
         <div className="bg-slate-800 text-white py-12">
           <div className="container mx-auto px-4 lg:px-8">
               <div className="text-sm mb-4">
@@ -509,8 +509,8 @@ export default function CourseDetailsClient() {
             <div className="grid lg:grid-cols-3 gap-8 items-center">
               <div className="lg:col-span-2 space-y-4">
                 <h1 className="text-3xl lg:text-4xl font-extrabold tracking-tight">{course.title}</h1>
-                <p className="text-lg text-slate-300">{course.description}</p>
-                <div className="flex items-center gap-4 text-sm">
+                <p className="text-lg text-slate-300 leading-relaxed">{course.description}</p>
+                <div className="flex items-center gap-4 text-sm flex-wrap">
                   <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/20">{course.category}</Badge>
                   <div className="flex items-center gap-2">
                     <StarRating rating={4.5} />
@@ -530,12 +530,12 @@ export default function CourseDetailsClient() {
         <div className="container mx-auto py-8 px-4 lg:px-8">
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
               <main className="lg:col-span-2 space-y-12">
-                <Card className="mb-8 rounded-3xl shadow-xl">
+                <Card className="mb-8 rounded-3xl shadow-lg dark:bg-[#1e293b] dark:border-slate-700">
                   <CardHeader>
-                    <CardTitle><h2>Ce que vous apprendrez</h2></CardTitle>
+                    <CardTitle className="dark:text-white"><h2>Ce que vous apprendrez</h2></CardTitle>
                   </CardHeader>
                   <CardContent>
-                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 list-inside">
+                     <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2 list-inside text-slate-700 dark:text-slate-300">
                           {course.learningObjectives?.map((obj: string, i: number) => (
                              <li key={i} className="flex items-start"><Check className="w-5 h-5 mr-2 mt-1 text-primary flex-shrink-0" /><span>{obj}</span></li>
                           )) ||  <li className="flex items-start"><Check className="w-5 h-5 mr-2 mt-1 text-primary flex-shrink-0" /><span>Les fondamentaux de ce sujet.</span></li>}
@@ -544,11 +544,11 @@ export default function CourseDetailsClient() {
                 </Card>
 
                 <div className="space-y-6">
-                  <h2 className="text-2xl font-bold">Programme du cours</h2>
+                  <h2 className="text-2xl font-bold dark:text-white">Programme du cours</h2>
                   <CourseCurriculum courseId={courseId} isEnrolled={isEnrolled} />
 
-                  <h2 className="text-2xl font-bold">Prérequis</h2>
-                   <ul className="list-disc list-inside space-y-1">
+                  <h2 className="text-2xl font-bold dark:text-white">Prérequis</h2>
+                   <ul className="list-disc list-inside space-y-1 dark:text-slate-300">
                       {course.prerequisites?.map((pre: string, i: number) => (
                          <li key={i}>{pre}</li>
                       )) || <li>Aucun prérequis !</li>}
@@ -559,16 +559,16 @@ export default function CourseDetailsClient() {
 
                 {instructor && (
                   <div>
-                    <h2 className="text-2xl font-bold mb-4">À propos de l'instructeur</h2>
-                    <Link href={`/instructor/${instructor.id}`} className="flex items-start gap-4 p-4 bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-shadow">
+                    <h2 className="text-2xl font-bold mb-4 dark:text-white">À propos de l'instructeur</h2>
+                    <Link href={`/instructor/${instructor.id}`} className="flex items-start gap-4 p-4 bg-white dark:bg-[#1e293b] rounded-3xl shadow-lg hover:shadow-2xl transition-shadow dark:border dark:border-slate-700">
                       <Avatar className="h-16 w-16">
                           <AvatarImage src={instructor.profilePictureURL} />
-                          <AvatarFallback>{instructor.fullName.charAt(0)}</AvatarFallback>
+                          <AvatarFallback className="text-white">{instructor.fullName.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div>
-                          <h3 className="font-bold text-lg hover:text-primary">{instructor.fullName}</h3>
+                          <h3 className="font-bold text-lg hover:text-primary dark:text-white">{instructor.fullName}</h3>
                           <p className="text-sm text-muted-foreground">{instructor.careerGoals?.currentRole || `Expert en ${course.category}`}</p>
-                          <p className="mt-2 text-sm line-clamp-2">{instructor.bio || 'Cet instructeur n\'a pas encore fourni de biographie.'}</p>
+                          <p className="mt-2 text-sm line-clamp-2 dark:text-slate-300">{instructor.bio || 'Cet instructeur n\'a pas encore fourni de biographie.'}</p>
                       </div>
                     </Link>
                   </div>
@@ -580,7 +580,7 @@ export default function CourseDetailsClient() {
 
               <aside className="hidden lg:block mt-8 lg:mt-0">
                   <div className="sticky top-24">
-                    <Card className="shadow-xl rounded-3xl">
+                    <Card className="shadow-xl rounded-3xl dark:bg-[#1e293b] dark:border-slate-700">
                         <div className="relative group">
                             <Image 
                                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
@@ -595,7 +595,7 @@ export default function CourseDetailsClient() {
                              <p className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity">Voir la présentation</p>
                         </div>
                         <CardContent className="p-6 space-y-4">
-                            <h2 className="text-3xl font-bold text-center">
+                            <h2 className="text-3xl font-bold text-center dark:text-white">
                                 {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
                             </h2>
 
@@ -619,8 +619,8 @@ export default function CourseDetailsClient() {
                             )}
                             <p className="text-xs text-muted-foreground text-center">Garantie satisfait ou remboursé 30 jours</p>
 
-                             <div className="space-y-2 pt-4 border-t border-slate-200">
-                                <h3 className="font-semibold">Ce cours inclut :</h3>
+                             <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                <h3 className="font-semibold dark:text-white">Ce cours inclut :</h3>
                                 <ul className="space-y-2 text-sm text-muted-foreground">
                                     <li className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary" /> {(courseStats.totalDuration / 60).toFixed(1)} heures de vidéo à la demande</li>
                                     <li className="flex items-center gap-2"><Info className="h-4 w-4 text-primary" /> {courseStats.lessonCount} leçons</li>
@@ -636,8 +636,8 @@ export default function CourseDetailsClient() {
               
                {/* Sticky footer for mobile */}
               {!isEnrolled && (
-                   <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/80 backdrop-blur-sm p-4 border-t border-slate-200">
-                      <p className="font-bold text-xl mb-2">{isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}</p>
+                   <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 border-t border-slate-200 dark:border-slate-700">
+                      <p className="font-bold text-xl mb-2 dark:text-white">{isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}</p>
                       <Button className="w-full" size="lg" onClick={isFree ? handleFreeEnrollment : handlePurchase} disabled={isEnrolling}>
                           {isEnrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           S'inscrire maintenant
