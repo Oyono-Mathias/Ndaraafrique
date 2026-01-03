@@ -70,7 +70,7 @@ L'accès aux cours nécessite la création d'un compte. Vous vous engagez à fou
 3.1. Les prix des cours sont fixés par les Instructeurs et indiqués en devise locale (XOF, FCFA, etc.).
 3.2. FormaAfrique facilite les paiements via des solutions de Mobile Money (Orange Money, MTN Mobile Money, Wave, etc.) et d'autres moyens de paiement locaux pertinents. En effectuant un achat, vous acceptez les conditions de nos prestataires de paiement.
 3.3. En achetant un cours, l'Étudiant obtient une licence d'utilisation personnelle, non exclusive et non transférable pour visionner le contenu pédagogique via la plateforme FormaAfrique. Vous n'acquérez aucun droit de propriété ou de distribution.
-3.4. **Modèle de Commission :** L'Instructeur autorise FormaAfrique à prélever automatiquement une commission sur le prix de vente de chaque cours vendu. Le taux de cette commission est défini dans les paramètres de la plateforme et peut être sujet à modification.
+3.4. **Modèle de Commission :** L'Instructeur autorise FormaAfrique à prlever automatiquement une commission sur le prix de vente de chaque cours vendu. Le taux de cette commission est défini dans les paramètres de la plateforme et peut être sujet à modification.
 
 **4. Propriété Intellectuelle**
 4.1. **Contenu des Instructeurs :** Les Instructeurs garantissent détenir tous les droits de propriété intellectuelle (droits d'auteur, etc.) sur le contenu qu'ils publient (vidéos, documents, quiz). Ils conservent l'entière propriété de leur contenu.
@@ -180,7 +180,7 @@ export default function AdminSettingsPage() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
     
-    const handleSave = async (data: Partial<SettingsFormValues>) => {
+    const handleSave = async (data: Partial<SettingsFormValues>, sectionName: string) => {
         if (formaAfriqueUser?.role !== 'admin') {
             toast({ variant: 'destructive', title: 'Accès refusé' });
             return;
@@ -191,7 +191,7 @@ export default function AdminSettingsPage() {
             await setDoc(settingsDocRef, data, { merge: true });
             toast({
                 title: 'Paramètres sauvegardés',
-                description: 'Les réglages de la section ont été mis à jour.',
+                description: `Les réglages de la section ${sectionName} ont été mis à jour.`,
             });
         } catch (error) {
             console.error("Failed to save settings:", error);
@@ -205,10 +205,10 @@ export default function AdminSettingsPage() {
         }
     };
     
-    const onGeneralSubmit = (data: Pick<SettingsFormValues, 'general'>) => handleSave({ general: data.general });
-    const onCommercialSubmit = (data: Pick<SettingsFormValues, 'commercial'>) => handleSave({ commercial: data.commercial });
-    const onPlatformSubmit = (data: Pick<SettingsFormValues, 'platform'>) => handleSave({ platform: data.platform });
-    const onLegalSubmit = (data: Pick<SettingsFormValues, 'legal'>) => handleSave({ legal: data.legal });
+    const onGeneralSubmit = (data: Pick<SettingsFormValues, 'general'>) => handleSave({ general: data.general }, 'Général');
+    const onCommercialSubmit = (data: Pick<SettingsFormValues, 'commercial'>) => handleSave({ commercial: data.commercial }, 'Commercial');
+    const onPlatformSubmit = (data: Pick<SettingsFormValues, 'platform'>) => handleSave({ platform: data.platform }, 'Plateforme');
+    const onLegalSubmit = (data: Pick<SettingsFormValues, 'legal'>) => handleSave({ legal: data.legal }, 'Légal');
 
     if (isLoading || isUserLoading) {
         return (
@@ -238,8 +238,8 @@ export default function AdminSettingsPage() {
                     
                     <div className="flex-1">
                         <TabsContent value="general">
-                            <Card className="bg-[#1e293b] border-slate-700">
-                                <form onSubmit={form.handleSubmit(onGeneralSubmit)}>
+                            <form onSubmit={form.handleSubmit(onGeneralSubmit)}>
+                                <Card className="bg-[#1e293b] border-slate-700">
                                     <CardHeader><CardTitle className="text-white">Informations Générales</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <FormField control={form.control} name="general.siteName" render={({ field }) => (
@@ -261,12 +261,12 @@ export default function AdminSettingsPage() {
                                             Enregistrer
                                         </Button>
                                     </CardFooter>
-                                </form>
-                            </Card>
+                                </Card>
+                            </form>
                         </TabsContent>
                          <TabsContent value="commercial">
-                            <Card className="bg-[#1e293b] border-slate-700">
-                                 <form onSubmit={form.handleSubmit(onCommercialSubmit)}>
+                            <form onSubmit={form.handleSubmit(onCommercialSubmit)}>
+                                <Card className="bg-[#1e293b] border-slate-700">
                                     <CardHeader><CardTitle className="text-white">Finances & Paiements</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <FormField control={form.control} name="commercial.commissionRate" render={({ field }) => (
@@ -285,12 +285,12 @@ export default function AdminSettingsPage() {
                                             Enregistrer
                                         </Button>
                                     </CardFooter>
-                                </form>
-                            </Card>
+                                </Card>
+                            </form>
                         </TabsContent>
                          <TabsContent value="platform">
-                            <Card className="bg-[#1e293b] border-slate-700">
-                                <form onSubmit={form.handleSubmit(onPlatformSubmit)}>
+                            <form onSubmit={form.handleSubmit(onPlatformSubmit)}>
+                                <Card className="bg-[#1e293b] border-slate-700">
                                     <CardHeader><CardTitle className="text-white">Configuration de la Plateforme</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <FormField control={form.control} name="platform.maintenanceMode" render={({ field }) => (
@@ -309,12 +309,12 @@ export default function AdminSettingsPage() {
                                             Enregistrer
                                         </Button>
                                     </CardFooter>
-                                </form>
-                            </Card>
+                                </Card>
+                            </form>
                         </TabsContent>
                          <TabsContent value="legal">
-                            <Card className="bg-[#1e293b] border-slate-700">
-                                <form onSubmit={form.handleSubmit(onLegalSubmit)}>
+                            <form onSubmit={form.handleSubmit(onLegalSubmit)}>
+                                <Card className="bg-[#1e293b] border-slate-700">
                                     <CardHeader><CardTitle className="text-white">Contenu Légal & Sécurité</CardTitle></CardHeader>
                                     <CardContent className="space-y-4">
                                         <FormField control={form.control} name="legal.termsOfService" render={({ field }) => (
@@ -330,8 +330,8 @@ export default function AdminSettingsPage() {
                                             Enregistrer
                                         </Button>
                                     </CardFooter>
-                                </form>
-                            </Card>
+                                </Card>
+                            </form>
                         </TabsContent>
                     </div>
                 </Tabs>
