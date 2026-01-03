@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -74,9 +73,9 @@ export default {
         },
       },
       borderRadius: {
-        lg: '12px',
-        md: '8px',
-        sm: '6px',
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 4px)',
+        sm: 'calc(var(--radius) - 8px)',
       },
       keyframes: {
         'accordion-down': {
