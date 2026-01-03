@@ -103,7 +103,7 @@ const CourseCard = ({
             alt={course.title}
             width={600}
             height={338}
-            className="aspect-video object-cover w-full"
+            className="aspect-video object-cover w-full h-40"
           />
            <Badge
             variant={getStatusBadgeVariant(course.status)}
@@ -127,7 +127,7 @@ const CourseCard = ({
             </p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white">
+                <Button variant="ghost" size="sm" className="h-8 w-8 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -269,11 +269,11 @@ export default function AdminCoursesPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-60 w-full rounded-xl dark:bg-slate-700" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-xl dark:bg-slate-700" />)}
         </div>
       ) : courses && courses.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {courses.map(course => (
             <CourseCard
               key={course.id}
