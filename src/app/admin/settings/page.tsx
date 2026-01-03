@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot, setDoc, getDoc } from 'firebase/firestore';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,32 +13,41 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Settings, Percent, Building, Shield, FileText } from 'lucide-react';
+import { useRole } from '@/context/RoleContext';
+
+const generalSchema = z.object({
+  siteName: z.string().min(1, 'Le nom du site est requis.'),
+  siteDescription: z.string().optional(),
+  contactEmail: z.string().email('Veuillez entrer un email valide.'),
+  logoUrl: z.string().url('Veuillez entrer une URL valide.').optional().or(z.literal('')),
+});
+
+const commercialSchema = z.object({
+  commissionRate: z.coerce.number().min(0).max(100, 'Le taux doit être entre 0 et 100.'),
+  minimumPayout: z.coerce.number().min(0, 'Le seuil ne peut pas être négatif.'),
+  enableMobileMoney: z.boolean().default(true),
+});
+
+const platformSchema = z.object({
+  maintenanceMode: z.boolean().default(false),
+  allowInstructorSignup: z.boolean().default(true),
+  announcementMessage: z.string().optional(),
+});
+
+const legalSchema = z.object({
+  termsOfService: z.string().optional(),
+  privacyPolicy: z.string().optional(),
+});
 
 const settingsSchema = z.object({
-  general: z.object({
-    siteName: z.string().min(1, 'Le nom du site est requis.'),
-    siteDescription: z.string().optional(),
-    contactEmail: z.string().email('Veuillez entrer un email valide.'),
-    logoUrl: z.string().url('Veuillez entrer une URL valide.').optional().or(z.literal('')),
-  }),
-  commercial: z.object({
-    commissionRate: z.coerce.number().min(0).max(100, 'Le taux doit être entre 0 et 100.'),
-    minimumPayout: z.coerce.number().min(0, 'Le seuil ne peut pas être négatif.'),
-    enableMobileMoney: z.boolean().default(true),
-  }),
-  platform: z.object({
-    maintenanceMode: z.boolean().default(false),
-    allowInstructorSignup: z.boolean().default(true),
-    announcementMessage: z.string().optional(),
-  }),
-  legal: z.object({
-    termsOfService: z.string().optional(),
-    privacyPolicy: z.string().optional(),
-  }),
+  general: generalSchema,
+  commercial: commercialSchema,
+  platform: platformSchema,
+  legal: legalSchema,
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -117,6 +126,7 @@ Conformément à la législation en vigueur sur la protection des données (par 
 };
 
 export default function AdminSettingsPage() {
+    const { formaAfriqueUser, isUserLoading } = useRole();
     const db = getFirestore();
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
@@ -140,8 +150,19 @@ export default function AdminSettingsPage() {
     useEffect(() => {
         const unsubscribe = onSnapshot(settingsDocRef, (docSnap) => {
             if (docSnap.exists()) {
-                const data = docSnap.data() as Partial<SettingsFormValues>;
-                form.reset(data as SettingsFormValues);
+                const data = docSnap.data();
+                 form.reset({
+                    general: data.general || form.getValues('general'),
+                    commercial: data.commercial || form.getValues('commercial'),
+                    platform: data.platform || form.getValues('platform'),
+                    legal: data.legal || form.getValues('legal'),
+                });
+            } else {
+                 getDoc(settingsDocRef).then(snap => {
+                     if (!snap.exists()) {
+                         setDoc(settingsDocRef, form.getValues(), { merge: true });
+                     }
+                 })
             }
             setIsLoading(false);
         }, (error) => {
@@ -151,14 +172,19 @@ export default function AdminSettingsPage() {
 
         return () => unsubscribe();
     }, [settingsDocRef, form]);
+    
+    const handleSave = async (data: Partial<SettingsFormValues>) => {
+        if (formaAfriqueUser?.role !== 'admin') {
+            toast({ variant: 'destructive', title: 'Accès refusé' });
+            return;
+        }
 
-    const onSubmit = async (data: SettingsFormValues) => {
         setIsSaving(true);
         try {
             await setDoc(settingsDocRef, data, { merge: true });
             toast({
                 title: 'Paramètres sauvegardés',
-                description: 'Les réglages globaux du site ont été mis à jour.',
+                description: 'Les réglages de la section ont été mis à jour.',
             });
         } catch (error) {
             console.error("Failed to save settings:", error);
@@ -171,8 +197,13 @@ export default function AdminSettingsPage() {
             setIsSaving(false);
         }
     };
+    
+    const onGeneralSubmit = (data: Pick<SettingsFormValues, 'general'>) => handleSave({ general: data.general });
+    const onCommercialSubmit = (data: Pick<SettingsFormValues, 'commercial'>) => handleSave({ commercial: data.commercial });
+    const onPlatformSubmit = (data: Pick<SettingsFormValues, 'platform'>) => handleSave({ platform: data.platform });
+    const onLegalSubmit = (data: Pick<SettingsFormValues, 'legal'>) => handleSave({ legal: data.legal });
 
-    if (isLoading) {
+    if (isLoading || isUserLoading) {
         return (
              <div className="space-y-6">
                 <Skeleton className="h-10 w-48" />
@@ -184,16 +215,10 @@ export default function AdminSettingsPage() {
     
     return (
         <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
-                <div className="flex items-center justify-between mb-6">
-                    <div>
-                        <h1 className="text-3xl font-bold">Paramètres</h1>
-                        <p className="text-muted-foreground">Gérez les configurations globales de la plateforme.</p>
-                    </div>
-                    <Button type="submit" disabled={isSaving}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Enregistrer
-                    </Button>
+            <div className="space-y-8">
+                <div>
+                    <h1 className="text-3xl font-bold">Paramètres</h1>
+                    <p className="text-muted-foreground">Gérez les configurations globales de la plateforme.</p>
                 </div>
 
                 <Tabs defaultValue="general" orientation="vertical" className="flex flex-col md:flex-row gap-8">
@@ -207,73 +232,103 @@ export default function AdminSettingsPage() {
                     <div className="flex-1">
                         <TabsContent value="general">
                             <Card>
-                                <CardHeader><CardTitle>Informations Générales</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="general.siteName" render={({ field }) => (
-                                        <FormItem><FormLabel>Nom du site</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                     <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
-                                        <FormItem><FormLabel>URL du Logo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
-                                        <FormItem><FormLabel>Email de contact</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="general.siteDescription" render={({ field }) => (
-                                        <FormItem><FormLabel>Description SEO</FormLabel><FormControl><Textarea {...field} rows={3}/></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                </CardContent>
+                                <form onSubmit={form.handleSubmit(onGeneralSubmit)}>
+                                    <CardHeader><CardTitle>Informations Générales</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="general.siteName" render={({ field }) => (
+                                            <FormItem><FormLabel>Nom du site</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
+                                            <FormItem><FormLabel>URL du Logo</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
+                                            <FormItem><FormLabel>Email de contact</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="general.siteDescription" render={({ field }) => (
+                                            <FormItem><FormLabel>Description SEO</FormLabel><FormControl><Textarea {...field} rows={3}/></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </CardContent>
+                                    <CardFooter className="justify-end">
+                                        <Button type="submit" disabled={isSaving}>
+                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Enregistrer
+                                        </Button>
+                                    </CardFooter>
+                                </form>
                             </Card>
                         </TabsContent>
                          <TabsContent value="commercial">
                             <Card>
-                                <CardHeader><CardTitle>Finances & Paiements</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                     <FormField control={form.control} name="commercial.commissionRate" render={({ field }) => (
-                                        <FormItem><FormLabel>Taux de commission (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Ce taux sera appliqué à toutes les nouvelles ventes.</FormDescription><FormMessage /></FormItem>
-                                    )} />
-                                     <FormField control={form.control} name="commercial.minimumPayout" render={({ field }) => (
-                                        <FormItem><FormLabel>Seuil de retrait minimum (XOF)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Le montant minimum qu'un instructeur doit atteindre pour demander un retrait.</FormDescription><FormMessage /></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="commercial.enableMobileMoney" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Paiements Mobile Money</FormLabel><FormDescription>Activer ou désactiver les paiements par Orange/MTN Money.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                                </CardContent>
+                                 <form onSubmit={form.handleSubmit(onCommercialSubmit)}>
+                                    <CardHeader><CardTitle>Finances & Paiements</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="commercial.commissionRate" render={({ field }) => (
+                                            <FormItem><FormLabel>Taux de commission (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Ce taux sera appliqué à toutes les nouvelles ventes.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="commercial.minimumPayout" render={({ field }) => (
+                                            <FormItem><FormLabel>Seuil de retrait minimum (XOF)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormDescription>Le montant minimum qu'un instructeur doit atteindre pour demander un retrait.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="commercial.enableMobileMoney" render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Paiements Mobile Money</FormLabel><FormDescription>Activer ou désactiver les paiements par Orange/MTN Money.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                    </CardContent>
+                                    <CardFooter className="justify-end">
+                                        <Button type="submit" disabled={isSaving}>
+                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Enregistrer
+                                        </Button>
+                                    </CardFooter>
+                                </form>
                             </Card>
                         </TabsContent>
                          <TabsContent value="platform">
                             <Card>
-                                <CardHeader><CardTitle>Configuration de la Plateforme</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                     <FormField control={form.control} name="platform.maintenanceMode" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Mode Maintenance</FormLabel><FormDescription>Coupe l'accès public au site et affiche une page de maintenance.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="platform.allowInstructorSignup" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Inscriptions des Instructeurs</FormLabel><FormDescription>Autoriser ou non les nouvelles candidatures d'instructeurs.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                                     <FormField control={form.control} name="platform.announcementMessage" render={({ field }) => (
-                                        <FormItem><FormLabel>Message d'annonce global</FormLabel><FormControl><Textarea {...field} rows={2}/></FormControl><FormDescription>Ce message s'affichera en bandeau sur tout le site (si le thème le supporte).</FormDescription><FormMessage /></FormItem>
-                                    )} />
-                                </CardContent>
+                                <form onSubmit={form.handleSubmit(onPlatformSubmit)}>
+                                    <CardHeader><CardTitle>Configuration de la Plateforme</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="platform.maintenanceMode" render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Mode Maintenance</FormLabel><FormDescription>Coupe l'accès public au site et affiche une page de maintenance.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="platform.allowInstructorSignup" render={({ field }) => (
+                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm"><div className="space-y-0.5"><FormLabel>Inscriptions des Instructeurs</FormLabel><FormDescription>Autoriser ou non les nouvelles candidatures d'instructeurs.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="platform.announcementMessage" render={({ field }) => (
+                                            <FormItem><FormLabel>Message d'annonce global</FormLabel><FormControl><Textarea {...field} rows={2}/></FormControl><FormDescription>Ce message s'affichera en bandeau sur tout le site (si le thème le supporte).</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                    </CardContent>
+                                    <CardFooter className="justify-end">
+                                        <Button type="submit" disabled={isSaving}>
+                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Enregistrer
+                                        </Button>
+                                    </CardFooter>
+                                </form>
                             </Card>
                         </TabsContent>
                          <TabsContent value="legal">
                             <Card>
-                                <CardHeader><CardTitle>Contenu Légal & Sécurité</CardTitle></CardHeader>
-                                <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="legal.termsOfService" render={({ field }) => (
-                                        <FormItem><FormLabel>Conditions Générales d'Utilisation</FormLabel><FormControl><Textarea {...field} rows={10} /></FormControl><FormDescription>Le contenu de votre page CGU.</FormDescription><FormMessage /></FormItem>
-                                    )} />
-                                     <FormField control={form.control} name="legal.privacyPolicy" render={({ field }) => (
-                                        <FormItem><FormLabel>Politique de Confidentialité</FormLabel><FormControl><Textarea {...field} rows={10} /></FormControl><FormDescription>Le contenu de votre page de politique de confidentialité.</FormDescription><FormMessage /></FormItem>
-                                    )} />
-                                </CardContent>
+                                <form onSubmit={form.handleSubmit(onLegalSubmit)}>
+                                    <CardHeader><CardTitle>Contenu Légal & Sécurité</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="legal.termsOfService" render={({ field }) => (
+                                            <FormItem><FormLabel>Conditions Générales d'Utilisation</FormLabel><FormControl><Textarea {...field} rows={10} /></FormControl><FormDescription>Le contenu de votre page CGU.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="legal.privacyPolicy" render={({ field }) => (
+                                            <FormItem><FormLabel>Politique de Confidentialité</FormLabel><FormControl><Textarea {...field} rows={10} /></FormControl><FormDescription>Le contenu de votre page de politique de confidentialité.</FormDescription><FormMessage /></FormItem>
+                                        )} />
+                                    </CardContent>
+                                    <CardFooter className="justify-end">
+                                        <Button type="submit" disabled={isSaving}>
+                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                            Enregistrer
+                                        </Button>
+                                    </CardFooter>
+                                </form>
                             </Card>
                         </TabsContent>
                     </div>
                 </Tabs>
-            </form>
+            </div>
         </Form>
     );
 }
-
-    
