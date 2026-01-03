@@ -127,8 +127,8 @@ const CourseCard = ({
             </p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 w-7 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white">
-                  <MoreHorizontal className="h-4 w-4" />
+                <Button variant="outline" size="icon" className="h-8 w-8 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white dark:border-slate-600 shadow-md">
+                  <MoreHorizontal className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
@@ -296,3 +296,5 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
+
+    
