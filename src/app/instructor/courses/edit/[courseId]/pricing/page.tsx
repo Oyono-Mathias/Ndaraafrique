@@ -69,19 +69,19 @@ export default function PricingPage() {
     };
     
     if (isLoading) {
-        return <Skeleton className="h-48 w-full" />
+        return <Skeleton className="h-48 w-full dark:bg-slate-700" />
     }
 
     return (
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                <Card>
+                <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                     <CardHeader>
-                        <CardTitle className="text-xl flex items-center gap-2">
+                        <CardTitle className="text-xl flex items-center gap-2 dark:text-white">
                             <Tag className="h-5 w-5" />
                             Prix du cours
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="dark:text-slate-400">
                             Définissez le prix de votre cours en Francs CFA (XOF). Mettez 0 pour un cours gratuit.
                         </CardDescription>
                     </CardHeader>
@@ -91,9 +91,9 @@ export default function PricingPage() {
                             name="price"
                             render={({ field }) => (
                                 <FormItem>
-                                <FormLabel>Prix (XOF)</FormLabel>
+                                <FormLabel className="dark:text-slate-300">Prix (XOF)</FormLabel>
                                 <FormControl>
-                                    <Input type="number" placeholder="0" {...field} />
+                                    <Input type="number" placeholder="0" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
                                 </FormControl>
                                 <FormMessage />
                                 </FormItem>
@@ -111,4 +111,3 @@ export default function PricingPage() {
         </Form>
     );
 }
-

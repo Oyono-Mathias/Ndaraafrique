@@ -2,9 +2,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -26,7 +26,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Folder, PlusCircle, ArrowLeft, Loader2, AlertCircle, Link2, FileText, Trash2, BookText } from 'lucide-react';
+import { Folder, PlusCircle, Loader2, AlertCircle, Link2, FileText, Trash2, BookText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -36,7 +36,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Course } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
@@ -66,7 +65,6 @@ const ResourceIcon = ({ type }: { type: 'link' | 'file' }) => {
 
 export default function ResourcesPage() {
     const { courseId } = useParams();
-    const router = useRouter();
     const { toast } = useToast();
     const db = getFirestore();
     const { formaAfriqueUser, isUserLoading } = useRole();
@@ -131,14 +129,14 @@ export default function ResourcesPage() {
 
     return (
         <div className="space-y-6">
-            <Card>
+            <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                 <CardHeader className="flex flex-row items-center justify-between">
                      <div>
-                        <CardTitle className="text-xl flex items-center gap-2">
+                        <CardTitle className="text-xl flex items-center gap-2 dark:text-white">
                             <BookText className="h-5 w-5" />
                             Ressources du cours
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="dark:text-slate-400">
                             Ajoutez et gérez les documents et liens pour ce cours.
                         </CardDescription>
                     </div>
@@ -149,10 +147,10 @@ export default function ResourcesPage() {
                                 Ajouter
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
                             <DialogHeader>
                                 <DialogTitle>Nouvelle ressource</DialogTitle>
-                                <DialogDescription>Renseignez les informations de la ressource.</DialogDescription>
+                                <DialogDescription className="dark:text-slate-400">Renseignez les informations de la ressource.</DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(handleCreateResource)} className="space-y-4">
@@ -163,7 +161,7 @@ export default function ResourcesPage() {
                                             <FormItem>
                                                 <FormLabel>Titre de la ressource</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Ex: Slides du chapitre 1" {...field} />
+                                                    <Input placeholder="Ex: Slides du chapitre 1" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -177,11 +175,11 @@ export default function ResourcesPage() {
                                                 <FormLabel>Type</FormLabel>
                                                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                                                     <FormControl>
-                                                        <SelectTrigger>
+                                                        <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600">
                                                             <SelectValue placeholder="Sélectionnez un type" />
                                                         </SelectTrigger>
                                                     </FormControl>
-                                                    <SelectContent>
+                                                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
                                                         <SelectItem value="link">Lien externe</SelectItem>
                                                         <SelectItem value="file" disabled>Fichier (bientôt disponible)</SelectItem>
                                                     </SelectContent>
@@ -198,7 +196,7 @@ export default function ResourcesPage() {
                                                 <FormItem>
                                                     <FormLabel>URL</FormLabel>
                                                     <FormControl>
-                                                        <Input placeholder="https://example.com/ressource" {...field} />
+                                                        <Input placeholder="https://example.com/ressource" {...field} className="dark:bg-slate-700 dark:border-slate-600"/>
                                                     </FormControl>
                                                     <FormMessage />
                                                 </FormItem>
@@ -206,7 +204,7 @@ export default function ResourcesPage() {
                                         />
                                     }
                                     <DialogFooter>
-                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
+                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="dark:hover:bg-slate-700 dark:text-slate-300">Annuler</Button>
                                         <Button type="submit" disabled={isSubmitting}>
                                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Enregistrer
@@ -226,43 +224,43 @@ export default function ResourcesPage() {
                     )}
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Titre</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Date d'ajout</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                            <TableRow className="dark:border-slate-700 hover:bg-slate-800/50">
+                                <TableHead className="dark:text-slate-300">Titre</TableHead>
+                                <TableHead className="dark:text-slate-300">Type</TableHead>
+                                <TableHead className="dark:text-slate-300">Date d'ajout</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-8" /></TableCell>
+                                    <TableRow key={i} className="dark:border-slate-700">
+                                        <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : resources && resources.length > 0 ? (
                                 resources.map((resource) => (
-                                    <TableRow key={resource.id}>
-                                        <TableCell className="font-medium flex items-center gap-3">
+                                    <TableRow key={resource.id} className="dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/50">
+                                        <TableCell className="font-medium flex items-center gap-3 dark:text-slate-100">
                                             <ResourceIcon type={resource.type} />
                                             {resource.title}
                                         </TableCell>
-                                        <TableCell className="text-muted-foreground">{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
-                                        <TableCell className="text-muted-foreground">{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                                        <TableCell>{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
+                                        <TableCell>{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-destructive">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-red-500 hover:text-red-400">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow>
+                                <TableRow className="dark:border-slate-700">
                                     <TableCell colSpan={4} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <Folder className="h-10 w-10" />
                                             <span className="font-medium">Aucune ressource pour ce cours</span>
                                             <span className="text-sm">Cliquez sur "Ajouter" pour commencer.</span>

@@ -51,7 +51,7 @@ const VideoPlayer = ({ videoUrl }: { videoUrl?: string }) => {
             width="100%"
             height="100%"
             controls={true}
-            playing={true} // Auto-play when component mounts
+            playing={true}
             onError={() => setError(true)}
          />
          {error && (
@@ -88,7 +88,6 @@ type CourseContentFormValues = z.infer<typeof courseContentSchema>;
 
 export default function CourseContentPage() {
   const { courseId } = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
   const { isUserLoading } = useRole();
@@ -161,10 +160,6 @@ export default function CourseContentPage() {
       for (const sectionId of removedItems.sections) {
         batch.delete(doc(db, `courses/${courseId}/sections`, sectionId));
       }
-      for (const lectureId of removedItems.lectures) {
-         // Need a map of lectureId to its sectionId to properly delete
-         // For now, we'll rely on section deletion to cascade, which isn't ideal but works for this structure
-      }
 
       // Handle updates and additions
       for (const [sectionIndex, section] of data.sections.entries()) {
@@ -194,9 +189,8 @@ export default function CourseContentPage() {
         title: 'Programme sauvegardé !',
         description: 'Le contenu de votre cours a été mis à jour.',
       });
-      setRemovedItems({ sections: [], lectures: [] }); // Reset removed items on success
+      setRemovedItems({ sections: [], lectures: [] });
       
-      // Manually trigger a re-fetch of the data to get new IDs
       const sectionsSnapshot = await getDocs(query(collection(db, `courses/${courseId}/sections`), orderBy('order')));
       const newSectionsData = sectionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SectionType));
 
@@ -224,9 +218,9 @@ export default function CourseContentPage() {
   if (isCourseLoading || isUserLoading || sectionsLoading || lecturesLoading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
-        <Skeleton className="h-20 w-full" />
+        <Skeleton className="h-20 w-full dark:bg-slate-700" />
+        <Skeleton className="h-20 w-full dark:bg-slate-700" />
+        <Skeleton className="h-20 w-full dark:bg-slate-700" />
       </div>
     );
   }
@@ -272,7 +266,6 @@ export default function CourseContentPage() {
             </Button>
           </div>
 
-          {/* Sticky footer for mobile */}
           <div className="fixed bottom-0 left-0 right-0 md:relative bg-white/80 dark:bg-slate-900/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t dark:border-slate-700 md:border-none p-4 md:p-0 md:flex md:justify-end md:gap-4 z-50">
              <Button type="submit" disabled={isSaving} className="w-full md:w-auto">
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -283,7 +276,7 @@ export default function CourseContentPage() {
       </Form>
 
       <Dialog open={!!previewingLesson} onOpenChange={(isOpen) => !isOpen && setPreviewingLesson(null)}>
-        <DialogContent className="max-w-3xl lg:max-w-4xl xl:max-w-5xl p-0 border-0">
+        <DialogContent className="max-w-3xl lg:max-w-4xl xl:max-w-5xl p-0 border-0 bg-black">
           <DialogHeader className="p-4 sr-only">
             <DialogTitle>{previewingLesson?.title}</DialogTitle>
           </DialogHeader>
@@ -314,7 +307,7 @@ function LessonsArray({ sectionIndex, form, onPreview }: { sectionIndex: number,
                       <FormItem>
                         <FormLabel className="text-gray-700 dark:text-slate-300 font-medium flex items-center justify-between">
                             <span className="flex items-center gap-2"><PlayCircle className="h-4 w-4 text-gray-500 dark:text-slate-400" /> Leçon #{lessonIndex + 1}</span>
-                             <Button type="button" variant="outline" size="sm" onClick={() => onPreview(form.getValues(`sections.${sectionIndex}.lectures.${lessonIndex}`))}>Tester le lecteur</Button>
+                             <Button type="button" variant="outline" size="sm" onClick={() => onPreview(form.getValues(`sections.${sectionIndex}.lectures.${lessonIndex}`))} className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700">Tester le lecteur</Button>
                         </FormLabel>
                         <FormControl><Input placeholder="Ex: Introduction à la leçon" {...field} className="border-gray-200 dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-4 focus-visible:ring-primary/10 focus-visible:border-primary"/></FormControl>
                         <FormMessage />

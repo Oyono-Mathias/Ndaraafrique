@@ -20,8 +20,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, PlusCircle, Trash2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import CourseContentPage from './content/page';
 
 const courseEditSchema = z.object({
   title: z.string().min(5, 'Le titre doit contenir au moins 5 caractères.'),
@@ -37,7 +35,6 @@ type CourseEditFormValues = z.infer<typeof courseEditSchema>;
 
 export default function EditCoursePage() {
   const { courseId } = useParams();
-  const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
   const { formaAfriqueUser, isUserLoading } = useRole();
@@ -203,7 +200,7 @@ export default function EditCoursePage() {
                   <FormItem>
                   <FormLabel className="flex justify-between items-center text-gray-700 dark:text-slate-300 font-medium">
                       <span>Description</span>
-                      <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading}>
+                      <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading} className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700">
                       {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2 text-yellow-500" />}
                       Assistance IA
                       </Button>
@@ -261,7 +258,7 @@ export default function EditCoursePage() {
                           <FormControl>
                           <Input {...field} placeholder={`Objectif #${index + 1}`} className="dark:bg-slate-700 dark:border-slate-600"/>
                           </FormControl>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removeObjective(index)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removeObjective(index)} className="text-muted-foreground dark:text-slate-400 hover:text-destructive dark:hover:text-red-400 hover:bg-destructive/10">
                           <Trash2 className="h-4 w-4" />
                           <span className="sr-only">Supprimer l'objectif</span>
                           </Button>
@@ -301,7 +298,7 @@ export default function EditCoursePage() {
                           <FormControl>
                           <Input {...field} placeholder={`Prérequis #${index + 1}`} className="dark:bg-slate-700 dark:border-slate-600"/>
                           </FormControl>
-                          <Button type="button" variant="ghost" size="icon" onClick={() => removePrereq(index)} className="text-muted-foreground hover:text-destructive hover:bg-destructive/10">
+                          <Button type="button" variant="ghost" size="icon" onClick={() => removePrereq(index)} className="text-muted-foreground dark:text-slate-400 hover:text-destructive dark:hover:text-red-400 hover:bg-destructive/10">
                           <Trash2 className="h-4 w-4" />
                           </Button>
                       </div>
@@ -338,10 +335,8 @@ export default function EditCoursePage() {
           </CardContent>
           </Card>
 
-
-          {/* Sticky footer for mobile, regular for desktop */}
-          <div className="fixed bottom-0 left-0 right-0 md:relative bg-white/80 dark:bg-slate-900/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t dark:border-slate-700 md:border-none p-4 md:p-0 md:flex md:justify-end md:gap-4 z-50">
-          <Button type="submit" disabled={isSaving} className="w-full md:w-auto">
+          <div className="flex justify-end pt-4">
+          <Button type="submit" disabled={isSaving}>
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
               Enregistrer les informations
           </Button>
