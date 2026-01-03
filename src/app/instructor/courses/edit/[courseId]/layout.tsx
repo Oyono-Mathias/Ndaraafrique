@@ -158,8 +158,8 @@ export default function CourseEditLayout({
                     )}
                 </div>
                 {isCourseLoading ? <Skeleton className="h-7 w-20 rounded-md dark:bg-slate-700" /> : (
-                     <Badge variant={getStatusBadgeVariant(course?.status)} className="capitalize dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
-                        {getStatusBadgeText(course?.status)}
+                     <Badge variant={getStatusBadgeVariant(course?.status || 'Draft')} className="capitalize dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
+                        {getStatusBadgeText(course?.status || 'Draft')}
                     </Badge>
                 )}
                 <Button variant="outline" size="sm" asChild className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700 dark:text-white">
