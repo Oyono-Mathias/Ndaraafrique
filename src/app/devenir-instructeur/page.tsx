@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -12,7 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UploadCloud, File as FileIcon, X } from 'lucide-react';
@@ -140,13 +141,13 @@ export default function BecomeInstructorPage() {
               <FormField
                 control={form.control}
                 name="verificationDoc"
-                render={({ field: { onChange, ...fieldProps } }) => (
+                render={({ field }) => (
                   <FormItem>
                     <FormLabel>Justificatif d'identité ou de compétence</FormLabel>
                     <FormDescription>Téléchargez une pièce d'identité (CNI, Passeport) ou un document prouvant votre expertise (diplôme, certificat).</FormDescription>
                     <FormControl>
                       <div>
-                        {!form.watch('verificationDoc') ? (
+                        {!form.watch('verificationDoc')?.size ? (
                           <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
                             <div className="flex flex-col items-center justify-center pt-5 pb-6">
                               <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
@@ -156,8 +157,7 @@ export default function BecomeInstructorPage() {
                               type="file"
                               className="hidden"
                               accept=".pdf,.png,.jpg,.jpeg"
-                              onChange={(e) => onChange(e.target.files?.[0])}
-                              {...fieldProps}
+                              onChange={(e) => field.onChange(e.target.files?.[0])}
                             />
                           </label>
                         ) : (
@@ -166,7 +166,7 @@ export default function BecomeInstructorPage() {
                                 <FileIcon className="h-5 w-5" />
                                 <span className="text-sm font-medium">{form.watch('verificationDoc').name}</span>
                             </div>
-                            <Button variant="ghost" size="icon" onClick={() => form.setValue('verificationDoc', new File([], ''))}><X className="h-4 w-4"/></Button>
+                            <Button variant="ghost" size="icon" onClick={() => field.onChange(null)}><X className="h-4 w-4"/></Button>
                           </div>
                         )}
                       </div>
