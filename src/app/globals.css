@@ -38,13 +38,13 @@
     --background: 222 47% 11%; /* #0f172a */
     --background-alt: 222 47% 11%;
     --foreground: 0 0% 98%; /* #fafafa */
-    --card: 222 39% 18%; /* #1e293b */
+    --card: 215 39% 18%; /* #1e293b */
     --card-foreground: 0 0% 98%;
-    --popover: 222 39% 18%;
+    --popover: 215 39% 18%;
     --popover-foreground: 0 0% 98%;
     --primary: 217 91% 60%;
     --primary-foreground: 210 20% 98%;
-    --secondary: 222 39% 18%;
+    --secondary: 215 39% 18%;
     --secondary-foreground: 0 0% 98%;
     --muted: 215 28% 15%;
     --muted-foreground: 215 20% 65%; /* #94a3b8 */

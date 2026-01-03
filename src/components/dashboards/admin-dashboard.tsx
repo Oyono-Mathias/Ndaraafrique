@@ -11,6 +11,7 @@ import { fr } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import type { Course } from '@/lib/types';
+import { cn } from '@/lib/utils';
 
 
 interface ActivityItem {
@@ -22,8 +23,8 @@ interface ActivityItem {
     date: Date;
 }
 
-const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, value: string, icon: React.ElementType, isLoading: boolean }) => (
-    <Card>
+const StatCard = ({ title, value, icon: Icon, isLoading, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, accentColor?: string }) => (
+    <Card className={cn("border-t-4", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -142,25 +143,28 @@ export function AdminDashboard() {
             title="Revenus Totaux" 
             value={formatCurrency(stats.totalRevenue)} 
             icon={DollarSign} 
-            isLoading={isLoading} 
+            isLoading={isLoading}
+            accentColor="border-green-500"
         />
         <StatCard 
-            title="Revenus (ce mois-ci)" 
-            value={formatCurrency(stats.monthlyRevenue)}
-            icon={DollarSign} 
-            isLoading={isLoading} 
-        />
-         <StatCard 
             title="Utilisateurs Totaux" 
             value={stats.userCount.toLocaleString('fr-FR')} 
             icon={Users} 
             isLoading={isLoading} 
+            accentColor="border-blue-500"
         />
         <StatCard 
             title="Cours Publiés" 
             value={stats.courseCount.toLocaleString('fr-FR')}
             icon={BookOpen} 
             isLoading={isLoading} 
+            accentColor="border-purple-500"
+        />
+        <StatCard 
+            title="Revenus (ce mois-ci)" 
+            value={formatCurrency(stats.monthlyRevenue)}
+            icon={DollarSign} 
+            isLoading={isLoading}
         />
       </section>
       

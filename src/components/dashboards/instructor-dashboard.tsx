@@ -13,14 +13,15 @@ import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface RevenueDataPoint {
     month: string;
     revenue: number;
 }
 
-const StatCard = ({ title, value, icon: Icon, isLoading, change }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string }) => (
-    <Card>
+const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
+    <Card className={cn("border-t-4", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -180,7 +181,13 @@ export function InstructorDashboard() {
             </header>
 
             <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Étudiants" value={stats.totalStudents.toLocaleString()} icon={Users} isLoading={isLoading} />
+                <StatCard 
+                    title="Étudiants" 
+                    value={stats.totalStudents.toLocaleString()} 
+                    icon={Users} 
+                    isLoading={isLoading} 
+                    accentColor="border-blue-500"
+                />
                 <StatCard 
                     title="Note Moyenne" 
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
@@ -188,8 +195,20 @@ export function InstructorDashboard() {
                     isLoading={isLoading} 
                     change={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"}
                 />
-                <StatCard title="Cours Publiés" value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} />
-                <StatCard title="Revenus (ce mois-ci)" value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+                <StatCard 
+                    title="Cours Publiés" 
+                    value={stats.publishedCourses.toString()} 
+                    icon={BookOpen} 
+                    isLoading={isLoading}
+                    accentColor="border-purple-500"
+                />
+                <StatCard 
+                    title="Revenus (ce mois-ci)" 
+                    value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
+                    icon={DollarSign} 
+                    isLoading={isLoading}
+                    accentColor="border-green-500"
+                />
             </section>
 
             <section className="grid lg:grid-cols-3 gap-6">
