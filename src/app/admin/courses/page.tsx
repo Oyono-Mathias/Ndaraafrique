@@ -96,7 +96,7 @@ const CourseCard = ({
 
   return (
     <>
-      <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl rounded-xl border-slate-200 bg-white flex flex-col">
+      <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl rounded-xl dark:bg-[#1e293b] dark:border-slate-700 flex flex-col h-full">
         <div className="relative">
           <Image
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/338`}
@@ -109,50 +109,51 @@ const CourseCard = ({
             variant={getStatusBadgeVariant(course.status)}
             className={cn(
               "absolute top-2 right-2 text-xs",
-              course.status === 'Published' && "bg-green-100 text-green-800 border-green-200",
-              course.status === 'Pending Review' && "bg-blue-100 text-blue-800 border-blue-200",
+              course.status === 'Published' && "bg-green-600/80 text-white border-green-500",
+              course.status === 'Pending Review' && "bg-blue-500/80 text-white border-blue-400",
+              course.status === 'Draft' && "dark:bg-slate-700/80 dark:text-slate-300 dark:border-slate-600"
             )}
           >
             {getStatusBadgeText(course.status)}
           </Badge>
         </div>
         <CardContent className="p-3 flex flex-col flex-grow">
-          <h3 className="font-bold text-sm truncate text-slate-900 mb-1 h-5">{course.title}</h3>
-          <p className="text-xs text-slate-500 mb-2">Par {instructor?.fullName || '...'}</p>
+          <h3 className="font-bold text-sm truncate dark:text-white mb-1 h-5">{course.title}</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mb-2">Par {instructor?.fullName || '...'}</p>
           <div className="flex-grow"></div>
           <div className="flex items-center justify-between mt-1">
-            <p className="font-semibold text-base text-slate-900">
+            <p className="font-semibold text-base dark:text-white">
               {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
             </p>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-8 w-8 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white">
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="dark:hover:bg-slate-700">
                     <Link href={`/course/${course.id}`}><Eye className="mr-2 h-4 w-4"/>Voir la page</Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
+                <DropdownMenuItem asChild className="dark:hover:bg-slate-700">
                     <Link href={`/instructor/courses/edit/${course.id}`}><Edit className="mr-2 h-4 w-4"/>Modifier</Link>
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
+                <DropdownMenuSeparator className="dark:bg-slate-700"/>
                 <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>
+                    <DropdownMenuSubTrigger className="dark:hover:bg-slate-700">
                         <Edit className="mr-2 h-4 w-4" />
                         <span>Changer le statut</span>
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
-                    <DropdownMenuSubContent>
-                        <DropdownMenuItem onClick={() => onStatusChange(course.id, 'Published')}>Publié</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onStatusChange(course.id, 'Pending Review')}>En révision</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onStatusChange(course.id, 'Draft')}>Brouillon</DropdownMenuItem>
+                    <DropdownMenuSubContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                        <DropdownMenuItem className="dark:hover:bg-slate-700" onClick={() => onStatusChange(course.id, 'Published')}>Publié</DropdownMenuItem>
+                        <DropdownMenuItem className="dark:hover:bg-slate-700" onClick={() => onStatusChange(course.id, 'Pending Review')}>En révision</DropdownMenuItem>
+                        <DropdownMenuItem className="dark:hover:bg-slate-700" onClick={() => onStatusChange(course.id, 'Draft')}>Brouillon</DropdownMenuItem>
                     </DropdownMenuSubContent>
                     </DropdownMenuPortal>
                 </DropdownMenuSub>
-                <DropdownMenuItem className="text-red-600" onSelect={() => setIsAlertOpen(true)}>
+                <DropdownMenuItem className="text-red-500 dark:hover:bg-red-900/50" onSelect={() => setIsAlertOpen(true)}>
                   <Trash2 className="mr-2 h-4 w-4" />
                   Supprimer
                 </DropdownMenuItem>
@@ -163,15 +164,15 @@ const CourseCard = ({
       </Card>
       
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="dark:bg-[#1e293b] dark:border-slate-700">
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="dark:text-white">Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription className="dark:text-slate-400">
               Êtes-vous sûr de vouloir supprimer définitivement le cours "{course.title}" ? Cette action est irréversible.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 dark:border-slate-600">Annuler</AlertDialogCancel>
             <AlertDialogAction onClick={() => onDelete(course.id)} className="bg-destructive hover:bg-destructive/90">
               Supprimer
             </AlertDialogAction>
@@ -248,8 +249,8 @@ export default function AdminCoursesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold">Gestion des Formations</h1>
-        <p className="text-muted-foreground">Consultez, filtrez et gérez tous les cours de la plateforme.</p>
+        <h1 className="text-3xl font-bold dark:text-white">Gestion des Formations</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Consultez, filtrez et gérez tous les cours de la plateforme.</p>
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -259,7 +260,7 @@ export default function AdminCoursesPage() {
             key={f}
             variant={filter === f ? 'default' : 'outline'}
             size="sm"
-            className="rounded-full text-xs h-7"
+            className="rounded-full text-xs h-7 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 data-[state=active]:dark:bg-primary data-[state=active]:dark:text-primary-foreground dark:hover:bg-slate-700"
             onClick={() => setFilter(f)}
           >
             {f === 'Tous' ? 'Tous' : getStatusBadgeText(f as Course['status'])}
@@ -268,11 +269,11 @@ export default function AdminCoursesPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-60 w-full rounded-xl" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-60 w-full rounded-xl dark:bg-slate-700" />)}
         </div>
       ) : courses && courses.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
           {courses.map(course => (
             <CourseCard
               key={course.id}
@@ -284,10 +285,10 @@ export default function AdminCoursesPage() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 border-2 border-dashed rounded-xl">
+        <div className="text-center py-20 border-2 border-dashed rounded-xl dark:border-slate-700">
           <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold">Aucun cours trouvé</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <h3 className="mt-4 text-lg font-semibold dark:text-white">Aucun cours trouvé</h3>
+          <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400">
             Aucun cours ne correspond au filtre '{filter}'.
           </p>
         </div>
@@ -295,5 +296,3 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-
-    
