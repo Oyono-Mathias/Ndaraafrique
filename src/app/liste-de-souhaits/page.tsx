@@ -141,7 +141,7 @@ export default function WishlistPage() {
             instructorName: instructor?.fullName
           };
         })
-        .filter((c): c is WishlistCourse => c !== null);
+        .filter((course): course is WishlistCourse => course !== null);
 
       setWishlistCourses(populatedCourses);
       setIsLoading(false);
