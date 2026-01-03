@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -64,6 +63,7 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
     
     const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
     const [lecturesLoading, setLecturesLoading] = useState(true);
+    const [openSectionId, setOpenSectionId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!sections || sectionsLoading) {
@@ -92,6 +92,11 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
             setLecturesLoading(false);
         });
     }, [sections, sectionsLoading, db, courseId]);
+    
+    const handleToggleSection = (sectionId: string) => {
+        setOpenSectionId(prevId => (prevId === sectionId ? null : sectionId));
+    };
+
 
     if (sectionsLoading) {
         return <Skeleton className="h-48 w-full" />;
@@ -106,32 +111,43 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
     }
     
     return (
-        <Accordion type="single" collapsible className="w-full space-y-2">
-            {sections.map((section, index) => (
-                <AccordionItem value={`item-${index}`} key={section.id} className="bg-slate-50 dark:bg-[#1e293b] rounded-2xl border dark:border-slate-700">
-                    <AccordionTrigger className="px-6 text-left hover:no-underline font-semibold text-lg text-slate-800 dark:text-white"><h2>{section.title}</h2></AccordionTrigger>
-                    <AccordionContent className="px-6 bg-slate-100 dark:bg-slate-900/50">
-                        {lecturesLoading ? <Skeleton className="h-10 w-full" /> : (
-                            <ul className="space-y-2">
-                                {(lecturesMap.get(section.id) || []).map(lecture => {
-                                    const canPreview = lecture.isFreePreview || isEnrolled;
-                                    return (
-                                        <li key={lecture.id} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700/50">
-                                            <div className="flex items-center">
-                                                {canPreview ? <PlayCircle className="h-4 w-4 mr-2 text-primary" /> : <Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
-                                                <span className="dark:text-slate-300">{lecture.title}</span>
-                                                {lecture.isFreePreview && <Badge variant="secondary" className="ml-2">Aperçu</Badge>}
-                                            </div>
-                                            <span className="text-xs text-muted-foreground">{lecture.duration ? `${lecture.duration} min` : ''}</span>
-                                        </li>
-                                    );
-                                })}
-                            </ul>
+        <div className="w-full space-y-2">
+            {sections.map((section) => {
+                const isOpen = openSectionId === section.id;
+                return (
+                    <div key={section.id} className="bg-slate-50 dark:bg-[#1e293b] rounded-2xl border dark:border-slate-700 overflow-hidden">
+                        <button
+                            onClick={() => handleToggleSection(section.id)}
+                            className="w-full flex justify-between items-center px-6 py-4 text-left font-semibold text-lg text-slate-800 dark:text-white"
+                        >
+                            <h2>{section.title}</h2>
+                            {isOpen ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                        </button>
+                        {isOpen && (
+                            <div className="px-6 pb-4 bg-slate-100 dark:bg-slate-900/50">
+                                {lecturesLoading ? <Skeleton className="h-10 w-full" /> : (
+                                    <ul className="space-y-2 pt-4">
+                                        {(lecturesMap.get(section.id) || []).map(lecture => {
+                                            const canPreview = lecture.isFreePreview || isEnrolled;
+                                            return (
+                                                <li key={lecture.id} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700/50">
+                                                    <div className="flex items-center">
+                                                        {canPreview ? <PlayCircle className="h-4 w-4 mr-2 text-primary" /> : <Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
+                                                        <span className="dark:text-slate-300">{lecture.title}</span>
+                                                        {lecture.isFreePreview && <Badge variant="secondary" className="ml-2">Aperçu</Badge>}
+                                                    </div>
+                                                    <span className="text-xs text-muted-foreground">{lecture.duration ? `${lecture.duration} min` : ''}</span>
+                                                </li>
+                                            );
+                                        })}
+                                    </ul>
+                                )}
+                            </div>
                         )}
-                    </AccordionContent>
-                </AccordionItem>
-            ))}
-        </Accordion>
+                    </div>
+                );
+            })}
+        </div>
     );
 };
 
@@ -660,3 +676,5 @@ export default function CourseDetailsClient() {
     </>
   );
 }
+
+    
