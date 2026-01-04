@@ -9,6 +9,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 function initializeAdminApp() {
     if (!admin.apps.length) {
         try {
+            // IMPORTANT: Make sure your environment variables are set in your Vercel project settings
             admin.initializeApp({
                 credential: admin.credential.cert({
                     projectId: process.env.FIREBASE_PROJECT_ID,
@@ -18,6 +19,7 @@ function initializeAdminApp() {
             });
         } catch (error: any) {
             console.error('Firebase admin initialization error', error.stack);
+            throw new Error('Failed to initialize Firebase Admin SDK. Check server logs.');
         }
     }
 }

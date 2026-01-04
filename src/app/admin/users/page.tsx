@@ -123,7 +123,6 @@ const UserActions = ({ user }: { user: FormaAfriqueUser }) => {
 
         try {
             const token = await adminUser.getIdToken();
-            // Pass the token as a direct argument
             const result = await deleteUserAccount({ userId: user.uid, idToken: token });
             
             if (result.success) {
