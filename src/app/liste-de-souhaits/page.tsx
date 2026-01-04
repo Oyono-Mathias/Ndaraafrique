@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -24,7 +23,7 @@ import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 
 interface WishlistItem {
-  id: string; // ID du document dans la sous-collection wishlist
+  id: string;
   courseId: string;
 }
 
@@ -34,7 +33,6 @@ interface WishlistCourse extends Course {
 }
 
 const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: (wishlistItemId: string) => void }) => {
-  
   const handleRemoveClick = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -87,135 +85,88 @@ export default function WishlistPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (isUserLoading) {
-      setIsLoading(true);
-      return;
-    }
-    if (!user?.uid) {
-      setIsLoading(false);
+    if (isUserLoading || !user?.uid) {
+      setIsLoading(isUserLoading);
       return;
     }
 
-    const wishlistQuery = query(collection(db, `users/${user.uid}/wishlist`));
-
-    const unsubscribe = onSnapshot(wishlistQuery, async (wishlistSnapshot) => {
-      if (wishlistSnapshot.empty) {
+    const unsubscribe = onSnapshot(query(collection(db, `users/${user.uid}/wishlist`)), async (snapshot) => {
+      if (snapshot.empty) {
         setWishlistCourses([]);
         setIsLoading(false);
         return;
       }
       
-      const wishlistItems = wishlistSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as WishlistItem));
+      const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as WishlistItem));
+      const ids = items.map(i => i.courseId).filter(Boolean);
       
-      const courseIds = wishlistItems.map(item => item.courseId).filter(Boolean);
-      if (courseIds.length === 0) {
+      if (ids.length === 0) {
         setWishlistCourses([]);
         setIsLoading(false);
         return;
       }
 
-      // Firestore 'in' query est limité à 30 items. 
-      // Si tu as plus de 30 cours, il faudrait faire plusieurs requêtes, mais on simplifie ici.
-      const coursesRef = collection(db, 'courses');
-      const coursesQuery = query(coursesRef, where('__name__', 'in', courseIds.slice(0, 30)));
+      const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', ids.slice(0, 30))));
+      const coursesMap = new Map(coursesSnap.docs.map(d => [d.id, { id: d.id, ...d.data() } as Course]));
       
-      const coursesSnapshot = await getDocs(coursesQuery);
-      const coursesData = new Map(coursesSnapshot.docs.map(d => [d.id, { id: d.id, ...d.data() } as Course]));
-      
-      const instructorIds = [...new Set(coursesSnapshot.docs.map(d => d.data().instructorId).filter(Boolean))];
-      const instructorsMap = new Map<string, FormaAfriqueUser>();
+      const instructorIds = [...new Set(coursesSnap.docs.map(d => d.data().instructorId).filter(Boolean))];
+      const instMap = new Map<string, FormaAfriqueUser>();
       
       if (instructorIds.length > 0) {
-        const instructorsQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
-        const instructorsSnapshot = await getDocs(instructorsQuery);
-        instructorsSnapshot.forEach(doc => instructorsMap.set(doc.data().uid, doc.data() as FormaAfriqueUser));
+        const instSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
+        instSnap.forEach(d => instMap.set(d.data().uid, d.data() as FormaAfriqueUser));
       }
 
-      // CORRECTION ICI : Utilisation explicite du Type Guard pour TypeScript
-      const populatedCourses: WishlistCourse[] = wishlistItems
-        .map(item => {
-            const course = coursesData.get(item.courseId);
-            if (!course) return null;
-            const instructor = instructorsMap.get(course.instructorId);
-            return {
-                ...course,
-                wishlistItemId: item.id,
-                instructorName: instructor?.fullName,
-                id: course.id
-            };
-        })
-        .filter((course): course is WishlistCourse => course !== null);
+      // VERSION SECURISEE : On utilise une boucle forEach au lieu de map/filter
+      const result: WishlistCourse[] = [];
+      items.forEach(item => {
+        const course = coursesMap.get(item.courseId);
+        if (course) {
+          const instructor = instMap.get(course.instructorId);
+          result.push({
+            ...course,
+            wishlistItemId: item.id,
+            instructorName: instructor?.fullName,
+            id: course.id
+          });
+        }
+      });
 
-      setWishlistCourses(populatedCourses);
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching wishlist (permissions?): ", error);
-      setWishlistCourses([]);
+      setWishlistCourses(result);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, [user, isUserLoading, db]);
 
-  const handleRemoveFromWishlist = async (wishlistItemId: string) => {
+  const handleRemoveFromWishlist = async (id: string) => {
     if (!user?.uid) return;
-    
-    const docRef = doc(db, `users/${user.uid}/wishlist`, wishlistItemId);
     try {
-      await deleteDoc(docRef);
-      toast({
-        title: 'Retiré de la liste',
-        description: 'Le cours a été retiré de votre liste de souhaits.',
-      });
-    } catch (error) {
-      console.error("Error removing from wishlist: ", error);
-      toast({
-        variant: 'destructive',
-        title: 'Erreur',
-        description: 'Impossible de retirer le cours de la liste.',
-      });
+      await deleteDoc(doc(db, `users/${user.uid}/wishlist`, id));
+      toast({ title: 'Retiré', description: 'Cours retiré de la liste.' });
+    } catch (e) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Action impossible.' });
     }
   };
   
-  const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-[100px] w-full rounded-xl bg-slate-200" />
-          ))}
-        </div>
-      );
-    }
-    
-    if (wishlistCourses.length === 0) {
-      return (
-        <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-xl">
-          <Heart className="mx-auto h-12 w-12 text-red-300" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-600">Rien ici pour l'instant ❤️</h3>
-          <p className="mt-1 text-sm text-slate-500">Parcourez les cours et ajoutez vos favoris.</p>
-          <Button asChild variant="link" className="mt-2">
-            <Link href="/dashboard">Parcourir les cours</Link>
-          </Button>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        {wishlistCourses.map(course => (
-          <WishlistCard key={course.wishlistItemId} course={course} onRemove={handleRemoveFromWishlist} />
-        ))}
-      </div>
-    );
-  };
-
   return (
     <div className="space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold text-slate-900">Ma liste de souhaits</h1>
-      </header>
-      {renderContent()}
+      <header><h1 className="text-3xl font-bold text-slate-900">Ma liste de souhaits</h1></header>
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-[100px] w-full bg-slate-200" />)}
+        </div>
+      ) : wishlistCourses.length === 0 ? (
+        <div className="text-center py-20 border-2 border-dashed rounded-xl">
+          <Heart className="mx-auto h-12 w-12 text-red-300" />
+          <h3 className="mt-4 text-lg font-semibold text-slate-600">Rien ici ❤️</h3>
+          <Button asChild variant="link"><Link href="/dashboard">Parcourir les cours</Link></Button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {wishlistCourses.map(c => <WishlistCard key={c.wishlistItemId} course={c} onRemove={handleRemoveFromWishlist} />)}
+        </div>
+      )}
     </div>
   );
 }
