@@ -24,7 +24,7 @@ import { Button } from "../ui/button";
 
 
 const adminMenu = [
-    { href: "/admin/dashboard", icon: LayoutDashboard, text: "Tableau de bord" },
+    { href: "/dashboard", icon: LayoutDashboard, text: "Tableau de bord" },
     { href: "/admin/users", icon: Users, text: "Utilisateurs" },
     { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
@@ -37,7 +37,7 @@ const adminMenu = [
 
 const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin/dashboard' && pathname === href) || (href !== '/admin/dashboard' && pathname.startsWith(href));
+  const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
 
   return (
     <Link
@@ -74,7 +74,7 @@ export function AdminSidebar() {
   return (
     <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
        <header className="p-4 border-b border-slate-700/50">
-        <Link href="/admin/dashboard" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
             <Image src="/icon.svg" width={32} height={32} alt="FormaAfrique Logo" />
             <span className="font-bold text-lg text-white">Admin Panel</span>
         </Link>
