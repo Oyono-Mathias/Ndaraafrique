@@ -24,7 +24,7 @@ import { Button } from "../ui/button";
 
 
 const adminMenu = [
-    { href: "/dashboard", icon: LayoutDashboard, text: "Tableau de bord" },
+    { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
     { href: "/admin/users", icon: Users, text: "Utilisateurs" },
     { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
@@ -37,7 +37,7 @@ const adminMenu = [
 
 const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
   const pathname = usePathname();
-  const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
+  const isActive = (href === '/admin' && pathname === href) || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link
