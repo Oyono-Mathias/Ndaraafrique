@@ -68,11 +68,11 @@ export default function AuthPage() {
               <form onSubmit={handleLoginSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="login-email" className="text-slate-900">Email</Label>
-                  <Input id="login-email" type="email" placeholder="votre.email@exemple.com" required className="bg-white border-slate-300 text-slate-900" />
+                  <Input id="login-email" type="email" placeholder="nom@exemple.com" required className="bg-white border-slate-300 text-slate-900" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="login-password">Mot de passe</Label>
-                  <Input id="login-password" type="password" required className="bg-white border-slate-300 text-slate-900" />
+                  <Input id="login-password" type="password" placeholder="********" required className="bg-white border-slate-300 text-slate-900" />
                 </div>
                 <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base" disabled={isLoading}>
                   {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -97,7 +97,7 @@ export default function AuthPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleRegisterSubmit} className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstname" className="text-slate-900">Prénom</Label>
                     <Input id="firstname" placeholder="Mathias" required className="bg-white border-slate-300 text-slate-900"/>
@@ -115,7 +115,7 @@ export default function AuthPage() {
                   <Label htmlFor="register-password" className="text-slate-900">Mot de passe</Label>
                   <Input id="register-password" type="password" placeholder="********" required className="bg-white border-slate-300 text-slate-900"/>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="country-origin" className="text-slate-900">Pays d'origine</Label>
                     <Select>
@@ -133,7 +133,7 @@ export default function AuthPage() {
                     <Label htmlFor="country-current" className="text-slate-900">Pays actuel</Label>
                      <Select defaultValue={detectedCountry}>
                       <SelectTrigger id="country-current" className="bg-white border-slate-300 text-slate-900">
-                        <SelectValue placeholder="Cameroun" />
+                        <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent>
                         {africanCountries.map(country => (
