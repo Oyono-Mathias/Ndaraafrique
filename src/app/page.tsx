@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -81,14 +81,14 @@ export default function AuthPage() {
                 </Button>
               </form>
             </CardContent>
-            <CardContent className="p-6 pt-0 text-center text-sm">
-                <p className="text-slate-700">
+            <CardFooter className="p-6 pt-0 text-center text-sm">
+                <p className="text-slate-700 mx-auto">
                     Vous n'avez pas de compte ?{' '}
                     <button onClick={() => setActiveTab('register')} className="font-semibold text-blue-600 hover:underline">
                         S'inscrire
                     </button>
                 </p>
-            </CardContent>
+            </CardFooter>
           </TabsContent>
           
           <TabsContent value="register" className="m-0">
@@ -150,14 +150,14 @@ export default function AuthPage() {
                 </Button>
               </form>
             </CardContent>
-             <CardContent className="p-6 pt-0 text-center text-sm">
-                <p className="text-slate-700">
+             <CardFooter className="p-6 pt-0 text-center text-sm">
+                <p className="text-slate-700 mx-auto">
                     Déjà un compte ?{' '}
                     <button onClick={() => setActiveTab('login')} className="font-semibold text-blue-600 hover:underline">
                         Se connecter
                     </button>
                 </p>
-            </CardContent>
+            </CardFooter>
           </TabsContent>
         </Card>
       </Tabs>
