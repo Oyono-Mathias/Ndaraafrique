@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -98,30 +97,30 @@ export default function AuthPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleRegisterSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstname" className="text-slate-900">Prénom</Label>
-                    <Input id="firstname" placeholder="John" required className="bg-white border-slate-300 text-slate-900"/>
+                    <Input id="firstname" placeholder="Mathias" required className="bg-white border-slate-300 text-slate-900"/>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastname" className="text-slate-900">Nom</Label>
-                    <Input id="lastname" placeholder="Doe" required className="bg-white border-slate-300 text-slate-900"/>
+                    <Input id="lastname" placeholder="OYONO" required className="bg-white border-slate-300 text-slate-900"/>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-email" className="text-slate-900">Email</Label>
-                  <Input id="register-email" type="email" placeholder="votre.email@exemple.com" required className="bg-white border-slate-300 text-slate-900"/>
+                  <Input id="register-email" type="email" placeholder="nom@exemple.com" required className="bg-white border-slate-300 text-slate-900"/>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="register-password" className="text-slate-900">Mot de passe</Label>
-                  <Input id="register-password" type="password" required className="bg-white border-slate-300 text-slate-900"/>
+                  <Input id="register-password" type="password" placeholder="********" required className="bg-white border-slate-300 text-slate-900"/>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="country-origin" className="text-slate-900">Pays d'origine</Label>
                     <Select>
                       <SelectTrigger id="country-origin" className="bg-white border-slate-300 text-slate-900">
-                        <SelectValue placeholder="Sélectionnez un pays" />
+                        <SelectValue placeholder="Sélectionner" />
                       </SelectTrigger>
                       <SelectContent>
                         {africanCountries.map(country => (
@@ -134,7 +133,7 @@ export default function AuthPage() {
                     <Label htmlFor="country-current" className="text-slate-900">Pays actuel</Label>
                      <Select defaultValue={detectedCountry}>
                       <SelectTrigger id="country-current" className="bg-white border-slate-300 text-slate-900">
-                        <SelectValue placeholder="Sélectionnez un pays" />
+                        <SelectValue placeholder="Cameroun" />
                       </SelectTrigger>
                       <SelectContent>
                         {africanCountries.map(country => (
