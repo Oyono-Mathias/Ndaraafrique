@@ -83,8 +83,7 @@
     width: 100vw;
     overflow: hidden;
     position: relative;
-    background: linear-gradient(rgba(10, 10, 20, 0.8), rgba(0, 0, 0, 0.9)),
-                url('https://img.freepik.com/free-vector/dark-low-poly-background_1048-7971.jpg');
+    background: linear-gradient(rgba(10, 10, 20, 0.8), rgba(0, 0, 0, 0.9));
     background-size: cover;
     background-position: center;
     animation: breathingBackground 20s ease-in-out infinite alternate;
@@ -127,3 +126,5 @@
     z-index: 2;
   }
 }
+
+    

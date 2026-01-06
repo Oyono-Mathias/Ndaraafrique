@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 
@@ -43,8 +44,10 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState('login');
   const [isLoading, setIsLoading] = useState(false);
   const [detectedCountry, setDetectedCountry] = useState('');
+  const [loginBackground, setLoginBackground] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+  const db = getFirestore();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -64,7 +67,20 @@ export default function AuthPage() {
   });
 
   useEffect(() => {
-    // Simple detection based on browser language
+    // Fetch global settings for background image
+    const fetchSettings = async () => {
+        const settingsRef = doc(db, 'settings', 'global');
+        const settingsSnap = await getDoc(settingsRef);
+        if (settingsSnap.exists()) {
+            const settingsData = settingsSnap.data();
+            if (settingsData?.general?.loginBackgroundImage) {
+                setLoginBackground(settingsData.general.loginBackgroundImage);
+            }
+        }
+    };
+    fetchSettings();
+
+    // Simple country detection based on browser language
     const userLang = navigator.language || (navigator as any).userLanguage; // e.g., fr-FR, en-US
     if (userLang) {
       const countryCode = userLang.split('-')[1]?.toUpperCase();
@@ -73,7 +89,7 @@ export default function AuthPage() {
         registerForm.setValue('countryCurrent', countryCode);
       }
     }
-  }, [registerForm]);
+  }, [registerForm, db]);
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -152,9 +168,13 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
+  
+  const containerStyle = loginBackground 
+    ? { backgroundImage: `linear-gradient(rgba(10, 10, 20, 0.8), rgba(0, 0, 0, 0.9)), url('${loginBackground}')` } 
+    : {};
 
   return (
-     <div className="auth-page-container">
+     <div className="auth-page-container" style={containerStyle}>
       <div className="min-h-screen w-full flex items-center justify-center p-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-lg">
           <TabsList className="grid w-full grid-cols-2 h-12 rounded-t-xl rounded-b-none p-0 border-b bg-slate-100">
@@ -162,7 +182,7 @@ export default function AuthPage() {
               value="login" 
               className="text-base h-full rounded-tl-xl rounded-b-none data-[state=active]:bg-white data-[state=active]:shadow-none data-[state=inactive]:bg-slate-100 data-[state=inactive]:text-slate-500"
             >
-              Connexion
+              Se connecter
             </TabsTrigger>
             <TabsTrigger 
               value="register" 
@@ -263,3 +283,5 @@ export default function AuthPage() {
     </div>
   );
 }
+
+    

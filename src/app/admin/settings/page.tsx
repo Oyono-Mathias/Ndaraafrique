@@ -24,6 +24,7 @@ const generalSchema = z.object({
   siteDescription: z.string().optional(),
   contactEmail: z.string().email('Veuillez entrer un email valide.'),
   logoUrl: z.string().url('Veuillez entrer une URL valide.').optional().or(z.literal('')),
+  loginBackgroundImage: z.string().url("Veuillez entrer une URL d'image valide.").optional().or(z.literal('')),
 });
 
 const commercialSchema = z.object({
@@ -137,7 +138,7 @@ export default function AdminSettingsPage() {
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
         defaultValues: {
-            general: { siteName: 'FormaAfrique', siteDescription: '', contactEmail: '', logoUrl: '' },
+            general: { siteName: 'FormaAfrique', siteDescription: '', contactEmail: '', logoUrl: '', loginBackgroundImage: '' },
             commercial: { commissionRate: 20, minimumPayout: 5000, enableMobileMoney: true },
             platform: { maintenanceMode: false, allowInstructorSignup: true, announcementMessage: '' },
             legal: { 
@@ -248,6 +249,9 @@ export default function AdminSettingsPage() {
                                         <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
                                             <FormItem><FormLabel className="text-slate-300">URL du Logo</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
                                         )} />
+                                        <FormField control={form.control} name="general.loginBackgroundImage" render={({ field }) => (
+                                            <FormItem><FormLabel className="text-slate-300">URL de l'image de fond (Login)</FormLabel><FormControl><Input {...field} placeholder="Laissez vide pour le style par défaut" className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
+                                        )} />
                                         <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
                                             <FormItem><FormLabel className="text-slate-300">Email de contact</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
                                         )} />
@@ -339,5 +343,7 @@ export default function AdminSettingsPage() {
         </Form>
     );
 }
+
+    
 
     
