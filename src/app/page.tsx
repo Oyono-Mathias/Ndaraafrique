@@ -21,6 +21,7 @@ import { Loader2 } from 'lucide-react';
 import { africanCountries } from '@/lib/countries';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { cn } from '@/lib/utils';
 
 // Schemas for form validation
 const loginSchema = z.object({
@@ -175,7 +176,7 @@ export default function AuthPage() {
           </TabsTrigger>
         </TabsList>
         
-        <Card className="bg-white rounded-t-none rounded-b-xl shadow-lg">
+        <Card className={cn("rounded-t-none rounded-b-xl shadow-lg auth-card")}>
           <TabsContent value="login" className="m-0">
             <CardHeader>
               <CardTitle className="text-3xl font-bold text-slate-900">Se connecter</CardTitle>
