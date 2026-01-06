@@ -78,92 +78,52 @@
     box-shadow: 0 4px 10px rgba(0,0,0,0.1);
   }
 
-  .glassmorphism {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
-
-  @keyframes backgroundPulse {
-    0% {
-        background-position: center;
-        filter: brightness(1);
-    }
-    100% {
-        background-position: center top; 
-        filter: brightness(1.1); 
-    }
-  }
-
-  body.auth-page {
+  .auth-page-container {
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
     background: linear-gradient(rgba(10, 10, 20, 0.8), rgba(0, 0, 0, 0.9)),
                 url('https://img.freepik.com/free-vector/dark-low-poly-background_1048-7971.jpg');
     background-size: cover;
     background-position: center;
-    animation: backgroundPulse 15s ease infinite alternate;
+    animation: breathingBackground 20s ease-in-out infinite alternate;
+  }
+
+  .auth-card {
+    background: rgba(255, 255, 255, 0.8) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+
+  @keyframes breathingBackground {
+    from {
+      transform: scale(1.0);
+    }
+    to {
+      transform: scale(1.05);
+    }
+  }
+
+  @keyframes rotateRays {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  .auth-page-container::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at 50% 50%, transparent, rgba(0,0,0,0.6)),
+                radial-gradient(circle at 20% 30%, hsla(var(--primary), 0.3), transparent 40%),
+                radial-gradient(circle at 80% 70%, hsla(190, 80%, 50%, 0.3), transparent 40%);
+    animation: breathingBackground 20s ease-in-out infinite alternate;
+    z-index: 1;
   }
   
-  .auth-page > div {
-    background-color: transparent !important;
+   .auth-page-container > div {
+    position: relative;
+    z-index: 2;
   }
-
-  body.auth-page .auth-card {
-    background: rgba(255, 255, 255, 0.9) !important;
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-  }
-}
-
-@keyframes glow-pulse {
-  0%, 100% {
-    transform: scale(1);
-    opacity: 0.3;
-  }
-  50% {
-    transform: scale(1.5);
-    opacity: 0.5;
-  }
-}
-
-@keyframes rotate-rays {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-body.auth-page::before,
-body.auth-page::after {
-  content: '';
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  z-index: -1; 
-}
-
-/* Glowing halo effect */
-body.auth-page::before {
-  width: 50vw;
-  height: 50vw;
-  max-width: 600px;
-  max-height: 600px;
-  background: radial-gradient(circle, hsla(var(--primary), 0.3) 0%, transparent 70%);
-  animation: glow-pulse 20s ease-in-out infinite;
-}
-
-/* Rotating rays effect */
-body.auth-page::after {
-  width: 100vw;
-  height: 100vw;
-  max-width: 1200px;
-  max-height: 1200px;
-  background: conic-gradient(
-    hsla(var(--primary), 0.1) 0deg 15deg, 
-    transparent 15deg 60deg
-  );
-  mask-image: radial-gradient(circle, transparent 30%, black 60%);
-  animation: rotate-rays 60s linear infinite;
 }
