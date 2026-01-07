@@ -194,7 +194,7 @@ export default function AuthPage() {
   return (
      <div className="auth-page-container" style={containerStyle}>
       <div className="min-h-screen w-full flex items-center justify-center p-4">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-lg">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-sm">
           <TabsList className="grid w-full grid-cols-2 h-12 rounded-t-xl rounded-b-none p-0 border-b bg-slate-100/10">
             <TabsTrigger 
               value="login" 
@@ -212,28 +212,28 @@ export default function AuthPage() {
           
           <Card className="auth-card rounded-t-none rounded-b-xl shadow-lg">
             <TabsContent value="login" className="m-0">
-              <CardHeader className="items-center">
-                 {logoUrl && <Image src={logoUrl} alt={siteName} width={48} height={48} className="mb-4 rounded-full" />}
-                <CardTitle className="text-3xl font-bold text-white">Se connecter</CardTitle>
+              <CardHeader className="items-center pb-4">
+                 {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
+                <CardTitle className="text-2xl font-bold text-white">Se connecter</CardTitle>
                 <CardDescription className="text-slate-300">Accédez à votre tableau de bord.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Form {...loginForm}>
-                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-6">
+                  <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField control={loginForm.control} name="email" render={({ field }) => (
                       <FormItem><FormLabel className="text-white">Email</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900" /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={loginForm.control} name="password" render={({ field }) => (
                       <FormItem><FormLabel className="text-white">Mot de passe</FormLabel><FormControl><Input type="password" required {...field} className="bg-white border-slate-300 text-slate-900" /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base" disabled={isLoading}>
+                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Se connecter
                     </Button>
                   </form>
                 </Form>
               </CardContent>
-              <CardContent className="p-6 pt-0 text-center text-sm">
+              <CardContent className="p-4 pt-0 text-center text-sm">
                   <p className="text-slate-300">
                       Vous n'avez pas de compte ?{' '}
                       <button onClick={() => setActiveTab('register')} className="font-semibold text-blue-400 hover:underline">
@@ -244,14 +244,14 @@ export default function AuthPage() {
             </TabsContent>
             
             <TabsContent value="register" className="m-0">
-              <CardHeader className="items-center">
-                {logoUrl && <Image src={logoUrl} alt={siteName} width={48} height={48} className="mb-4 rounded-full" />}
-                <CardTitle className="text-3xl font-bold text-white">Créer un compte</CardTitle>
+              <CardHeader className="items-center pb-4">
+                {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
+                <CardTitle className="text-2xl font-bold text-white">Créer un compte</CardTitle>
                 <CardDescription className="text-slate-300">Rejoignez la plus grande communauté d'apprenants d'Afrique.</CardDescription>
               </CardHeader>
               <CardContent>
                 <Form {...registerForm}>
-                    <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
+                    <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         <FormField control={registerForm.control} name="firstName" render={({ field }) => (
                             <FormItem><FormLabel className="text-white">Prénom</FormLabel><FormControl><Input placeholder="Mathias" {...field} className="bg-white border-slate-300 text-slate-900" /></FormControl><FormMessage /></FormItem>
@@ -281,14 +281,14 @@ export default function AuthPage() {
                               </Select><FormMessage /></FormItem>
                           )} />
                       </div>
-                      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-base" disabled={isLoading}>
+                      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Créer un compte
                       </Button>
                     </form>
                 </Form>
               </CardContent>
-              <CardContent className="p-6 pt-0 text-center text-sm">
+              <CardContent className="p-4 pt-0 text-center text-sm">
                   <p className="text-slate-300">
                       Déjà un compte ?{' '}
                       <button onClick={() => setActiveTab('login')} className="font-semibold text-blue-400 hover:underline">
