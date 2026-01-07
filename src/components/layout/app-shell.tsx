@@ -12,7 +12,7 @@ import { AdminSidebar } from './admin-sidebar';
 import { Footer } from './footer';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
-import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Tool } from 'lucide-react';
+import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Tool, Loader2 } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -281,30 +281,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Show loading skeleton while determining maintenance mode status
+  // Show a full-page loader until we know the maintenance status and user role
   if (isLoading) {
-      return (
-        <div className="flex min-h-screen w-full bg-background dark:bg-[#0f172a]">
-          <div className="hidden md:flex flex-col gap-4 border-r bg-white dark:bg-[#1e293b] dark:border-slate-700 p-4 w-64">
-            <div className="flex items-center gap-2 p-2">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <Skeleton className="h-6 w-32" />
-            </div>
-            <div className="space-y-2 mt-4 px-2">
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-full" />
-              <Skeleton className="h-8 w-1/2" />
-            </div>
-          </div>
-          <main className="flex-1 p-6">
-            <Skeleton className="h-full w-full" />
-          </main>
+    return (
+        <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-[#0f172a]">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      );
+    );
   }
 
   // Once loading is complete, check for maintenance mode.
+  // Crucially, formaAfriqueUser is now guaranteed to be loaded or null.
   if (siteSettings.maintenanceMode && formaAfriqueUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
