@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -17,7 +18,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Loader2, Send, Shield, ArrowLeft } from 'lucide-react';
+import { Loader2, Send, Shield, ArrowLeft, Video, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -187,7 +188,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   if (isLoading) {
     return (
-        <div className="flex h-full w-full items-center justify-center bg-slate-100">
+        <div className="flex h-full w-full items-center justify-center bg-[#E5DDD5]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
@@ -195,7 +196,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[#E5DDD5]">
-        <header className="flex items-center p-3 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+       <header className="flex items-center p-3 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
             <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.push('/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -203,11 +204,15 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 <AvatarImage src={otherParticipant?.profilePictureURL} />
                 <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
-            <div className="ml-3">
+            <div className="ml-3 flex-1">
                 <h2 className="font-bold text-base flex items-center text-black">
                     {otherParticipant?.fullName || "Utilisateur"}
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
+            </div>
+            <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon"><Video className="h-5 w-5 text-slate-600" /></Button>
+                <Button variant="ghost" size="icon"><Phone className="h-5 w-5 text-slate-600" /></Button>
             </div>
         </header>
 
@@ -234,7 +239,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        <div className="fixed bottom-0 left-0 w-full p-2 bg-transparent">
+        <div className="p-2 bg-transparent">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
                 <Input
                     value={newMessage}
@@ -251,3 +256,4 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     </div>
   );
 }
+

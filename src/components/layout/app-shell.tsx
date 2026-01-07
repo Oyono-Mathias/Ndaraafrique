@@ -160,8 +160,15 @@ const AnnouncementBanner = () => {
     const [message, setMessage] = useState('');
     const [isVisible, setIsVisible] = useState(false);
     const db = getFirestore();
+    const pathname = usePathname();
+    const isChatPage = pathname.startsWith('/messages/');
 
     useEffect(() => {
+        if (isChatPage) {
+            setIsVisible(false);
+            return;
+        }
+
         const settingsRef = doc(db, 'settings', 'global');
         const fetchSettings = async () => {
             const docSnap = await getDoc(settingsRef);
@@ -177,7 +184,7 @@ const AnnouncementBanner = () => {
             }
         };
         fetchSettings();
-    }, [db]);
+    }, [db, isChatPage]);
     
     const handleDismiss = () => {
         setIsVisible(false);
@@ -333,6 +340,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className='dark flex flex-col min-h-screen bg-background-alt dark:bg-[#0f172a]'>
+        <AnnouncementBanner />
         <div className="flex flex-1">
             <aside className={cn("hidden md:flex", isFullScreenPage && "md:hidden")}>
               {renderSidebar()}
@@ -396,9 +404,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
               </main>
               {showBottomNav && <BottomNavBar />}
-              {!isFullScreenPage && <Footer />}
+              {!isFullScreenPage && !isChatPage && <Footer />}
             </div>
         </div>
     </div>
   );
 }
+

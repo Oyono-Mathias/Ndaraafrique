@@ -2,8 +2,17 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 export function Footer() {
+  const pathname = usePathname();
+  const isChatPage = pathname.startsWith('/messages/');
+  
+  if (isChatPage) {
+    return null;
+  }
+
   return (
     <footer className="mt-auto border-t bg-card text-card-foreground">
       <div className="container mx-auto flex flex-col items-center justify-between gap-4 p-4 sm:flex-row">
