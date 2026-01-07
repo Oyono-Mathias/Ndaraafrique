@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -46,7 +45,9 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
-  const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+
 
   // Fetch chat details, listen for messages, and mark as read
   useEffect(() => {
@@ -123,9 +124,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   // Auto-scroll to the bottom
   useEffect(() => {
-    setTimeout(() => {
-        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-      }, 100);
+    bottomRef.current?.scrollIntoView({ behavior: "smooth", block: 'end' });
   }, [messages]);
 
 
@@ -195,69 +194,52 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-card">
-      <header className="p-4 border-b flex items-center gap-3 bg-card/50 backdrop-blur z-10">
-        <Avatar className="h-10 w-10 border">
-          <AvatarImage src={otherParticipant?.profilePictureURL} />
-          <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
-        </Avatar>
-        <div className="flex items-center">
-          <h2 className="font-semibold text-sm">{otherParticipant?.fullName || 'Chargement...'}</h2>
-          <RoleBadge role={otherParticipant?.role} />
+        {/* Messages Area - takes up remaining space and is scrollable */}
+        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+            <div className="p-4 sm:p-6 space-y-4">
+                {messages.map((msg) => {
+                    const isMe = msg.senderId === user?.uid;
+                    return (
+                        <div 
+                            key={msg.id} 
+                            className={cn("flex items-end gap-2", isMe && "justify-end")}
+                        >
+                            {!isMe && (
+                                <Avatar className="h-6 w-6 border">
+                                    <AvatarImage src={otherParticipant?.profilePictureURL} />
+                                    <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
+                                </Avatar>
+                            )}
+                            <div className={cn(
+                                "rounded-2xl px-4 py-2 max-w-[75%] text-sm shadow-sm",
+                                isMe 
+                                    ? "bg-primary text-primary-foreground rounded-br-none" 
+                                    : "bg-background border rounded-bl-none text-card-foreground"
+                            )}>
+                                {msg.text}
+                            </div>
+                        </div>
+                    );
+                })}
+                <div ref={bottomRef} />
+            </div>
+        </ScrollArea>
+
+        {/* Sticky Input Bar at the bottom */}
+        <div className="p-4 border-t bg-background shadow-t-lg">
+            <form onSubmit={handleSend} className="flex items-center gap-2">
+                <Input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Écrivez votre message..."
+                    className="flex-1"
+                />
+                <Button type="submit" size="icon" disabled={!newMessage.trim()} className="shrink-0">
+                    <Send className="h-4 w-4" />
+                    <span className="sr-only">Envoyer</span>
+                </Button>
+            </form>
         </div>
-      </header>
-
-      <div className="bg-amber-50 border-b border-amber-200 p-3 flex gap-2 items-start">
-        <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-        <p className="text-xs text-amber-800">
-          <strong>Conseil de sécurité :</strong> Pour votre protection, gardez les échanges et paiements sur FormaAfrique. 
-          Tout partage de numéro (WhatsApp, Telegram) est interdit.
-        </p>
-      </div>
-
-      <ScrollArea className="flex-1 bg-muted/20">
-        <div className="p-4 sm:p-6 space-y-4">
-          {messages.map((msg) => {
-            const isMe = msg.senderId === user?.uid;
-            return (
-              <div 
-                key={msg.id} 
-                className={cn("flex items-end gap-2", isMe && "justify-end")}
-              >
-                {!isMe && (
-                  <Avatar className="h-6 w-6 border">
-                    <AvatarImage src={otherParticipant?.profilePictureURL} />
-                    <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
-                  </Avatar>
-                )}
-                 <div className={cn(
-                  "rounded-2xl px-4 py-2 max-w-[75%] text-sm shadow-sm",
-                  isMe 
-                    ? "bg-primary text-primary-foreground rounded-br-none" 
-                    : "bg-background border rounded-bl-none text-card-foreground"
-                )}>
-                  {msg.text}
-                </div>
-              </div>
-            );
-          })}
-          <div ref={scrollRef} />
-        </div>
-      </ScrollArea>
-
-      <div className="p-4 border-t bg-background">
-        <form onSubmit={handleSend} className="flex items-center gap-2">
-            <Input
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            placeholder="Écrivez votre message..."
-            className="flex-1"
-            />
-            <Button type="submit" size="icon" disabled={!newMessage.trim()} className="shrink-0">
-                <Send className="h-4 w-4" />
-                <span className="sr-only">Envoyer</span>
-            </Button>
-        </form>
-      </div>
     </div>
   );
 }
