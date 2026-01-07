@@ -18,10 +18,12 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Loader2, Send, ShieldAlert } from 'lucide-react';
+import { Loader2, Send, ShieldAlert, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { Badge } from '../ui/badge';
+import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 
 interface Message {
   id: string;
@@ -33,6 +35,7 @@ interface Message {
 interface ParticipantDetails {
     fullName: string;
     profilePictureURL?: string;
+    role: UserRole;
 }
 
 export function ChatRoom({ chatId }: { chatId: string }) {
@@ -164,6 +167,23 @@ export function ChatRoom({ chatId }: { chatId: string }) {
       }));
     }
   };
+  
+  const RoleBadge = ({ role }: { role: UserRole | undefined }) => {
+    if (!role || role === 'student') return null;
+
+    const styles = {
+        admin: 'bg-destructive text-destructive-foreground',
+        instructor: 'bg-blue-600 text-white',
+    };
+
+    return (
+        <Badge className={cn('ml-2 capitalize', styles[role])}>
+            <Shield className="h-3 w-3 mr-1"/>
+            {role}
+        </Badge>
+    );
+};
+
 
   if (isLoading) {
     return (
@@ -180,8 +200,9 @@ export function ChatRoom({ chatId }: { chatId: string }) {
           <AvatarImage src={otherParticipant?.profilePictureURL} />
           <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
         </Avatar>
-        <div>
+        <div className="flex items-center">
           <h2 className="font-semibold text-sm">{otherParticipant?.fullName || 'Chargement...'}</h2>
+          <RoleBadge role={otherParticipant?.role} />
         </div>
       </header>
 

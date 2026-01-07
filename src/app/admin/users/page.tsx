@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, where, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import {
   Table,
@@ -48,7 +48,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye } from 'lucide-react';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
 import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
@@ -71,7 +71,7 @@ const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
     return status === 'suspended' ? 'destructive' : 'default';
 };
 
-const UserActions = ({ user }: { user: FormaAfriqueUser }) => {
+const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
     const { toast } = useToast();
     const router = useRouter();
     const db = getFirestore();
@@ -138,6 +138,36 @@ const UserActions = ({ user }: { user: FormaAfriqueUser }) => {
             setIsSubmitting(false);
         }
     };
+    
+    const handleStartChat = async () => {
+        if (!adminId || adminId === user.uid) return;
+
+        const chatsRef = collection(db, 'chats');
+        const sortedParticipants = [adminId, user.uid].sort();
+        
+        const q = query(chatsRef, where('participants', '==', sortedParticipants));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            let chatId: string | null = null;
+            if (!querySnapshot.empty) {
+                chatId = querySnapshot.docs[0].id;
+            } else {
+                const newChatRef = doc(collection(db, 'chats'));
+                await setDoc(newChatRef, {
+                    participants: sortedParticipants,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: `Conversation initiée par un administrateur.`,
+                });
+                chatId = newChatRef.id;
+            }
+            router.push(`/messages/${chatId}`);
+        } catch (error) {
+            console.error("Error starting chat:", error);
+            toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
+        }
+    };
 
     return (
         <>
@@ -153,6 +183,10 @@ const UserActions = ({ user }: { user: FormaAfriqueUser }) => {
                     <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
                         <Eye className="mr-2 h-4 w-4"/>
                         Voir le profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStartChat}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Contacter
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
                         <UserCog className="mr-2 h-4 w-4"/>
@@ -332,7 +366,7 @@ export default function AdminUsersPage() {
                           </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                          <UserActions user={user} />
+                          <UserActions user={user} adminId={adminUser?.uid} />
                       </TableCell>
                     </TableRow>
                   ))
