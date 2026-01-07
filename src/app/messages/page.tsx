@@ -21,6 +21,7 @@ import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareDashed } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { usePathname } from 'next/navigation';
 
 // --- INTERFACES ---
 interface Chat {
@@ -36,6 +37,7 @@ interface Chat {
 // --- MAIN PAGE COMPONENT ---
 export default function MessagesPage() {
   const { user, isUserLoading } = useRole();
+  const pathname = usePathname();
   const db = getFirestore();
   
   const [chatList, setChatList] = useState<Chat[]>([]);
@@ -103,50 +105,54 @@ export default function MessagesPage() {
       </Card>
     );
   }
+  
+  const currentChatId = pathname.split('/').pop();
+
 
   return (
-    <Card>
+    <Card className="dark:bg-slate-900 dark:border-slate-800">
         <CardHeader>
-            <CardTitle>Messagerie</CardTitle>
+            <CardTitle className="dark:text-white">Messagerie</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
              <ScrollArea className="h-[calc(100vh-250px)]">
                 {chatList.length > 0 ? (
                     <div className="space-y-1">
                         {chatList.map(chat => {
                             const otherId = chat.participants.find(p => p !== user?.uid);
                             const other = otherId ? chat.participantDetails[otherId] : null;
-                            const isUnread = chat.unreadBy?.includes(user?.uid || '');
+                            const isUnread = chat.lastSenderId !== user?.uid && (chat.unreadBy ? chat.unreadBy.includes(user?.uid || '') : true);
+                            const isActive = currentChatId === chat.id;
 
                             return (
                                 <Link
                                     key={chat.id}
                                     href={`/messages/${chat.id}`}
                                     className={cn(
-                                        "block p-3 rounded-lg flex items-center gap-4 transition-all hover:bg-muted",
-                                        isUnread && "bg-primary/10"
+                                        "block p-3 flex items-center gap-4 transition-all border-b dark:border-slate-800",
+                                        isActive ? "bg-primary/10 dark:bg-slate-800" : "hover:bg-muted/50 dark:hover:bg-slate-800/50"
                                     )}
                                 >
                                     <div className="relative">
-                                      <Avatar className="h-12 w-12 border-2 border-white">
+                                      <Avatar className="h-12 w-12 border-2 border-white dark:border-slate-700">
                                           <AvatarImage src={other?.profilePictureURL} alt={other?.fullName}/>
-                                          <AvatarFallback>{other?.fullName?.charAt(0) || '?'}</AvatarFallback>
+                                          <AvatarFallback className="dark:bg-slate-700 dark:text-slate-300">{other?.fullName?.charAt(0) || '?'}</AvatarFallback>
                                       </Avatar>
-                                      {other?.isOnline && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white" />}
+                                      {other?.isOnline && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-white dark:ring-slate-900" />}
                                     </div>
 
                                     <div className="flex-1 overflow-hidden">
                                         <div className="flex justify-between items-baseline">
-                                            <p className={cn("truncate text-sm", isUnread ? "font-bold text-foreground" : "font-semibold text-foreground")}>
+                                            <p className={cn("truncate text-sm dark:text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
                                               {other?.fullName || "Utilisateur"}
                                             </p>
                                             {chat.updatedAt && (
-                                                <span className="text-[11px] text-muted-foreground whitespace-nowrap ml-2">
+                                                <span className="text-[11px] text-muted-foreground dark:text-slate-400 whitespace-nowrap ml-2">
                                                     {formatDistanceToNow(chat.updatedAt.toDate(), { addSuffix: true, locale: fr })}
                                                 </span>
                                             )}
                                         </div>
-                                        <p className={cn("text-sm truncate leading-relaxed", isUnread ? "font-semibold text-foreground" : "text-muted-foreground")}>
+                                        <p className={cn("text-sm truncate leading-relaxed", isUnread ? "font-semibold text-foreground dark:text-slate-300" : "text-muted-foreground dark:text-slate-400")}>
                                             {chat.lastMessage || "Cliquez pour lire les messages"}
                                         </p>
                                     </div>
