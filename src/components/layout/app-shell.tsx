@@ -12,7 +12,7 @@ import { AdminSidebar } from './admin-sidebar';
 import { Footer } from './footer';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
-import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare } from 'lucide-react';
+import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Tool } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -73,6 +73,17 @@ function getPageTitle(pathname: string): string {
     if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur';
     return pageTitles[pathname] || 'FormaAfrique';
 }
+
+function MaintenancePage() {
+    return (
+        <div className="flex flex-col items-center justify-center h-screen bg-background text-center p-4">
+            <Tool className="h-16 w-16 text-primary mb-4" />
+            <h1 className="text-3xl font-bold text-foreground">Site en maintenance</h1>
+            <p className="text-muted-foreground mt-2">Nous effectuons des mises à jour. Le site sera de retour très prochainement.</p>
+        </div>
+    );
+}
+
 
 function ApprovalPendingScreen() {
     return (
@@ -232,24 +243,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/login';
   const hasUnreadNotifications = useUnreadNotifications(user?.uid);
-  const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg' });
+  const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   
   useEffect(() => {
-    const fetchSettings = async () => {
-        const settingsRef = doc(db, 'settings', 'global');
-        const settingsSnap = await getDoc(settingsRef);
-        if (settingsSnap.exists()) {
-            const settingsData = settingsSnap.data()?.general;
-            if (settingsData) {
-                setSiteSettings({
-                    siteName: settingsData.siteName || 'FormaAfrique',
-                    logoUrl: settingsData.logoUrl || '/icon.svg',
-                });
-            }
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const settingsData = docSnap.data();
+            setSiteSettings({
+                siteName: settingsData.general?.siteName || 'FormaAfrique',
+                logoUrl: settingsData.general?.logoUrl || '/icon.svg',
+                maintenanceMode: settingsData.platform?.maintenanceMode || false,
+            });
         }
-    };
-    fetchSettings();
+    });
+    return () => unsubscribe();
   }, [db]);
 
   React.useEffect(() => {
@@ -269,6 +278,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isAuthPage) {
     return <>{children}</>;
+  }
+
+  if (siteSettings.maintenanceMode && formaAfriqueUser?.role !== 'admin') {
+    return <MaintenancePage />;
   }
 
 

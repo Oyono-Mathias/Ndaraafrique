@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -29,7 +30,7 @@ import {
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { collection, query, where, onSnapshot, getFirestore } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
 
@@ -101,6 +102,18 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
   const isAdmin = availableRoles.includes('admin');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const db = getFirestore();
+  const [showInstructorSignup, setShowInstructorSignup] = useState(true);
+
+  useEffect(() => {
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setShowInstructorSignup(docSnap.data().platform?.allowInstructorSignup ?? true);
+        }
+    });
+    return () => unsubscribe();
+  }, [db]);
+
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -152,7 +165,7 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
                 <LogIn className="mr-2 h-4 w-4" />
                 Mode Instructeur
             </Button>
-        ) : (
+        ) : showInstructorSignup && (
              <Button variant="outline" className="w-full justify-center" asChild>
                 <Link href="/devenir-instructeur">
                     <Briefcase className="mr-2 h-4 w-4" />
