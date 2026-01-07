@@ -95,8 +95,14 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     const messagesCollectionRef = collection(chatDocRef, "messages");
 
     const markAsRead = async () => {
+        if (!otherParticipantId) return;
+
         const batch = writeBatch(db);
-        const unreadMessagesQuery = query(messagesCollectionRef, where('status', '!=', 'read'), where('senderId', '!=', user.uid));
+        const unreadMessagesQuery = query(
+            messagesCollectionRef, 
+            where('status', '!=', 'read'), 
+            where('senderId', '==', otherParticipantId)
+        );
         const unreadSnapshot = await getDocs(unreadMessagesQuery);
         
         let hasUnread = false;
@@ -111,11 +117,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     };
 
     // Initial fetch and marking as read
-    getDoc(chatDocRef).then(async (chatDoc) => {
+    const unsubscribeChatDoc = onSnapshot(chatDocRef, async (chatDoc) => {
         if(chatDoc.exists()) {
             const participants = chatDoc.data().participants as string[];
             const otherId = participants.find(p => p !== user.uid);
-            if(otherId) {
+            if(otherId && otherId !== otherParticipantId) {
                 setOtherParticipantId(otherId);
                 const userDocRef = doc(db, 'users', otherId);
                 const userDoc = await getDoc(userDocRef);
@@ -128,8 +134,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
     // Listen for new messages
     const q = query(messagesCollectionRef, orderBy("createdAt", "asc"));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeMessages = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -145,8 +150,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [chatId, user, db]);
+    return () => {
+      unsubscribeChatDoc();
+      unsubscribeMessages();
+    };
+  }, [chatId, user, db, otherParticipantId]);
 
 
   // Auto-scroll to the bottom
