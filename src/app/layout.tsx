@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   title: "FormaAfrique | Formations Gratuites et Certifiantes au Cameroun",
   description: "La plateforme n°1 pour apprendre un métier. Accédez à nos formations gratuites et premium. Payez facilement par Orange Money, MTN et Wave.",
   keywords: ['formation gratuite', 'apprendre en ligne Afrique', 'e-commerce Cameroun', 'cours certifiants'],
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
 const fontSans = FontSans({

@@ -138,7 +138,7 @@ export function AdminDashboard() {
         <p className="text-muted-foreground dark:text-slate-400">Vue d'ensemble de la plateforme FormaAfrique.</p>
       </header>
 
-      <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
             title="Revenus Totaux" 
             value={formatCurrency(stats.totalRevenue)} 
