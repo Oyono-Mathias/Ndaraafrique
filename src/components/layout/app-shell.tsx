@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -11,13 +12,13 @@ import { AdminSidebar } from './admin-sidebar';
 import { Footer } from './footer';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
-import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User } from 'lucide-react';
+import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmailVerification } from 'firebase/auth';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, getDoc } from 'firebase/firestore';
 
 const pageTitles: { [key: string]: string } = {
     '/dashboard': 'Sélection',
@@ -154,6 +155,50 @@ const useUnreadNotifications = (userId?: string) => {
     return hasUnread;
 };
 
+const AnnouncementBanner = () => {
+    const [message, setMessage] = useState('');
+    const [isVisible, setIsVisible] = useState(false);
+    const db = getFirestore();
+
+    useEffect(() => {
+        const settingsRef = doc(db, 'settings', 'global');
+        const fetchSettings = async () => {
+            const docSnap = await getDoc(settingsRef);
+            if (docSnap.exists()) {
+                const announcementMessage = docSnap.data().platform?.announcementMessage;
+                if (announcementMessage) {
+                    const dismissed = sessionStorage.getItem(`announcement_${announcementMessage}`);
+                    if (!dismissed) {
+                        setMessage(announcementMessage);
+                        setIsVisible(true);
+                    }
+                }
+            }
+        };
+        fetchSettings();
+    }, [db]);
+    
+    const handleDismiss = () => {
+        setIsVisible(false);
+        sessionStorage.setItem(`announcement_${message}`, 'true');
+    };
+
+    if (!isVisible || !message) {
+        return null;
+    }
+
+    return (
+        <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center justify-center gap-4 text-sm font-medium relative">
+            <Megaphone className="h-5 w-5" />
+            <span>{message}</span>
+            <Button variant="ghost" size="icon" onClick={handleDismiss} className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-primary/50">
+                <X className="h-4 w-4"/>
+            </Button>
+        </div>
+    );
+};
+
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading: isRoleLoading, user, isUserLoading, formaAfriqueUser, switchRole } = useRole();
   const router = useRouter();
@@ -165,7 +210,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hasUnreadNotifications = useUnreadNotifications(user?.uid);
   
   React.useEffect(() => {
-    // If we are not on an auth page, and the user is not logged in, redirect to login.
     if (!isAuthPage && !isUserLoading && !user) {
       router.push('/');
     }
@@ -295,6 +339,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       <span className="sr-only">Notifications</span>
                   </Button>
               </header>
+              <AnnouncementBanner />
               <main className={cn("flex-1 overflow-y-auto w-full", !isFullScreenPage && "p-4 sm:p-6", showBottomNav ? "pb-20" : "")}>
                   <div className={cn("mx-auto", !isFullScreenPage && "max-w-7xl")}>
                     {!isUserLoading && user && !user.emailVerified && !isFullScreenPage && (
