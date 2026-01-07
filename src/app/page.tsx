@@ -19,6 +19,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2 } from 'lucide-react';
 import { africanCountries } from '@/lib/countries';
 import { errorEmitter } from '@/firebase';
@@ -31,6 +32,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
   password: z.string().min(1, { message: "Le mot de passe est requis." }),
+  rememberMe: z.boolean().default(false).optional(),
 });
 
 const registerSchema = z.object({
@@ -56,7 +58,7 @@ export default function AuthPage() {
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', rememberMe: false },
   });
 
   const registerForm = useForm<z.infer<typeof registerSchema>>({
@@ -217,7 +219,7 @@ export default function AuthPage() {
                 <CardTitle className="text-2xl font-bold text-white">Se connecter</CardTitle>
                 <CardDescription className="text-slate-300">Accédez à votre tableau de bord.</CardDescription>
               </CardHeader>
-              <CardContent className="pb-4">
+              <CardContent className="space-y-4 pb-4">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField control={loginForm.control} name="email" render={({ field }) => (
@@ -226,7 +228,27 @@ export default function AuthPage() {
                     <FormField control={loginForm.control} name="password" render={({ field }) => (
                       <FormItem><FormLabel className="text-white">Mot de passe</FormLabel><FormControl><Input type="password" required {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                     )} />
-                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-base" disabled={isLoading}>
+                    <FormField
+                        control={loginForm.control}
+                        name="rememberMe"
+                        render={({ field }) => (
+                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                <FormControl>
+                                    <Checkbox
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                        className="border-slate-300"
+                                    />
+                                </FormControl>
+                                <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-sm text-slate-300 font-normal">
+                                    Se souvenir de moi
+                                    </FormLabel>
+                                </div>
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                       Se connecter
                     </Button>
@@ -249,10 +271,10 @@ export default function AuthPage() {
                 <CardTitle className="text-2xl font-bold text-white">Créer un compte</CardTitle>
                 <CardDescription className="text-slate-300">Rejoignez la communauté.</CardDescription>
               </CardHeader>
-              <CardContent className="pb-4">
+              <CardContent className="space-y-3 pb-4">
                 <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                         <FormField control={registerForm.control} name="firstName" render={({ field }) => (
                             <FormItem><FormLabel className="text-white">Prénom</FormLabel><FormControl><Input placeholder="Mathias" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                         )} />
@@ -266,7 +288,7 @@ export default function AuthPage() {
                       <FormField control={registerForm.control} name="password" render={({ field }) => (
                           <FormItem><FormLabel className="text-white">Mot de passe</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                       )} />
-                      <div className="grid grid-cols-2 gap-2">
+                      <div className="grid grid-cols-2 gap-3">
                           <FormField control={registerForm.control} name="countryOrigin" render={({ field }) => (
                             <FormItem><FormLabel className="text-white">Pays d'origine</FormLabel>
                               <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-white border-slate-300 text-slate-900 h-9"><SelectValue placeholder="Sélectionner" /></SelectTrigger></FormControl>
@@ -281,7 +303,7 @@ export default function AuthPage() {
                               </Select><FormMessage /></FormItem>
                           )} />
                       </div>
-                      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-9 text-base" disabled={isLoading}>
+                      <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Créer un compte
                       </Button>
