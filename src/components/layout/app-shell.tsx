@@ -12,7 +12,7 @@ import { AdminSidebar } from './admin-sidebar';
 import { Footer } from './footer';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
-import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Tool, Loader2 } from 'lucide-react';
+import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Tool, Loader2, HelpCircle } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -233,6 +233,41 @@ const AnnouncementBanner = () => {
     );
 };
 
+const SupportButton = () => {
+    const { role, user } = useRole();
+    const pathname = usePathname();
+    
+    const isAuthPage = pathname === '/';
+    const isInsideChat = pathname.startsWith('/messages/');
+
+    if (!user && !isAuthPage) {
+        return null;
+    }
+
+    if (isInsideChat) {
+        return null;
+    }
+
+    let href = '/questions-reponses'; // Default for students
+    if (role === 'admin') {
+        href = '/admin/support';
+    } else if (isAuthPage) {
+        // A default support link for non-authenticated users, e.g., a mailto or contact page
+        href = 'mailto:support@formaafrique.com';
+    }
+
+    return (
+        <Link href={href} passHref>
+            <Button
+                className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center bg-green-500 hover:bg-green-600 text-white"
+                aria-label="Support"
+            >
+                <HelpCircle className="h-8 w-8" />
+            </Button>
+        </Link>
+    );
+};
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading: isRoleLoading, user, isUserLoading, formaAfriqueUser, switchRole } = useRole();
@@ -278,7 +313,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isLoading = isUserLoading || isRoleLoading;
 
   if (isAuthPage) {
-    return <>{children}</>;
+    return (
+        <>
+            {children}
+            <SupportButton />
+        </>
+    );
   }
 
   // Show a full-page loader until we know the maintenance status and user role
@@ -291,7 +331,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   // Once loading is complete, check for maintenance mode.
-  // Crucially, formaAfriqueUser is now guaranteed to be loaded or null.
   if (siteSettings.maintenanceMode && formaAfriqueUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
@@ -415,7 +454,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
               </main>
               {showBottomNav && <BottomNavBar />}
-              {!isFullScreenPage && !isChatPage && <Footer />}
+              {!isFullScreenPage && !isChatPage && (
+                <>
+                  <SupportButton />
+                  <Footer />
+                </>
+              )}
             </div>
         </div>
     </div>
