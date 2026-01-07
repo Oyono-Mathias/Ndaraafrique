@@ -57,7 +57,7 @@ service cloud.firestore {
     // --- Règles pour 'courses' ---
     match /courses/{courseId} {
       allow get: if true;
-      allow list: if true; // Allow anyone to list courses for the catalog
+      allow list: if isSignedIn(); // Allow any signed-in user to list courses for the catalog
       allow create: if isSignedIn() && isApprovedInstructor();
       allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
       
@@ -181,6 +181,12 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read, write: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
       }
+    }
+    
+    // --- Règles pour la configuration globale ---
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
