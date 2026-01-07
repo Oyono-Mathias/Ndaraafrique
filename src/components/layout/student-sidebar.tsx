@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -34,36 +35,6 @@ import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from 
 import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
 
-
-const studentMenu = [
-  {
-    label: "NAVIGATION",
-    items: [
-      { href: "/dashboard", icon: Star, text: "Sélection" },
-      { href: "/search", icon: Search, text: "Recherche" },
-      { href: "/mes-formations", icon: Play, text: "Mon apprentissage" },
-      { href: "/tutor", icon: Bot, text: "Tuteur IA" },
-    ],
-  },
-  {
-    label: "PERSONNEL",
-    items: [
-      { href: "/mes-certificats", icon: Award, text: "Mes Certificats" },
-      { href: "/liste-de-souhaits", icon: Heart, text: "Liste de souhaits" },
-      { href: "/mes-devoirs", icon: ClipboardCheck, text: "Mes Devoirs" },
-      { href: "/annuaire", icon: Users, text: "Annuaire" },
-      { href: "/questions-reponses", icon: HelpCircle, text: "Mes Questions" },
-      { href: "/messages", icon: MessageSquare, text: "Messages" },
-    ],
-  },
-  {
-    label: "COMPTE",
-    items: [
-      { href: "/account", icon: User, text: "Compte" },
-      { href: "/notifications", icon: Bell, text: "Notifications" },
-    ],
-  },
-];
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount }: { href: string, icon: React.ElementType, label: string, unreadCount?: number }) => {
   const pathname = usePathname();
@@ -98,11 +69,42 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
   const router = useRouter();
   const { toast } = useToast();
   const { switchRole, availableRoles, user } = useRole();
+  const { t } = useLanguage();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
+
+  const studentMenu = [
+    {
+      label: t('navPersonal'),
+      items: [
+        { href: "/dashboard", icon: Star, text: t('navSelection') },
+        { href: "/search", icon: Search, text: t('navSearch') },
+        { href: "/mes-formations", icon: Play, text: t('navMyLearning') },
+        { href: "/tutor", icon: Bot, text: t('navTutor') },
+      ],
+    },
+    {
+      label: t('navPersonal'),
+      items: [
+        { href: "/mes-certificats", icon: Award, text: t('navMyCertificates') },
+        { href: "/liste-de-souhaits", icon: Heart, text: t('navWishlist') },
+        { href: "/mes-devoirs", icon: ClipboardCheck, text: t('navMyAssignments') },
+        { href: "/annuaire", icon: Users, text: t('navDirectory') },
+        { href: "/questions-reponses", icon: HelpCircle, text: t('navMyQuestions') },
+        { href: "/messages", icon: MessageSquare, text: t('navMessages') },
+      ],
+    },
+    {
+      label: t('navAccount'),
+      items: [
+        { href: "/account", icon: User, text: t('navAccount') },
+        { href: "/notifications", icon: Bell, text: t('navNotifications') },
+      ],
+    },
+  ];
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');

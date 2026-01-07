@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
+import { useLanguage } from '@/context/LanguageContext';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
@@ -27,37 +28,6 @@ import { useToast } from '@/hooks/use-toast';
 import { getAuth, signOut } from 'firebase/auth';
 import { cn } from '@/lib/utils';
 
-
-const instructorMenu = [
-  {
-    label: 'NAVIGATION',
-    items: [
-      { href: '/dashboard', icon: LayoutDashboard, text: 'Tableau de bord' },
-      { href: '/instructor/courses', icon: BookOpen, text: 'Mes Cours' },
-      { href: '/instructor/students', icon: Users, text: 'Mes Étudiants' },
-      { href: '/mes-revenus', icon: DollarSign, text: 'Mes Revenus' },
-      { href: '/statistiques', icon: BarChart3, text: 'Statistiques' },
-    ],
-  },
-  {
-    label: 'INTERACTION',
-    items: [
-      { href: '/messages', icon: MessagesSquare, text: 'Messages' },
-      { href: '/questions-reponses', icon: MessagesSquare, text: 'Questions/Réponses' },
-      { href: '/avis', icon: Star, text: 'Avis' },
-      { href: '/instructor/devoirs', icon: ClipboardCheck, text: 'Devoirs' },
-    ],
-  },
-  {
-    label: 'OUTILS',
-    items: [
-      { href: '/quiz', icon: FileQuestion, text: 'Quiz' },
-      { href: '/certificats-instructor', icon: Award, text: 'Certificats' },
-      { href: '/ressources', icon: Folder, text: 'Ressources' },
-      { href: '/account', icon: Settings, text: 'Paramètres' },
-    ],
-  },
-];
 
 const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
   const pathname = usePathname();
@@ -109,7 +79,39 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
   const router = useRouter();
   const { switchRole, formaAfriqueUser, availableRoles } = useRole();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const isAdmin = availableRoles.includes('admin');
+
+  const instructorMenu = [
+    {
+      label: 'NAVIGATION',
+      items: [
+        { href: '/dashboard', icon: LayoutDashboard, text: t('navInstructorDashboard') },
+        { href: '/instructor/courses', icon: BookOpen, text: t('navMyCourses') },
+        { href: '/instructor/students', icon: Users, text: t('navMyStudents') },
+        { href: '/mes-revenus', icon: DollarSign, text: t('navMyRevenue') },
+        { href: '/statistiques', icon: BarChart3, text: t('navStatistics') },
+      ],
+    },
+    {
+      label: t('navInteraction'),
+      items: [
+        { href: '/messages', icon: MessagesSquare, text: t('navMessages') },
+        { href: '/questions-reponses', icon: MessagesSquare, text: t('navQA') },
+        { href: '/avis', icon: Star, text: t('navReviews') },
+        { href: '/instructor/devoirs', icon: ClipboardCheck, text: t('navAssignments') },
+      ],
+    },
+    {
+      label: t('navTools'),
+      items: [
+        { href: '/quiz', icon: FileQuestion, text: t('navQuiz') },
+        { href: '/certificats-instructor', icon: Award, text: t('navCertificates') },
+        { href: '/ressources', icon: Folder, text: t('navResources') },
+        { href: '/account', icon: Settings, text: t('navSettings') },
+      ],
+    },
+  ];
 
   const handleLogout = async () => {
     const auth = getAuth();

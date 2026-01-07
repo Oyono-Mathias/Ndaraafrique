@@ -11,6 +11,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, up
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc, collection, addDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/context/LanguageContext';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +57,7 @@ export default function AuthPage() {
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
+  const { t } = useLanguage();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -110,7 +112,7 @@ export default function AuthPage() {
     const auth = getAuth();
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({ title: "Connexion réussie !" });
+      toast({ title: t('loginSuccessTitle') });
 
       // Fetch user role for redirection
       const userDocRef = doc(db, 'users', userCredential.user.uid);
@@ -136,7 +138,7 @@ export default function AuthPage() {
              description = 'Échec de la connexion. Veuillez vérifier vos identifiants.';
          }
        }
-       toast({ variant: 'destructive', title: 'Échec de la connexion', description });
+       toast({ variant: 'destructive', title: t('loginErrorTitle'), description });
     } finally {
       setIsLoading(false);
     }
@@ -155,7 +157,7 @@ export default function AuthPage() {
 
     const chatDocRef = doc(collection(db, 'chats'));
     const messageCollectionRef = collection(chatDocRef, 'messages');
-    const welcomeMessage = "Bienvenue sur FormaAfrique ! 🌍 Nous sommes ravis de t'accompagner dans ta formation. Si tu as des questions, n'hésite pas à les poser ici.";
+    const welcomeMessage = t('welcomeMessage');
 
     try {
       // Create chat document
@@ -211,7 +213,7 @@ export default function AuthPage() {
       // After user is created, create the welcome chat
       await createWelcomeChat(user.uid);
 
-      toast({ title: 'Inscription réussie !', description: 'Bienvenue sur FormaAfrique.' });
+      toast({ title: t('registerSuccessTitle'), description: t('registerSuccessDescription') });
       router.push('/dashboard'); // All new users are students, so redirect to student dashboard
 
     } catch (error) {
@@ -227,7 +229,7 @@ export default function AuthPage() {
            description = 'Impossible de créer le compte. Vérifiez les permissions de la base de données.';
          }
        }
-       toast({ variant: 'destructive', title: 'Échec de l\'inscription', description });
+       toast({ variant: 'destructive', title: t('registerErrorTitle'), description });
     } finally {
       setIsLoading(false);
     }
@@ -246,13 +248,13 @@ export default function AuthPage() {
               value="login" 
               className="text-base h-full rounded-tl-xl rounded-b-none data-[state=active]:bg-white/10 data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-300 text-white"
             >
-              Se connecter
+              {t('loginButton')}
             </TabsTrigger>
             <TabsTrigger 
               value="register" 
               className="text-base h-full rounded-tr-xl rounded-b-none data-[state=active]:bg-white/10 data-[state=inactive]:bg-transparent data-[state=inactive]:text-slate-300 text-white"
             >
-              Inscription
+              {t('registerButton')}
             </TabsTrigger>
           </TabsList>
           
@@ -260,17 +262,17 @@ export default function AuthPage() {
             <TabsContent value="login" className="m-0">
               <CardHeader className="items-center pb-4">
                  {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
-                <CardTitle className="text-2xl font-bold text-white">Se connecter</CardTitle>
-                <CardDescription className="text-slate-300">Accédez à votre tableau de bord.</CardDescription>
+                <CardTitle className="text-2xl font-bold text-white">{t('loginTitle')}</CardTitle>
+                <CardDescription className="text-slate-300">{t('loginDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 pb-4">
                 <Form {...loginForm}>
                   <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                     <FormField control={loginForm.control} name="email" render={({ field }) => (
-                      <FormItem><FormLabel className="text-white">Email</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel className="text-white">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                     )} />
                     <FormField control={loginForm.control} name="password" render={({ field }) => (
-                      <FormItem><FormLabel className="text-white">Mot de passe</FormLabel><FormControl><Input type="password" required {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel className="text-white">{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                     )} />
                     
                     <div className="flex items-center justify-between">
@@ -288,28 +290,28 @@ export default function AuthPage() {
                                         />
                                     </FormControl>
                                     <FormLabel htmlFor="rememberMe" className="text-sm text-slate-300 font-normal">
-                                        Se souvenir de moi
+                                        {t('rememberMeLabel')}
                                     </FormLabel>
                                 </FormItem>
                             )}
                         />
                         <Link href="/forgot-password" className="text-sm font-semibold text-blue-400 hover:underline">
-                            Mot de passe oublié ?
+                            {t('forgotPasswordLink')}
                         </Link>
                     </div>
 
                     <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5" disabled={isLoading}>
                       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Se connecter
+                      {t('loginButton')}
                     </Button>
                   </form>
                 </Form>
               </CardContent>
               <CardContent className="p-4 pt-0 text-center text-sm">
                   <p className="text-slate-300">
-                      Vous n'avez pas de compte ?{' '}
+                      {t('noAccountPrompt')}{' '}
                       <button onClick={() => setActiveTab('register')} className="font-semibold text-blue-400 hover:underline">
-                          S'inscrire
+                          {t('registerLink')}
                       </button>
                   </p>
               </CardContent>
@@ -318,53 +320,53 @@ export default function AuthPage() {
             <TabsContent value="register" className="m-0">
               <CardHeader className="items-center pb-4">
                 {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
-                <CardTitle className="text-2xl font-bold text-white">Créer un compte</CardTitle>
-                <CardDescription className="text-slate-300">Rejoignez la communauté.</CardDescription>
+                <CardTitle className="text-2xl font-bold text-white">{t('registerTitle')}</CardTitle>
+                <CardDescription className="text-slate-300">{t('registerDescription')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 pb-4">
                 <Form {...registerForm}>
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <FormField control={registerForm.control} name="firstName" render={({ field }) => (
-                            <FormItem><FormLabel className="text-white">Prénom</FormLabel><FormControl><Input placeholder="Mathias" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel className="text-white">{t('firstNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={registerForm.control} name="lastName" render={({ field }) => (
-                            <FormItem><FormLabel className="text-white">Nom</FormLabel><FormControl><Input placeholder="OYONO" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel className="text-white">{t('lastNameLabel')}</FormLabel><FormControl><Input placeholder="OYONO" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                         )} />
                       </div>
                       <FormField control={registerForm.control} name="email" render={({ field }) => (
-                          <FormItem><FormLabel className="text-white">Email</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
+                          <FormItem><FormLabel className="text-white">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={registerForm.control} name="password" render={({ field }) => (
-                          <FormItem><FormLabel className="text-white">Mot de passe</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
+                          <FormItem><FormLabel className="text-white">{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="bg-white border-slate-300 text-slate-900 h-9" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <div className="grid grid-cols-2 gap-3">
                           <FormField control={registerForm.control} name="countryOrigin" render={({ field }) => (
-                            <FormItem><FormLabel className="text-white">Pays d'origine</FormLabel>
-                              <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-white border-slate-300 text-slate-900 h-9"><SelectValue placeholder="Sélectionner" /></SelectTrigger></FormControl>
+                            <FormItem><FormLabel className="text-white">{t('countryOriginLabel')}</FormLabel>
+                              <Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger className="bg-white border-slate-300 text-slate-900 h-9"><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger></FormControl>
                                 <SelectContent>{africanCountries.map(c => <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>)}</SelectContent>
                               </Select><FormMessage /></FormItem>
                           )} />
                           <FormField control={registerForm.control} name="countryCurrent" render={({ field }) => (
-                            <FormItem><FormLabel className="text-white">Pays actuel</FormLabel>
+                            <FormItem><FormLabel className="text-white">{t('countryCurrentLabel')}</FormLabel>
                               <Select onValueChange={field.onChange} value={field.value} defaultValue={detectedCountry}>
-                                <FormControl><SelectTrigger className="bg-white border-slate-300 text-slate-900 h-9"><SelectValue placeholder="Sélectionner" /></SelectTrigger></FormControl>
+                                <FormControl><SelectTrigger className="bg-white border-slate-300 text-slate-900 h-9"><SelectValue placeholder={t('selectPlaceholder')} /></SelectTrigger></FormControl>
                                 <SelectContent>{africanCountries.map(c => <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>)}</SelectContent>
                               </Select><FormMessage /></FormItem>
                           )} />
                       </div>
                       <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5" disabled={isLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Créer un compte
+                        {t('createAccountButton')}
                       </Button>
                     </form>
                 </Form>
               </CardContent>
               <CardContent className="p-4 pt-0 text-center text-sm">
                   <p className="text-slate-300">
-                      Déjà un compte ?{' '}
+                      {t('alreadyAccountPrompt')}{' '}
                       <button onClick={() => setActiveTab('login')} className="font-semibold text-blue-400 hover:underline">
-                          Se connecter
+                          {t('loginLink')}
                       </button>
                   </p>
               </CardContent>
