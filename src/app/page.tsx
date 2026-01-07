@@ -23,6 +23,8 @@ import { africanCountries } from '@/lib/countries';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { cn } from '@/lib/utils';
+import type { FormaAfriqueUser } from '@/context/RoleContext';
+
 
 // Schemas for form validation
 const loginSchema = z.object({
@@ -95,9 +97,17 @@ export default function AuthPage() {
     setIsLoading(true);
     const auth = getAuth();
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({ title: "Connexion réussie !" });
-      router.push('/dashboard');
+
+      // Fetch user role for redirection
+      const userDocRef = doc(db, 'users', userCredential.user.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
        if (error instanceof FirebaseError) {
@@ -123,7 +133,6 @@ export default function AuthPage() {
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
     const auth = getAuth();
-    const db = getFirestore();
     const fullName = `${values.firstName} ${values.lastName}`;
     
     try {
@@ -148,7 +157,7 @@ export default function AuthPage() {
       await setDoc(userDocRef, newUserPayload);
 
       toast({ title: 'Inscription réussie !', description: 'Bienvenue sur FormaAfrique.' });
-      router.push('/dashboard');
+      router.push('/dashboard'); // All new users are students, so redirect to student dashboard
 
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';

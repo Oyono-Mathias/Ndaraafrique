@@ -113,10 +113,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           
           let newRole: UserRole;
           
-          if (lastRole && roles.includes(lastRole)) {
-            newRole = lastRole;
-          } else if (roles.includes('admin')) {
+          // Prioritize admin role on fresh login or if last role is not available
+          if (userData.role === 'admin') {
             newRole = 'admin';
+          } else if (lastRole && roles.includes(lastRole)) {
+            newRole = lastRole;
           } else if (roles.includes('instructor')) {
             newRole = 'instructor';
           } else {
