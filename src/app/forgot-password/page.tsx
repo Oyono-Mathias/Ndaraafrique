@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MailCheck } from 'lucide-react';
 import Link from 'next/link';
 
 const forgotPasswordSchema = z.object({
@@ -25,6 +25,7 @@ const forgotPasswordSchema = z.object({
 
 export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
   const [siteName, setSiteName] = useState('FormaAfrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
@@ -62,11 +63,7 @@ export default function ForgotPasswordPage() {
     const auth = getAuth();
     try {
       await sendPasswordResetEmail(auth, values.email);
-      toast({
-        title: 'E-mail envoyé !',
-        description: 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.',
-      });
-      router.push('/');
+      setIsSubmitted(true); // Show success message instead of toast
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
        if (error instanceof FirebaseError) {
@@ -90,38 +87,56 @@ export default function ForgotPasswordPage() {
     <div className="auth-page-container" style={containerStyle}>
         <div className="min-h-screen w-full flex items-center justify-center p-4">
             <Card className="auth-card rounded-xl shadow-lg w-full max-w-md">
-                <CardHeader className="items-center pb-4">
-                    {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
-                    <CardTitle className="text-2xl font-bold text-white">Mot de passe oublié ?</CardTitle>
-                    <CardDescription className="text-slate-300 text-center">Entrez votre email pour recevoir un lien de réinitialisation.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 pb-4">
-                    <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                            <FormField control={form.control} name="email" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-white">Email</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="votre.email@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                            <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5" disabled={isLoading}>
-                                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Envoyer le lien
+                {isSubmitted ? (
+                    <div className="animate-in fade-in-50 duration-500">
+                        <CardHeader className="items-center text-center pb-4">
+                            <MailCheck className="h-12 w-12 text-green-400 mb-2"/>
+                            <CardTitle className="text-2xl font-bold text-white">E-mail envoyé !</CardTitle>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pb-4 text-center">
+                            <p className="text-slate-300">
+                                📧 Un lien de réinitialisation a été envoyé à votre adresse email. Pensez à vérifier vos courriers indésirables (spams).
+                            </p>
+                            <Button onClick={() => router.push('/')} className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5">
+                                OK, j'ai compris
                             </Button>
-                        </form>
-                    </Form>
-                </CardContent>
-                <CardContent className="p-4 pt-0 text-center text-sm">
-                    <Link href="/" className="font-semibold text-blue-400 hover:underline">
-                        Retour à la connexion
-                    </Link>
-                </CardContent>
+                        </CardContent>
+                    </div>
+                ) : (
+                    <>
+                        <CardHeader className="items-center pb-4">
+                            {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
+                            <CardTitle className="text-2xl font-bold text-white">Mot de passe oublié ?</CardTitle>
+                            <CardDescription className="text-slate-300 text-center">Entrez votre email pour recevoir un lien de réinitialisation.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 pb-4">
+                            <Form {...form}>
+                                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                                    <FormField control={form.control} name="email" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel className="text-white">Email</FormLabel>
+                                            <FormControl>
+                                                <Input placeholder="votre.email@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )} />
+                                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5" disabled={isLoading}>
+                                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                        Envoyer le lien
+                                    </Button>
+                                </form>
+                            </Form>
+                        </CardContent>
+                        <CardContent className="p-4 pt-0 text-center text-sm">
+                            <Link href="/" className="font-semibold text-blue-400 hover:underline">
+                                Retour à la connexion
+                            </Link>
+                        </CardContent>
+                    </>
+                )}
             </Card>
         </div>
     </div>
   );
 }
-
