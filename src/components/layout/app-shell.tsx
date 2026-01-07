@@ -191,8 +191,8 @@ const AnnouncementBanner = () => {
         <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center gap-4 text-sm font-medium relative overflow-hidden">
             <Megaphone className="h-5 w-5 flex-shrink-0" />
             <div className="flex-1 overflow-hidden whitespace-nowrap">
-                <span className="inline-block animate-marquee-fast pr-8">{message}</span>
-                <span className="inline-block animate-marquee-fast pr-8">{message}</span>
+                <span className="inline-block animate-marquee-fast pr-8 whitespace-nowrap">{message}</span>
+                <span className="inline-block animate-marquee-fast pr-8 whitespace-nowrap">{message}</span>
             </div>
             <Button variant="ghost" size="icon" onClick={handleDismiss} className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-primary/50">
                 <X className="h-4 w-4"/>

@@ -95,7 +95,7 @@ export default {
           },
         },
         'marquee-fast': {
-          from: { transform: 'translateX(0)' },
+          from: { transform: 'translateX(100%)' },
           to: { transform: 'translateX(-100%)' },
         }
       },
