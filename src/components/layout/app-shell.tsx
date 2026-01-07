@@ -209,7 +209,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
-  const isAuthPage = pathname === '/' || pathname === '/register';
+  const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/login';
   const hasUnreadNotifications = useUnreadNotifications(user?.uid);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg' });
   const db = getFirestore();
@@ -320,20 +320,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isInstructorAndNotApproved = role === 'instructor' && formaAfriqueUser && !formaAfriqueUser.isInstructorApproved;
   const userIsNotAdmin = formaAfriqueUser?.role !== 'admin';
   const showAdminAccessRequired = isAdminRoute && userIsNotAdmin;
-  const isFullScreenPage = pathname.startsWith('/courses/') || pathname.startsWith('/messages/') || pathname.startsWith('/questions-reponses/') || pathname.startsWith('/course/');
+  const isFullScreenPage = pathname.startsWith('/courses/');
+  const isChatPage = pathname.startsWith('/messages/') || pathname.startsWith('/questions-reponses/');
   const showBottomNav = (role === 'student') && isMobile;
 
   return (
     <div className='dark flex flex-col min-h-screen bg-background-alt dark:bg-[#0f172a]'>
         <div className="flex flex-1">
-            <aside className={cn("hidden md:flex", isFullScreenPage && "md:hidden")}>
+            <aside className={cn("hidden md:flex", (isFullScreenPage || isChatPage) && "md:hidden")}>
               {renderSidebar()}
             </aside>
             <div className="flex flex-col flex-1">
               <header className="flex h-14 items-center gap-4 border-b bg-card dark:bg-[#1e293b] dark:border-slate-700 px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
                   <Sheet>
                     <SheetTrigger asChild>
-                      <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden")}>
+                      <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", (isFullScreenPage || isChatPage) && "hidden")}>
                         <PanelLeft className="text-foreground"/>
                         <span className="sr-only">Toggle Menu</span>
                       </Button>
@@ -363,9 +364,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </Button>
               </header>
               <AnnouncementBanner />
-              <main className={cn("flex-1 overflow-y-auto w-full", !isFullScreenPage && "p-4 sm:p-6", showBottomNav ? "pb-20" : "")}>
-                  <div className={cn(!isFullScreenPage && "w-full")}>
-                    {!isUserLoading && user && !user.emailVerified && !isFullScreenPage && (
+              <main className={cn("flex-1 overflow-y-auto", 
+                isChatPage ? "h-full" : "p-4 sm:p-6", 
+                showBottomNav ? "pb-20" : "")
+              }>
+                  <div className={cn(isChatPage ? "h-full" : "", !isFullScreenPage && !isChatPage && "w-full")}>
+                    {!isUserLoading && user && !user.emailVerified && !isFullScreenPage && !isChatPage && (
                       <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
                         <p className="font-bold">Vérifiez votre adresse e-mail</p>
                         <p className="text-sm">
@@ -385,7 +389,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                   </div>
               </main>
               {showBottomNav && <BottomNavBar />}
-              {!isFullScreenPage && !showBottomNav && <Footer />}
+              {!isFullScreenPage && !isChatPage && !showBottomNav && <Footer />}
             </div>
         </div>
     </div>
