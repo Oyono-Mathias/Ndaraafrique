@@ -136,3 +136,57 @@
     z-index: 2;
   }
 }
+
+/* Custom styles for ChatRoom */
+.chat-background {
+    background-color: #E5DDD5;
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.chat-bubble-sent {
+    background-color: #DCF8C6; /* WhatsApp sent green */
+}
+
+.chat-bubble-sent::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -7px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0px 10px 10px 0;
+    border-color: transparent #DCF8C6 transparent transparent;
+}
+
+.chat-bubble-received {
+    background-color: #FFFFFF;
+}
+
+.chat-bubble-received::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -7px;
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 0px 0 10px 10px;
+    border-color: transparent transparent #FFFFFF transparent;
+}
+
+.dark .chat-bubble-sent {
+    background-color: #075E54;
+    color: #E1E1E1;
+}
+.dark .chat-bubble-sent::after {
+    border-color: transparent #075E54 transparent transparent;
+}
+
+.dark .chat-bubble-received {
+    background-color: #263238; /* Dark slate gray */
+    color: #FFFFFF;
+}
+.dark .chat-bubble-received::after {
+     border-color: transparent transparent #263238 transparent;
+}

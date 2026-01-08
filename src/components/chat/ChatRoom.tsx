@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -233,16 +232,16 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   if (isLoading) {
     return (
-        <div className="flex h-full w-full items-center justify-center bg-slate-100">
+        <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-900">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#E5DDD5]">
-       <header className="flex items-center p-3 border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-            <Button variant="ghost" size="icon" className="mr-2" onClick={() => router.push('/messages')}>
+    <div className="flex flex-col h-full chat-background">
+       <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-slate-800/80 backdrop-blur-sm sticky top-0 z-10 dark:border-slate-700">
+            <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => router.push('/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
             <Avatar className="h-10 w-10">
@@ -250,19 +249,19 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="ml-3 flex-1">
-                <h2 className="font-bold text-base flex items-center text-black">
+                <h2 className="font-bold text-base flex items-center text-slate-900 dark:text-slate-100">
                     {otherParticipant?.fullName || "Utilisateur"}
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon"><Video className="h-5 w-5 text-slate-600" /></Button>
-                <Button variant="ghost" size="icon"><Phone className="h-5 w-5 text-slate-600" /></Button>
+                <Button variant="ghost" size="icon"><Video className="h-5 w-5 text-slate-600 dark:text-slate-400" /></Button>
+                <Button variant="ghost" size="icon"><Phone className="h-5 w-5 text-slate-600 dark:text-slate-400" /></Button>
             </div>
         </header>
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
-            <div className="p-4 sm:p-6 space-y-4 pb-24">
+            <div className="p-4 sm:p-6 space-y-4">
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
                     return (
@@ -273,12 +272,15 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                             <div className={cn(
                                 "rounded-lg px-3 py-2 text-[15px] shadow-sm relative",
                                 isMe 
-                                    ? "bg-[#DCF8C6] text-black rounded-br-none" 
-                                    : "bg-white text-black rounded-bl-none"
+                                    ? "chat-bubble-sent" 
+                                    : "chat-bubble-received"
                             )}>
                                 {msg.text}
                                 {isMe && (
-                                  <div className="absolute bottom-1 right-2 flex items-center gap-1">
+                                  <div className="flex items-center gap-1 justify-end mt-1">
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                                      {msg.createdAt ? msg.createdAt.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </span>
                                     <ReadReceipt status={msg.status} />
                                   </div>
                                 )}
@@ -295,7 +297,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Écrivez votre message..."
-                    className="flex-1 h-12 rounded-full bg-white border-slate-300 focus-visible:ring-primary text-base shadow-md"
+                    className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base shadow-md"
                 />
                 <Button type="submit" size="icon" disabled={!newMessage.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
                     <Send className="h-5 w-5" />
