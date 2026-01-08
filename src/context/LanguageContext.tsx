@@ -68,6 +68,22 @@ interface Translations {
   totalUsers: string;
   publishedCourses: string;
   monthlyRevenue: string;
+  // My Courses Page (Instructor)
+  myCoursesDescription: string;
+  searchCoursePlaceholder: string;
+  noCoursesFoundTitle: string;
+  noCoursesFoundMessage: string;
+  createNewCourse: string;
+  studentLabel: (params: { count: number }) => string;
+  deleteCourseConfirmationTitle: string;
+  deleteCourseConfirmationMessage: (params: { courseTitle: string }) => string;
+  courseDeletedTitle: string;
+  courseDeletedMessage: string;
+  errorTitle: string;
+  courseDeletionErrorMessage: string;
+  editButton: string;
+  deleteButton: string;
+  cancelButton: string;
 }
 
 // Define the supported languages
@@ -76,7 +92,7 @@ export type Language = 'en' | 'fr' | 'sg';
 interface LanguageContextType {
   language: Language;
   setLanguage: (language: Language) => void;
-  t: (key: keyof Translations) => string;
+  t: (key: keyof Translations, params?: any) => string;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
@@ -142,6 +158,21 @@ const translations: Record<Language, Translations> = {
     totalUsers: 'Total Users',
     publishedCourses: 'Published Courses',
     monthlyRevenue: 'Revenue (this month)',
+    myCoursesDescription: 'Manage your courses and track enrollments.',
+    searchCoursePlaceholder: 'Search for a course...',
+    noCoursesFoundTitle: 'No Courses Found',
+    noCoursesFoundMessage: 'Start by creating your first educational content.',
+    createNewCourse: 'Create a new course',
+    studentLabel: ({ count }) => `${count} student${count > 1 ? 's' : ''}`,
+    deleteCourseConfirmationTitle: 'Confirm Deletion',
+    deleteCourseConfirmationMessage: ({ courseTitle }) => `Are you sure you want to permanently delete the course "${courseTitle}"? This action is irreversible.`,
+    courseDeletedTitle: 'Course Deleted',
+    courseDeletedMessage: 'The course has been successfully deleted.',
+    errorTitle: 'Error',
+    courseDeletionErrorMessage: 'Failed to delete the course.',
+    editButton: 'Edit',
+    deleteButton: 'Delete',
+    cancelButton: 'Cancel',
   },
   fr: {
     welcomeMessage: "Bienvenue sur FormaAfrique ! 🌍 Nous sommes ravis de t'accompagner dans ta formation. Si tu as des questions, n'hésite pas à les poser ici.",
@@ -203,6 +234,21 @@ const translations: Record<Language, Translations> = {
     totalUsers: 'Utilisateurs Totaux',
     publishedCourses: 'Cours Publiés',
     monthlyRevenue: 'Revenus (ce mois-ci)',
+    myCoursesDescription: 'Gérez vos formations et suivez les inscriptions.',
+    searchCoursePlaceholder: 'Rechercher un cours...',
+    noCoursesFoundTitle: 'Aucun cours trouvé',
+    noCoursesFoundMessage: 'Commencez par créer votre premier contenu pédagogique.',
+    createNewCourse: 'Créer un nouveau cours',
+    studentLabel: ({ count }) => `${count} étudiant${count > 1 ? 's' : ''}`,
+    deleteCourseConfirmationTitle: 'Confirmer la suppression',
+    deleteCourseConfirmationMessage: ({ courseTitle }) => `Êtes-vous sûr de vouloir supprimer définitivement le cours "${courseTitle}" ? Cette action est irréversible.`,
+    courseDeletedTitle: 'Cours Supprimé',
+    courseDeletedMessage: 'Le cours a été supprimé avec succès.',
+    errorTitle: 'Erreur',
+    courseDeletionErrorMessage: 'Impossible de supprimer le cours.',
+    editButton: 'Modifier',
+    deleteButton: 'Supprimer',
+    cancelButton: 'Annuler',
   },
   sg: {
     welcomeMessage: "Bara ala FormaAfrique! E yeke na ngia ti mû maboko na mo na yâ ti formation ti mo. Tongana mo yeke na kionde, hunda ni ge.",
@@ -264,6 +310,21 @@ const translations: Record<Language, Translations> = {
     totalUsers: 'Wara ti azo',
     publishedCourses: 'Mbeti ti mandango ye',
     monthlyRevenue: 'Wara ti nze so',
+    myCoursesDescription: 'Sâra kua na aformation ti mo na mo tara awamandango.',
+    searchCoursePlaceholder: 'Diko mbeni cours...',
+    noCoursesFoundTitle: 'A wara cours pëpe',
+    noCoursesFoundMessage: 'Komanse na sâra ye ti mandango ti mo ti kôzo.',
+    createNewCourse: 'Sâra mbeni fini cours',
+    studentLabel: ({ count }) => `${count} wamandango`,
+    deleteCourseConfirmationTitle: 'Yeda ti zi na sese',
+    deleteCourseConfirmationMessage: ({ courseTitle }) => `Mo ye biani ti zi cours "${courseTitle}"? A yeke kiri na pekoni pëpe.`,
+    courseDeletedTitle: 'A zi cours awe',
+    courseDeletedMessage: 'A zi cours ti mo na succès.',
+    errorTitle: 'Erreur',
+    courseDeletionErrorMessage: 'A lingbi ti zi cours so pëpe.',
+    editButton: 'Changé',
+    deleteButton: 'Zi',
+    cancelButton: 'Ke',
   },
 };
 
@@ -288,8 +349,12 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('formaafrique-lang', lang);
   };
 
-  const t = useCallback((key: keyof Translations): string => {
-    return translations[language][key] || key;
+  const t = useCallback((key: keyof Translations, params?: any): string => {
+    const translation = translations[language][key];
+    if (typeof translation === 'function') {
+        return translation(params);
+    }
+    return translation || key;
   }, [language]);
 
   return (
