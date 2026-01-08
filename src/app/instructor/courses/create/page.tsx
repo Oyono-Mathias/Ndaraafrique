@@ -55,7 +55,7 @@ export default function CreateCoursePage() {
       description: '',
       price: 0,
       category: '',
-      status: 'Draft',
+      status: 'Draft', // 'Draft', 'Published', 'Pending Review'
       instructorId: formaAfriqueUser.uid,
       createdAt: serverTimestamp(),
       publishedAt: null,
@@ -63,6 +63,9 @@ export default function CreateCoursePage() {
       learningObjectives: [],
       prerequisites: [],
       targetAudience: '',
+      contentType: 'video', // 'video' or 'ebook'
+      isPopular: false,
+      ebookUrl: ''
     };
 
     try {
