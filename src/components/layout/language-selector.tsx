@@ -22,6 +22,7 @@ const languages: LanguageOption[] = [
     { code: 'fr', name: 'Français', flag: '/flags/fr.svg' },
     { code: 'en', name: 'English', flag: '/flags/gb.svg' },
     { code: 'sg', name: 'Sango', flag: '/flags/cf.svg' },
+    { code: 'ln', name: 'Lingala', flag: '/flags/cd.svg' },
 ];
 
 export function LanguageSelector() {
@@ -31,7 +32,7 @@ export function LanguageSelector() {
         i18n.changeLanguage(lng);
     };
 
-    const selectedLanguage = languages.find(l => l.code === i18n.language) || languages[0];
+    const selectedLanguage = languages.find(l => i18n.language.startsWith(l.code)) || languages[0];
 
     return (
         <DropdownMenu>

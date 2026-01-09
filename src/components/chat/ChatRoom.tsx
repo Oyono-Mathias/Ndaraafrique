@@ -271,7 +271,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         </header>
 
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
-            <div className="p-4 sm:p-6 space-y-4">
+            <div className="p-4 sm:p-6 space-y-1">
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
                     return (
@@ -280,7 +280,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                             className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto")}
                         >
                             <div className={cn(
-                                "rounded-lg px-3 py-2 text-[15px] shadow-sm relative",
+                                "rounded-xl px-3 py-2 text-[15px] shadow-sm relative",
                                 isMe 
                                     ? "chat-bubble-sent" 
                                     : "chat-bubble-received"
@@ -301,7 +301,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        <div className="p-2 bg-transparent sticky bottom-0">
+        <div className="p-2 border-t border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900/50">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
                 <Input
                     value={newMessage}
