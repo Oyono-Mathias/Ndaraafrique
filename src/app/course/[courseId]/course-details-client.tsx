@@ -645,9 +645,17 @@ export default function CourseDetailsClient() {
               <aside className="hidden lg:block mt-8 lg:mt-0">
                   <div className="sticky top-24">
                     <Card className="shadow-xl rounded-3xl dark:bg-[#1e293b] dark:border-slate-700">
-                         <div className="relative group aspect-video bg-black rounded-t-3xl overflow-hidden">
+                         <div className="relative group aspect-video w-full bg-black rounded-t-3xl overflow-hidden">
                            {activeLesson?.videoUrl ? (
-                               <ReactPlayer url={activeLesson.videoUrl} width="100%" height="100%" playing={true} controls={true} light={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`} />
+                               <ReactPlayer 
+                                  url={activeLesson.videoUrl} 
+                                  width="100%" 
+                                  height="100%" 
+                                  playing={true} 
+                                  controls={true} 
+                                  playsinline={true}
+                                  light={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`} 
+                                />
                            ) : (
                                 <Image 
                                     src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}

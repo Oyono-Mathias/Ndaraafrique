@@ -38,7 +38,15 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
 
     return (
        <div className="aspect-video w-full bg-black rounded-lg overflow-hidden video-wrapper shadow-2xl">
-         <ReactPlayer url={videoUrl} onEnded={onEnded} width="100%" height="100%" controls playing />
+         <ReactPlayer 
+            url={videoUrl} 
+            onEnded={onEnded} 
+            width="100%" 
+            height="100%" 
+            controls 
+            playing
+            playsinline
+          />
        </div>
     );
 };
@@ -357,7 +365,3 @@ export default function CoursePlayerPage() {
         </div>
     );
 }
-
-    
-
-    
