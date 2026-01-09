@@ -19,6 +19,11 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
+
+const Worker = dynamic(() => import('@react-pdf-viewer/core').then(mod => mod.Worker), { ssr: false });
+const Viewer = dynamic(() => import('@react-pdf-viewer/core').then(mod => mod.Viewer), { ssr: false });
+
 
 const InstructorRequestCard = ({ user, onApprove, onReject }: { user: FormaAfriqueUser & { instructorApplication?: any }, onApprove: (id: string) => void, onReject: (id: string) => void }) => {
     const [isProcessing, setIsProcessing] = useState(false);
@@ -40,23 +45,23 @@ const InstructorRequestCard = ({ user, onApprove, onReject }: { user: FormaAfriq
 
     return (
         <>
-            <Card className="flex flex-col">
+            <Card className="flex flex-col dark:bg-[#1e293b] dark:border-slate-700">
                 <CardHeader className="flex flex-row items-center gap-4">
                     <Avatar className="h-12 w-12">
                         <AvatarImage src={user.profilePictureURL} />
                         <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
                     </Avatar>
                     <div>
-                        <CardTitle className="text-lg">{user.fullName}</CardTitle>
-                        <CardDescription>{user.email}</CardDescription>
+                        <CardTitle className="text-lg dark:text-white">{user.fullName}</CardTitle>
+                        <CardDescription className="dark:text-slate-400">{user.email}</CardDescription>
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow space-y-2">
-                    <p className="text-sm italic text-muted-foreground p-3 bg-slate-50 rounded-md">
+                    <p className="text-sm italic text-muted-foreground p-3 bg-slate-100 dark:bg-slate-800/50 rounded-md">
                         "{user.instructorApplication?.motivation || 'Aucune motivation fournie.'}"
                     </p>
                     {docUrl ? (
-                         <Button variant="outline" size="sm" className="w-full" onClick={() => setIsViewerOpen(true)}>
+                         <Button variant="outline" size="sm" className="w-full dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 dark:border-slate-600" onClick={() => setIsViewerOpen(true)}>
                             <FileText className="mr-2 h-4 w-4" />
                             Voir les justificatifs
                         </Button>
@@ -77,13 +82,17 @@ const InstructorRequestCard = ({ user, onApprove, onReject }: { user: FormaAfriq
             </Card>
 
             <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-                <DialogContent className="max-w-4xl">
+                <DialogContent className="max-w-4xl min-h-[80vh] flex flex-col dark:bg-[#1e293b] dark:border-slate-700">
                     <DialogHeader>
-                        <DialogTitle>Justificatif pour {user.fullName}</DialogTitle>
+                        <DialogTitle className="dark:text-white">Justificatif pour {user.fullName}</DialogTitle>
                     </DialogHeader>
-                    <div className="p-4 h-[70vh] bg-muted rounded-lg">
-                        {docUrl && (docUrl.includes('.pdf') ? (
-                            <iframe src={docUrl} className="w-full h-full" title="Justificatif PDF" />
+                    <div className="flex-1 p-4 bg-muted dark:bg-slate-800 rounded-lg">
+                        {docUrl && (docUrl.toLowerCase().includes('.pdf') ? (
+                           <Worker workerUrl={`https://unpkg.com/pdfjs-dist@3.4.120/build/pdf.worker.min.js`}>
+                               <div className="h-full w-full">
+                                <Viewer fileUrl={docUrl} />
+                               </div>
+                           </Worker>
                         ) : (
                             <Image src={docUrl} alt="Justificatif" layout="fill" objectFit="contain" />
                         ))}
@@ -96,13 +105,13 @@ const InstructorRequestCard = ({ user, onApprove, onReject }: { user: FormaAfriq
 
 const CourseReviewCard = ({ course }: { course: Course }) => {
      return (
-        <Card>
+        <Card className="dark:bg-[#1e293b] dark:border-slate-700">
             <CardHeader>
-                <CardTitle className="text-base">{course.title}</CardTitle>
-                <CardDescription>Catégorie : {course.category || 'N/A'}</CardDescription>
+                <CardTitle className="text-base dark:text-white">{course.title}</CardTitle>
+                <CardDescription className="dark:text-slate-400">Catégorie : {course.category || 'N/A'}</CardDescription>
             </CardHeader>
             <CardFooter>
-                <Button asChild size="sm" variant="outline">
+                <Button asChild size="sm" variant="outline" className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 dark:border-slate-600">
                     <Link href={`/instructor/courses/edit/${course.id}`}>
                         Examiner le cours
                     </Link>
@@ -169,8 +178,8 @@ export default function ModerationPage() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold">Gestion de la Modération</h1>
-                <p className="text-muted-foreground">Approuvez les nouveaux instructeurs et les cours en attente de révision.</p>
+                <h1 className="text-3xl font-bold dark:text-white">Gestion de la Modération</h1>
+                <p className="text-muted-foreground dark:text-slate-400">Approuvez les nouveaux instructeurs et les cours en attente de révision.</p>
             </header>
             
             {hasError && (
@@ -181,13 +190,13 @@ export default function ModerationPage() {
             )}
 
             <Tabs defaultValue="instructors" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="instructors">
+                <TabsList className="grid w-full grid-cols-2 dark:bg-slate-800 dark:text-slate-300">
+                    <TabsTrigger value="instructors" className="data-[state=active]:dark:bg-slate-700 data-[state=active]:dark:text-white">
                         <UserCheck className="mr-2 h-4 w-4" />
                         Instructeurs en attente
                         <Badge className="ml-2">{pendingInstructors?.length || 0}</Badge>
                     </TabsTrigger>
-                    <TabsTrigger value="courses">
+                    <TabsTrigger value="courses" className="data-[state=active]:dark:bg-slate-700 data-[state=active]:dark:text-white">
                         <Clock className="mr-2 h-4 w-4" />
                         Cours à valider
                         <Badge className="ml-2">{pendingCourses?.length || 0}</Badge>
@@ -197,7 +206,7 @@ export default function ModerationPage() {
                 <TabsContent value="instructors" className="mt-6">
                     {isLoading ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full" />)}
+                            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full dark:bg-slate-700" />)}
                         </div>
                     ) : pendingInstructors && pendingInstructors.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -206,10 +215,10 @@ export default function ModerationPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                        <div className="text-center py-20 border-2 border-dashed rounded-lg dark:border-slate-700">
                             <ShieldCheck className="mx-auto h-12 w-12 text-green-500" />
-                            <h3 className="mt-4 text-lg font-semibold">Aucune demande d'instructeur en attente.</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">Tout est à jour !</p>
+                            <h3 className="mt-4 text-lg font-semibold dark:text-white">Aucune demande d'instructeur en attente.</h3>
+                            <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400">Tout est à jour !</p>
                         </div>
                     )}
                 </TabsContent>
@@ -217,7 +226,7 @@ export default function ModerationPage() {
                 <TabsContent value="courses" className="mt-6">
                     {isLoading ? (
                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full" />)}
+                            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full dark:bg-slate-700" />)}
                         </div>
                     ) : pendingCourses && pendingCourses.length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -226,10 +235,10 @@ export default function ModerationPage() {
                             ))}
                         </div>
                     ) : (
-                        <div className="text-center py-20 border-2 border-dashed rounded-lg">
+                        <div className="text-center py-20 border-2 border-dashed rounded-lg dark:border-slate-700">
                             <BadgeCheck className="mx-auto h-12 w-12 text-green-500" />
-                            <h3 className="mt-4 text-lg font-semibold">Aucun cours à valider.</h3>
-                            <p className="mt-1 text-sm text-muted-foreground">L'équipe a fait du bon travail !</p>
+                            <h3 className="mt-4 text-lg font-semibold dark:text-white">Aucun cours à valider.</h3>
+                            <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400">L'équipe a fait du bon travail !</p>
                         </div>
                     )}
                 </TabsContent>
