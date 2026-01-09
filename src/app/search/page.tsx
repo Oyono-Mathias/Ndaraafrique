@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, orderBy, startAt, endAt, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, orderBy, startAt, endAt, getDocs, limit } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';

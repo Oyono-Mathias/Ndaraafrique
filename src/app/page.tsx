@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -211,7 +210,7 @@ export default function LandingPage() {
         <section className="py-16 bg-slate-900/50">
           <div className="container mx-auto px-4">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <StatItem value="15+" label="Pays Africains" icon={MapPin}>
+                <StatItem value="15+" label="Pays africains" icon={MapPin}>
                    <div className="absolute top-0 right-0 flex">
                         <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
                         <Image src="/flags/ci.svg" alt="Côte d'Ivoire" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />

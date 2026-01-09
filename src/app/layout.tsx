@@ -8,8 +8,6 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Inter as FontSans } from "next/font/google"
-import { getAuth } from "firebase/auth";
-import { initializeFirebase } from "@/firebase";
 
 export const metadata: Metadata = {
   title: "FormaAfrique | Formations en ligne pour le marché Africain",

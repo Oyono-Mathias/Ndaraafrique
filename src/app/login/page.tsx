@@ -2,13 +2,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp, getDoc, collection, addDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc, collection } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -51,7 +51,9 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function LoginPage() {
   const { t } = useTranslation();
-  const [activeTab, setActiveTab] = useState('login');
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'login';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
@@ -331,5 +333,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

@@ -6,7 +6,7 @@ import { useEffect } from "react";
 export default function RegisterPage() {
     const router = useRouter();
     useEffect(() => {
-        router.replace('/?initialTab=register');
+        router.replace('/login?tab=register');
     }, [router]);
 
     return null;

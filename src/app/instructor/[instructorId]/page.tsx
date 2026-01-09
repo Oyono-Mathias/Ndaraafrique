@@ -10,7 +10,7 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Star, Globe, Twitter, Linkedin, Youtube, MessageCircle, Edit, ShieldAlert, Users, BookOpen, Share2, CheckBadgeIcon, Calendar } from 'lucide-react';
+import { Star, Globe, Twitter, Linkedin, Youtube, MessageCircle, Edit, ShieldAlert, Users, BookOpen, Share2, Calendar } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -284,5 +284,3 @@ export default function InstructorProfilePage() {
         </div>
     );
 }
-
-    

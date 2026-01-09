@@ -247,7 +247,7 @@ const SupportButton = () => {
     const pathname = usePathname();
     const db = getFirestore();
     
-    const isAuthPage = pathname === '/';
+    const isAuthPage = pathname === '/login';
     const isInsideChat = pathname.startsWith('/messages/');
 
     useEffect(() => {
@@ -344,7 +344,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isAuthPage && !isUserLoading && !user) {
-      router.push('/');
+      router.push('/login');
     }
   }, [user, isUserLoading, router, isAuthPage]);
   
