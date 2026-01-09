@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -10,14 +10,15 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CheckCircle2, Download } from 'lucide-react';
+import { CheckCircle2, Download, Loader2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
 
 
-export default function PaymentSuccessPage() {
+function SuccessPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const courseId = searchParams.get('courseId');
+    const transactionId = searchParams.get('transactionId');
 
     const [course, setCourse] = useState<Course | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -83,7 +84,7 @@ export default function PaymentSuccessPage() {
                     </Button>
                 </CardContent>
                 <CardFooter className="flex-col gap-3 text-xs text-slate-500 pb-8">
-                     <p>N° de transaction : TX-{Math.random().toString(36).substr(2, 9).toUpperCase()}</p>
+                     <p>N° de transaction : {transactionId}</p>
                      <Button variant="link" className="p-0 h-auto">
                         <Download className="mr-2 h-3 w-3" />
                         Recevoir le reçu par e-mail
@@ -92,4 +93,13 @@ export default function PaymentSuccessPage() {
             </Card>
         </div>
     );
+}
+
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+      <SuccessPageContent />
+    </Suspense>
+  )
 }

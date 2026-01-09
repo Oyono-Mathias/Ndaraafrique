@@ -1,194 +1,183 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useDoc, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
+import { doc, getFirestore } from 'firebase/firestore';
+import Image from 'next/image';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Ticket } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import Image from 'next/image';
+import { Loader2, CreditCard, ArrowLeft } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import { Input } from '@/components/ui/input';
-import { createMonerooPaymentLink } from '@/app/actions/monerooActions';
+import { useMoneroo } from 'moneroo.js/react';
+import { verifyMonerooTransaction } from '../actions/monerooActions';
+import { toast } from '@/hooks/use-toast';
+import { sendEnrollmentEmails } from '@/lib/emails';
+import { setDoc, serverTimestamp } from 'firebase/firestore';
 
-interface PromoCode {
-    id: string;
-    code: string;
-    discountPercentage: number;
-    isActive: boolean;
+
+function PaymentPageContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const { user, formaAfriqueUser, isUserLoading } = useRole();
+    const db = getFirestore();
+    
+    const courseId = searchParams.get('courseId');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const courseRef = useMemoFirebase(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
+    const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+    
+    const instructorRef = useMemoFirebase(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [db, course]);
+    const { data: instructor } = useDoc(instructorRef);
+
+    const handlePaymentSuccess = async (data: any) => {
+        if (!course || !instructor || !user || !formaAfriqueUser) return;
+        setIsLoading(true);
+
+        try {
+            const result = await verifyMonerooTransaction(data.transaction_id);
+
+            if (result.success) {
+                const enrollmentId = `${user.uid}_${courseId}`;
+                const enrollmentRef = doc(db, 'enrollments', enrollmentId);
+
+                await setDoc(enrollmentRef, {
+                    enrollmentId,
+                    studentId: user.uid,
+                    courseId: courseId,
+                    instructorId: course.instructorId,
+                    enrollmentDate: serverTimestamp(),
+                    progress: 0,
+                });
+
+                await setDoc(doc(db, 'payments', data.transaction_id), {
+                  paymentId: data.transaction_id,
+                  userId: user.uid,
+                  instructorId: course.instructorId,
+                  courseId: courseId,
+                  amount: course.price,
+                  currency: 'XOF',
+                  date: serverTimestamp(),
+                  status: 'Completed',
+                  monerooData: data,
+                });
+                
+                await sendEnrollmentEmails(formaAfriqueUser, course, instructor);
+
+                router.push(`/payment/success?courseId=${courseId}&transactionId=${data.transaction_id}`);
+            } else {
+                throw new Error(result.error || 'La vérification du paiement a échoué.');
+            }
+        } catch (error: any) {
+            console.error("Payment processing error:", error);
+            toast({
+                variant: "destructive",
+                title: "Erreur de post-paiement",
+                description: error.message || "Une erreur est survenue lors de la finalisation de votre inscription.",
+            });
+            router.push(`/payment/error?courseId=${courseId}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const { checkout } = useMoneroo({
+        publicKey: process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY || '',
+        onClose: () => setIsLoading(false),
+        onSuccess: handlePaymentSuccess,
+    });
+
+    const handlePayment = () => {
+        if (!course || !formaAfriqueUser) return;
+        setIsLoading(true);
+        checkout({
+            amount: course.price,
+            currency: "XOF",
+            description: `Achat du cours: ${course.title}`,
+            customer: {
+                email: formaAfriqueUser.email,
+                name: formaAfriqueUser.fullName,
+            },
+            metadata: {
+                courseId: course.id,
+                userId: formaAfriqueUser.uid,
+            }
+        });
+    };
+
+    const loading = isUserLoading || courseLoading;
+
+    if (loading) {
+        return (
+            <div className="flex justify-center items-center h-screen">
+                <Card className="w-full max-w-md">
+                    <CardHeader><Skeleton className="h-8 w-3/4" /></CardHeader>
+                    <CardContent className="space-y-4">
+                        <Skeleton className="h-6 w-full" />
+                        <Skeleton className="h-10 w-full" />
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
+    
+    if (!course) {
+        return (
+             <div className="flex flex-col justify-center items-center h-screen gap-4">
+                <h1 className="text-2xl font-bold">Cours non trouvé</h1>
+                <Button onClick={() => router.push('/dashboard')}>Retour à l'accueil</Button>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 p-4">
+            <Card className="w-full max-w-md shadow-lg rounded-2xl">
+                <CardHeader className="text-center">
+                    <CardTitle className="text-2xl font-bold">Finaliser votre achat</CardTitle>
+                    <CardDescription>Vous êtes sur le point de vous inscrire à un cours exceptionnel.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="p-4 border rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center gap-4">
+                        <Image 
+                            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
+                            alt={course.title}
+                            width={80}
+                            height={45}
+                            className="rounded-lg aspect-video object-cover"
+                        />
+                        <div className="flex-1">
+                            <h3 className="font-bold text-sm line-clamp-2">{course.title}</h3>
+                            <p className="text-lg font-bold text-primary mt-1">{course.price.toLocaleString('fr-FR')} XOF</p>
+                        </div>
+                    </div>
+                    <p className="text-xs text-center text-muted-foreground">
+                        Vous serez redirigé vers la passerelle de paiement sécurisée de Moneroo pour finaliser votre transaction.
+                    </p>
+                    <Button onClick={handlePayment} disabled={isLoading} size="lg" className="w-full h-12 text-base">
+                        {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <CreditCard className="mr-2 h-5 w-5" />}
+                        Payer en toute sécurité
+                    </Button>
+                </CardContent>
+                 <CardFooter>
+                    <Button variant="link" onClick={() => router.back()} className="text-muted-foreground mx-auto">
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Annuler et retourner au cours
+                    </Button>
+                </CardFooter>
+            </Card>
+        </div>
+    )
 }
 
 export default function PaiementsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { toast } = useToast();
-  const { user, formaAfriqueUser, isUserLoading } = useRole();
-  const db = getFirestore();
-  
-  const courseId = searchParams.get('courseId');
-
-  const [course, setCourse] = useState<Course | null>(null);
-  const [isCourseLoading, setIsCourseLoading] = useState(true);
-  const [promoCode, setPromoCode] = useState('');
-  const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
-
-  const discountedPrice = useMemo(() => {
-    if (!course) return 0;
-    if (appliedPromo) {
-        return Math.max(0, course.price * (1 - appliedPromo.discountPercentage / 100));
-    }
-    return course.price;
-  }, [course, appliedPromo]);
-
-  useEffect(() => {
-    if (!courseId) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Aucun cours sélectionné.'});
-        router.push('/dashboard');
-        return;
-    }
-
-    const fetchCourse = async () => {
-        setIsCourseLoading(true);
-        const courseRef = doc(db, 'courses', courseId);
-        const courseSnap = await getDoc(courseRef);
-        if (courseSnap.exists()) {
-            setCourse({ id: courseSnap.id, ...courseSnap.data() } as Course);
-        } else {
-            toast({ variant: 'destructive', title: 'Erreur', description: 'Cours non trouvé.'});
-            router.push('/dashboard');
-        }
-        setIsCourseLoading(false);
-    };
-    fetchCourse();
-  }, [courseId, router, toast, db]);
-
-  const handlePayment = async () => {
-      if (!user || !course || !formaAfriqueUser) {
-          toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté pour acheter.' });
-          return;
-      }
-      setIsProcessing(true);
-      setErrorMessage('');
-
-      const result = await createMonerooPaymentLink({
-          amount: discountedPrice,
-          currency: 'XOF',
-          description: `Achat du cours: ${course.title}`,
-          customer: {
-              email: formaAfriqueUser.email,
-              name: formaAfriqueUser.fullName,
-          },
-          metadata: {
-              userId: user.uid,
-              courseId: course.id,
-              courseTitle: course.title,
-              instructorId: course.instructorId,
-          }
-      });
-      
-      if (result.success && result.paymentLink) {
-          router.push(result.paymentLink);
-      } else {
-          setErrorMessage(result.error || 'Une erreur inconnue est survenue.');
-          setIsProcessing(false);
-      }
-  };
-  
-  const handleApplyPromoCode = async () => {
-    if (!promoCode.trim()) return;
-    setIsProcessing(true);
-
-    const promoQuery = query(collection(db, 'promoCodes'), where('code', '==', promoCode.trim().toUpperCase()), where('isActive', '==', true));
-    const snapshot = await getDocs(promoQuery);
-
-    if (snapshot.empty) {
-        toast({ variant: 'destructive', title: 'Code invalide', description: 'Ce code promo est invalide ou a expiré.'});
-        setAppliedPromo(null);
-    } else {
-        const promo = { id: snapshot.docs[0].id, ...snapshot.docs[0].data() } as PromoCode;
-        setAppliedPromo(promo);
-        toast({ title: 'Code appliqué !', description: `Vous avez obtenu une réduction de ${promo.discountPercentage}%.`});
-    }
-    setIsProcessing(false);
-  }
-
-  const renderLoadingState = () => (
-    <div className="flex flex-col justify-center items-center h-screen gap-4 text-center p-4">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <h2 className="text-xl font-semibold">Chargement des informations...</h2>
-    </div>
-  );
-
-  if (isUserLoading || isCourseLoading) {
-    return renderLoadingState();
-  }
-
-  return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-xl rounded-2xl">
-        <CardHeader className="text-center relative">
-            <Button variant="ghost" className="absolute top-4 left-4" onClick={() => router.back()}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour
-            </Button>
-          <CardTitle className="text-2xl font-bold pt-10">Récapitulatif</CardTitle>
-          <CardDescription>Vérifiez les détails avant de payer.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="p-4 border rounded-lg bg-slate-100 flex flex-col items-center text-center gap-4">
-                <Image 
-                    src={course?.imageUrl || `https://picsum.photos/seed/${course?.id}/300/170`}
-                    alt={course?.title || 'Image du cours'}
-                    width={300}
-                    height={170}
-                    className="rounded-lg aspect-video object-cover"
-                />
-                <div>
-                    <p className="text-base font-bold">{course?.title}</p>
-                    {appliedPromo ? (
-                        <div className="flex items-center gap-2 justify-center mt-2">
-                             <p className="text-lg line-through text-muted-foreground">{course?.price.toLocaleString('fr-FR')} XOF</p>
-                             <p className="text-2xl font-extrabold text-primary">{discountedPrice.toLocaleString('fr-FR')} XOF</p>
-                        </div>
-                    ) : (
-                        <p className="text-2xl font-extrabold mt-2 text-primary">{course?.price.toLocaleString('fr-FR')} XOF</p>
-                    )}
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                <label htmlFor="promo-code" className="text-sm font-medium">Code Promo</label>
-                <div className="flex gap-2">
-                    <Input id="promo-code" value={promoCode} onChange={e => setPromoCode(e.target.value)} placeholder="Ex: AFRIQUE50" disabled={!!appliedPromo} />
-                    <Button onClick={handleApplyPromoCode} disabled={!promoCode.trim() || isProcessing || !!appliedPromo}>
-                        {isProcessing ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Appliquer'}
-                    </Button>
-                </div>
-                {appliedPromo && (
-                    <p className="text-sm text-green-600 flex items-center gap-1">
-                        <Ticket className="h-4 w-4"/> Réduction de {appliedPromo.discountPercentage}% appliquée !
-                    </p>
-                )}
-            </div>
-
-             {errorMessage && (
-                <p className="text-sm font-medium text-destructive text-center">{errorMessage}</p>
-             )}
-
-        </CardContent>
-        <CardFooter className="flex-col gap-4">
-             <Button size="lg" className="w-full h-12 text-base" onClick={handlePayment} disabled={isProcessing}>
-                 {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : `Payer ${discountedPrice.toLocaleString('fr-FR')} XOF`}
-             </Button>
-            <p className="text-xs text-center text-muted-foreground w-full">Vous serez redirigé vers notre partenaire de paiement sécurisé pour finaliser votre achat.</p>
-        </CardFooter>
-      </Card>
-    </div>
-  );
+    return (
+        <Suspense fallback={<div className="flex justify-center items-center h-screen"><Loader2 className="h-8 w-8 animate-spin" /></div>}>
+            <PaymentPageContent />
+        </Suspense>
+    );
 }

@@ -32,6 +32,8 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 import { sendEnrollmentEmails } from '@/lib/emails';
+import { useMoneroo } from 'moneroo.js/react';
+import { verifyMonerooTransaction } from '@/app/actions/monerooActions';
 
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
@@ -381,6 +383,7 @@ export default function CourseDetailsClient() {
   const router = useRouter();
   const { user, formaAfriqueUser, isUserLoading } = useRole();
   const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
   const [courseStats, setCourseStats] = useState({ totalDuration: 0, lessonCount: 0 });
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
   const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
@@ -398,6 +401,68 @@ export default function CourseDetailsClient() {
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
   const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0, [enrollments]);
+  
+  const handlePaymentSuccess = async (data: any) => {
+    if (!course || !instructor || !user) return;
+    setIsPaying(true);
+
+    try {
+        const result = await verifyMonerooTransaction(data.transaction_id);
+
+        if (result.success) {
+            const enrollmentId = `${user.uid}_${courseId}`;
+            const enrollmentRef = doc(db, 'enrollments', enrollmentId);
+
+            const enrollmentPayload = {
+                enrollmentId,
+                studentId: user.uid,
+                courseId: courseId,
+                instructorId: course.instructorId,
+                enrollmentDate: serverTimestamp(),
+                progress: 0,
+            };
+            
+            await setDoc(enrollmentRef, enrollmentPayload);
+
+            const paymentPayload = {
+              paymentId: data.transaction_id,
+              userId: user.uid,
+              instructorId: course.instructorId,
+              courseId: courseId,
+              amount: course.price,
+              currency: 'XOF',
+              date: serverTimestamp(),
+              status: 'Completed',
+              monerooData: data,
+            };
+            await setDoc(doc(db, 'payments', data.transaction_id), paymentPayload);
+
+            if(formaAfriqueUser){
+              await sendEnrollmentEmails(formaAfriqueUser, course, instructor);
+            }
+
+            router.push(`/payment/success?courseId=${courseId}&transactionId=${data.transaction_id}`);
+        } else {
+            throw new Error(result.error || 'La vérification du paiement a échoué.');
+        }
+    } catch (error: any) {
+        console.error("Payment processing error:", error);
+        toast({
+            variant: "destructive",
+            title: "Erreur de post-paiement",
+            description: error.message || "Une erreur est survenue lors de la finalisation de votre inscription.",
+        });
+        router.push(`/payment/error?courseId=${courseId}`);
+    } finally {
+        setIsPaying(false);
+    }
+  };
+  
+  const { checkout } = useMoneroo({
+      publicKey: process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY || '',
+      onClose: () => setIsPaying(false),
+      onSuccess: handlePaymentSuccess,
+  });
 
   useEffect(() => {
     if (!courseId || course?.contentType === 'ebook') return;
@@ -425,14 +490,6 @@ export default function CourseDetailsClient() {
     fetchStats();
   }, [courseId, db, course?.contentType]);
 
-
-  const handlePurchase = () => {
-    toast({
-        title: "Simulation de paiement",
-        description: `Redirection pour l'achat du cours : ${course?.title}`,
-    });
-    router.push(`/paiements?courseId=${courseId}`);
-  };
 
   const handleFreeEnrollment = async () => {
     if (!user || !course || !course.instructorId || !instructor || !formaAfriqueUser) {
@@ -478,6 +535,33 @@ export default function CourseDetailsClient() {
             requestResourceData: { studentId: user.uid, courseId: courseId, progress: 0, instructorId: course.instructorId },
         }));
         setIsEnrolling(false);
+    }
+  };
+
+  const handleMainAction = () => {
+    if (!user) {
+        router.push(`/login?redirect=/course/${courseId}`);
+        return;
+    }
+    if(isEnrolled) {
+        router.push(`/courses/${courseId}`);
+    } else if (course?.price === 0) {
+        handleFreeEnrollment();
+    } else if(course && user && formaAfriqueUser) {
+        setIsPaying(true);
+        checkout({
+            amount: course.price,
+            currency: "XOF",
+            description: course.title,
+            customer: {
+                email: formaAfriqueUser.email,
+                name: formaAfriqueUser.fullName,
+            },
+            metadata: {
+                courseId: course.id,
+                userId: user.uid,
+            }
+        });
     }
   };
 
@@ -542,12 +626,6 @@ export default function CourseDetailsClient() {
     if(isEnrolled) return isEbook ? "Lire l'E-book" : "Aller au cours";
     if(isFree) return isEbook ? "Obtenir l'E-book Gratuitement" : "S'inscrire Gratuitement";
     return isEbook ? "Acheter l'E-book" : "Acheter le Cours";
-  }
-
-  const handleMainAction = () => {
-    if(isEnrolled) router.push(`/courses/${courseId}`);
-    else if(isFree) handleFreeEnrollment();
-    else handlePurchase();
   }
   
   const playerConfig = {
@@ -669,7 +747,6 @@ export default function CourseDetailsClient() {
                                   playing={true} 
                                   controls={true} 
                                   config={playerConfig}
-                                  playsinline={true}
                                 />
                            ) : (
                                 <Image 
@@ -692,13 +769,13 @@ export default function CourseDetailsClient() {
                             <h2 className="text-3xl tv:text-4xl font-bold text-center dark:text-white">
                                 {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
                             </h2>
-
-                            <Button className={cn("w-full tv:text-lg tv:h-14", isEnrolled && "bg-green-600 hover:bg-green-700")} size="lg" onClick={handleMainAction} disabled={isEnrolling}>
-                                {isEnrolling ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
-                                 isEbook ? <BookOpen className="mr-2 h-5 w-5" /> : 
-                                 isEnrolled ? <Check className="mr-2 h-5 w-5" /> :
-                                 <CreditCard className="mr-2 h-5 w-5" />}
-                                {isEnrolling ? 'Traitement...' : getButtonText()}
+                            
+                            <Button className={cn("w-full tv:text-lg tv:h-14", isEnrolled && "bg-green-600 hover:bg-green-700")} size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
+                                {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
+                                    isEbook ? <BookOpen className="mr-2 h-5 w-5" /> : 
+                                    isEnrolled ? <Check className="mr-2 h-5 w-5" /> :
+                                    <CreditCard className="mr-2 h-5 w-5" />}
+                                {isPaying ? 'Traitement du paiement...' : isEnrolling ? 'Traitement...' : getButtonText()}
                             </Button>
                             
                             <p className="text-xs text-muted-foreground text-center">Garantie satisfait ou remboursé 30 jours</p>
@@ -732,9 +809,9 @@ export default function CourseDetailsClient() {
                 <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 border-t border-slate-200 dark:border-slate-700 z-50">
                     <div className="flex justify-between items-center">
                         <p className="font-bold text-xl dark:text-white">{isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}</p>
-                        <Button className="w-auto" size="lg" onClick={handleMainAction} disabled={isEnrolling}>
-                            {isEnrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {getButtonText()}
+                        <Button className="w-auto" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
+                            {isEnrolling || isPaying ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {isPaying ? 'Chargement...' : getButtonText()}
                         </Button>
                     </div>
                 </div>
@@ -745,5 +822,3 @@ export default function CourseDetailsClient() {
     </>
   );
 }
-
-    

@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, Suspense } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function PaymentErrorPage() {
+function ErrorPageContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const courseId = searchParams.get('courseId');
@@ -30,4 +30,12 @@ export default function PaymentErrorPage() {
             </div>
         </div>
     );
+}
+
+export default function PaymentErrorPage() {
+  return (
+    <Suspense>
+      <ErrorPageContent />
+    </Suspense>
+  )
 }
