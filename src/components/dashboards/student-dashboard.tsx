@@ -119,15 +119,15 @@ export function StudentDashboard() {
   const whatsappShareLink = `https://wa.me/?text=${encodeURIComponent(t('whatsappShareText', { siteUrl: 'https://formaafrique-app.web.app' }))}`;
   
   return (
-    <div className="space-y-12 pb-20">
+    <div className="space-y-8 sm:space-y-12 pb-20">
       <section className="text-center pt-8 md:pt-16">
-          <h1 className="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Dominez votre futur avec des compétences réelles</h1>
-          <p className="max-w-2xl mx-auto mt-4 text-slate-600 text-lg">La meilleure formation en ligne au Cameroun, accessible via Orange Money et MTN MoMo. Apprenez un métier et changez votre avenir.</p>
-          <div className="mt-8 flex flex-wrap justify-center gap-4">
-              <Button size="lg" asChild className="h-14 px-8 text-base font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight">Dominez votre futur avec des compétences réelles</h1>
+          <p className="max-w-2xl mx-auto mt-4 text-slate-600 text-base md:text-lg">La meilleure formation en ligne au Cameroun, accessible via Orange Money et MTN MoMo. Apprenez un métier et changez votre avenir.</p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" asChild className="h-12 sm:h-14 px-8 text-base font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 w-full sm:w-auto">
                 <Link href="/search">Explorer les cours</Link>
               </Button>
-               <Button size="lg" variant="outline" asChild className="h-14 px-8 text-base font-bold bg-green-50 text-green-700 border-green-200 hover:bg-green-100">
+               <Button size="lg" variant="outline" asChild className="h-12 sm:h-14 px-8 text-base font-bold bg-green-50 text-green-700 border-green-200 hover:bg-green-100 w-full sm:w-auto">
                   <a href={whatsappShareLink} target="_blank" rel="noopener noreferrer">
                     <WhatsAppIcon className="h-5 w-5 mr-2" />
                     Inviter un ami
@@ -137,7 +137,7 @@ export function StudentDashboard() {
       </section>
 
       <section>
-        <h2 className="text-3xl font-bold mb-6 text-slate-900 text-center">Explorez nos formations</h2>
+        <h2 className="text-2xl md:text-3xl font-bold mb-6 text-slate-900 text-center">Explorez nos formations</h2>
          <div className="border-b mb-6">
           <div className="flex items-center justify-center space-x-2 overflow-x-auto pb-3 no-scrollbar">
             {categoriesLoading ? (

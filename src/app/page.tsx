@@ -195,11 +195,11 @@ export default function LandingPage() {
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 mb-4">La plateforme d'excellence pour les talents de toute l'Afrique</Badge>
             <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">Révélez votre potentiel sur le continent</h1>
             <p className="max-w-3xl mx-auto mt-6 text-lg md:text-xl text-slate-300">Des formations de qualité, accessibles partout, pour booster votre carrière et construire l'Afrique de demain.</p>
-            <div className="mt-8 flex justify-center gap-4">
-              <Button size="lg" asChild className="h-12 px-8 text-base bg-primary hover:bg-primary/90 text-primary-foreground">
+            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Button size="lg" asChild className="h-12 px-8 text-base bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
                 <Link href="/search">Explorer les cours</Link>
               </Button>
-              <Button size="lg" variant="secondary" asChild className="h-12 px-8 text-base bg-green-600 text-white hover:bg-green-700">
+              <Button size="lg" variant="secondary" asChild className="h-12 px-8 text-base bg-green-600 text-white hover:bg-green-700 w-full sm:w-auto">
                 <Link href="/login?tab=register">S'inscrire gratuitement</Link>
               </Button>
             </div>
@@ -209,7 +209,7 @@ export default function LandingPage() {
         {/* Stats Section */}
         <section className="py-16 bg-slate-900/50">
           <div className="container mx-auto px-4">
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+             <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8">
                 <StatItem value="15+" label="Pays africains" icon={MapPin}>
                    <div className="absolute top-0 right-0 flex">
                         <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
@@ -228,11 +228,11 @@ export default function LandingPage() {
           <div className="container mx-auto px-4">
             <h2 className="text-3xl font-bold text-center mb-12">Nos formations les plus populaires</h2>
             {coursesLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
                 </div>
             ) : courses && courses.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
                     {courses.map(course => (
                         <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
                     ))}
