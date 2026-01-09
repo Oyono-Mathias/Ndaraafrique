@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -16,6 +17,15 @@ export default {
       },
     },
     extend: {
+      screens: {
+        'xs': '480px',      // Extra small devices (phones)
+        'sm': '640px',      // Small devices (phones, landscape)
+        'md': '768px',      // Medium devices (tablets)
+        'lg': '1024px',     // Large devices (laptops/desktops)
+        'xl': '1280px',     // Extra large devices (large laptops, desktops)
+        '2xl': '1536px',    // 2x extra large (large monitors)
+        'tv': '1920px',     // TV screens
+      },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
       },
