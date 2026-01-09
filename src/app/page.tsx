@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import Link from 'next/link';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase } from "lucide-react";
+import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase, MapPin } from "lucide-react";
 import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -63,13 +64,17 @@ const CourseCard = ({ course, instructor }: { course: Course, instructor: Partia
     );
 };
 
-const StatItem = ({ value, label, icon: Icon }: { value: string, label: string, icon: React.ElementType }) => (
+const StatItem = ({ value, label, icon: Icon, children }: { value: string, label: string, icon: React.ElementType, children?: React.ReactNode }) => (
     <div className="flex flex-col items-center text-center">
-        <Icon className="h-10 w-10 text-primary mb-2" />
+        <div className="relative">
+            <Icon className="h-10 w-10 text-primary mb-2" />
+            {children}
+        </div>
         <p className="text-3xl font-extrabold text-white">{value}</p>
         <p className="text-sm text-slate-400">{label}</p>
     </div>
 );
+
 
 const FeatureItem = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
     <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl text-center">
@@ -81,14 +86,26 @@ const FeatureItem = ({ icon: Icon, title, description }: { icon: React.ElementTy
     </div>
 );
 
-const TestimonialCard = ({ quote, name, country, flag }: { quote: string, name: string, country: string, flag: string }) => (
+const TestimonialCard = ({ quote, name, country, flag, imageSeed }: { quote: string, name: string, country: string, flag: string, imageSeed: string }) => (
     <Card className="h-full bg-slate-800/50 border border-slate-700/80 rounded-2xl text-white flex flex-col p-6">
         <CardContent className="p-0 flex-grow">
             <p className="italic">"{quote}"</p>
         </CardContent>
-        <div className="mt-4 flex items-center gap-2">
-            <Image src={`/flags/${flag}.svg`} alt={country} width={20} height={15} />
-            <p className="font-bold text-sm">{name}, <span className="text-slate-400">{country}</span></p>
+        <div className="mt-4 flex items-center gap-3">
+             <Image 
+                src={`https://picsum.photos/seed/${imageSeed}/48/48`}
+                alt={`Photo de ${name}`}
+                width={48}
+                height={48}
+                className="rounded-full border-2 border-primary/50"
+             />
+             <div>
+                <p className="font-bold text-sm">{name}</p>
+                <div className="flex items-center gap-1.5">
+                    <Image src={`/flags/${flag}.svg`} alt={country} width={16} height={12} className="rounded-sm" />
+                    <span className="text-slate-400 text-xs">{country}</span>
+                </div>
+            </div>
         </div>
     </Card>
 );
@@ -193,10 +210,16 @@ export default function LandingPage() {
         {/* Stats Section */}
         <section className="py-16 bg-slate-900/50">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <StatItem value="500+" label="Étudiants" icon={Users} />
-              <StatItem value="20+" label="Formations" icon={BookOpen} />
-              <StatItem value="Reconnus" label="Certificats" icon={Award} />
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <StatItem value="15+" label="Pays Africains" icon={MapPin}>
+                   <div className="absolute top-0 right-0 flex">
+                        <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
+                        <Image src="/flags/ci.svg" alt="Côte d'Ivoire" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
+                        <Image src="/flags/sn.svg" alt="Sénégal" width={20} height={15} className="rounded-full border-2 border-slate-700" />
+                   </div>
+                </StatItem>
+                <StatItem value="500+" label="Étudiants engagés" icon={Users} />
+                <StatItem value="20+" label="Formations disponibles" icon={BookOpen} />
             </div>
           </div>
         </section>
@@ -232,16 +255,16 @@ export default function LandingPage() {
                 <div className="md:hidden">
                      <Carousel opts={{ loop: true, align: "start" }} className="w-full">
                         <CarouselContent className="-ml-4">
-                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" /></CarouselItem>
-                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" /></CarouselItem>
-                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" /></CarouselItem>
+                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard imageSeed="moussa" quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" /></CarouselItem>
+                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard imageSeed="amina" quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" /></CarouselItem>
+                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard imageSeed="jean-david" quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" /></CarouselItem>
                         </CarouselContent>
                     </Carousel>
                 </div>
                 <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <TestimonialCard quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" />
-                     <TestimonialCard quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" />
-                     <TestimonialCard quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" />
+                     <TestimonialCard imageSeed="moussa" quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" />
+                     <TestimonialCard imageSeed="amina" quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" />
+                     <TestimonialCard imageSeed="jean-david" quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" />
                 </div>
             </div>
         </section>
