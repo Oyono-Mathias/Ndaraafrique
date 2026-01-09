@@ -1,5 +1,5 @@
 
-"use client";
+'use client';
 
 import Link from "next/link";
 import Image from "next/image";
@@ -87,15 +87,20 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
       ],
     },
     {
-      label: t('navPersonal'),
+      label: t('navFollowUp'),
       items: [
         { href: "/mes-certificats", icon: Award, text: t('navMyCertificates') },
         { href: "/liste-de-souhaits", icon: Heart, text: t('navWishlist') },
         { href: "/mes-devoirs", icon: ClipboardCheck, text: t('navMyAssignments') },
+      ],
+    },
+    {
+      label: t('navCommunity'),
+      items: [
         { href: "/annuaire", icon: Users, text: t('navDirectory') },
         { href: "/questions-reponses", icon: HelpCircle, text: t('navMyQuestions') },
         { href: "/messages", icon: MessageSquare, text: t('navMessages') },
-      ],
+      ]
     },
     {
       label: t('navAccount'),
@@ -181,7 +186,7 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
                 Mode Admin
             </Button>
         )}
-        <Button variant="destructive" className="w-full justify-center" onClick={handleLogout}>
+        <Button variant="ghost" className="w-full justify-center text-slate-500" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Déconnexion
         </Button>

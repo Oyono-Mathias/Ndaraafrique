@@ -62,13 +62,13 @@ const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.El
       className={cn(
         "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-md'
-          : 'text-slate-700 hover:bg-slate-100'
+          ? 'bg-primary text-white shadow-md'
+          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
       )}
     >
       <Icon className={cn(
         "w-5 h-5 mr-4",
-        isActive ? 'text-white' : 'text-slate-500 group-hover:text-primary'
+        isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'
       )} />
       <span className="font-medium text-sm">{label}</span>
     </Link>
@@ -121,11 +121,11 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
   }
 
   return (
-    <div className="w-64 h-full bg-white border-r border-slate-200 flex flex-col shadow-sm">
-      <header className="p-4 border-b border-slate-100">
+    <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
+      <header className="p-4 border-b border-slate-700/50">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
-          <span className="font-bold text-lg text-primary">
+          <span className="font-bold text-lg text-white">
             {siteName || 'FormaAfrique'}
           </span>
         </Link>
@@ -142,10 +142,10 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
         ))}
       </nav>
 
-      <footer className="p-4 mt-auto border-t border-slate-100 space-y-2">
+      <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
         <Button
           variant="outline"
-          className="w-full justify-center"
+          className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white"
           onClick={() => switchRole('student')}
         >
           <LogIn className="mr-2 h-4 w-4" />

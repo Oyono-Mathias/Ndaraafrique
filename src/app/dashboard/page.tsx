@@ -12,25 +12,23 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-        <div className="space-y-8 p-4 md:p-0">
+        <div className="space-y-8">
             <header>
                 <Skeleton className="h-8 w-48" />
             </header>
             <div className="space-y-6">
                 <Skeleton className="h-6 w-1/3" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Skeleton className="h-64 w-full rounded-xl" />
-                  <Skeleton className="h-64 w-full rounded-xl" />
-                  <Skeleton className="h-64 w-full rounded-xl hidden sm:block" />
-                  <Skeleton className="h-64 w-full rounded-xl hidden lg:block" />
+                  <Skeleton className="h-28 w-full rounded-xl" />
+                  <Skeleton className="h-28 w-full rounded-xl" />
+                  <Skeleton className="h-28 w-full rounded-xl hidden sm:block" />
+                  <Skeleton className="h-28 w-full rounded-xl hidden lg:block" />
                 </div>
             </div>
              <div className="space-y-6">
                 <Skeleton className="h-6 w-1/4" />
-                <div className="flex flex-wrap gap-2">
-                  <Skeleton className="h-8 w-24 rounded-full" />
-                  <Skeleton className="h-8 w-32 rounded-full" />
-                  <Skeleton className="h-8 w-28 rounded-full" />
+                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-72 w-full rounded-2xl" />)}
                 </div>
             </div>
         </div>
