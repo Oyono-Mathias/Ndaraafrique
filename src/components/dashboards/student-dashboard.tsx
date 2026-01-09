@@ -65,7 +65,7 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
                  <Carousel opts={{ align: "start", loop: false }} className="w-full">
                     <CarouselContent className="-ml-4">
                         {courses.map(course => (
-                            <CarouselItem key={course.id} className="pl-4 basis-3/4 sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CarouselItem key={course.id} className="pl-4 basis-[60%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                                 <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} />
                             </CarouselItem>
                         ))}
