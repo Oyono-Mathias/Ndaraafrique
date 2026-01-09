@@ -24,6 +24,7 @@ import {
   Search,
   Play,
   Briefcase,
+  Bell,
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
