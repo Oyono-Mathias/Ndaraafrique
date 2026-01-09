@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -436,7 +435,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className='dark flex flex-col min-h-screen bg-background-alt dark:bg-[#0f172a] tv:text-lg'>
       <AnnouncementBanner />
         <div className="flex flex-1">
-            <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden", isChatPage && !isMobile && "md:w-80 lg:w-96")}>
+            <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
               {renderSidebar()}
             </aside>
             <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>

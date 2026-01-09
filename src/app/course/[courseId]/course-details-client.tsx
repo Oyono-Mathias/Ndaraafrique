@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -480,7 +479,7 @@ export default function CourseDetailsClient() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto py-8 px-4">
+      <div className="container mx-auto max-w-7xl py-8 px-4">
         <div className="grid md:grid-cols-3 gap-8">
             <div className="md:col-span-2 space-y-6">
                 <Skeleton className="h-10 w-3/4" />
@@ -498,7 +497,7 @@ export default function CourseDetailsClient() {
 
   if (!course) {
     return (
-      <div className="container mx-auto py-12 text-center">
+      <div className="container mx-auto max-w-7xl py-12 text-center">
         <Info className="mx-auto h-12 w-12 text-destructive" />
         <h1 className="mt-4 text-2xl font-bold">Cours non trouvé</h1>
         <p className="text-muted-foreground">Le cours que vous cherchez n'existe pas ou a été retiré.</p>
@@ -565,7 +564,7 @@ export default function CourseDetailsClient() {
       />
       <div className="bg-background-alt dark:bg-[#0f172a]">
         <div className="bg-slate-800 text-white py-12">
-          <div className="container mx-auto px-4 lg:px-8">
+          <div className="container mx-auto max-w-7xl px-4 lg:px-8">
               <div className="text-sm mb-4">
                   <Link href="/dashboard" className="hover:text-slate-300">Accueil</Link>
                   <ChevronRight className="inline-block h-4 w-4 mx-1" />
@@ -601,7 +600,7 @@ export default function CourseDetailsClient() {
           </div>
         </div>
         
-        <div className="container mx-auto py-8 px-4 lg:px-8">
+        <div className="container mx-auto max-w-7xl py-8 px-4 lg:px-8">
           <div className="lg:grid lg:grid-cols-3 lg:gap-8">
               <main className="lg:col-span-2 space-y-12">
                 {!isEbook && (
@@ -679,16 +678,18 @@ export default function CourseDetailsClient() {
                            )}
                            {!isEnrolled && !isEbook && (
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                   <Button size="icon" variant="secondary" className="h-16 w-16 rounded-full" onClick={handleMainAction}><PlayCircle className="h-8 w-8 text-primary"/></Button>
+                                   <Button size="icon" variant="secondary" className="h-16 w-16 rounded-full tv:h-20 tv:w-20" onClick={handleMainAction}>
+                                     <PlayCircle className="h-8 w-8 text-primary tv:h-10 tv:w-10"/>
+                                   </Button>
                                 </div>
                             )}
                         </div>
                         <CardContent className="p-6 space-y-4">
-                            <h2 className="text-3xl font-bold text-center dark:text-white">
+                            <h2 className="text-3xl tv:text-4xl font-bold text-center dark:text-white">
                                 {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
                             </h2>
 
-                            <Button className={cn("w-full", isEnrolled && "bg-green-600 hover:bg-green-700")} size="lg" onClick={handleMainAction} disabled={isEnrolling}>
+                            <Button className={cn("w-full tv:text-lg tv:h-14", isEnrolled && "bg-green-600 hover:bg-green-700")} size="lg" onClick={handleMainAction} disabled={isEnrolling}>
                                 {isEnrolling ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
                                  isEbook ? <BookOpen className="mr-2 h-5 w-5" /> : 
                                  isEnrolled ? <Check className="mr-2 h-5 w-5" /> :
