@@ -76,9 +76,17 @@ export default function LoginPage() {
 
    useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/dashboard');
+      // If user is already logged in, check their role for redirection
+      const userDocRef = doc(db, "users", user.uid);
+      getDoc(userDocRef).then(userDoc => {
+        if (userDoc.exists() && userDoc.data()?.role === 'admin') {
+          router.push('/admin');
+        } else {
+          router.push('/dashboard');
+        }
+      });
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, db]);
 
   useEffect(() => {
     const fetchSettings = async () => {
