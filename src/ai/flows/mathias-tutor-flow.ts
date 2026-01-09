@@ -11,7 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { getFirestore, collection, getDocs, query, where } from 'firebase/firestore';
+import { getFirestore, collection, getDocs, query, where, Firestore } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 
 const MathiasTutorInputSchema = z.object({
@@ -26,7 +26,7 @@ const MathiasTutorOutputSchema = z.object({
 export type MathiasTutorOutput = z.infer<typeof MathiasTutorOutputSchema>;
 
 // Initialize outside the tool to reuse the connection
-let db: ReturnType<typeof getFirestore>;
+let db: Firestore;
 try {
   const services = initializeFirebase();
   db = services.firestore;

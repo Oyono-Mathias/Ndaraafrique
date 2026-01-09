@@ -18,7 +18,7 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { AdminTicketDetailsPage } from './[ticketId]/page';
+import TicketDetailsPage from './[ticketId]/page';
 
 interface SupportTicket {
     id: string;
@@ -180,7 +180,7 @@ export default function AdminSupportPage() {
                 
                  <div className="lg:col-span-2 hidden lg:block rounded-2xl shadow-sm bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
                     {activeTicketId ? (
-                        <AdminTicketDetailsPage key={activeTicketId} ticketId={activeTicketId} />
+                        <TicketDetailsPage key={activeTicketId} />
                     ) : (
                          <div className="h-full flex items-center justify-center text-slate-500 flex-col">
                             <Inbox className="h-16 w-16" />

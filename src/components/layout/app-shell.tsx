@@ -76,6 +76,7 @@ function getPageTitle(pathname: string): string {
     if (pathname.startsWith('/messages/')) return 'Messagerie';
     if (pathname.startsWith('/questions-reponses/')) return 'Questions & Réponses';
     if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur';
+    if (pathname.startsWith('/admin/support/')) return 'Détails du Ticket';
     return pageTitles[pathname] || 'FormaAfrique';
 }
 
