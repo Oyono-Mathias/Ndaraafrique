@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase, MapPin } from "lucide-react";
+import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase, MapPin, ArrowRight } from "lucide-react";
 import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,10 +30,12 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 
 const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => {
     const isEbook = course.contentType === 'ebook';
+    const isFree = course.price === 0;
+
     return (
         <div className="w-full">
             <Link href={`/course/${course.id}`} className="block group">
-                <div className="overflow-hidden bg-slate-800/50 border border-slate-700/80 shadow-lg transition-all duration-300 group-hover:shadow-primary/20 group-hover:-translate-y-1 rounded-2xl">
+                <div className="overflow-hidden bg-slate-800/50 border border-slate-700/80 shadow-lg transition-all duration-300 group-hover:shadow-primary/20 group-hover:-translate-y-1 rounded-2xl flex flex-col h-full">
                     <div className="relative">
                         <Image
                             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}
@@ -47,14 +49,18 @@ const CourseCard = ({ course, instructor }: { course: Course, instructor: Partia
                             {isEbook ? 'E-book' : 'Vidéo'}
                          </Badge>
                     </div>
-                    <div className="p-4 space-y-2">
+                    <div className="p-4 space-y-2 flex flex-col flex-grow">
                         <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{course.title}</h3>
-                        <p className="text-sm text-slate-400 truncate">Par {instructor?.fullName || 'un instructeur'}</p>
-                        <div className="flex justify-between items-center pt-1">
-                            <StarRating rating={4.7} reviewCount={123} />
-                            <p className="font-bold text-lg text-white">
-                              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
+                        <p className="text-xs text-slate-400 truncate">Par {instructor?.fullName || 'un instructeur'}</p>
+                        <StarRating rating={4.7} reviewCount={123} />
+                        <div className="flex-grow"></div>
+                        <div className="flex justify-between items-center pt-2">
+                             <p className="font-bold text-lg text-white">
+                              {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
                             </p>
+                             <Button variant="secondary" size="sm" className="bg-slate-700 hover:bg-slate-600 text-white h-8 text-xs">
+                                S'inscrire <ArrowRight className="h-3 w-3 ml-1.5" />
+                            </Button>
                         </div>
                     </div>
                 </div>
