@@ -8,7 +8,6 @@ import { useRole } from "@/context/RoleContext";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
-  LayoutDashboard,
   Book,
   Award,
   Bot,
@@ -18,8 +17,6 @@ import {
   Users,
   User,
   Heart,
-  CreditCard,
-  Bell,
   LogIn,
   Shield,
   LogOut,

@@ -149,8 +149,8 @@ const BottomNavBar = () => {
 
     const items = [
         { href: '/dashboard', icon: Star, label: 'Sélection' },
+        { href: '/search', icon: Search, label: 'Rechercher' },
         { href: '/mes-formations', icon: Play, label: 'Apprentissage' },
-        { href: '/messages', icon: MessageSquare, label: 'Messages', unreadCount: unreadMessages },
         { href: '/liste-de-souhaits', icon: Heart, label: 'Souhaits' },
         { href: '/account', icon: User, label: 'Compte' },
     ];
@@ -158,7 +158,7 @@ const BottomNavBar = () => {
     return (
         <div className="fixed bottom-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-sm border-t border-slate-200/80 flex md:hidden z-40">
             {items.map(item => (
-                <BottomNavItem key={item.href} {...item} isActive={pathname.startsWith(item.href)} />
+                <BottomNavItem key={item.href} {...item} isActive={pathname === item.href} />
             ))}
         </div>
     );
@@ -442,6 +442,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isChatPage = pathname.startsWith('/messages');
   const showBottomNav = (role === 'student') && isMobile;
+  const isStudentDashboard = role === 'student' && pathname === '/dashboard';
 
   // This handles the full-screen layout for chat pages on mobile.
   if (isMobile && pathname.startsWith('/messages/')) {
@@ -449,7 +450,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className={cn('flex flex-col min-h-screen bg-background-alt', role === 'instructor' ? 'dark' : '')}>
+    <div className={cn('flex flex-col min-h-screen', (role === 'instructor' || isStudentDashboard) ? 'dark bg-background-alt' : 'bg-background-alt' )}>
       <AnnouncementBanner />
         <div className="flex flex-1">
             <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
@@ -457,15 +458,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </aside>
             <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>
                {!isChatPage && !isFullScreenPage && (
-                <header className="flex h-14 items-center gap-4 border-b bg-card px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30">
+                <header className={cn(
+                    "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
+                    (role === 'instructor' || isStudentDashboard) ? 'bg-[#1e293b] border-slate-700' : 'bg-card border-border'
+                )}>
                     <Sheet>
                       <SheetTrigger asChild>
                         <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden")}>
-                          <PanelLeft className="text-foreground"/>
+                          <PanelLeft className={cn((role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-foreground')} />
                           <span className="sr-only">Toggle Menu</span>
                         </Button>
                       </SheetTrigger>
-                      <SheetContent side="left" className="p-0 w-64">
+                      <SheetContent side="left" className={cn("p-0 w-64", (role === 'instructor' || isStudentDashboard) ? 'dark' : '')}>
                          <SheetHeader>
                           <SheetTitle className="sr-only">Menu principal</SheetTitle>
                           <SheetDescription className="sr-only">Navigation pour le profil utilisateur.</SheetDescription>
@@ -474,13 +478,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </SheetContent>
                     </Sheet>
                     <div className="flex-1">
-                        <h1 className="text-lg font-semibold md:text-xl text-card-foreground">
+                        <h1 className={cn("text-lg font-semibold md:text-xl", (role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-card-foreground')}>
                             {isInstructorAndNotApproved ? "Approbation en attente" : getPageTitle(pathname)}
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
                         <LanguageSelector />
-                        <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="text-card-foreground relative">
+                        <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", (role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-card-foreground')}>
                             <Bell className="h-4 w-4" />
                             {hasUnreadNotifications && (
                                 <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
