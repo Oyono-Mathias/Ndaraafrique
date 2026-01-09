@@ -3,58 +3,22 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
+import { StudentCourseCard } from '@/components/cards/student-course-card';
 
 interface EnrolledCourse extends Course {
   progress: number;
   instructorName: string;
 }
-
-function CourseCard({ course }: { course: EnrolledCourse }) {
-  const isStarted = course.progress > 0;
-
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md">
-        <Link href={`/courses/${course.id}`} className="block">
-            <div className="flex items-start gap-4 p-4">
-                <Image
-                    src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
-                    alt={course.title}
-                    width={120}
-                    height={70}
-                    className="aspect-video object-cover rounded-lg shrink-0"
-                />
-                <div className="flex-1 overflow-hidden">
-                    <h3 className="font-bold text-sm text-slate-800 line-clamp-2 h-10">{course.title}</h3>
-                    <p className="text-xs text-slate-500 truncate">Par {course.instructorName}</p>
-                </div>
-            </div>
-            <div className="px-4 pb-4 space-y-2">
-                 <Progress value={course.progress} className="h-2" />
-                 <p className="text-xs text-slate-500">{course.progress}% terminé</p>
-                 <Button asChild size="sm" className="w-full font-bold">
-                    <Link href={`/courses/${course.id}`}>
-                        {isStarted ? 'Reprendre le cours' : 'Commencer le cours'}
-                    </Link>
-                </Button>
-            </div>
-        </Link>
-    </div>
-  );
-}
-
 
 export default function MyLearningPage() {
   const { formaAfriqueUser, isUserLoading } = useRole();
@@ -166,10 +130,10 @@ export default function MyLearningPage() {
 const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit à aucun cours." }: { courses: EnrolledCourse[], isLoading: boolean, emptyMessage?: string }) => {
     if (isLoading) {
         return (
-            <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-                 <Skeleton key={i} className="h-[150px] w-full rounded-xl bg-slate-200" />
-            ))}
+            <div className="flex flex-col gap-4">
+                {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-[150px] w-full rounded-xl bg-slate-200" />
+                ))}
             </div>
         );
     }
@@ -187,9 +151,9 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit �
     }
     
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="flex flex-col gap-4">
             {courses.map(course => (
-                <CourseCard key={course.id} course={course} />
+                <StudentCourseCard key={course.id} course={course} />
             ))}
         </div>
     );
