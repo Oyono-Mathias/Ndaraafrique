@@ -15,7 +15,8 @@ import {
   Settings,
   ShieldAlert,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Sparkles
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,7 @@ const adminMenu = [
     { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
     { href: "/admin/payments", icon: CreditCard, text: "Finances" },
+    { href: "/admin/marketing", icon: Sparkles, text: "Marketing IA" },
     { href: "/admin/support", icon: HelpCircle, text: "Support" },
     { href: "/messages", icon: MessageSquare, text: "Messagerie" },
     { href: "/admin/settings", icon: Settings, text: "Paramètres" },

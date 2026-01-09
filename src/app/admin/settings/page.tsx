@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { generateAnnouncement } from '@/ai/flows/generate-announcement-flow';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Settings, Percent, Building, Shield, FileText } from 'lucide-react';
+import { Loader2, Settings, Percent, Building, Shield, FileText, Sparkles } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 
 const generalSchema = z.object({
@@ -133,6 +134,7 @@ export default function AdminSettingsPage() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isAiLoading, setIsAiLoading] = useState(false);
     
     const settingsDocRef = doc(db, 'settings', 'global');
 
@@ -211,6 +213,27 @@ export default function AdminSettingsPage() {
     const onCommercialSubmit = (data: Pick<SettingsFormValues, 'commercial'>) => handleSave({ commercial: data.commercial }, 'Commercial');
     const onPlatformSubmit = (data: Pick<SettingsFormValues, 'platform'>) => handleSave({ platform: data.platform }, 'Plateforme');
     const onLegalSubmit = (data: Pick<SettingsFormValues, 'legal'>) => handleSave({ legal: data.legal }, 'Légal');
+    
+    const handleAiAssist = async () => {
+        setIsAiLoading(true);
+        try {
+            const result = await generateAnnouncement({ topic: "a special launch offer with a 50% discount" });
+            form.setValue('platform.announcementMessage', result.announcement, { shouldValidate: true });
+            toast({
+                title: 'Message généré par IA !',
+                description: 'La proposition a été insérée dans le champ ci-dessous.',
+            });
+        } catch (error) {
+            console.error("AI announcement generation failed:", error);
+            toast({
+                variant: 'destructive',
+                title: 'Erreur IA',
+                description: 'Impossible de générer le message.',
+            });
+        } finally {
+            setIsAiLoading(false);
+        }
+    };
 
     if (isLoading || isUserLoading) {
         return (
@@ -308,7 +331,16 @@ export default function AdminSettingsPage() {
                                             <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-700 p-3 shadow-sm bg-slate-800/50"><div className="space-y-0.5"><FormLabel className="text-slate-200">Inscriptions des Instructeurs</FormLabel><FormDescription className="text-slate-400">Autoriser ou non les nouvelles candidatures d'instructeurs.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                                         )} />
                                         <FormField control={form.control} name="platform.announcementMessage" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Message d'annonce global</FormLabel><FormControl><Textarea {...field} rows={2} className="bg-slate-700 border-slate-600 text-white"/></FormControl><FormDescription className="text-slate-400">Ce message s'affichera en bandeau sur tout le site (si le thème le supporte).</FormDescription><FormMessage /></FormItem>
+                                            <FormItem>
+                                                <FormLabel className="text-slate-300 flex justify-between items-center">
+                                                    <span>Message d'annonce global</span>
+                                                    <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading} className="bg-slate-800 border-slate-600 hover:bg-slate-700">
+                                                        {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                                                        Générer avec Mathias
+                                                    </Button>
+                                                </FormLabel>
+                                                <FormControl><Textarea {...field} rows={2} className="bg-slate-700 border-slate-600 text-white"/></FormControl><FormDescription className="text-slate-400">Ce message s'affichera en bandeau sur tout le site (si le thème le supporte).</FormDescription><FormMessage />
+                                            </FormItem>
                                         )} />
                                     </CardContent>
                                     <CardFooter className="justify-end">
@@ -347,7 +379,3 @@ export default function AdminSettingsPage() {
         </Form>
     );
 }
-
-    
-
-    
