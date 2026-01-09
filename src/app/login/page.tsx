@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -129,21 +130,40 @@ export default function LoginPage() {
   const handleAuthSuccess = async (user: any) => {
     const userDocRef = doc(db, "users", user.uid);
     const userDoc = await getDoc(userDocRef);
+    
     if (!userDoc.exists()) {
-        const newUserPayload: Omit<FormaAfriqueUser, 'availableRoles' | 'status'> = {
-            uid: user.uid,
-            email: user.email || '',
-            fullName: user.displayName || 'Nouvel utilisateur',
-            role: 'student',
-            isInstructorApproved: false,
-            createdAt: serverTimestamp() as any,
-            profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName}`,
-        };
-        await setDoc(userDocRef, newUserPayload);
+      const newUserPayload: Omit<FormaAfriqueUser, 'availableRoles' | 'status'> = {
+        uid: user.uid,
+        email: user.email || '',
+        fullName: user.displayName || 'Nouvel utilisateur',
+        role: 'student',
+        isInstructorApproved: false,
+        createdAt: serverTimestamp() as any,
+        profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName}`,
+      };
+      
+      // Use non-blocking setDoc with error handling
+      setDoc(userDocRef, newUserPayload)
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: newUserPayload,
+            }));
+            // We don't re-throw here because the global listener will handle it.
+            // But we should show a user-facing error.
+            toast({
+                variant: 'destructive',
+                title: t('registerErrorTitle'),
+                description: 'Impossible de créer le profil utilisateur dans la base de données.',
+            });
+        });
+
     }
+    
     toast({ title: t('loginSuccessTitle') });
     router.push('/dashboard');
-  }
+  };
 
   const handleGoogleSignIn = async () => {
     setIsGoogleLoading(true);
@@ -174,6 +194,7 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.fullName });
+      // Call handleAuthSuccess which now contains the non-blocking write
       await handleAuthSuccess(userCredential.user);
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
@@ -181,11 +202,8 @@ export default function LoginPage() {
          if (error.code === 'auth/email-already-in-use') {
            description = 'Cet email est déjà utilisé. Veuillez vous connecter.';
          } else {
-           errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `users/${auth.currentUser?.uid}`,
-                operation: 'create',
-            }));
-           description = 'Impossible de créer le compte.';
+           // Don't emit here, let the handleAuthSuccess do it if it's a DB error.
+           description = 'Impossible de créer le compte. ' + error.message;
          }
        }
        toast({ variant: 'destructive', title: t('registerErrorTitle'), description });
@@ -313,3 +331,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
