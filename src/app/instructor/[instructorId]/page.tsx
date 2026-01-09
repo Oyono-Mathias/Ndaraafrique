@@ -10,11 +10,14 @@ import Link from 'next/link';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Star, Globe, Twitter, Linkedin, Youtube, MessageCircle, Edit, ShieldAlert, Users, BookOpen } from 'lucide-react';
+import { Star, Globe, Twitter, Linkedin, Youtube, MessageCircle, Edit, ShieldAlert, Users, BookOpen, Share2, CheckBadgeIcon, Calendar } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 const StatCard = ({ value, label }: { value: string, label: string }) => (
     <div className="text-center">
@@ -125,6 +128,26 @@ export default function InstructorProfilePage() {
     
     const isOwner = currentUser?.uid === instructorId;
     const isLoading = instructorLoading || statsLoading;
+    
+    const handleShare = async () => {
+        const shareData = {
+            title: `Profil de ${instructor?.fullName} sur FormaAfrique`,
+            text: `Découvrez les cours de ${instructor?.fullName}, expert en ${instructor?.careerGoals?.currentRole || 'formation'}, sur FormaAfrique !`,
+            url: window.location.href,
+        };
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                // Fallback for desktop
+                await navigator.clipboard.writeText(window.location.href);
+                toast({ title: 'Lien copié !', description: 'Le lien du profil a été copié dans votre presse-papiers.' });
+            }
+        } catch (error) {
+            console.error('Error sharing:', error);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Le partage a échoué.' });
+        }
+    };
 
     if (isLoading) {
         return (
@@ -161,16 +184,46 @@ export default function InstructorProfilePage() {
                         <AvatarImage src={instructor.profilePictureURL} />
                         <AvatarFallback className="text-5xl bg-gray-800">{instructor.fullName?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
-                    <div className="text-center sm:text-left">
-                        <h1 className="text-4xl font-bold">{instructor.fullName || 'Formateur FormaAfrique'}</h1>
+                    <div className="text-center sm:text-left flex-grow">
+                        <div className="flex items-center justify-center sm:justify-start gap-2">
+                            <h1 className="text-4xl font-bold">{instructor.fullName || 'Formateur FormaAfrique'}</h1>
+                            {instructor.isInstructorApproved && (
+                                <TooltipProvider>
+                                    <Tooltip>
+                                        <TooltipTrigger>
+                                             <svg className="h-7 w-7 text-blue-400" viewBox="0 0 24 24" fill="currentColor">
+                                                <path fillRule="evenodd" d="M8.603 3.799A4.49 4.49 0 0112 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 013.498 1.307 4.491 4.491 0 011.307 3.497A4.49 4.49 0 0121.75 12a4.49 4.49 0 01-1.549 3.397 4.491 4.491 0 01-1.307 3.497 4.491 4.491 0 01-3.497 1.307A4.49 4.49 0 0112 21.75a4.49 4.49 0 01-3.397-1.549 4.49 4.49 0 01-3.498-1.306 4.491 4.491 0 01-1.307-3.498A4.49 4.49 0 012.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 011.307-3.497 4.49 4.49 0 013.497-1.307zm7.007 6.387a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clipRule="evenodd" />
+                                            </svg>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                            <p>Profil vérifié par l'équipe FormaAfrique</p>
+                                        </TooltipContent>
+                                    </Tooltip>
+                                </TooltipProvider>
+                            )}
+                        </div>
                         <p className="text-xl text-primary mt-1">{instructor.careerGoals?.currentRole || `Expert en ${courses?.[0]?.category || 'Tech'}`}</p>
+                        <div className="flex items-center justify-center sm:justify-start gap-4 text-xs text-slate-400 mt-2">
+                             {instructor.createdAt && (
+                                <div className="flex items-center gap-1.5">
+                                    <Calendar className="h-3 w-3" />
+                                    <span>Membre depuis {format(instructor.createdAt.toDate(), 'MMMM yyyy', { locale: fr })}</span>
+                                </div>
+                             )}
+                        </div>
                     </div>
-                    {isOwner && (
-                         <Button variant="outline" size="sm" onClick={() => router.push('/account')} className="text-white border-gray-600 hover:bg-gray-800 ml-auto hidden sm:flex">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Modifier le Profil
+                     <div className="flex items-center gap-2">
+                        {isOwner && (
+                             <Button variant="outline" size="sm" onClick={() => router.push('/account')} className="text-white border-gray-600 hover:bg-gray-800">
+                                <Edit className="mr-2 h-4 w-4" />
+                                Modifier
+                            </Button>
+                        )}
+                         <Button variant="outline" size="sm" onClick={handleShare} className="text-white border-gray-600 hover:bg-gray-800">
+                            <Share2 className="mr-2 h-4 w-4" />
+                            Partager
                         </Button>
-                    )}
+                    </div>
                 </header>
 
                 <section className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -231,3 +284,5 @@ export default function InstructorProfilePage() {
         </div>
     );
 }
+
+    
