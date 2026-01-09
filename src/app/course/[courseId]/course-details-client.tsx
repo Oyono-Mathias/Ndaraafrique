@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { CreditCard, Info, BookOpen, Gift, Loader2, Check, Star, AlertTriangle, MessageSquarePlus, MessageSquare, Video, PlayCircle, Lock, ChevronRight, ChevronDown, ChevronUp, Book, Globe, Clock, Users, Tv, FileText, ShoppingCart, Heart } from 'lucide-react';
+import { CreditCard, Info, BookOpen, Gift, Loader2, Check, Star, AlertTriangle, MessageSquarePlus, MessageSquare, Video, PlayCircle, Lock, ChevronRight, ChevronDown, ChevronUp, Book, Globe, Clock, Users, Tv, FileText, ShoppingCart, Heart, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge';
 import { sendEnrollmentEmails } from '@/lib/emails';
 import { verifyMonerooTransaction } from '@/app/actions/monerooActions';
 import Script from 'next/script';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
@@ -696,4 +697,3 @@ export default function CourseDetailsClient() {
     </>
   );
 }
-
