@@ -53,9 +53,6 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
                         origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app',
                         autoplay: 0,
                     }
-                },
-                attributes: {
-                    playsInline: true,
                 }
             }}
           />
