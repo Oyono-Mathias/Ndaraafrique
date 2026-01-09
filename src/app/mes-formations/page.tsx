@@ -26,36 +26,32 @@ function CourseCard({ course }: { course: EnrolledCourse }) {
   const isStarted = course.progress > 0;
 
   return (
-    <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-lg rounded-xl border-slate-200 bg-white">
-      <div className="flex flex-row items-center gap-4">
-        <Link href={`/courses/${course.id}`} className="block shrink-0">
-          <Image
-            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
-            alt={course.title}
-            width={150}
-            height={100}
-            className="aspect-[3/2] object-cover"
-          />
-        </Link>
-        <div className="flex-1 py-3 pr-4">
-            <Link href={`/courses/${course.id}`} className="block group">
-                <h3 className="font-bold text-sm text-slate-800 line-clamp-2 group-hover:text-primary transition-colors">{course.title}</h3>
-                <p className="text-xs text-slate-500 truncate">Par {course.instructorName}</p>
-            </Link>
-          <div className="mt-2 space-y-2">
-            <Progress value={course.progress} className="h-1" />
-            <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">{course.progress}%</span>
-                <Button asChild size="sm" variant="outline" className="text-xs h-7">
+    <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm transition-shadow hover:shadow-md">
+        <Link href={`/courses/${course.id}`} className="block">
+            <div className="flex items-start gap-4 p-4">
+                <Image
+                    src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
+                    alt={course.title}
+                    width={120}
+                    height={70}
+                    className="aspect-video object-cover rounded-lg shrink-0"
+                />
+                <div className="flex-1 overflow-hidden">
+                    <h3 className="font-bold text-sm text-slate-800 line-clamp-2 h-10">{course.title}</h3>
+                    <p className="text-xs text-slate-500 truncate">Par {course.instructorName}</p>
+                </div>
+            </div>
+            <div className="px-4 pb-4 space-y-2">
+                 <Progress value={course.progress} className="h-2" />
+                 <p className="text-xs text-slate-500">{course.progress}% terminÃ©</p>
+                 <Button asChild size="sm" className="w-full font-bold">
                     <Link href={`/courses/${course.id}`}>
-                        {isStarted ? 'Reprendre' : 'Commencer'}
+                        {isStarted ? 'Reprendre le cours' : 'Commencer le cours'}
                     </Link>
                 </Button>
             </div>
-          </div>
-        </div>
-      </div>
-    </Card>
+        </Link>
+    </div>
   );
 }
 
@@ -172,7 +168,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
         return (
             <div className="space-y-4">
             {[...Array(3)].map((_, i) => (
-                 <Skeleton key={i} className="h-[100px] w-full rounded-xl bg-slate-200" />
+                 <Skeleton key={i} className="h-[150px] w-full rounded-xl bg-slate-200" />
             ))}
             </div>
         );
@@ -191,12 +187,10 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
     }
     
     return (
-        <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {courses.map(course => (
                 <CourseCard key={course.id} course={course} />
             ))}
         </div>
     );
 };
-
-    
