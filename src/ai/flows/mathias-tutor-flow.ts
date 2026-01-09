@@ -12,7 +12,6 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import { adminDb } from '@/firebase/admin';
-import type { Firestore } from 'firebase-admin/firestore';
 
 const MathiasTutorInputSchema = z.object({
   query: z.string().describe('The student’s question or request for the AI tutor.'),

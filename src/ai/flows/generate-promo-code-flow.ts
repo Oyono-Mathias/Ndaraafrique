@@ -7,6 +7,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 import { adminDb } from '@/firebase/admin';
+import * as admin from 'firebase-admin';
 import { generateAnnouncement } from './generate-announcement-flow';
 
 
