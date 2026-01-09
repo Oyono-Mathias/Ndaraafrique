@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc, collection } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
@@ -93,20 +93,54 @@ export default function LoginPage() {
     };
     fetchSettings();
   }, [db]);
+  
+  const handleAuthSuccess = async (user: FirebaseUser) => {
+    const userDocRef = doc(db, "users", user.uid);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (userDoc.exists()) {
+        const userData = userDoc.data();
+        if (userData.role === 'admin') {
+            router.push('/admin');
+        } else {
+            router.push('/dashboard');
+        }
+    } else {
+      const newUserPayload: Omit<FormaAfriqueUser, 'availableRoles' | 'status'> = {
+        uid: user.uid,
+        email: user.email || '',
+        fullName: user.displayName || 'Nouvel utilisateur',
+        role: 'student',
+        isInstructorApproved: false,
+        createdAt: serverTimestamp() as any,
+        profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName}`,
+      };
+      
+      setDoc(userDocRef, newUserPayload)
+        .catch(error => {
+            errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: userDocRef.path,
+                operation: 'create',
+                requestResourceData: newUserPayload,
+            }));
+            toast({
+                variant: 'destructive',
+                title: t('registerErrorTitle'),
+                description: 'Impossible de créer le profil utilisateur dans la base de données.',
+            });
+        });
+       router.push('/dashboard');
+    }
+    
+    toast({ title: t('loginSuccessTitle') });
+  };
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     const auth = getAuth();
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({ title: t('loginSuccessTitle') });
-      const userDocRef = doc(db, 'users', userCredential.user.uid);
-      const userDoc = await getDoc(userDocRef);
-      if (userDoc.exists() && userDoc.data()?.role === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/dashboard');
-      }
+      await handleAuthSuccess(userCredential.user);
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
        if (error instanceof FirebaseError) {
@@ -127,44 +161,6 @@ export default function LoginPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-  
-  const handleAuthSuccess = async (user: any) => {
-    const userDocRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userDocRef);
-    
-    if (!userDoc.exists()) {
-      const newUserPayload: Omit<FormaAfriqueUser, 'availableRoles' | 'status'> = {
-        uid: user.uid,
-        email: user.email || '',
-        fullName: user.displayName || 'Nouvel utilisateur',
-        role: 'student',
-        isInstructorApproved: false,
-        createdAt: serverTimestamp() as any,
-        profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName}`,
-      };
-      
-      // Use non-blocking setDoc with error handling
-      setDoc(userDocRef, newUserPayload)
-        .catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'create',
-                requestResourceData: newUserPayload,
-            }));
-            // We don't re-throw here because the global listener will handle it.
-            // But we should show a user-facing error.
-            toast({
-                variant: 'destructive',
-                title: t('registerErrorTitle'),
-                description: 'Impossible de créer le profil utilisateur dans la base de données.',
-            });
-        });
-
-    }
-    
-    toast({ title: t('loginSuccessTitle') });
-    router.push('/dashboard');
   };
 
   const handleGoogleSignIn = async () => {
@@ -196,7 +192,6 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.fullName });
-      // Call handleAuthSuccess which now contains the non-blocking write
       await handleAuthSuccess(userCredential.user);
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
@@ -204,7 +199,6 @@ export default function LoginPage() {
          if (error.code === 'auth/email-already-in-use') {
            description = 'Cet email est déjà utilisé. Veuillez vous connecter.';
          } else {
-           // Don't emit here, let the handleAuthSuccess do it if it's a DB error.
            description = 'Impossible de créer le compte. ' + error.message;
          }
        }
