@@ -85,17 +85,19 @@ const InstructorRequestCard = ({ user, onApprove, onReject }: { user: FormaAfriq
             </Card>
 
             <Dialog open={isViewerOpen} onOpenChange={setIsViewerOpen}>
-                <DialogContent className="max-w-4xl min-h-[80vh] flex flex-col dark:bg-[#1e293b] dark:border-slate-700">
-                    <DialogHeader>
+                <DialogContent className="max-w-4xl h-[80vh] flex flex-col dark:bg-[#1e293b] dark:border-slate-700 p-0">
+                    <DialogHeader className="p-4 border-b dark:border-slate-700">
                         <DialogTitle className="dark:text-white">Justificatif pour {user.fullName}</DialogTitle>
                     </DialogHeader>
-                    <div className="flex-1 p-4 bg-muted dark:bg-slate-800 rounded-lg">
+                    <div className="flex-1 bg-muted dark:bg-slate-800">
                         {docUrl && (docUrl.toLowerCase().includes('.pdf') ? (
                            <div className="h-full w-full">
                              <PdfViewerClient fileUrl={docUrl} />
                            </div>
                         ) : (
-                            <Image src={docUrl} alt="Justificatif" layout="fill" objectFit="contain" />
+                           <div className="relative h-full w-full">
+                             <Image src={docUrl} alt="Justificatif" layout="fill" objectFit="contain" />
+                           </div>
                         ))}
                     </div>
                 </DialogContent>
