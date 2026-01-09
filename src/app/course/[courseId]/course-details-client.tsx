@@ -22,6 +22,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { Textarea } from '@/components/ui/textarea';
+import dynamic from 'next/dynamic';
 import {
   Accordion,
   AccordionContent,
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 
+const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 interface ReviewWithUser extends Review {
   reviewerName?: string;
@@ -57,7 +59,7 @@ const StarRating = ({ rating, size = 'md' }: { rating: number, size?: 'sm' | 'md
   );
 };
 
-const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnrolled: boolean }) => {
+const CourseCurriculum = ({ courseId, isEnrolled, onLessonClick, activeLessonId }: { courseId: string, isEnrolled: boolean, onLessonClick: (lesson: Lecture) => void, activeLessonId: string | null }) => {
     const db = getFirestore();
     const sectionsQuery = useMemoFirebase(() => query(collection(db, 'courses', courseId, 'sections'), orderBy('order')), [db, courseId]);
     const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
@@ -65,6 +67,12 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
     const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
     const [lecturesLoading, setLecturesLoading] = useState(true);
     const [openSectionId, setOpenSectionId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (sections && sections.length > 0 && !openSectionId) {
+            setOpenSectionId(sections[0].id);
+        }
+    }, [sections, openSectionId]);
 
     useEffect(() => {
         if (!sections || sectionsLoading) {
@@ -81,17 +89,25 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
 
         Promise.all(allLecturesPromises).then(lectureSnapshots => {
             const newLecturesMap = new Map<string, Lecture[]>();
+            let firstLesson: Lecture | null = null;
             lectureSnapshots.forEach((snapshot, index) => {
                 const sectionId = sections[index].id;
                 const lectures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture));
+                if (!firstLesson && lectures.length > 0 && (lectures[0].isFreePreview || isEnrolled)) {
+                    firstLesson = lectures[0];
+                }
                 newLecturesMap.set(sectionId, lectures);
             });
             setLecturesMap(newLecturesMap);
             setLecturesLoading(false);
+            if (firstLesson) {
+                onLessonClick(firstLesson);
+            }
         }).catch(err => {
             console.error("Error fetching lectures:", err);
             setLecturesLoading(false);
         });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sections, sectionsLoading, db, courseId]);
     
     const handleToggleSection = (sectionId: string) => {
@@ -127,17 +143,24 @@ const CourseCurriculum = ({ courseId, isEnrolled }: { courseId: string, isEnroll
                         {isOpen && (
                             <div className="px-6 pb-4 bg-slate-100 dark:bg-slate-900/50">
                                 {lecturesLoading ? <Skeleton className="h-10 w-full" /> : (
-                                    <ul className="space-y-2 pt-4">
+                                    <ul className="space-y-1 pt-4">
                                         {(lecturesMap.get(section.id) || []).map(lecture => {
                                             const canPreview = lecture.isFreePreview || isEnrolled;
+                                            const isActive = lecture.id === activeLessonId;
                                             return (
-                                                <li key={lecture.id} className="flex justify-between items-center text-sm p-2 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700/50">
-                                                    <div className="flex items-center">
-                                                        {canPreview ? <PlayCircle className="h-4 w-4 mr-2 text-primary" /> : <Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
-                                                        <span className="dark:text-slate-300">{lecture.title}</span>
-                                                        {lecture.isFreePreview && <Badge variant="secondary" className="ml-2">Aperçu</Badge>}
-                                                    </div>
-                                                    <span className="text-xs text-muted-foreground">{lecture.duration ? `${lecture.duration} min` : ''}</span>
+                                                <li key={lecture.id}>
+                                                  <button onClick={() => canPreview && onLessonClick(lecture)} disabled={!canPreview} className={cn("w-full text-left flex justify-between items-center text-sm p-2 rounded-md transition-colors", 
+                                                    isActive && "bg-primary/10 text-primary font-bold",
+                                                    canPreview && "hover:bg-slate-200 dark:hover:bg-slate-700/50",
+                                                    !canPreview && "cursor-not-allowed text-muted-foreground"
+                                                  )}>
+                                                      <div className="flex items-center">
+                                                          {canPreview ? <PlayCircle className="h-4 w-4 mr-2 text-primary" /> : <Lock className="h-4 w-4 mr-2 text-muted-foreground" />}
+                                                          <span className="dark:text-slate-300">{lecture.title}</span>
+                                                          {lecture.isFreePreview && !isEnrolled && <Badge variant="secondary" className="ml-2">Aperçu</Badge>}
+                                                      </div>
+                                                      <span className="text-xs text-muted-foreground">{lecture.duration ? `${lecture.duration} min` : ''}</span>
+                                                  </button>
                                                 </li>
                                             );
                                         })}
@@ -254,7 +277,7 @@ const ReviewsSection = ({ courseId }: { courseId: string }) => {
             </div>
         )}
 
-        {user && !hasReviewed && (
+        {user && !hasReviewed && isEnrolled && (
           <div className="pt-8">
              <h3 className="text-xl font-bold mb-4 dark:text-white">Laissez votre avis</h3>
              <ReviewForm courseId={courseId} userId={user.uid} onReviewSubmit={() => setHasReviewed(true)} />
@@ -358,6 +381,7 @@ export default function CourseDetailsClient() {
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [courseStats, setCourseStats] = useState({ totalDuration: 0, lessonCount: 0 });
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
 
   const courseRef = useMemoFirebase(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -499,8 +523,6 @@ export default function CourseDetailsClient() {
       priceCurrency: 'XOF',
       category: 'Paid',
     },
-    // This assumes you have a way to calculate average rating.
-    // Replace with actual data if available.
     aggregateRating: {
         '@type': 'AggregateRating',
         ratingValue: '4.7',
@@ -587,7 +609,7 @@ export default function CourseDetailsClient() {
 
                 <div className="space-y-6">
                   {isEbook ? <h2 className="text-2xl font-bold dark:text-white">Aperçu du livre</h2> : <h2 className="text-2xl font-bold dark:text-white">Programme du cours</h2>}
-                  {!isEbook && <CourseCurriculum courseId={courseId} isEnrolled={isEnrolled} />}
+                  {!isEbook && <CourseCurriculum courseId={courseId} isEnrolled={isEnrolled} onLessonClick={setActiveLesson} activeLessonId={activeLesson?.id || null} />}
 
                   <h2 className="text-2xl font-bold dark:text-white">Prérequis</h2>
                    <ul className="list-disc list-inside space-y-1 dark:text-slate-300">
@@ -623,28 +645,33 @@ export default function CourseDetailsClient() {
               <aside className="hidden lg:block mt-8 lg:mt-0">
                   <div className="sticky top-24">
                     <Card className="shadow-xl rounded-3xl dark:bg-[#1e293b] dark:border-slate-700">
-                        <div className="relative group">
-                            <Image 
-                                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
-                                alt={course.title}
-                                width={800}
-                                height={450}
-                                className="rounded-t-3xl aspect-video object-cover w-full"
-                            />
-                            {!isEbook && (
-                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button size="icon" variant="secondary" className="h-16 w-16 rounded-full"><PlayCircle className="h-8 w-8 text-primary"/></Button>
-                                 </div>
-                             )}
+                         <div className="relative group aspect-video bg-black rounded-t-3xl overflow-hidden">
+                           {activeLesson?.videoUrl ? (
+                               <ReactPlayer url={activeLesson.videoUrl} width="100%" height="100%" playing={true} controls={true} light={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`} />
+                           ) : (
+                                <Image 
+                                    src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
+                                    alt={course.title}
+                                    width={800}
+                                    height={450}
+                                    className="object-cover w-full h-full"
+                                />
+                           )}
+                           {!isEnrolled && !isEbook && (
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                   <Button size="icon" variant="secondary" className="h-16 w-16 rounded-full" onClick={handleMainAction}><PlayCircle className="h-8 w-8 text-primary"/></Button>
+                                </div>
+                            )}
                         </div>
                         <CardContent className="p-6 space-y-4">
                             <h2 className="text-3xl font-bold text-center dark:text-white">
                                 {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
                             </h2>
 
-                            <Button className="w-full" size="lg" onClick={handleMainAction} disabled={isEnrolling}>
+                            <Button className={cn("w-full", isEnrolled && "bg-green-600 hover:bg-green-700")} size="lg" onClick={handleMainAction} disabled={isEnrolling}>
                                 {isEnrolling ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : 
                                  isEbook ? <BookOpen className="mr-2 h-5 w-5" /> : 
+                                 isEnrolled ? <Check className="mr-2 h-5 w-5" /> :
                                  <CreditCard className="mr-2 h-5 w-5" />}
                                 {isEnrolling ? 'Traitement...' : getButtonText()}
                             </Button>
@@ -676,15 +703,15 @@ export default function CourseDetailsClient() {
               </aside>
               
                {/* Sticky footer for mobile */}
-              {!isEnrolled && (
-                   <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 border-t border-slate-200 dark:border-slate-700">
-                      <p className="font-bold text-xl mb-2 dark:text-white">{isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}</p>
-                      <Button className="w-full" size="lg" onClick={handleMainAction} disabled={isEnrolling}>
-                          {isEnrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                          {getButtonText()}
-                      </Button>
+              <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm p-4 border-t border-slate-200 dark:border-slate-700 z-50">
+                  <div className="flex justify-between items-center">
+                    <p className="font-bold text-xl dark:text-white">{isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}</p>
+                    <Button className={cn("w-auto", isEnrolled && "bg-green-600 hover:bg-green-700")} size="lg" onClick={handleMainAction} disabled={isEnrolling}>
+                        {isEnrolling && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {getButtonText()}
+                    </Button>
                   </div>
-              )}
+              </div>
           </div>
         </div>
       </div>

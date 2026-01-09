@@ -15,68 +15,19 @@ import { CheckCircle, Lock, PlayCircle, BookOpen, ArrowLeft, Loader2, FileText }
 import { cn } from '@/lib/utils';
 import type { Course, Section, Lecture, Enrollment } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
-import Plyr from 'plyr';
 import 'plyr/dist/plyr.css';
 import { useToast } from '@/hooks/use-toast';
 import dynamic from 'next/dynamic';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
+const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 const Worker = dynamic(() => import('@react-pdf-viewer/core').then(mod => mod.Worker), { ssr: false });
 const Viewer = dynamic(() => import('@react-pdf-viewer/core').then(mod => mod.Viewer), { ssr: false });
 
 
 const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () => void }) => {
-    const videoRef = useRef<HTMLVideoElement>(null);
-    const playerRef = useRef<Plyr | null>(null);
-
-    useEffect(() => {
-        if (videoRef.current) {
-            if (playerRef.current) {
-                playerRef.current.destroy();
-            }
-            playerRef.current = new Plyr(videoRef.current, {
-                // Options here
-            });
-             if (onEnded) {
-                playerRef.current.on('ended', onEnded);
-            }
-        }
-
-        return () => {
-            if (playerRef.current) {
-                playerRef.current.off('ended', onEnded);
-                playerRef.current.destroy();
-            }
-        };
-    }, [onEnded]);
-
-    useEffect(() => {
-        if (playerRef.current && videoUrl) {
-            try {
-                if (videoUrl.includes('youtube.com') || videoUrl.includes('youtu.be')) {
-                    const videoIdMatch = videoUrl.match(/(?:v=|\/)([\w-]{11})(?:\?|&|#|$)/);
-                    const videoId = videoIdMatch ? videoIdMatch[1] : null;
-                    
-                    if (videoId) {
-                        playerRef.current.source = {
-                            type: 'video',
-                            sources: [{ src: videoId, provider: 'youtube' }],
-                        };
-                    }
-                } else {
-                     playerRef.current.source = {
-                        type: 'video',
-                        sources: [{ src: videoUrl, type: 'video/mp4' }],
-                    };
-                }
-            } catch (e) {
-                console.error("Invalid video URL for Plyr:", videoUrl, e);
-            }
-        }
-    }, [videoUrl]);
     
-
     if (!videoUrl) {
         return (
             <div className="aspect-video w-full bg-slate-900 flex items-center justify-center rounded-lg">
@@ -87,7 +38,7 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
 
     return (
        <div className="aspect-video w-full bg-black rounded-lg overflow-hidden video-wrapper shadow-2xl">
-         <video ref={videoRef} className="w-full h-full" preload="none" playsInline controls></video>
+         <ReactPlayer url={videoUrl} onEnded={onEnded} width="100%" height="100%" controls playing />
        </div>
     );
 };
