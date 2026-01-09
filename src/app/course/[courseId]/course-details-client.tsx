@@ -176,7 +176,7 @@ const CourseCurriculum = ({ courseId, isEnrolled, onLessonClick, activeLessonId 
 };
 
 
-const ReviewsSection = ({ courseId }: { courseId: string }) => {
+const ReviewsSection = ({ courseId, isEnrolled }: { courseId: string, isEnrolled: boolean }) => {
   const db = getFirestore();
   const { user, isUserLoading } = useRole();
   const [hasReviewed, setHasReviewed] = useState(false);
@@ -638,7 +638,7 @@ export default function CourseDetailsClient() {
                   </div>
                 )}
                 
-                <ReviewsSection courseId={courseId} />
+                <ReviewsSection courseId={courseId} isEnrolled={isEnrolled} />
 
               </main>
 
