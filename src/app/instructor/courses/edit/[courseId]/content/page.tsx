@@ -36,12 +36,12 @@ const VideoPlayer = ({ videoUrl }: { videoUrl?: string }) => {
     const [error, setError] = useState(false);
     const cleanedUrl = videoUrl?.trim() || '';
 
-    if (!cleanedUrl || !ReactPlayer.canPlay(cleanedUrl)) {
+    if (!cleanedUrl) {
         return (
             <div className="aspect-video w-full bg-slate-900 flex flex-col items-center justify-center rounded-lg text-white p-4">
                 <AlertCircle className="h-8 w-8 mb-2" />
-                <p className="font-semibold">Format de lien non supporté ou vidéo privée.</p>
-                <p className="text-sm text-slate-400">Vérifiez que l'URL est correcte et que la vidéo est publique.</p>
+                <p className="font-semibold">Aucune URL de vidéo fournie.</p>
+                <p className="text-sm text-slate-400">Veuillez ajouter une URL pour prévisualiser la vidéo.</p>
             </div>
         );
     }
@@ -63,16 +63,14 @@ const VideoPlayer = ({ videoUrl }: { videoUrl?: string }) => {
                         origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app',
                         autoplay: 0,
                     }
-                },
-                attributes: {
-                    playsInline: true,
                 }
             }}
          />
          {error && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white p-4">
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center text-white p-4 text-center">
                  <AlertCircle className="h-8 w-8 mb-2" />
                 <p className="font-semibold">Impossible de charger cette vidéo.</p>
+                 <p className="text-sm text-slate-400">Vérifiez que l'URL est correcte et que la vidéo est publique.</p>
             </div>
          )}
        </div>

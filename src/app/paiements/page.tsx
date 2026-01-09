@@ -1,11 +1,10 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, doc, getDoc, serverTimestamp, setDoc, addDoc, collection, query, where, getDocs } from 'firebase/firestore';
-
+import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +12,8 @@ import { Loader2, ArrowLeft, Ticket } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import Image from 'next/image';
 import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { Input } from '@/components/ui/input';
-import { sendEnrollmentEmails } from '@/lib/emails';
+import { createMonerooPaymentLink } from '@/app/actions/monerooActions';
 
 interface PromoCode {
     id: string;
@@ -38,11 +36,12 @@ export default function PaiementsPage() {
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<PromoCode | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const discountedPrice = useMemo(() => {
     if (!course) return 0;
     if (appliedPromo) {
-        return course.price * (1 - appliedPromo.discountPercentage / 100);
+        return Math.max(0, course.price * (1 - appliedPromo.discountPercentage / 100));
     }
     return course.price;
   }, [course, appliedPromo]);
@@ -69,62 +68,36 @@ export default function PaiementsPage() {
     fetchCourse();
   }, [courseId, router, toast, db]);
 
+  const handlePayment = async () => {
+      if (!user || !course || !formaAfriqueUser) {
+          toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté pour acheter.' });
+          return;
+      }
+      setIsProcessing(true);
+      setErrorMessage('');
 
-  // Simulate payment processing and random outcome
-  const startPaymentProcess = async () => {
-    if (isUserLoading || isCourseLoading || !course || !user || !formaAfriqueUser) return;
-    
-    setIsProcessing(true);
-
-    try {
-        const paymentId = doc(collection(db, 'payments')).id;
-        await setDoc(doc(db, 'payments', paymentId), {
-            paymentId: paymentId,
-            userId: user.uid,
-            instructorId: course.instructorId,
-            courseId: course.id,
-            amount: discountedPrice,
-            currency: 'XOF',
-            date: serverTimestamp(),
-            status: 'Pending',
-            method: 'moneroo_simulation',
-            promoCode: appliedPromo?.code || null,
-        });
-
-        setTimeout(async () => {
-            const isSuccess = Math.random() > 0.1; // 90% chance of success
-            
-            if (isSuccess) {
-                const enrollmentId = `${user.uid}_${course.id}`;
-                const enrollmentRef = doc(db, 'enrollments', enrollmentId);
-                await setDoc(enrollmentRef, {
-                    studentId: user.uid,
-                    courseId: course.id,
-                    instructorId: course.instructorId,
-                    enrollmentDate: serverTimestamp(),
-                    progress: 0,
-                });
-                
-                // Fetch instructor details for email
-                const instructorRef = doc(db, 'users', course.instructorId);
-                const instructorSnap = await getDoc(instructorRef);
-                if(instructorSnap.exists()) {
-                    await sendEnrollmentEmails(formaAfriqueUser, course, instructorSnap.data() as FormaAfriqueUser);
-                }
-
-                router.push(`/payment/success?courseId=${course.id}`);
-            } else {
-                await updateDoc(doc(db, 'payments', paymentId), { status: 'Failed' });
-                router.push(`/payment/error?courseId=${course.id}`);
-            }
-            setIsProcessing(false);
-        }, 4000);
-
-    } catch (error) {
-        console.error("Error creating pending payment record: ", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'initier le paiement.' });
-        setIsProcessing(false);
-    }
+      const result = await createMonerooPaymentLink({
+          amount: discountedPrice,
+          currency: 'XOF',
+          description: `Achat du cours: ${course.title}`,
+          customer: {
+              email: formaAfriqueUser.email,
+              name: formaAfriqueUser.fullName,
+          },
+          metadata: {
+              userId: user.uid,
+              courseId: course.id,
+              courseTitle: course.title,
+              instructorId: course.instructorId,
+          }
+      });
+      
+      if (result.success && result.paymentLink) {
+          router.push(result.paymentLink);
+      } else {
+          setErrorMessage(result.error || 'Une erreur inconnue est survenue.');
+          setIsProcessing(false);
+      }
   };
   
   const handleApplyPromoCode = async () => {
@@ -204,9 +177,13 @@ export default function PaiementsPage() {
                 )}
             </div>
 
+             {errorMessage && (
+                <p className="text-sm font-medium text-destructive text-center">{errorMessage}</p>
+             )}
+
         </CardContent>
         <CardFooter className="flex-col gap-4">
-             <Button size="lg" className="w-full h-12 text-base" onClick={startPaymentProcess} disabled={isProcessing}>
+             <Button size="lg" className="w-full h-12 text-base" onClick={handlePayment} disabled={isProcessing}>
                  {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : `Payer ${discountedPrice.toLocaleString('fr-FR')} XOF`}
              </Button>
             <p className="text-xs text-center text-muted-foreground w-full">Vous serez redirigé vers notre partenaire de paiement sécurisé pour finaliser votre achat.</p>
