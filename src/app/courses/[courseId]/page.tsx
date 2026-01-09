@@ -37,8 +37,9 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
     }
 
     return (
-       <div className="aspect-video w-full bg-black rounded-lg overflow-hidden video-wrapper shadow-2xl">
+       <div className="aspect-video w-full bg-black rounded-lg overflow-hidden video-wrapper shadow-2xl min-h-[200px]">
          <ReactPlayer 
+            key={videoUrl}
             url={videoUrl} 
             onEnded={onEnded} 
             width="100%" 
@@ -46,6 +47,13 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
             controls 
             playing
             playsinline
+            config={{
+                youtube: {
+                    playerVars: { 
+                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app'
+                    }
+                }
+            }}
           />
        </div>
     );

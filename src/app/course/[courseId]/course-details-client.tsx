@@ -544,6 +544,14 @@ export default function CourseDetailsClient() {
     else if(isFree) handleFreeEnrollment();
     else handlePurchase();
   }
+  
+  const playerConfig = {
+    youtube: {
+        playerVars: { 
+            origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app'
+        }
+    }
+  };
 
   return (
     <>
@@ -645,16 +653,18 @@ export default function CourseDetailsClient() {
               <aside className="hidden lg:block mt-8 lg:mt-0">
                   <div className="sticky top-24">
                     <Card className="shadow-xl rounded-3xl dark:bg-[#1e293b] dark:border-slate-700">
-                         <div className="relative group aspect-video w-full bg-black rounded-t-3xl overflow-hidden">
+                         <div className="relative group aspect-video w-full bg-black rounded-t-3xl overflow-hidden min-h-[200px]">
                            {activeLesson?.videoUrl ? (
-                               <ReactPlayer 
+                               <ReactPlayer
+                                  key={activeLesson.videoUrl} 
                                   url={activeLesson.videoUrl} 
                                   width="100%" 
                                   height="100%" 
                                   playing={true} 
                                   controls={true} 
                                   playsinline={true}
-                                  light={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`} 
+                                  light={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
+                                  config={playerConfig}
                                 />
                            ) : (
                                 <Image 
