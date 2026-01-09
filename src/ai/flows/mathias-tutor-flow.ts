@@ -10,9 +10,9 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
-import { getFirestore, collection, getDocs, query, where, Firestore } from 'firebase/firestore';
-import { initializeFirebase } from '@/firebase';
+import {z} from 'zod';
+import { adminDb } from '@/firebase/admin';
+import type { Firestore } from 'firebase-admin/firestore';
 
 const MathiasTutorInputSchema = z.object({
   query: z.string().describe('The student’s question or request for the AI tutor.'),
@@ -25,16 +25,6 @@ const MathiasTutorOutputSchema = z.object({
 });
 export type MathiasTutorOutput = z.infer<typeof MathiasTutorOutputSchema>;
 
-// Initialize outside the tool to reuse the connection
-let db: Firestore;
-try {
-  const services = initializeFirebase();
-  db = services.firestore;
-} catch (e) {
-  console.error("Failed to initialize Firebase for AI flow", e);
-}
-
-
 const getCourseCatalog = ai.defineTool(
     {
         name: 'getCourseCatalog',
@@ -46,14 +36,14 @@ const getCourseCatalog = ai.defineTool(
         })),
     },
     async () => {
-        if (!db) {
+        if (!adminDb) {
             console.error("Firestore is not initialized.");
             return [];
         }
         console.log('Fetching course catalog from Firestore...');
-        const coursesCol = collection(db, 'courses');
-        const q = query(coursesCol, where('status', '==', 'Published'));
-        const courseSnapshot = await getDocs(q);
+        const coursesCol = adminDb.collection('courses');
+        const q = coursesCol.where('status', '==', 'Published');
+        const courseSnapshot = await q.get();
         const courseList = courseSnapshot.docs.map(doc => {
             const data = doc.data();
             return {

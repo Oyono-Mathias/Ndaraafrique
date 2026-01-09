@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A Genkit flow that uses a tool to create promo codes in Firestore.
@@ -5,7 +6,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
-import { addDoc, collection, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { adminDb } from '@/firebase/admin';
 import { generateAnnouncement } from './generate-announcement-flow';
 
@@ -35,13 +35,13 @@ const createPromoCode = ai.defineTool(
         code: input.code.toUpperCase(),
         discountPercentage: input.discountPercentage,
         isActive: input.isActive,
-        createdAt: serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
       };
       if (input.expiresAt) {
-        promoCodeData.expiresAt = Timestamp.fromDate(new Date(input.expiresAt));
+        promoCodeData.expiresAt = admin.firestore.Timestamp.fromDate(new Date(input.expiresAt));
       }
 
-      await addDoc(collection(adminDb, 'promoCodes'), promoCodeData);
+      await adminDb.collection('promoCodes').add(promoCodeData);
       
       return { success: true, code: input.code };
     } catch (error) {
