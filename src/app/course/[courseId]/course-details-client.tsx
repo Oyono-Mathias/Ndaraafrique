@@ -706,7 +706,7 @@ export default function CourseDetailsClient() {
       </div>
 
        {/* --- Mobile Sticky Footer --- */}
-       <div className="sticky bottom-0 left-0 right-0 lg:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-50 space-y-2">
+       <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-50 space-y-2">
            <div className="flex items-baseline gap-2 justify-center">
                  <h3 className="text-2xl font-bold text-white">
                     {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
