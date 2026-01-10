@@ -19,12 +19,14 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2 } from 'lucide-react';
+import { Loader2, MapPin } from 'lucide-react';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
+import { africanCountries, Country } from '@/lib/countries';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Schemas for form validation
 const loginSchema = z.object({
@@ -48,7 +50,6 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-
 export default function LoginPage() {
   const { t } = useTranslation();
   const searchParams = useSearchParams();
@@ -58,6 +59,10 @@ export default function LoginPage() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [siteName, setSiteName] = useState('FormaAfrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [loginBackground, setLoginBackground] = useState<string | null>(null);
+  const [detectedCountry, setDetectedCountry] = useState<{name: string; code: string; flag: string} | null>(null);
+  const [countryError, setCountryError] = useState(false);
+  
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
@@ -80,19 +85,32 @@ export default function LoginPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    const fetchSettings = async () => {
+    const fetchSettingsAndGeo = async () => {
+        // Fetch settings
         const settingsRef = doc(db, 'settings', 'global');
         const settingsSnap = await getDoc(settingsRef);
         if (settingsSnap.exists()) {
             const settingsData = settingsSnap.data()?.general;
             if (settingsData?.logoUrl) setLogoUrl(settingsData.logoUrl);
             if (settingsData?.siteName) setSiteName(settingsData.siteName);
+            if (settingsData?.loginBackgroundImage) setLoginBackground(settingsData.loginBackgroundImage);
+        }
+        
+        // Fetch geo-location
+        try {
+            const response = await fetch('https://ipapi.co/json/');
+            if (!response.ok) throw new Error('Failed to fetch geo data');
+            const data = await response.json();
+            setDetectedCountry({ name: data.country_name, code: data.country_code, flag: data.country_calling_code });
+        } catch (error) {
+            console.error("Geolocation failed:", error);
+            setCountryError(true);
         }
     };
-    fetchSettings();
+    fetchSettingsAndGeo();
   }, [db]);
   
-  const handleAuthSuccess = async (user: FirebaseUser, isNewUser: boolean = false) => {
+  const handleAuthSuccess = async (user: FirebaseUser, isNewUser: boolean = false, registrationData?: z.infer<typeof registerSchema>) => {
     const userDocRef = doc(db, "users", user.uid);
     let userData;
 
@@ -108,14 +126,16 @@ export default function LoginPage() {
             router.push('/dashboard');
         }
     } else {
-      const newUserPayload: Omit<FormaAfriqueUser, 'availableRoles' | 'status'> = {
+      const newUserPayload: Partial<FormaAfriqueUser> = {
         uid: user.uid,
-        email: user.email || '',
-        fullName: user.displayName || 'Nouvel utilisateur',
+        email: user.email || registrationData?.email || '',
+        fullName: user.displayName || registrationData?.fullName || 'Nouvel utilisateur',
         role: 'student',
         isInstructorApproved: false,
         createdAt: serverTimestamp() as any,
-        profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName}`,
+        profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName || registrationData?.fullName}`,
+        country: detectedCountry?.name,
+        countryCode: detectedCountry?.code.toLowerCase()
       };
       
       setDoc(userDocRef, newUserPayload)
@@ -194,7 +214,7 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.fullName });
-      await handleAuthSuccess(userCredential.user, true);
+      await handleAuthSuccess(userCredential.user, true, values);
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
        if (error instanceof FirebaseError) {
@@ -209,6 +229,10 @@ export default function LoginPage() {
       setIsLoading(false);
     }
   };
+
+  const containerStyle = loginBackground
+    ? { backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), url('${loginBackground}')`, backgroundSize: 'cover', backgroundPosition: 'center' }
+    : {};
   
   if (isUserLoading || user) {
     return (
@@ -219,24 +243,18 @@ export default function LoginPage() {
   }
 
   return (
-     <div className="auth-page-container grid grid-cols-1 md:grid-cols-2">
-        <div className="hidden md:flex flex-col items-center justify-center p-12 bg-slate-900 text-white relative overflow-hidden">
-            <div className="absolute inset-0 bg-grid-slate-700/40 [mask-image:linear-gradient(to_bottom,white_5%,transparent_80%)]"></div>
-            <div className="relative z-10 text-center">
-                {logoUrl && <Image src={logoUrl} alt={siteName} width={64} height={64} className="mb-4 mx-auto rounded-xl" />}
-                <h1 className="text-3xl font-bold">{t('loginWelcomeTitle', { appName: siteName })}</h1>
-                <p className="mt-2 text-lg text-slate-300">{t('loginWelcomeSubtitle')}</p>
-            </div>
-        </div>
-        <div className="flex items-center justify-center p-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-sm">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
-                <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
-            </TabsList>
-            <Card className="auth-card">
+     <div className="auth-page-container" style={containerStyle}>
+        <div className="min-h-screen w-full flex items-center justify-center p-4">
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
+            <Card className="auth-card bg-card/80 backdrop-blur-sm border-white/10 text-card-foreground">
+                <TabsList className="grid w-full grid-cols-2 bg-white/5 border-white/10 m-2">
+                    <TabsTrigger value="login" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-300">{t('loginButton')}</TabsTrigger>
+                    <TabsTrigger value="register" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-300">{t('registerButton')}</TabsTrigger>
+                </TabsList>
+
                 <TabsContent value="login" className="m-0">
                 <CardHeader className="items-center pb-4">
+                    {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
                     <CardTitle className="text-2xl font-bold">{t('loginTitle')}</CardTitle>
                     <CardDescription>{t('loginDescription')}</CardDescription>
                 </CardHeader>
@@ -244,16 +262,16 @@ export default function LoginPage() {
                     <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                         <FormField control={loginForm.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="form-label-white">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={loginForm.control} name="password" render={({ field }) => (
-                        <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="h-10" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="form-label-white">{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <div className="flex items-center justify-between">
                             <FormField control={loginForm.control} name="rememberMe" render={({ field }) => (
                                 <FormItem className="flex flex-row items-center space-x-2 space-y-0">
                                     <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="rememberMe" /></FormControl>
-                                    <FormLabel htmlFor="rememberMe" className="text-sm text-slate-500 font-normal">{t('rememberMeLabel')}</FormLabel>
+                                    <FormLabel htmlFor="rememberMe" className="text-sm font-normal">{t('rememberMeLabel')}</FormLabel>
                                 </FormItem>
                             )} />
                             <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('forgotPasswordLink')}</Link>
@@ -264,7 +282,7 @@ export default function LoginPage() {
                         {t('loginButton')}
                         </Button>
                         
-                        <Button variant="outline" type="button" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                             {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                             Continuer avec Google
                         </Button>
@@ -272,7 +290,7 @@ export default function LoginPage() {
                     </Form>
                 </CardContent>
                 <CardContent className="p-4 pt-0 text-center text-sm">
-                    <p className="text-slate-500">
+                    <p>
                         {t('noAccountPrompt')}{' '}
                         <button onClick={() => setActiveTab('register')} className="font-semibold text-primary hover:underline">{t('registerLink')}</button>
                     </p>
@@ -288,19 +306,56 @@ export default function LoginPage() {
                     <Form {...registerForm}>
                         <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
                         <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                            <FormItem><FormLabel>{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel className="form-label-white">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={registerForm.control} name="email" render={({ field }) => (
-                            <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel className="form-label-white">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={registerForm.control} name="password" render={({ field }) => (
-                            <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="h-10" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel className="form-label-white">{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
                         )} />
-                        <Button type="submit" className="w-full h-10 text-base !mt-5" disabled={isLoading}>
+
+                        {countryError ? (
+                            <FormItem>
+                                <FormLabel className="form-label-white">Pays</FormLabel>
+                                <Select onValueChange={(value) => {
+                                    const country = africanCountries.find(c => c.code === value);
+                                    if(country) setDetectedCountry({name: country.name, code: country.code, flag: country.prefix});
+                                }}>
+                                    <FormControl>
+                                        <SelectTrigger className="auth-input">
+                                            <SelectValue placeholder="Sélectionnez votre pays" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        {africanCountries.map(c => (
+                                            <SelectItem key={c.code} value={c.code}>
+                                                <div className="flex items-center gap-2">
+                                                    <span>{c.emoji}</span>
+                                                    <span>{c.name}</span>
+                                                </div>
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </FormItem>
+                        ) : detectedCountry ? (
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-white/10 text-sm">
+                                <MapPin className="h-4 w-4" />
+                                <span>Pays détecté : {detectedCountry.name}</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-white/10 text-sm">
+                               <Loader2 className="h-4 w-4 animate-spin"/>
+                               <span>Détection du pays...</span>
+                            </div>
+                        )}
+
+                        <Button type="submit" className="w-full h-10 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {t('createAccountButton')}
                         </Button>
-                        <Button variant="outline" type="button" className="w-full h-10" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                             {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                             Continuer avec Google
                         </Button>
@@ -308,7 +363,7 @@ export default function LoginPage() {
                     </Form>
                 </CardContent>
                 <CardContent className="p-4 pt-0 text-center text-sm">
-                    <p className="text-slate-500">
+                    <p>
                         {t('alreadyAccountPrompt')}{' '}
                         <button onClick={() => setActiveTab('login')} className="font-semibold text-primary hover:underline">{t('loginLink')}</button>
                     </p>

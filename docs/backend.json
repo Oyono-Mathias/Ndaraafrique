@@ -109,6 +109,14 @@
                 "interestDomain": { "type": "string" },
                 "mainGoal": { "type": "string" }
             }
+        },
+        "country": {
+          "type": "string",
+          "description": "The country of the user, detected at signup."
+        },
+        "countryCode": {
+          "type": "string",
+          "description": "The ISO 3166-1 alpha-2 country code."
         }
       },
       "required": [
