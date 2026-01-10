@@ -311,6 +311,7 @@ export default function CourseDetailsClient() {
                 instructorId: course.instructorId,
                 enrollmentDate: serverTimestamp(),
                 progress: 0,
+                priceAtEnrollment: course.price,
             };
             
             await setDoc(enrollmentRef, enrollmentPayload);
@@ -424,6 +425,7 @@ export default function CourseDetailsClient() {
             instructorId: course.instructorId,
             enrollmentDate: serverTimestamp(),
             progress: 0,
+            priceAtEnrollment: 0,
         };
         
         await setDoc(enrollmentRef, enrollmentPayload);

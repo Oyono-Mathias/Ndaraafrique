@@ -56,6 +56,7 @@ export interface Course {
     ebookUrl?: string;
     language?: string;
     participantsCount?: number;
+    previewVideoUrl?: string; // Added for course preview
 }
 
 export interface Enrollment {
@@ -65,6 +66,7 @@ export interface Enrollment {
     instructorId: string;
     enrollmentDate: Timestamp;
     progress: number;
+    priceAtEnrollment: number; // Price when the user enrolled
     completedLessons?: string[];
     lastWatchedLesson?: string;
 }

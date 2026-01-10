@@ -52,6 +52,7 @@ function PaymentPageContent() {
                     instructorId: course.instructorId,
                     enrollmentDate: serverTimestamp(),
                     progress: 0,
+                    priceAtEnrollment: course.price,
                 });
 
                 await setDoc(doc(db, 'payments', data.transaction_id), {

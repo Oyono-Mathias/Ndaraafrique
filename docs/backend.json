@@ -264,6 +264,10 @@
         "progress": {
           "type": "number",
           "description": "Percentage of the course completed by the student."
+        },
+        "priceAtEnrollment": {
+          "type": "number",
+          "description": "The price of the course at the time of enrollment (0 if free)."
         }
       },
       "required": [
@@ -272,7 +276,8 @@
         "courseId",
         "instructorId",
         "enrollmentDate",
-        "progress"
+        "progress",
+        "priceAtEnrollment"
       ]
     },
     "Payment": {
@@ -679,5 +684,3 @@
     }
   }
 }
-
-    

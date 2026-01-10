@@ -240,17 +240,32 @@ export default function CoursePlayerPage() {
 
     const isLoading = courseLoading || isUserLoading || enrollmentLoading || lecturesLoading;
 
-    // Redirect if not enrolled
+    // Redirect if not enrolled or if free enrollment needs to become paid
     useEffect(() => {
-        if (!isLoading && !isEnrolled) {
-            toast({
-                title: "Accès refusé",
-                description: "Vous devez être inscrit à ce cours.",
-                variant: "destructive"
-            });
-            router.push(`/course/${courseId}`);
+        if (!isLoading && course) {
+            // Not enrolled at all
+            if (!isEnrolled) {
+                 toast({
+                    title: "Accès refusé",
+                    description: "Vous devez être inscrit à ce cours.",
+                    variant: "destructive"
+                });
+                router.push(`/course/${courseId}`);
+                return;
+            }
+            
+            // Enrolled but course became paid
+            if (isEnrolled && course.price > 0 && enrollment.priceAtEnrollment === 0) {
+                toast({
+                    title: "Accès mis à jour",
+                    description: "Ce cours est maintenant payant. Veuillez l'acheter pour continuer.",
+                    variant: "destructive"
+                });
+                router.push(`/course/${courseId}`);
+                return;
+            }
         }
-    }, [isLoading, isEnrolled, courseId, router, toast]);
+    }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast]);
 
     const handleLessonCompletion = async () => {
         if (!enrollment || !activeLesson) return;
@@ -372,4 +387,3 @@ export default function CoursePlayerPage() {
         </div>
     );
 }
-
