@@ -119,8 +119,13 @@ service cloud.firestore {
     // --- Règles pour 'reviews' ---
      match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isStudentEnrolled(request.resource.data.courseId);
       allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId)); 
+      allow list: if isSignedIn() && 
+                   request.query.where.size() > 0 && (
+                     ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid) ||
+                     ('courseId' in request.query.where)
+                   );
     }
 
      // --- Règles pour 'payments' ---
@@ -188,5 +193,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

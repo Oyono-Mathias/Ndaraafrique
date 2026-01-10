@@ -67,25 +67,43 @@ export default function ReviewsPage() {
 
     setIsLoading(true);
 
-    const reviewsQuery = query(
-        collection(db, 'reviews'),
-        where('instructorId', '==', formaAfriqueUser.uid),
-        orderBy('createdAt', 'desc')
-    );
+    const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', formaAfriqueUser.uid));
 
-    const unsubscribeReviews = onSnapshot(reviewsQuery, async (reviewSnapshot) => {
-        const reviewsData = reviewSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+    const unsubscribeCourses = onSnapshot(coursesQuery, async (coursesSnapshot) => {
+        if (coursesSnapshot.empty) {
+            setReviews([]);
+            setIsLoading(false);
+            return;
+        }
+
+        const courseIds = coursesSnapshot.docs.map(doc => doc.id);
+        const coursesMap = new Map(coursesSnapshot.docs.map(doc => [doc.id, doc.data() as Course]));
+
+        // Firestore 'in' query supports up to 30 elements. We need to batch if there are more.
+        const courseIdChunks: string[][] = [];
+        for (let i = 0; i < courseIds.length; i += 30) {
+            courseIdChunks.push(courseIds.slice(i, i + 30));
+        }
+
+        const allReviews: Review[] = [];
         
-        if (reviewsData.length === 0) {
+        for (const chunk of courseIdChunks) {
+             if (chunk.length === 0) continue;
+            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk), orderBy('createdAt', 'desc'));
+            const reviewSnapshot = await getDocs(reviewsQuery);
+            reviewSnapshot.forEach(doc => {
+                allReviews.push({ id: doc.id, ...doc.data() } as Review);
+            });
+        }
+        
+        if (allReviews.length === 0) {
              setReviews([]);
              setIsLoading(false);
              return;
         }
 
-        // Fetch user and course details
-        const userIds = [...new Set(reviewsData.map(r => r.userId))];
-        const courseIds = [...new Set(reviewsData.map(r => r.courseId))];
-
+        // Fetch user details for the reviews
+        const userIds = [...new Set(allReviews.map(r => r.userId))];
         const usersMap = new Map();
         if (userIds.length > 0) {
             const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
@@ -93,15 +111,8 @@ export default function ReviewsPage() {
             userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
         }
 
-        const coursesMap = new Map();
-        if (courseIds.length > 0) {
-            const coursesQuery = query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 30)));
-            const courseSnapshots = await getDocs(coursesQuery);
-            courseSnapshots.forEach(doc => coursesMap.set(doc.id, doc.data()));
-        }
-
         // Combine all data
-        const populatedReviews = reviewsData.map(review => {
+        const populatedReviews = allReviews.map(review => {
             const course = coursesMap.get(review.courseId);
             const user = usersMap.get(review.userId);
             return {
@@ -112,15 +123,16 @@ export default function ReviewsPage() {
             };
         });
         
-        setReviews(populatedReviews);
+        setReviews(populatedReviews.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
         setIsLoading(false);
+
     }, (error) => {
-        console.error("Error fetching reviews:", error);
+        console.error("Error fetching courses for reviews:", error);
         setIsLoading(false);
     });
 
     return () => {
-      unsubscribeReviews();
+      unsubscribeCourses();
     };
 
   }, [formaAfriqueUser, isUserLoading, db]);
