@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -130,7 +131,7 @@ export default function LoginPage() {
     if (!userData) {
       const newUserPayload: Partial<FormaAfriqueUser> = {
         uid: firebaseUser.uid,
-        email: firebaseUser.email || registrationData?.email || '',
+        email: firebaseUser.email || (registrationData && 'email' in registrationData ? registrationData.email : '') || '',
         fullName: firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber || 'Nouvel utilisateur',
         role: 'student', isInstructorApproved: false, createdAt: serverTimestamp() as any,
         profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber || 'A')}`,
@@ -249,7 +250,7 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center justify-center mb-6 text-center">
               {logoUrl ? <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" /> : 
-                <div className="flex items-center gap-2 text-2xl font-bold text-secondary" style={{color: "hsl(var(--secondary))"}}><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
+                <div className="flex items-center gap-2 text-2xl font-bold" style={{color: "hsl(var(--secondary))"}}><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
               <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
             </div>
             
