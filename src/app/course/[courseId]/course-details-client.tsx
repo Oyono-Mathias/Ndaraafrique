@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, addDoc, orderBy, DocumentData, QuerySnapshot, getDoc } from 'firebase/firestore';
+import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, addDoc, orderBy, DocumentData, QuerySnapshot, getDoc, deleteDoc } from 'firebase/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -288,6 +288,10 @@ export default function CourseDetailsClient() {
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
   const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0, [enrollments]);
   
+  const wishlistRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'users', user.uid, 'wishlist', courseId) : null, [user, courseId, db]);
+  const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
+  const isInWishlist = !!wishlistItem;
+
   const handlePreviewClick = (lesson: Lecture) => {
     setPreviewLesson(lesson);
     setIsPreviewModalOpen(true);
@@ -371,6 +375,28 @@ export default function CourseDetailsClient() {
         });
     }
   };
+  
+    const handleToggleWishlist = async () => {
+        if (!user || !courseId) {
+            router.push(`/login?redirect=/course/${courseId}`);
+            return;
+        }
+
+        const wishlistDocRef = doc(db, 'users', user.uid, 'wishlist', courseId);
+        
+        try {
+            if (isInWishlist) {
+                await deleteDoc(wishlistDocRef);
+                toast({ title: "Cours retiré de votre liste de souhaits." });
+            } else {
+                await setDoc(wishlistDocRef, { courseId: courseId, addedAt: serverTimestamp() });
+                toast({ title: "Cours ajouté à votre liste de souhaits !" });
+            }
+        } catch (error) {
+            console.error("Wishlist toggle error:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier la liste de souhaits." });
+        }
+    };
 
   useEffect(() => {
     if (!courseId || course?.contentType === 'ebook') return;
@@ -461,7 +487,7 @@ export default function CourseDetailsClient() {
     }
   };
 
-  const isLoading = courseLoading || instructorLoading || enrollmentsLoading || isUserLoading;
+  const isLoading = courseLoading || instructorLoading || enrollmentsLoading || isUserLoading || isWishlistLoading;
 
   if (isLoading) {
     return (
@@ -675,8 +701,8 @@ export default function CourseDetailsClient() {
                                 <Button variant="outline" className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white">
                                     <ShoppingCart className="h-4 w-4 mr-2" /> Ajouter au panier
                                 </Button>
-                                <Button variant="outline" className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white">
-                                    <Heart className="h-4 w-4 mr-2" /> Liste de souhaits
+                                <Button variant="outline" className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white" onClick={handleToggleWishlist}>
+                                    <Heart className={cn("h-4 w-4 mr-2", isInWishlist && "fill-red-500 text-red-500")} /> {isInWishlist ? 'Dans la liste' : 'Liste de souhaits'}
                                 </Button>
                              </div>
 
@@ -724,8 +750,8 @@ export default function CourseDetailsClient() {
                   {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
                   {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
                 </Button>
-                <Button variant="outline" size="icon" className="h-12 w-12 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white">
-                    <Heart className="h-5 w-5" />
+                <Button variant="outline" size="icon" className="h-12 w-12 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white" onClick={handleToggleWishlist}>
+                    <Heart className={cn("h-5 w-5", isInWishlist && "fill-red-500 text-red-500")} />
                 </Button>
             </div>
       </div>
@@ -742,3 +768,4 @@ export default function CourseDetailsClient() {
     </>
   );
 }
+
