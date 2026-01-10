@@ -124,24 +124,24 @@ export default function LoginPage() {
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists()) {
-        // User exists, only update last login to prevent overwriting roles.
-        await updateDoc(userDocRef, {
-            lastLogin: serverTimestamp(),
-        });
+      // User exists, only update last login to prevent overwriting roles.
+      await updateDoc(userDocRef, {
+        lastLogin: serverTimestamp(),
+      });
     } else {
-        // New user, create the document with default student role
-        const newUserPayload: Partial<FormaAfriqueUser> = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            fullName: firebaseUser.displayName || firebaseUser.phoneNumber || 'Utilisateur',
-            role: 'student',
-            isInstructorApproved: false,
-            createdAt: serverTimestamp() as any,
-            profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-            country: detectedCountry?.name,
-            countryCode: detectedCountry?.code?.toLowerCase()
-        };
-        await setDoc(userDocRef, newUserPayload);
+      // New user, create the document with default student role
+      const newUserPayload: Partial<FormaAfriqueUser> = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        fullName: firebaseUser.displayName || firebaseUser.phoneNumber || 'Utilisateur',
+        role: 'student',
+        isInstructorApproved: false,
+        createdAt: serverTimestamp() as any,
+        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
+        country: detectedCountry?.name,
+        countryCode: detectedCountry?.code?.toLowerCase(),
+      };
+      await setDoc(userDocRef, newUserPayload);
     }
     toast({ title: t('loginSuccessTitle') });
     router.push('/dashboard');
@@ -293,5 +293,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
