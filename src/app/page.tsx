@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase, MapPin, ArrowRight } from "lucide-react";
+import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase, MapPin, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,9 +21,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
-    <div className="flex items-center gap-1 text-xs text-white/80">
-        <span className="font-bold text-amber-400">{rating.toFixed(1)}</span>
-        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+        <span className="font-bold text-amber-500">{rating.toFixed(1)}</span>
+        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
         <span>({reviewCount.toLocaleString()})</span>
     </div>
 );
@@ -35,7 +35,7 @@ const CourseCard = ({ course, instructor }: { course: Course, instructor: Partia
     return (
         <div className="w-full">
             <Link href={`/course/${course.id}`} className="block group">
-                <div className="overflow-hidden bg-slate-800/50 border border-slate-700/80 shadow-lg transition-all duration-300 group-hover:shadow-primary/20 group-hover:-translate-y-1 rounded-2xl flex flex-col h-full">
+                <div className="bg-background rounded-lg overflow-hidden transition-all duration-300 hover:shadow-lg border">
                     <div className="relative">
                         <Image
                             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}
@@ -44,23 +44,17 @@ const CourseCard = ({ course, instructor }: { course: Course, instructor: Partia
                             height={170}
                             className="aspect-video object-cover w-full"
                         />
-                         <Badge variant="secondary" className="absolute top-3 left-3 bg-black/50 text-white/90 border-slate-700 flex items-center gap-1.5">
-                            {isEbook ? <BookText className="h-3 w-3" /> : <Video className="h-3 w-3" />}
-                            {isEbook ? 'E-book' : 'Vidéo'}
-                         </Badge>
+                         {course.isPopular && <Badge variant="destructive" className="absolute top-2 left-2">Bestseller</Badge>}
                     </div>
-                    <div className="p-4 space-y-2 flex flex-col flex-grow">
-                        <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{course.title}</h3>
-                        <p className="text-xs text-slate-400 truncate">Par {instructor?.fullName || 'un instructeur'}</p>
+                    <div className="p-3 space-y-2 flex flex-col flex-grow">
+                        <h3 className="font-bold text-sm text-foreground line-clamp-2 h-10">{course.title}</h3>
+                        <p className="text-xs text-muted-foreground truncate">Par {instructor?.fullName || 'un instructeur'}</p>
                         <StarRating rating={4.7} reviewCount={123} />
                         <div className="flex-grow"></div>
-                        <div className="flex justify-between items-center pt-2">
-                             <p className="font-bold text-lg text-white">
+                        <div className="pt-2">
+                            <p className="font-bold text-base text-foreground">
                               {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
                             </p>
-                             <Button variant="secondary" size="sm" className="bg-slate-700 hover:bg-slate-600 text-white h-8 text-xs">
-                                S'inscrire <ArrowRight className="h-3 w-3 ml-1.5" />
-                            </Button>
                         </div>
                     </div>
                 </div>
@@ -68,65 +62,6 @@ const CourseCard = ({ course, instructor }: { course: Course, instructor: Partia
         </div>
     );
 };
-
-const StatItem = ({ value, label, icon: Icon, children }: { value: string, label: string, icon: React.ElementType, children?: React.ReactNode }) => (
-    <div className="flex flex-col items-center text-center">
-        <div className="relative">
-            <Icon className="h-10 w-10 text-primary mb-2" />
-            {children}
-        </div>
-        <p className="text-3xl font-extrabold text-white">{value}</p>
-        <p className="text-sm text-slate-400">{label}</p>
-    </div>
-);
-
-
-const FeatureItem = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
-    <div className="bg-slate-800/50 border border-slate-700 p-6 rounded-2xl text-center">
-        <div className="inline-block p-3 bg-primary/10 rounded-full mb-4">
-          <Icon className="h-8 w-8 text-primary" />
-        </div>
-        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-slate-400">{description}</p>
-    </div>
-);
-
-const TestimonialCard = ({ quote, name, country, flag, imageSeed }: { quote: string, name: string, country: string, flag: string, imageSeed: string }) => (
-    <Card className="h-full bg-slate-800/50 border border-slate-700/80 rounded-2xl text-white flex flex-col p-6">
-        <CardContent className="p-0 flex-grow">
-            <p className="italic">"{quote}"</p>
-        </CardContent>
-        <div className="mt-4 flex items-center gap-3">
-             <Image 
-                src={`https://picsum.photos/seed/${imageSeed}/48/48`}
-                alt={`Photo de ${name}`}
-                width={48}
-                height={48}
-                className="rounded-full border-2 border-primary/50"
-             />
-             <div>
-                <p className="font-bold text-sm">{name}</p>
-                <div className="flex items-center gap-1.5">
-                    <Image src={`/flags/${flag}.svg`} alt={country} width={16} height={12} className="rounded-sm" />
-                    <span className="text-slate-400 text-xs">{country}</span>
-                </div>
-            </div>
-        </div>
-    </Card>
-);
-
-const AfricanFlags = () => (
-    <div className="py-8 bg-black/20">
-        <div className="container mx-auto px-4 text-center">
-             <p className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Une Communauté Panafricaine</p>
-            <div className="flex justify-center items-center gap-4 flex-wrap">
-                {['ng', 'ci', 'cm', 'ga', 'cd', 'sn', 'ke', 'za'].map(flag => (
-                    <Image key={flag} src={`/flags/${flag}.svg`} alt={flag} width={36} height={24} className="rounded-sm" />
-                ))}
-            </div>
-        </div>
-    </div>
-);
 
 
 export default function LandingPage() {
@@ -136,7 +71,7 @@ export default function LandingPage() {
   const { user, isUserLoading } = useRole();
 
   const coursesQuery = useMemoFirebase(() => {
-    return query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('isPopular', 'desc'), limit(4));
+    return query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('isPopular', 'desc'), limit(12));
   }, [db]);
 
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
@@ -164,26 +99,22 @@ export default function LandingPage() {
 
   if (isUserLoading || user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-[#0f172a]">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-[#020617] text-white">
-      <header className="absolute top-0 left-0 right-0 z-50 p-4">
+    <div className="w-full bg-background text-foreground">
+      <header className="absolute top-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/icon.svg" alt="FormaAfrique Logo" width={32} height={32} />
-            <span className="font-bold text-xl">FormaAfrique</span>
+            <Image src="/icon.svg" alt="FormaAfrique Logo" width={28} height={28} />
+            <span className="font-bold text-lg text-foreground">FormaAfrique</span>
           </Link>
-          <nav className="hidden md:flex items-center gap-4">
-            <Link href="/search" className="text-sm font-medium text-slate-300 hover:text-white">Cours</Link>
-            <Link href="/devenir-instructeur" className="text-sm font-medium text-slate-300 hover:text-white">Devenir Formateur</Link>
-          </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild className="hover:bg-slate-800 hover:text-white px-2 sm:px-4">
+            <Button variant="ghost" asChild className="px-2 sm:px-4">
               <Link href="/login">Se connecter</Link>
             </Button>
             <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:flex">
@@ -193,105 +124,42 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main>
+      <main className="pt-20">
         {/* Hero Section */}
-        <section className="relative pt-32 pb-20 md:pt-48 md:pb-28 text-center overflow-hidden">
-          <div className="absolute inset-0 bg-grid-slate-700/40 [mask-image:linear-gradient(to_bottom,white_20%,transparent_100%)]"></div>
+        <section className="py-12 md:py-20 text-center">
           <div className="container mx-auto px-4 relative">
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20 mb-4">La plateforme d'excellence pour les talents de toute l'Afrique</Badge>
-            <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">Révélez votre potentiel sur le continent</h1>
-            <p className="max-w-3xl mx-auto mt-6 text-lg md:text-xl text-slate-300">Des formations de qualité, accessibles partout, pour booster votre carrière et construire l'Afrique de demain.</p>
+            <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight">Révélez votre potentiel sur le continent</h1>
+            <p className="max-w-2xl mx-auto mt-4 text-md md:text-lg text-muted-foreground">Des formations de qualité, accessibles partout, pour booster votre carrière et construire l'Afrique de demain.</p>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Button size="lg" asChild className="h-12 px-8 text-base bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
+              <Button size="lg" asChild className="h-11 px-6 text-base bg-primary hover:bg-primary/90 text-primary-foreground w-full sm:w-auto">
                 <Link href="/search">Explorer les cours</Link>
               </Button>
-              <Button size="lg" variant="secondary" asChild className="h-12 px-8 text-base bg-green-600 text-white hover:bg-green-700 w-full sm:w-auto">
-                <Link href="/login?tab=register">S'inscrire gratuitement</Link>
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        {/* Stats Section */}
-        <section className="py-16 bg-slate-900/50">
-          <div className="container mx-auto px-4">
-             <div className="flex flex-col sm:flex-row justify-around items-center gap-12">
-                <StatItem value="15+" label="Pays africains" icon={MapPin}>
-                   <div className="absolute top-0 right-0 flex">
-                        <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
-                        <Image src="/flags/ci.svg" alt="Côte d'Ivoire" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
-                        <Image src="/flags/sn.svg" alt="Sénégal" width={20} height={15} className="rounded-full border-2 border-slate-700" />
-                   </div>
-                </StatItem>
-                <StatItem value="500+" label="Étudiants engagés" icon={Users} />
-                <StatItem value="20+" label="Formations disponibles" icon={BookOpen} />
             </div>
           </div>
         </section>
 
         {/* Popular Courses Section */}
-        <section className="py-20">
+        <section className="py-12 bg-background-alt">
           <div className="container mx-auto px-4">
-            <h2 className="text-3xl font-bold text-center mb-12">Nos formations les plus populaires</h2>
+            <h2 className="text-2xl font-bold mb-8">Une sélection de cours pour vous lancer</h2>
             {coursesLoading ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-lg" />)}
                 </div>
             ) : courses && courses.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {courses.map(course => (
                         <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
                     ))}
                 </div>
             ) : (
-                <div className="text-center py-16 px-4 border-2 border-dashed border-slate-700 rounded-xl">
-                    <Frown className="mx-auto h-12 w-12 text-slate-500" />
-                    <h3 className="mt-4 text-lg font-semibold">Aucun cours populaire pour le moment.</h3>
-                    <p className="mt-1 text-sm text-slate-400">Nos formateurs préparent du nouveau contenu !</p>
+                <div className="text-center py-16 px-4 border-2 border-dashed rounded-xl">
+                    <Frown className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">Aucun cours disponible pour le moment.</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">Nos formateurs préparent du nouveau contenu !</p>
                 </div>
             )}
           </div>
-        </section>
-
-        {/* Testimonials Section */}
-        <section className="py-20">
-            <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-12">Ils réussissent avec FormaAfrique</h2>
-                <div className="md:hidden">
-                     <Carousel opts={{ loop: true, align: "start" }} className="w-full">
-                        <CarouselContent className="-ml-4">
-                             <CarouselItem className="pl-4 basis-[85%]">
-                                <TestimonialCard imageSeed="moussa" quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" />
-                            </CarouselItem>
-                            <CarouselItem className="pl-4 basis-[85%]">
-                                <TestimonialCard imageSeed="amina" quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" />
-                            </CarouselItem>
-                            <CarouselItem className="pl-4 basis-[85%]">
-                                <TestimonialCard imageSeed="jean-david" quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" />
-                            </CarouselItem>
-                        </CarouselContent>
-                    </Carousel>
-                </div>
-                <div className="hidden md:grid grid-cols-1 md:grid-cols-3 gap-8">
-                     <TestimonialCard imageSeed="moussa" quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" />
-                     <TestimonialCard imageSeed="amina" quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" />
-                     <TestimonialCard imageSeed="jean-david" quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" />
-                </div>
-            </div>
-        </section>
-
-        <AfricanFlags />
-
-        {/* Why Us Section */}
-        <section className="py-20 bg-slate-900/50">
-            <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-12">Pourquoi choisir FormaAfrique ?</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <FeatureItem icon={Clock} title="Apprentissage flexible" description="Accédez à vos cours 24/7 sur mobile ou ordinateur et apprenez à votre propre rythme." />
-                    <FeatureItem icon={Briefcase} title="Experts locaux" description="Nos formateurs sont des professionnels expérimentés et reconnus dans leur domaine sur le continent africain." />
-                    <FeatureItem icon={Award} title="Accès à vie & Certificat" description="Une fois inscrit, vous avez un accès à vie au contenu du cours et recevez un certificat à la fin." />
-                </div>
-            </div>
         </section>
       </main>
       
