@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import { Inter as FontSans } from "next/font/google"
+import { Inter } from "next/font/google";
 
 export const metadata: Metadata = {
   title: "FormaAfrique | Formations en ligne pour le marché Africain",
@@ -16,10 +16,10 @@ export const metadata: Metadata = {
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
-const fontSans = FontSans({
+const fontSans = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
-})
+});
 
 export default function RootLayout({
   children,
@@ -28,7 +28,7 @@ export default function RootLayout({
 }) {
 
   return (
-    <html lang="fr" suppressHydrationWarning className="dark">
+    <html lang="fr" suppressHydrationWarning>
        <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         <FirebaseClientProvider>
           <RoleProvider>
