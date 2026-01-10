@@ -130,22 +130,21 @@ export function StudentDashboard() {
 
   return (
     <div className="bg-slate-900 -m-6 p-6 min-h-screen space-y-12">
-        {sortedCategories.map(category => (
-             <CourseCarousel 
-                key={category}
-                title={`Meilleurs cours dans la catégorie ${category}`}
-                courses={coursesByCategory[category] || []}
-                instructorsMap={instructorsMap}
-                isLoading={coursesLoading}
-            />
-        ))}
-
         <CourseCarousel 
             title="Les nouveautés à ne pas rater"
             courses={newCourses}
             instructorsMap={instructorsMap}
             isLoading={coursesLoading}
         />
+        {sortedCategories.map(category => (
+             <CourseCarousel 
+                key={category}
+                title={category}
+                courses={coursesByCategory[category] || []}
+                instructorsMap={instructorsMap}
+                isLoading={coursesLoading}
+            />
+        ))}
     </div>
   );
 }
