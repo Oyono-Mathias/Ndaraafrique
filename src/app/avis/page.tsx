@@ -91,53 +91,63 @@ export default function ReviewsPage() {
 
     setIsLoading(true);
 
-    const reviewsQuery = query(
-        collection(db, 'reviews'), 
-        where('instructorId', '==', formaAfriqueUser.uid),
-        orderBy('createdAt', 'desc')
-    );
+    const instructorCoursesQuery = query(collection(db, 'courses'), where('instructorId', '==', formaAfriqueUser.uid));
 
-    const unsubscribe = onSnapshot(reviewsQuery, async (reviewsSnapshot) => {
-        if (reviewsSnapshot.empty) {
+    const unsubscribeCourses = onSnapshot(instructorCoursesQuery, async (coursesSnapshot) => {
+        if (coursesSnapshot.empty) {
             setReviews([]);
             setIsLoading(false);
             return;
         }
 
-        const allReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-        const courseIds = [...new Set(allReviews.map(r => r.courseId))];
-        const userIds = [...new Set(allReviews.map(r => r.userId))];
-
+        const courseIds = coursesSnapshot.docs.map(doc => doc.id);
         const coursesMap = new Map<string, Course>();
-        if (courseIds.length > 0) {
-            const coursesQuery = query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 30)));
-            const courseSnapshots = await getDocs(coursesQuery);
-            courseSnapshots.forEach(doc => coursesMap.set(doc.id, doc.data() as Course));
+        coursesSnapshot.forEach(doc => coursesMap.set(doc.id, doc.data() as Course));
+
+        if (courseIds.length === 0) {
+            setReviews([]);
+            setIsLoading(false);
+            return;
         }
 
-        const usersMap = new Map();
-        if (userIds.length > 0) {
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
-            const userSnapshots = await getDocs(usersQuery);
-            userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
-        }
-
-        const populatedReviews = allReviews.map(review => ({
-            ...review,
-            courseTitle: coursesMap.get(review.courseId)?.title || 'Cours inconnu',
-            studentName: usersMap.get(review.userId)?.fullName || 'Anonyme',
-            studentImage: usersMap.get(review.userId)?.profilePictureURL,
-        }));
+        const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', courseIds.slice(0, 30)), orderBy('createdAt', 'desc'));
         
-        setReviews(populatedReviews);
-        setIsLoading(false);
+        onSnapshot(reviewsQuery, async (reviewsSnapshot) => {
+            if (reviewsSnapshot.empty) {
+                setReviews([]);
+                setIsLoading(false);
+                return;
+            }
 
+            const allReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+            const userIds = [...new Set(allReviews.map(r => r.userId))];
+
+            const usersMap = new Map();
+            if (userIds.length > 0) {
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
+                const userSnapshots = await getDocs(usersQuery);
+                userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
+            }
+
+            const populatedReviews = allReviews.map(review => ({
+                ...review,
+                courseTitle: coursesMap.get(review.courseId)?.title || 'Cours inconnu',
+                studentName: usersMap.get(review.userId)?.fullName || 'Anonyme',
+                studentImage: usersMap.get(review.userId)?.profilePictureURL,
+            }));
+            
+            setReviews(populatedReviews);
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching reviews:", error);
+            setIsLoading(false);
+        });
     }, (error) => {
-        console.error("Error fetching reviews:", error);
+        console.error("Error fetching instructor courses:", error);
         setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribeCourses();
 
   }, [formaAfriqueUser, isUserLoading, db]);
 
