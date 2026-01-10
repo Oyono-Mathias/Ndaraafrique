@@ -47,8 +47,8 @@ export interface FormaAfriqueUser {
         submittedAt: Date;
     };
     createdAt?: Timestamp; // Add createdAt to the type
-    countryOrigin?: string;
-    countryCurrent?: string;
+    country?: string;
+    countryCode?: string;
 }
 
 interface RoleContextType {
