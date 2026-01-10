@@ -75,6 +75,7 @@ export interface Review {
     id: string;
     courseId: string;
     userId: string;
+    instructorId: string; // Keep track of the instructor for easier querying
     rating: number;
     comment: string;
     createdAt: Timestamp;

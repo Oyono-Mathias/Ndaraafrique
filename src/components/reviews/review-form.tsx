@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getFirestore, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, addDoc, collection, serverTimestamp, getDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -14,6 +14,7 @@ import { Star, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import type { Course } from '@/lib/types';
 
 const reviewSchema = z.object({
   rating: z.number().min(1, 'La note est requise.').max(5),
@@ -31,6 +32,7 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const db = getFirestore();
 
   const form = useForm<z.infer<typeof reviewSchema>>({
     resolver: zodResolver(reviewSchema),
@@ -42,27 +44,40 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
 
   const onSubmit = async (values: z.infer<typeof reviewSchema>) => {
     setIsSubmitting(true);
-    const db = getFirestore();
-    const reviewsCollection = collection(db, 'reviews');
     
-    const reviewPayload = {
-      courseId,
-      userId,
-      rating: values.rating,
-      comment: values.comment,
-      createdAt: serverTimestamp(),
-    };
-
     try {
+      // Fetch course to get instructorId
+      const courseRef = doc(db, 'courses', courseId);
+      const courseSnap = await getDoc(courseRef);
+      if (!courseSnap.exists()) {
+          toast({ variant: 'destructive', title: 'Erreur', description: 'Le cours n\'existe pas.' });
+          setIsSubmitting(false);
+          return;
+      }
+      const courseData = courseSnap.data() as Course;
+
+      const reviewPayload = {
+        courseId,
+        userId,
+        instructorId: courseData.instructorId, // Add instructorId here
+        rating: values.rating,
+        comment: values.comment,
+        createdAt: serverTimestamp(),
+      };
+      
+      const reviewsCollection = collection(db, 'reviews');
       await addDoc(reviewsCollection, reviewPayload);
+      
       toast({ title: 'Avis soumis !', description: 'Merci pour votre contribution.' });
       setSubmitted(true);
       onReviewSubmit();
+
     } catch (error) {
+      console.error("Error submitting review:", error);
       errorEmitter.emit('permission-error', new FirestorePermissionError({
         path: 'reviews',
         operation: 'create',
-        requestResourceData: reviewPayload,
+        requestResourceData: { courseId, userId, ...values },
       }));
     } finally {
       setIsSubmitting(false);

@@ -67,81 +67,60 @@ export default function ReviewsPage() {
 
     setIsLoading(true);
 
-    const coursesQuery = query(
-      collection(db, 'courses'),
-      where('instructorId', '==', formaAfriqueUser.uid)
+    const reviewsQuery = query(
+        collection(db, 'reviews'),
+        where('instructorId', '==', formaAfriqueUser.uid),
+        orderBy('createdAt', 'desc')
     );
 
-    // 1. Fetch instructor's courses
-    const getCourses = async () => {
-      const courseSnapshot = await getDocs(coursesQuery);
-      if (courseSnapshot.empty) {
-        setIsLoading(false);
-        setReviews([]);
-        return null;
-      }
-      const coursesMap = new Map<string, Course>();
-      courseSnapshot.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
-      return coursesMap;
-    };
-
-    let unsubscribeReviews: () => void = () => {};
-
-    // 2. After getting courses, listen for reviews
-    getCourses().then(coursesMap => {
-        if (!coursesMap || coursesMap.size === 0) return;
-
-        const courseIds = Array.from(coursesMap.keys());
+    const unsubscribeReviews = onSnapshot(reviewsQuery, async (reviewSnapshot) => {
+        const reviewsData = reviewSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
         
-        // Firestore 'in' query has a limit of 30 items. Batch if necessary.
-        const reviewsQuery = query(
-            collection(db, 'reviews'),
-            where('courseId', 'in', courseIds.slice(0, 30)),
-            orderBy('createdAt', 'desc')
-        );
+        if (reviewsData.length === 0) {
+             setReviews([]);
+             setIsLoading(false);
+             return;
+        }
 
-        unsubscribeReviews = onSnapshot(reviewsQuery, async (reviewSnapshot) => {
-            const reviewsData = reviewSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-            
-            if (reviewsData.length === 0) {
-                 setReviews([]);
-                 setIsLoading(false);
-                 return;
-            }
+        // Fetch user and course details
+        const userIds = [...new Set(reviewsData.map(r => r.userId))];
+        const courseIds = [...new Set(reviewsData.map(r => r.courseId))];
 
-            // 3. Fetch user details for the reviewers
-            const userIds = [...new Set(reviewsData.map(r => r.userId))];
-            const usersRef = collection(db, 'users');
-            const usersQuery = query(usersRef, where('uid', 'in', userIds.slice(0, 30)));
+        const usersMap = new Map();
+        if (userIds.length > 0) {
+            const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
-            const usersMap = new Map();
-            userSnapshots.forEach(doc => usersMap.set(doc.id, doc.data()));
+            userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
+        }
 
-            // 4. Combine all data
-            const populatedReviews = reviewsData.map(review => {
-                const course = coursesMap.get(review.courseId);
-                const user = usersMap.get(review.userId);
-                return {
-                    ...review,
-                    courseTitle: course?.title || 'Cours inconnu',
-                    studentName: user?.fullName || 'Anonyme',
-                    studentImage: user?.profilePictureURL,
-                };
-            });
-            
-            setReviews(populatedReviews);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching reviews:", error);
-            setIsLoading(false);
+        const coursesMap = new Map();
+        if (courseIds.length > 0) {
+            const coursesQuery = query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 30)));
+            const courseSnapshots = await getDocs(coursesQuery);
+            courseSnapshots.forEach(doc => coursesMap.set(doc.id, doc.data()));
+        }
+
+        // Combine all data
+        const populatedReviews = reviewsData.map(review => {
+            const course = coursesMap.get(review.courseId);
+            const user = usersMap.get(review.userId);
+            return {
+                ...review,
+                courseTitle: course?.title || 'Cours inconnu',
+                studentName: user?.fullName || 'Anonyme',
+                studentImage: user?.profilePictureURL,
+            };
         });
+        
+        setReviews(populatedReviews);
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching reviews:", error);
+        setIsLoading(false);
     });
 
-
     return () => {
-      if (unsubscribeReviews) {
-        unsubscribeReviews();
-      }
+      unsubscribeReviews();
     };
 
   }, [formaAfriqueUser, isUserLoading, db]);

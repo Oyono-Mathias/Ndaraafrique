@@ -117,10 +117,14 @@ service cloud.firestore {
     }
 
     // --- Règles pour 'reviews' ---
-     match /reviews/{reviewId} {
+    match /reviews/{reviewId} {
       allow read: if true;
+      // Allow creation if user is enrolled and is the author
       allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isStudentEnrolled(request.resource.data.courseId);
-      allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId)); 
+      allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId));
+      // Allow instructors to list reviews for their courses
+      allow list: if isSignedIn() && request.query.where.size() > 0 && 
+                   'instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid;
     }
 
      // --- Règles pour 'payments' ---
