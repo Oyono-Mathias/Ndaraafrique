@@ -13,16 +13,17 @@ import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 interface RevenueDataPoint {
     month: string;
     revenue: number;
 }
 
-const StatCard = ({ title, value, icon: Icon, isLoading, change }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string }) => (
-    <Card className="dark:bg-slate-800 dark:border-slate-700">
+const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
+    <Card className={cn("dark:bg-[#1e293b] dark:border-slate-700", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium dark:text-slate-400">{title}</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
@@ -30,7 +31,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change }: { title: stri
                 <Skeleton className="h-8 w-3/4 dark:bg-slate-700" />
             ) : (
                 <>
-                    <div className="text-2xl font-bold dark:text-white">{value}</div>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
                     {change && <p className="text-xs text-muted-foreground dark:text-slate-500">{change}</p>}
                 </>
             )}
@@ -180,37 +181,32 @@ export default function StatisticsPage() {
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title="Étudiants" value={stats.totalStudents.toLocaleString()} icon={Users} isLoading={isLoading} />
+                <StatCard title="Étudiants" value={stats.totalStudents.toLocaleString()} icon={Users} isLoading={isLoading} accentColor="border-t-blue-500" />
                 <StatCard 
                     title="Note Moyenne" 
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
                     change={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"}
+                    accentColor="border-t-amber-500"
                 />
-                <StatCard title="Cours Publiés" value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} />
-                <StatCard title="Revenus (ce mois-ci)" value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+                <StatCard title="Cours Publiés" value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} accentColor="border-t-purple-500" />
+                <StatCard title="Revenus (ce mois-ci)" value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} accentColor="border-t-green-500" />
             </section>
 
             <section className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <h2 className="text-2xl font-semibold mb-4 dark:text-white">Tendance des revenus</h2>
-                    <Card className="dark:bg-slate-800 dark:border-slate-700">
+                    <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full dark:bg-slate-700" /> : (
                                 <ChartContainer config={chartConfig} className="h-72 w-full">
                                     <ResponsiveContainer>
                                         <BarChart data={revenueTrendData}>
                                             <CartesianGrid vertical={false} strokeDasharray="3 3" className="dark:stroke-slate-700" />
-                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400" />
-                                            <ChartTooltip
-                                                cursor={false}
-                                                content={<ChartTooltipContent
-                                                    indicator="dot"
-                                                    className="dark:bg-slate-800 dark:border-slate-600"
-                                                />}
-                                            />
+                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                            <ChartTooltip content={<ChartTooltipContent formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`} className="dark:bg-slate-900 dark:border-slate-700" />} />
                                             <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -221,7 +217,7 @@ export default function StatisticsPage() {
                 </div>
                 <div>
                      <h2 className="text-2xl font-semibold mb-4 dark:text-white">Top 5 des Cours</h2>
-                      <Card className="dark:bg-slate-800 dark:border-slate-700">
+                      <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
@@ -251,5 +247,3 @@ export default function StatisticsPage() {
         </div>
     );
 }
-
-    

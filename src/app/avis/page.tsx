@@ -15,7 +15,7 @@ import {
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -27,7 +27,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star } from 'lucide-react';
+import { Star, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Course, Review } from '@/lib/types';
 
@@ -45,11 +45,35 @@ const StarRating = ({ rating }: { rating: number }) => (
         key={i}
         className={cn(
           'h-4 w-4',
-          i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'
+          i < rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300 dark:text-slate-600'
         )}
       />
     ))}
   </div>
+);
+
+const ReviewRowMobile = ({ review }: { review: ReviewWithDetails }) => (
+    <Card className="dark:bg-slate-800">
+        <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-4">
+                <Avatar className="h-10 w-10 border">
+                    <AvatarImage src={review.studentImage} />
+                    <AvatarFallback>{review.studentName.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <p className="font-semibold dark:text-white">{review.studentName}</p>
+                    <StarRating rating={review.rating} />
+                </div>
+            </div>
+            <p className="text-sm italic text-muted-foreground dark:text-slate-400">"{review.comment}"</p>
+            <div className="text-xs pt-2 border-t dark:border-slate-700">
+                <p className="font-medium text-slate-600 dark:text-slate-300">{review.courseTitle}</p>
+                <p className="text-muted-foreground dark:text-slate-500">
+                    {review.createdAt ? format(review.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
+                </p>
+            </div>
+        </CardContent>
+    </Card>
 );
 
 export default function ReviewsPage() {
@@ -67,143 +91,136 @@ export default function ReviewsPage() {
 
     setIsLoading(true);
 
-    const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', formaAfriqueUser.uid));
+    const reviewsQuery = query(
+        collection(db, 'reviews'), 
+        where('instructorId', '==', formaAfriqueUser.uid),
+        orderBy('createdAt', 'desc')
+    );
 
-    const unsubscribeCourses = onSnapshot(coursesQuery, async (coursesSnapshot) => {
-        if (coursesSnapshot.empty) {
+    const unsubscribe = onSnapshot(reviewsQuery, async (reviewsSnapshot) => {
+        if (reviewsSnapshot.empty) {
             setReviews([]);
             setIsLoading(false);
             return;
         }
 
-        const courseIds = coursesSnapshot.docs.map(doc => doc.id);
-        const coursesMap = new Map(coursesSnapshot.docs.map(doc => [doc.id, doc.data() as Course]));
-
-        // Firestore 'in' query supports up to 30 elements. We need to batch if there are more.
-        const courseIdChunks: string[][] = [];
-        for (let i = 0; i < courseIds.length; i += 30) {
-            courseIdChunks.push(courseIds.slice(i, i + 30));
-        }
-
-        const allReviews: Review[] = [];
-        
-        for (const chunk of courseIdChunks) {
-             if (chunk.length === 0) continue;
-            // FIX: Removed orderBy('createdAt', 'desc') to avoid needing a composite index
-            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk));
-            const reviewSnapshot = await getDocs(reviewsQuery);
-            reviewSnapshot.forEach(doc => {
-                allReviews.push({ id: doc.id, ...doc.data() } as Review);
-            });
-        }
-        
-        if (allReviews.length === 0) {
-             setReviews([]);
-             setIsLoading(false);
-             return;
-        }
-
-        // Fetch user details for the reviews
+        const allReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
+        const courseIds = [...new Set(allReviews.map(r => r.courseId))];
         const userIds = [...new Set(allReviews.map(r => r.userId))];
+
+        const coursesMap = new Map<string, Course>();
+        if (courseIds.length > 0) {
+            const coursesQuery = query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 30)));
+            const courseSnapshots = await getDocs(coursesQuery);
+            courseSnapshots.forEach(doc => coursesMap.set(doc.id, doc.data() as Course));
+        }
+
         const usersMap = new Map();
         if (userIds.length > 0) {
-            // Firestore 'in' query has a limit of 30, batch if needed for production scale
             const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
             userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
         }
 
-        // Combine all data
-        const populatedReviews = allReviews.map(review => {
-            const course = coursesMap.get(review.courseId);
-            const user = usersMap.get(review.userId);
-            return {
-                ...review,
-                courseTitle: course?.title || 'Cours inconnu',
-                studentName: user?.fullName || 'Anonyme',
-                studentImage: user?.profilePictureURL,
-            };
-        });
+        const populatedReviews = allReviews.map(review => ({
+            ...review,
+            courseTitle: coursesMap.get(review.courseId)?.title || 'Cours inconnu',
+            studentName: usersMap.get(review.userId)?.fullName || 'Anonyme',
+            studentImage: usersMap.get(review.userId)?.profilePictureURL,
+        }));
         
-        // FIX: Sort on the client-side
-        setReviews(populatedReviews.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
+        setReviews(populatedReviews);
         setIsLoading(false);
 
     }, (error) => {
-        console.error("Error fetching courses for reviews:", error);
+        console.error("Error fetching reviews:", error);
         setIsLoading(false);
     });
 
-    return () => {
-      unsubscribeCourses();
-    };
+    return () => unsubscribe();
 
   }, [formaAfriqueUser, isUserLoading, db]);
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold">Avis des étudiants</h1>
-        <p className="text-muted-foreground">Consultez les retours sur vos formations.</p>
+        <h1 className="text-3xl font-bold dark:text-white">Avis des étudiants</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Consultez les retours sur vos formations.</p>
       </header>
 
-      <Card>
+      <Card className="dark:bg-[#1e293b] dark:border-slate-700">
         <CardHeader>
-          <CardTitle>Derniers avis reçus</CardTitle>
+          <CardTitle className="dark:text-white">Derniers avis reçus</CardTitle>
+          <CardDescription className="dark:text-slate-400">Lisez ce que vos étudiants pensent de vos cours.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Étudiant</TableHead>
-                <TableHead>Note</TableHead>
-                <TableHead>Commentaire</TableHead>
-                <TableHead>Cours</TableHead>
-                <TableHead>Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <div className="hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="dark:border-slate-700">
+                    <TableHead className="dark:text-slate-300">Étudiant</TableHead>
+                    <TableHead className="dark:text-slate-300">Note</TableHead>
+                    <TableHead className="dark:text-slate-300">Commentaire</TableHead>
+                    <TableHead className="dark:text-slate-300">Cours</TableHead>
+                    <TableHead className="dark:text-slate-300">Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                      <TableRow key={i} className="dark:border-slate-700">
+                        <TableCell><Skeleton className="h-10 w-32 dark:bg-slate-700" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-full dark:bg-slate-700" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
+                      </TableRow>
+                    ))
+                  ) : reviews.length > 0 ? (
+                    reviews.map((review) => (
+                      <TableRow key={review.id} className="dark:border-slate-700">
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={review.studentImage} />
+                              <AvatarFallback>{review.studentName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium dark:text-slate-100">{review.studentName}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <StarRating rating={review.rating} />
+                        </TableCell>
+                        <TableCell className="text-muted-foreground dark:text-slate-400">{review.comment}</TableCell>
+                        <TableCell className="font-medium dark:text-slate-200">{review.courseTitle}</TableCell>
+                        <TableCell className="text-muted-foreground dark:text-slate-500 text-sm">
+                            {review.createdAt ? format(review.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={5} className="h-32 text-center text-muted-foreground dark:text-slate-400">
+                        <MessageCircle className="mx-auto h-10 w-10 mb-2" />
+                        Aucun avis pour le moment.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+          </div>
+          <div className="md:hidden space-y-4">
               {isLoading ? (
-                [...Array(5)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-10 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-full" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                  </TableRow>
-                ))
+                 [...Array(3)].map((_, i) => <Skeleton key={i} className="h-36 w-full dark:bg-slate-700" />)
               ) : reviews.length > 0 ? (
-                reviews.map((review) => (
-                  <TableRow key={review.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage src={review.studentImage} />
-                          <AvatarFallback>{review.studentName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{review.studentName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <StarRating rating={review.rating} />
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">{review.comment}</TableCell>
-                    <TableCell className="font-medium">{review.courseTitle}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                        {review.createdAt ? format(review.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
-                    </TableCell>
-                  </TableRow>
-                ))
+                  reviews.map((review) => <ReviewRowMobile key={review.id} review={review} />)
               ) : (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">
+                 <div className="h-32 text-center text-muted-foreground flex items-center justify-center flex-col gap-2 dark:text-slate-400">
+                    <MessageCircle className="h-10 w-10" />
                     Aucun avis pour le moment.
-                  </TableCell>
-                </TableRow>
+                 </div>
               )}
-            </TableBody>
-          </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
