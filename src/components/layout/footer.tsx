@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -16,7 +17,7 @@ export function Footer() {
   return (
     <footer className="bg-background-alt border-t text-foreground">
       <div className="container mx-auto px-4 py-12">
-        <div className="mb-8">
+        <div className="mb-8 md:hidden">
             <Link href="/" className="flex items-center gap-2 mb-4">
                 <Image src="/icon.svg" alt="FormaAfrique Logo" width={28} height={28} />
                 <span className="font-bold text-lg text-foreground">FormaAfrique</span>
@@ -44,15 +45,24 @@ export function Footer() {
                         </ul>
                     </AccordionContent>
                 </AccordionItem>
+                 <AccordionItem value="ressources">
+                    <AccordionTrigger className="font-semibold">Ressources</AccordionTrigger>
+                    <AccordionContent>
+                         <ul className="space-y-3 pl-2">
+                           <li><a href="#" className="text-muted-foreground hover:text-primary">Blog</a></li>
+                           <li><a href="#" className="text-muted-foreground hover:text-primary">Support</a></li>
+                        </ul>
+                    </AccordionContent>
+                </AccordionItem>
             </Accordion>
-            <div className="mt-6">
-                <h3 className="font-semibold text-foreground mb-2">Langue</h3>
-                <LanguageSelector />
-            </div>
         </div>
 
         <div className="hidden md:grid md:grid-cols-12 gap-8">
           <div className="md:col-span-12 lg:col-span-5">
+             <Link href="/" className="flex items-center gap-2 mb-4">
+                <Image src="/icon.svg" alt="FormaAfrique Logo" width={28} height={28} />
+                <span className="font-bold text-lg text-foreground">FormaAfrique</span>
+            </Link>
             <p className="text-sm max-w-md text-muted-foreground">
                 La plateforme n°1 pour apprendre un métier. Accédez à nos formations gratuites et premium, conçues par des experts locaux pour le marché africain.
             </p>
@@ -66,11 +76,13 @@ export function Footer() {
                 <li><Link href="/tutor" className="text-muted-foreground hover:text-primary">Tuteur IA</Link></li>
               </ul>
             </div>
-            <div>
-              <h3 className="font-semibold text-foreground mb-4">Légal</h3>
+             <div>
+              <h3 className="font-semibold text-foreground mb-4">Ressources</h3>
               <ul className="space-y-2 text-sm">
-                  <li><Link href="/mentions-legales" className="text-muted-foreground hover:text-primary">Mentions Légales</Link></li>
-                  <li><Link href="/cgu" className="text-muted-foreground hover:text-primary">Conditions d'Utilisation</Link></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary">Blog</a></li>
+                  <li><a href="#" className="text-muted-foreground hover:text-primary">Support</a></li>
+                   <li><Link href="/mentions-legales" className="text-muted-foreground hover:text-primary">Légal</Link></li>
+                  <li><Link href="/cgu" className="text-muted-foreground hover:text-primary">Conditions</Link></li>
               </ul>
             </div>
           </div>

@@ -5,20 +5,19 @@ import Link from 'next/link';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Star, Frown, BookText, Video, Award, Users, BookOpen, Clock, Linkedin, Twitter, Youtube, Briefcase, MapPin, ArrowRight } from 'lucide-react';
+import { Star, Frown, Menu } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { useRole } from '@/context/RoleContext';
 import { useRouter } from 'next/navigation';
+import { useRole } from '@/context/RoleContext';
 import { Loader2 } from 'lucide-react';
 import { Footer } from '@/components/layout/footer';
-import { Card, CardContent } from '@/components/ui/card';
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { LanguageSelector } from '@/components/layout/language-selector';
+
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
     <div className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -29,7 +28,6 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 );
 
 const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => {
-    const isEbook = course.contentType === 'ebook';
     const isFree = course.price === 0;
 
     return (
@@ -107,24 +105,60 @@ export default function LandingPage() {
 
   return (
     <div className="w-full bg-background text-foreground">
-      <header className="absolute top-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-sm border-b">
+      <header className="sticky top-0 left-0 right-0 z-50 p-4 bg-background/80 backdrop-blur-sm border-b">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/icon.svg" alt="FormaAfrique Logo" width={28} height={28} />
             <span className="font-bold text-lg text-foreground">FormaAfrique</span>
           </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild className="px-2 sm:px-4">
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-2">
+            <Button variant="ghost" asChild>
               <Link href="/login">Se connecter</Link>
             </Button>
-            <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:flex">
+            <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Link href="/login?tab=register">S'inscrire</Link>
             </Button>
           </div>
+          {/* Mobile Navigation */}
+           <div className="md:hidden">
+                <Sheet>
+                    <SheetTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                            <Menu className="h-6 w-6"/>
+                            <span className="sr-only">Ouvrir le menu</span>
+                        </Button>
+                    </SheetTrigger>
+                    <SheetContent side="right" className="w-full max-w-sm bg-background">
+                         <SheetHeader>
+                          <SheetTitle className="sr-only">Menu</SheetTitle>
+                          <SheetDescription className="sr-only">Navigation principale</SheetDescription>
+                        </SheetHeader>
+                        <nav className="flex flex-col h-full p-4">
+                            <ul className="flex flex-col gap-4 text-lg font-medium">
+                                <li><Link href="/search" className="hover:text-primary">Tous les cours</Link></li>
+                                <li><Link href="/devenir-instructeur" className="hover:text-primary">Devenir Formateur</Link></li>
+                                <li><Link href="/tutor" className="hover:text-primary">Tuteur IA</Link></li>
+                            </ul>
+                            <div className="mt-auto space-y-4">
+                                <Button asChild size="lg" className="w-full bg-primary text-primary-foreground">
+                                    <Link href="/login?tab=register">S'inscrire gratuitement</Link>
+                                </Button>
+                                <Button asChild size="lg" variant="outline" className="w-full">
+                                    <Link href="/login">Se connecter</Link>
+                                </Button>
+                                <div className="pt-4 border-t">
+                                  <LanguageSelector />
+                                </div>
+                            </div>
+                        </nav>
+                    </SheetContent>
+                </Sheet>
+           </div>
         </div>
       </header>
 
-      <main className="pt-20">
+      <main className="pt-8">
         {/* Hero Section */}
         <section className="py-12 md:py-20 text-center">
           <div className="container mx-auto px-4 relative">

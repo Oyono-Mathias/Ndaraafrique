@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -272,7 +273,7 @@ const SupportButton = () => {
     const pathname = usePathname();
     const db = getFirestore();
     
-    const isAuthPage = pathname === '/login';
+    const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
     const isInsideChat = pathname.startsWith('/messages/');
 
     useEffect(() => {
@@ -487,6 +488,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
+                        <LanguageSelector />
                         <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", (role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-card-foreground')}>
                             <Bell className="h-4 w-4" />
                             {hasUnreadNotifications && (
