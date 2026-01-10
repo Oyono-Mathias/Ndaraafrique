@@ -131,6 +131,7 @@ const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { hre
     </Link>
 );
 
+const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/liste-de-souhaits', '/account'];
 
 const BottomNavBar = () => {
     const pathname = usePathname();
@@ -146,6 +147,11 @@ const BottomNavBar = () => {
         });
         return () => unsubscribe();
     }, [user, db]);
+    
+    // Check if the current route is one of the main navigation routes
+    if (!BOTTOM_NAV_ROUTES.includes(pathname)) {
+        return null;
+    }
 
     const items = [
         { href: '/dashboard', icon: Star, label: 'Sélection' },
@@ -441,7 +447,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isInstructorAndNotApproved = role === 'instructor' && formaAfriqueUser && !formaAfriqueUser.isInstructorApproved;
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isChatPage = pathname.startsWith('/messages');
-  const showBottomNav = (role === 'student') && isMobile;
   const isStudentDashboard = role === 'student' && pathname === '/dashboard';
 
   // This handles the full-screen layout for chat pages on mobile.
@@ -500,7 +505,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               
               <main className={cn("flex-1 overflow-y-auto", 
                 isChatPage && !isMobile ? "" : "p-4 sm:p-6", 
-                showBottomNav ? "pb-20" : "")
+                isMobile ? "pb-20" : "")
               }>
                   <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
                     {!isUserLoading && user && !user.emailVerified && !isFullScreenPage && !isChatPage && (
@@ -522,7 +527,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     {isInstructorAndNotApproved ? <ApprovalPendingScreen /> : children}
                   </div>
               </main>
-              {showBottomNav && <BottomNavBar />}
+              {isMobile && <BottomNavBar />}
               {!isFullScreenPage && !isChatPage && (
                 <>
                   <SupportButton />
