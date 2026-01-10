@@ -273,9 +273,7 @@ const SupportButton = () => {
     const pathname = usePathname();
     const db = getFirestore();
     
-    const isLoginPage = pathname === '/login' || pathname === '/register';
-    // Hide on the root path now.
-    const isAuthPage = isLoginPage || pathname === '/';
+    const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
     const isInsideChat = pathname.startsWith('/messages/');
 
     useEffect(() => {
@@ -292,7 +290,7 @@ const SupportButton = () => {
         return () => unsub();
     }, [db]);
 
-    if ((!user && !isAuthPage) || isInsideChat) {
+    if (!user && !isAuthPage || isInsideChat) {
         return null;
     }
     
@@ -386,14 +384,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, isRoleLoading, formaAfriqueUser, role, switchRole, isAdminRoute]);
 
   const isLoading = isUserLoading || isRoleLoading;
-
-  if (isAuthPage || isLandingPage) {
-    return (
-        <>
-            {children}
-            <SupportButton />
-        </>
-    );
+  
+  // This is the new logic to handle unauthenticated full-width pages
+  if (!user && (isLandingPage || isAuthPage)) {
+    return <>{children}</>;
   }
 
   // Show a full-page loader until we know the maintenance status and user role
@@ -428,12 +422,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const props = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl };
     if (role === 'student') return <StudentSidebar {...props} />;
     if (role === 'instructor') return <InstructorSidebar {...props} />;
-    // Admin role has its own layout, so this part should not be reached for admin routes.
     return null;
   };
   
   if (!user) {
-    // This can happen briefly during redirects, return null to avoid flashing content.
     return null;
   }
   
@@ -442,7 +434,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // If it's an admin route, the src/app/admin/layout.tsx will handle the layout.
   if (isAdminRoute) {
       return <>{children}</>;
   }
@@ -452,7 +443,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isChatPage = pathname.startsWith('/messages');
   const isStudentDashboard = role === 'student' && pathname === '/dashboard';
 
-  // This handles the full-screen layout for chat pages on mobile.
   if (isMobile && pathname.startsWith('/messages/')) {
     return <main className="h-screen w-screen">{children}</main>;
   }
