@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { generateAnnouncement } from '@/ai/flows/generate-announcement-flow';
 
 import { Button } from '@/components/ui/button';
@@ -234,6 +235,31 @@ export default function AdminSettingsPage() {
             setIsAiLoading(false);
         }
     };
+    
+    const handleLoginImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return;
+        
+        const file = e.target.files[0];
+        const storage = getStorage();
+        const storageRef = ref(storage, `site_assets/login_background_${Date.now()}`);
+        
+        setIsSaving(true);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        uploadTask.on(
+            'state_changed',
+            (snapshot) => {}, // Can show progress here
+            (error) => {
+                toast({ variant: 'destructive', title: 'Erreur d\'upload', description: 'Impossible de téléverser l\'image.' });
+                setIsSaving(false);
+            },
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                form.setValue('general.loginBackgroundImage', downloadURL);
+                handleSave({ general: form.getValues().general }, 'Général');
+            }
+        );
+    };
 
     if (isLoading || isUserLoading) {
         return (
@@ -273,9 +299,16 @@ export default function AdminSettingsPage() {
                                         <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
                                             <FormItem><FormLabel className="text-slate-300">URL du Logo</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
                                         )} />
-                                        <FormField control={form.control} name="general.loginBackgroundImage" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">URL de l'image de fond (Login)</FormLabel><FormControl><Input {...field} placeholder="Laissez vide pour le style par défaut" className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
-                                        )} />
+                                        
+                                        <FormItem>
+                                            <FormLabel className="text-slate-300">Image de fond (Login)</FormLabel>
+                                            <FormControl>
+                                                <Input type="file" accept="image/*" onChange={handleLoginImageUpload} className="bg-slate-700 border-slate-600 text-white" />
+                                            </FormControl>
+                                            {form.watch('general.loginBackgroundImage') && <img src={form.watch('general.loginBackgroundImage')} alt="Preview" className="mt-2 h-20 rounded-md" />}
+                                            <FormMessage />
+                                        </FormItem>
+                                        
                                         <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
                                             <FormItem><FormLabel className="text-slate-300">Email de contact</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
                                         )} />

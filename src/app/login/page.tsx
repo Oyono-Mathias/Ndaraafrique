@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -325,10 +324,8 @@ export default function LoginPage() {
         </div>
       </div>
       <div className="hidden lg:block bg-slate-100">
-        <Image src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop" alt="Image" width="1200" height="1800" className="h-full w-full object-cover" data-ai-hint="learning students" />
+        <Image src={loginBackground || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} alt="Image" width="1200" height="1800" className="h-full w-full object-cover" data-ai-hint="learning students" />
       </div>
     </div>
   );
 }
-
-    
