@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,7 +28,7 @@ type ApplicationFormValues = z.infer<typeof instructorApplicationSchema>;
 
 export default function BecomeInstructorPage() {
   const router = useRouter();
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { user, formaAfriqueUser, isUserLoading } = useRole();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
@@ -36,6 +36,18 @@ export default function BecomeInstructorPage() {
   const form = useForm<ApplicationFormValues>({
     resolver: zodResolver(instructorApplicationSchema),
   });
+  
+  useEffect(() => {
+    // If not loading and not logged in, redirect to login
+    if (!isUserLoading && !user) {
+        toast({
+            variant: "destructive",
+            title: "Accès refusé",
+            description: "Vous devez être connecté pour devenir instructeur.",
+        });
+        router.push('/login?tab=register');
+    }
+  }, [user, isUserLoading, router, toast]);
 
   const onSubmit = async (data: ApplicationFormValues) => {
     if (!formaAfriqueUser) return;

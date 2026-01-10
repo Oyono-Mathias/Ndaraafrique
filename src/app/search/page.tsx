@@ -99,12 +99,16 @@ export default function SearchPage() {
                 const idsToFetch = instructorIds.filter(id => !newInstructors.has(id));
 
                 if (idsToFetch.length > 0) {
-                    const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
-                    const usersSnap = await getDocs(usersQuery);
-                    usersSnap.forEach(doc => {
-                        newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser);
-                    });
-                    setInstructors(newInstructors);
+                    try {
+                        const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
+                        const usersSnap = await getDocs(usersQuery);
+                        usersSnap.forEach(doc => {
+                            newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+                        });
+                        setInstructors(newInstructors);
+                    } catch (error) {
+                        console.error("Error fetching instructors:", error);
+                    }
                 }
             }
             setIsLoading(false);
@@ -116,7 +120,18 @@ export default function SearchPage() {
             setIsLoading(false);
         });
 
-        return () => unsubscribe();
+        // Add a timeout to prevent infinite loading state
+        const loadingTimeout = setTimeout(() => {
+            if (isLoading) {
+                setIsLoading(false);
+                console.warn("Search page loading timeout reached.");
+            }
+        }, 5000);
+
+        return () => {
+            unsubscribe();
+            clearTimeout(loadingTimeout);
+        };
     }, [debouncedSearchTerm, activeFilter, db]);
 
     return (

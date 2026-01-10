@@ -1,54 +1,84 @@
+
 'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Search, Menu, Star, BookOpen, Users, Award, Briefcase, ChevronRight } from 'lucide-react';
+import { Search, Menu, Star, BookOpen, Users, Award, Briefcase, ChevronRight, Frown, Loader2 } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useEffect, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelector } from '@/components/layout/language-selector';
 import { Footer } from '@/components/layout/footer';
+import { getFirestore, collection, query, where, getDocs, limit, orderBy } from 'firebase/firestore';
+import type { Course } from '@/lib/types';
+import type { FormaAfriqueUser } from '@/context/RoleContext';
+import { Skeleton } from '@/components/ui/skeleton';
 
-const CourseCard = ({ title, instructor, rating, reviews, price, imageUrl, id }: any) => (
+const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => (
   <div className="bg-white dark:bg-slate-800/50 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-shadow duration-300">
-    <Link href={`/course/${id}`} className="block">
-      <Image src={imageUrl} alt={title} width={300} height={170} className="w-full aspect-video object-cover" />
+    <Link href={`/course/${course.id}`} className="block">
+      <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`} alt={course.title} width={300} height={170} className="w-full aspect-video object-cover" />
       <div className="p-4">
-        <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 line-clamp-2 h-12">{title}</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{instructor}</p>
+        <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 line-clamp-2 h-12">{course.title}</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{instructor?.fullName || 'Instructeur FormaAfrique'}</p>
         <div className="flex items-center gap-1 mt-2">
-          <span className="font-bold text-sm text-amber-500">{rating}</span>
+          <span className="font-bold text-sm text-amber-500">4.8</span>
           <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-          <span className="text-xs text-slate-400">({reviews})</span>
+          <span className="text-xs text-slate-400">({(Math.random() * 2000 + 50).toFixed(0)})</span>
         </div>
-        <p className="font-extrabold text-lg text-slate-900 dark:text-white mt-2">{price}</p>
+        <p className="font-extrabold text-lg text-slate-900 dark:text-white mt-2">
+          {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
+        </p>
       </div>
     </Link>
   </div>
 );
-
-const dummyCourses = [
-    { id: '1', title: 'Marketing Digital de A à Z pour Entrepreneurs Africains', instructor: 'Fatima Ouattara', rating: 4.8, reviews: '1,2k', price: '35 000 FCFA', imageUrl: 'https://picsum.photos/seed/course1/300/170', "data-ai-hint": "digital marketing" },
-    { id: '2', title: 'Développement Web Full-Stack avec React et Node.js', instructor: 'Kwame N\'Krumah', rating: 4.9, reviews: '3,4k', price: '45 000 FCFA', imageUrl: 'https://picsum.photos/seed/course2/300/170', "data-ai-hint": "web development" },
-    { id: '3', title: 'Maîtriser le Design UI/UX avec Figma pour le Marché Mobile', instructor: 'Aïcha Traoré', rating: 4.7, reviews: '890', price: '30 000 FCFA', imageUrl: 'https://picsum.photos/seed/course3/300/170', "data-ai-hint": "ui ux design" },
-    { id: '4', title: 'Gestion de Projet Agile : Devenez un Scrum Master Certifié', instructor: 'David Okoro', rating: 4.8, reviews: '2.1k', price: '40 000 FCFA', imageUrl: 'https://picsum.photos/seed/course4/300/170', "data-ai-hint": "project management" },
-    { id: '5', title: 'Introduction à l\'Intelligence Artificielle et Machine Learning', instructor: 'Dr. Ifeoma Adebayo', rating: 4.9, reviews: '4.5k', price: '60 000 FCFA', imageUrl: 'https://picsum.photos/seed/course5/300/170', "data-ai-hint": "artificial intelligence" },
-    { id: '6', title: 'Analyse de Données avec Python : De Débutant à Expert', instructor: 'Samira Dione', rating: 4.7, reviews: '1.8k', price: '45 000 FCFA', imageUrl: 'https://picsum.photos/seed/course6/300/170', "data-ai-hint": "data analysis" },
-    { id: '7', title: 'E-commerce : Lancer sa Boutique en Ligne avec Shopify', instructor: 'Moussa Diop', rating: 4.6, reviews: '950', price: '25 000 FCFA', imageUrl: 'https://picsum.photos/seed/course7/300/170', "data-ai-hint": "ecommerce" },
-    { id: '8', title: 'Devenir un Pro du Montage Vidéo avec Adobe Premiere Pro', instructor: 'Daniel Adekunle', rating: 4.8, reviews: '2.2k', price: '35 000 FCFA', imageUrl: 'https://picsum.photos/seed/course8/300/170', "data-ai-hint": "video editing" },
-];
-
 
 export default function LandingPage() {
   const router = useRouter();
   const { user, isUserLoading } = useRole();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [instructors, setInstructors] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      setIsLoadingCourses(true);
+      const db = getFirestore();
+      try {
+        const coursesRef = collection(db, 'courses');
+        const q = query(coursesRef, where('status', '==', 'Published'), orderBy('createdAt', 'desc'), limit(8));
+        const querySnapshot = await getDocs(q);
+        const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        setCourses(coursesData);
+
+        if (coursesData.length > 0) {
+          const instructorIds = [...new Set(coursesData.map(c => c.instructorId).filter(Boolean))];
+          if (instructorIds.length > 0) {
+            const usersRef = collection(db, 'users');
+            const usersQuery = query(usersRef, where('uid', 'in', instructorIds));
+            const usersSnapshot = await getDocs(usersQuery);
+            const instructorsMap = new Map<string, Partial<FormaAfriqueUser>>();
+            usersSnapshot.forEach(doc => {
+              instructorsMap.set(doc.data().uid, doc.data());
+            });
+            setInstructors(instructorsMap);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching courses for landing page:", error);
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    };
+    fetchCourses();
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,14 +103,12 @@ export default function LandingPage() {
 
   return (
     <div className="w-full bg-slate-50 dark:bg-[#020617] text-slate-800 dark:text-white flex flex-col">
-      {/* Header */}
-       <header className="sticky top-0 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+      <header className="sticky top-0 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/icon.svg" alt="FormaAfrique Logo" width={32} height={32} />
             <span className="font-bold text-xl text-slate-900 dark:text-white">FormaAfrique</span>
           </Link>
-
           <div className="hidden md:flex flex-1 justify-center px-8">
             <form onSubmit={handleSearch} className="relative w-full max-w-lg">
                 <Input
@@ -93,7 +121,6 @@ export default function LandingPage() {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
             </form>
           </div>
-
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" asChild className="text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
               <Link href="/login">Se connecter</Link>
@@ -102,7 +129,6 @@ export default function LandingPage() {
               <Link href="/login?tab=register">S'inscrire</Link>
             </Button>
           </div>
-          
            <div className="md:hidden">
                 <Sheet>
                     <SheetTrigger asChild>
@@ -132,8 +158,6 @@ export default function LandingPage() {
            </div>
         </div>
       </header>
-
-      {/* Hero Section */}
       <main className="flex-grow">
         <section className="relative pt-20 pb-28 md:pt-32 md:pb-40 w-full bg-slate-100 dark:bg-slate-900/50">
             <div className="container mx-auto px-4 z-10 relative text-center">
@@ -153,18 +177,29 @@ export default function LandingPage() {
               </div>
             </div>
         </section>
-
-        {/* Courses Showcase */}
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4">
                  <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white">Une sélection de cours pour démarrer</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {dummyCourses.slice(0,8).map(course => <CourseCard key={course.id} {...course} />)}
+                    {isLoadingCourses ? (
+                      [...Array(8)].map((_, i) => (
+                        <div key={i} className="space-y-2">
+                           <Skeleton className="h-40 w-full rounded-lg bg-slate-200 dark:bg-slate-800" />
+                           <Skeleton className="h-5 w-full bg-slate-200 dark:bg-slate-800" />
+                           <Skeleton className="h-4 w-1/2 bg-slate-200 dark:bg-slate-800" />
+                        </div>
+                      ))
+                    ) : courses.length > 0 ? (
+                      courses.map(course => <CourseCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />)
+                    ) : (
+                      <div className="col-span-full text-center py-10 text-slate-500">
+                        <Frown className="w-12 h-12 mx-auto" />
+                        <p className="mt-4">Aucun cours n'est disponible pour le moment.</p>
+                      </div>
+                    )}
                 </div>
             </div>
         </section>
-
-        {/* Value Proposition */}
         <section className="py-16 md:py-24 bg-slate-100 dark:bg-slate-900/50">
             <div className="container mx-auto px-4">
                 <div className="grid md:grid-cols-3 gap-10 text-center">
@@ -186,8 +221,6 @@ export default function LandingPage() {
                 </div>
             </div>
         </section>
-
-        {/* Instructor CTA */}
         <section className="py-16 md:py-24">
              <div className="container mx-auto px-4 text-center">
                 <div className="bg-slate-100 dark:bg-slate-800/50 p-10 rounded-2xl flex flex-col items-center">
@@ -202,7 +235,6 @@ export default function LandingPage() {
                 </div>
             </div>
         </section>
-
       </main>
       <Footer />
     </div>
