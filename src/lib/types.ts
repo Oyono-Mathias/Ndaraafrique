@@ -40,9 +40,11 @@ export interface Course {
     instructorId: string;
     category: string;
     price: number;
+    originalPrice?: number;
     status: 'Draft' | 'Published' | 'Pending Review';
     imageUrl?: string;
     createdAt?: Timestamp;
+    updatedAt?: Timestamp;
     publishedAt?: Timestamp;
     currency?: string;
     learningObjectives?: string[];
@@ -52,6 +54,8 @@ export interface Course {
     isPopular?: boolean;
     contentType?: 'video' | 'ebook';
     ebookUrl?: string;
+    language?: string;
+    participantsCount?: number;
 }
 
 export interface Enrollment {

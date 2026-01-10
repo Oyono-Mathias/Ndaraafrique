@@ -546,11 +546,14 @@ export default function CourseDetailsClient() {
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
                 {course.isPopular && <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>}
                 <StarRating rating={4.7} reviewCount={187212} size="sm" />
+                <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
               </div>
               <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName}</Link></p>
-              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
-                <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
-                <span className="flex items-center gap-1.5"><Globe className="h-4 w-4"/>Français</span>
+               <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
+                {(course.updatedAt || course.createdAt) && (
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
+                )}
+                {course.language && <span className="flex items-center gap-1.5"><Globe className="h-4 w-4"/>{course.language}</span>}
               </div>
            </div>
         </div>
@@ -565,11 +568,14 @@ export default function CourseDetailsClient() {
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
                       {course.isPopular && <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>}
                       <StarRating rating={4.7} reviewCount={187212} size="sm" />
-                       <span>Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName}</Link></span>
+                      <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
                     </div>
+                     <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName}</Link></p>
                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
-                        <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
-                        <span className="flex items-center gap-1.5"><Globe className="h-4 w-4"/>Français</span>
+                         {(course.updatedAt || course.createdAt) && (
+                            <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
+                         )}
+                        {course.language && <span className="flex items-center gap-1.5"><Globe className="h-4 w-4"/>{course.language}</span>}
                     </div>
                  </div>
 
@@ -629,9 +635,16 @@ export default function CourseDetailsClient() {
                             </div>
                         </div>
                         <CardContent className="p-4 space-y-3">
-                            <h2 className="text-3xl font-bold text-white">
-                                {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
-                            </h2>
+                            <div className="flex items-baseline gap-2">
+                                <h2 className="text-3xl font-bold text-white">
+                                    {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
+                                </h2>
+                                {course.originalPrice && (
+                                    <span className="text-base line-through text-slate-400">
+                                        {course.originalPrice.toLocaleString('fr-FR')} XOF
+                                    </span>
+                                )}
+                            </div>
                             
                             <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
                                 {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
@@ -676,9 +689,16 @@ export default function CourseDetailsClient() {
 
        {/* --- Mobile Sticky Footer --- */}
        <div className="sticky bottom-0 left-0 right-0 lg:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-50 space-y-2">
-           <h3 className="text-2xl font-bold text-white text-center">
-             {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
-           </h3>
+           <div className="flex items-baseline gap-2 justify-center">
+                 <h3 className="text-2xl font-bold text-white">
+                    {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
+                 </h3>
+                 {course.originalPrice && (
+                    <span className="text-base line-through text-slate-400">
+                        {course.originalPrice.toLocaleString('fr-FR')} XOF
+                    </span>
+                )}
+            </div>
            <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
               {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
               {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
