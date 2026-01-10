@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -250,13 +251,13 @@ export default function LoginPage() {
       {/* --- COLONNE DROITE : FORMULAIRE --- */}
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-sm">
-            <div className="flex flex-col items-center justify-center mb-6 text-center">
+            <div className="flex flex-col items-center justify-center text-center mb-6">
               {logoUrl ? <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" /> : 
-                <div className="flex items-center gap-2 text-2xl font-bold" style={{color: '#7C3AED'}}><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
-              <h1 className="text-2xl font-bold text-foreground mt-4" style={{color: '#1E293B'}}>Content de vous revoir !</h1>
+                <div className="flex items-center gap-2 text-2xl font-bold text-primary"><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
+              <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
             </div>
             
-           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
                     <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
@@ -329,11 +330,10 @@ export default function LoginPage() {
       
       {/* --- COLONNE GAUCHE : IMAGE --- */}
       <div className="hidden bg-muted lg:block relative">
-        <Image 
-          src={loginImageUrl || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} 
+        <Image
+          src={loginImageUrl || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"}
           alt="Illustration"
-          width={1200} 
-          height={1800} 
+          fill
           className="absolute inset-0 h-full w-full object-cover"
           priority
           data-ai-hint="learning students" 
