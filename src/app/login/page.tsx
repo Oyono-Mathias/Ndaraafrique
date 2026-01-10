@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, MapPin, BookOpen, Smartphone, Mail } from 'lucide-react';
@@ -60,6 +60,8 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.901,36.626,44,30.638,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
     </svg>
 );
+
+const africanCountryCodes = africanCountries.map(c => c.code);
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -131,7 +133,7 @@ export default function LoginPage() {
         email: firebaseUser.email || registrationData?.email || '',
         fullName: firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber || 'Nouvel utilisateur',
         role: 'student', isInstructorApproved: false, createdAt: serverTimestamp() as any,
-        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber}`,
+        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber || 'A')}`,
         country: detectedCountry?.name, countryCode: detectedCountry?.code?.toLowerCase()
       };
       try { await setDoc(userDocRef, newUserPayload); } catch (error) {
@@ -276,11 +278,12 @@ export default function LoginPage() {
                                         <FormItem>
                                             <FormLabel>Numéro de téléphone</FormLabel>
                                             <FormControl>
-                                                <PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
+                                                <PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" countries={africanCountryCodes} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                      )}/>
+                                      <p className="text-xs text-center text-muted-foreground">Option disponible uniquement pour nos utilisateurs en Afrique.</p>
                                     <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Envoyer le code</Button>
                                 </form>
                             </Form>
@@ -311,6 +314,7 @@ export default function LoginPage() {
                         <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
                         <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
                         {countryError ? ( <FormItem> <FormLabel>Pays</FormLabel> <Select onValueChange={(value) => { const country = africanCountries.find(c => c.code === value); if(country) setDetectedCountry({name: country.name, code: country.code, flag: country.prefix}); }}> <FormControl> <SelectTrigger className="h-11"> <SelectValue placeholder="Sélectionnez votre pays" /> </SelectTrigger> </FormControl> <SelectContent> {africanCountries.map(c => ( <SelectItem key={c.code} value={c.code}> <div className="flex items-center gap-2"> <span>{c.emoji}</span> <span>{c.name}</span> </div> </SelectItem> ))} </SelectContent> </Select> </FormItem> ) : detectedCountry ? ( <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm"> <MapPin className="h-4 w-4 text-muted-foreground" /> <span className="text-muted-foreground">Pays détecté : {detectedCountry.name}</span> </div> ) : ( <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm"> <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/> <span className="text-muted-foreground">Détection du pays...</span> </div> )}
+                        <p className="text-center text-xs text-muted-foreground pt-2">En vous inscrivant, vous acceptez nos <Link href="/cgu" className="underline hover:text-primary">Conditions d'utilisation</Link>.</p>
                         <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('createAccountButton')}</Button>
                         </form>
                     </Form>
