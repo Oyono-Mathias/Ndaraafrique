@@ -550,7 +550,12 @@ export default function CourseDetailsClient() {
            </div>
            <div className="p-4 space-y-3">
               <h1 className="text-2xl font-bold">{course.title}</h1>
-              <p className="text-slate-300">{course.description}</p>
+              <p className={cn("text-slate-300", !isDescriptionExpanded && "line-clamp-3")}>{course.description}</p>
+                {course.description.length > 150 && (
+                    <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-primary font-semibold text-sm">
+                        {isDescriptionExpanded ? "Afficher moins" : "Lire la suite"}
+                    </button>
+                )}
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
                 {course.isPopular && <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>}
                 <StarRating rating={4.7} reviewCount={187212} size="sm" />
@@ -572,7 +577,12 @@ export default function CourseDetailsClient() {
                  {/* --- Header Section (Desktop) --- */}
                  <div className="hidden lg:block space-y-3">
                     <h1 className="text-4xl font-extrabold tracking-tight">{course.title}</h1>
-                    <p className="text-xl text-slate-300">{course.description}</p>
+                     <div className={cn("text-xl text-slate-300", !isDescriptionExpanded && "line-clamp-3")}>{course.description}</div>
+                     {course.description.length > 200 && (
+                        <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-primary font-semibold">
+                            {isDescriptionExpanded ? "Afficher moins" : "Lire la suite"}
+                        </button>
+                    )}
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
                       {course.isPopular && <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>}
                       <StarRating rating={4.7} reviewCount={187212} size="sm" />
