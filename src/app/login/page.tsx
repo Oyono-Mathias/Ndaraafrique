@@ -62,7 +62,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const africanCountryCodes = africanCountries.map(c => c.code);
+const africanCountryCodes = africanCountries.map(c => c.code as 'CM' | 'CI' | 'SN' | 'GA' | 'CD' | 'TG' | 'BJ' | 'GN' | 'ML' | 'BF' | 'DZ' | 'AO' | 'BW' | 'BI' | 'CV' | 'CF' | 'TD' | 'KM' | 'CG' | 'DJ' | 'EG' | 'GQ' | 'ER' | 'SZ' | 'ET' | 'GM' | 'GH' | 'GW' | 'KE' | 'LS' | 'LR' | 'LY' | 'MG' | 'MW' | 'MR' | 'MU' | 'MA' | 'MZ' | 'NA' | 'NE' | 'NG' | 'RW' | 'ST' | 'SC' | 'SL' | 'SO' | 'ZA' | 'SS' | 'SD' | 'TZ' | 'TN' | 'UG' | 'ZM' | 'ZW');
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -250,8 +250,8 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center justify-center mb-6 text-center">
               {logoUrl ? <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" /> : 
-                <div className="flex items-center gap-2 text-2xl font-bold text-secondary"><BookOpen className="h-8 w-8 text-indigo-500" /><span>FormaAfrique</span></div>}
-              <h1 className="text-2xl font-bold text-slate-900 mt-4">Content de vous revoir !</h1>
+                <div className="flex items-center gap-2 text-2xl font-bold text-secondary" style={{color: "hsl(var(--secondary))"}}><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
+              <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
             </div>
             
            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
@@ -330,3 +330,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
