@@ -884,5 +884,3 @@ export default function CourseDetailsClient() {
     </>
   );
 }
-
-    

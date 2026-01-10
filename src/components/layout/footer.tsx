@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -12,7 +13,7 @@ import {
 import { LanguageSelector } from './language-selector';
 
 
-export function Footer() {
+export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: (e: React.MouseEvent) => void }) {
   return (
     <footer className="bg-slate-100 dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-300">
       <div className="container mx-auto px-4 py-12">
@@ -30,7 +31,7 @@ export function Footer() {
                     <AccordionContent>
                         <ul className="space-y-3 pl-2">
                            <li><Link href="/search" className="text-slate-600 dark:text-slate-400 hover:text-primary">Tous les cours</Link></li>
-                            <li><Link href="/devenir-instructeur" className="text-slate-600 dark:text-slate-400 hover:text-primary">Devenir Formateur</Link></li>
+                            <li><Link href="/devenir-instructeur" onClick={onBecomeInstructorClick} className="text-slate-600 dark:text-slate-400 hover:text-primary">Devenir Formateur</Link></li>
                             <li><Link href="/tutor" className="text-slate-600 dark:text-slate-400 hover:text-primary">Tuteur IA</Link></li>
                         </ul>
                     </AccordionContent>
@@ -70,9 +71,9 @@ export function Footer() {
             <div>
               <h3 className="font-semibold text-slate-900 dark:text-slate-200 mb-4">Navigation</h3>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/search" className="text-slate-600 dark:text-slate-400 hover:text-primary">Tous les cours</Link></li>
-                <li><Link href="/devenir-instructeur" className="text-slate-600 dark:text-slate-400 hover:text-primary">Devenir Formateur</Link></li>
-                <li><Link href="/tutor" className="text-slate-600 dark:text-slate-400 hover:text-primary">Tuteur IA</Link></li>
+                <li><Link href="/login" className="text-slate-600 dark:text-slate-400 hover:text-primary">Tous les cours</Link></li>
+                <li><Link href="/devenir-instructeur" onClick={onBecomeInstructorClick} className="text-slate-600 dark:text-slate-400 hover:text-primary">Devenir Formateur</Link></li>
+                <li><Link href="/login" className="text-slate-600 dark:text-slate-400 hover:text-primary">Tuteur IA</Link></li>
               </ul>
             </div>
              <div>

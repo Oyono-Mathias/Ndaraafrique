@@ -17,38 +17,106 @@ import { getFirestore, collection, query, where, getDocs, limit, orderBy } from 
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
 
-const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => (
-  <div className="bg-white dark:bg-slate-800/50 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-shadow duration-300">
-    <Link href={`/course/${course.id}`} className="block">
-      <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`} alt={course.title} width={300} height={170} className="w-full aspect-video object-cover" />
-      <div className="p-4">
-        <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 line-clamp-2 h-12">{course.title}</h3>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{instructor?.fullName || 'Instructeur FormaAfrique'}</p>
-        <div className="flex items-center gap-1 mt-2">
-          <span className="font-bold text-sm text-amber-500">4.8</span>
-          <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-          <span className="text-xs text-slate-400">({(Math.random() * 2000 + 50).toFixed(0)})</span>
-        </div>
-        <p className="font-extrabold text-lg text-slate-900 dark:text-white mt-2">
-          {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
-        </p>
+const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => {
+    const { user } = useRole();
+    const router = useRouter();
+    const { toast } = useToast();
+
+    const handleClick = (e: React.MouseEvent) => {
+        if (!user) {
+            e.preventDefault();
+            toast({
+                title: "Accès réservé",
+                description: "Veuillez vous connecter ou créer un compte pour voir les détails du cours.",
+                variant: 'destructive',
+            });
+            router.push('/login');
+        }
+    };
+    
+    return (
+      <div className="bg-white dark:bg-slate-800/50 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-lg transition-shadow duration-300">
+        <Link href={`/course/${course.id}`} onClick={handleClick} className="block">
+          <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`} alt={course.title} width={300} height={170} className="w-full aspect-video object-cover" />
+          <div className="p-4">
+            <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 line-clamp-2 h-12">{course.title}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{instructor?.fullName || 'Instructeur FormaAfrique'}</p>
+            <div className="flex items-center gap-1 mt-2">
+              <span className="font-bold text-sm text-amber-500">4.8</span>
+              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span className="text-xs text-slate-400">({(Math.random() * 2000 + 50).toFixed(0)})</span>
+            </div>
+            <p className="font-extrabold text-lg text-slate-900 dark:text-white mt-2">
+              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
+            </p>
+          </div>
+        </Link>
       </div>
-    </Link>
-  </div>
-);
+    );
+};
+
 
 export default function LandingPage() {
   const router = useRouter();
   const { user, isUserLoading } = useRole();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [instructors, setInstructors] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
+  const [coursesLoading, setCoursesLoading] = useState(true);
   
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
     }
   }, [user, isUserLoading, router]);
+  
+  useEffect(() => {
+    const fetchCourses = async () => {
+        setCoursesLoading(true);
+        try {
+            const db = getFirestore();
+            const coursesRef = collection(db, 'courses');
+            const q = query(coursesRef, where('status', '==', 'Published'), limit(8));
+            const querySnapshot = await getDocs(q);
+            const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+            setCourses(coursesData);
+
+            if (coursesData.length > 0) {
+                const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
+                const usersRef = collection(db, 'users');
+                const usersQuery = query(usersRef, where('uid', 'in', instructorIds));
+                const userSnapshots = await getDocs(usersQuery);
+                const instMap = new Map<string, Partial<FormaAfriqueUser>>();
+                userSnapshots.forEach(doc => instMap.set(doc.data().uid, doc.data()));
+                setInstructors(instMap);
+            }
+        } catch (error) {
+            console.error("Error fetching courses for landing page:", error);
+        } finally {
+            setTimeout(() => setCoursesLoading(false), 5000); // Failsafe timeout
+        }
+    };
+    if (!user) { // Only fetch if user is not logged in
+        fetchCourses();
+    }
+  }, [user]);
+
+  const handleBecomeInstructorClick = (e: React.MouseEvent) => {
+    if (!user) {
+        e.preventDefault();
+        toast({
+            title: "Accès réservé",
+            description: "Veuillez créer un compte ou vous connecter pour devenir formateur.",
+            variant: "destructive",
+        });
+        router.push('/login');
+    }
+  };
+
 
   if (isUserLoading || user) {
     return (
@@ -60,7 +128,7 @@ export default function LandingPage() {
 
   return (
     <div className="w-full bg-slate-50 dark:bg-[#020617] text-slate-800 dark:text-white flex flex-col">
-      <header className="sticky top-0 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+       <header className="sticky top-0 z-50 p-4 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
         <div className="container mx-auto flex justify-between items-center">
           <Link href="/" className="flex items-center gap-2">
             <Image src="/icon.svg" alt="FormaAfrique Logo" width={32} height={32} />
@@ -85,9 +153,8 @@ export default function LandingPage() {
                     <SheetContent side="right" className="w-full max-w-sm bg-white dark:bg-slate-900 border-l-slate-200 dark:border-l-slate-800 text-slate-900 dark:text-white">
                         <nav className="flex flex-col h-full p-4">
                             <div className="flex flex-col gap-4 text-lg font-medium mt-8">
-                                <Link href="/search" className="hover:text-primary">Tous les cours</Link>
-                                <Link href="/devenir-instructeur" className="hover:text-primary">Devenir Formateur</Link>
-                                <Link href="/tutor" className="hover:text-primary">Tuteur IA</Link>
+                                <Link href="/search" onClick={(e) => { e.preventDefault(); router.push('/login'); toast({title: "Veuillez vous connecter."})}}>Tous les cours</Link>
+                                <Link href="/devenir-instructeur" onClick={handleBecomeInstructorClick}>Devenir Formateur</Link>
                             </div>
                             <div className="mt-auto space-y-4">
                                 <Button asChild size="lg" className="w-full bg-primary text-white rounded-full">
@@ -117,20 +184,33 @@ export default function LandingPage() {
                     <Link href="/login?tab=register">Créer un compte gratuitement</Link>
                   </Button>
                    <Button size="lg" asChild variant="outline" className="h-12 text-base w-full sm:w-auto bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700">
-                    <Link href="/search">Parcourir le catalogue</Link>
+                    <Link href="/login">Parcourir le catalogue</Link>
                   </Button>
               </div>
             </div>
         </section>
         
-        <section className="py-16 md:py-24 text-center">
-            <h2 className="text-3xl font-bold text-center mb-4 text-slate-900 dark:text-white">Un large catalogue de formations</h2>
-            <p className="max-w-2xl mx-auto text-slate-600 dark:text-slate-400 mb-8">
-                Pour voir l'ensemble de nos formations, il vous suffit de créer un compte. L'inscription est gratuite et rapide.
-            </p>
-            <Button asChild size="lg" className="h-12 text-base">
-                 <Link href="/login?tab=register">Inscrivez-vous pour voir nos formations</Link>
-            </Button>
+        <section className="py-16 md:py-24">
+            <div className="container mx-auto px-4">
+                <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white">Une sélection de cours pour démarrer</h2>
+                {coursesLoading ? (
+                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-lg bg-slate-200 dark:bg-slate-800" />)}
+                    </div>
+                ) : courses.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {courses.map(course => (
+                            <CourseCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-10 px-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
+                        <Frown className="mx-auto h-10 w-10 text-slate-400" />
+                        <h3 className="mt-2 text-md font-semibold text-slate-600 dark:text-slate-300">Aucun cours disponible pour le moment.</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Revenez bientôt !</p>
+                    </div>
+                )}
+            </div>
         </section>
 
         <section className="py-16 md:py-24 bg-slate-100 dark:bg-slate-900/50">
@@ -163,15 +243,13 @@ export default function LandingPage() {
                         Partagez votre expertise, créez un impact et générez des revenus en formant les talents de demain.
                     </p>
                     <Button size="lg" asChild className="mt-8 h-12 text-base">
-                        <Link href="/devenir-instructeur">Enseigner sur FormaAfrique <ChevronRight className="ml-2 h-4 w-4" /></Link>
+                        <Link href="/devenir-instructeur" onClick={handleBecomeInstructorClick}>Enseigner sur FormaAfrique <ChevronRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
                 </div>
             </div>
         </section>
       </main>
-      <Footer />
+      <Footer onBecomeInstructorClick={handleBecomeInstructorClick}/>
     </div>
   );
 }
-
-    
