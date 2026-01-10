@@ -273,7 +273,9 @@ const SupportButton = () => {
     const pathname = usePathname();
     const db = getFirestore();
     
-    const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/';
+    const isLoginPage = pathname === '/login' || pathname === '/register';
+    // Hide on the root path now.
+    const isAuthPage = isLoginPage || pathname === '/';
     const isInsideChat = pathname.startsWith('/messages/');
 
     useEffect(() => {
@@ -352,7 +354,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   
-  const isAuthPage = pathname === '/' || pathname === '/register' || pathname === '/login' || pathname === '/forgot-password';
+  const isAuthPage = pathname === '/register' || pathname === '/login' || pathname === '/forgot-password';
+  const isLandingPage = pathname === '/';
   const isAdminRoute = pathname.startsWith('/admin');
 
   useEffect(() => {
@@ -371,10 +374,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [db]);
 
   useEffect(() => {
-    if (!isAuthPage && !isUserLoading && !user) {
+    if (!isAuthPage && !isLandingPage && !isUserLoading && !user) {
       router.push('/login');
     }
-  }, [user, isUserLoading, router, isAuthPage]);
+  }, [user, isUserLoading, router, isAuthPage, isLandingPage]);
   
   useEffect(() => {
     if (isAdminRoute && !isRoleLoading && formaAfriqueUser?.role === 'admin' && role !== 'admin') {
@@ -384,7 +387,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isLoading = isUserLoading || isRoleLoading;
 
-  if (isAuthPage) {
+  if (isAuthPage || isLandingPage) {
     return (
         <>
             {children}
