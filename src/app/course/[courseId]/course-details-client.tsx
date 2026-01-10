@@ -537,7 +537,7 @@ export default function CourseDetailsClient() {
              <Image 
                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
                 alt={course.title}
-                layout="fill"
+                fill
                 objectFit="cover"
                 className="opacity-80"
              />
@@ -642,7 +642,7 @@ export default function CourseDetailsClient() {
                            <Image 
                                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
                                 alt={course.title}
-                                layout="fill"
+                                fill
                                 objectFit="cover"
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
@@ -717,10 +717,15 @@ export default function CourseDetailsClient() {
                     </span>
                 )}
             </div>
-           <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
-              {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
-              {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
-            </Button>
+            <div className="flex gap-2">
+                <Button className="flex-1 h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
+                  {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
+                  {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
+                </Button>
+                <Button variant="outline" size="icon" className="h-12 w-12 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white">
+                    <Heart className="h-5 w-5" />
+                </Button>
+            </div>
       </div>
 
       {/* --- Video Preview Modal --- */}
