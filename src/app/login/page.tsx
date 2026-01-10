@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -74,7 +73,7 @@ export default function LoginPage() {
   const [isSocialLoading, setIsSocialLoading] = useState(false);
   const [siteName, setSiteName] = useState('FormaAfrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [loginBackground, setLoginBackground] = useState<string | null>(null);
+  const [loginImageUrl, setLoginImageUrl] = useState<string | null>(null);
   const [detectedCountry, setDetectedCountry] = useState<{name: string; code: string; flag: string} | null>(null);
   const [countryError, setCountryError] = useState(false);
   const [loginMode, setLoginMode] = useState<LoginMode>('email');
@@ -103,7 +102,7 @@ export default function LoginPage() {
             const settingsData = settingsSnap.data()?.general;
             if (settingsData?.logoUrl) setLogoUrl(settingsData.logoUrl);
             if (settingsData?.siteName) setSiteName(settingsData.siteName);
-            if (settingsData?.loginBackgroundImage) setLoginBackground(settingsData.loginBackgroundImage);
+            if (settingsData?.loginBackgroundImage) setLoginImageUrl(settingsData.loginBackgroundImage);
         }
         try {
             const response = await fetch('https://ipapi.co/json/');
@@ -247,6 +246,8 @@ export default function LoginPage() {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div id="recaptcha-container" />
+
+      {/* --- COLONNE DROITE : FORMULAIRE --- */}
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center justify-center mb-6 text-center">
@@ -325,13 +326,15 @@ export default function LoginPage() {
             </Tabs>
         </div>
       </div>
-       <div className="hidden lg:block h-full w-full">
+      
+      {/* --- COLONNE GAUCHE : IMAGE --- */}
+      <div className="hidden bg-muted lg:block relative">
         <Image 
-          src={loginBackground || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} 
-          alt="Image d'arrière-plan" 
-          width="1200" 
-          height="1800" 
-          className="h-screen w-full object-cover"
+          src={loginImageUrl || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} 
+          alt="Illustration"
+          width={1200} 
+          height={1800} 
+          className="absolute inset-0 h-full w-full object-cover"
           priority
           data-ai-hint="learning students" 
         />
