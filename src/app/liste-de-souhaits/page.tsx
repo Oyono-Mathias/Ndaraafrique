@@ -17,9 +17,9 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, Trash2 } from 'lucide-react';
+import { Heart, Trash2, Play } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Course } from '@/lib/types';
+import type { Course, Enrollment } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 
 interface WishlistItem {
@@ -30,6 +30,7 @@ interface WishlistItem {
 interface WishlistCourse extends Course {
   wishlistItemId: string;
   instructorName?: string;
+  isEnrolled: boolean;
 }
 
 const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: (wishlistItemId: string) => void }) => {
@@ -41,7 +42,7 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
 
   return (
     <div className="relative group bg-white border border-slate-200 rounded-lg overflow-hidden transition-shadow hover:shadow-md">
-      <Link href={`/course/${course.id}`} className="flex gap-4">
+      <Link href={course.isEnrolled ? `/courses/${course.id}` : `/course/${course.id}`} className="flex gap-4">
         <Image
           src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
           alt={course.title}
@@ -59,7 +60,8 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
               {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
             </p>
             <Button size="sm" className="h-8">
-              S'inscrire
+              {course.isEnrolled ? <Play className="h-4 w-4 mr-2" /> : null}
+              {course.isEnrolled ? 'Aller au cours' : "S'inscrire"}
             </Button>
           </div>
         </div>
@@ -91,6 +93,7 @@ export default function WishlistPage() {
     }
 
     const unsubscribe = onSnapshot(query(collection(db, `users/${user.uid}/wishlist`)), async (snapshot) => {
+      setIsLoading(true);
       if (snapshot.empty) {
         setWishlistCourses([]);
         setIsLoading(false);
@@ -98,15 +101,20 @@ export default function WishlistPage() {
       }
       
       const items = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as WishlistItem));
-      const ids = items.map(i => i.courseId).filter(Boolean);
+      const courseIds = items.map(i => i.courseId).filter(Boolean);
       
-      if (ids.length === 0) {
+      if (courseIds.length === 0) {
         setWishlistCourses([]);
         setIsLoading(false);
         return;
       }
 
-      const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', ids.slice(0, 30))));
+      // Fetch user's enrollments to check status
+      const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', user.uid));
+      const enrollmentsSnap = await getDocs(enrollmentsQuery);
+      const enrolledCourseIds = new Set(enrollmentsSnap.docs.map(doc => doc.data().courseId));
+
+      const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 30))));
       const coursesMap = new Map(coursesSnap.docs.map(d => [d.id, { id: d.id, ...d.data() } as Course]));
       
       const instructorIds = [...new Set(coursesSnap.docs.map(d => d.data().instructorId).filter(Boolean))];
@@ -117,7 +125,6 @@ export default function WishlistPage() {
         instSnap.forEach(d => instMap.set(d.data().uid, d.data() as FormaAfriqueUser));
       }
 
-      // VERSION SECURISEE : On utilise une boucle forEach au lieu de map/filter
       const result: WishlistCourse[] = [];
       items.forEach(item => {
         const course = coursesMap.get(item.courseId);
@@ -127,7 +134,8 @@ export default function WishlistPage() {
             ...course,
             wishlistItemId: item.id,
             instructorName: instructor?.fullName,
-            id: course.id
+            id: course.id,
+            isEnrolled: enrolledCourseIds.has(course.id), // Check if enrolled
           });
         }
       });
@@ -160,6 +168,7 @@ export default function WishlistPage() {
         <div className="text-center py-20 border-2 border-dashed rounded-xl">
           <Heart className="mx-auto h-12 w-12 text-red-300" />
           <h3 className="mt-4 text-lg font-semibold text-slate-600">Rien ici ❤️</h3>
+          <p className="text-sm text-slate-500">Ajoutez des cours qui vous intéressent pour les retrouver plus tard.</p>
           <Button asChild variant="link"><Link href="/dashboard">Parcourir les cours</Link></Button>
         </div>
       ) : (
