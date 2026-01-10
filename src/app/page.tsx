@@ -215,7 +215,7 @@ export default function LandingPage() {
         {/* Stats Section */}
         <section className="py-16 bg-slate-900/50">
           <div className="container mx-auto px-4">
-             <div className="grid grid-cols-1 gap-y-12 sm:grid-cols-3 sm:gap-x-8">
+             <div className="flex flex-col sm:flex-row justify-around items-center gap-12">
                 <StatItem value="15+" label="Pays africains" icon={MapPin}>
                    <div className="absolute top-0 right-0 flex">
                         <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
@@ -299,4 +299,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
