@@ -27,7 +27,7 @@ export default {
         'tv': '1920px',     // TV screens
       },
       fontFamily: {
-        sans: ["var(--font-sans)", ...fontFamily.sans],
+        sans: ["Inter", "Poppins", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",

@@ -242,29 +242,29 @@ export default function LoginPage() {
   }
 
   return (
-     <div className="auth-page-container" style={containerStyle}>
-        <div className="min-h-screen w-full flex items-center justify-center p-4">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
-            <Card className="auth-card bg-card/80 backdrop-blur-sm border-white/10 text-card-foreground">
-                <TabsList className="grid w-full grid-cols-2 bg-white/5 border-white/10 m-2">
-                    <TabsTrigger value="login" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-300">{t('loginButton')}</TabsTrigger>
-                    <TabsTrigger value="register" className="data-[state=active]:bg-white/10 data-[state=active]:text-white text-slate-300">{t('registerButton')}</TabsTrigger>
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-sm">
+           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
+            <Card className="shadow-none border-none bg-transparent">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
+                    <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="login" className="m-0">
-                <CardHeader className="items-center pb-4">
-                    {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
-                    <CardTitle className="text-2xl font-bold">{t('loginTitle')}</CardTitle>
+                <CardHeader className="text-center pb-4">
+                    <CardTitle className="text-3xl font-bold">{t('loginTitle')}</CardTitle>
                     <CardDescription>{t('loginDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4 pb-4">
                     <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                         <FormField control={loginForm.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel className="form-label-white">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={loginForm.control} name="password" render={({ field }) => (
-                        <FormItem><FormLabel className="form-label-white">{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <div className="flex items-center justify-between">
                             <FormField control={loginForm.control} name="rememberMe" render={({ field }) => (
@@ -276,7 +276,7 @@ export default function LoginPage() {
                             <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('forgotPasswordLink')}</Link>
                         </div>
 
-                        <Button type="submit" className="w-full h-10 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
+                        <Button type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {t('loginButton')}
                         </Button>
@@ -284,13 +284,13 @@ export default function LoginPage() {
                     </Form>
                     <div className="relative my-4">
                         <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t border-slate-600" />
+                            <span className="w-full border-t" />
                         </div>
                         <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-card px-2 text-muted-foreground">OU</span>
+                            <span className="bg-background px-2 text-muted-foreground">OU</span>
                         </div>
                     </div>
-                    <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                    <Button variant="outline" type="button" className="w-full h-11" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                         {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                         Continuer avec Google
                     </Button>
@@ -304,32 +304,32 @@ export default function LoginPage() {
                 </TabsContent>
                 
                 <TabsContent value="register" className="m-0">
-                <CardHeader className="items-center pb-4">
-                    <CardTitle className="text-2xl font-bold">{t('registerTitle')}</CardTitle>
+                <CardHeader className="text-center pb-4">
+                    <CardTitle className="text-3xl font-bold">{t('registerTitle')}</CardTitle>
                     <CardDescription>{t('registerDescription')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-3 pb-4">
                     <Form {...registerForm}>
                         <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
                         <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                            <FormItem><FormLabel className="form-label-white">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={registerForm.control} name="email" render={({ field }) => (
-                            <FormItem><FormLabel className="form-label-white">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
                         )} />
                         <FormField control={registerForm.control} name="password" render={({ field }) => (
-                            <FormItem><FormLabel className="form-label-white">{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="auth-input" /></FormControl><FormMessage /></FormItem>
+                            <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
                         )} />
 
                         {countryError ? (
                             <FormItem>
-                                <FormLabel className="form-label-white">Pays</FormLabel>
+                                <FormLabel>Pays</FormLabel>
                                 <Select onValueChange={(value) => {
                                     const country = africanCountries.find(c => c.code === value);
                                     if(country) setDetectedCountry({name: country.name, code: country.code, flag: country.prefix});
                                 }}>
                                     <FormControl>
-                                        <SelectTrigger className="auth-input">
+                                        <SelectTrigger className="h-11">
                                             <SelectValue placeholder="Sélectionnez votre pays" />
                                         </SelectTrigger>
                                     </FormControl>
@@ -346,30 +346,30 @@ export default function LoginPage() {
                                 </Select>
                             </FormItem>
                         ) : detectedCountry ? (
-                            <div className="flex items-center gap-2 p-2 rounded-md bg-white/10 text-sm">
-                                <MapPin className="h-4 w-4" />
-                                <span>Pays détecté : {detectedCountry.name}</span>
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <span className="text-muted-foreground">Pays détecté : {detectedCountry.name}</span>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 p-2 rounded-md bg-white/10 text-sm">
-                               <Loader2 className="h-4 w-4 animate-spin"/>
-                               <span>Détection du pays...</span>
+                            <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm">
+                               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/>
+                               <span className="text-muted-foreground">Détection du pays...</span>
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full h-10 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
+                        <Button type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {t('createAccountButton')}
                         </Button>
                          <div className="relative my-4">
                             <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t border-slate-600" />
+                                <span className="w-full border-t" />
                             </div>
                             <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-card px-2 text-muted-foreground">OU</span>
+                                <span className="bg-background px-2 text-muted-foreground">OU</span>
                             </div>
                         </div>
-                        <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        <Button variant="outline" type="button" className="w-full h-11" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                             {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                             Continuer avec Google
                         </Button>
@@ -386,6 +386,17 @@ export default function LoginPage() {
             </Card>
             </Tabs>
         </div>
+      </div>
+      <div className="hidden lg:block">
+        <Image
+          src="https://picsum.photos/seed/login/1200/1800"
+          alt="Image"
+          width="1200"
+          height="1800"
+          className="h-full w-full object-cover"
+          data-ai-hint="learning students"
+        />
+      </div>
     </div>
   );
 }
