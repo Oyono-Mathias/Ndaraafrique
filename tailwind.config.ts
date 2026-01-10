@@ -2,7 +2,6 @@
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme"
 
-// Added a comment to force cache invalidation.
 export default {
   darkMode: 'class',
   content: [
@@ -27,7 +26,7 @@ export default {
         'tv': '1920px',     // TV screens
       },
       fontFamily: {
-        sans: ["Inter", "Poppins", ...fontFamily.sans],
+        sans: ["var(--font-sans)", ...fontFamily.sans],
       },
       colors: {
         border: "hsl(var(--border))",

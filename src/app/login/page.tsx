@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, MapPin } from 'lucide-react';
+import { Loader2, MapPin, BookOpen } from 'lucide-react';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
@@ -245,6 +245,18 @@ export default function LoginPage() {
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-sm">
+            <div className="flex flex-col items-center justify-center mb-6 text-center">
+              {logoUrl ? (
+                <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" />
+              ) : (
+                <div className="flex items-center gap-2 text-2xl font-bold text-secondary">
+                  <BookOpen className="h-8 w-8" />
+                  <span>FormaAfrique</span>
+                </div>
+              )}
+              <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
+            </div>
+            
            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
             <Card className="shadow-none border-none bg-transparent">
                 <TabsList className="grid w-full grid-cols-2">
@@ -252,12 +264,8 @@ export default function LoginPage() {
                     <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
                 </TabsList>
 
-                <TabsContent value="login" className="m-0">
-                <CardHeader className="text-center pb-4">
-                    <CardTitle className="text-3xl font-bold">{t('loginTitle')}</CardTitle>
-                    <CardDescription>{t('loginDescription')}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4 pb-4">
+                <TabsContent value="login" className="m-0 pt-6">
+                <CardContent className="space-y-4 pb-4 p-0">
                     <Form {...loginForm}>
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                         <FormField control={loginForm.control} name="email" render={({ field }) => (
@@ -276,7 +284,7 @@ export default function LoginPage() {
                             <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('forgotPasswordLink')}</Link>
                         </div>
 
-                        <Button type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
+                        <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isGoogleLoading}>
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {t('loginButton')}
                         </Button>
@@ -290,25 +298,15 @@ export default function LoginPage() {
                             <span className="bg-background px-2 text-muted-foreground">OU</span>
                         </div>
                     </div>
-                    <Button variant="outline" type="button" className="w-full h-11" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                    <Button variant="outline" type="button" className="w-full h-11 btn" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                         {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                         Continuer avec Google
                     </Button>
                 </CardContent>
-                <CardContent className="p-4 pt-0 text-center text-sm">
-                    <p>
-                        {t('noAccountPrompt')}{' '}
-                        <button onClick={() => setActiveTab('register')} className="font-semibold text-primary hover:underline">{t('registerLink')}</button>
-                    </p>
-                </CardContent>
                 </TabsContent>
                 
-                <TabsContent value="register" className="m-0">
-                <CardHeader className="text-center pb-4">
-                    <CardTitle className="text-3xl font-bold">{t('registerTitle')}</CardTitle>
-                    <CardDescription>{t('registerDescription')}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3 pb-4">
+                <TabsContent value="register" className="m-0 pt-6">
+                <CardContent className="space-y-3 pb-4 p-0">
                     <Form {...registerForm}>
                         <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
                         <FormField control={registerForm.control} name="fullName" render={({ field }) => (
@@ -357,7 +355,7 @@ export default function LoginPage() {
                             </div>
                         )}
 
-                        <Button type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading || isGoogleLoading}>
+                        <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isGoogleLoading}>
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {t('createAccountButton')}
                         </Button>
@@ -369,27 +367,21 @@ export default function LoginPage() {
                                 <span className="bg-background px-2 text-muted-foreground">OU</span>
                             </div>
                         </div>
-                        <Button variant="outline" type="button" className="w-full h-11" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        <Button variant="outline" type="button" className="w-full h-11 btn" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                             {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                             Continuer avec Google
                         </Button>
                         </form>
                     </Form>
                 </CardContent>
-                <CardContent className="p-4 pt-0 text-center text-sm">
-                    <p>
-                        {t('alreadyAccountPrompt')}{' '}
-                        <button onClick={() => setActiveTab('login')} className="font-semibold text-primary hover:underline">{t('loginLink')}</button>
-                    </p>
-                </CardContent>
                 </TabsContent>
             </Card>
             </Tabs>
         </div>
       </div>
-      <div className="hidden lg:block">
+      <div className="hidden lg:block bg-slate-100">
         <Image
-          src="https://picsum.photos/seed/login/1200/1800"
+          src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"
           alt="Image"
           width="1200"
           height="1800"
