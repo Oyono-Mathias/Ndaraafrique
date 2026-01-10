@@ -23,6 +23,7 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ReviewForm } from '@/components/reviews/review-form';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import dynamic from 'next/dynamic';
 import {
   Accordion,
@@ -34,9 +35,18 @@ import { Badge } from '@/components/ui/badge';
 import { sendEnrollmentEmails } from '@/lib/emails';
 import { verifyMonerooTransaction } from '@/app/actions/monerooActions';
 import Script from 'next/script';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
 
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
+
+const questionFormSchema = z.object({
+  subject: z.string().min(10, { message: "Le sujet doit contenir au moins 10 caractères." }),
+  message: z.string().min(20, { message: "Votre question doit contenir au moins 20 caractères." }),
+});
+type QuestionFormValues = z.infer<typeof questionFormSchema>;
 
 interface ReviewWithUser extends Review {
   reviewerName?: string;
@@ -274,6 +284,10 @@ export default function CourseDetailsClient() {
   const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [previewLesson, setPreviewLesson] = useState<Lecture | null>(null);
 
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+  const questionForm = useForm<QuestionFormValues>({ resolver: zodResolver(questionFormSchema) });
+
   const courseRef = useMemoFirebase(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
@@ -296,6 +310,51 @@ export default function CourseDetailsClient() {
     setPreviewLesson(lesson);
     setIsPreviewModalOpen(true);
   }
+  
+    const handleAskQuestion = async (data: QuestionFormValues) => {
+        if (!user || !course || !instructor) return;
+        setIsSubmittingQuestion(true);
+        try {
+            const ticketsCollection = collection(db, 'support_tickets');
+            const newTicketRef = doc(ticketsCollection);
+            
+            const ticketPayload = {
+                ticketId: newTicketRef.id,
+                userId: user.uid,
+                instructorId: instructor.uid,
+                courseId: course.id,
+                subject: data.subject,
+                lastMessage: data.message,
+                status: 'open',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            
+            const messagePayload = {
+                senderId: user.uid,
+                text: data.message,
+                createdAt: serverTimestamp(),
+            };
+
+            await setDoc(newTicketRef, ticketPayload);
+            await addDoc(collection(newTicketRef, 'messages'), messagePayload);
+
+            toast({ title: 'Question envoyée !', description: "L'instructeur a été notifié." });
+            setIsQuestionModalOpen(false);
+            questionForm.reset();
+            router.push(`/questions-reponses/${newTicketRef.id}`);
+
+        } catch (error) {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'support_tickets',
+                operation: 'create',
+            }));
+            console.error("Error creating support ticket:", error);
+        } finally {
+            setIsSubmittingQuestion(false);
+        }
+    }
+
 
   const handlePaymentSuccess = async (data: any) => {
     if (!course || !instructor || !user || !formaAfriqueUser) return;
@@ -639,7 +698,17 @@ export default function CourseDetailsClient() {
                 
                 {/* --- Curriculum --- */}
                 <CourseCurriculum courseId={courseId} isEnrolled={isEnrolled} onPreviewClick={handlePreviewClick} />
-
+                
+                 {/* --- Q&A Button --- */}
+                 {isEnrolled && (
+                    <div className="border-t border-slate-800 pt-8">
+                       <Button onClick={() => setIsQuestionModalOpen(true)} className="w-full md:w-auto" variant="secondary">
+                           <MessageSquarePlus className="mr-2 h-4 w-4"/>
+                           Poser une question à l'instructeur
+                       </Button>
+                    </div>
+                )}
+                
                 {/* --- Instructor --- */}
                 {instructor && (
                   <div>
@@ -765,7 +834,41 @@ export default function CourseDetailsClient() {
           <ReactPlayer url={previewLesson?.videoUrl || ''} width="100%" height="100%" controls playing={true} config={{ youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } } }} />
         </DialogContent>
       </Dialog>
+      
+       {/* --- Ask Question Modal --- */}
+       <Dialog open={isQuestionModalOpen} onOpenChange={setIsQuestionModalOpen}>
+           <DialogContent className="dark:bg-slate-800 dark:border-slate-700">
+                <DialogHeader>
+                    <DialogTitle className="dark:text-white">Poser une question à {instructor?.fullName}</DialogTitle>
+                    <DialogDescription className="dark:text-slate-400">Votre question sera envoyée directement à l'instructeur.</DialogDescription>
+                </DialogHeader>
+                 <Form {...questionForm}>
+                    <form onSubmit={questionForm.handleSubmit(handleAskQuestion)} className="space-y-4">
+                        <FormField control={questionForm.control} name="subject" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="dark:text-slate-300">Sujet</FormLabel>
+                                <FormControl><Input placeholder="Ex: Problème avec la leçon 5" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={questionForm.control} name="message" render={({ field }) => (
+                             <FormItem>
+                                <FormLabel className="dark:text-slate-300">Votre question</FormLabel>
+                                <FormControl><Textarea placeholder="Bonjour, je n'ai pas bien compris..." {...field} rows={5} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setIsQuestionModalOpen(false)}>Annuler</Button>
+                            <Button type="submit" disabled={isSubmittingQuestion}>
+                                {isSubmittingQuestion ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Envoyer la question
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+           </DialogContent>
+       </Dialog>
     </>
   );
 }
-

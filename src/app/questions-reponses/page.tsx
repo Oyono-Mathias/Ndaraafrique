@@ -34,9 +34,9 @@ interface SupportTicket {
 
 const TicketStatusBadge = ({ status }: { status: SupportTicket['status'] }) => {
     if (status === 'open') {
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200">En attente</Badge>;
+        return <Badge className="bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700">En attente</Badge>;
     }
-    return <Badge className="bg-green-100 text-green-800 border-green-200">Répondu</Badge>;
+    return <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">Répondu</Badge>;
 };
 
 
@@ -62,12 +62,15 @@ export default function QAPage() {
     const { data: tickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
     const isLoading = isUserLoading || ticketsLoading;
 
+    const pageThemeClass = formaAfriqueUser?.role === 'instructor' ? 'dark' : '';
+
+
     return (
-        <div className="space-y-8">
+        <div className={`space-y-8 ${pageThemeClass}`}>
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Questions & Réponses</h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground dark:text-slate-400">
                         {formaAfriqueUser?.role === 'instructor' 
                             ? 'Gérez les questions des étudiants pour tous vos cours.'
                             : 'Consultez vos questions posées aux instructeurs.'
@@ -86,51 +89,51 @@ export default function QAPage() {
                 </div>
             )}
 
-            <Card className="bg-card shadow-sm">
+            <Card className="bg-card shadow-sm dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
-                    <CardTitle>Boîte de réception</CardTitle>
+                    <CardTitle className="dark:text-white">Boîte de réception</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Statut</TableHead>
-                                <TableHead>Sujet</TableHead>
-                                <TableHead>Dernière activité</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                            <TableRow className="dark:border-slate-700">
+                                <TableHead className="dark:text-slate-400">Statut</TableHead>
+                                <TableHead className="dark:text-slate-400">Sujet</TableHead>
+                                <TableHead className="dark:text-slate-400">Dernière activité</TableHead>
+                                <TableHead className="text-right dark:text-slate-400">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                     <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-20" /></TableCell>
+                                     <TableRow key={i} className="dark:border-slate-700">
+                                        <TableCell><Skeleton className="h-6 w-20 rounded-full bg-slate-200 dark:bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-48 bg-slate-200 dark:bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-24 bg-slate-200 dark:bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-20 bg-slate-200 dark:bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : tickets && tickets.length > 0 ? (
                                 tickets.map((ticket) => (
-                                    <TableRow key={ticket.id} className="hover:bg-muted/50">
+                                    <TableRow key={ticket.id} className="hover:bg-muted/50 dark:hover:bg-slate-700/50 dark:border-slate-700">
                                         <TableCell>
                                             <TicketStatusBadge status={ticket.status} />
                                         </TableCell>
-                                        <TableCell className="font-medium">{ticket.subject}</TableCell>
-                                        <TableCell className="text-muted-foreground text-sm">
+                                        <TableCell className="font-medium dark:text-slate-200">{ticket.subject}</TableCell>
+                                        <TableCell className="text-muted-foreground text-sm dark:text-slate-400">
                                             {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" asChild>
+                                            <Button variant="outline" size="sm" asChild className="dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600">
                                                 <Link href={`/questions-reponses/${ticket.id}`}>Voir</Link>
                                             </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow>
+                                <TableRow className="dark:border-slate-700">
                                     <TableCell colSpan={5} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <MessageSquare className="h-10 w-10" />
                                             <span className="font-medium">Aucune question pour le moment</span>
                                             <span className="text-sm">Les nouvelles questions apparaîtront ici.</span>
