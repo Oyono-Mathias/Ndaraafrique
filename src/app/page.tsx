@@ -43,50 +43,7 @@ export default function LandingPage() {
   const { user, isUserLoading } = useRole();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [courses, setCourses] = useState<Course[]>([]);
-  const [instructors, setInstructors] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
-  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      setIsLoadingCourses(true);
-      const db = getFirestore();
-      try {
-        const coursesRef = collection(db, 'courses');
-        const q = query(coursesRef, where('status', '==', 'Published'), orderBy('createdAt', 'desc'), limit(8));
-        const querySnapshot = await getDocs(q);
-        const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-        setCourses(coursesData);
-
-        if (coursesData.length > 0) {
-          const instructorIds = [...new Set(coursesData.map(c => c.instructorId).filter(Boolean))];
-          if (instructorIds.length > 0) {
-            const usersRef = collection(db, 'users');
-            const usersQuery = query(usersRef, where('uid', 'in', instructorIds));
-            const usersSnapshot = await getDocs(usersQuery);
-            const instructorsMap = new Map<string, Partial<FormaAfriqueUser>>();
-            usersSnapshot.forEach(doc => {
-              instructorsMap.set(doc.data().uid, doc.data());
-            });
-            setInstructors(instructorsMap);
-          }
-        }
-      } catch (error) {
-        console.error("Error fetching courses for landing page:", error);
-      } finally {
-        setIsLoadingCourses(false);
-      }
-    };
-    fetchCourses();
-  }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchTerm.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchTerm.trim())}`);
-    }
-  };
-
+  
   useEffect(() => {
     if (!isUserLoading && user) {
       router.push('/dashboard');
@@ -109,18 +66,6 @@ export default function LandingPage() {
             <Image src="/icon.svg" alt="FormaAfrique Logo" width={32} height={32} />
             <span className="font-bold text-xl text-slate-900 dark:text-white">FormaAfrique</span>
           </Link>
-          <div className="hidden md:flex flex-1 justify-center px-8">
-            <form onSubmit={handleSearch} className="relative w-full max-w-lg">
-                <Input
-                    type="search"
-                    placeholder="Que voulez-vous apprendre aujourd'hui ?"
-                    className="w-full pl-10 pr-4 py-2 h-11 bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded-full text-slate-900 dark:text-white placeholder:text-slate-400 focus:ring-primary focus:ring-2 focus:border-transparent"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-            </form>
-          </div>
           <div className="hidden md:flex items-center gap-2">
             <Button variant="ghost" asChild className="text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white">
               <Link href="/login">Se connecter</Link>
@@ -177,29 +122,17 @@ export default function LandingPage() {
               </div>
             </div>
         </section>
-        <section className="py-16 md:py-24">
-            <div className="container mx-auto px-4">
-                 <h2 className="text-3xl font-bold text-center mb-10 text-slate-900 dark:text-white">Une sélection de cours pour démarrer</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {isLoadingCourses ? (
-                      [...Array(8)].map((_, i) => (
-                        <div key={i} className="space-y-2">
-                           <Skeleton className="h-40 w-full rounded-lg bg-slate-200 dark:bg-slate-800" />
-                           <Skeleton className="h-5 w-full bg-slate-200 dark:bg-slate-800" />
-                           <Skeleton className="h-4 w-1/2 bg-slate-200 dark:bg-slate-800" />
-                        </div>
-                      ))
-                    ) : courses.length > 0 ? (
-                      courses.map(course => <CourseCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />)
-                    ) : (
-                      <div className="col-span-full text-center py-10 text-slate-500">
-                        <Frown className="w-12 h-12 mx-auto" />
-                        <p className="mt-4">Aucun cours n'est disponible pour le moment.</p>
-                      </div>
-                    )}
-                </div>
-            </div>
+        
+        <section className="py-16 md:py-24 text-center">
+            <h2 className="text-3xl font-bold text-center mb-4 text-slate-900 dark:text-white">Un large catalogue de formations</h2>
+            <p className="max-w-2xl mx-auto text-slate-600 dark:text-slate-400 mb-8">
+                Pour voir l'ensemble de nos formations, il vous suffit de créer un compte. L'inscription est gratuite et rapide.
+            </p>
+            <Button asChild size="lg" className="h-12 text-base">
+                 <Link href="/login?tab=register">Inscrivez-vous pour voir nos formations</Link>
+            </Button>
         </section>
+
         <section className="py-16 md:py-24 bg-slate-100 dark:bg-slate-900/50">
             <div className="container mx-auto px-4">
                 <div className="grid md:grid-cols-3 gap-10 text-center">
@@ -240,3 +173,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    

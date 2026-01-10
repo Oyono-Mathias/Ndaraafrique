@@ -43,7 +43,7 @@ export default function BecomeInstructorPage() {
         toast({
             variant: "destructive",
             title: "Accès refusé",
-            description: "Vous devez être connecté pour devenir instructeur.",
+            description: "Veuillez créer un compte pour accéder à ce contenu.",
         });
         router.push('/login?tab=register');
     }
@@ -102,7 +102,7 @@ export default function BecomeInstructorPage() {
     );
   };
   
-   if (isUserLoading) {
+   if (isUserLoading || (!isUserLoading && !user)) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
@@ -201,3 +201,5 @@ export default function BecomeInstructorPage() {
     </div>
   );
 }
+
+    

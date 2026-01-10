@@ -306,6 +306,17 @@ export default function CourseDetailsClient() {
   const wishlistRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'users', user.uid, 'wishlist', courseId) : null, [user, courseId, db]);
   const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
   const isInWishlist = !!wishlistItem;
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        toast({
+            variant: "destructive",
+            title: "Accès non autorisé",
+            description: "Veuillez créer un compte pour accéder à ce contenu.",
+        });
+        router.push('/login?tab=register');
+    }
+  }, [isUserLoading, user, router, toast]);
 
   const handlePreviewClick = (lesson: Lecture) => {
     setPreviewLesson(lesson);
@@ -549,7 +560,7 @@ export default function CourseDetailsClient() {
 
   const isLoading = courseLoading || instructorLoading || enrollmentsLoading || isUserLoading || isWishlistLoading;
 
-  if (isLoading) {
+  if (isLoading || (!isUserLoading && !user)) {
     return (
       <div className="container mx-auto max-w-5xl py-8 px-4">
         <div className="grid md:grid-cols-3 gap-8">
@@ -873,3 +884,5 @@ export default function CourseDetailsClient() {
     </>
   );
 }
+
+    

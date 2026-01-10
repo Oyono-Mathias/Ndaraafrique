@@ -9,10 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { Star, Search, Frown } from 'lucide-react';
+import { Star, Search, Frown, Loader2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useRole } from '@/context/RoleContext';
+import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 const FILTERS = ['Tous', 'Gratuit', 'Design', 'Code', 'Marketing', 'Business'];
 
@@ -51,6 +54,9 @@ const ResultRow = ({ course, instructor }: { course: Course, instructor: FormaAf
 
 export default function SearchPage() {
     const db = getFirestore();
+    const router = useRouter();
+    const { toast } = useToast();
+    const { user, isUserLoading } = useRole();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [results, setResults] = useState<Course[]>([]);
@@ -60,12 +66,25 @@ export default function SearchPage() {
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
     useEffect(() => {
+        if (!isUserLoading && !user) {
+            toast({
+                variant: "destructive",
+                title: "Accès non autorisé",
+                description: "Veuillez créer un compte pour accéder à ce contenu.",
+            });
+            router.push('/login?tab=register');
+        }
+    }, [isUserLoading, user, router, toast]);
+
+    useEffect(() => {
+        // Don't run query if user is not yet loaded or doesn't exist
+        if (isUserLoading || !user) return;
+
         setIsLoading(true);
 
         const coursesRef = collection(db, 'courses');
         let q = query(coursesRef, where('status', '==', 'Published'));
         
-        // Apply text search filter if there is a search term
         if (debouncedSearchTerm) {
             const lowercasedTerm = debouncedSearchTerm.toLowerCase();
             q = query(q, 
@@ -75,7 +94,6 @@ export default function SearchPage() {
             );
         }
 
-        // Apply category/price filter
         if (activeFilter !== 'Tous') {
             if (activeFilter === 'Gratuit') {
                 q = query(q, where('price', '==', 0));
@@ -92,7 +110,6 @@ export default function SearchPage() {
             const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
             setResults(coursesData);
             
-            // Fetch instructors for the new results
             if (coursesData.length > 0) {
                 const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
                 const newInstructors = new Map(instructors);
@@ -114,17 +131,13 @@ export default function SearchPage() {
             setIsLoading(false);
         }, (error) => {
             console.error("Search query failed:", error);
-            // Firestore might require an index for this query.
-            // For now, we'll just show an empty state.
             setResults([]);
             setIsLoading(false);
         });
-
-        // Add a timeout to prevent infinite loading state
+        
         const loadingTimeout = setTimeout(() => {
             if (isLoading) {
                 setIsLoading(false);
-                console.warn("Search page loading timeout reached.");
             }
         }, 5000);
 
@@ -132,7 +145,11 @@ export default function SearchPage() {
             unsubscribe();
             clearTimeout(loadingTimeout);
         };
-    }, [debouncedSearchTerm, activeFilter, db]);
+    }, [debouncedSearchTerm, activeFilter, db, user, isUserLoading]);
+
+    if (isUserLoading || !user) {
+        return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    }
 
     return (
         <div className="container mx-auto py-6 px-4 space-y-8">
@@ -194,3 +211,5 @@ export default function SearchPage() {
         </div>
     );
 }
+
+    
