@@ -8,7 +8,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User as FirebaseUser, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -123,14 +123,14 @@ export default function LoginPage() {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
-    if (userDocSnap.exists()) {
-      // User exists, only update last login to prevent overwriting roles.
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-      });
-    } else {
-      // New user, create the document with default student role
-      const newUserPayload: Partial<FormaAfriqueUser> = {
+    let userData: Partial<FormaAfriqueUser> = {
+      lastLogin: serverTimestamp() as any,
+    };
+
+    if (!userDocSnap.exists()) {
+      // User is new, create the full document
+      userData = {
+        ...userData,
         uid: firebaseUser.uid,
         email: firebaseUser.email || '',
         fullName: firebaseUser.displayName || firebaseUser.phoneNumber || 'Utilisateur',
@@ -141,8 +141,12 @@ export default function LoginPage() {
         country: detectedCountry?.name,
         countryCode: detectedCountry?.code?.toLowerCase(),
       };
-      await setDoc(userDocRef, newUserPayload);
     }
+    // For both new and existing users, we use { merge: true }
+    // This will create the doc if it doesn't exist, or update `lastLogin` if it does,
+    // without overwriting any other fields like 'role' or 'fullName'.
+    await setDoc(userDocRef, userData, { merge: true });
+
     toast({ title: t('loginSuccessTitle') });
     router.push('/dashboard');
   };
