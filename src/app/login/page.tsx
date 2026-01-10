@@ -110,8 +110,8 @@ export default function LoginPage() {
     fetchSettingsAndGeo();
   }, [db]);
   
-  const handleAuthSuccess = async (user: FirebaseUser, isNewUser: boolean = false, registrationData?: z.infer<typeof registerSchema>) => {
-    const userDocRef = doc(db, "users", user.uid);
+  const handleAuthSuccess = async (firebaseUser: FirebaseUser, isNewUser: boolean = false, registrationData?: z.infer<typeof registerSchema>) => {
+    const userDocRef = doc(db, "users", firebaseUser.uid);
     let userData;
 
     if (!isNewUser) {
@@ -119,43 +119,41 @@ export default function LoginPage() {
         userData = userDoc.data();
     }
     
-    if (userData) {
-        if (userData.role === 'admin') {
-            router.push('/admin');
-        } else {
-            router.push('/dashboard');
-        }
-    } else {
+    // If user document doesn't exist, create it
+    if (!userData) {
       const newUserPayload: Partial<FormaAfriqueUser> = {
-        uid: user.uid,
-        email: user.email || registrationData?.email || '',
-        fullName: user.displayName || registrationData?.fullName || 'Nouvel utilisateur',
+        uid: firebaseUser.uid,
+        email: firebaseUser.email || registrationData?.email || '',
+        fullName: firebaseUser.displayName || registrationData?.fullName || 'Nouvel utilisateur',
         role: 'student',
         isInstructorApproved: false,
         createdAt: serverTimestamp() as any,
-        profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${user.displayName || registrationData?.fullName}`,
+        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${firebaseUser.displayName || registrationData?.fullName}`,
         country: detectedCountry?.name,
-        countryCode: detectedCountry?.code.toLowerCase()
+        countryCode: detectedCountry?.code?.toLowerCase()
       };
       
-      setDoc(userDocRef, newUserPayload)
-        .catch(error => {
-            errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: userDocRef.path,
-                operation: 'create',
-                requestResourceData: newUserPayload,
-            }));
-            toast({
-                variant: 'destructive',
-                title: t('registerErrorTitle'),
-                description: 'Impossible de créer le profil utilisateur dans la base de données.',
-            });
+      try {
+        await setDoc(userDocRef, newUserPayload);
+      } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: userDocRef.path,
+            operation: 'create',
+            requestResourceData: newUserPayload,
+        }));
+        toast({
+            variant: 'destructive',
+            title: t('registerErrorTitle'),
+            description: 'Impossible de créer le profil utilisateur dans la base de données.',
         });
-       router.push('/dashboard');
+        return; // Stop execution if profile creation fails
+      }
     }
     
     toast({ title: t('loginSuccessTitle') });
+    router.push('/dashboard');
   };
+
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -191,7 +189,8 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        await handleAuthSuccess(result.user, true);
+        const isNewUser = !result.user.metadata.lastSignInTime;
+        await handleAuthSuccess(result.user, isNewUser);
     } catch (error) {
          let description = 'Une erreur inattendue est survenue.';
         if (error instanceof FirebaseError) {
@@ -281,13 +280,20 @@ export default function LoginPage() {
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {t('loginButton')}
                         </Button>
-                        
-                        <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                            {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
-                            Continuer avec Google
-                        </Button>
                     </form>
                     </Form>
+                    <div className="relative my-4">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t border-slate-600" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-card px-2 text-muted-foreground">OU</span>
+                        </div>
+                    </div>
+                    <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
+                        {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
+                        Continuer avec Google
+                    </Button>
                 </CardContent>
                 <CardContent className="p-4 pt-0 text-center text-sm">
                     <p>
@@ -355,6 +361,14 @@ export default function LoginPage() {
                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             {t('createAccountButton')}
                         </Button>
+                         <div className="relative my-4">
+                            <div className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t border-slate-600" />
+                            </div>
+                            <div className="relative flex justify-center text-xs uppercase">
+                                <span className="bg-card px-2 text-muted-foreground">OU</span>
+                            </div>
+                        </div>
                         <Button variant="outline" type="button" className="w-full h-10 bg-white/90 text-slate-800 hover:bg-white" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
                             {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
                             Continuer avec Google

@@ -5,7 +5,7 @@
 
 @layer base {
   :root {
-    --background: 240 5.9% 97.5%; /* slate-50 ~ #F8FAFC */
+    --background: 220 13% 97.5%; /* slate-50 ~ #F8FAFC */
     --background-alt: 0 0% 100%; /* white */
     --foreground: 224 71% 4%; /* slate-900 */
     --card: 0 0% 100%;
@@ -23,7 +23,7 @@
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
     --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --input: 220 13% 84%; /* darker border for inputs */
     --ring: 221 83% 53%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
@@ -70,38 +70,44 @@
   .auth-page-container {
     height: 100vh;
     width: 100vw;
-    overflow: hidden;
+    overflow-y: auto;
     position: relative;
     background-color: hsl(var(--background));
     background-image: none;
+    background-size: cover;
+    background-position: center;
   }
 
   .auth-card {
     background-color: hsl(var(--card));
     color: hsl(var(--card-foreground));
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    border-radius: 12px;
   }
   
+  .dark .auth-card {
+     background-color: hsla(222, 47%, 11%, 0.8);
+     border-color: hsla(0, 0%, 100%, 0.1);
+     color: hsl(0, 0%, 98%);
+  }
+
   .auth-card .form-label-white {
-    color: inherit;
+    color: hsl(var(--card-foreground));
   }
   
-  .auth-card h1, .auth-card h2, .auth-card h3, .auth-card p, .auth-card span {
-      color: inherit;
-  }
-  
-  .bg-grid-slate-700\/40 {
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' width='32' height='32' fill='none' stroke='rgb(51 65 85 / 0.4)'%3e%3cpath d='M0 .5H31.5V32'/%3e%3c/svg%3e");
+  .dark .auth-card .form-label-white {
+    color: hsl(215, 20%, 65%); /* muted-foreground */
   }
 
-  @keyframes rotateRays {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+  .auth-input {
+      background-color: hsl(var(--muted));
+      border-color: hsl(var(--border));
+      color: hsl(var(--foreground));
+      height: 2.5rem; /* 40px */
   }
 
-  .auth-page-container::before {
-    content: none;
+  .dark .auth-input {
+      background-color: hsl(215, 28%, 20%);
+      border-color: hsl(215, 28%, 30%);
+      color: hsl(0, 0%, 98%);
   }
   
    .auth-page-container > div {
@@ -163,3 +169,4 @@
 .dark .chat-bubble-received::after {
      border-color: transparent transparent #202c33 transparent;
 }
+
