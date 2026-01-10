@@ -243,23 +243,23 @@ export default function CoursePlayerPage() {
     // Redirect if not enrolled or if free enrollment needs to become paid
     useEffect(() => {
         if (!isLoading && course) {
-            // Not enrolled at all
             if (!isEnrolled) {
-                 toast({
+                toast({
                     title: "Accès refusé",
-                    description: "Vous devez être inscrit à ce cours.",
+                    description: "Vous devez être inscrit à ce cours pour y accéder.",
                     variant: "destructive"
                 });
                 router.push(`/course/${courseId}`);
                 return;
             }
-            
-            // Enrolled but course became paid
-            if (isEnrolled && course.price > 0 && enrollment.priceAtEnrollment === 0) {
+
+            // CRITICAL BUSINESS LOGIC: If course is now paid, but was free on enrollment, block access.
+            if (course.price > 0 && enrollment.priceAtEnrollment === 0) {
                 toast({
                     title: "Accès mis à jour",
-                    description: "Ce cours est maintenant payant. Veuillez l'acheter pour continuer.",
-                    variant: "destructive"
+                    description: "Désolé, la période de gratuité de ce cours est terminée. Le cours est devenu payant, veuillez l'acheter pour continuer votre progression.",
+                    variant: "destructive",
+                    duration: 10000,
                 });
                 router.push(`/course/${courseId}`);
                 return;
