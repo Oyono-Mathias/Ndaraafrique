@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRole } from '@/context/RoleContext';
 import {
   getFirestore,
@@ -30,6 +30,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Course, Review } from '@/lib/types';
+import type { FormaAfriqueUser } from '@/context/RoleContext';
 
 
 interface ReviewWithDetails extends Review {
@@ -83,73 +84,82 @@ export default function ReviewsPage() {
   const [reviews, setReviews] = useState<ReviewWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!formaAfriqueUser?.uid || !formaAfriqueUser.isInstructorApproved) {
-      if (!isUserLoading) setIsLoading(false);
-      return;
-    }
-
+  const fetchAllReviews = useCallback(async (instructorId: string) => {
     setIsLoading(true);
 
-    const instructorCoursesQuery = query(collection(db, 'courses'), where('instructorId', '==', formaAfriqueUser.uid));
-
-    const unsubscribeCourses = onSnapshot(instructorCoursesQuery, async (coursesSnapshot) => {
-        if (coursesSnapshot.empty) {
-            setReviews([]);
-            setIsLoading(false);
-            return;
-        }
-
-        const courseIds = coursesSnapshot.docs.map(doc => doc.id);
-        const coursesMap = new Map<string, Course>();
-        coursesSnapshot.forEach(doc => coursesMap.set(doc.id, doc.data() as Course));
-
-        if (courseIds.length === 0) {
-            setReviews([]);
-            setIsLoading(false);
-            return;
-        }
-
-        const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', courseIds.slice(0, 30)), orderBy('createdAt', 'desc'));
-        
-        onSnapshot(reviewsQuery, async (reviewsSnapshot) => {
-            if (reviewsSnapshot.empty) {
-                setReviews([]);
-                setIsLoading(false);
-                return;
-            }
-
-            const allReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
-            const userIds = [...new Set(allReviews.map(r => r.userId))];
-
-            const usersMap = new Map();
-            if (userIds.length > 0) {
-                const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
-                const userSnapshots = await getDocs(usersQuery);
-                userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
-            }
-
-            const populatedReviews = allReviews.map(review => ({
-                ...review,
-                courseTitle: coursesMap.get(review.courseId)?.title || 'Cours inconnu',
-                studentName: usersMap.get(review.userId)?.fullName || 'Anonyme',
-                studentImage: usersMap.get(review.userId)?.profilePictureURL,
-            }));
-            
-            setReviews(populatedReviews);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching reviews:", error);
-            setIsLoading(false);
-        });
-    }, (error) => {
-        console.error("Error fetching instructor courses:", error);
+    try {
+      // 1. Get all courses for the instructor
+      const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', instructorId));
+      const coursesSnapshot = await getDocs(coursesQuery);
+      if (coursesSnapshot.empty) {
+        setReviews([]);
         setIsLoading(false);
-    });
+        return;
+      }
+      const courseIds = coursesSnapshot.docs.map(doc => doc.id);
+      const coursesMap = new Map<string, Course>(coursesSnapshot.docs.map(doc => [doc.id, doc.data() as Course]));
 
-    return () => unsubscribeCourses();
+      // 2. Batch fetch reviews for all courses
+      const reviewPromises = [];
+      // Firestore 'in' query has a limit of 30 items, so we chunk the courseIds
+      for (let i = 0; i < courseIds.length; i += 30) {
+          const chunk = courseIds.slice(i, i + 30);
+          const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk));
+          reviewPromises.push(getDocs(reviewsQuery));
+      }
+      
+      const reviewSnapshots = await Promise.all(reviewPromises);
+      const allReviews = reviewSnapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
 
-  }, [formaAfriqueUser, isUserLoading, db]);
+      if (allReviews.length === 0) {
+        setReviews([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 3. Get all unique student details
+      const userIds = [...new Set(allReviews.map(r => r.userId))];
+      const userPromises = [];
+      const usersMap = new Map<string, FormaAfriqueUser>();
+      for (let i = 0; i < userIds.length; i += 30) {
+          const chunk = userIds.slice(i, i + 30);
+          const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
+          userPromises.push(getDocs(usersQuery));
+      }
+
+      const userSnapshots = await Promise.all(userPromises);
+      userSnapshots.flatMap(snapshot => snapshot.docs).forEach(doc => {
+          usersMap.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+      });
+
+      // 4. Populate and set reviews
+      const populatedReviews = allReviews.map(review => ({
+        ...review,
+        courseTitle: coursesMap.get(review.courseId)?.title || 'Cours inconnu',
+        studentName: usersMap.get(review.userId)?.fullName || 'Anonyme',
+        studentImage: usersMap.get(review.userId)?.profilePictureURL,
+      }));
+
+      // 5. Sort client-side
+      populatedReviews.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+      
+      setReviews(populatedReviews);
+
+    } catch (error) {
+      console.error("Error fetching all reviews:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [db]);
+  
+  useEffect(() => {
+    if (!isUserLoading && formaAfriqueUser?.uid) {
+        fetchAllReviews(formaAfriqueUser.uid);
+    } else if (!isUserLoading) {
+        setIsLoading(false);
+    }
+  }, [formaAfriqueUser, isUserLoading, fetchAllReviews]);
+
 
   return (
     <div className="space-y-8">
