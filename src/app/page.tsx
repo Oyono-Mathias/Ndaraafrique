@@ -215,7 +215,7 @@ export default function LandingPage() {
         {/* Stats Section */}
         <section className="py-16 bg-slate-900/50">
           <div className="container mx-auto px-4">
-             <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-8">
+             <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-8">
                 <StatItem value="15+" label="Pays africains" icon={MapPin}>
                    <div className="absolute top-0 right-0 flex">
                         <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
@@ -224,7 +224,9 @@ export default function LandingPage() {
                    </div>
                 </StatItem>
                 <StatItem value="500+" label="Étudiants engagés" icon={Users} />
-                <StatItem value="20+" label="Formations disponibles" icon={BookOpen} />
+                <div className="xs:col-span-2 md:col-span-1 flex justify-center">
+                    <StatItem value="20+" label="Formations disponibles" icon={BookOpen} />
+                </div>
             </div>
           </div>
         </section>
@@ -260,9 +262,15 @@ export default function LandingPage() {
                 <div className="md:hidden">
                      <Carousel opts={{ loop: true, align: "start" }} className="w-full">
                         <CarouselContent className="-ml-4">
-                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard imageSeed="moussa" quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" /></CarouselItem>
-                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard imageSeed="amina" quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" /></CarouselItem>
-                            <CarouselItem className="pl-4 basis-4/5"><TestimonialCard imageSeed="jean-david" quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" /></CarouselItem>
+                             <CarouselItem className="pl-4 basis-[85%]">
+                                <TestimonialCard imageSeed="moussa" quote="Grâce à la formation Alibaba Cloud, j'ai pu lancer mon service de e-commerce et toucher des clients bien au-delà de Dakar." name="Moussa" country="Sénégal" flag="sn" />
+                            </CarouselItem>
+                            <CarouselItem className="pl-4 basis-[85%]">
+                                <TestimonialCard imageSeed="amina" quote="Le cours de Python est ultra-clair et bien structuré. Je peux suivre les leçons depuis mon téléphone à Nairobi sans problème." name="Amina" country="Kenya" flag="ke" />
+                            </CarouselItem>
+                            <CarouselItem className="pl-4 basis-[85%]">
+                                <TestimonialCard imageSeed="jean-david" quote="Enfin une plateforme qui pense à nous ! Le support en Sango est un vrai plus pour comprendre les concepts complexes." name="Jean-David" country="Centrafrique" flag="cf" />
+                            </CarouselItem>
                         </CarouselContent>
                     </Carousel>
                 </div>
@@ -293,3 +301,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
