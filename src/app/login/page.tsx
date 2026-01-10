@@ -250,7 +250,7 @@ export default function LoginPage() {
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center justify-center mb-6 text-center">
               {logoUrl ? <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" /> : 
-                <div className="flex items-center gap-2 text-2xl font-bold" style={{color: "hsl(var(--secondary))"}}><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
+                <div className="flex items-center gap-2 text-2xl font-bold text-secondary"><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
               <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
             </div>
             
