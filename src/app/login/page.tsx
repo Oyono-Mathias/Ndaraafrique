@@ -124,13 +124,12 @@ export default function LoginPage() {
     const userDocSnap = await getDoc(userDocRef);
 
     if (userDocSnap.exists()) {
-        // User exists, just update last login
-        const updatePayload: any = {
+        // User exists, only update last login to prevent overwriting roles.
+        await updateDoc(userDocRef, {
             lastLogin: serverTimestamp(),
-        };
-        await updateDoc(userDocRef, updatePayload);
+        });
     } else {
-        // New user, create the document
+        // New user, create the document with default student role
         const newUserPayload: Partial<FormaAfriqueUser> = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
@@ -202,7 +201,7 @@ export default function LoginPage() {
     <div className="grid min-h-screen w-full lg:grid-cols-2">
       <div id="recaptcha-container" />
 
-      {/* --- COLONNE GAUCHE : IMAGE (Visible seulement sur Desktop) --- */}
+      {/* --- COLONNE GAUCHE : IMAGE --- */}
        <div className="hidden bg-muted lg:block relative">
         <Image 
           src={loginImageUrl || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} 
@@ -213,7 +212,7 @@ export default function LoginPage() {
       </div>
 
       {/* --- COLONNE DROITE : FORMULAIRE --- */}
-      <div className="flex items-center justify-center py-12 px-6 bg-white">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center text-center mb-8">
               {logoUrl ? <Image src={logoUrl} alt={siteName} width={60} height={60} className="mb-4" /> : 
@@ -295,4 +294,3 @@ export default function LoginPage() {
   );
 }
 
-    
