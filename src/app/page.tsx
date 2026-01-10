@@ -183,7 +183,7 @@ export default function LandingPage() {
             <Link href="/devenir-instructeur" className="text-sm font-medium text-slate-300 hover:text-white">Devenir Formateur</Link>
           </nav>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild className="hover:bg-slate-800 hover:text-white">
+            <Button variant="ghost" asChild className="hover:bg-slate-800 hover:text-white px-2 sm:px-4">
               <Link href="/login">Se connecter</Link>
             </Button>
             <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground hidden sm:flex">
@@ -215,7 +215,7 @@ export default function LandingPage() {
         {/* Stats Section */}
         <section className="py-16 bg-slate-900/50">
           <div className="container mx-auto px-4">
-             <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-8">
+             <div className="grid grid-cols-1 gap-y-12 sm:grid-cols-3 sm:gap-x-8">
                 <StatItem value="15+" label="Pays africains" icon={MapPin}>
                    <div className="absolute top-0 right-0 flex">
                         <Image src="/flags/cm.svg" alt="Cameroun" width={20} height={15} className="rounded-full border-2 border-slate-700 -mr-2" />
@@ -224,9 +224,7 @@ export default function LandingPage() {
                    </div>
                 </StatItem>
                 <StatItem value="500+" label="Étudiants engagés" icon={Users} />
-                <div className="xs:col-span-2 md:col-span-1 flex justify-center">
-                    <StatItem value="20+" label="Formations disponibles" icon={BookOpen} />
-                </div>
+                <StatItem value="20+" label="Formations disponibles" icon={BookOpen} />
             </div>
           </div>
         </section>
@@ -302,4 +300,3 @@ export default function LandingPage() {
   );
 }
 
-    
