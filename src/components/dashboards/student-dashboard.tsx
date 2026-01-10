@@ -85,20 +85,35 @@ export function StudentDashboard() {
   const db = getFirestore();
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
 
-  const popularCoursesQuery = useMemoFirebase(() => {
-    return query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('isPopular', 'desc'), limit(12));
+  // Fetch all published courses
+  const allCoursesQuery = useMemoFirebase(() => {
+    return query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
   }, [db]);
+  const { data: allCourses, isLoading: coursesLoading } = useCollection<Course>(allCoursesQuery);
 
-  const { data: popularCourses, isLoading: popularCoursesLoading } = useCollection<Course>(popularCoursesQuery);
+  // Group courses by category
+  const coursesByCategory = useMemo(() => {
+    if (!allCourses) return {};
+    return allCourses.reduce((acc, course) => {
+      const category = course.category || 'Autres';
+      if (!acc[category]) {
+        acc[category] = [];
+      }
+      acc[category].push(course);
+      return acc;
+    }, {} as Record<string, Course[]>);
+  }, [allCourses]);
 
-  const newCoursesQuery = useMemoFirebase(() => {
-    return query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'), limit(12));
-  }, [db]);
-  const { data: newCourses, isLoading: newCoursesLoading } = useCollection<Course>(newCoursesQuery);
+  const sortedCategories = useMemo(() => Object.keys(coursesByCategory).sort(), [coursesByCategory]);
+
+  const newCourses = useMemo(() => {
+    if (!allCourses) return [];
+    return allCourses.slice(0, 12);
+  }, [allCourses]);
+
 
   useEffect(() => {
-    const allCourses = [...(popularCourses || []), ...(newCourses || [])];
-    if (allCourses.length === 0) return;
+    if (coursesLoading || !allCourses) return;
 
     const processData = async () => {
         const neededInstructorIds = [...new Set(allCourses.map(c => c.instructorId).filter(id => !instructorsMap.has(id)))];
@@ -111,21 +126,25 @@ export function StudentDashboard() {
         }
     };
     processData();
-  }, [popularCourses, newCourses, db, instructorsMap]);
+  }, [allCourses, coursesLoading, db, instructorsMap]);
 
   return (
     <div className="bg-slate-900 -m-6 p-6 min-h-screen space-y-12">
-        <CourseCarousel 
-            title="Meilleurs cours dans la catégorie IT"
-            courses={popularCourses || []}
-            instructorsMap={instructorsMap}
-            isLoading={popularCoursesLoading}
-        />
+        {sortedCategories.map(category => (
+             <CourseCarousel 
+                key={category}
+                title={`Meilleurs cours dans la catégorie ${category}`}
+                courses={coursesByCategory[category] || []}
+                instructorsMap={instructorsMap}
+                isLoading={coursesLoading}
+            />
+        ))}
+
         <CourseCarousel 
             title="Les nouveautés à ne pas rater"
-            courses={newCourses || []}
+            courses={newCourses}
             instructorsMap={instructorsMap}
-            isLoading={newCoursesLoading}
+            isLoading={coursesLoading}
         />
     </div>
   );
