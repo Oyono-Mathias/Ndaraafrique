@@ -15,7 +15,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, MapPin, BookOpen, Smartphone, Mail } from 'lucide-react';
@@ -62,7 +62,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const africanCountryCodes = africanCountries.map(c => c.code as 'CM' | 'CI' | 'SN' | 'GA' | 'CD' | 'TG' | 'BJ' | 'GN' | 'ML' | 'BF' | 'DZ' | 'AO' | 'BW' | 'BI' | 'CV' | 'CF' | 'TD' | 'KM' | 'CG' | 'DJ' | 'EG' | 'GQ' | 'ER' | 'SZ' | 'ET' | 'GM' | 'GH' | 'GW' | 'KE' | 'LS' | 'LR' | 'LY' | 'MG' | 'MW' | 'MR' | 'MU' | 'MA' | 'MZ' | 'NA' | 'NE' | 'NG' | 'RW' | 'ST' | 'SC' | 'SL' | 'SO' | 'ZA' | 'SS' | 'SD' | 'TZ' | 'TN' | 'UG' | 'ZM' | 'ZW');
+const africanCountryCodes = africanCountries.map(c => c.code) as any;
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -242,16 +242,16 @@ export default function LoginPage() {
   if (isUserLoading || user) {
     return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
-
+  
   return (
-    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
       <div id="recaptcha-container" />
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center justify-center mb-6 text-center">
               {logoUrl ? <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" /> : 
-                <div className="flex items-center gap-2 text-2xl font-bold text-secondary"><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
-              <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
+                <div className="flex items-center gap-2 text-2xl font-bold" style={{color: '#7C3AED'}}><BookOpen className="h-8 w-8" /><span>FormaAfrique</span></div>}
+              <h1 className="text-2xl font-bold text-foreground mt-4" style={{color: '#1E293B'}}>Content de vous revoir !</h1>
             </div>
             
            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
@@ -267,7 +267,7 @@ export default function LoginPage() {
                             <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-between"><FormField control={loginForm.control} name="rememberMe" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="rememberMe" /></FormControl><FormLabel htmlFor="rememberMe" className="text-sm font-normal">{t('rememberMeLabel')}</FormLabel></FormItem> )} /> <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('forgotPasswordLink')}</Link></div>
-                            <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
+                            <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
                     )}
@@ -285,7 +285,7 @@ export default function LoginPage() {
                                         </FormItem>
                                      )}/>
                                       <p className="text-xs text-center text-muted-foreground">Option disponible uniquement pour nos utilisateurs en Afrique.</p>
-                                    <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Envoyer le code</Button>
+                                    <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Envoyer le code</Button>
                                 </form>
                             </Form>
                          ) : (
@@ -294,7 +294,7 @@ export default function LoginPage() {
                                     <FormField control={otpForm.control} name="otp" render={({ field }) => (
                                         <FormItem><FormLabel>Code de vérification</FormLabel><FormControl><Input placeholder="123456" {...field} className="h-11 text-center tracking-[1em]" maxLength={6} /></FormControl><FormMessage /></FormItem>
                                     )} />
-                                    <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Confirmer</Button>
+                                    <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Confirmer</Button>
                                 </form>
                             </Form>
                          )
@@ -316,7 +316,7 @@ export default function LoginPage() {
                         <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
                         {countryError ? ( <FormItem> <FormLabel>Pays</FormLabel> <Select onValueChange={(value) => { const country = africanCountries.find(c => c.code === value); if(country) setDetectedCountry({name: country.name, code: country.code, flag: country.prefix}); }}> <FormControl> <SelectTrigger className="h-11"> <SelectValue placeholder="Sélectionnez votre pays" /> </SelectTrigger> </FormControl> <SelectContent> {africanCountries.map(c => ( <SelectItem key={c.code} value={c.code}> <div className="flex items-center gap-2"> <span>{c.emoji}</span> <span>{c.name}</span> </div> </SelectItem> ))} </SelectContent> </FormItem> ) : detectedCountry ? ( <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm"> <MapPin className="h-4 w-4 text-muted-foreground" /> <span className="text-muted-foreground">Pays détecté : {detectedCountry.name}</span> </div> ) : ( <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm"> <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/> <span className="text-muted-foreground">Détection du pays...</span> </div> )}
                         <p className="text-center text-xs text-muted-foreground pt-2">En vous inscrivant, vous acceptez nos <Link href="/cgu" className="underline hover:text-primary">Conditions d'utilisation</Link>.</p>
-                        <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('createAccountButton')}</Button>
+                        <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-11 text-base !mt-5" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('createAccountButton')}</Button>
                         </form>
                     </Form>
                 </div>
@@ -324,8 +324,16 @@ export default function LoginPage() {
             </Tabs>
         </div>
       </div>
-      <div className="hidden lg:block">
-        <Image src={loginBackground || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} alt="Image" width="1200" height="1800" className="h-full w-full object-cover" data-ai-hint="learning students" />
+       <div className="hidden lg:block h-full w-full">
+        <Image 
+          src={loginBackground || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} 
+          alt="Image d'arrière-plan" 
+          width="1200" 
+          height="1800" 
+          className="h-screen w-full object-cover"
+          priority
+          data-ai-hint="learning students" 
+        />
       </div>
     </div>
   );
