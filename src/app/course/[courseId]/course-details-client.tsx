@@ -516,6 +516,14 @@ export default function CourseDetailsClient() {
     if(isFree) return isEbook ? "Obtenir l'E-book Gratuitement" : "S'inscrire Gratuitement";
     return isEbook ? "Acheter l'E-book" : "Acheter maintenant";
   }
+  
+  const hasValidLearningObjectives = course.learningObjectives && course.learningObjectives.length > 0 && course.learningObjectives[0].length > 2;
+  const defaultLearningObjectives = [
+    "Maîtriser les fondamentaux du sujet.",
+    "Acquérir des compétences pratiques et applicables.",
+    "Apprendre à utiliser les outils et technologies clés.",
+    "Développer une compréhension approfondie des concepts avancés.",
+  ];
 
   return (
     <>
@@ -584,9 +592,9 @@ export default function CourseDetailsClient() {
                     <div className="border border-slate-700/80 rounded-lg p-6">
                         <h2 className="text-2xl font-bold text-white mb-4">Ce que vous apprendrez</h2>
                         <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-slate-300">
-                            {course.learningObjectives?.map((obj: string, i: number) => (
+                            {(hasValidLearningObjectives ? course.learningObjectives : defaultLearningObjectives)?.map((obj: string, i: number) => (
                                 <li key={i} className="flex items-start"><Check className="w-5 h-5 mr-3 mt-1 text-primary shrink-0" /><span>{obj}</span></li>
-                            )) ||  <li className="flex items-start"><Check className="w-5 h-5 mr-3 mt-1 text-primary shrink-0" /><span>Les fondamentaux de ce sujet.</span></li>}
+                            ))}
                         </ul>
                     </div>
                 )}
@@ -606,7 +614,7 @@ export default function CourseDetailsClient() {
                               <AvatarImage src={instructor.profilePictureURL} />
                               <AvatarFallback className="text-white bg-slate-700">{instructor.fullName.charAt(0)}</AvatarFallback>
                           </Avatar>
-                          <p className="text-sm line-clamp-3 text-slate-300">{instructor.bio || 'Cet instructeur n\'a pas encore fourni de biographie.'}</p>
+                          <p className="text-sm line-clamp-3 text-slate-300">{instructor.bio || `Découvrez le parcours et l'expertise de ${instructor.fullName}, un professionnel passionné qui vous guidera à travers ce cours.`}</p>
                       </div>
                     </Link>
                   </div>
@@ -666,7 +674,7 @@ export default function CourseDetailsClient() {
                                     {isEbook ? (
                                         <>
                                             <li className="flex items-center gap-2"><Book className="h-4 w-4 text-primary" /> Format PDF</li>
-                                            <li className="flex items-center gap-2"><Download className="h-4 w-4 text-primary" /> Accès immédiat après achat</li>
+                                            <li className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Accès immédiat après achat</li>
                                         </>
                                     ) : (
                                         <>
