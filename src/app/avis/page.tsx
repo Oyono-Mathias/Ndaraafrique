@@ -89,7 +89,8 @@ export default function ReviewsPage() {
         
         for (const chunk of courseIdChunks) {
              if (chunk.length === 0) continue;
-            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk), orderBy('createdAt', 'desc'));
+            // FIX: Removed orderBy('createdAt', 'desc') to avoid needing a composite index
+            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk));
             const reviewSnapshot = await getDocs(reviewsQuery);
             reviewSnapshot.forEach(doc => {
                 allReviews.push({ id: doc.id, ...doc.data() } as Review);
@@ -106,6 +107,7 @@ export default function ReviewsPage() {
         const userIds = [...new Set(allReviews.map(r => r.userId))];
         const usersMap = new Map();
         if (userIds.length > 0) {
+            // Firestore 'in' query has a limit of 30, batch if needed for production scale
             const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
             userSnapshots.forEach(doc => usersMap.set(doc.data().uid, doc.data()));
@@ -123,6 +125,7 @@ export default function ReviewsPage() {
             };
         });
         
+        // FIX: Sort on the client-side
         setReviews(populatedReviews.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
         setIsLoading(false);
 
