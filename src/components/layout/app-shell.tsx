@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -148,7 +147,6 @@ const BottomNavBar = () => {
         return () => unsubscribe();
     }, [user, db]);
     
-    // Check if the current route is one of the main navigation routes
     if (!BOTTOM_NAV_ROUTES.includes(pathname)) {
         return null;
     }
@@ -216,7 +214,6 @@ const AnnouncementBanner = () => {
                         setIsVisible(true);
                     }
                 } else {
-                  // Use translated launch offer as fallback
                   const launchOffer = t('launchOffer');
                    const dismissed = sessionStorage.getItem(`announcement_${launchOffer}`);
                    if (!dismissed) {
@@ -268,7 +265,7 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 );
 
 const SupportButton = () => {
-    const { role, user, formaAfriqueUser } = useRole();
+    const { user, formaAfriqueUser } = useRole();
     const [supportInfo, setSupportInfo] = useState({ email: 'support@formaafrique.com', phone: '+237600000000' });
     const pathname = usePathname();
     const db = getFirestore();
@@ -352,9 +349,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   
-  const isAuthPage = pathname === '/register' || pathname === '/login' || pathname === '/forgot-password';
+  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const isLandingPage = pathname === '/';
-  const isAdminRoute = pathname.startsWith('/admin');
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');
@@ -370,28 +366,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
     return () => unsubscribe();
   }, [db]);
-
-  useEffect(() => {
-    if (!isAuthPage && !isLandingPage && !isUserLoading && !user) {
-      router.push('/login');
-    }
-  }, [user, isUserLoading, router, isAuthPage, isLandingPage]);
   
-  useEffect(() => {
-    if (isAdminRoute && !isRoleLoading && formaAfriqueUser?.role === 'admin' && role !== 'admin') {
-      switchRole('admin');
-    }
-  }, [pathname, isRoleLoading, formaAfriqueUser, role, switchRole, isAdminRoute]);
-
-  const isLoading = isUserLoading || isRoleLoading;
-  
-  // This is the new logic to handle unauthenticated full-width pages
-  if (!user && (isLandingPage || isAuthPage)) {
+  if (isLandingPage || isAuthPage) {
     return <>{children}</>;
   }
 
-  // Show a full-page loader until we know the maintenance status and user role
-  if (isLoading) {
+  if (isUserLoading || isRoleLoading) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-[#0f172a]">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -399,25 +379,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     );
   }
 
-  // Once loading is complete, check for maintenance mode.
   if (siteSettings.maintenanceMode && formaAfriqueUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
-
-  const handleResendVerification = async () => {
-    if (user) {
-      setIsSendingVerification(true);
-      try {
-        await sendEmailVerification(user);
-        toast({ title: "E-mail renvoyé !", description: "Veuillez vérifier votre boîte de réception." });
-      } catch (error) {
-        toast({ variant: "destructive", title: "Erreur", description: "Impossible de renvoyer l'e-mail de vérification." });
-      } finally {
-        setIsSendingVerification(false);
-      }
-    }
-  };
-
+  
+  if (!user) {
+    // This case should be handled by the redirect effect in dashboard, but as a fallback:
+    return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
+  
   const renderSidebar = () => {
     const props = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl };
     if (role === 'student') return <StudentSidebar {...props} />;
@@ -425,24 +395,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return null;
   };
   
-  if (!user) {
-    return null;
-  }
-  
-  const isStudioRoute = pathname.startsWith('/instructor/courses/edit/');
-  if (isStudioRoute) {
-    return <>{children}</>;
-  }
-
-  if (isAdminRoute) {
-      return <>{children}</>;
-  }
-
-  const isInstructorAndNotApproved = role === 'instructor' && formaAfriqueUser && !formaAfriqueUser.isInstructorApproved;
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isChatPage = pathname.startsWith('/messages');
   const isStudentDashboard = role === 'student' && pathname === '/dashboard';
-
+  
   if (isMobile && pathname.startsWith('/messages/')) {
     return <main className="h-screen w-screen">{children}</main>;
   }
@@ -477,7 +433,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </Sheet>
                     <div className="flex-1">
                         <h1 className={cn("text-lg font-semibold md:text-xl", (role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-card-foreground')}>
-                            {isInstructorAndNotApproved ? "Approbation en attente" : getPageTitle(pathname)}
+                            {getPageTitle(pathname)}
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
@@ -501,23 +457,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 isMobile ? "pb-20" : "")
               }>
                   <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
-                    {!isUserLoading && user && !user.emailVerified && !isFullScreenPage && !isChatPage && (
-                      <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md" role="alert">
-                        <p className="font-bold">Vérifiez votre adresse e-mail</p>
-                        <p className="text-sm">
-                          Un lien de vérification a été envoyé à votre adresse. Veuillez vérifier votre boîte de réception.
-                        </p>
-                        <Button
-                          variant="link"
-                          className="p-0 h-auto text-yellow-800 font-bold text-sm"
-                          onClick={handleResendVerification}
-                          disabled={isSendingVerification}
-                        >
-                          {isSendingVerification ? 'Envoi en cours...' : 'Renvoyer l\'e-mail'}
-                        </Button>
-                      </div>
-                    )}
-                    {isInstructorAndNotApproved ? <ApprovalPendingScreen /> : children}
+                    {children}
                   </div>
               </main>
               {isMobile && <BottomNavBar />}

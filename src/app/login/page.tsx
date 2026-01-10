@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp, getDoc, collection } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -74,19 +73,11 @@ export default function LoginPage() {
     defaultValues: { fullName: '', email: '', password: '' },
   });
 
-   useEffect(() => {
+  useEffect(() => {
     if (!isUserLoading && user) {
-      // If user is already logged in, check their role for redirection
-      const userDocRef = doc(db, "users", user.uid);
-      getDoc(userDocRef).then(userDoc => {
-        if (userDoc.exists() && userDoc.data()?.role === 'admin') {
-          router.push('/admin');
-        } else {
-          router.push('/dashboard');
-        }
-      });
+        router.push('/dashboard');
     }
-  }, [user, isUserLoading, router, db]);
+  }, [user, isUserLoading, router]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -102,12 +93,16 @@ export default function LoginPage() {
     fetchSettings();
   }, [db]);
   
-  const handleAuthSuccess = async (user: FirebaseUser) => {
+  const handleAuthSuccess = async (user: FirebaseUser, isNewUser: boolean = false) => {
     const userDocRef = doc(db, "users", user.uid);
-    const userDoc = await getDoc(userDocRef);
+    let userData;
+
+    if (!isNewUser) {
+        const userDoc = await getDoc(userDocRef);
+        userData = userDoc.data();
+    }
     
-    if (userDoc.exists()) {
-        const userData = userDoc.data();
+    if (userData) {
         if (userData.role === 'admin') {
             router.push('/admin');
         } else {
@@ -177,7 +172,7 @@ export default function LoginPage() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        await handleAuthSuccess(result.user);
+        await handleAuthSuccess(result.user, true); // Assume new user for simplicity, handleAuthSuccess will check
     } catch (error) {
          let description = 'Une erreur inattendue est survenue.';
         if (error instanceof FirebaseError) {
@@ -200,7 +195,7 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.fullName });
-      await handleAuthSuccess(userCredential.user);
+      await handleAuthSuccess(userCredential.user, true);
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
        if (error instanceof FirebaseError) {
