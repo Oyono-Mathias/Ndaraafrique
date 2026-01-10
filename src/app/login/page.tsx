@@ -62,7 +62,8 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-const africanCountryCodes = africanCountries.map(c => c.code) as any;
+const africanCountryCodes = africanCountries.map(c => c.code as any);
+const prioritizedCountries = ['CM', 'CI', 'SN', 'CD', 'GA', 'BJ', 'TG', 'GN', 'ML', 'BF'];
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -279,7 +280,7 @@ export default function LoginPage() {
                                         <FormItem>
                                             <FormLabel>Numéro de téléphone</FormLabel>
                                             <FormControl>
-                                                <PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" countries={africanCountryCodes} />
+                                                <PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" countries={africanCountryCodes} countryOptionsOrder={prioritizedCountries} />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
