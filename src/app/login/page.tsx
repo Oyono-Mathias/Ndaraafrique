@@ -1,34 +1,34 @@
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
+import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User as FirebaseUser, RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from 'firebase/auth';
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, MapPin, BookOpen } from 'lucide-react';
+import { Loader2, MapPin, BookOpen, Smartphone, Mail } from 'lucide-react';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
-import { africanCountries, Country } from '@/lib/countries';
+import { africanCountries } from '@/lib/countries';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PhoneInput from 'react-phone-number-input/react-hook-form-input';
+import 'react-phone-number-input/style.css';
 
-// Schemas for form validation
+
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
   password: z.string().min(1, { message: "Le mot de passe est requis." }),
@@ -40,6 +40,17 @@ const registerSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
   password: z.string().min(6, { message: "Le mot de passe doit contenir au moins 6 caractères." }),
 });
+
+const phoneSchema = z.object({
+    phoneNumber: z.string().min(10, { message: "Veuillez entrer un numéro de téléphone valide." }),
+});
+
+const otpSchema = z.object({
+    otp: z.string().length(6, { message: "Le code doit contenir 6 chiffres." }),
+});
+
+type LoginMode = 'email' | 'phone';
+type PhoneAuthState = 'enter-number' | 'enter-otp';
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="24px" height="24px" {...props}>
@@ -56,37 +67,32 @@ export default function LoginPage() {
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isSocialLoading, setIsSocialLoading] = useState(false);
   const [siteName, setSiteName] = useState('FormaAfrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
   const [detectedCountry, setDetectedCountry] = useState<{name: string; code: string; flag: string} | null>(null);
   const [countryError, setCountryError] = useState(false);
-  
+  const [loginMode, setLoginMode] = useState<LoginMode>('email');
+  const [phoneAuthState, setPhoneAuthState] = useState<PhoneAuthState>('enter-number');
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading } = useRole();
 
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '', rememberMe: false },
-  });
+  const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: '', email: '', password: '' },
-  });
+  const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', rememberMe: false } });
+  const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '' } });
+  const phoneForm = useForm<z.infer<typeof phoneSchema>>({ resolver: zodResolver(phoneSchema) });
+  const otpForm = useForm<z.infer<typeof otpSchema>>({ resolver: zodResolver(otpSchema) });
 
-  useEffect(() => {
-    if (!isUserLoading && user) {
-        router.push('/dashboard');
-    }
-  }, [user, isUserLoading, router]);
+  useEffect(() => { if (!isUserLoading && user) router.push('/dashboard'); }, [user, isUserLoading, router]);
 
   useEffect(() => {
     const fetchSettingsAndGeo = async () => {
-        // Fetch settings
         const settingsRef = doc(db, 'settings', 'global');
         const settingsSnap = await getDoc(settingsRef);
         if (settingsSnap.exists()) {
@@ -95,65 +101,48 @@ export default function LoginPage() {
             if (settingsData?.siteName) setSiteName(settingsData.siteName);
             if (settingsData?.loginBackgroundImage) setLoginBackground(settingsData.loginBackgroundImage);
         }
-        
-        // Fetch geo-location
         try {
             const response = await fetch('https://ipapi.co/json/');
             if (!response.ok) throw new Error('Failed to fetch geo data');
             const data = await response.json();
             setDetectedCountry({ name: data.country_name, code: data.country_code, flag: data.country_calling_code });
-        } catch (error) {
-            console.error("Geolocation failed:", error);
-            setCountryError(true);
-        }
+        } catch (error) { console.error("Geolocation failed:", error); setCountryError(true); }
     };
     fetchSettingsAndGeo();
   }, [db]);
   
-  const handleAuthSuccess = async (firebaseUser: FirebaseUser, isNewUser: boolean = false, registrationData?: z.infer<typeof registerSchema>) => {
+  const setupRecaptcha = () => {
+    if (recaptchaVerifier.current) return;
+    const auth = getAuth();
+    recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      'size': 'invisible'
+    });
+  };
+
+  const handleAuthSuccess = async (firebaseUser: FirebaseUser, isNewUser: boolean = false, registrationData?: z.infer<typeof registerSchema> | { fullName: string }) => {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     let userData;
 
-    if (!isNewUser) {
-        const userDoc = await getDoc(userDocRef);
-        userData = userDoc.data();
-    }
+    if (!isNewUser) { const userDoc = await getDoc(userDocRef); userData = userDoc.data(); }
     
-    // If user document doesn't exist, create it
     if (!userData) {
       const newUserPayload: Partial<FormaAfriqueUser> = {
         uid: firebaseUser.uid,
         email: firebaseUser.email || registrationData?.email || '',
-        fullName: firebaseUser.displayName || registrationData?.fullName || 'Nouvel utilisateur',
-        role: 'student',
-        isInstructorApproved: false,
-        createdAt: serverTimestamp() as any,
-        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${firebaseUser.displayName || registrationData?.fullName}`,
-        country: detectedCountry?.name,
-        countryCode: detectedCountry?.code?.toLowerCase()
+        fullName: firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber || 'Nouvel utilisateur',
+        role: 'student', isInstructorApproved: false, createdAt: serverTimestamp() as any,
+        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${firebaseUser.displayName || registrationData?.fullName || firebaseUser.phoneNumber}`,
+        country: detectedCountry?.name, countryCode: detectedCountry?.code?.toLowerCase()
       };
-      
-      try {
-        await setDoc(userDocRef, newUserPayload);
-      } catch (error) {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: userDocRef.path,
-            operation: 'create',
-            requestResourceData: newUserPayload,
-        }));
-        toast({
-            variant: 'destructive',
-            title: t('registerErrorTitle'),
-            description: 'Impossible de créer le profil utilisateur dans la base de données.',
-        });
-        return; // Stop execution if profile creation fails
+      try { await setDoc(userDocRef, newUserPayload); } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({ path: userDocRef.path, operation: 'create', requestResourceData: newUserPayload, }));
+        toast({ variant: 'destructive', title: t('registerErrorTitle'), description: 'Impossible de créer le profil utilisateur.' });
+        return;
       }
     }
-    
     toast({ title: t('loginSuccessTitle') });
     router.push('/dashboard');
   };
-
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -168,23 +157,18 @@ export default function LoginPage() {
            case 'auth/user-not-found':
            case 'auth/wrong-password':
            case 'auth/invalid-credential':
-             description = 'Email ou mot de passe incorrect.';
-             break;
+             description = 'Email ou mot de passe incorrect.'; break;
            case 'auth/invalid-email':
-             description = 'Veuillez entrer une adresse e-mail valide.';
-             break;
-           default:
-             description = 'Échec de la connexion. Veuillez vérifier vos identifiants.';
+             description = 'Veuillez entrer une adresse e-mail valide.'; break;
+           default: description = 'Échec de la connexion.';
          }
        }
        toast({ variant: 'destructive', title: t('loginErrorTitle'), description });
-    } finally {
-      setIsLoading(false);
-    }
+    } finally { setIsLoading(false); }
   };
 
   const handleGoogleSignIn = async () => {
-    setIsGoogleLoading(true);
+    setIsSocialLoading(true);
     const auth = getAuth();
     const provider = new GoogleAuthProvider();
     try {
@@ -194,17 +178,10 @@ export default function LoginPage() {
     } catch (error) {
          let description = 'Une erreur inattendue est survenue.';
         if (error instanceof FirebaseError) {
-            if (error.code !== 'auth/popup-closed-by-user') {
-                 description = 'Impossible de se connecter avec Google. Veuillez réessayer.';
-            } else {
-              setIsGoogleLoading(false);
-              return;
-            }
+            if (error.code !== 'auth/popup-closed-by-user') { description = 'Impossible de se connecter avec Google.'; } else { setIsSocialLoading(false); return; }
         }
        toast({ variant: 'destructive', title: 'Erreur Google', description });
-    } finally {
-        setIsGoogleLoading(false);
-    }
+    } finally { setIsSocialLoading(false); }
   };
 
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
@@ -217,177 +194,133 @@ export default function LoginPage() {
     } catch (error) {
        let description = 'Une erreur inattendue est survenue.';
        if (error instanceof FirebaseError) {
-         if (error.code === 'auth/email-already-in-use') {
-           description = 'Cet email est déjà utilisé. Veuillez vous connecter.';
-         } else {
-           description = 'Impossible de créer le compte. ' + error.message;
-         }
+         if (error.code === 'auth/email-already-in-use') { description = 'Cet email est déjà utilisé.'; } else { description = 'Impossible de créer le compte. ' + error.message; }
        }
        toast({ variant: 'destructive', title: t('registerErrorTitle'), description });
+    } finally { setIsLoading(false); }
+  };
+
+  const onPhoneSubmit = async (values: z.infer<typeof phoneSchema>) => {
+    setIsLoading(true);
+    setupRecaptcha();
+    const auth = getAuth();
+    if (!recaptchaVerifier.current) {
+        toast({ variant: "destructive", title: "Erreur", description: "Recaptcha non initialisé." });
+        setIsLoading(false);
+        return;
+    }
+    try {
+        const confirmation = await signInWithPhoneNumber(auth, values.phoneNumber, recaptchaVerifier.current);
+        setConfirmationResult(confirmation);
+        setPhoneAuthState('enter-otp');
+        toast({ title: "Code envoyé !", description: "Veuillez entrer le code reçu par SMS." });
+    } catch (error) {
+        console.error("SMS sending error:", error);
+        toast({ variant: "destructive", title: "Erreur d'envoi", description: "Impossible d'envoyer le code SMS. Vérifiez le numéro." });
     } finally {
-      setIsLoading(false);
+        setIsLoading(false);
     }
   };
 
-  const containerStyle = loginBackground
-    ? { backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.9)), url('${loginBackground}')`, backgroundSize: 'cover', backgroundPosition: 'center' }
-    : {};
+  const onOtpSubmit = async (values: z.infer<typeof otpSchema>) => {
+    if (!confirmationResult) return;
+    setIsLoading(true);
+    try {
+        const result = await confirmationResult.confirm(values.otp);
+        const isNewUser = !result.user.metadata.lastSignInTime;
+        await handleAuthSuccess(result.user, isNewUser, { fullName: "Utilisateur" });
+    } catch (error) {
+        toast({ variant: "destructive", title: "Code incorrect", description: "Le code que vous avez entré est invalide." });
+    } finally {
+        setIsLoading(false);
+    }
+  };
   
   if (isUserLoading || user) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
 
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div id="recaptcha-container" />
       <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="mx-auto w-full max-w-sm">
             <div className="flex flex-col items-center justify-center mb-6 text-center">
-              {logoUrl ? (
-                <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" />
-              ) : (
-                <div className="flex items-center gap-2 text-2xl font-bold text-secondary">
-                  <BookOpen className="h-8 w-8" />
-                  <span>FormaAfrique</span>
-                </div>
-              )}
-              <h1 className="text-2xl font-bold text-foreground mt-4">Content de vous revoir !</h1>
+              {logoUrl ? <Image src={logoUrl} alt={siteName} width={48} height={48} className="rounded-full" /> : 
+                <div className="flex items-center gap-2 text-2xl font-bold text-secondary"><BookOpen className="h-8 w-8 text-indigo-500" /><span>FormaAfrique</span></div>}
+              <h1 className="text-2xl font-bold text-slate-900 mt-4">Content de vous revoir !</h1>
             </div>
             
            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
-            <Card className="shadow-none border-none bg-transparent">
                 <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
                     <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
                 </TabsList>
-
                 <TabsContent value="login" className="m-0 pt-6">
-                <CardContent className="space-y-4 pb-4 p-0">
-                    <Form {...loginForm}>
-                    <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                        <FormField control={loginForm.control} name="email" render={({ field }) => (
-                        <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={loginForm.control} name="password" render={({ field }) => (
-                        <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <div className="flex items-center justify-between">
-                            <FormField control={loginForm.control} name="rememberMe" render={({ field }) => (
-                                <FormItem className="flex flex-row items-center space-x-2 space-y-0">
-                                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="rememberMe" /></FormControl>
-                                    <FormLabel htmlFor="rememberMe" className="text-sm font-normal">{t('rememberMeLabel')}</FormLabel>
-                                </FormItem>
-                            )} />
-                            <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('forgotPasswordLink')}</Link>
-                        </div>
-
-                        <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isGoogleLoading}>
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t('loginButton')}
-                        </Button>
-                    </form>
-                    </Form>
-                    <div className="relative my-4">
-                        <div className="absolute inset-0 flex items-center">
-                            <span className="w-full border-t" />
-                        </div>
-                        <div className="relative flex justify-center text-xs uppercase">
-                            <span className="bg-background px-2 text-muted-foreground">OU</span>
-                        </div>
+                <div className="space-y-4 pb-4 p-0">
+                    {loginMode === 'email' && (
+                        <Form {...loginForm}>
+                        <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
+                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="votre.email@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" required {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
+                            <div className="flex items-center justify-between"><FormField control={loginForm.control} name="rememberMe" render={({ field }) => ( <FormItem className="flex flex-row items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} id="rememberMe" /></FormControl><FormLabel htmlFor="rememberMe" className="text-sm font-normal">{t('rememberMeLabel')}</FormLabel></FormItem> )} /> <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('forgotPasswordLink')}</Link></div>
+                            <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
+                        </form>
+                        </Form>
+                    )}
+                    {loginMode === 'phone' && (
+                         phoneAuthState === 'enter-number' ? (
+                            <Form {...phoneForm}>
+                                <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
+                                     <Controller control={phoneForm.control} name="phoneNumber" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Numéro de téléphone</FormLabel>
+                                            <FormControl>
+                                                <PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-11 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50" />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                     )}/>
+                                    <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Envoyer le code</Button>
+                                </form>
+                            </Form>
+                         ) : (
+                            <Form {...otpForm}>
+                                <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-4">
+                                    <FormField control={otpForm.control} name="otp" render={({ field }) => (
+                                        <FormItem><FormLabel>Code de vérification</FormLabel><FormControl><Input placeholder="123456" {...field} className="h-11 text-center tracking-[1em]" maxLength={6} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                    <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Confirmer</Button>
+                                </form>
+                            </Form>
+                         )
+                    )}
+                    <div className="relative my-4"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">OU</span></div></div>
+                    <div className='flex gap-4 justify-center'>
+                      <Button variant="outline" className="h-14 w-14 rounded-lg" onClick={() => setLoginMode('email')}><Mail className="h-6 w-6"/></Button>
+                      <Button variant="outline" className="h-14 w-14 rounded-lg" onClick={handleGoogleSignIn} disabled={isLoading || isSocialLoading}>{isSocialLoading ? <Loader2 className="animate-spin" /> : <GoogleIcon />}</Button>
+                      <Button variant="outline" className="h-14 w-14 rounded-lg" onClick={() => setLoginMode('phone')}><Smartphone className="h-6 w-6"/></Button>
                     </div>
-                    <Button variant="outline" type="button" className="w-full h-11 btn" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                        {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
-                        Continuer avec Google
-                    </Button>
-                </CardContent>
+                </div>
                 </TabsContent>
-                
                 <TabsContent value="register" className="m-0 pt-6">
-                <CardContent className="space-y-3 pb-4 p-0">
+                <div className="space-y-3 pb-4 p-0">
                     <Form {...registerForm}>
                         <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-3">
-                        <FormField control={registerForm.control} name="fullName" render={({ field }) => (
-                            <FormItem><FormLabel>{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={registerForm.control} name="email" render={({ field }) => (
-                            <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
-                        )} />
-                        <FormField control={registerForm.control} name="password" render={({ field }) => (
-                            <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="h-11" /></FormControl><FormMessage /></FormItem>
-                        )} />
-
-                        {countryError ? (
-                            <FormItem>
-                                <FormLabel>Pays</FormLabel>
-                                <Select onValueChange={(value) => {
-                                    const country = africanCountries.find(c => c.code === value);
-                                    if(country) setDetectedCountry({name: country.name, code: country.code, flag: country.prefix});
-                                }}>
-                                    <FormControl>
-                                        <SelectTrigger className="h-11">
-                                            <SelectValue placeholder="Sélectionnez votre pays" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                        {africanCountries.map(c => (
-                                            <SelectItem key={c.code} value={c.code}>
-                                                <div className="flex items-center gap-2">
-                                                    <span>{c.emoji}</span>
-                                                    <span>{c.name}</span>
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </FormItem>
-                        ) : detectedCountry ? (
-                            <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm">
-                                <MapPin className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-muted-foreground">Pays détecté : {detectedCountry.name}</span>
-                            </div>
-                        ) : (
-                            <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm">
-                               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/>
-                               <span className="text-muted-foreground">Détection du pays...</span>
-                            </div>
-                        )}
-
-                        <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isGoogleLoading}>
-                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            {t('createAccountButton')}
-                        </Button>
-                         <div className="relative my-4">
-                            <div className="absolute inset-0 flex items-center">
-                                <span className="w-full border-t" />
-                            </div>
-                            <div className="relative flex justify-center text-xs uppercase">
-                                <span className="bg-background px-2 text-muted-foreground">OU</span>
-                            </div>
-                        </div>
-                        <Button variant="outline" type="button" className="w-full h-11 btn" onClick={handleGoogleSignIn} disabled={isLoading || isGoogleLoading}>
-                            {isGoogleLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <GoogleIcon className="mr-2 h-5 w-5" />}
-                            Continuer avec Google
-                        </Button>
+                        <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel>{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
+                        <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
+                        <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" placeholder="********" {...field} className="h-11" /></FormControl><FormMessage /></FormItem> )} />
+                        {countryError ? ( <FormItem> <FormLabel>Pays</FormLabel> <Select onValueChange={(value) => { const country = africanCountries.find(c => c.code === value); if(country) setDetectedCountry({name: country.name, code: country.code, flag: country.prefix}); }}> <FormControl> <SelectTrigger className="h-11"> <SelectValue placeholder="Sélectionnez votre pays" /> </SelectTrigger> </FormControl> <SelectContent> {africanCountries.map(c => ( <SelectItem key={c.code} value={c.code}> <div className="flex items-center gap-2"> <span>{c.emoji}</span> <span>{c.name}</span> </div> </SelectItem> ))} </SelectContent> </Select> </FormItem> ) : detectedCountry ? ( <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm"> <MapPin className="h-4 w-4 text-muted-foreground" /> <span className="text-muted-foreground">Pays détecté : {detectedCountry.name}</span> </div> ) : ( <div className="flex items-center gap-2 p-2 rounded-md bg-slate-100 text-sm"> <Loader2 className="h-4 w-4 animate-spin text-muted-foreground"/> <span className="text-muted-foreground">Détection du pays...</span> </div> )}
+                        <Button type="submit" className="w-full h-11 text-base !mt-5 btn" disabled={isLoading || isSocialLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('createAccountButton')}</Button>
                         </form>
                     </Form>
-                </CardContent>
+                </div>
                 </TabsContent>
-            </Card>
             </Tabs>
         </div>
       </div>
       <div className="hidden lg:block bg-slate-100">
-        <Image
-          src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"
-          alt="Image"
-          width="1200"
-          height="1800"
-          className="h-full w-full object-cover"
-          data-ai-hint="learning students"
-        />
+        <Image src="https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop" alt="Image" width="1200" height="1800" className="h-full w-full object-cover" data-ai-hint="learning students" />
       </div>
     </div>
   );

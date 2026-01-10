@@ -68,54 +68,44 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-  .auth-page-container {
-    height: 100vh;
-    width: 100vw;
-    overflow-y: auto;
-    position: relative;
-    background-color: hsl(var(--background));
-    background-image: none;
-    background-size: cover;
-    background-position: center;
-  }
-
-  .auth-card {
-    background-color: hsl(var(--card));
-    color: hsl(var(--card-foreground));
-  }
-  
-  .dark .auth-card {
-     background-color: hsla(222, 47%, 11%, 0.8);
-     border-color: hsla(0, 0%, 100%, 0.1);
-     color: hsl(0, 0%, 98%);
-  }
-
-  .auth-card .form-label-white {
-    color: hsl(var(--card-foreground));
-  }
-  
-  .dark .auth-card .form-label-white {
-    color: hsl(215, 20%, 65%); /* muted-foreground */
-  }
-
-  .auth-input {
-      background-color: hsl(var(--muted));
-      border-color: hsl(var(--border));
-      color: hsl(var(--foreground));
-      height: 2.5rem; /* 40px */
-  }
-
-  .dark .auth-input {
-      background-color: hsl(215, 28%, 20%);
-      border-color: hsl(215, 28%, 30%);
-      color: hsl(0, 0%, 98%);
-  }
-  
-   .auth-page-container > div {
-    position: relative;
-    z-index: 2;
-  }
 }
+
+/* Custom styles for react-phone-number-input */
+.PhoneInput {
+  display: flex;
+  align-items: center;
+}
+
+.PhoneInputInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  padding-left: 0.5rem;
+}
+
+.PhoneInputCountry {
+  position: relative;
+  align-self: center;
+  display: flex;
+  align-items: center;
+}
+.PhoneInputCountryIcon--border {
+    box-shadow: none;
+}
+.PhoneInputCountrySelect {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  z-index: 1;
+  opacity: 0;
+  cursor: pointer;
+}
+
 
 /* Custom styles for ChatRoom */
 .chat-background {
