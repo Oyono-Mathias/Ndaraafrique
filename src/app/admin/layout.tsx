@@ -3,12 +3,12 @@
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Loader2, ShieldAlert, PanelLeft, X } from "lucide-react";
+import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getDoc, doc, getFirestore, onSnapshot } from "firebase/firestore";
-import { useToast } from "@/hooks/use-toast";
+import { Header } from "@/components/layout/header";
 
 function AdminAccessRequiredScreen() {
     const router = useRouter();
@@ -23,44 +23,6 @@ function AdminAccessRequiredScreen() {
         </div>
     )
 }
-
-const AnnouncementBanner = () => {
-    const [message, setMessage] = useState('');
-    const [isVisible, setIsVisible] = useState(false);
-    const db = getFirestore();
-
-    useEffect(() => {
-        const settingsRef = doc(db, 'settings', 'global');
-        const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const announcementMessage = docSnap.data().platform?.announcementMessage;
-                if (announcementMessage && sessionStorage.getItem(`announcement_${announcementMessage}`) !== 'dismissed') {
-                    setMessage(announcementMessage);
-                    setIsVisible(true);
-                } else {
-                    setIsVisible(false);
-                }
-            }
-        });
-        return () => unsubscribe();
-    }, [db]);
-    
-    const handleDismiss = () => {
-        setIsVisible(false);
-        sessionStorage.setItem(`announcement_${message}`, 'dismissed');
-    };
-
-    if (!isVisible) return null;
-
-    return (
-        <div className="bg-primary text-primary-foreground px-4 py-2 flex items-center gap-4 text-sm font-medium relative">
-            <p className="flex-1 text-center">{message}</p>
-            <Button variant="ghost" size="icon" onClick={handleDismiss} className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 hover:bg-primary/50">
-                <X className="h-4 w-4"/>
-            </Button>
-        </div>
-    );
-};
 
 export default function AdminLayout({
   children,
@@ -114,7 +76,6 @@ export default function AdminLayout({
 
         {/* --- Main Content Area --- */}
         <div className="flex flex-col min-h-screen">
-            <AnnouncementBanner />
             <header className="admin-header flex h-16 items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm px-4 lg:px-6">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
@@ -131,9 +92,7 @@ export default function AdminLayout({
                         <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} />
                     </SheetContent>
                 </Sheet>
-                <div className="w-full flex-1">
-                    {/* You can add a search bar or other header elements here if needed */}
-                </div>
+                <Header />
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 overflow-y-auto">
                 {children}

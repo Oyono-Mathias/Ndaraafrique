@@ -18,11 +18,7 @@ export default function AdminRootPage() {
   }, [isUserLoading, formaAfriqueUser, router]);
   
   if (isUserLoading || formaAfriqueUser?.role !== 'admin') {
-    return (
-        <div className="flex justify-center items-center h-full">
-            {/* You can add a loader here if you want */}
-        </div>
-    );
+    return null;
   }
 
   return <AdminDashboard />;

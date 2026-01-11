@@ -136,6 +136,14 @@
       .admin-sidebar-container {
         width: 350px; /* Even wider sidebar for TV */
       }
+       .sidebar-label {
+        padding: 0.5rem 0; /* Larger clickable area for TV remote navigation */
+      }
+      a:focus, button:focus {
+        outline: 2px solid hsl(var(--primary));
+        box-shadow: 0 0 0 4px hsl(var(--primary) / 0.3);
+        border-radius: var(--radius);
+      }
     }
 }
 
