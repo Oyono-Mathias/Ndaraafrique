@@ -94,8 +94,13 @@ export function AdminDashboard() {
     const recentPaymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'), limit(5));
     unsubs.push(onSnapshot(recentPaymentsQuery, async (snapshot) => {
         const paymentDocs = snapshot.docs;
-        const userIds = [...new Set(paymentDocs.map(doc => doc.data().userId))];
-        const courseIds = [...new Set(paymentDocs.map(doc => doc.data().courseId))];
+        if(paymentDocs.length === 0) {
+            setActivities([]);
+            return;
+        }
+
+        const userIds = [...new Set(paymentDocs.map(doc => doc.data().userId))].filter(Boolean);
+        const courseIds = [...new Set(paymentDocs.map(doc => doc.data().courseId))].filter(Boolean);
 
         const usersMap = new Map<string, FormaAfriqueUser>();
         if(userIds.length > 0) {
