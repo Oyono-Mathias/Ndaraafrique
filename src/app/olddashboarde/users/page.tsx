@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -181,7 +179,7 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={() => router.push(`/dashboarde/users/${user.uid}`)}>
+                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
                         <Eye className="mr-2 h-4 w-4"/>
                         Voir le profil
                     </DropdownMenuItem>
@@ -395,5 +393,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    

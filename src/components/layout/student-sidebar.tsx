@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -140,7 +139,7 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
 
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-    router.push('/dashboarde');
+    router.push('/admin');
   }
 
   return (

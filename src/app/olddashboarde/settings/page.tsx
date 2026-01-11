@@ -1,416 +1,395 @@
-
-
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { generateAnnouncement } from '@/ai/flows/generate-announcement-flow';
-
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Settings, Percent, Building, Shield, FileText, Sparkles } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, where, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
+import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
+import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useToast } from '@/hooks/use-toast';
+import { deleteUserAccount } from '@/app/actions/userActions';
 
-const generalSchema = z.object({
-  siteName: z.string().min(1, 'Le nom du site est requis.'),
-  siteDescription: z.string().optional(),
-  contactEmail: z.string().email('Veuillez entrer un email valide.'),
-  supportPhone: z.string().optional(),
-  logoUrl: z.string().url('Veuillez entrer une URL valide.').optional().or(z.literal('')),
-  loginBackgroundImage: z.string().url("Veuillez entrer une URL d'image valide.").optional().or(z.literal('')),
-});
 
-const commercialSchema = z.object({
-  commissionRate: z.coerce.number().min(0).max(100, 'Le taux doit être entre 0 et 100.'),
-  minimumPayout: z.coerce.number().min(0, 'Le seuil ne peut pas être négatif.'),
-  enableMobileMoney: z.boolean().default(true),
-});
-
-const platformSchema = z.object({
-  maintenanceMode: z.boolean().default(false),
-  allowInstructorSignup: z.boolean().default(true),
-  announcementMessage: z.string().optional(),
-});
-
-const legalSchema = z.object({
-  termsOfService: z.string().optional(),
-  privacyPolicy: z.string().optional(),
-});
-
-const settingsSchema = z.object({
-  general: generalSchema,
-  commercial: commercialSchema,
-  platform: platformSchema,
-  legal: legalSchema,
-});
-
-type SettingsFormValues = z.infer<typeof settingsSchema>;
-
-const defaultLegalContent = {
-  terms: `
-**Conditions Générales d'Utilisation (CGU) de FormaAfrique**
-
-*Dernière mise à jour : [Date]*
-
-Bienvenue sur FormaAfrique !
-
-**1. Objet**
-Les présentes CGU régissent l'accès et l'utilisation de la plateforme de cours en ligne FormaAfrique. La plateforme met en relation des créateurs de contenu pédagogique ("Instructeurs") et des personnes souhaitant suivre des formations ("Étudiants").
-
-**2. Inscription et Compte**
-L'accès aux cours nécessite la création d'un compte. Vous vous engagez à fournir des informations exactes et à les maintenir à jour. Vous êtes seul responsable de la sécurité de votre mot de passe et de toutes les activités sur votre compte.
-
-**3. Paiements et Modèle de Revenus**
-3.1. Les prix des cours sont fixés par les Instructeurs et indiqués en devise locale (XOF, FCFA, etc.).
-3.2. FormaAfrique facilite les paiements via des solutions de Mobile Money (Orange Money, MTN Mobile Money, Wave, etc.) et d'autres moyens de paiement locaux pertinents. En effectuant un achat, vous acceptez les conditions de nos prestataires de paiement.
-3.3. En achetant un cours, l'Étudiant obtient une licence d'utilisation personnelle, non exclusive et non transférable pour visionner le contenu pédagogique via la plateforme FormaAfrique. Vous n'acquérez aucun droit de propriété ou de distribution.
-3.4. **Modèle de Commission :** L'Instructeur autorise FormaAfrique à prlever automatiquement une commission sur le prix de vente de chaque cours vendu. Le taux de cette commission est défini dans les paramètres de la plateforme et peut être sujet à modification.
-
-**4. Propriété Intellectuelle**
-4.1. **Contenu des Instructeurs :** Les Instructeurs garantissent détenir tous les droits de propriété intellectuelle (droits d'auteur, etc.) sur le contenu qu'ils publient (vidéos, documents, quiz). Ils conservent l'entière propriété de leur contenu.
-4.2. **Licence d'Exploitation :** En publiant un cours, l'Instructeur accorde à FormaAfrique une licence mondiale, non exclusive et révocable, pour héberger, promouvoir, vendre et diffuser son contenu sur la plateforme et via ses canaux marketing. Cette licence prend fin si le cours est retiré de la plateforme par l'Instructeur.
-4.3. **Contenu de la Plateforme :** La marque FormaAfrique, le logo, le design, et les textes de la plateforme sont la propriété exclusive de FormaAfrique et protégés par les lois en vigueur.
-
-**5. Responsabilité**
-5.1. FormaAfrique agit en tant qu'intermédiaire technique. Nous ne sommes pas responsables de la qualité pédagogique, de l'exactitude ou de la pertinence du contenu des cours, qui relève de l'entière responsabilité de chaque Instructeur.
-5.2. En cas de litige entre un Étudiant et un Instructeur concernant le contenu d'un cours, FormaAfrique pourra, à sa discrétion, proposer une médiation mais ne pourra être tenue pour responsable du préjudice allégué.
-
-**6. Droit Applicable et Juridiction**
-Les présentes CGU sont soumises au droit en vigueur dans le pays d'opération principal de FormaAfrique (par exemple, le droit camerounais). Tout litige sera de la compétence exclusive des tribunaux de sa capitale économique.
-`,
-  privacy: `
-**Politique de Confidentialité de FormaAfrique**
-
-*Dernière mise à jour : [Date]*
-
-La protection de vos données personnelles est une priorité pour FormaAfrique.
-
-**1. Données Collectées**
-Nous collectons les informations que vous nous fournissez lors de votre inscription et de votre utilisation de nos services :
-- **Données d'identification :** Nom, prénom, adresse e-mail.
-- **Données de profil :** Biographie, liens vers les réseaux sociaux (pour les instructeurs).
-- **Données de navigation :** Adresse IP, type de navigateur, pages visitées pour améliorer nos services.
-- **Données de progression :** Cours suivis, progression, résultats aux devoirs et quiz.
-- **Données financières des Instructeurs :** Informations nécessaires au paiement des revenus (numéro Mobile Money, coordonnées bancaires), stockées de manière sécurisée.
-- **Documents de vérification (Instructeurs) :** Les pièces d'identité ou justificatifs de compétence sont collectés à des fins de vérification uniquement.
-
-**2. Utilisation de vos Données**
-Vos données sont utilisées pour :
-- Fournir, gérer et améliorer nos services (accès aux cours, suivi de la progression).
-- Personnaliser votre expérience d'apprentissage.
-- Traiter les paiements des cours et les revenus des instructeurs.
-- Communiquer avec vous concernant les cours ou les mises à jour de la plateforme.
-- Assurer la sécurité de la plateforme et prévenir la fraude.
-- Valider le statut des instructeurs.
-
-**3. Stockage et Sécurité des Données**
-- Vos données sont hébergées sur l'infrastructure sécurisée de Google Cloud (Firebase), qui respecte les standards internationaux de sécurité des données.
-- **Confidentialité des documents :** Les documents de vérification soumis par les instructeurs sont stockés de manière sécurisée, accessibles uniquement par une équipe d'administration restreinte et ne sont jamais partagés avec des tiers. Ils sont utilisés exclusivement pour le processus d'approbation.
-- Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles (cryptage, règles d'accès strictes) pour protéger vos données.
-
-**4. Partage des Données**
-Nous ne vendons, ni ne louons vos données personnelles à des tiers.
-Vos données peuvent être partagées uniquement avec :
-- Les instructeurs (votre nom et votre progression dans leurs cours).
-- Nos prestataires de services techniques (hébergement, traitement des paiements) qui sont contractuellement tenus de protéger vos données.
-
-**5. Vos Droits**
-Conformément à la législation en vigueur sur la protection des données (par exemple, la loi camerounaise de 2010 sur la cybersécurité et la cybercriminalité), vous disposez d'un droit d'accès, de rectification et de suppression de vos données. Pour exercer ces droits, contactez-nous à notre adresse email officielle.
-`
+const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
+  switch (role) {
+    case 'admin':
+      return 'destructive';
+    case 'instructor':
+      return 'default';
+    default:
+      return 'secondary';
+  }
 };
 
-export default function AdminSettingsPage() {
-    const { formaAfriqueUser, isUserLoading } = useRole();
-    const db = getFirestore();
+const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
+    return status === 'suspended' ? 'destructive' : 'default';
+};
+
+const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
     const { toast } = useToast();
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isAiLoading, setIsAiLoading] = useState(false);
+    const router = useRouter();
+    const db = getFirestore();
+    const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
     
-    const settingsDocRef = doc(db, 'settings', 'global');
+    const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
 
-    const form = useForm<SettingsFormValues>({
-        resolver: zodResolver(settingsSchema),
-        defaultValues: {
-            general: { siteName: 'FormaAfrique', siteDescription: '', contactEmail: '', supportPhone: '', logoUrl: '', loginBackgroundImage: '' },
-            commercial: { commissionRate: 20, minimumPayout: 5000, enableMobileMoney: true },
-            platform: { maintenanceMode: false, allowInstructorSignup: true, announcementMessage: '' },
-            legal: { 
-                termsOfService: defaultLegalContent.terms.trim(),
-                privacyPolicy: defaultLegalContent.privacy.trim(),
-            },
-        },
-    });
-
-    useEffect(() => {
-      const fetchSettings = async () => {
+    const handleRoleChange = async () => {
+        setIsSubmitting(true);
         try {
-          const docSnap = await getDoc(settingsDocRef);
-          if (docSnap.exists()) {
-            const data = docSnap.data();
-            form.reset({
-              general: data.general || form.getValues('general'),
-              commercial: data.commercial || form.getValues('commercial'),
-              platform: data.platform || form.getValues('platform'),
-              legal: data.legal || form.getValues('legal'),
-            });
-          } else {
-            // If the document doesn't exist, create it with default values
-            await setDoc(settingsDocRef, form.getValues(), { merge: true });
-          }
+            await updateDoc(userDocRef, { role: selectedRole });
+            toast({ title: "Rôle mis à jour", description: `Le rôle de ${user.fullName} est maintenant ${selectedRole}.` });
+            setIsRoleDialogOpen(false);
         } catch (error) {
-          console.error("Failed to fetch or create settings:", error);
-          toast({
-            variant: 'destructive',
-            title: 'Erreur',
-            description: 'Impossible de charger les paramètres de la plateforme.',
-          });
+            console.error("Failed to update role:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le rôle." });
         } finally {
-          setIsLoading(false);
+            setIsSubmitting(false);
         }
-      };
+    };
 
-      fetchSettings();
-      // We only want to run this once on mount, so we pass an empty dependency array.
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-    
-    const handleSave = async (data: Partial<SettingsFormValues>, sectionName: string) => {
-        if (formaAfriqueUser?.role !== 'admin') {
-            toast({ variant: 'destructive', title: 'Accès refusé' });
+    const handleStatusToggle = async () => {
+        const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { status: newStatus });
+            toast({ title: "Statut mis à jour", description: `${user.fullName} est maintenant ${newStatus === 'active' ? 'actif' : 'suspendu'}.` });
+        } catch (error) {
+            console.error("Failed to toggle status:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le statut." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        setIsSubmitting(true);
+        const auth = getAuth();
+        const adminUser = auth.currentUser;
+
+        if (!adminUser) {
+            toast({ variant: "destructive", title: "Erreur d'authentification", description: "Administrateur non connecté." });
+            setIsSubmitting(false);
             return;
         }
 
-        setIsSaving(true);
         try {
-            await setDoc(settingsDocRef, data, { merge: true });
-            toast({
-                title: 'Paramètres sauvegardés',
-                description: `Les réglages de la section ${sectionName} ont été mis à jour.`,
-            });
-        } catch (error) {
-            console.error("Failed to save settings:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erreur',
-                description: 'Impossible de sauvegarder les paramètres.',
-            });
-        } finally {
-            setIsSaving(false);
-        }
-    };
-    
-    const onGeneralSubmit = (data: Pick<SettingsFormValues, 'general'>) => handleSave({ general: data.general }, 'Général');
-    const onCommercialSubmit = (data: Pick<SettingsFormValues, 'commercial'>) => handleSave({ commercial: data.commercial }, 'Commercial');
-    const onPlatformSubmit = (data: Pick<SettingsFormValues, 'platform'>) => handleSave({ platform: data.platform }, 'Plateforme');
-    const onLegalSubmit = (data: Pick<SettingsFormValues, 'legal'>) => handleSave({ legal: data.legal }, 'Légal');
-    
-    const handleAiAssist = async () => {
-        setIsAiLoading(true);
-        try {
-            const result = await generateAnnouncement({ topic: "a special launch offer with a 50% discount" });
-            form.setValue('platform.announcementMessage', result.announcement, { shouldValidate: true });
-            toast({
-                title: 'Message généré par IA !',
-                description: 'La proposition a été insérée dans le champ ci-dessous.',
-            });
-        } catch (error) {
-            console.error("AI announcement generation failed:", error);
-            toast({
-                variant: 'destructive',
-                title: 'Erreur IA',
-                description: 'Impossible de générer le message.',
-            });
-        } finally {
-            setIsAiLoading(false);
-        }
-    };
-    
-    const handleLoginImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return;
-        
-        const file = e.target.files[0];
-        const storage = getStorage();
-        const storageRef = ref(storage, `site_assets/login_background_${Date.now()}`);
-        
-        setIsSaving(true);
-        const uploadTask = uploadBytesResumable(storageRef, file);
-
-        uploadTask.on(
-            'state_changed',
-            (snapshot) => {}, // Can show progress here
-            (error) => {
-                toast({ variant: 'destructive', title: 'Erreur d\'upload', description: 'Impossible de téléverser l\'image.' });
-                setIsSaving(false);
-            },
-            async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                form.setValue('general.loginBackgroundImage', downloadURL);
-                handleSave({ general: form.getValues().general }, 'Général');
+            const token = await adminUser.getIdToken();
+            const result = await deleteUserAccount({ userId: user.uid, idToken: token });
+            
+            if (result.success) {
+                toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été définitivement supprimé.` });
+                setIsDeleteAlertOpen(false);
+            } else {
+                throw new Error(result.error || 'Unknown error');
             }
-        );
+        } catch (error: any) {
+            console.error("Failed to delete user:", error);
+            toast({ variant: "destructive", title: "Erreur de suppression", description: error.message || "Impossible de supprimer l'utilisateur." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    const handleStartChat = async () => {
+        if (!adminId || adminId === user.uid) return;
+
+        const chatsRef = collection(db, 'chats');
+        const sortedParticipants = [adminId, user.uid].sort();
+        
+        const q = query(chatsRef, where('participants', '==', sortedParticipants));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            let chatId: string | null = null;
+            if (!querySnapshot.empty) {
+                chatId = querySnapshot.docs[0].id;
+            } else {
+                const newChatRef = doc(collection(db, 'chats'));
+                await setDoc(newChatRef, {
+                    participants: sortedParticipants,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: `Conversation initiée par un administrateur.`,
+                });
+                chatId = newChatRef.id;
+            }
+            router.push(`/messages/${chatId}`);
+        } catch (error) {
+            console.error("Error starting chat:", error);
+            toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
+        }
     };
 
-    if (isLoading || isUserLoading) {
-        return (
-             <div className="space-y-6">
-                <Skeleton className="h-10 w-48" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-64 w-full" />
-            </div>
-        );
-    }
-    
     return (
-        <Form {...form}>
-            <div className="space-y-8">
-                <div>
-                    <h1 className="text-3xl font-bold text-white">Paramètres</h1>
-                    <p className="text-slate-400">Gérez les configurations globales de la plateforme.</p>
-                </div>
-
-                <Tabs defaultValue="general" orientation="vertical" className="flex flex-col md:flex-row gap-8">
-                    <TabsList className="w-full md:w-48 h-full flex-shrink-0 flex-col justify-start items-stretch bg-slate-800 border-slate-700">
-                        <TabsTrigger value="general" className="w-full justify-start gap-2 text-slate-300 data-[state=active]:bg-slate-700 data-[state=active]:text-white"><Settings className="h-4 w-4"/> Général</TabsTrigger>
-                        <TabsTrigger value="commercial" className="w-full justify-start gap-2 text-slate-300 data-[state=active]:bg-slate-700 data-[state=active]:text-white"><Percent className="h-4 w-4"/> Commercial</TabsTrigger>
-                        <TabsTrigger value="platform" className="w-full justify-start gap-2 text-slate-300 data-[state=active]:bg-slate-700 data-[state=active]:text-white"><Building className="h-4 w-4"/> Plateforme</TabsTrigger>
-                        <TabsTrigger value="legal" className="w-full justify-start gap-2 text-slate-300 data-[state=active]:bg-slate-700 data-[state=active]:text-white"><FileText className="h-4 w-4"/> Légal</TabsTrigger>
-                    </TabsList>
-                    
-                    <div className="flex-1">
-                        <TabsContent value="general">
-                            <form onSubmit={form.handleSubmit(onGeneralSubmit)}>
-                                <Card className="bg-[#1e293b] border-slate-700">
-                                    <CardHeader><CardTitle className="text-white">Informations Générales</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="general.siteName" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Nom du site</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="general.logoUrl" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">URL du Logo</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        
-                                        <FormItem>
-                                            <FormLabel className="text-slate-300">Image de fond (Login)</FormLabel>
-                                            <FormControl>
-                                                <Input type="file" accept="image/*" onChange={handleLoginImageUpload} className="bg-slate-700 border-slate-600 text-white" />
-                                            </FormControl>
-                                            {form.watch('general.loginBackgroundImage') && <img src={form.watch('general.loginBackgroundImage')} alt="Preview" className="mt-2 h-20 rounded-md" />}
-                                            <FormMessage />
-                                        </FormItem>
-                                        
-                                        <FormField control={form.control} name="general.contactEmail" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Email de contact</FormLabel><FormControl><Input {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="general.supportPhone" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Numéro de téléphone du support (WhatsApp)</FormLabel><FormControl><Input {...field} placeholder="+2376XXXXXXXX" className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormDescription className="text-slate-400">Inclure l'indicatif du pays.</FormDescription><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="general.siteDescription" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Description SEO</FormLabel><FormControl><Textarea {...field} rows={3} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormMessage /></FormItem>
-                                        )} />
-                                    </CardContent>
-                                    <CardFooter className="justify-end">
-                                        <Button type="submit" disabled={isSaving}>
-                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Enregistrer
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            </form>
-                        </TabsContent>
-                         <TabsContent value="commercial">
-                            <form onSubmit={form.handleSubmit(onCommercialSubmit)}>
-                                <Card className="bg-[#1e293b] border-slate-700">
-                                    <CardHeader><CardTitle className="text-white">Finances & Paiements</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="commercial.commissionRate" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Taux de commission (%)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormDescription className="text-slate-400">Ce taux sera appliqué à toutes les nouvelles ventes.</FormDescription><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="commercial.minimumPayout" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Seuil de retrait minimum (XOF)</FormLabel><FormControl><Input type="number" {...field} className="bg-slate-700 border-slate-600 text-white" /></FormControl><FormDescription className="text-slate-400">Le montant minimum qu'un instructeur doit atteindre pour demander un retrait.</FormDescription><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="commercial.enableMobileMoney" render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-700 p-3 shadow-sm bg-slate-800/50"><div className="space-y-0.5"><FormLabel className="text-slate-200">Paiements Mobile Money</FormLabel><FormDescription className="text-slate-400">Activer ou désactiver les paiements par Orange/MTN Money.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                        )} />
-                                    </CardContent>
-                                    <CardFooter className="justify-end">
-                                        <Button type="submit" disabled={isSaving}>
-                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Enregistrer
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            </form>
-                        </TabsContent>
-                         <TabsContent value="platform">
-                            <form onSubmit={form.handleSubmit(onPlatformSubmit)}>
-                                <Card className="bg-[#1e293b] border-slate-700">
-                                    <CardHeader><CardTitle className="text-white">Configuration de la Plateforme</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="platform.maintenanceMode" render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-700 p-3 shadow-sm bg-slate-800/50"><div className="space-y-0.5"><FormLabel className="text-slate-200">Mode Maintenance</FormLabel><FormDescription className="text-slate-400">Coupe l'accès public au site et affiche une page de maintenance.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="platform.allowInstructorSignup" render={({ field }) => (
-                                            <FormItem className="flex flex-row items-center justify-between rounded-lg border border-slate-700 p-3 shadow-sm bg-slate-800/50"><div className="space-y-0.5"><FormLabel className="text-slate-200">Inscriptions des Instructeurs</FormLabel><FormDescription className="text-slate-400">Autoriser ou non les nouvelles candidatures d'instructeurs.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="platform.announcementMessage" render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel className="text-slate-300 flex justify-between items-center">
-                                                    <span>Message d'annonce global</span>
-                                                    <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading} className="bg-slate-800 border-slate-600 hover:bg-slate-700">
-                                                        {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
-                                                        Générer avec Mathias
-                                                    </Button>
-                                                </FormLabel>
-                                                <FormControl><Textarea {...field} rows={2} className="bg-slate-700 border-slate-600 text-white"/></FormControl><FormDescription className="text-slate-400">Ce message s'affichera en bandeau sur tout le site (si le thème le supporte).</FormDescription><FormMessage />
-                                            </FormItem>
-                                        )} />
-                                    </CardContent>
-                                    <CardFooter className="justify-end">
-                                        <Button type="submit" disabled={isSaving}>
-                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Enregistrer
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            </form>
-                        </TabsContent>
-                         <TabsContent value="legal">
-                            <form onSubmit={form.handleSubmit(onLegalSubmit)}>
-                                <Card className="bg-[#1e293b] border-slate-700">
-                                    <CardHeader><CardTitle className="text-white">Contenu Légal & Sécurité</CardTitle></CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="legal.termsOfService" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Conditions Générales d'Utilisation</FormLabel><FormControl><Textarea {...field} rows={10} className="bg-slate-700 border-slate-600 text-white"/></FormControl><FormDescription className="text-slate-400">Le contenu de votre page CGU.</FormDescription><FormMessage /></FormItem>
-                                        )} />
-                                        <FormField control={form.control} name="legal.privacyPolicy" render={({ field }) => (
-                                            <FormItem><FormLabel className="text-slate-300">Politique de Confidentialité</FormLabel><FormControl><Textarea {...field} rows={10} className="bg-slate-700 border-slate-600 text-white"/></FormControl><FormDescription className="text-slate-400">Le contenu de votre page de politique de confidentialité.</FormDescription><FormMessage /></FormItem>
-                                        )} />
-                                    </CardContent>
-                                    <CardFooter className="justify-end">
-                                        <Button type="submit" disabled={isSaving}>
-                                            {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Enregistrer
-                                        </Button>
-                                    </CardFooter>
-                                </Card>
-                            </form>
-                        </TabsContent>
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
+                        <Eye className="mr-2 h-4 w-4"/>
+                        Voir le profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStartChat}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Contacter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
+                        <UserCog className="mr-2 h-4 w-4"/>
+                        Modifier le rôle
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting}>
+                        <Ban className="mr-2 h-4 w-4"/>
+                        {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4"/>
+                        Supprimer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Role Change Dialog */}
+            <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Modifier le rôle de {user.fullName}</DialogTitle>
+                        <DialogDescription>
+                            Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir un rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="student">Étudiant</SelectItem>
+                                <SelectItem value="instructor">Instructeur</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
-                </Tabs>
-            </div>
-        </Form>
-    );
-}
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Annuler</Button>
+                        <Button onClick={handleRoleChange} disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirmer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
 
+            {/* Delete Confirmation Alert */}
+            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+};
+
+
+export default function AdminUsersPage() {
+  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const db = getFirestore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const usersQuery = useMemoFirebase(
+    () => query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+    [db]
+  );
+  const { data: users, isLoading: usersLoading } = useCollection<FormaAfriqueUser & {createdAt?: any; status?: 'active' | 'suspended'}>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!debouncedSearchTerm) return users;
+    return users.filter(user =>
+      user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [users, debouncedSearchTerm]);
+
+  const isLoading = isUserLoading || usersLoading;
+
+  if (adminUser?.role !== 'admin') {
+    return <div className="p-8 text-center">Accès non autorisé.</div>;
+  }
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto px-4">
+      <header>
+        <h1 className="text-3xl font-bold dark:text-white">Gestion des Utilisateurs</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
+      </header>
+
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
+          <CardDescription className="dark:text-slate-400">
+            Liste de tous les utilisateurs enregistrés.
+          </CardDescription>
+          <div className="relative pt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom ou email..."
+              className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                  <TableHead className="dark:text-slate-400">Nom</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
+                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={i} className="dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+                          <Skeleton className="h-4 w-32 dark:bg-slate-700" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                            <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
+                            <div className="sm:hidden mt-1">
+                                <Badge variant={getStatusBadgeVariant(user.status)} className={cn('text-xs', user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                                    {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                       <TableCell className="hidden sm:table-cell">
+                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                          <UserActions user={user} adminId={adminUser?.uid} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow className="dark:border-slate-700">
+                    <TableCell colSpan={5} className="h-48 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <UserX className="h-12 w-12" />
+                          <p className="font-medium">Aucun utilisateur trouvé</p>
+                          <p className="text-sm">
+                              {searchTerm 
+                                  ? `Aucun résultat pour "${searchTerm}".`
+                                  : "Il n'y a pas encore d'utilisateurs sur la plateforme."
+                              }
+                          </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

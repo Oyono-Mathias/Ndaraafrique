@@ -1,11 +1,9 @@
 
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
 import { StudentDashboard } from '@/components/dashboards/student-dashboard';
 import { InstructorDashboard } from '@/components/dashboards/instructor-dashboard';
-import { AdminDashboard } from '@/components/dashboards/admin-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
