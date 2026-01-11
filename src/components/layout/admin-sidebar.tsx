@@ -73,6 +73,11 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
     toast({ title: "Déconnexion réussie" });
   }
 
+  const handleExitAdmin = () => {
+    switchRole('student');
+    router.push('/dashboard');
+  }
+
   return (
     <div className="w-full h-full flex flex-col">
        <header className="p-4 border-b border-slate-700/50">
@@ -89,7 +94,7 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
       </nav>
 
       <footer className="p-4 mt-auto space-y-2 border-t border-slate-700/50">
-        <Button variant="outline" className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white" onClick={() => switchRole('student')}>
+        <Button variant="outline" className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white" onClick={handleExitAdmin}>
             <LogIn className="mr-2 h-4 w-4"/>
             Quitter Admin
         </Button>
