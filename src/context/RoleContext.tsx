@@ -15,7 +15,7 @@ export interface FormaAfriqueUser {
     fullName: string;
     role: UserRole;
     isInstructorApproved: boolean;
-    availableRoles: UserRole[]; // Changed to non-optional
+    availableRoles: UserRole[];
     status?: 'active' | 'suspended';
     bio?: string;
     socialLinks?: {
@@ -42,11 +42,20 @@ export interface FormaAfriqueUser {
     };
     profilePictureURL?: string;
     instructorApplication?: {
-        motivation: string;
-        verificationDocUrl: string;
+        specialty?: string;
+        whatsappNumber?: string;
+        youtubeUrl?: string;
+        facebookUrl?: string;
+        presentationVideoUrl?: string;
+        professionalExperience?: string;
+        linkedinUrl?: string;
+        portfolioUrl?: string;
+        firstCourseTitle?: string;
+        firstCourseDescription?: string;
+        hasEquipment?: boolean;
         submittedAt: Date;
     };
-    createdAt?: Timestamp; // Add createdAt to the type
+    createdAt?: Timestamp;
     country?: string;
     countryCode?: string;
 }

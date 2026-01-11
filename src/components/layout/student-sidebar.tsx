@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -136,7 +137,7 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
     router.push('/');
     toast({ title: "Déconnexion réussie" });
   }
-
+  
   const handleSwitchToAdmin = () => {
     switchRole('admin');
     router.push('/admin');
