@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -60,13 +61,13 @@ const SidebarItem = ({ href, icon: Icon, label, count }: { href: string, icon: R
     >
         <div className="flex items-center">
             <Icon className={cn(
-                "sidebar-icon w-5 h-5 mr-4",
+                "sidebar-icon w-5 h-5 mr-4 tv:w-7 tv:h-7",
                 isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'
             )} />
-            <span className="sidebar-label font-medium text-sm">{label}</span>
+            <span className="sidebar-label font-medium text-sm tv:text-lg">{label}</span>
         </div>
         {count !== undefined && count > 0 && (
-            <Badge className="bg-red-500 text-white h-5 px-2 text-xs">{count}</Badge>
+            <Badge className="bg-red-500 text-white h-5 px-2 text-xs tv:h-7 tv:px-3 tv:text-base">{count}</Badge>
         )}
     </Link>
   );
@@ -128,8 +129,8 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
   return (
     <div className="w-full h-full flex flex-col">
        <header className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 sidebar-header">
-            <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full sidebar-logo" />
-            <span className="sidebar-label font-bold text-lg text-slate-900 dark:text-white">{siteName || 'Admin Panel'}</span>
+            <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full sidebar-logo tv:w-10 tv:h-10" />
+            <span className="sidebar-label font-bold text-lg text-slate-900 dark:text-white tv:text-2xl">{siteName || 'Admin Panel'}</span>
       </header>
 
       <nav className="flex-1 py-2 overflow-y-auto">
@@ -145,16 +146,16 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
       </nav>
 
       <footer className="p-4 mt-auto space-y-2 border-t border-slate-200 dark:border-slate-800">
-        <Button variant="outline" className="w-full justify-center" onClick={handleSwitchToInstructor}>
-            <Briefcase className="mr-2 h-4 w-4"/>
+        <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToInstructor}>
+            <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
             <span className="sidebar-label">Mode Instructeur</span>
         </Button>
-         <Button variant="outline" className="w-full justify-center" onClick={handleSwitchToStudent}>
-            <Users className="mr-2 h-4 w-4"/>
+         <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToStudent}>
+            <Users className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
             <span className="sidebar-label">Mode Étudiant</span>
         </Button>
-         <Button variant="ghost" className="w-full justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
+         <Button variant="ghost" className="w-full justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white tv:py-6 tv:text-lg" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
           <span className="sidebar-label">Déconnexion</span>
         </Button>
       </footer>

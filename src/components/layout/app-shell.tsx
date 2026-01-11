@@ -387,7 +387,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   // If it's an admin page, let the admin layout handle everything.
   if (isAdminPage) {
-    return <>{children}</>;
+    return <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>{children}</div>;
   }
   
   if (isMobile && pathname.startsWith('/messages/')) {
@@ -397,7 +397,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const showHeader = !isChatPage && !isFullScreenPage && role === 'student';
 
   return (
-    <>
+    <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
       <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background-alt' : 'bg-background-alt' )}>
         <AnnouncementBanner />
           <div className="flex flex-1">
@@ -463,6 +463,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
           </div>
       </div>
-    </>
+    </div>
   );
 }

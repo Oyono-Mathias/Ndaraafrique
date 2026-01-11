@@ -34,8 +34,8 @@ export default function RootLayout({
           <RoleProvider>
             <I18nProvider>
               <AppShell>{children}</AppShell>
+              <Toaster />
             </I18nProvider>
-            <Toaster />
           </RoleProvider>
         </FirebaseClientProvider>
       </body>
