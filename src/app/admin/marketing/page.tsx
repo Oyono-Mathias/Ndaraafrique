@@ -64,7 +64,7 @@ export default function AdminMarketingPage() {
       toast({
         variant: 'destructive',
         title: 'Erreur de l\'IA',
-        description: "Impossible de traiter la demande. Veuillez vérifier votre clé API ou réessayer.",
+        description: "Impossible de traiter la demande. Vérifiez votre clé API ou réessayer.",
       });
     } finally {
       setIsAiLoading(false);

@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -602,44 +601,21 @@
       },
       "required": ["code", "discountPercentage", "isActive"]
     },
-    "Settings": {
-      "title": "Settings",
+    "AdminNotification": {
+      "title": "Admin Notification",
       "type": "object",
-      "description": "Global settings for the FormaAfrique platform.",
+      "description": "Represents a system notification for administrators.",
       "properties": {
-        "general": {
-          "type": "object",
-          "properties": {
-            "siteName": { "type": "string" },
-            "logoUrl": { "type": "string", "format": "uri" },
-            "loginBackgroundImage": { "type": "string", "format": "uri" },
-            "contactEmail": { "type": "string", "format": "email" },
-            "supportPhone": { "type": "string" }
-          }
+        "type": {
+          "type": "string",
+          "enum": ["new_instructor_application", "new_support_ticket", "new_course_for_review"]
         },
-        "commercial": {
-          "type": "object",
-          "properties": {
-            "platformCommission": { "type": "number", "description": "The percentage commission the platform takes on sales." },
-            "featuredCourseId": { "type": "string", "description": "ID of the course to feature on the homepage." }
-          }
-        },
-        "platform": {
-          "type": "object",
-          "properties": {
-            "announcementMessage": { "type": "string" },
-            "maintenanceMode": { "type": "boolean" },
-            "allowInstructorSignup": { "type": "boolean" }
-          }
-        },
-        "legal": {
-          "type": "object",
-          "properties": {
-            "termsOfService": { "type": "string", "description": "Full text for the Terms of Service." },
-            "privacyPolicy": { "type": "string", "description": "Full text for the Privacy Policy." }
-          }
-        }
-      }
+        "message": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "message", "isRead", "createdAt"]
     }
   },
   "auth": {
@@ -729,9 +705,50 @@
       "schema": { "$ref": "#/entities/PromoCode" },
       "description": "Stores promotional codes for discounts."
     },
+    "/admin_notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AdminNotification" },
+      "description": "A collection for storing system-wide notifications for administrators."
+    },
     "/settings/global": {
-        "schema": { "$ref": "#/entities/Settings" },
-        "description": "Stores global configuration for the entire application."
+      "schema": {
+        "title": "Settings",
+        "type": "object",
+        "properties": {
+            "general": {
+                "type": "object",
+                "properties": {
+                    "siteName": { "type": "string" },
+                    "logoUrl": { "type": "string", "format": "uri" },
+                    "loginBackgroundImage": { "type": "string", "format": "uri" },
+                    "contactEmail": { "type": "string", "format": "email" },
+                    "supportPhone": { "type": "string" }
+                }
+            },
+            "commercial": {
+                "type": "object",
+                "properties": {
+                    "platformCommission": { "type": "number" },
+                    "featuredCourseId": { "type": "string" }
+                }
+            },
+            "platform": {
+                "type": "object",
+                "properties": {
+                    "announcementMessage": { "type": "string" },
+                    "maintenanceMode": { "type": "boolean" },
+                    "allowInstructorSignup": { "type": "boolean" }
+                }
+            },
+            "legal": {
+                "type": "object",
+                "properties": {
+                    "termsOfService": { "type": "string" },
+                    "privacyPolicy": { "type": "string" }
+                }
+            }
+        }
+      },
+      "description": "Stores global configuration for the entire application."
     }
   }
 }

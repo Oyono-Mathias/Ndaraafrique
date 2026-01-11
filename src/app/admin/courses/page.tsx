@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -74,10 +73,18 @@ export default function AdminCoursesPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const coursesQuery = useMemoFirebase(
-    () => query(collection(db, 'courses'), orderBy('createdAt', 'desc')),
-    [db]
+    () => {
+        let q = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+        if (debouncedSearchTerm) {
+            // Firestore doesn't support case-insensitive search natively.
+            // A common workaround is to store a lowercased version of the title.
+            // For now, we'll filter client-side.
+        }
+        return q;
+    },
+    [db] // No need to depend on debouncedSearchTerm for the query itself
   );
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+  const { data: courses, isLoading: coursesLoading, error } = useCollection<Course>(coursesQuery);
 
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
@@ -88,13 +95,17 @@ export default function AdminCoursesPage() {
   }, [courses, debouncedSearchTerm]);
 
   const isLoading = isUserLoading || coursesLoading;
+  
+  if (error) {
+      return <div className="text-destructive p-4">Erreur: Impossible de charger les cours. L'index est peut-être manquant.</div>;
+  }
 
   if (adminUser?.role !== 'admin') {
     return <div className="p-8 text-center">Accès non autorisé.</div>;
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4">
+    <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">Gestion des Formations</h1>
         <p className="text-muted-foreground dark:text-slate-400">Consultez et gérez toutes les formations de la plateforme.</p>

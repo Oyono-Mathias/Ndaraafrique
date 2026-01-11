@@ -72,6 +72,71 @@
     .btn-primary {
         @apply bg-primary text-primary-foreground hover:bg-primary/90;
     }
+
+    /* === Admin Dashboard Layout === */
+    .admin-grid-layout {
+      display: grid;
+      grid-template-columns: auto 1fr; /* Sidebar, Main Content */
+    }
+
+    .admin-sidebar-container {
+      grid-column: 1;
+      width: 80px; /* Slim by default for tablets */
+      transition: width 0.3s ease-in-out;
+    }
+    
+    .admin-header {
+      grid-column: 2;
+    }
+
+    /* Styles for the "slim" tablet sidebar */
+    .admin-sidebar-container .sidebar-label,
+    .admin-sidebar-container .sidebar-header .sidebar-label,
+    .admin-sidebar-container footer .sidebar-label {
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s, visibility 0.2s;
+    }
+    
+    .admin-sidebar-container .sidebar-header {
+      justify-content: center;
+    }
+
+    /* === Desktop State (> 1024px) === */
+    @media (min-width: 1024px) {
+      .admin-sidebar-container {
+        width: 280px; /* Full width for desktop */
+      }
+      .admin-sidebar-container .sidebar-label,
+      .admin-sidebar-container .sidebar-header .sidebar-label,
+      .admin-sidebar-container footer .sidebar-label {
+        opacity: 1;
+        visibility: visible;
+      }
+      .admin-sidebar-container .sidebar-header {
+        justify-content: flex-start;
+      }
+    }
+
+    /* === Mobile State (< 768px) === */
+    @media (max-width: 767px) {
+      .admin-grid-layout {
+        grid-template-columns: 1fr; /* Single column */
+      }
+      .admin-header {
+        grid-column: 1;
+      }
+    }
+    
+    /* === TV State (> 1920px) === */
+    @media (min-width: 1920px) {
+      html {
+        font-size: 125%; /* Increase base font size */
+      }
+      .admin-sidebar-container {
+        width: 350px; /* Even wider sidebar for TV */
+      }
+    }
 }
 
 /* Custom styles for react-phone-number-input */
