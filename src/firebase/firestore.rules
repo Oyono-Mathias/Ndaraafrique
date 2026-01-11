@@ -35,10 +35,16 @@ service cloud.firestore {
     function isStudentEnrolled(courseId) {
         return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
-
-    // --- Règles pour 'courses' (Déplacé au niveau supérieur) ---
+    
+    // --- Règles pour 'courses' ---
     match /courses/{courseId} {
-      allow read, list: if true; // Règle explicite pour autoriser la lecture/liste par tous
+      // Tout le monde peut lire un cours individuel
+      allow get: if true;
+      
+      // La liste est autorisée si:
+      // 1. C'est une requête de base (pas de filtre complexe)
+      // 2. OU si l'utilisateur est un admin (pour les requêtes de modération/filtrage)
+      allow list: if request.query.keys().size() == 0 || isAdmin();
       
       allow create: if isSignedIn() && isApprovedInstructor();
       allow update: if isAdmin() || (isCourseOwner(courseId) && request.resource.data.status != 'Published');
