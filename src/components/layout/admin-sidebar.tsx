@@ -15,14 +15,12 @@ import {
   Settings,
   ShieldAlert,
   LogOut,
-  ChevronDown,
   Sparkles
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-
 
 const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
@@ -74,7 +72,7 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
   }
 
   return (
-    <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
+    <div className="w-full h-full flex flex-col">
        <header className="p-4 border-b border-slate-700/50">
         <Link href="/dashboard" className="flex items-center gap-2">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
