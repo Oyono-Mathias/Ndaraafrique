@@ -19,18 +19,19 @@ export default function DashboardPage() {
     if (!isUserLoading && !user) {
       router.push('/');
     }
-  }, [user, isUserLoading, router]);
+    
+    // **CORRECTION**: If the user is an admin, redirect them to the /admin route.
+    if (!isUserLoading && formaAfriqueUser?.role === 'admin') {
+      router.push('/admin');
+    }
+  }, [user, isUserLoading, formaAfriqueUser, router]);
 
-  if (isUserLoading || !user) {
+  if (isUserLoading || !user || formaAfriqueUser?.role === 'admin') {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-slate-900">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
-  }
-  
-  if (formaAfriqueUser?.role === 'admin') {
-    return <AdminDashboard />;
   }
 
   if (role === 'instructor') {
