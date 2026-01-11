@@ -136,7 +136,7 @@ const CourseCurriculum = ({ courseId, isEnrolled, onPreviewClick }: { courseId: 
                       {lecturesLoading ? <Skeleton className="h-10 w-full m-2" /> : (
                           <ul className="divide-y divide-slate-700/50">
                               {(lecturesMap.get(section.id) || []).map(lecture => {
-                                  const canPreview = lecture.isFreePreview || isEnrolled;
+                                  const canPreview = isEnrolled || lecture.isFreePreview;
                                   return (
                                       <li key={lecture.id}>
                                         <button onClick={() => canPreview && onPreviewClick(lecture)} disabled={!canPreview} className="w-full text-left flex items-center text-sm p-3 transition-colors hover:bg-slate-700/50 disabled:opacity-60 disabled:cursor-not-allowed">
