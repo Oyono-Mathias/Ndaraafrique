@@ -400,7 +400,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isChatPage = pathname.startsWith('/messages');
-  const isStudentDashboard = role === 'student' && pathname === '/dashboard';
+  const isInstructorDashboard = role === 'instructor';
   
   // If it's an admin page, let the admin layout handle everything.
   if (isAdminPage) {
@@ -411,27 +411,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <main className="h-screen w-screen">{children}</main>;
   }
 
+  const showHeader = !isChatPage && !isFullScreenPage && role === 'student';
+
   return (
-    <div className={cn('flex flex-col min-h-screen', (role === 'instructor' || isStudentDashboard) ? 'dark bg-background-alt' : 'bg-background-alt' )}>
+    <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background-alt' : 'bg-background-alt' )}>
       <AnnouncementBanner />
         <div className="flex flex-1">
             <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
               {renderSidebar()}
             </aside>
             <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>
-               {!isChatPage && !isFullScreenPage && (
+               {showHeader && (
                 <header className={cn(
                     "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
-                    (role === 'instructor' || isStudentDashboard) ? 'bg-[#1e293b] border-slate-700' : 'bg-card border-border'
+                    'bg-card border-border'
                 )}>
                     <Sheet>
                       <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden")}>
-                          <PanelLeft className={cn((role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-foreground')} />
+                        <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", 'text-foreground')}>
+                          <PanelLeft />
                           <span className="sr-only">Toggle Menu</span>
                         </Button>
                       </SheetTrigger>
-                      <SheetContent side="left" className={cn("p-0 w-64", (role === 'instructor' || isStudentDashboard) ? 'dark' : '')}>
+                      <SheetContent side="left" className={cn("p-0 w-64")}>
                          <SheetHeader>
                           <SheetTitle className="sr-only">Menu principal</SheetTitle>
                           <SheetDescription className="sr-only">Navigation pour le profil utilisateur.</SheetDescription>
@@ -440,13 +442,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </SheetContent>
                     </Sheet>
                     <div className="flex-1">
-                        <h1 className={cn("text-lg font-semibold md:text-xl", (role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-card-foreground')}>
+                        <h1 className={cn("text-lg font-semibold md:text-xl", 'text-card-foreground')}>
                             {getPageTitle(pathname)}
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
                         <LanguageSelector />
-                        <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", (role === 'instructor' || isStudentDashboard) ? 'text-white' : 'text-card-foreground')}>
+                        <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", 'text-card-foreground')}>
                             <Bell className="h-4 w-4" />
                             {hasUnreadNotifications && (
                                 <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -479,4 +481,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
 
