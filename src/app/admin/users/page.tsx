@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -260,7 +261,7 @@ export default function AdminUsersPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const usersQuery = useMemoFirebase(
-    () => query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+    () => query(collection(db, 'users'), where('role', 'in', ['student', 'instructor', 'admin'])),
     [db]
   );
   const { data: users, isLoading: usersLoading } = useCollection<FormaAfriqueUser & {createdAt?: any; status?: 'active' | 'suspended'}>(usersQuery);

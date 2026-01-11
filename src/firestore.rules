@@ -1,4 +1,5 @@
 
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -82,7 +83,7 @@ service cloud.firestore {
     // --- Règles pour 'users' ---
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow list: if isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.size() > 0 && ('role' in request.query.where));
       allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if isOwner(userId) || isAdmin();
 
