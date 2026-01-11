@@ -601,6 +601,45 @@
         }
       },
       "required": ["code", "discountPercentage", "isActive"]
+    },
+    "Settings": {
+      "title": "Settings",
+      "type": "object",
+      "description": "Global settings for the FormaAfrique platform.",
+      "properties": {
+        "general": {
+          "type": "object",
+          "properties": {
+            "siteName": { "type": "string" },
+            "logoUrl": { "type": "string", "format": "uri" },
+            "loginBackgroundImage": { "type": "string", "format": "uri" },
+            "contactEmail": { "type": "string", "format": "email" },
+            "supportPhone": { "type": "string" }
+          }
+        },
+        "commercial": {
+          "type": "object",
+          "properties": {
+            "platformCommission": { "type": "number", "description": "The percentage commission the platform takes on sales." },
+            "featuredCourseId": { "type": "string", "description": "ID of the course to feature on the homepage." }
+          }
+        },
+        "platform": {
+          "type": "object",
+          "properties": {
+            "announcementMessage": { "type": "string" },
+            "maintenanceMode": { "type": "boolean" },
+            "allowInstructorSignup": { "type": "boolean" }
+          }
+        },
+        "legal": {
+          "type": "object",
+          "properties": {
+            "termsOfService": { "type": "string", "description": "Full text for the Terms of Service." },
+            "privacyPolicy": { "type": "string", "description": "Full text for the Privacy Policy." }
+          }
+        }
+      }
     }
   },
   "auth": {
@@ -689,6 +728,10 @@
     "/promoCodes/{codeId}": {
       "schema": { "$ref": "#/entities/PromoCode" },
       "description": "Stores promotional codes for discounts."
+    },
+    "/settings/global": {
+        "schema": { "$ref": "#/entities/Settings" },
+        "description": "Stores global configuration for the entire application."
     }
   }
 }
