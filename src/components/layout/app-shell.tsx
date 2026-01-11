@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -351,6 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const isLandingPage = pathname === '/';
+  const isAdminPage = pathname.startsWith('/admin');
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');
@@ -398,6 +400,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isChatPage = pathname.startsWith('/messages');
   const isStudentDashboard = role === 'student' && pathname === '/dashboard';
+  
+  // If it's an admin page, let the admin layout handle everything.
+  if (isAdminPage) {
+    return <>{children}</>;
+  }
   
   if (isMobile && pathname.startsWith('/messages/')) {
     return <main className="h-screen w-screen">{children}</main>;
