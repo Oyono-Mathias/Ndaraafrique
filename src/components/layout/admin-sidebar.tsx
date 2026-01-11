@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
+import { useTranslation } from "react-i18next";
 import {
   LayoutDashboard,
   Users,
@@ -28,21 +29,6 @@ import { Button } from "../ui/button";
 import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";
-
-const adminMenu = [
-    { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
-    { href: "/admin/users", icon: Users, text: "Utilisateurs" },
-    { href: "/admin/instructors", icon: UserCheck, text: "Candidatures", countId: 'pendingInstructors' },
-    { href: "/admin/moderation", icon: ShieldAlert, text: "Modération", countId: 'pendingCourses' },
-    { href: "/admin/courses", icon: BookOpen, text: "Formations" },
-    { href: "/admin/payments", icon: CreditCard, text: "Transactions" },
-    { href: "/admin/payouts", icon: Landmark, text: "Retraits", countId: 'pendingPayouts' },
-    { href: "/admin/marketing", icon: Sparkles, text: "Marketing IA" },
-    { href: "/admin/support", icon: HelpCircle, text: "Support" },
-    { href: "/messages", icon: MessageSquare, text: "Messagerie" },
-    { href: "/admin/settings", icon: Settings, text: "Paramètres" },
-];
-
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
@@ -76,7 +62,22 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
 
 export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const { switchRole } = useRole();
+  const { t } = useTranslation();
   const db = getFirestore();
+
+  const adminMenu = [
+    { href: "/admin", icon: LayoutDashboard, textKey: "navDashboard" },
+    { href: "/admin/users", icon: Users, textKey: "navUsers" },
+    { href: "/admin/instructors", icon: UserCheck, textKey: "navApplications", countId: 'pendingInstructors' },
+    { href: "/admin/moderation", icon: ShieldAlert, textKey: "navModeration", countId: 'pendingCourses' },
+    { href: "/admin/courses", icon: BookOpen, textKey: "navCourses" },
+    { href: "/admin/payments", icon: CreditCard, textKey: "navTransactions" },
+    { href: "/admin/payouts", icon: Landmark, textKey: "navPayouts", countId: 'pendingPayouts' },
+    { href: "/admin/marketing", icon: Sparkles, textKey: "navMarketing" },
+    { href: "/admin/support", icon: HelpCircle, textKey: "navSupport" },
+    { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
+    { href: "/admin/settings", icon: Settings, textKey: "navSettings" },
+];
 
   const pendingInstructorsQuery = useMemoFirebase(() => 
     query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)),
@@ -129,7 +130,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
                 key={item.href} 
                 href={item.href} 
                 icon={item.icon} 
-                label={item.text}
+                label={t(item.textKey)}
                 count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
                 onClick={onLinkClick}
             />
