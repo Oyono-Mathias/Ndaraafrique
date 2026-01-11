@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -19,6 +20,7 @@ import {
   Shield,
   Briefcase,
   UserCheck,
+  Landmark,
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -31,7 +33,8 @@ const adminMenu = [
     { href: "/admin/instructors", icon: UserCheck, text: "Candidatures" },
     { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
-    { href: "/admin/payments", icon: CreditCard, text: "Finances" },
+    { href: "/admin/payments", icon: CreditCard, text: "Transactions" },
+    { href: "/admin/payouts", icon: Landmark, text: "Retraits" },
     { href: "/admin/marketing", icon: Sparkles, text: "Marketing IA" },
     { href: "/admin/support", icon: HelpCircle, text: "Support" },
     { href: "/messages", icon: MessageSquare, text: "Messagerie" },
