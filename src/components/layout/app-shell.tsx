@@ -22,7 +22,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, getDoc } from 'firebase/firestore';
 import { LanguageSelector } from './language-selector';
 import { useTranslation } from 'react-i18next';
-import { I18nProvider } from '@/context/I18nProvider';
 
 
 const pageTitles: { [key: string]: string } = {
@@ -355,7 +354,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [db]);
   
   if (isLandingPage || isAuthPage) {
-    return <I18nProvider>{children}</I18nProvider>;
+    return <>{children}</>;
   }
 
   if (isUserLoading || isRoleLoading) {
@@ -388,17 +387,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   // If it's an admin page, let the admin layout handle everything.
   if (isAdminPage) {
-    return <I18nProvider>{children}</I18nProvider>;
+    return <>{children}</>;
   }
   
   if (isMobile && pathname.startsWith('/messages/')) {
-    return <main className="h-screen w-screen"><I18nProvider>{children}</I18nProvider></main>;
+    return <main className="h-screen w-screen">{children}</main>;
   }
 
   const showHeader = !isChatPage && !isFullScreenPage && role === 'student';
 
   return (
-    <I18nProvider>
+    <>
       <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background-alt' : 'bg-background-alt' )}>
         <AnnouncementBanner />
           <div className="flex flex-1">
@@ -464,6 +463,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
           </div>
       </div>
-    </I18nProvider>
+    </>
   );
 }

@@ -27,6 +27,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { getAuth, signOut } from 'firebase/auth';
 import { cn } from '@/lib/utils';
+import { I18nProvider } from '@/context/I18nProvider';
 
 
 const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
@@ -126,47 +127,49 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
   }
 
   return (
-    <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
-      <header className="p-4 border-b border-slate-700/50">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
-          <span className="font-bold text-lg text-white">
-            {siteName || 'FormaAfrique'}
-          </span>
-        </Link>
-      </header>
+    <I18nProvider>
+      <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
+        <header className="p-4 border-b border-slate-700/50">
+          <Link href="/dashboard" className="flex items-center gap-2">
+            <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
+            <span className="font-bold text-lg text-white">
+              {siteName || 'FormaAfrique'}
+            </span>
+          </Link>
+        </header>
 
-      <nav className="flex-1 py-2 overflow-y-auto">
-        {instructorMenu.map((group) => (
-          <div key={group.label} className="py-2">
-            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
-            {group.items.map((item) => (
-              <SidebarItem key={item.href} href={item.href} icon={item.icon} label={item.text} />
-            ))}
-          </div>
-        ))}
-      </nav>
+        <nav className="flex-1 py-2 overflow-y-auto">
+          {instructorMenu.map((group) => (
+            <div key={group.label} className="py-2">
+              <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
+              {group.items.map((item) => (
+                <SidebarItem key={item.href} href={item.href} icon={item.icon} label={item.text} />
+              ))}
+            </div>
+          ))}
+        </nav>
 
-      <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
-        <Button
-          variant="outline"
-          className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white"
-          onClick={() => switchRole('student')}
-        >
-          <LogIn className="mr-2 h-4 w-4" />
-          Mode Étudiant
-        </Button>
-        {isAdmin && (
-             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
-                <Shield className="mr-2 h-4 w-4" />
-                Mode Admin
-            </Button>
-        )}
-        <Button variant="ghost" className="w-full justify-center text-slate-400 hover:text-white" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Déconnexion
-        </Button>
-      </footer>
-    </div>
+        <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
+          <Button
+            variant="outline"
+            className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white"
+            onClick={() => switchRole('student')}
+          >
+            <LogIn className="mr-2 h-4 w-4" />
+            Mode Étudiant
+          </Button>
+          {isAdmin && (
+              <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
+                  <Shield className="mr-2 h-4 w-4" />
+                  Mode Admin
+              </Button>
+          )}
+          <Button variant="ghost" className="w-full justify-center text-slate-400 hover:text-white" onClick={handleLogout}>
+            <LogOut className="mr-2 h-4 w-4" />
+            Déconnexion
+          </Button>
+        </footer>
+      </div>
+    </I18nProvider>
   );
 }
