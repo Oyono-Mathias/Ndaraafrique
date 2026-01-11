@@ -131,7 +131,7 @@ export default function AdminSupportPage() {
     
     const handleTicketClick = (id: string) => {
         if (isMobile) {
-            router.push(`/admin/support/${id}`);
+            router.push(`/dashboarde/support/${id}`);
         } else {
             setActiveTicketId(id);
         }
@@ -180,7 +180,7 @@ export default function AdminSupportPage() {
                 
                  <div className="lg:col-span-2 hidden lg:block rounded-2xl shadow-sm bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
                     {activeTicketId ? (
-                        <TicketDetailsPage />
+                        <TicketDetailsPage ticketId={activeTicketId} />
                     ) : (
                          <div className="h-full flex items-center justify-center text-slate-500 flex-col">
                             <Inbox className="h-16 w-16" />

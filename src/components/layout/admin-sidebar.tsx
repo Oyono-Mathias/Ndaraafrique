@@ -26,21 +26,21 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
 const adminMenu = [
-    { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
-    { href: "/admin/users", icon: Users, text: "Utilisateurs" },
-    { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
-    { href: "/admin/courses", icon: BookOpen, text: "Formations" },
-    { href: "/admin/payments", icon: CreditCard, text: "Finances" },
-    { href: "/admin/marketing", icon: Sparkles, text: "Marketing IA" },
-    { href: "/admin/support", icon: HelpCircle, text: "Support" },
+    { href: "/dashboarde", icon: LayoutDashboard, text: "Tableau de bord" },
+    { href: "/dashboarde/users", icon: Users, text: "Utilisateurs" },
+    { href: "/dashboarde/moderation", icon: ShieldAlert, text: "Modération" },
+    { href: "/dashboarde/courses", icon: BookOpen, text: "Formations" },
+    { href: "/dashboarde/payments", icon: CreditCard, text: "Finances" },
+    { href: "/dashboarde/marketing", icon: Sparkles, text: "Marketing IA" },
+    { href: "/dashboarde/support", icon: HelpCircle, text: "Support" },
     { href: "/messages", icon: MessageSquare, text: "Messagerie" },
-    { href: "/admin/settings", icon: Settings, text: "Paramètres" },
+    { href: "/dashboarde/settings", icon: Settings, text: "Paramètres" },
 ];
 
 
 const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin' && pathname === href) || (href !== '/admin' && pathname.startsWith(href));
+  const isActive = (href === '/dashboarde' && pathname === href) || (href !== '/dashboarde' && pathname.startsWith(href));
 
   return (
     <Link
@@ -76,21 +76,15 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
 
   const handleSwitchToInstructor = () => {
     switchRole('instructor');
-    // Force a full page reload to ensure context is updated correctly
     if (typeof window !== 'undefined') {
         window.location.assign('/dashboard');
-    } else {
-        router.push('/dashboard');
     }
   }
 
   const handleSwitchToStudent = () => {
     switchRole('student');
-    // Force a full page reload
     if (typeof window !== 'undefined') {
         window.location.assign('/dashboard');
-    } else {
-        router.push('/dashboard');
     }
   }
 

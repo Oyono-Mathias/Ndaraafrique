@@ -50,22 +50,22 @@ const pageTitles: { [key: string]: string } = {
     '/ressources': 'Ressources',
     '/mentions-legales': 'Mentions Légales',
     '/cgu': 'Conditions Générales d\'Utilisation',
-    '/admin': 'Admin: Tableau de bord',
-    '/admin/dashboard': 'Admin: Tableau de bord',
-    '/admin/users': 'Admin: Gestion des utilisateurs',
-    '/admin/courses': 'Admin: Gestion des cours',
-    '/admin/payments': 'Admin: Finances',
-    '/admin/moderation': 'Admin: Modération',
-    '/admin/conversations': 'Admin: Conversations',
-    '/admin/statistiques': 'Admin: Statistiques',
-    '/admin/support': 'Admin: Support',
-    '/admin/mon-profil': 'Admin: Mon Profil',
-    '/admin/formations/disponibles': 'Admin: Formations disponibles',
-    '/admin/formations/details': 'Admin: Détails des formations',
-    '/admin/finances/paiements': 'Admin: Paiements',
-    '/admin/finances/factures': 'Admin: Factures',
-    '/admin/parametres/generaux': 'Admin: Paramètres généraux',
-    '/admin/parametres/avances': 'Admin: Paramètres avancés',
+    '/dashboarde': 'Admin: Tableau de bord',
+    '/dashboarde/dashboard': 'Admin: Tableau de bord',
+    '/dashboarde/users': 'Admin: Gestion des utilisateurs',
+    '/dashboarde/courses': 'Admin: Gestion des cours',
+    '/dashboarde/payments': 'Admin: Finances',
+    '/dashboarde/moderation': 'Admin: Modération',
+    '/dashboarde/conversations': 'Admin: Conversations',
+    '/dashboarde/statistiques': 'Admin: Statistiques',
+    '/dashboarde/support': 'Admin: Support',
+    '/dashboarde/mon-profil': 'Admin: Mon Profil',
+    '/dashboarde/formations/disponibles': 'Admin: Formations disponibles',
+    '/dashboarde/formations/details': 'Admin: Détails des formations',
+    '/dashboarde/finances/paiements': 'Admin: Paiements',
+    '/dashboarde/finances/factures': 'Admin: Factures',
+    '/dashboarde/parametres/generaux': 'Admin: Paramètres généraux',
+    '/dashboarde/parametres/avances': 'Admin: Paramètres avancés',
 };
 
 function getPageTitle(pathname: string): string {
@@ -75,8 +75,8 @@ function getPageTitle(pathname: string): string {
     if (pathname.startsWith('/instructor/courses/create')) return 'Créer un cours';
     if (pathname.startsWith('/messages/')) return 'Messagerie';
     if (pathname.startsWith('/questions-reponses/')) return 'Questions & Réponses';
-    if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur';
-    if (pathname.startsWith('/admin/support/')) return 'Détails du Ticket';
+    if (pathname.startsWith('/dashboarde/users/')) return 'Profil Utilisateur';
+    if (pathname.startsWith('/dashboarde/support/')) return 'Détails du Ticket';
     return pageTitles[pathname] || 'FormaAfrique';
 }
 
@@ -294,7 +294,7 @@ const SupportButton = () => {
     
     let internalSupportHref = '/questions-reponses';
     if (formaAfriqueUser?.role === 'admin') {
-      internalSupportHref = '/admin/support';
+      internalSupportHref = '/dashboarde/support';
     } else if (!user) {
       internalSupportHref = 'mailto:' + supportInfo.email;
     }
@@ -352,7 +352,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const isLandingPage = pathname === '/';
-  const isAdminPage = pathname.startsWith('/admin');
+  const isAdminPage = pathname.startsWith('/dashboarde');
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');

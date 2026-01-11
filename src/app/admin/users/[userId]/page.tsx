@@ -173,7 +173,7 @@ export default function UserProfilePage() {
                 <UserIcon className="h-12 w-12 mx-auto mb-4" />
                 <h2 className="text-xl font-semibold">Utilisateur non trouvé</h2>
                 <p>Impossible de trouver les détails pour cet utilisateur.</p>
-                <Button onClick={() => router.push('/admin/users')} className="mt-4">Retour à la liste</Button>
+                <Button onClick={() => router.push('/dashboarde/users')} className="mt-4">Retour à la liste</Button>
             </div>
         )
     }
@@ -181,7 +181,7 @@ export default function UserProfilePage() {
     return (
         <div className="space-y-6">
             <header>
-                <Button variant="ghost" onClick={() => router.push('/admin/users')}>
+                <Button variant="ghost" onClick={() => router.push('/dashboarde/users')}>
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Retour à la liste des utilisateurs
                 </Button>

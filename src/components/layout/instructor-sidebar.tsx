@@ -119,6 +119,11 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
     router.push('/');
     toast({ title: "Déconnexion réussie" });
   }
+  
+  const handleSwitchToAdmin = () => {
+    switchRole('admin');
+    router.push('/dashboarde');
+  }
 
   return (
     <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
@@ -152,7 +157,7 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
           Mode Étudiant
         </Button>
         {isAdmin && (
-             <Button variant="secondary" className="w-full justify-center" onClick={() => switchRole('admin')}>
+             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                 <Shield className="mr-2 h-4 w-4" />
                 Mode Admin
             </Button>
