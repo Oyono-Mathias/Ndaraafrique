@@ -76,12 +76,22 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
 
   const handleSwitchToInstructor = () => {
     switchRole('instructor');
-    router.push('/dashboard');
+    // Force a full page reload to ensure context is updated correctly
+    if (typeof window !== 'undefined') {
+        window.location.assign('/dashboard');
+    } else {
+        router.push('/dashboard');
+    }
   }
 
   const handleSwitchToStudent = () => {
     switchRole('student');
-    router.push('/dashboard');
+    // Force a full page reload
+    if (typeof window !== 'undefined') {
+        window.location.assign('/dashboard');
+    } else {
+        router.push('/dashboard');
+    }
   }
 
   return (
