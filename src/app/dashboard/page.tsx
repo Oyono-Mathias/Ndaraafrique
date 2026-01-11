@@ -18,15 +18,19 @@ export default function DashboardPage() {
     // If loading is done and there's no user, redirect to login.
     if (!isUserLoading && !user) {
       router.push('/');
+      return;
     }
     
-    // **CORRECTION**: If the user is an admin, redirect them to the /admin route.
-    if (!isUserLoading && formaAfriqueUser?.role === 'admin') {
+    // If the user's base role is 'admin' AND their currently active role is also 'admin',
+    // redirect them to the /admin section. This allows them to switch to other roles
+    // and still access /dashboard without being forced back to /admin.
+    if (!isUserLoading && user && formaAfriqueUser?.role === 'admin' && role === 'admin') {
       router.push('/admin');
     }
-  }, [user, isUserLoading, formaAfriqueUser, router]);
+  }, [user, isUserLoading, formaAfriqueUser, role, router]);
 
-  if (isUserLoading || !user || formaAfriqueUser?.role === 'admin') {
+  // Show a loader while redirecting or if the user role is still being determined.
+  if (isUserLoading || !user || (formaAfriqueUser?.role === 'admin' && role === 'admin')) {
     return (
         <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-slate-900">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -38,5 +42,6 @@ export default function DashboardPage() {
      return <InstructorDashboard />;
   }
 
+  // Default to student dashboard
   return <StudentDashboard />;
 }
