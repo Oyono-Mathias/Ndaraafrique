@@ -123,7 +123,7 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-    router.push('/dashboarde');
+    router.push('/admin');
   }
 
   return (
@@ -171,4 +171,3 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
     </div>
   );
 }
-

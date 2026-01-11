@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -46,7 +45,7 @@ export default function AdminLayout({
     );
   }
 
-  if (formaAfriqueUser?.role !== 'admin') {
+  if (formaAfriqueUser?.role !== 'admin' || role !== 'admin') {
     return <AdminAccessRequiredScreen />;
   }
   

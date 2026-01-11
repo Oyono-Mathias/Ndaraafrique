@@ -27,21 +27,21 @@ import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 
 const adminMenu = [
-    { href: "/dashboarde", icon: LayoutDashboard, text: "Tableau de bord" },
-    { href: "/dashboarde/users", icon: Users, text: "Utilisateurs" },
-    { href: "/dashboarde/moderation", icon: ShieldAlert, text: "Modération" },
-    { href: "/dashboarde/courses", icon: BookOpen, text: "Formations" },
-    { href: "/dashboarde/payments", icon: CreditCard, text: "Finances" },
-    { href: "/dashboarde/marketing", icon: Sparkles, text: "Marketing IA" },
-    { href: "/dashboarde/support", icon: HelpCircle, text: "Support" },
+    { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
+    { href: "/admin/users", icon: Users, text: "Utilisateurs" },
+    { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
+    { href: "/admin/courses", icon: BookOpen, text: "Formations" },
+    { href: "/admin/payments", icon: CreditCard, text: "Finances" },
+    { href: "/admin/marketing", icon: Sparkles, text: "Marketing IA" },
+    { href: "/admin/support", icon: HelpCircle, text: "Support" },
     { href: "/messages", icon: MessageSquare, text: "Messagerie" },
-    { href: "/dashboarde/settings", icon: Settings, text: "Paramètres" },
+    { href: "/admin/settings", icon: Settings, text: "Paramètres" },
 ];
 
 
 const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
   const pathname = usePathname();
-  const isActive = (href === '/dashboarde' && pathname === href) || (href !== '/dashboarde' && pathname.startsWith(href));
+  const isActive = (href === '/admin' && pathname === href) || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link
@@ -92,7 +92,7 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
   return (
     <div className="w-full h-full flex flex-col">
        <header className="p-4 border-b border-slate-700/50">
-        <Link href="/dashboard" className="flex items-center gap-2">
+        <Link href="/admin" className="flex items-center gap-2">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
             <span className="font-bold text-lg text-white">{siteName || 'Admin Panel'}</span>
         </Link>
@@ -121,4 +121,3 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
     </div>
   );
 }
-

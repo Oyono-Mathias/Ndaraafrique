@@ -22,11 +22,8 @@ export default function DashboardPage() {
       return;
     }
     
-    // If the user's base role is 'admin' AND their currently active role is also 'admin',
-    // redirect them to the /dashboarde section. This allows them to switch to other roles
-    // and still access /dashboard without being forced back to /dashboarde.
     if (!isUserLoading && user && formaAfriqueUser?.role === 'admin' && role === 'admin') {
-      router.push('/dashboarde');
+      router.push('/admin');
     }
   }, [user, isUserLoading, formaAfriqueUser, role, router]);
 
@@ -46,4 +43,3 @@ export default function DashboardPage() {
   // Default to student dashboard
   return <StudentDashboard />;
 }
-
