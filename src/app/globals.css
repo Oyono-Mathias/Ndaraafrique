@@ -82,7 +82,6 @@
       grid-column: 2;
     }
 
-    /* Styles for the "slim" tablet sidebar */
     .admin-sidebar-container .sidebar-label,
     .admin-sidebar-container .sidebar-header .sidebar-label,
     .admin-sidebar-container footer .sidebar-label {
@@ -95,7 +94,6 @@
       justify-content: center;
     }
 
-    /* === Desktop State (> 1024px) === */
     @media (min-width: 1024px) {
       .admin-sidebar-container {
         width: 250px; /* Full width for desktop */
@@ -111,12 +109,11 @@
       }
     }
     
-    /* === TV State (> 1920px) === */
     .tv {
-      font-size: 125%; /* Increase base font size */
+      font-size: 125%; 
     }
     .tv .admin-sidebar-container {
-        width: 350px; /* Even wider sidebar for TV */
+        width: 350px;
     }
     .tv [role="row"]:focus-within {
         outline: 2px solid hsl(var(--primary));
@@ -126,16 +123,53 @@
         position: relative;
     }
     .tv .sidebar-label {
-        padding: 0.5rem 0; /* Larger clickable area for TV remote navigation */
+        padding: 0.5rem 0;
     }
 
-    /* === Mobile State (< 768px) === */
     @media (max-width: 767px) {
       .admin-grid-layout {
-        grid-template-columns: 1fr; /* Single column */
+        grid-template-columns: 1fr;
       }
       .admin-header {
         grid-column: 1;
       }
+    }
+
+    /* === WhatsApp Clone Chat Styles === */
+    .chat-background {
+      background-color: #e5ddd5; /* Light theme background */
+      background-image: url('/backgrounds/whatsapp-bg.png');
+      background-blend-mode: overlay;
+    }
+
+    .dark .chat-background {
+      background-color: #0b141a; /* Dark theme background */
+      background-image: url('/backgrounds/whatsapp-bg-dark.png');
+    }
+
+    .chat-bubble-sent::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: -7px;
+        width: 20px;
+        height: 20px;
+        background: radial-gradient(circle at 0 0, transparent, transparent 7px, #dcf8c6 8px);
+    }
+    .dark .chat-bubble-sent::after {
+        background: radial-gradient(circle at 0 0, transparent, transparent 7px, #075e54 8px);
+    }
+
+    .chat-bubble-received::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -7px;
+        width: 20px;
+        height: 20px;
+        background: radial-gradient(circle at 100% 0, transparent, transparent 7px, white 8px);
+    }
+    .dark .chat-bubble-received::after {
+        background: radial-gradient(circle at 100% 0, transparent, transparent 7px, hsl(var(--muted)) 8px);
     }
 }

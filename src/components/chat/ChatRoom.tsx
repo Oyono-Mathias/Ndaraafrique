@@ -14,7 +14,8 @@ import {
   serverTimestamp,
   getFirestore,
   where,
-  getDocs
+  getDocs,
+  addDoc
 } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -58,15 +59,12 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Time-since display state
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
-  // Sound effect
   useEffect(() => {
     audioRef.current = new Audio('/sounds/notification.mp3');
   }, []);
 
-  // Effect to handle new messages (sound, title change)
   useEffect(() => {
     if (messages.length > 0) {
       const lastMessage = messages[messages.length - 1];
@@ -81,7 +79,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     }
   }, [messages, user?.uid]);
 
-  // Effect to clear title when tab is focused
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
@@ -93,7 +90,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   }, []);
 
 
-  // Fetch chat details, listen for messages, and mark as read
   useEffect(() => {
     if (!chatId || !user) return;
     setIsLoading(true);
@@ -101,7 +97,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     const chatDocRef = doc(db, "chats", chatId);
     const messagesCollectionRef = collection(chatDocRef, "messages");
 
-    // Fetch participant details first
     const fetchParticipantDetails = async () => {
       const chatDoc = await getDoc(chatDocRef);
       if (chatDoc.exists()) {
@@ -120,7 +115,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
     fetchParticipantDetails();
 
-    // Listen for new messages
     const q = query(messagesCollectionRef, orderBy("createdAt", "asc"));
     const unsubscribeMessages = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({
@@ -142,7 +136,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     };
   }, [chatId, user, db]);
 
-  // Effect to mark messages as read
   useEffect(() => {
     if (messages.length === 0 || !otherParticipantId) return;
 
@@ -171,7 +164,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   }, [messages, otherParticipantId, chatId, db]);
 
 
-  // Auto-scroll to the bottom
   useEffect(() => {
      if (scrollAreaRef.current) {
       const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -181,7 +173,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     }
   }, [messages]);
 
-   // Effect for updating the 'last seen' time
   useEffect(() => {
     const updateLastSeen = () => {
         if (otherParticipant?.lastSeen?.toDate) {
@@ -198,7 +189,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   }, [otherParticipant]);
 
 
-  // Send a message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user || !otherParticipantId) return;
@@ -207,23 +197,24 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     setNewMessage("");
     
     const chatDocRef = doc(db, "chats", chatId);
-    const messageDocRef = doc(collection(chatDocRef, "messages"));
+    const messagesCollectionRef = collection(chatDocRef, "messages");
 
     try {
         const batch = writeBatch(db);
         
-        batch.set(messageDocRef, {
+        const messagePayload = {
             text: textToSend,
             senderId: user.uid,
             createdAt: serverTimestamp(),
-            status: 'sent', // Initial status
-        });
+            status: 'sent',
+        };
+        const messageRef = doc(messagesCollectionRef);
+        batch.set(messageRef, messagePayload);
         
         batch.update(chatDocRef, {
             lastMessage: textToSend,
             updatedAt: serverTimestamp(),
             lastSenderId: user.uid,
-            // Ensure the other user will see it as unread
             unreadBy: [otherParticipantId],
         });
 
@@ -274,7 +265,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   return (
     <div className="flex flex-col h-full chat-background dark:bg-slate-900">
        <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-slate-800/80 backdrop-blur-sm sticky top-0 z-10 dark:border-slate-700">
-            <Button variant="ghost" size="icon" className="mr-2 lg:hidden" onClick={() => router.push('/messages')}>
+            <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => router.push('/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
             <Avatar className="h-10 w-10">
@@ -308,8 +299,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                             <div className={cn(
                                 "rounded-xl px-3 py-2 text-[15px] shadow-sm relative",
                                 isMe 
-                                    ? "chat-bubble-sent dark:chat-bubble-sent" 
-                                    : "chat-bubble-received dark:chat-bubble-received"
+                                    ? "chat-bubble-sent bg-[#dcf8c6] text-slate-800 dark:bg-[#075e54] dark:text-slate-100" 
+                                    : "chat-bubble-received bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-100"
                             )}>
                                 {msg.text}
                                 {isMe && (

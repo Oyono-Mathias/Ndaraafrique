@@ -1,14 +1,22 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
 import { ChatRoom } from '@/components/chat/ChatRoom';
+import { useIsMobile } from '@/hooks/use-mobile';
+import MessagesPage from '../page';
 
 export default function ChatConversationPage() {
   const params = useParams();
   const chatId = params.chatId as string;
+  const isMobile = useIsMobile();
 
-  // The parent div is now simplified. The ChatRoom component will control its own layout.
-  // The negative margins and complex height calculations from AppShell are handled internally.
+  // On Desktop, the main MessagesPage handles the rendering. This page should not render anything.
+  if (!isMobile) {
+     return <MessagesPage />;
+  }
+
+  // On Mobile, this page takes over to show the chat in full screen.
   return (
       <div className="h-full w-full">
           {chatId ? <ChatRoom chatId={chatId} /> : <div>Chargement...</div>}

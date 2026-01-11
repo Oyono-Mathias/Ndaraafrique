@@ -185,14 +185,23 @@ export default function MessagesPage() {
 
   if (isLoading) {
     return (
-      <Card>
-        <CardHeader><CardTitle>Messages</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] lg:grid-cols-[400px_1fr] h-full">
+         <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800">
+             <div className="p-4 border-b border-slate-800 space-y-2">
+                <Skeleton className="h-8 w-1/2"/>
+                <Skeleton className="h-9 w-full rounded-full"/>
+             </div>
+             <div className="p-3 space-y-2">
+                 <Skeleton className="h-16 w-full"/>
+                 <Skeleton className="h-16 w-full"/>
+                 <Skeleton className="h-16 w-full"/>
+             </div>
+         </div>
+          <div className="hidden md:flex h-full flex-col items-center justify-center bg-slate-900 text-slate-500">
+             <MessageSquareDashed className="h-16 w-16 mb-4" />
+             <p>Sélectionnez une conversation pour commencer</p>
+         </div>
+      </div>
     );
   }
   
