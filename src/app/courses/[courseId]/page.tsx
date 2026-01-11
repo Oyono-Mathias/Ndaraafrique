@@ -49,7 +49,7 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
             width="100%" 
             height="100%" 
             controls 
-            playing
+            playing={false}
             playsinline={true}
             config={{
                 youtube: {
@@ -254,7 +254,7 @@ export default function CoursePlayerPage() {
             }
 
             // CRITICAL BUSINESS LOGIC: If course is now paid, but was free on enrollment, block access.
-            if (course.price > 0 && enrollment.priceAtEnrollment === 0) {
+            if (enrollment && course.price > 0 && enrollment.priceAtEnrollment === 0) {
                 toast({
                     title: "Accès mis à jour",
                     description: "Désolé, la période de gratuité de ce cours est terminée. Le cours est devenu payant, veuillez l'acheter pour continuer votre progression.",

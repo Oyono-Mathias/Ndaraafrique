@@ -426,24 +426,36 @@ export default function CourseDetailsClient() {
   };
   
   const handleCheckout = () => {
-    if (typeof window !== 'undefined' && (window as any).Moneroo) {
-        (window as any).Moneroo.setup({
-            publicKey: process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY || '',
-            onClose: () => setIsPaying(false),
-            onSuccess: handlePaymentSuccess,
-        }).open({
-            amount: course!.price,
-            currency: "XOF",
-            description: course!.title,
-            customer: {
-                email: formaAfriqueUser!.email,
-                name: formaAfriqueUser!.fullName,
-            },
-            metadata: {
-                courseId: course!.id,
-                userId: user!.uid,
-            }
-        });
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Non connecté', description: 'Veuillez vous connecter pour acheter ce cours.' });
+        router.push(`/login?redirect=/course/${courseId}`);
+        return;
+    }
+    setIsPaying(true);
+    try {
+        if (typeof window !== 'undefined' && (window as any).Moneroo) {
+            (window as any).Moneroo.setup({
+                publicKey: process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY || '',
+                onClose: () => setIsPaying(false),
+                onSuccess: handlePaymentSuccess,
+            }).open({
+                amount: course!.price,
+                currency: "XOF",
+                description: course!.title,
+                customer: {
+                    email: formaAfriqueUser!.email,
+                    name: formaAfriqueUser!.fullName,
+                },
+                metadata: {
+                    courseId: course!.id,
+                    userId: user!.uid,
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Moneroo checkout error:", error);
+        toast({ variant: 'destructive', title: "Erreur de paiement", description: "Impossible d'initier le paiement."});
+        setIsPaying(false);
     }
   };
   
@@ -553,7 +565,6 @@ export default function CourseDetailsClient() {
     } else if (course?.price === 0) {
         handleFreeEnrollment();
     } else if(course && user && formaAfriqueUser) {
-        setIsPaying(true);
         handleCheckout();
     }
   };
@@ -660,7 +671,7 @@ export default function CourseDetailsClient() {
                 <StarRating rating={4.7} reviewCount={187212} size="sm" />
                 <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
               </div>
-              <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName}</Link></p>
+              <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe FormaAfrique'}</Link></p>
                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
                 {(course.updatedAt || course.createdAt) && (
                   <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
@@ -687,7 +698,7 @@ export default function CourseDetailsClient() {
                       <StarRating rating={4.7} reviewCount={187212} size="sm" />
                       <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
                     </div>
-                     <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName}</Link></p>
+                     <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe FormaAfrique'}</Link></p>
                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
                          {(course.updatedAt || course.createdAt) && (
                             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
