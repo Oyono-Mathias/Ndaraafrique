@@ -15,7 +15,9 @@ import {
   Settings,
   ShieldAlert,
   LogOut,
-  Sparkles
+  Sparkles,
+  LogIn,
+  Shield,
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -88,8 +90,12 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
 
       <footer className="p-4 mt-auto space-y-2 border-t border-slate-700/50">
         <Button variant="outline" className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white" onClick={() => switchRole('student')}>
-            <LogOut className="mr-2 h-4 w-4"/>
+            <LogIn className="mr-2 h-4 w-4"/>
             Quitter Admin
+        </Button>
+         <Button variant="ghost" className="w-full justify-center text-slate-400 hover:text-white" onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Déconnexion
         </Button>
       </footer>
     </div>

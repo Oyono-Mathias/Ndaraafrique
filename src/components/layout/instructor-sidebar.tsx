@@ -157,7 +157,7 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
                 Mode Admin
             </Button>
         )}
-        <Button variant="destructive" className="w-full justify-center" onClick={handleLogout}>
+        <Button variant="ghost" className="w-full justify-center text-slate-400 hover:text-white" onClick={handleLogout}>
           <LogOut className="mr-2 h-4 w-4" />
           Déconnexion
         </Button>
