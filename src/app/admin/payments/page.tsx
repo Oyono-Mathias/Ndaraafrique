@@ -142,7 +142,7 @@ export default function AdminPaymentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="hidden sm:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
@@ -175,7 +175,6 @@ export default function AdminPaymentsPage() {
                           </Avatar>
                           <div>
                             <span className="font-medium dark:text-slate-100">{payment.user?.fullName}</span>
-                             <p className="text-xs text-muted-foreground dark:text-slate-400 sm:hidden">{formatCurrency(payment.amount, payment.currency)}</p>
                           </div>
                         </div>
                       </TableCell>
@@ -208,6 +207,40 @@ export default function AdminPaymentsPage() {
               </TableBody>
             </Table>
           </div>
+
+          <div className="sm:hidden space-y-4">
+             {isLoading ? (
+                [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg dark:bg-slate-700" />)
+             ) : filteredPayments.length > 0 ? (
+                 filteredPayments.map(payment => (
+                    <Card key={payment.id} className="p-3 dark:bg-slate-900/50 dark:border-slate-700">
+                        <div className="flex items-start gap-4">
+                           <Avatar className="mt-1">
+                                <AvatarImage src={payment.user?.profilePictureURL} />
+                                <AvatarFallback>{payment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1">
+                                <p className="font-bold dark:text-white">{payment.user?.fullName}</p>
+                                <p className="text-sm text-muted-foreground dark:text-slate-400">{payment.courseTitle}</p>
+                                 <p className="text-xs text-muted-foreground dark:text-slate-500 mt-1">{payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-bold text-green-600 dark:text-green-400 text-lg">+{formatCurrency(payment.amount, payment.currency)}</p>
+                                {getStatusBadge(payment.status)}
+                            </div>
+                        </div>
+                    </Card>
+                 ))
+             ) : (
+                 <div className="h-48 text-center flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                      <ShoppingCart className="h-12 w-12" />
+                      <p className="font-medium">Aucune transaction</p>
+                    </div>
+                </div>
+             )}
+          </div>
+
         </CardContent>
       </Card>
     </div>
