@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +22,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, getDoc } from 'firebase/firestore';
 import { LanguageSelector } from './language-selector';
 import { useTranslation } from 'react-i18next';
+import { I18nProvider } from '@/context/I18nProvider';
 
 
 const pageTitles: { [key: string]: string } = {
@@ -353,7 +355,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [db]);
   
   if (isLandingPage || isAuthPage) {
-    return <>{children}</>;
+    return <I18nProvider>{children}</I18nProvider>;
   }
 
   if (isUserLoading || isRoleLoading) {
@@ -386,80 +388,82 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   // If it's an admin page, let the admin layout handle everything.
   if (isAdminPage) {
-    return <>{children}</>;
+    return <I18nProvider>{children}</I18nProvider>;
   }
   
   if (isMobile && pathname.startsWith('/messages/')) {
-    return <main className="h-screen w-screen">{children}</main>;
+    return <main className="h-screen w-screen"><I18nProvider>{children}</I18nProvider></main>;
   }
 
   const showHeader = !isChatPage && !isFullScreenPage && role === 'student';
 
   return (
-    <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background-alt' : 'bg-background-alt' )}>
-      <AnnouncementBanner />
-        <div className="flex flex-1">
-            <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
-              {renderSidebar()}
-            </aside>
-            <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>
-               {showHeader && (
-                <header className={cn(
-                    "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
-                    'bg-card border-border'
-                )}>
-                    <Sheet>
-                      <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", 'text-foreground')}>
-                          <PanelLeft />
-                          <span className="sr-only">Toggle Menu</span>
-                        </Button>
-                      </SheetTrigger>
-                      <SheetContent side="left" className={cn("p-0 w-64")}>
-                         <SheetHeader>
-                          <SheetTitle className="sr-only">Menu principal</SheetTitle>
-                          <SheetDescription className="sr-only">Navigation pour le profil utilisateur.</SheetDescription>
-                        </SheetHeader>
-                        {renderSidebar()}
-                      </SheetContent>
-                    </Sheet>
-                    <div className="flex-1">
-                        <h1 className={cn("text-lg font-semibold md:text-xl", 'text-card-foreground')}>
-                            {getPageTitle(pathname)}
-                        </h1>
+    <I18nProvider>
+      <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background-alt' : 'bg-background-alt' )}>
+        <AnnouncementBanner />
+          <div className="flex flex-1">
+              <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
+                {renderSidebar()}
+              </aside>
+              <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>
+                 {showHeader && (
+                  <header className={cn(
+                      "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
+                      'bg-card border-border'
+                  )}>
+                      <Sheet>
+                        <SheetTrigger asChild>
+                          <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", 'text-foreground')}>
+                            <PanelLeft />
+                            <span className="sr-only">Toggle Menu</span>
+                          </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className={cn("p-0 w-64")}>
+                           <SheetHeader>
+                            <SheetTitle className="sr-only">Menu principal</SheetTitle>
+                            <SheetDescription className="sr-only">Navigation pour le profil utilisateur.</SheetDescription>
+                          </SheetHeader>
+                          {renderSidebar()}
+                        </SheetContent>
+                      </Sheet>
+                      <div className="flex-1">
+                          <h1 className={cn("text-lg font-semibold md:text-xl", 'text-card-foreground')}>
+                              {getPageTitle(pathname)}
+                          </h1>
+                      </div>
+                      <div className="flex items-center gap-2">
+                          <LanguageSelector />
+                          <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", 'text-card-foreground')}>
+                              <Bell className="h-4 w-4" />
+                              {hasUnreadNotifications && (
+                                  <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+                                  </span>
+                              )}
+                              <span className="sr-only">Notifications</span>
+                          </Button>
+                      </div>
+                  </header>
+                )}
+                
+                <main className={cn("flex-1 overflow-y-auto", 
+                  isChatPage && !isMobile ? "" : "p-4 sm:p-6", 
+                  isMobile ? "pb-20" : "")
+                }>
+                    <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
+                      {children}
                     </div>
-                    <div className="flex items-center gap-2">
-                        <LanguageSelector />
-                        <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", 'text-card-foreground')}>
-                            <Bell className="h-4 w-4" />
-                            {hasUnreadNotifications && (
-                                <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                </span>
-                            )}
-                            <span className="sr-only">Notifications</span>
-                        </Button>
-                    </div>
-                </header>
-              )}
-              
-              <main className={cn("flex-1 overflow-y-auto", 
-                isChatPage && !isMobile ? "" : "p-4 sm:p-6", 
-                isMobile ? "pb-20" : "")
-              }>
-                  <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
-                    {children}
-                  </div>
-              </main>
-              {isMobile && <BottomNavBar />}
-              {!isFullScreenPage && !isChatPage && (
-                <>
-                  <SupportButton />
-                </>
-              )}
-            </div>
-        </div>
-    </div>
+                </main>
+                {isMobile && <BottomNavBar />}
+                {!isFullScreenPage && !isChatPage && (
+                  <>
+                    <SupportButton />
+                  </>
+                )}
+              </div>
+          </div>
+      </div>
+    </I18nProvider>
   );
 }
