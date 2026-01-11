@@ -3,9 +3,9 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
+import { useDoc, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, addDoc, orderBy, DocumentData, QuerySnapshot, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, addDoc, orderBy, DocumentData, QuerySnapshot, getDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -41,7 +41,7 @@ import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 
-const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 const questionFormSchema = z.object({
   subject: z.string().min(10, { message: "Le sujet doit contenir au moins 10 caractères." }),

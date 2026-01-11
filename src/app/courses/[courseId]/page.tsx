@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -24,7 +24,7 @@ import { PdfViewerSkeleton } from '@/components/ui/PdfViewerClient';
 import Link from 'next/link';
 
 
-const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 const PdfViewerClient = dynamic(() => import('@/components/ui/PdfViewerClient').then(mod => mod.PdfViewerClient), { 
     ssr: false,
     loading: () => <PdfViewerSkeleton />
@@ -397,4 +397,3 @@ export default function CoursePlayerPage() {
         </div>
     );
 }
-
