@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface ActivityItem {
     id: string;
@@ -38,6 +39,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export function AdminDashboard() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({
     userCount: 0,
     courseCount: 0,
@@ -136,28 +138,28 @@ export function AdminDashboard() {
     <div className="space-y-8">
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-            title="Total Étudiants"
+            title={t('total_students')}
             value={stats.userCount.toLocaleString('fr-FR')} 
             icon={Users} 
             isLoading={isLoading} 
             accentColor="border-blue-500"
         />
         <StatCard 
-            title="Revenu Mensuel" 
+            title={t('monthly_revenue')} 
             value={formatCurrency(stats.monthlyRevenue)} 
             icon={DollarSign} 
             isLoading={isLoading} 
             accentColor="border-green-500"
         />
          <StatCard 
-            title="Cours Actifs"
+            title={t('active_courses')}
             value={stats.courseCount.toLocaleString('fr-FR')}
             icon={BookOpen} 
             isLoading={isLoading} 
             accentColor="border-purple-500"
         />
         <StatCard 
-            title="Support en Attente"
+            title={t('support_tickets')}
             value={stats.openSupportTickets.toString()}
             icon={MessageSquare} 
             isLoading={isLoading}
@@ -187,7 +189,7 @@ export function AdminDashboard() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-4 dark:text-white">Activités Récentes</h2>
+        <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('recent_activity')}</h2>
         <Card className="dark:bg-[#1e293b] dark:border-slate-700">
             <CardContent className="pt-6">
                 {isLoading ? (
