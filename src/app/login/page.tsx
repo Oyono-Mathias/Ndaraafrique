@@ -142,9 +142,7 @@ export default function LoginPage() {
         countryCode: detectedCountry?.code?.toLowerCase(),
       };
     }
-    // For both new and existing users, we use { merge: true }
-    // This will create the doc if it doesn't exist, or update `lastLogin` if it does,
-    // without overwriting any other fields like 'role' or 'fullName'.
+    
     await setDoc(userDocRef, userData, { merge: true });
 
     toast({ title: t('loginSuccessTitle') });

@@ -87,6 +87,8 @@ export default function LandingPage() {
 
             if (coursesData.length > 0) {
                 const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
+                if (instructorIds.length === 0) return;
+
                 const usersRef = collection(db, 'users');
                 const usersQuery = query(usersRef, where('uid', 'in', instructorIds));
                 const userSnapshots = await getDocs(usersQuery);

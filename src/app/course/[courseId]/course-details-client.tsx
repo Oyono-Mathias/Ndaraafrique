@@ -652,7 +652,7 @@ export default function CourseDetailsClient() {
                 className="opacity-80"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
-                 <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || ''})}>
+                 <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
                     <PlayCircle className="h-5 w-5 mr-2"/>
                     Afficher un aperçu
                  </Button>
@@ -766,7 +766,7 @@ export default function CourseDetailsClient() {
                                 objectFit="cover"
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                               <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || ''})}>
+                               <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
                                   <PlayCircle className="h-5 w-5 mr-2"/>
                                   Afficher un aperçu
                                </Button>
@@ -854,7 +854,7 @@ export default function CourseDetailsClient() {
           <DialogHeader className="p-4 sr-only">
             <DialogTitle>{previewLesson?.title}</DialogTitle>
           </DialogHeader>
-          <ReactPlayer url={previewLesson?.videoUrl || ''} width="100%" height="100%" controls playing={true} config={{ youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } } }} />
+          <ReactPlayer url={previewLesson?.videoUrl || ''} width="100%" height="100%" controls playing={false} config={{ youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } } }} />
         </DialogContent>
       </Dialog>
       

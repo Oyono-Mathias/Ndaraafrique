@@ -68,7 +68,8 @@ service cloud.firestore {
       
       // Update Logic:
       // - Admins can update anything.
-      // - The course owner can update, but cannot change the 'status' to 'Published'.
+      // - The course owner can update, but cannot change the 'status' to 'Published' themselves.
+      //   They can only set it to 'Pending Review' or 'Draft'.
       allow update: if isAdmin() || (isCourseOwner(courseId) && request.resource.data.status != 'Published');
       
        match /sections/{sectionId} {
@@ -153,11 +154,16 @@ service cloud.firestore {
 
     // --- Règles pour 'support_tickets' ---
     match /support_tickets/{ticketId} {
-      allow read, create, update, delete, list: if isAdmin();
-      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId));
-      allow list: if isSignedIn() && (request.query.where.size() > 0 && (('userId' in request.query.where && request.query.where.userId == request.auth.uid) || ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)));
+      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
+      allow list: if isSignedIn() && (
+                    (request.query.where.size() > 0 &&
+                     (('userId' in request.query.where && request.query.where.userId == request.auth.uid) ||
+                      ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)))
+                    || isAdmin()
+                  );
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      allow update: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId));
+      allow update: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
+      allow delete: if isAdmin();
       
       match /messages/{messageId} {
         allow read, write: if isSignedIn() && (
@@ -175,12 +181,6 @@ service cloud.firestore {
       allow list: if isSignedIn() && request.query.keys().hasAny(['courseId']);
     }
 
-    // --- Règles pour les codes promo ---
-    match /promoCodes/{codeId} {
-      allow get: if isSignedIn();
-      allow list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
 
     // --- Règles pour 'chats' ---
     match /chats/{chatId} {
@@ -200,6 +200,7 @@ service cloud.firestore {
     
     // Admin catch-all for any other collection (use with caution)
     match /{path=**} {
+       // Admins have full access to everything else
       allow read, write: if isAdmin();
     }
   }
