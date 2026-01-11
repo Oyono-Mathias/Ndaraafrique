@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -26,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Folder, PlusCircle, ArrowLeft, Loader2, AlertCircle, Link2, FileText, Trash2 } from 'lucide-react';
+import { Folder, PlusCircle, ArrowLeft, Loader2, AlertCircle, Link2, FileText, Trash2, BookText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -58,9 +59,9 @@ const resourceSchema = z.object({
 
 const ResourceIcon = ({ type }: { type: 'link' | 'file' }) => {
     switch (type) {
-        case 'link': return <Link2 className="h-5 w-5 text-slate-400" />;
-        case 'file': return <FileText className="h-5 w-5 text-slate-400" />;
-        default: return <Folder className="h-5 w-5 text-slate-400" />;
+        case 'link': return <Link2 className="h-5 w-5 text-slate-500" />;
+        case 'file': return <FileText className="h-5 w-5 text-slate-500" />;
+        default: return <Folder className="h-5 w-5 text-slate-500" />;
     }
 };
 
@@ -135,7 +136,7 @@ export default function CourseResourcesPage() {
     return (
         <div className="space-y-8">
             <header>
-                <Button variant="ghost" size="sm" onClick={() => router.push('/ressources')} className="mb-2">
+                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/ressources')} className="mb-2">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour à la liste des cours
                 </Button>
@@ -162,14 +163,19 @@ export default function CourseResourcesPage() {
             <Card className="bg-slate-800 border-slate-700">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle className="text-white">Liste des ressources</CardTitle>
-                        <CardDescription className="text-slate-400">Ces ressources seront visibles par les étudiants inscrits.</CardDescription>
+                        <CardTitle className="text-xl flex items-center gap-2 text-white">
+                            <BookText className="h-5 w-5" />
+                            Ressources du cours
+                        </CardTitle>
+                        <CardDescription className="text-slate-400">
+                            Ajoutez et gérez les documents et liens pour ce cours.
+                        </CardDescription>
                     </div>
-                    <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
-                            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                            <Button>
                                 <PlusCircle className="mr-2 h-4 w-4" />
-                                Ajouter une ressource
+                                Ajouter
                             </Button>
                         </DialogTrigger>
                         <DialogContent className="bg-slate-800 border-slate-700 text-white">
@@ -257,7 +263,7 @@ export default function CourseResourcesPage() {
                                         <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
                                         <TableCell><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-20 bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : resources && resources.length > 0 ? (
@@ -287,7 +293,7 @@ export default function CourseResourcesPage() {
                                         <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
                                             <Folder className="h-10 w-10" />
                                             <span className="font-medium">Aucune ressource pour ce cours</span>
-                                            <span className="text-sm">Cliquez sur "Ajouter une ressource" pour commencer.</span>
+                                            <span className="text-sm">Cliquez sur "Ajouter" pour commencer.</span>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -299,5 +305,3 @@ export default function CourseResourcesPage() {
         </div>
     );
 }
-
-    

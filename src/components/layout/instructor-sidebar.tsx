@@ -105,9 +105,9 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
     {
       label: t('navTools'),
       items: [
-        { href: '/quiz', icon: FileQuestion, text: t('navQuiz') },
+        { href: '/instructor/quiz', icon: FileQuestion, text: t('navQuiz') },
         { href: '/certificats-instructor', icon: Award, text: t('navCertificates') },
-        { href: '/ressources', icon: Folder, text: t('navResources') },
+        { href: '/instructor/ressources', icon: Folder, text: t('navResources') },
         { href: '/account', icon: Settings, text: t('navSettings') },
       ],
     },

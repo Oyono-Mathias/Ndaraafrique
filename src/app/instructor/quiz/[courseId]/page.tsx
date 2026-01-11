@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -146,7 +147,7 @@ export default function CourseQuizzesPage() {
     return (
         <div className="space-y-8">
             <header>
-                <Button variant="ghost" size="sm" onClick={() => router.push('/quiz')} className="mb-2">
+                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/quiz')} className="mb-2">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour à la liste des cours
                 </Button>

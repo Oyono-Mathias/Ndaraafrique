@@ -1,11 +1,11 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -15,12 +15,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { AlertCircle, Folder } from 'lucide-react';
+import { AlertCircle, FileQuestion } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
-export default function ResourcesDashboardPage() {
+export default function QuizzesDashboardPage() {
     const { formaAfriqueUser, isUserLoading } = useRole();
     const db = getFirestore();
 
@@ -40,12 +41,12 @@ export default function ResourcesDashboardPage() {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold text-white">Gestion des Ressources</h1>
-                <p className="text-slate-400">Sélectionnez un cours pour y ajouter des fichiers et des liens.</p>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Gestion des Quiz</h1>
+                <p className="text-muted-foreground">Sélectionnez un cours pour créer et gérer ses quiz.</p>
             </header>
 
              {error && (
-                <div className="p-4 bg-red-900/50 text-red-300 border border-red-700 rounded-lg flex items-center gap-3">
+                <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
                     <p>
                         Une erreur est survenue lors du chargement des cours. 
@@ -54,52 +55,51 @@ export default function ResourcesDashboardPage() {
                 </div>
             )}
 
-            <Card className="bg-slate-800 border-slate-700">
+            <Card className="bg-card shadow-sm">
                 <CardHeader>
-                    <CardTitle className="text-white">Liste de vos cours</CardTitle>
+                    <CardTitle>Liste de vos cours</CardTitle>
                 </CardHeader>
                 <CardContent>
                      <Table>
                         <TableHeader>
-                            <TableRow className="border-slate-700 hover:bg-slate-700/50">
-                                <TableHead className="text-slate-300">Titre du cours</TableHead>
-                                <TableHead className="text-slate-300">Statut</TableHead>
-                                <TableHead className="text-right text-slate-300">Action</TableHead>
+                            <TableRow>
+                                <TableHead>Titre du cours</TableHead>
+                                <TableHead>Statut</TableHead>
+                                <TableHead className="text-right">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                              {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                     <TableRow key={i} className="border-slate-700">
-                                        <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-6 w-20 rounded-full bg-slate-700" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-36 bg-slate-700" /></TableCell>
+                                     <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : courses && courses.length > 0 ? (
                                 courses.map((course) => (
-                                    <TableRow key={course.id} className="border-slate-700 hover:bg-slate-700/50">
-                                        <TableCell className="font-medium text-slate-100">{course.title}</TableCell>
+                                    <TableRow key={course.id} className="hover:bg-muted/50">
+                                        <TableCell className="font-medium">{course.title}</TableCell>
                                         <TableCell>
-                                            <Badge variant={course.status === 'Published' ? 'default' : 'secondary'} 
-                                                className={course.status === 'Published' ? 'bg-green-600 text-white' : 'bg-slate-600 text-slate-200'}>
+                                            <Badge variant={course.status === 'Published' ? 'default' : 'secondary'}>
                                                 {course.status}
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Link href={`/ressources/${course.id}`} className="text-sm font-semibold text-primary hover:underline">
-                                                Gérer les ressources
+                                            <Link href={`/instructor/quiz/${course.id}`} className="text-sm font-semibold text-primary hover:underline">
+                                                Gérer les quiz
                                             </Link>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow className="border-slate-700">
+                                <TableRow>
                                     <TableCell colSpan={3} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
-                                            <Folder className="h-10 w-10" />
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                            <FileQuestion className="h-10 w-10" />
                                             <span className="font-medium">Aucun cours trouvé</span>
-                                            <span className="text-sm">Créez un cours pour pouvoir y ajouter des ressources.</span>
+                                            <span className="text-sm">Créez un cours pour pouvoir y ajouter des quiz.</span>
                                         </div>
                                     </TableCell>
                                 </TableRow>
