@@ -136,12 +136,12 @@ const CourseCurriculum = ({ courseId, isEnrolled, onPreviewClick }: { courseId: 
                       {lecturesLoading ? <Skeleton className="h-10 w-full m-2" /> : (
                           <ul className="divide-y divide-slate-700/50">
                               {(lecturesMap.get(section.id) || []).map(lecture => {
-                                  const canPreview = isEnrolled || lecture.isFreePreview;
+                                  const canAccess = isEnrolled || lecture.isFreePreview;
                                   return (
                                       <li key={lecture.id}>
-                                        <button onClick={() => canPreview && onPreviewClick(lecture)} disabled={!canPreview} className="w-full text-left flex items-center text-sm p-3 transition-colors hover:bg-slate-700/50 disabled:opacity-60 disabled:cursor-not-allowed">
+                                        <button onClick={() => canAccess && onPreviewClick(lecture)} disabled={!canAccess} className="w-full text-left flex items-center text-sm p-3 transition-colors hover:bg-slate-700/50 disabled:opacity-60 disabled:cursor-not-allowed">
                                             <div className="flex-1 flex items-start gap-3">
-                                                {canPreview ? <PlayCircle className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" /> : <Lock className="h-4 w-4 mr-2 text-slate-500 shrink-0 mt-0.5" />}
+                                                {canAccess ? <PlayCircle className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" /> : <Lock className="h-4 w-4 mr-2 text-slate-500 shrink-0 mt-0.5" />}
                                                 <span className="text-slate-300">{lecture.title}</span>
                                             </div>
                                             <div className="flex items-center gap-4 text-xs text-slate-400">
