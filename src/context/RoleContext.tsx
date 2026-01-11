@@ -116,15 +116,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           
           let newRole: UserRole;
           
-          // Prioritize admin role on fresh login or if last role is not available
-          if (userData.role === 'admin') {
-            newRole = 'admin';
-          } else if (lastRole && roles.includes(lastRole)) {
+          // **CORRECTION LOGIC**: Prioritize the role chosen by the user if it's valid for them.
+          if (lastRole && roles.includes(lastRole)) {
             newRole = lastRole;
-          } else if (roles.includes('instructor')) {
-            newRole = 'instructor';
           } else {
-            newRole = 'student';
+            // Fallback to their highest permission role if no valid choice is stored.
+            newRole = userData.role;
           }
 
           setRole(newRole);
