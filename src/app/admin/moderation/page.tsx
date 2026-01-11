@@ -1,11 +1,23 @@
+
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, doc, updateDoc, where, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  where,
+  doc,
+  updateDoc,
+} from 'firebase/firestore';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
 import {
   Table,
   TableBody,
@@ -15,372 +27,118 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
-import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
-import { cn } from '@/lib/utils';
-import { useDebounce } from '@/hooks/use-debounce';
+import { Eye, CheckCircle, Clock, ShieldAlert, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { deleteUserAccount } from '@/app/actions/userActions';
+import type { Course } from '@/lib/types';
 
 
-const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
-  switch (role) {
-    case 'admin':
-      return 'destructive';
-    case 'instructor':
-      return 'default';
-    default:
-      return 'secondary';
-  }
-};
-
-const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
-    return status === 'suspended' ? 'destructive' : 'default';
-};
-
-const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
-    const { toast } = useToast();
-    const router = useRouter();
-    const db = getFirestore();
-    const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
-    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
-    
-    const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
-
-    const handleRoleChange = async () => {
-        setIsSubmitting(true);
-        try {
-            await updateDoc(userDocRef, { role: selectedRole });
-            toast({ title: "Rôle mis à jour", description: `Le rôle de ${user.fullName} est maintenant ${selectedRole}.` });
-            setIsRoleDialogOpen(false);
-        } catch (error) {
-            console.error("Failed to update role:", error);
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le rôle." });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleStatusToggle = async () => {
-        const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
-        setIsSubmitting(true);
-        try {
-            await updateDoc(userDocRef, { status: newStatus });
-            toast({ title: "Statut mis à jour", description: `${user.fullName} est maintenant ${newStatus === 'active' ? 'actif' : 'suspendu'}.` });
-        } catch (error) {
-            console.error("Failed to toggle status:", error);
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le statut." });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
-    const handleDeleteUser = async () => {
-        setIsSubmitting(true);
-        const auth = getAuth();
-        const adminUser = auth.currentUser;
-
-        if (!adminUser) {
-            toast({ variant: "destructive", title: "Erreur d'authentification", description: "Administrateur non connecté." });
-            setIsSubmitting(false);
-            return;
-        }
-
-        try {
-            const token = await adminUser.getIdToken();
-            const result = await deleteUserAccount({ userId: user.uid, idToken: token });
-            
-            if (result.success) {
-                toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été définitivement supprimé.` });
-                setIsDeleteAlertOpen(false);
-            } else {
-                throw new Error(result.error || 'Unknown error');
-            }
-        } catch (error: any) {
-            console.error("Failed to delete user:", error);
-            toast({ variant: "destructive", title: "Erreur de suppression", description: error.message || "Impossible de supprimer l'utilisateur." });
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-    
-    const handleStartChat = async () => {
-        if (!adminId || adminId === user.uid) return;
-
-        const chatsRef = collection(db, 'chats');
-        const sortedParticipants = [adminId, user.uid].sort();
-        
-        const q = query(chatsRef, where('participants', '==', sortedParticipants));
-        
-        try {
-            const querySnapshot = await getDocs(q);
-            let chatId: string | null = null;
-            if (!querySnapshot.empty) {
-                chatId = querySnapshot.docs[0].id;
-            } else {
-                const newChatRef = doc(collection(db, 'chats'));
-                await setDoc(newChatRef, {
-                    participants: sortedParticipants,
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                    lastMessage: `Conversation initiée par un administrateur.`,
-                });
-                chatId = newChatRef.id;
-            }
-            router.push(`/messages/${chatId}`);
-        } catch (error) {
-            console.error("Error starting chat:", error);
-            toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
-        }
-    };
-
-    return (
-        <>
-            <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Ouvrir le menu</span>
-                        <MoreHorizontal className="h-4 w-4" />
-                    </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
-                        <Eye className="mr-2 h-4 w-4"/>
-                        Voir le profil
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={handleStartChat}>
-                        <MessageSquare className="mr-2 h-4 w-4" />
-                        Contacter
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
-                        <UserCog className="mr-2 h-4 w-4"/>
-                        Modifier le rôle
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting}>
-                        <Ban className="mr-2 h-4 w-4"/>
-                        {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive">
-                        <Trash2 className="mr-2 h-4 w-4"/>
-                        Supprimer
-                    </DropdownMenuItem>
-                </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Role Change Dialog */}
-            <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Modifier le rôle de {user.fullName}</DialogTitle>
-                        <DialogDescription>
-                            Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="py-4">
-                        <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Choisir un rôle" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="student">Étudiant</SelectItem>
-                                <SelectItem value="instructor">Instructeur</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Annuler</Button>
-                        <Button onClick={handleRoleChange} disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Confirmer
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Alert */}
-            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
-                <AlertDialogContent>
-                    <AlertDialogHeader>
-                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
-                        </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
-                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
-                        </AlertDialogAction>
-                    </AlertDialogFooter>
-                </AlertDialogContent>
-            </AlertDialog>
-        </>
-    );
-};
-
-
-export default function AdminUsersPage() {
+export default function AdminModerationPage() {
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const [searchTerm, setSearchTerm] = useState('');
-  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const { toast } = useToast();
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const usersQuery = useMemoFirebase(
-    () => query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+  const coursesQuery = useMemoFirebase(
+    () => query(collection(db, 'courses'), where('status', '==', 'Pending Review'), orderBy('updatedAt', 'desc')),
     [db]
   );
-  const { data: users, isLoading: usersLoading } = useCollection<FormaAfriqueUser & {createdAt?: any; status?: 'active' | 'suspended'}>(usersQuery);
+  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    if (!debouncedSearchTerm) return users;
-    return users.filter(user =>
-      user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    );
-  }, [users, debouncedSearchTerm]);
+  const isLoading = isUserLoading || coursesLoading;
+  
+  const handleApprove = async (courseId: string) => {
+    setUpdatingId(courseId);
+    const courseRef = doc(db, 'courses', courseId);
+    try {
+        await updateDoc(courseRef, {
+            status: 'Published',
+            publishedAt: new Date(),
+        });
+        toast({ title: 'Cours Approuvé', description: 'Le cours est maintenant publié et visible sur la plateforme.' });
+    } catch (error) {
+        console.error("Error approving course:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'approuver le cours.' });
+    } finally {
+        setUpdatingId(null);
+    }
+  };
 
-  const isLoading = isUserLoading || usersLoading;
 
   if (adminUser?.role !== 'admin') {
     return <div className="p-8 text-center">Accès non autorisé.</div>;
   }
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4">
+    <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Gestion des Utilisateurs</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
+        <h1 className="text-3xl font-bold dark:text-white">Modération de Contenu</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Examinez et approuvez les nouveaux cours soumis par les instructeurs.</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
+          <CardTitle className="dark:text-white">Cours en attente de validation</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            Liste de tous les utilisateurs enregistrés.
+            Ces cours ont été soumis par des instructeurs et nécessitent votre approbation avant d'être publiés.
           </CardDescription>
-          <div className="relative pt-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom ou email..."
-              className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Nom</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
-                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="dark:text-slate-400">Titre du Cours</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">Soumis le</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Statut</TableHead>
                   <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  [...Array(5)].map((_, i) => (
+                  [...Array(3)].map((_, i) => (
                     <TableRow key={i} className="dark:border-slate-700">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
-                          <Skeleton className="h-4 w-32 dark:bg-slate-700" />
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-48 dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
                       <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><div className="flex justify-end gap-2"><Skeleton className="h-8 w-20 dark:bg-slate-700" /><Skeleton className="h-8 w-20 dark:bg-slate-700" /></div></TableCell>
                     </TableRow>
                   ))
-                ) : filteredUsers.length > 0 ? (
-                  filteredUsers.map((user) => (
-                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
-                            <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
-                            <div className="sm:hidden mt-1">
-                                <Badge variant={getStatusBadgeVariant(user.status)} className={cn('text-xs', user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
-                                    {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
-                                </Badge>
-                            </div>
-                          </div>
-                        </div>
+                ) : courses && courses.length > 0 ? (
+                  courses.map((course) => (
+                    <TableRow key={course.id} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                      <TableCell className="font-medium dark:text-slate-100">{course.title}</TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">
+                          {course.updatedAt ? formatDistanceToNow(course.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
                       </TableCell>
-                      <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
-                      <TableCell className="hidden lg:table-cell">
-                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
-                          {user.role}
-                        </Badge>
-                      </TableCell>
-                       <TableCell className="hidden sm:table-cell">
-                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
-                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                       <TableCell className="hidden lg:table-cell">
+                          <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                            <Clock className="mr-1.5 h-3 w-3"/>
+                            En attente
                           </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                          <UserActions user={user} adminId={adminUser?.uid} />
+                         <div className="flex justify-end gap-2">
+                            <Button asChild variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600">
+                                <Link href={`/course/${course.id}`} target="_blank"><Eye className="mr-2 h-4 w-4"/>Aperçu</Link>
+                            </Button>
+                             <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" disabled={updatingId === course.id}>
+                                {updatingId === course.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
+                                Approuver
+                            </Button>
+                         </div>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow className="dark:border-slate-700">
-                    <TableCell colSpan={5} className="h-48 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                          <UserX className="h-12 w-12" />
-                          <p className="font-medium">Aucun utilisateur trouvé</p>
-                          <p className="text-sm">
-                              {searchTerm 
-                                  ? `Aucun résultat pour "${searchTerm}".`
-                                  : "Il n'y a pas encore d'utilisateurs sur la plateforme."
-                              }
-                          </p>
+                    <TableCell colSpan={4} className="h-48 text-center">
+                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <ShieldAlert className="h-12 w-12" />
+                          <p className="font-medium">Aucun cours en attente</p>
+                          <p className="text-sm">Tous les cours soumis ont été traités.</p>
                       </div>
                     </TableCell>
                   </TableRow>
