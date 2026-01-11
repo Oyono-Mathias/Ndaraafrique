@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -34,12 +35,17 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTranslation } from 'react-i18next';
+import { Label } from '@/components/ui/label';
+
 
 interface Application extends FormaAfriqueUser {
     instructorApplication?: {
         motivation?: string;
         verificationDocUrl?: string;
         submittedAt: any;
+        specialty?: string;
+        presentationVideoUrl?: string;
     }
 }
 
@@ -56,22 +62,19 @@ const DecisionModal = ({
     onClose: () => void;
     onConfirm: (userId: string, approve: boolean, message: string) => Promise<void>;
 }) => {
+    const { t } = useTranslation();
     const [decision, setDecision] = useState<Decision>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [message, setMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
     const rejectionTemplates = {
-        quality: "Bonjour, merci pour votre intérêt. Après examen, nous avons constaté que la qualité audio/vidéo de votre présentation n'atteint pas nos standards actuels. Nous vous encourageons à améliorer ce point et à postuler de nouveau.",
-        topic: "Bonjour, merci pour votre candidature. Votre profil est intéressant, mais le sujet de cours proposé ne correspond pas à nos priorités actuelles. Nous conservons votre dossier pour de futures opportunités.",
-        incomplete: "Bonjour, merci d'avoir postulé. Votre dossier est malheureusement incomplet. Veuillez vous assurer de fournir toutes les informations demandées avant de soumettre à nouveau votre candidature."
+        quality: t('rejectionTemplateQuality'),
+        topic: t('rejectionTemplateTopic'),
+        incomplete: t('rejectionTemplateIncomplete')
     };
 
-    const acceptanceTemplate = `Félicitations ! Votre candidature pour devenir formateur sur FormaAfrique a été acceptée.
-    
-Nous sommes ravis de vous accueillir dans notre communauté d'experts. Vous avez maintenant accès à toutes les fonctionnalités de création de cours.
-
-Bienvenue à bord !`;
+    const acceptanceTemplate = t('acceptanceTemplate');
 
     React.useEffect(() => {
         if (application) {
@@ -85,12 +88,12 @@ Bienvenue à bord !`;
         if (decision === 'accepted') {
             setMessage(acceptanceTemplate);
         } else if (decision === 'rejected') {
-            const template = rejectionTemplates[rejectionReason as keyof typeof rejectionTemplates] || "Bonjour, après un examen attentif de votre dossier, nous avons le regret de vous informer que votre candidature n'a pas été retenue pour le moment.";
+            const template = rejectionTemplates[rejectionReason as keyof typeof rejectionTemplates] || t('rejectionTemplateGeneric');
             setMessage(template);
         } else {
             setMessage('');
         }
-    }, [decision, rejectionReason, acceptanceTemplate]);
+    }, [decision, rejectionReason, acceptanceTemplate, rejectionTemplates, t]);
 
     if (!application) return null;
     
@@ -113,7 +116,7 @@ Bienvenue à bord !`;
                         <div>
                             <DialogTitle className="text-2xl dark:text-white">{application.fullName}</DialogTitle>
                             <DialogDescription className="dark:text-slate-400">
-                                Candidature en attente - {application.instructorApplication?.specialty || 'Spécialité non définie'}
+                                {t('decisionModalTitle')} - {application.instructorApplication?.specialty || t('unspecifiedSpecialty')}
                             </DialogDescription>
                         </div>
                     </div>
@@ -121,21 +124,21 @@ Bienvenue à bord !`;
 
                 <div className="py-4 space-y-6">
                     <div>
-                        <h4 className="font-semibold mb-2 dark:text-slate-300">1. Prendre une décision</h4>
+                        <h4 className="font-semibold mb-2 dark:text-slate-300">{t('step1_makeDecision')}</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Button 
                                 variant={decision === 'accepted' ? 'default' : 'outline'} 
                                 onClick={() => setDecision('accepted')}
                                 className={cn("h-20 text-lg", decision === 'accepted' && 'bg-green-600 hover:bg-green-700 border-green-600 ring-4 ring-green-500/20')}
                             >
-                                <Check className="mr-2 h-6 w-6"/> Accepter
+                                <Check className="mr-2 h-6 w-6"/> {t('accept')}
                             </Button>
                              <Button 
                                 variant={decision === 'rejected' ? 'destructive' : 'outline'} 
                                 onClick={() => setDecision('rejected')}
                                 className={cn("h-20 text-lg", decision === 'rejected' && 'ring-4 ring-red-500/20')}
                             >
-                                <X className="mr-2 h-6 w-6"/> Refuser
+                                <X className="mr-2 h-6 w-6"/> {t('reject')}
                             </Button>
                         </div>
                     </div>
@@ -144,22 +147,22 @@ Bienvenue à bord !`;
                         <div className="animate-in fade-in-50 duration-500 space-y-4">
                              {decision === 'rejected' && (
                                 <div>
-                                    <Label htmlFor="rejection-reason" className="dark:text-slate-300">2. Motif du refus</Label>
+                                    <Label htmlFor="rejection-reason" className="dark:text-slate-300">{t('step2_rejectionReason')}</Label>
                                     <Select onValueChange={setRejectionReason}>
                                         <SelectTrigger id="rejection-reason" className="w-full mt-1 dark:bg-slate-800 dark:border-slate-700">
-                                            <SelectValue placeholder="Choisir un motif..." />
+                                            <SelectValue placeholder={t('chooseReason')} />
                                         </SelectTrigger>
                                         <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
-                                            <SelectItem value="quality">Qualité audio/vidéo</SelectItem>
-                                            <SelectItem value="topic">Sujet non pertinent</SelectItem>
-                                            <SelectItem value="incomplete">Dossier incomplet</SelectItem>
+                                            <SelectItem value="quality">{t('reasonQuality')}</SelectItem>
+                                            <SelectItem value="topic">{t('reasonTopic')}</SelectItem>
+                                            <SelectItem value="incomplete">{t('reasonIncomplete')}</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                              )}
                              <div>
                                 <h4 className="font-semibold mb-2 dark:text-slate-300">
-                                    {decision === 'accepted' ? '2. Message de bienvenue' : '3. Message de refus'}
+                                    {decision === 'accepted' ? t('step2_welcomeMessage') : t('step3_rejectionMessage')}
                                 </h4>
                                 <Textarea 
                                     value={message} 
@@ -173,10 +176,10 @@ Bienvenue à bord !`;
                 </div>
                 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={onClose}>Annuler</Button>
+                    <Button variant="ghost" onClick={onClose}>{t('cancelButton')}</Button>
                     <Button onClick={handleConfirm} disabled={!decision || isProcessing}>
                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        <Send className="mr-2 h-4 w-4"/> Confirmer et Envoyer
+                        <Send className="mr-2 h-4 w-4"/> {t('confirmAndSend')}
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -188,6 +191,7 @@ export default function InstructorApplicationsPage() {
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   const applicationsQuery = useMemoFirebase(
@@ -208,29 +212,29 @@ export default function InstructorApplicationsPage() {
     try {
         if (approve) {
             await updateDoc(userRef, { isInstructorApproved: true });
-            toast({ title: 'Candidature Approuvée', description: 'L\'instructeur a maintenant accès à toutes les fonctionnalités.' });
+            toast({ title: t('applicationApprovedTitle'), description: t('applicationApprovedMessage') });
         } else {
             await updateDoc(userRef, { role: 'student', isInstructorApproved: false });
-            toast({ title: 'Candidature Rejetée', description: 'Le rôle de l\'utilisateur a été réinitialisé à étudiant.' });
+            toast({ title: t('applicationRejectedTitle'), description: t('applicationRejectedMessage') });
         }
         // TODO: Send email with `message` content
     } catch (error) {
         console.error("Error updating application:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour la candidature.' });
+        toast({ variant: 'destructive', title: t('errorTitle'), description: t('applicationUpdateError') });
     }
   };
 
 
   if (adminUser?.role !== 'admin') {
-    return <div className="p-8 text-center">Accès non autorisé.</div>;
+    return <div className="p-8 text-center">{t('unauthorizedAccess')}</div>;
   }
 
   return (
     <>
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Candidatures Instructeurs</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Examinez, approuvez ou rejetez les nouvelles demandes.</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('navApplications')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('reviewApplicationsDescription')}</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -250,18 +254,18 @@ export default function InstructorApplicationsPage() {
                           </Avatar>
                           <div>
                             <CardTitle className="dark:text-slate-100">{app.fullName}</CardTitle>
-                            <CardDescription className="dark:text-slate-400">{app.instructorApplication?.specialty || 'Spécialité non précisée'}</CardDescription>
+                            <CardDescription className="dark:text-slate-400">{app.instructorApplication?.specialty || t('unspecifiedSpecialty')}</CardDescription>
                           </div>
                     </CardHeader>
                      <CardContent className="flex-grow">
                         <p className="text-sm text-muted-foreground dark:text-slate-400 line-clamp-3">
-                            {app.instructorApplication?.motivation || "Aucune motivation fournie."}
+                            {app.instructorApplication?.motivation || t('noMotivationProvided')}
                         </p>
                          <div className="flex gap-2 mt-4">
                           {app.instructorApplication?.verificationDocUrl && (
                             <Button asChild variant="outline" size="sm">
                                 <a href={app.instructorApplication.verificationDocUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                                    <FileText className="mr-2 h-4 w-4"/> CV/Doc
+                                    <FileText className="mr-2 h-4 w-4"/> {t('cv_file')}
                                 </a>
                             </Button>
                           )}
@@ -275,15 +279,15 @@ export default function InstructorApplicationsPage() {
                         </div>
                     </CardContent>
                      <CardContent className="text-xs text-muted-foreground">
-                        Reçu {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt.toDate(), { addSuffix: true, locale: fr }) : 'récemment'}
+                        {t('app_date')} {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt.toDate(), { addSuffix: true, locale: fr }) : t('recently')}
                     </CardContent>
                 </Card>
             ))
         ) : (
              <div className="md:col-span-2 xl:col-span-3 h-64 flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400 border-2 border-dashed dark:border-slate-700 rounded-xl">
                 <UserCheck className="h-12 w-12" />
-                <p className="font-medium">Aucune nouvelle candidature</p>
-                <p className="text-sm">Toutes les demandes ont été traitées.</p>
+                <p className="font-medium">{t('noNewApplications')}</p>
+                <p className="text-sm">{t('allApplicationsProcessed')}</p>
             </div>
         )}
       </div>
