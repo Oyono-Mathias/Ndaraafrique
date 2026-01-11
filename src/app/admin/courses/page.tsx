@@ -1,10 +1,11 @@
+
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import {
   Table,
   TableBody,
