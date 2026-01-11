@@ -55,6 +55,7 @@ import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUserAccount } from '@/app/actions/userActions';
+import { useTranslation } from 'react-i18next';
 
 
 const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
@@ -73,6 +74,7 @@ const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
 };
 
 const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
+    const { t } = useTranslation();
     const { toast } = useToast();
     const router = useRouter();
     const db = getFirestore();
@@ -87,11 +89,11 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
         setIsSubmitting(true);
         try {
             await updateDoc(userDocRef, { role: selectedRole });
-            toast({ title: "Rôle mis à jour", description: `Le rôle de ${user.fullName} est maintenant ${selectedRole}.` });
+            toast({ title: t('roleUpdatedTitle'), description: t('roleUpdatedMessage', { name: user.fullName, role: selectedRole }) });
             setIsRoleDialogOpen(false);
         } catch (error) {
             console.error("Failed to update role:", error);
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le rôle." });
+            toast({ variant: 'destructive', title: t('errorTitle'), description: t('roleUpdateError') });
         } finally {
             setIsSubmitting(false);
         }
@@ -102,10 +104,10 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
         setIsSubmitting(true);
         try {
             await updateDoc(userDocRef, { status: newStatus });
-            toast({ title: "Statut mis à jour", description: `${user.fullName} est maintenant ${newStatus === 'active' ? 'actif' : 'suspendu'}.` });
+            toast({ title: t('statusUpdatedTitle'), description: t('statusUpdatedMessage', { name: user.fullName, status: newStatus === 'active' ? t('active') : t('banned') }) });
         } catch (error) {
             console.error("Failed to toggle status:", error);
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le statut." });
+            toast({ variant: 'destructive', title: t('errorTitle'), description: t('statusUpdateError') });
         } finally {
             setIsSubmitting(false);
         }
@@ -117,7 +119,7 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
         const adminUser = auth.currentUser;
 
         if (!adminUser) {
-            toast({ variant: "destructive", title: "Erreur d'authentification", description: "Administrateur non connecté." });
+            toast({ variant: "destructive", title: t('authErrorTitle'), description: t('adminNotConnected') });
             setIsSubmitting(false);
             return;
         }
@@ -127,14 +129,14 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
             const result = await deleteUserAccount({ userId: user.uid, idToken: token });
             
             if (result.success) {
-                toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été définitivement supprimé.` });
+                toast({ title: t('userDeletedTitle'), description: t('userDeletedMessage', { name: user.fullName }) });
                 setIsDeleteAlertOpen(false);
             } else {
                 throw new Error(result.error || 'Unknown error');
             }
         } catch (error: any) {
             console.error("Failed to delete user:", error);
-            toast({ variant: "destructive", title: "Erreur de suppression", description: error.message || "Impossible de supprimer l'utilisateur." });
+            toast({ variant: "destructive", title: t('deleteErrorTitle'), description: error.message || t('deleteErrorMessage') });
         } finally {
             setIsSubmitting(false);
         }
@@ -180,23 +182,23 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
                     </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
                     <DropdownMenuItem onSelect={handleStartChat} className="cursor-pointer dark:focus:bg-slate-700">
                         <MessageSquare className="mr-2 h-4 w-4" />
-                        Contacter
+                        {t('contact')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)} className="cursor-pointer dark:focus:bg-slate-700">
                         <UserCog className="mr-2 h-4 w-4"/>
-                        Modifier le rôle
+                        {t('editRole')}
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting} className="cursor-pointer dark:focus:bg-slate-700">
                         <Ban className="mr-2 h-4 w-4"/>
-                        {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                        {user.status === 'suspended' ? t('reactivate') : t('suspend')}
                     </DropdownMenuItem>
                     <DropdownMenuSeparator className="dark:bg-slate-700" />
                     <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive dark:text-red-400 cursor-pointer dark:focus:bg-destructive/10 dark:focus:text-red-400">
                         <Trash2 className="mr-2 h-4 w-4"/>
-                        Supprimer
+                        {t('delete')}
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
@@ -205,28 +207,28 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
             <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
                 <DialogContent className="dark:bg-slate-800 dark:border-slate-700">
                     <DialogHeader>
-                        <DialogTitle className="dark:text-white">Modifier le rôle de {user.fullName}</DialogTitle>
+                        <DialogTitle className="dark:text-white">{t('editRoleFor', { name: user.fullName })}</DialogTitle>
                         <DialogDescription className="dark:text-slate-400">
-                            Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
+                            {t('editRoleDescription')}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
                             <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600 dark:text-white">
-                                <SelectValue placeholder="Choisir un rôle" />
+                                <SelectValue placeholder={t('chooseRole')} />
                             </SelectTrigger>
                             <SelectContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                                <SelectItem value="student" className="cursor-pointer dark:focus:bg-slate-700">Étudiant</SelectItem>
-                                <SelectItem value="instructor" className="cursor-pointer dark:focus:bg-slate-700">Instructeur</SelectItem>
-                                <SelectItem value="admin" className="cursor-pointer dark:focus:bg-slate-700">Admin</SelectItem>
+                                <SelectItem value="student" className="cursor-pointer dark:focus:bg-slate-700">{t('roleStudent')}</SelectItem>
+                                <SelectItem value="instructor" className="cursor-pointer dark:focus:bg-slate-700">{t('roleInstructor')}</SelectItem>
+                                <SelectItem value="admin" className="cursor-pointer dark:focus:bg-slate-700">{t('roleAdmin')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)} className="dark:hover:bg-slate-700">Annuler</Button>
+                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)} className="dark:hover:bg-slate-700">{t('cancelButton')}</Button>
                         <Button onClick={handleRoleChange} disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Confirmer
+                            {t('confirmButton')}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
@@ -236,15 +238,15 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
             <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
                 <AlertDialogContent className="dark:bg-slate-800 dark:border-slate-700">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="dark:text-white">Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+                        <AlertDialogTitle className="dark:text-white">{t('deleteUserConfirmationTitle')}</AlertDialogTitle>
                         <AlertDialogDescription className="dark:text-slate-400">
-                            Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
+                             {t('deleteUserConfirmationMessage', { name: user.fullName })}
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel className="dark:bg-slate-700 dark:hover:bg-slate-600">Annuler</AlertDialogCancel>
+                        <AlertDialogCancel className="dark:bg-slate-700 dark:hover:bg-slate-600">{t('cancelButton')}</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
-                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
+                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : t('deleteButton')}
                         </AlertDialogAction>
                     </AlertDialogFooter>
                 </AlertDialogContent>
@@ -255,6 +257,7 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
 
 
 export default function AdminUsersPage() {
+  const { t } = useTranslation();
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const [searchTerm, setSearchTerm] = useState('');
@@ -278,26 +281,26 @@ export default function AdminUsersPage() {
   const isLoading = isUserLoading || usersLoading;
 
   if (adminUser?.role !== 'admin') {
-    return <div className="p-8 text-center">Accès non autorisé.</div>;
+    return <div className="p-8 text-center">{t('unauthorizedAccess')}</div>;
   }
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Gestion des Utilisateurs</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('navUsers')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('manageUsersDescription')}</p>
       </header>
 
       <Card className="dark:bg-[#1e293b] dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
+          <CardTitle className="dark:text-white">{t('user_list')}</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            Liste de tous les utilisateurs enregistrés.
+            {t('allRegisteredUsers')}
           </CardDescription>
           <div className="relative pt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom ou email..."
+              placeholder={t('search_placeholder')}
               className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -309,11 +312,11 @@ export default function AdminUsersPage() {
             <Table className="hidden md:table">
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Nom</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
-                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('name')}</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">{t('emailLabel')}</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">{t('role')}</TableHead>
+                  <TableHead className="hidden sm:table-cell dark:text-slate-400">{t('status')}</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -349,12 +352,12 @@ export default function AdminUsersPage() {
                       <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
-                          {user.role}
+                          {t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`)}
                         </Badge>
                       </TableCell>
                        <TableCell className="hidden sm:table-cell">
                           <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
-                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                            {user.status === 'suspended' ? t('banned') : t('active')}
                           </Badge>
                       </TableCell>
                       <TableCell className="text-right">
@@ -367,11 +370,11 @@ export default function AdminUsersPage() {
                     <TableCell colSpan={5} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <UserX className="h-12 w-12" />
-                          <p className="font-medium">Aucun utilisateur trouvé</p>
+                          <p className="font-medium">{t('noUsersFound')}</p>
                           <p className="text-sm">
                               {searchTerm 
-                                  ? `Aucun résultat pour "${searchTerm}".`
-                                  : "Il n'y a pas encore d'utilisateurs sur la plateforme."
+                                  ? t('noResultsFor', { term: searchTerm })
+                                  : t('noUsersYet')
                               }
                           </p>
                       </div>
@@ -399,9 +402,9 @@ export default function AdminUsersPage() {
                                     <p className="font-bold text-base dark:text-white">{user.fullName}</p>
                                     <p className="text-xs text-muted-foreground dark:text-slate-400">{user.email}</p>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{user.role}</Badge>
+                                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`)}</Badge>
                                         <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
-                                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                            {user.status === 'suspended' ? t('banned') : t('active')}
                                         </Badge>
                                     </div>
                                 </div>
