@@ -12,16 +12,16 @@ import {
   writeBatch,
   doc,
   limit,
+  Timestamp,
 } from 'firebase/firestore';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BellRing, Bell, CheckCircle, Gift } from 'lucide-react';
+import { BellRing, Bell, CheckCircle, Gift, ShieldAlert } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import type { Timestamp } from 'firebase/firestore';
 
 interface Notification {
   id: string;
@@ -29,12 +29,13 @@ interface Notification {
   createdAt: Timestamp;
   read: boolean;
   link?: string;
-  type?: 'success' | 'info' | 'reminder';
+  type?: 'success' | 'info' | 'reminder' | 'alert';
 }
 
 const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     switch (type) {
         case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
+        case 'alert': return <ShieldAlert className="h-5 w-5 text-red-500" />;
         case 'reminder': return <Gift className="h-5 w-5 text-orange-500" />;
         default: return <Bell className="h-5 w-5 text-blue-500" />;
     }
@@ -56,7 +57,7 @@ export default function NotificationsPage() {
     const notifsQuery = query(
       collection(db, `users/${user.uid}/notifications`),
       orderBy('createdAt', 'desc'),
-      limit(30)
+      limit(50)
     );
 
     const unsubscribe = onSnapshot(
@@ -128,17 +129,17 @@ export default function NotificationsPage() {
               className={cn(
                 "flex items-start gap-4 p-3 rounded-lg transition-colors",
                 notif.link ? 'hover:bg-muted/50' : 'cursor-default',
-                !notif.read && "bg-primary/5"
+                !notif.read && "bg-primary/5 dark:bg-primary/10"
               )}
             >
               <div className="p-2 mt-1 bg-muted rounded-full">
                 <NotificationIcon type={notif.type} />
               </div>
               <div className="flex-1">
-                <p className={cn("text-sm line-clamp-2", !notif.read && "font-semibold text-foreground")}>
+                <p className={cn("text-sm line-clamp-3", !notif.read && "font-semibold text-foreground dark:text-white")}>
                   {notif.text}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground dark:text-slate-400">
                   {notif.createdAt
                     ? formatDistanceToNow(notif.createdAt.toDate(), {
                         locale: fr,
@@ -168,20 +169,21 @@ export default function NotificationsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold">Notifications</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-bold dark:text-white">Notifications</h1>
+        <p className="text-muted-foreground dark:text-slate-400">
           Restez informé des dernières activités.
         </p>
       </header>
 
-      <Card>
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Boîte de réception</CardTitle>
+          <CardTitle className="dark:text-white">Boîte de réception</CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={markAllAsRead}
             disabled={notifications.every((n) => n.read)}
+            className="dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Tout marquer comme lu
           </Button>

@@ -19,9 +19,49 @@ import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { sendEmailVerification } from 'firebase/auth';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, getDoc, limit, orderBy, Timestamp } from 'firebase/firestore';
 import { LanguageSelector } from './language-selector';
 import { useTranslation } from 'react-i18next';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+
+interface Notification {
+  id: string;
+  text: string;
+  createdAt: Timestamp;
+  read: boolean;
+  link?: string;
+  type?: 'success' | 'info' | 'reminder' | 'alert';
+}
+
+const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
+    switch (type) {
+        case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
+        case 'alert': return <ShieldAlert className="h-5 w-5 text-red-500" />;
+        default: return <Bell className="h-5 w-5 text-blue-500" />;
+    }
+}
+
+const NotificationItem = ({ notif }: { notif: Notification }) => {
+  const content = (
+    <div className="flex items-start gap-4 p-3 rounded-lg transition-colors hover:bg-muted/50 cursor-pointer">
+      <div className="p-1 mt-1">
+          <NotificationIcon type={notif.type} />
+      </div>
+       <div className="flex-1">
+          <p className={cn("text-sm", !notif.read && "font-semibold")}>
+            {notif.text}
+          </p>
+          <p className="text-xs text-muted-foreground">
+            {notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
+          </p>
+       </div>
+       {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center" />}
+    </div>
+  );
+
+  return notif.link ? <Link href={notif.link}>{content}</Link> : <div>{content}</div>;
+}
 
 
 const pageTitles: { [key: string]: string } = {
@@ -154,29 +194,48 @@ const BottomNavBar = () => {
 };
 
 const useUnreadNotifications = (userId?: string) => {
+    const [notifications, setNotifications] = useState<Notification[]>([]);
     const [hasUnread, setHasUnread] = useState(false);
     const db = getFirestore();
 
     useEffect(() => {
         if (!userId) {
             setHasUnread(false);
+            setNotifications([]);
             return;
         }
 
-        const q = query(collection(db, `users/${userId}/notifications`), where('read', '==', false));
+        const q = query(
+          collection(db, `users/${userId}/notifications`),
+          orderBy('createdAt', 'desc'),
+          limit(10)
+        );
         
         const unsubscribe = onSnapshot(q, (snapshot) => {
-            setHasUnread(!snapshot.empty);
+            const fetchedNotifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Notification);
+            setNotifications(fetchedNotifs);
+            setHasUnread(fetchedNotifs.some(n => !n.read));
         }, (error) => {
-            console.error("Failed to listen for unread notifications:", error);
-            setHasUnread(false);
+            console.error("Failed to listen for notifications:", error);
         });
 
         return () => unsubscribe();
     }, [userId, db]);
 
-    return hasUnread;
+    const markAllAsRead = async () => {
+      if (!userId || notifications.length === 0) return;
+      const unreadNotifs = notifications.filter(n => !n.read);
+      if (unreadNotifs.length === 0) return;
+      const batch = writeBatch(db);
+      unreadNotifs.forEach(notif => {
+        batch.update(doc(db, `users/${userId}/notifications`, notif.id), { read: true });
+      });
+      await batch.commit();
+    };
+
+    return { notifications, hasUnread, markAllAsRead };
 };
+
 
 const AnnouncementBanner = () => {
     const { t } = useTranslation();
@@ -322,6 +381,62 @@ const SupportButton = () => {
     );
 };
 
+const HeaderNotificationButton = () => {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const { user } = useRole();
+  const { notifications, hasUnread, markAllAsRead } = useUnreadNotifications(user?.uid);
+  
+  if (isMobile) {
+    return (
+      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-card-foreground">
+        <Bell className="h-4 w-4" />
+        {hasUnread && (
+          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+          </span>
+        )}
+        <span className="sr-only">Notifications</span>
+      </Button>
+    )
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative text-card-foreground">
+          <Bell className="h-4 w-4" />
+          {hasUnread && (
+            <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+          )}
+          <span className="sr-only">Notifications</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+          <Card className="border-0">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-base font-semibold">Notifications</CardTitle>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread}>Marquer comme lu</Button>
+            </CardHeader>
+            <CardContent>
+              {notifications.length > 0 ? (
+                <div className="space-y-1">
+                  {notifications.map(n => <NotificationItem key={n.id} notif={n} />)}
+                </div>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground py-8">Aucune notification.</p>
+              )}
+            </CardContent>
+          </Card>
+      </PopoverContent>
+    </Popover>
+  );
+};
+
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading: isRoleLoading, user, isUserLoading, formaAfriqueUser, switchRole } = useRole();
@@ -330,7 +445,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
-  const hasUnreadNotifications = useUnreadNotifications(user?.uid);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -437,16 +551,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </div>
                       <div className="flex items-center gap-2">
                           <LanguageSelector />
-                          <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className={cn("relative", 'text-card-foreground')}>
-                              <Bell className="h-4 w-4" />
-                              {hasUnreadNotifications && (
-                                  <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                                  </span>
-                              )}
-                              <span className="sr-only">Notifications</span>
-                          </Button>
+                          <HeaderNotificationButton />
                       </div>
                   </header>
                 )}
