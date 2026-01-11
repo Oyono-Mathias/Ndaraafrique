@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -108,7 +108,7 @@ export default function PayoutsPage() {
         setUsersLoading(false);
     }
     fetchInstructors();
-  }, [payouts]);
+  }, [payouts, db]);
   
   const filteredPayouts = useMemo(() => {
     return enrichedPayouts.filter(payout => payout.status === activeTab);
@@ -148,14 +148,14 @@ export default function PayoutsPage() {
             </Tabs>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                   <TableHead className="dark:text-slate-400">Instructeur</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">Montant</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Date</TableHead>
-                   <TableHead className="hidden lg:table-cell dark:text-slate-400">Méthode</TableHead>
+                  <TableHead className="dark:text-slate-400">Montant</TableHead>
+                  <TableHead className="dark:text-slate-400">Date</TableHead>
+                   <TableHead className="dark:text-slate-400">Méthode</TableHead>
                   <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -164,9 +164,9 @@ export default function PayoutsPage() {
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i} className="dark:border-slate-700">
                       <TableCell><Skeleton className="h-10 w-40 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-28 dark:bg-slate-700" /></TableCell>
-                       <TableCell className="hidden lg:table-cell"><Skeleton className="h-5 w-20 dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-5 w-28 dark:bg-slate-700" /></TableCell>
+                       <TableCell><Skeleton className="h-5 w-20 dark:bg-slate-700" /></TableCell>
                       <TableCell className="text-right"><div className="flex justify-end gap-2"><Skeleton className="h-8 w-20 dark:bg-slate-700" /><Skeleton className="h-8 w-20 dark:bg-slate-700" /></div></TableCell>
                     </TableRow>
                   ))
@@ -181,15 +181,14 @@ export default function PayoutsPage() {
                           </Avatar>
                           <div>
                             <span className="font-medium dark:text-slate-100">{payout.instructor?.fullName}</span>
-                            <p className="text-xs text-muted-foreground dark:text-slate-400 md:hidden">{formatCurrency(payout.amount)}</p>
                           </div>
                         </div>
                       </TableCell>
-                       <TableCell className="hidden md:table-cell font-mono dark:text-slate-200">{formatCurrency(payout.amount)}</TableCell>
-                       <TableCell className="text-muted-foreground hidden lg:table-cell dark:text-slate-400">
+                       <TableCell className="font-mono dark:text-slate-200">{formatCurrency(payout.amount)}</TableCell>
+                       <TableCell className="text-muted-foreground dark:text-slate-400">
                           {payout.date ? formatDistanceToNow(payout.date.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
                       </TableCell>
-                       <TableCell className="hidden lg:table-cell dark:text-slate-300">{payout.method}</TableCell>
+                       <TableCell className="dark:text-slate-300">{payout.method}</TableCell>
                       <TableCell className="text-right">
                          {payout.status === 'en_attente' ? (
                              <div className="flex justify-end gap-2">
@@ -198,7 +197,7 @@ export default function PayoutsPage() {
                                     Rejeter
                                 </Button>
                                 <Button onClick={() => handleUpdateStatus(payout.id, 'valide')} size="sm" variant="default" disabled={updatingId === payout.id}>
-                                    {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                                    {updatingId === payout.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
                                     Valider
                                 </Button>
                              </div>
@@ -220,6 +219,55 @@ export default function PayoutsPage() {
               </TableBody>
             </Table>
           </div>
+
+          <div className="md:hidden space-y-4">
+             {isLoading ? (
+                [...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full dark:bg-slate-700" />)
+             ) : filteredPayouts.length > 0 ? (
+                filteredPayouts.map((payout) => (
+                    <Card key={payout.id} className="dark:bg-slate-900/50 dark:border-slate-700">
+                        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
+                           <Avatar>
+                                <AvatarImage src={payout.instructor?.profilePictureURL} alt={payout.instructor?.fullName} />
+                                <AvatarFallback>{payout.instructor?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <CardTitle className="text-base dark:text-white">{payout.instructor?.fullName}</CardTitle>
+                                <p className="text-xs text-muted-foreground dark:text-slate-400">{payout.method} • {payout.date ? formatDistanceToNow(payout.date.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}</p>
+                            </div>
+                        </CardHeader>
+                        <CardContent className="text-center">
+                            <p className="text-4xl font-extrabold tracking-tighter dark:text-white">{formatCurrency(payout.amount)}</p>
+                        </CardContent>
+                        {payout.status === 'en_attente' && (
+                             <CardContent className="flex justify-between gap-2">
+                                <Button onClick={() => handleUpdateStatus(payout.id, 'rejete')} variant="destructive" className="flex-1" disabled={updatingId === payout.id}>
+                                    {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
+                                    Rejeter
+                                </Button>
+                                <Button onClick={() => handleUpdateStatus(payout.id, 'valide')} className="flex-1" disabled={updatingId === payout.id}>
+                                    {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                                    Valider
+                                </Button>
+                            </CardContent>
+                        )}
+                         {payout.status !== 'en_attente' && (
+                            <CardContent className="flex justify-center">
+                                {getStatusBadge(payout.status)}
+                            </CardContent>
+                         )}
+                    </Card>
+                ))
+             ) : (
+                <div className="h-48 text-center flex items-center justify-center">
+                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                        <Wallet className="h-12 w-12" />
+                        <p className="font-medium">Aucune demande de retrait</p>
+                    </div>
+                </div>
+             )}
+          </div>
+
         </CardContent>
       </Card>
     </div>

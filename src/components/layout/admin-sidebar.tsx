@@ -36,7 +36,7 @@ const adminMenu = [
     { href: "/admin/moderation", icon: ShieldAlert, text: "Modération", countId: 'pendingCourses' },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
     { href: "/admin/payments", icon: CreditCard, text: "Transactions" },
-    { href: "/admin/payouts", icon: Landmark, text: "Retraits" },
+    { href: "/admin/payouts", icon: Landmark, text: "Retraits", countId: 'pendingPayouts' },
     { href: "/admin/marketing", icon: Sparkles, text: "Marketing IA" },
     { href: "/admin/support", icon: HelpCircle, text: "Support" },
     { href: "/messages", icon: MessageSquare, text: "Messagerie" },
@@ -91,6 +91,12 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
   );
   const { data: pendingCourses } = useCollection(pendingCoursesQuery);
 
+  const pendingPayoutsQuery = useMemoFirebase(() =>
+    query(collection(db, 'payouts'), where('status', '==', 'en_attente')),
+    [db]
+  );
+  const { data: pendingPayouts } = useCollection(pendingPayoutsQuery);
+
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -116,6 +122,7 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
   const counts = {
       pendingInstructors: pendingInstructors?.length || 0,
       pendingCourses: pendingCourses?.length || 0,
+      pendingPayouts: pendingPayouts?.length || 0,
   }
 
   return (
