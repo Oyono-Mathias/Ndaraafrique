@@ -1,19 +1,16 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Users, BookOpen, DollarSign, Activity, ShoppingCart } from "lucide-react";
+import { Users, BookOpen, DollarSign, Activity, ShoppingCart, MessageSquare } from "lucide-react";
 import { getFirestore, collection, query, where, onSnapshot, Timestamp, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
-import { format, startOfMonth } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
-
 
 interface ActivityItem {
     id: string;
@@ -40,14 +37,12 @@ const formatCurrency = (amount: number) => {
   return `${amount.toLocaleString('fr-FR')} XOF`;
 };
 
-
 export function AdminDashboard() {
-  const { t } = useTranslation();
   const [stats, setStats] = useState({
     userCount: 0,
     courseCount: 0,
     monthlyRevenue: 0,
-    totalRevenue: 0,
+    openSupportTickets: 0,
   });
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,38 +54,38 @@ export function AdminDashboard() {
     const unsubs: (() => void)[] = [];
 
     // Listener for total users
-    const usersQuery = query(collection(db, 'users'));
-    unsubs.push(onSnapshot(usersQuery, (snapshot) => {
+    unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
         setStats(prev => ({ ...prev, userCount: snapshot.size }));
     }));
 
     // Listener for published courses
-    const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
-    unsubs.push(onSnapshot(coursesQuery, (snapshot) => {
+    unsubs.push(onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published')), (snapshot) => {
         setStats(prev => ({ ...prev, courseCount: snapshot.size }));
+    }));
+    
+    // Listener for open support tickets
+    unsubs.push(onSnapshot(query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')), (snapshot) => {
+        setStats(prev => ({ ...prev, openSupportTickets: snapshot.size }));
     }));
 
     // Listener for payments to calculate revenue
-    const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'));
-    unsubs.push(onSnapshot(paymentsQuery, (snapshot) => {
-        const startOfCurrentMonth = startOfMonth(new Date());
+    unsubs.push(onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snapshot) => {
+        const startOfCurrentMonth = format(new Date(), 'yyyy-MM');
         let monthlyTotal = 0;
-        let grandTotal = 0;
         
         snapshot.docs.forEach(doc => {
             const payment = doc.data();
-            const amount = payment.amount || 0;
-            grandTotal += amount;
-            if (payment.date && payment.date.toDate() >= startOfCurrentMonth) {
-                monthlyTotal += amount;
+            const paymentDate = payment.date?.toDate ? format(payment.date.toDate(), 'yyyy-MM') : null;
+            if (paymentDate === startOfCurrentMonth) {
+                monthlyTotal += (payment.amount || 0);
             }
         });
         
-        setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal, totalRevenue: grandTotal }));
+        setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
         if(isLoading) setIsLoading(false); // Stop loading after first data fetch
     }));
 
-    // Listener for recent activities
+    // Listener for recent activities (new payments)
     const recentPaymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'), limit(5));
     unsubs.push(onSnapshot(recentPaymentsQuery, async (snapshot) => {
         const paymentDocs = snapshot.docs;
@@ -103,13 +98,13 @@ export function AdminDashboard() {
         const courseIds = [...new Set(paymentDocs.map(doc => doc.data().courseId))].filter(Boolean);
 
         const usersMap = new Map<string, FormaAfriqueUser>();
-        if(userIds.length > 0) {
+        if (userIds.length > 0) {
             const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0,30))));
             usersSnap.forEach(doc => usersMap.set(doc.data().uid, doc.data() as FormaAfriqueUser));
         }
         
         const coursesMap = new Map<string, Course>();
-        if(courseIds.length > 0) {
+        if (courseIds.length > 0) {
             const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0,30))));
             coursesSnap.forEach(doc => coursesMap.set(doc.id, doc.data() as Course));
         }
@@ -130,7 +125,6 @@ export function AdminDashboard() {
         setActivities(newActivities);
     }));
 
-
     return () => {
         unsubs.forEach(unsub => unsub());
     };
@@ -140,36 +134,58 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
-            title={t('totalRevenue')}
-            value={formatCurrency(stats.totalRevenue)} 
-            icon={DollarSign} 
-            isLoading={isLoading}
-            accentColor="border-green-500"
-        />
-        <StatCard 
-            title={t('totalUsers')}
+            title="Total Étudiants"
             value={stats.userCount.toLocaleString('fr-FR')} 
             icon={Users} 
             isLoading={isLoading} 
             accentColor="border-blue-500"
         />
         <StatCard 
-            title={t('publishedCourses')}
+            title="Revenu Mensuel" 
+            value={formatCurrency(stats.monthlyRevenue)} 
+            icon={DollarSign} 
+            isLoading={isLoading} 
+            accentColor="border-green-500"
+        />
+         <StatCard 
+            title="Cours Actifs"
             value={stats.courseCount.toLocaleString('fr-FR')}
             icon={BookOpen} 
             isLoading={isLoading} 
             accentColor="border-purple-500"
         />
         <StatCard 
-            title={t('monthlyRevenue')}
-            value={formatCurrency(stats.monthlyRevenue)}
-            icon={DollarSign} 
+            title="Support en Attente"
+            value={stats.openSupportTickets.toString()}
+            icon={MessageSquare} 
             isLoading={isLoading}
+            accentColor="border-orange-500"
         />
       </section>
       
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Évolution des inscriptions</h2>
+            <Card className="dark:bg-[#1e293b] dark:border-slate-700 h-80 flex items-center justify-center">
+                <CardContent className="pt-6 text-center text-muted-foreground">
+                    <Activity className="h-10 w-10 mx-auto mb-2"/>
+                    <p>Graphique à venir</p>
+                </CardContent>
+            </Card>
+        </div>
+        <div>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Répartition des revenus</h2>
+            <Card className="dark:bg-[#1e293b] dark:border-slate-700 h-80 flex items-center justify-center">
+                 <CardContent className="pt-6 text-center text-muted-foreground">
+                    <DollarSign className="h-10 w-10 mx-auto mb-2"/>
+                    <p>Graphique à venir</p>
+                </CardContent>
+            </Card>
+        </div>
+      </section>
+
       <section>
         <h2 className="text-2xl font-semibold mb-4 dark:text-white">Activités Récentes</h2>
         <Card className="dark:bg-[#1e293b] dark:border-slate-700">

@@ -37,12 +37,8 @@ service cloud.firestore {
 
     // --- Règles pour 'courses' ---
     match /courses/{courseId} {
-      // Tout le monde peut lire un cours individuel
       allow get: if true; 
       
-      // La liste est autorisée si:
-      // 1. C'est une requête de base (pas de filtre complexe)
-      // 2. OU si l'utilisateur est un admin (pour les requêtes de modération/filtrage)
       allow list: if request.query.keys().size() == 0 || isAdmin();
 
       allow create: if isSignedIn() && isApprovedInstructor();
@@ -86,7 +82,8 @@ service cloud.firestore {
     // --- Règles pour 'users' ---
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if true; // Allow user creation on signup
+      allow list: if isAdmin();
+      allow create: if request.auth != null && request.auth.uid == userId;
       allow update: if isOwner(userId) || isAdmin();
 
       match /chatHistory/{messageId} {
@@ -145,7 +142,8 @@ service cloud.firestore {
 
     // --- Règles pour 'support_tickets' ---
     match /support_tickets/{ticketId} {
-      allow read, create: if isSignedIn();
+      allow read, list: if isAdmin() || isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId);
+      allow create: if isSignedIn();
       allow update, delete: if (isSignedIn() && isOwner(resource.data.userId)) || isAdmin();
       
       match /messages/{messageId} {
