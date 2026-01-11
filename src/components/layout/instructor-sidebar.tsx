@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -170,3 +171,4 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
     </div>
   );
 }
+

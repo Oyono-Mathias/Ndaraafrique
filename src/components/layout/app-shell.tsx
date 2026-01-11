@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -478,3 +479,4 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+

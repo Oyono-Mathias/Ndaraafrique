@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -45,3 +46,4 @@ export default function DashboardPage() {
   // Default to student dashboard
   return <StudentDashboard />;
 }
+
