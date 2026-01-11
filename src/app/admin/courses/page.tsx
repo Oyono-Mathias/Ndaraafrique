@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, where } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
+import Image from 'next/image';
 import {
   Table,
   TableBody,
@@ -25,8 +26,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, BookOpen, Eye } from 'lucide-react';
+import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
+import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 
 const getStatusBadgeVariant = (status?: Course['status']) => {
@@ -54,37 +56,113 @@ const CourseActions = ({ course }: { course: Course }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => router.push(`/instructor/courses/edit/${course.id}`)}>
-                    Modifier le cours
-                </DropdownMenuItem>
-                 <DropdownMenuItem onSelect={() => window.open(`/course/${course.id}`, '_blank')}>
+                <DropdownMenuItem onSelect={() => window.open(`/course/${course.id}`, '_blank')}>
                     <Eye className="mr-2 h-4 w-4" />
-                    Aperçu public
+                    Voir la page du cours
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => router.push(`/instructor/courses/edit/${course.id}`)}>
+                    <Edit className="mr-2 h-4 w-4" />
+                    Éditer le cours
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
     );
 };
 
+const CourseCard = ({ course, instructorName }: { course: Course, instructorName: string }) => (
+    <Card className="dark:bg-slate-800 dark:border-slate-700 flex flex-col">
+        <div className="relative aspect-video">
+            <Image
+                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
+                alt={course.title}
+                fill
+                className="object-cover rounded-t-lg"
+            />
+        </div>
+        <CardHeader className="flex-grow">
+            <CardTitle className="text-base line-clamp-2 leading-tight dark:text-white">{course.title}</CardTitle>
+            <CardDescription className="text-xs pt-1 dark:text-slate-400">Par {instructorName}</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col justify-end">
+             <div className="flex justify-between items-center text-xs text-muted-foreground dark:text-slate-400">
+                <span>{course.category}</span>
+                <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize">
+                  {course.status === 'Pending Review' ? 'En révision' : course.status === 'Draft' ? 'Brouillon' : 'Publié'}
+                </Badge>
+            </div>
+            <div className="flex justify-between items-center mt-2 pt-2 border-t dark:border-slate-700">
+                 <p className="font-bold text-lg dark:text-white">
+                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
+                </p>
+                <CourseActions course={course} />
+            </div>
+        </CardContent>
+    </Card>
+);
+
+const CourseRow = ({ course, instructorName }: { course: Course, instructorName: string }) => (
+     <div className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
+        <Image
+            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/160/90`}
+            alt={course.title}
+            width={100}
+            height={56}
+            className="rounded-md aspect-video object-cover"
+        />
+        <div className="flex-1">
+            <p className="font-bold text-sm line-clamp-1 dark:text-white">{course.title}</p>
+            <p className="text-xs text-muted-foreground dark:text-slate-400">Par {instructorName}</p>
+            <div className="flex items-center gap-2 mt-1">
+                 <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize text-xs">
+                  {course.status === 'Pending Review' ? 'En révision' : course.status === 'Draft' ? 'Brouillon' : 'Publié'}
+                </Badge>
+                <p className="font-bold text-xs dark:text-white">
+                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
+                </p>
+            </div>
+        </div>
+        <CourseActions course={course} />
+     </div>
+);
+
+
 export default function AdminCoursesPage() {
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
 
   const coursesQuery = useMemoFirebase(
-    () => {
-        let q = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
-        if (debouncedSearchTerm) {
-            // Firestore doesn't support case-insensitive search natively.
-            // A common workaround is to store a lowercased version of the title.
-            // For now, we'll filter client-side.
-        }
-        return q;
-    },
-    [db] // No need to depend on debouncedSearchTerm for the query itself
+    () => query(collection(db, 'courses'), orderBy('createdAt', 'desc')),
+    [db]
   );
   const { data: courses, isLoading: coursesLoading, error } = useCollection<Course>(coursesQuery);
+
+  useEffect(() => {
+    if (!courses) return;
+
+    const fetchInstructors = async () => {
+        const instructorIds = [...new Set(courses.map(c => c.instructorId))];
+        if (instructorIds.length === 0) return;
+
+        const newIdsToFetch = instructorIds.filter(id => !instructors.has(id));
+        if (newIdsToFetch.length === 0) return;
+
+        const usersQuery = query(collection(db, 'users'), where('uid', 'in', newIdsToFetch.slice(0, 30)));
+        const usersSnap = await getDocs(usersQuery);
+        
+        const newInstructors = new Map(instructors);
+        usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser));
+        setInstructors(newInstructors);
+    };
+    fetchInstructors();
+  }, [courses, db, instructors]);
+
 
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
@@ -98,10 +176,6 @@ export default function AdminCoursesPage() {
   
   if (error) {
       return <div className="text-destructive p-4">Erreur: Impossible de charger les cours. L'index est peut-être manquant.</div>;
-  }
-
-  if (adminUser?.role !== 'admin') {
-    return <div className="p-8 text-center">Accès non autorisé.</div>;
   }
 
   return (
@@ -128,57 +202,38 @@ export default function AdminCoursesPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Titre</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">Statut</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Prix</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            {/* Desktop & Tablet Grid View */}
+            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i} className="dark:border-slate-700">
-                      <TableCell><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-20 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
-                    </TableRow>
-                  ))
+                    [...Array(8)].map((_, i) => <Skeleton key={i} className="h-80 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
-                  filteredCourses.map((course) => (
-                    <TableRow key={course.id} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                      <TableCell className="font-medium dark:text-slate-100">{course.title}</TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize">
-                          {course.status === 'Pending Review' ? 'En révision' : course.status === 'Draft' ? 'Brouillon' : 'Publié'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell font-mono dark:text-slate-300">
-                        {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                          <CourseActions course={course} />
-                      </TableCell>
-                    </TableRow>
-                  ))
+                    filteredCourses.map(course => (
+                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
+                    ))
                 ) : (
-                  <TableRow className="dark:border-slate-700">
-                    <TableCell colSpan={4} className="h-48 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                          <BookOpen className="h-12 w-12" />
-                          <p className="font-medium">Aucun cours trouvé</p>
-                          <p className="text-sm">Il n'y a pas encore de cours sur la plateforme.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                    <div className="col-span-full text-center py-10">
+                        <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
+                        <p className="mt-4 font-medium">Aucun cours trouvé</p>
+                    </div>
                 )}
-              </TableBody>
-            </Table>
-          </div>
+            </div>
+            
+            {/* Mobile List View */}
+            <div className="block md:hidden space-y-2">
+                {isLoading ? (
+                    [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full dark:bg-slate-700"/>)
+                ) : filteredCourses.length > 0 ? (
+                     filteredCourses.map(course => (
+                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
+                    ))
+                ) : (
+                    <div className="col-span-full text-center py-10">
+                        <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
+                        <p className="mt-4 font-medium">Aucun cours trouvé</p>
+                    </div>
+                )}
+            </div>
+
         </CardContent>
       </Card>
     </div>
