@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -20,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Tag, Speaker, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 const marketingFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Veuillez entrer une instruction d\'au moins 10 caractères.' }),
@@ -37,6 +39,7 @@ interface PromoCode {
 }
 
 export default function AdminMarketingPage() {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
@@ -56,15 +59,15 @@ export default function AdminMarketingPage() {
       const result = await generatePromoCode(data);
       setAiResponse(result.response);
       toast({
-        title: "Action IA terminée !",
-        description: "L'assistant a traité votre demande.",
+        title: t('aiTaskComplete'),
+        description: t('aiRequestProcessed'),
       });
     } catch (error) {
       console.error("AI Marketing Error:", error);
       toast({
         variant: 'destructive',
-        title: 'Erreur de l\'IA',
-        description: "Impossible de traiter la demande. Vérifiez votre clé API ou réessayer.",
+        title: t('aiErrorTitle'),
+        description: t('aiRequestError'),
       });
     } finally {
       setIsAiLoading(false);
@@ -75,27 +78,25 @@ export default function AdminMarketingPage() {
     const codeRef = doc(db, 'promoCodes', code.id);
     try {
         await updateDoc(codeRef, { isActive: !code.isActive });
-        toast({ title: `Code ${code.code} ${!code.isActive ? 'activé' : 'désactivé'}` });
+        toast({ title: `Code ${code.code} ${!code.isActive ? t('activated') : t('deactivated')}` });
     } catch(err) {
         console.error("Failed to toggle promo code:", err);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le code promo.' });
+        toast({ variant: 'destructive', title: t('errorTitle'), description: t('promoUpdateError') });
     }
   };
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Marketing & Promotions</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Générez des annonces et des codes promo avec l'assistant IA Mathias.</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('marketingTitle')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('marketingDescription')}</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white flex items-center gap-2"><Sparkles className="text-amber-400 h-5 w-5"/> Assistant Marketing IA</CardTitle>
+          <CardTitle className="dark:text-white flex items-center gap-2"><Sparkles className="text-amber-400 h-5 w-5"/> {t('mkt_assistant')}</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            Utilisez des instructions en langage naturel pour vos tâches marketing. Exemples : <br/>
-            - "Crée un code de bienvenue de 25% nommé BIENVENUE25" <br/>
-            - "Rédige une annonce pour la promotion du weekend"
+            {t('mktExamples')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,7 +109,7 @@ export default function AdminMarketingPage() {
                   <FormItem>
                     <FormControl>
                       <Input
-                        placeholder="Votre instruction pour Mathias..."
+                        placeholder={t('prompt_label')}
                         className="dark:bg-slate-700 dark:border-slate-600"
                         {...field}
                       />
@@ -119,7 +120,7 @@ export default function AdminMarketingPage() {
               />
               <Button type="submit" disabled={isAiLoading}>
                 {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                Générer
+                {t('generate_btn')}
               </Button>
             </form>
           </Form>
@@ -127,7 +128,7 @@ export default function AdminMarketingPage() {
           {isAiLoading && (
              <div className="mt-6 p-4 rounded-lg bg-muted dark:bg-slate-700/50 flex items-center gap-3 animate-pulse">
                 <Speaker className="h-5 w-5 text-muted-foreground"/>
-                <p className="text-sm text-muted-foreground">Mathias est en train d'écrire...</p>
+                <p className="text-sm text-muted-foreground">{t('aiWriting')}</p>
             </div>
           )}
           {aiResponse && (
@@ -140,22 +141,22 @@ export default function AdminMarketingPage() {
       
        <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white flex items-center gap-2"><Tag className="h-5 w-5"/> Codes Promo Existants</CardTitle>
+          <CardTitle className="dark:text-white flex items-center gap-2"><Tag className="h-5 w-5"/> {t('existingPromoCodes')}</CardTitle>
         </CardHeader>
         <CardContent>
            {codesError && (
                 <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
-                    <p>Erreur de chargement des codes promo. Un index est peut-être manquant.</p>
+                    <p>{t('promoLoadError')}</p>
                 </div>
             )}
             <Table>
                 <TableHeader>
                     <TableRow className="dark:border-slate-700">
-                        <TableHead className="dark:text-slate-400">Code</TableHead>
-                        <TableHead className="dark:text-slate-400">Réduction</TableHead>
-                        <TableHead className="dark:text-slate-400">Expiration</TableHead>
-                        <TableHead className="text-right dark:text-slate-400">Actif</TableHead>
+                        <TableHead className="dark:text-slate-400">{t('code')}</TableHead>
+                        <TableHead className="dark:text-slate-400">{t('discount')}</TableHead>
+                        <TableHead className="dark:text-slate-400">{t('expiration')}</TableHead>
+                        <TableHead className="text-right dark:text-slate-400">{t('active')}</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -174,7 +175,7 @@ export default function AdminMarketingPage() {
                                 <TableCell className="font-mono font-semibold dark:text-slate-100">{code.code}</TableCell>
                                 <TableCell className="font-medium dark:text-slate-300">{code.discountPercentage}%</TableCell>
                                 <TableCell className="text-muted-foreground dark:text-slate-400">
-                                    {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'Jamais'}
+                                    {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : t('never')}
                                 </TableCell>
                                 <TableCell className="text-right">
                                     <Switch
@@ -187,7 +188,7 @@ export default function AdminMarketingPage() {
                     ) : (
                          <TableRow className="dark:border-slate-700">
                             <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-500">
-                                Aucun code promo n'a encore été créé.
+                                {t('noPromoCodes')}
                             </TableCell>
                         </TableRow>
                     )}
