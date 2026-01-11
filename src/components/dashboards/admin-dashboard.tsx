@@ -140,11 +140,6 @@ export function AdminDashboard() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('dashboardTitle')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Vue d'ensemble de la plateforme FormaAfrique.</p>
-      </header>
-
       <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
             title={t('totalRevenue')}
