@@ -322,7 +322,7 @@
         },
         "status": {
           "type": "string",
-          "description": "Status of the payment (e.g., Completed, Pending, Failed)."
+          "description": "Status of the payment (e.g., Completed, Pending, Failed, Refunded)."
         }
       },
       "required": [
@@ -472,7 +472,8 @@
         "courseId": { "type": "string", "description": "Reference to the course this ticket is about." },
         "subject": { "type": "string", "description": "The subject of the support question." },
         "lastMessage": { "type": "string", "description": "A snippet of the last message for preview." },
-        "status": { "type": "string", "enum": ["open", "closed"] },
+        "category": { "type": "string", "enum": ["Paiement", "Technique", "Pédagogique"], "description": "Category of the support request."},
+        "status": { "type": "string", "enum": ["ouvert", "fermé"], "description": "Status of the ticket."},
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
@@ -692,3 +693,5 @@
     }
   }
 }
+
+    

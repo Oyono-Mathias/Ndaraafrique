@@ -120,7 +120,7 @@ service cloud.firestore {
           isOwner(resource.data.instructorId) ||
           isAdmin()
         );
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || isOwner(resource.data.studentId);
     }
 
     // --- Règles pour 'reviews' ---
@@ -155,12 +155,7 @@ service cloud.firestore {
     // --- Règles pour 'support_tickets' ---
     match /support_tickets/{ticketId} {
       allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
-      allow list: if isSignedIn() && (
-                    (request.query.where.size() > 0 &&
-                     (('userId' in request.query.where && request.query.where.userId == request.auth.uid) ||
-                      ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)))
-                    || isAdmin()
-                  );
+      allow list: if isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
       allow delete: if isAdmin();
@@ -205,3 +200,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
