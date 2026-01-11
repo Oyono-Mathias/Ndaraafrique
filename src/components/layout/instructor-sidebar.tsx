@@ -34,7 +34,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const pathname = usePathname();
   const { formaAfriqueUser } = useRole();
   const { toast } = useToast();
-  const isActive = pathname.startsWith(href) && href !== '/dashboard' || pathname === href;
+  const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
   const isAllowedPath = (path: string) => {
     // Allow dashboard and account pages for all instructors

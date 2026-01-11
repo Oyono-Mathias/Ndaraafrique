@@ -44,13 +44,14 @@ const adminMenu = [
 ];
 
 
-const SidebarItem = ({ href, icon: Icon, label, count }: { href: string, icon: React.ElementType, label: string, count?: number }) => {
+const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
   const isActive = (href === '/admin' && pathname === href) || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
@@ -73,7 +74,7 @@ const SidebarItem = ({ href, icon: Icon, label, count }: { href: string, icon: R
 };
 
 
-export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl?: string }) {
+export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const { switchRole } = useRole();
   const db = getFirestore();
 
@@ -130,6 +131,7 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
                 icon={item.icon} 
                 label={item.text}
                 count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
+                onClick={onLinkClick}
             />
           ))}
       </nav>

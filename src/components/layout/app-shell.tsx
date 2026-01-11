@@ -12,7 +12,7 @@ import { AdminSidebar } from './admin-sidebar';
 import { Footer } from './footer';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
-import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Wrench, Loader2, HelpCircle, Mail } from 'lucide-react';
+import { ShieldAlert, Bell, PanelLeft, Star, Search, Play, Heart, User, X, Megaphone, MessageSquare, Wrench, Loader2, HelpCircle, Mail, CheckCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
 import { cn } from '@/lib/utils';
@@ -24,6 +24,7 @@ import { LanguageSelector } from './language-selector';
 import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { UserNav } from './user-nav';
 
 interface Notification {
   id: string;
@@ -56,7 +57,7 @@ const NotificationItem = ({ notif }: { notif: Notification }) => {
             {notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
           </p>
        </div>
-       {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center" />}
+       {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}
     </div>
   );
 
@@ -513,7 +514,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <main className="h-screen w-screen">{children}</main>;
   }
 
-  const showHeader = !isChatPage && !isFullScreenPage && role === 'student';
+  const showHeader = !isChatPage && !isFullScreenPage;
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
@@ -527,16 +528,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                  {showHeader && (
                   <header className={cn(
                       "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
-                      'bg-card border-border'
+                      isInstructorDashboard ? 'bg-[#1e293b] border-slate-700' : 'bg-card border-border'
                   )}>
                       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>
-                          <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", 'text-foreground')}>
+                          <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", isInstructorDashboard ? 'text-white' : 'text-foreground')}>
                             <PanelLeft />
                             <span className="sr-only">Toggle Menu</span>
                           </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className={cn("p-0 w-64")}>
+                        <SheetContent side="left" className={cn("p-0 w-64", isInstructorDashboard && 'bg-[#1e293b] border-r-slate-700')}>
                            <SheetHeader>
                             <SheetTitle className="sr-only">Menu principal</SheetTitle>
                             <SheetDescription className="sr-only">Navigation pour le profil utilisateur.</SheetDescription>
@@ -545,13 +546,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </SheetContent>
                       </Sheet>
                       <div className="flex-1">
-                          <h1 className={cn("text-lg font-semibold md:text-xl", 'text-card-foreground')}>
+                          <h1 className={cn("text-lg font-semibold md:text-xl", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
                               {getPageTitle(pathname)}
                           </h1>
                       </div>
                       <div className="flex items-center gap-2">
                           <LanguageSelector />
                           <HeaderNotificationButton />
+                          <UserNav />
                       </div>
                   </header>
                 )}
