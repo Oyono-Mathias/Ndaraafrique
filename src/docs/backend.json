@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -728,6 +727,47 @@
     "/admin_notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/AdminNotification" },
       "description": "A collection for storing system-wide notifications for administrators."
+    },
+    "/settings/global": {
+      "schema": {
+        "title": "Settings",
+        "type": "object",
+        "properties": {
+            "general": {
+                "type": "object",
+                "properties": {
+                    "siteName": { "type": "string" },
+                    "logoUrl": { "type": "string", "format": "uri" },
+                    "loginBackgroundImage": { "type": "string", "format": "uri" },
+                    "contactEmail": { "type": "string", "format": "email" },
+                    "supportPhone": { "type": "string" }
+                }
+            },
+            "commercial": {
+                "type": "object",
+                "properties": {
+                    "platformCommission": { "type": "number" },
+                    "featuredCourseId": { "type": "string" }
+                }
+            },
+            "platform": {
+                "type": "object",
+                "properties": {
+                    "announcementMessage": { "type": "string" },
+                    "maintenanceMode": { "type": "boolean" },
+                    "allowInstructorSignup": { "type": "boolean" }
+                }
+            },
+            "legal": {
+                "type": "object",
+                "properties": {
+                    "termsOfService": { "type": "string" },
+                    "privacyPolicy": { "type": "string" }
+                }
+            }
+        }
+      },
+      "description": "Stores global configuration for the entire application."
     }
   }
 }
