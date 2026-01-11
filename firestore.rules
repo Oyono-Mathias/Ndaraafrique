@@ -121,11 +121,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isStudentEnrolled(request.resource.data.courseId);
       allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId)); 
-      allow list: if isSignedIn() && 
-                   request.query.where.size() > 0 && (
-                     ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid) ||
-                     ('courseId' in request.query.where)
-                   );
+      allow list: if true;
     }
 
      // --- Règles pour 'payments' ---

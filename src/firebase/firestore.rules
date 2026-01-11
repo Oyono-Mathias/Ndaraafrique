@@ -14,10 +14,12 @@ service cloud.firestore {
     }
 
     function getUserData(userId) {
+      // Allow reading user data only if signed in.
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
     function isAdmin() {
+      // Check if the user is signed in and their role in the DB is 'admin'.
       return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
     }
     
@@ -37,9 +39,14 @@ service cloud.firestore {
 
     // --- Règles pour 'users' ---
     match /users/{userId} {
+      allow list: if isAdmin();
       allow read: if isSignedIn();
-      allow create: if true; // Allow user creation on signup
-      allow update: if isOwner(userId) || isAdmin();
+      allow create: if request.auth != null && request.auth.uid == userId;
+      
+      // Update logic:
+      // - Admins can update anything.
+      // - Owners can update their profile, BUT NOT their own 'role' or 'isInstructorApproved' status.
+      allow update: if isAdmin() || (isOwner(userId) && !(request.resource.data.keys().hasAny(['role', 'isInstructorApproved'])));
 
       match /chatHistory/{messageId} {
         allow read, write: if isOwner(userId);
@@ -57,9 +64,14 @@ service cloud.firestore {
     // --- Règles pour 'courses' ---
     match /courses/{courseId} {
       allow get: if true;
-      allow list: if true; // Allow anyone to list courses for the catalog
+      allow list: if true;
       allow create: if isSignedIn() && isApprovedInstructor();
-      allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
+      
+      // Update Logic:
+      // - Admins can update anything.
+      // - The course owner can update, but cannot change the 'status' to 'Published' themselves.
+      //   They can only set it to 'Pending Review' or 'Draft'.
+      allow update: if isAdmin() || (isCourseOwner(courseId) && request.resource.data.status != 'Published');
       
        match /sections/{sectionId} {
         allow read: if true;
@@ -72,37 +84,33 @@ service cloud.firestore {
         }
       }
       
-      // --- Règles pour les devoirs (Assignments) ---
       match /assignments/{assignmentId} {
-        allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
-        allow create, update, delete: if isCourseOwner(courseId) || isAdmin();
+        allow read: if isSignedIn() && (isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin());
+        allow create, update, delete: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
         
-        // --- Règles pour les soumissions (Submissions) ---
         match /submissions/{submissionId} {
-            allow get: if isCourseOwner(courseId) || isOwner(resource.data.userId);
-            allow list: if isCourseOwner(courseId);
-            allow create: if isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
-            allow update: if isCourseOwner(courseId);
+            allow get: if isSignedIn() && (isCourseOwner(courseId) || isOwner(resource.data.userId));
+            allow list: if isSignedIn() && isCourseOwner(courseId);
+            allow create: if isSignedIn() && isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
+            allow update: if isSignedIn() && isCourseOwner(courseId);
         }
       }
 
-      // --- Règles pour les Quiz ---
       match /quizzes/{quizId} {
-        allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
-        allow create, update, delete: if isCourseOwner(courseId) || isAdmin();
+        allow read: if isSignedIn() && (isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin());
+        allow create, update, delete: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
         
-        // --- Règles pour les tentatives (Attempts) ---
         match /attempts/{attemptId} {
-            allow get: if isCourseOwner(courseId) || isOwner(resource.data.userId);
-            allow list: if isCourseOwner(courseId);
-            allow create: if isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
+            allow get: if isSignedIn() && (isCourseOwner(courseId) || isOwner(resource.data.userId));
+            allow list: if isSignedIn() && isCourseOwner(courseId);
+            allow create: if isSignedIn() && isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
         }
       }
     }
 
     // --- Règles pour 'enrollments' ---
     match /enrollments/{enrollmentId} {
-        allow read: if isSignedIn(); 
+        allow read: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin());
         allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
         allow list: if isSignedIn() && 
                     (request.query.where.size() > 0 &&
@@ -113,14 +121,15 @@ service cloud.firestore {
           isOwner(resource.data.instructorId) ||
           isAdmin()
         );
-        allow delete: if isAdmin();
+        allow delete: if isAdmin() || isOwner(resource.data.studentId);
     }
 
     // --- Règles pour 'reviews' ---
-     match /reviews/{reviewId} {
+    match /reviews/{reviewId} {
       allow read: if true;
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isStudentEnrolled(request.resource.data.courseId);
       allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId)); 
+      allow list: if true;
     }
 
      // --- Règles pour 'payments' ---
@@ -134,7 +143,7 @@ service cloud.firestore {
     
     // --- Règles pour 'payouts' ---
     match /payouts/{payoutId} {
-      allow create: if isSignedIn() && request.resource.data.instructorId == request.auth.uid;
+      allow create: if isSignedIn() && isApprovedInstructor() && request.resource.data.instructorId == request.auth.uid;
       allow read: if (isSignedIn() && isOwner(resource.data.instructorId)) || isAdmin();
       allow list: if isAdmin();
       allow update, delete: if isAdmin();
@@ -143,11 +152,7 @@ service cloud.firestore {
     // --- Règles pour 'support_tickets' ---
     match /support_tickets/{ticketId} {
       allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
-      allow list: if isSignedIn() &&
-                    (request.query.where.size() > 0 &&
-                     (('userId' in request.query.where && request.query.where.userId == request.auth.uid) ||
-                      ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid) ||
-                      isAdmin()));
+      allow list: if isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
       allow delete: if isAdmin();
@@ -155,25 +160,21 @@ service cloud.firestore {
       match /messages/{messageId} {
         allow read, write: if isSignedIn() && (
           isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId) ||
-          isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.instructorId)
+          isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.instructorId) || isAdmin()
         );
       }
     }
     
     // --- Règles pour les ressources ---
     match /resources/{resourceId} {
-      // Un instructeur peut créer une ressource pour son cours.
       allow create: if isApprovedInstructor() && isCourseOwner(request.resource.data.courseId);
-      // Un étudiant inscrit, le propriétaire du cours ou un admin peut lire.
       allow read: if (isStudentEnrolled(resource.data.courseId)) || isCourseOwner(resource.data.courseId) || isAdmin();
-      // Le propriétaire du cours ou un admin peut mettre à jour/supprimer.
       allow update, delete: if isCourseOwner(resource.data.courseId) || isAdmin();
-       // Une requête de liste doit être filtrée par courseId pour que la lecture soit permise.
       allow list: if isSignedIn() && request.query.keys().hasAny(['courseId']);
     }
 
 
-    // --- Règles pour 'chats' (CORRIGÉES) ---
+    // --- Règles pour 'chats' ---
     match /chats/{chatId} {
       allow create: if isSignedIn();
       allow read, update: if isSignedIn() && request.auth.uid in resource.data.participants;
@@ -182,10 +183,17 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
       }
     }
+    
      // --- Règles pour la configuration globale ---
     match /settings/{docId} {
-      allow read: if isSignedIn();
+      allow read: if true;
       allow write: if isAdmin();
+    }
+    
+    // Admin catch-all for any other collection (use with caution)
+    match /{path=**} {
+       // Admins have full access to everything else
+      allow read, write: if isAdmin();
     }
   }
 }
