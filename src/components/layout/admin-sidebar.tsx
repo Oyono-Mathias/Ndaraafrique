@@ -26,12 +26,15 @@ import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
+import { useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where, getFirestore } from "firebase/firestore";
+import { Badge } from "../ui/badge";
 
 const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
     { href: "/admin/users", icon: Users, text: "Utilisateurs" },
-    { href: "/admin/instructors", icon: UserCheck, text: "Candidatures" },
-    { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
+    { href: "/admin/instructors", icon: UserCheck, text: "Candidatures", countId: 'pendingInstructors' },
+    { href: "/admin/moderation", icon: ShieldAlert, text: "Modération", countId: 'pendingCourses' },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
     { href: "/admin/payments", icon: CreditCard, text: "Transactions" },
     { href: "/admin/payouts", icon: Landmark, text: "Retraits" },
@@ -42,7 +45,7 @@ const adminMenu = [
 ];
 
 
-const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
+const SidebarItem = ({ href, icon: Icon, label, count }: { href: string, icon: React.ElementType, label: string, count?: number }) => {
   const pathname = usePathname();
   const isActive = (href === '/admin' && pathname === href) || (href !== '/admin' && pathname.startsWith(href));
 
@@ -50,17 +53,22 @@ const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.El
     <Link
       href={href}
       className={cn(
-        "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
+        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
           ? 'bg-primary text-primary-foreground shadow-md'
           : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
       )}
     >
-      <Icon className={cn(
-        "w-5 h-5 mr-4",
-        isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'
-      )} />
-      <span className="font-medium text-sm">{label}</span>
+        <div className="flex items-center">
+            <Icon className={cn(
+                "w-5 h-5 mr-4",
+                isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'
+            )} />
+            <span className="font-medium text-sm">{label}</span>
+        </div>
+        {count !== undefined && count > 0 && (
+            <Badge className="bg-red-500 text-white h-5 px-2 text-xs">{count}</Badge>
+        )}
     </Link>
   );
 };
@@ -70,6 +78,20 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
   const router = useRouter();
   const { toast } = useToast();
   const { switchRole } = useRole();
+  const db = getFirestore();
+
+  const pendingInstructorsQuery = useMemoFirebase(() => 
+    query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)),
+    [db]
+  );
+  const { data: pendingInstructors } = useCollection(pendingInstructorsQuery);
+
+  const pendingCoursesQuery = useMemoFirebase(() =>
+    query(collection(db, 'courses'), where('status', '==', 'Pending Review')),
+    [db]
+  );
+  const { data: pendingCourses } = useCollection(pendingCoursesQuery);
+
 
   const handleLogout = async () => {
     const auth = getAuth();
@@ -91,6 +113,11 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
         window.location.assign('/dashboard');
     }
   }
+  
+  const counts = {
+      pendingInstructors: pendingInstructors?.length || 0,
+      pendingCourses: pendingCourses?.length || 0,
+  }
 
   return (
     <div className="w-full h-full flex flex-col">
@@ -103,7 +130,13 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
 
       <nav className="flex-1 py-2 overflow-y-auto">
           {adminMenu.map((item) => (
-            <SidebarItem key={item.href} href={item.href} icon={item.icon} label={item.text} />
+            <SidebarItem 
+                key={item.href} 
+                href={item.href} 
+                icon={item.icon} 
+                label={item.text}
+                count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
+            />
           ))}
       </nav>
 

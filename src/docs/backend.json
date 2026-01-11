@@ -54,6 +54,24 @@
           "type": "boolean",
           "description": "Indicates whether the instructor's account has been approved by an admin."
         },
+        "instructorApplication": {
+            "type": "object",
+            "description": "Stores the application data for users who want to become instructors.",
+            "properties": {
+                "specialty": { "type": "string" },
+                "whatsappNumber": { "type": "string" },
+                "youtubeUrl": { "type": "string", "format": "uri" },
+                "facebookUrl": { "type": "string", "format": "uri" },
+                "presentationVideoUrl": { "type": "string", "format": "uri" },
+                "professionalExperience": { "type": "string" },
+                "linkedinUrl": { "type": "string", "format": "uri" },
+                "portfolioUrl": { "type": "string", "format": "uri" },
+                "firstCourseTitle": { "type": "string" },
+                "firstCourseDescription": { "type": "string" },
+                "hasEquipment": { "type": "boolean" },
+                "submittedAt": { "type": "string", "format": "date-time" }
+            }
+        },
         "payoutMethod": {
             "type": "object",
             "description": "Configuration for instructor payouts.",
@@ -602,6 +620,22 @@
         }
       },
       "required": ["code", "discountPercentage", "isActive"]
+    },
+    "AdminNotification": {
+      "title": "Admin Notification",
+      "type": "object",
+      "description": "Represents a system notification for administrators.",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["new_instructor_application", "new_support_ticket", "new_course_for_review"]
+        },
+        "message": { "type": "string" },
+        "link": { "type": "string", "format": "uri" },
+        "isRead": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["type", "message", "isRead", "createdAt"]
     }
   },
   "auth": {
@@ -690,8 +724,10 @@
     "/promoCodes/{codeId}": {
       "schema": { "$ref": "#/entities/PromoCode" },
       "description": "Stores promotional codes for discounts."
+    },
+    "/admin_notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/AdminNotification" },
+      "description": "A collection for storing system-wide notifications for administrators."
     }
   }
 }
-
-    

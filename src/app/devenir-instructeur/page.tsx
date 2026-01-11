@@ -20,6 +20,7 @@ import PhoneInput from 'react-phone-number-input/react-hook-form-input';
 import 'react-phone-number-input/style.css';
 import { africanCountries } from '@/lib/countries';
 import { Checkbox } from '@/components/ui/checkbox';
+import { sendNewInstructorApplicationEmail } from '@/lib/emails';
 
 
 const instructorApplicationSchema = z.object({
@@ -73,6 +74,14 @@ export default function BecomeInstructorPage() {
         isInstructorApproved: false,
         instructorApplication: { ...data, submittedAt: serverTimestamp() }
       });
+      
+      // Send email notification to admin
+      await sendNewInstructorApplicationEmail({
+        applicantName: formaAfriqueUser.fullName,
+        applicantEmail: formaAfriqueUser.email,
+        specialty: data.specialty
+      });
+
       toast({
         duration: 10000,
         title: 'Candidature envoyée avec succès !',

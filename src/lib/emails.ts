@@ -87,3 +87,33 @@ export const sendEnrollmentEmails = async (student: FormaAfriqueUser, course: Co
         html: instructorHtml,
     });
 };
+
+const getNewInstructorApplicationEmailTemplate = ({ applicantName, applicantEmail, specialty }: { applicantName: string; applicantEmail: string; specialty: string }): string => {
+    const adminUrl = 'https://formaafrique-app.web.app/admin/instructors';
+    return `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+            <h1 style="color: #2563eb;">Nouvelle Candidature d'Instructeur</h1>
+            <p>Une nouvelle personne a postulé pour devenir instructeur sur FormaAfrique.</p>
+            <ul>
+                <li><strong>Nom :</strong> ${applicantName}</li>
+                <li><strong>Email :</strong> ${applicantEmail}</li>
+                <li><strong>Spécialité :</strong> ${specialty}</li>
+            </ul>
+            <p>Veuillez examiner la candidature dès que possible dans votre panneau d'administration.</p>
+            <a href="${adminUrl}" style="background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Voir les candidatures</a>
+        </div>
+    `;
+}
+
+export const sendNewInstructorApplicationEmail = async ({ applicantName, applicantEmail, specialty }: { applicantName: string; applicantEmail: string; specialty: string }) => {
+    // In a real app, this would be a specific admin email from environment variables
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'oyonomathias@gmail.com';
+
+    const html = getNewInstructorApplicationEmailTemplate({ applicantName, applicantEmail, specialty });
+
+    await sendEmail({
+        to: adminEmail,
+        subject: `[FormaAfrique] Nouvelle Candidature d'Instructeur : ${applicantName}`,
+        html,
+    });
+};
