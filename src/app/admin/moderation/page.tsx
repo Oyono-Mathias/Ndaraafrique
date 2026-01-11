@@ -33,6 +33,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Eye, CheckCircle, Clock, ShieldAlert, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
+import { useTranslation } from 'react-i18next';
 
 
 export default function AdminModerationPage() {
@@ -40,6 +41,7 @@ export default function AdminModerationPage() {
   const db = getFirestore();
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const coursesQuery = useMemoFirebase(
     () => query(collection(db, 'courses'), where('status', '==', 'Pending Review'), orderBy('updatedAt', 'desc')),
@@ -57,7 +59,7 @@ export default function AdminModerationPage() {
             status: 'Published',
             publishedAt: new Date(),
         });
-        toast({ title: 'Cours Approuvé', description: 'Le cours est maintenant publié et visible sur la plateforme.' });
+        toast({ title: t('courseApprovedTitle'), description: t('courseApprovedMessage') });
     } catch (error) {
         console.error("Error approving course:", error);
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'approuver le cours.' });
@@ -74,15 +76,15 @@ export default function AdminModerationPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Modération de Contenu</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Examinez et approuvez les nouveaux cours soumis par les instructeurs.</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('moderationTitle')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('moderationDescription')}</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white">Cours en attente de validation</CardTitle>
+          <CardTitle className="dark:text-white">{t('pendingCoursesTitle')}</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            Ces cours ont été soumis par des instructeurs et nécessitent votre approbation avant d'être publiés.
+            {t('pendingCoursesDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -90,10 +92,10 @@ export default function AdminModerationPage() {
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Titre du Cours</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">Soumis le</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Statut</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('courseTitle')}</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">{t('submittedDate')}</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">{t('status')}</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -116,17 +118,17 @@ export default function AdminModerationPage() {
                        <TableCell className="hidden lg:table-cell">
                           <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
                             <Clock className="mr-1.5 h-3 w-3"/>
-                            En attente
+                            {t('pendingStatus')}
                           </Badge>
                       </TableCell>
                       <TableCell className="text-right">
                          <div className="flex justify-end gap-2">
                             <Button asChild variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600">
-                                <Link href={`/course/${course.id}`} target="_blank"><Eye className="mr-2 h-4 w-4"/>Aperçu</Link>
+                                <Link href={`/course/${course.id}`} target="_blank"><Eye className="mr-2 h-4 w-4"/>{t('preview')}</Link>
                             </Button>
                              <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" disabled={updatingId === course.id}>
                                 {updatingId === course.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
-                                Approuver
+                                {t('approve')}
                             </Button>
                          </div>
                       </TableCell>
@@ -137,8 +139,8 @@ export default function AdminModerationPage() {
                     <TableCell colSpan={4} className="h-48 text-center">
                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <ShieldAlert className="h-12 w-12" />
-                          <p className="font-medium">Aucun cours en attente</p>
-                          <p className="text-sm">Tous les cours soumis ont été traités.</p>
+                          <p className="font-medium">{t('noPendingCoursesTitle')}</p>
+                          <p className="text-sm">{t('noPendingCoursesMessage')}</p>
                       </div>
                     </TableCell>
                   </TableRow>
