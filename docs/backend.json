@@ -583,18 +583,6 @@
       },
       "required": ["resourceId", "courseId", "instructorId", "title", "type", "url", "createdAt"]
     },
-    "Notification": {
-      "title": "Notification",
-      "type": "object",
-      "description": "Represents a notification for a user.",
-      "properties": {
-        "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "read": { "type": "boolean" },
-        "link": { "type": "string", "format": "uri" }
-      },
-      "required": ["text", "createdAt", "read"]
-    },
     "PromoCode": {
       "title": "Promo Code",
       "type": "object",

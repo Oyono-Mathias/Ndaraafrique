@@ -16,7 +16,8 @@ import {
   getFirestore,
   where,
   getDocs,
-  deleteDoc
+  deleteDoc,
+  writeBatch
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
