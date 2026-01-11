@@ -7,7 +7,6 @@ import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,7 +16,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import TicketDetailsPage from './[ticketId]/page';
 
 interface SupportTicket {
@@ -44,7 +43,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string; valu
   </Card>
 );
 
-const TicketListItem = ({ ticket, isActive, onClick }: { ticket: SupportTicket, isActive: boolean, onClick: (id: string) => void }) => {
+const TicketListItem = ({ ticket, isActive }: { ticket: SupportTicket, isActive: boolean }) => {
     const [lastActivity, setLastActivity] = useState('');
 
     useEffect(() => {
@@ -54,7 +53,7 @@ const TicketListItem = ({ ticket, isActive, onClick }: { ticket: SupportTicket, 
     }, [ticket.updatedAt]);
     
     return (
-    <button onClick={() => onClick(ticket.id)} className={cn("w-full text-left block p-4 rounded-2xl cursor-pointer transition-colors", isActive ? "bg-primary/10" : "hover:bg-slate-100 dark:hover:bg-slate-800")}>
+    <Link href={`/admin/support/${ticket.id}`} className={cn("w-full text-left block p-4 rounded-2xl cursor-pointer transition-colors", isActive ? "bg-primary/10" : "hover:bg-slate-100 dark:hover:bg-slate-800")}>
         <div className="flex justify-between items-start">
             <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8">
@@ -70,18 +69,19 @@ const TicketListItem = ({ ticket, isActive, onClick }: { ticket: SupportTicket, 
         </div>
         <p className="text-xs text-slate-400 mt-2 pl-11 line-clamp-1">{ticket.lastMessage}</p>
         <p className="text-[11px] text-slate-400 mt-1 pl-11">{lastActivity}</p>
-    </button>
+    </Link>
 );}
 
 
 export default function AdminSupportPage() {
     const db = getFirestore();
-    const router = useRouter();
     const isMobile = useIsMobile();
+    const pathname = usePathname();
+    const activeTicketId = isMobile ? null : pathname.split('/').pop();
     
-    const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Correct query for admin: fetch ALL tickets
     const ticketsQuery = useMemoFirebase(() => query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc')), [db]);
     const { data: rawTickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
 
@@ -96,6 +96,7 @@ export default function AdminSupportPage() {
               setTickets(rawTickets);
               return;
           }
+          // Batch fetch user details
           const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30))));
           const usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data()]));
           
@@ -108,18 +109,14 @@ export default function AdminSupportPage() {
               }
           });
           setTickets(populated);
-
-          if (!isMobile && !activeTicketId && populated.length > 0) {
-              setActiveTicketId(populated[0].id);
-          }
       };
 
       populateTickets();
 
-    }, [rawTickets, db, isMobile, activeTicketId]);
+    }, [rawTickets, db]);
 
     const openTicketsCount = useMemo(() => tickets?.filter(t => t.status === 'open').length || 0, [tickets]);
-    const averageResponseTime = "3h 15m";
+    const averageResponseTime = "3h 15m"; // This would require more complex logic in a real app
 
     const filteredTickets = useMemo(() => {
         if (!tickets) return [];
@@ -128,14 +125,6 @@ export default function AdminSupportPage() {
             t.userName?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [tickets, searchTerm]);
-    
-    const handleTicketClick = (id: string) => {
-        if (isMobile) {
-            router.push(`/dashboarde/support/${id}`);
-        } else {
-            setActiveTicketId(id);
-        }
-    }
     
     return (
         <div className="space-y-6">
@@ -166,7 +155,7 @@ export default function AdminSupportPage() {
                                 </div>
                             ) : filteredTickets.length > 0 ? (
                                 <div>
-                                    {filteredTickets.map(ticket => <TicketListItem key={ticket.id} ticket={ticket} isActive={activeTicketId === ticket.id} onClick={handleTicketClick} />)}
+                                    {filteredTickets.map(ticket => <TicketListItem key={ticket.id} ticket={ticket} isActive={activeTicketId === ticket.id} />)}
                                 </div>
                             ): (
                                  <div className="text-center pt-20 text-slate-500">
@@ -179,8 +168,8 @@ export default function AdminSupportPage() {
                 </Card>
                 
                  <div className="lg:col-span-2 hidden lg:block rounded-2xl shadow-sm bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
-                    {activeTicketId ? (
-                        <TicketDetailsPage ticketId={activeTicketId} />
+                    {activeTicketId && activeTicketId !== 'support' ? (
+                        <TicketDetailsPage />
                     ) : (
                          <div className="h-full flex items-center justify-center text-slate-500 flex-col">
                             <Inbox className="h-16 w-16" />

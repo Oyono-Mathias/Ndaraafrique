@@ -47,7 +47,7 @@ interface Message {
   createdAt: any;
 }
 
-function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
+function AdminTicketDetailsContent({ ticketId }: { ticketId: string }) {
     const router = useRouter();
     const db = getFirestore();
     const { toast } = useToast();
@@ -104,7 +104,6 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
         try {
             const batch = writeBatch(db);
 
-            // 1. Find the relevant payment document
             const paymentsQuery = query(
                 collection(db, 'payments'),
                 where('userId', '==', ticket.userId),
@@ -119,23 +118,19 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
                 return;
             }
             
-            // Mark the first found payment as refunded
             const paymentToRefundRef = paymentsSnap.docs[0].ref;
             batch.update(paymentToRefundRef, { status: 'Remboursé' });
 
-            // 2. Find and delete the enrollment document
             const enrollmentId = `${ticket.userId}_${ticket.courseId}`;
             const enrollmentRef = doc(db, 'enrollments', enrollmentId);
             batch.delete(enrollmentRef);
 
-            // 3. Close the ticket
             batch.update(ticketRef, { status: 'closed' });
             
-            // Commit all operations
             await batch.commit();
 
             toast({ title: 'Remboursement traité', description: "Le paiement a été marqué comme remboursé et l'accès de l'étudiant au cours a été révoqué." });
-            router.push('/dashboarde/support');
+            router.push('/admin/support');
 
         } catch (error) {
             console.error("Refund failed:", error);
@@ -146,10 +141,9 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
         }
     };
 
-
     const handleCloseTicket = async () => {
         await updateDoc(ticketRef, { status: 'closed' });
-        router.push('/dashboarde/support');
+        router.push('/admin/support');
     };
 
     const isLoading = ticketLoading || messagesLoading || userLoading;
@@ -174,7 +168,7 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
         <>
             <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-800">
                 <CardHeader className="flex flex-row items-center gap-4 border-b bg-white dark:bg-slate-800 dark:border-slate-700">
-                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => router.push('/dashboarde/support')}>
+                    <Button variant="ghost" size="icon" className="md:hidden" onClick={() => router.push('/admin/support')}>
                         <ArrowLeft className="h-5 w-5" />
                     </Button>
                     <Avatar>
@@ -231,7 +225,7 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
                     <div className="flex justify-between items-center">
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={handleCloseTicket} className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"><XCircle className="mr-2 h-4 w-4" /> Fermer le ticket</Button>
-                            <Button variant="outline" size="sm" onClick={() => router.push(`/dashboarde/users/${ticket?.userId}`)} className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"><User className="mr-2 h-4 w-4" /> Voir le profil</Button>
+                            <Button variant="outline" size="sm" onClick={() => router.push(`/admin/users/${ticket?.userId}`)} className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700"><User className="mr-2 h-4 w-4" /> Voir le profil</Button>
                         </div>
                         <Button variant="destructive" size="sm" onClick={() => setIsRefundAlertOpen(true)}><DollarSign className="mr-2 h-4 w-4" /> Rembourser</Button>
                     </div>
@@ -259,7 +253,6 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
     );
 }
 
-// Default export needed for Next.js pages. This is the main component for the page.
 export default function TicketDetailsPage() {
   const { ticketId } = useParams();
   if (!ticketId || typeof ticketId !== 'string') {
@@ -269,5 +262,5 @@ export default function TicketDetailsPage() {
         </div>
     );
   }
-  return <AdminTicketDetailsPage ticketId={ticketId} />;
+  return <AdminTicketDetailsContent ticketId={ticketId} />;
 }
