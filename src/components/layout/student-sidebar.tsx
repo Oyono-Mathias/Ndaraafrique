@@ -26,7 +26,6 @@ import {
   Briefcase,
   Bell,
 } from "lucide-react";
-import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
@@ -34,13 +33,14 @@ import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
 
 
-const SidebarItem = ({ href, icon: Icon, label, unreadCount }: { href: string, icon: React.ElementType, label: string, unreadCount?: number }) => {
+const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void }) => {
   const pathname = usePathname();
   const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
 
   return (
     <Link
       href={href}
+      onClick={onClick}
       className={cn(
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
@@ -63,9 +63,8 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount }: { href: string, i
 };
 
 
-export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl?: string }) {
+export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
-  const { toast } = useToast();
   const { switchRole, availableRoles, user } = useRole();
   const { t } = useTranslation();
   const isInstructor = availableRoles.includes('instructor');
@@ -130,13 +129,6 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
 
     return () => unsubscribe();
   }, [user, db]);
-
-  const handleLogout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    router.push('/');
-    toast({ title: "Déconnexion réussie" });
-  }
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
@@ -144,7 +136,7 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
   }
 
   return (
-    <div className="w-64 h-full bg-white border-r border-slate-200 flex flex-col shadow-sm">
+    <div className="w-full h-full bg-white border-r border-slate-200 flex flex-col shadow-sm">
       <header className="p-4 border-b border-slate-100">
         <Link href="/dashboard" className="flex items-center gap-2">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
@@ -163,6 +155,7 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
                 icon={item.icon}
                 label={item.text}
                 unreadCount={item.href === '/messages' ? unreadMessages : undefined}
+                onClick={onLinkClick}
               />
             ))}
           </div>
@@ -189,10 +182,6 @@ export function StudentSidebar({ siteName, logoUrl }: { siteName?: string, logoU
                 Mode Admin
             </Button>
         )}
-        <Button variant="ghost" className="w-full justify-center text-slate-500" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Déconnexion
-        </Button>
       </footer>
     </div>
   );

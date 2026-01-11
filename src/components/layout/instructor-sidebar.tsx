@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 import { I18nProvider } from '@/context/I18nProvider';
 
 
-const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.ElementType, label: string }) => {
+const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname();
   const { formaAfriqueUser } = useRole();
   const { toast } = useToast();
@@ -53,6 +53,8 @@ const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.El
             title: "Accès refusé",
             description: "Votre compte instructeur est en attente d'approbation.",
         });
+    } else {
+      onClick();
     }
   };
 
@@ -76,7 +78,7 @@ const SidebarItem = ({ href, icon: Icon, label }: { href: string, icon: React.El
   );
 };
 
-export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl?: string }) {
+export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, formaAfriqueUser, availableRoles } = useRole();
   const { toast } = useToast();
@@ -113,13 +115,6 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
       ],
     },
   ];
-
-  const handleLogout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    router.push('/');
-    toast({ title: "Déconnexion réussie" });
-  }
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
@@ -128,7 +123,7 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
 
   return (
     <I18nProvider>
-      <div className="w-64 h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
+      <div className="w-full h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
         <header className="p-4 border-b border-slate-700/50">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
@@ -143,7 +138,7 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
             <div key={group.label} className="py-2">
               <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
               {group.items.map((item) => (
-                <SidebarItem key={item.href} href={item.href} icon={item.icon} label={item.text} />
+                <SidebarItem key={item.href} href={item.href} icon={item.icon} label={item.text} onClick={onLinkClick} />
               ))}
             </div>
           ))}
@@ -164,10 +159,6 @@ export function InstructorSidebar({ siteName, logoUrl }: { siteName?: string, lo
                   Mode Admin
               </Button>
           )}
-          <Button variant="ghost" className="w-full justify-center text-slate-400 hover:text-white" onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            Déconnexion
-          </Button>
         </footer>
       </div>
     </I18nProvider>

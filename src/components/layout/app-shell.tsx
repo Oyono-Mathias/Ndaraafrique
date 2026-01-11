@@ -333,6 +333,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const hasUnreadNotifications = useUnreadNotifications(user?.uid);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const isLandingPage = pathname === '/';
@@ -370,12 +371,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
   
   if (!user) {
-    // This case should be handled by the redirect effect in dashboard, but as a fallback:
     return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
   
+  const handleSidebarLinkClick = () => {
+    if (isMobile) {
+      setIsSheetOpen(false);
+    }
+  };
+
   const renderSidebar = () => {
-    const props = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl };
+    const props = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
     if (role === 'student') return <StudentSidebar {...props} />;
     if (role === 'instructor') return <InstructorSidebar {...props} />;
     return null;
@@ -385,7 +391,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isChatPage = pathname.startsWith('/messages');
   const isInstructorDashboard = role === 'instructor';
   
-  // If it's an admin page, let the admin layout handle everything.
   if (isAdminPage) {
     return <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>{children}</div>;
   }
@@ -410,7 +415,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
                       'bg-card border-border'
                   )}>
-                      <Sheet>
+                      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>
                           <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", 'text-foreground')}>
                             <PanelLeft />

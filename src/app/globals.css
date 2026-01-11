@@ -99,7 +99,7 @@
 
     @media (min-width: 1024px) {
       .admin-sidebar-container {
-        width: 280px; /* Full width for desktop */
+        width: 220px; /* MODIFICATION: Reduced from 280px */
       }
       .admin-sidebar-container .sidebar-label,
       .admin-sidebar-container .sidebar-header .sidebar-label,

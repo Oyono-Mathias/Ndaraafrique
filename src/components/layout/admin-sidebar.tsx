@@ -22,7 +22,6 @@ import {
   UserCheck,
   Landmark,
 } from "lucide-react";
-import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
@@ -75,8 +74,6 @@ const SidebarItem = ({ href, icon: Icon, label, count }: { href: string, icon: R
 
 
 export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl?: string }) {
-  const router = useRouter();
-  const { toast } = useToast();
   const { switchRole } = useRole();
   const db = getFirestore();
 
@@ -97,14 +94,6 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
     [db]
   );
   const { data: pendingPayouts } = useCollection(pendingPayoutsQuery);
-
-
-  const handleLogout = async () => {
-    const auth = getAuth();
-    await signOut(auth);
-    router.push('/');
-    toast({ title: "Déconnexion réussie" });
-  }
 
   const handleSwitchToInstructor = () => {
     switchRole('instructor');
@@ -153,10 +142,6 @@ export function AdminSidebar({ siteName, logoUrl }: { siteName?: string, logoUrl
          <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToStudent}>
             <Users className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
             <span className="sidebar-label">Mode Étudiant</span>
-        </Button>
-         <Button variant="ghost" className="w-full justify-center text-slate-500 hover:text-slate-900 dark:hover:text-white tv:py-6 tv:text-lg" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
-          <span className="sidebar-label">Déconnexion</span>
         </Button>
       </footer>
     </div>
