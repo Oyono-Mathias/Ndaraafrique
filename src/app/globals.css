@@ -66,13 +66,6 @@
 }
 
 @layer components {
-    .btn {
-        @apply transition-transform duration-200 ease-in-out active:scale-95;
-    }
-    .btn-primary {
-        @apply bg-primary text-primary-foreground hover:bg-primary/90;
-    }
-
     /* === Admin Dashboard Layout === */
     .admin-grid-layout {
       display: grid;
@@ -105,7 +98,7 @@
     /* === Desktop State (> 1024px) === */
     @media (min-width: 1024px) {
       .admin-sidebar-container {
-        width: 280px; /* Full width for desktop */
+        width: 250px; /* Full width for desktop */
       }
       .admin-sidebar-container .sidebar-label,
       .admin-sidebar-container .sidebar-header .sidebar-label,
@@ -117,6 +110,24 @@
         justify-content: flex-start;
       }
     }
+    
+    /* === TV State (> 1920px) === */
+    .tv {
+      font-size: 125%; /* Increase base font size */
+    }
+    .tv .admin-sidebar-container {
+        width: 350px; /* Even wider sidebar for TV */
+    }
+    .tv [role="row"]:focus-within {
+        outline: 2px solid hsl(var(--primary));
+        transform: scale(1.02);
+        box-shadow: 0 8px 30px hsl(var(--primary) / 0.2);
+        z-index: 10;
+        position: relative;
+    }
+    .tv .sidebar-label {
+        padding: 0.5rem 0; /* Larger clickable area for TV remote navigation */
+    }
 
     /* === Mobile State (< 768px) === */
     @media (max-width: 767px) {
@@ -127,70 +138,4 @@
         grid-column: 1;
       }
     }
-    
-    /* === TV State (> 1920px) === */
-    @media (min-width: 1920px) {
-      html {
-        font-size: 125%; /* Increase base font size */
-      }
-      .admin-sidebar-container {
-        width: 350px; /* Even wider sidebar for TV */
-      }
-       .sidebar-label {
-        padding: 0.5rem 0; /* Larger clickable area for TV remote navigation */
-      }
-      a:focus, button:focus {
-        outline: 2px solid hsl(var(--primary));
-        box-shadow: 0 0 0 4px hsl(var(--primary) / 0.3);
-        border-radius: var(--radius);
-      }
-    }
-}
-
-/* Custom styles for react-phone-number-input */
-.PhoneInput {
-  display: flex;
-  align-items: center;
-}
-
-.PhoneInputInput {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-  border: none;
-  outline: none;
-  background-color: transparent;
-  padding-left: 0.5rem;
-}
-
-.PhoneInputCountry {
-  position: relative;
-  align-self: center;
-  display: flex;
-  align-items: center;
-}
-.PhoneInputCountryIcon--border {
-    box-shadow: none;
-    background: transparent;
-    border: none;
-}
-
-.PhoneInputCountryIcon {
-    width: 2rem;
-    height: 1.5rem;
-}
-
-.PhoneInputCountrySelect {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  z-index: 1;
-  opacity: 0;
-  cursor: pointer;
-}
-
-.PhoneInputCountrySelectArrow {
-    display: none;
 }

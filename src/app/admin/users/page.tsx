@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -177,26 +178,22 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
                     <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
-                        <Eye className="mr-2 h-4 w-4"/>
-                        Voir le profil
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={handleStartChat}>
+                    <DropdownMenuItem onSelect={handleStartChat} className="cursor-pointer dark:focus:bg-slate-700">
                         <MessageSquare className="mr-2 h-4 w-4" />
                         Contacter
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
+                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)} className="cursor-pointer dark:focus:bg-slate-700">
                         <UserCog className="mr-2 h-4 w-4"/>
                         Modifier le rôle
                     </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting}>
+                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting} className="cursor-pointer dark:focus:bg-slate-700">
                         <Ban className="mr-2 h-4 w-4"/>
                         {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
                     </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive">
+                    <DropdownMenuSeparator className="dark:bg-slate-700" />
+                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive dark:text-red-400 cursor-pointer dark:focus:bg-destructive/10 dark:focus:text-red-400">
                         <Trash2 className="mr-2 h-4 w-4"/>
                         Supprimer
                     </DropdownMenuItem>
@@ -205,27 +202,27 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
             
             {/* Role Change Dialog */}
             <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-                <DialogContent>
+                <DialogContent className="dark:bg-slate-800 dark:border-slate-700">
                     <DialogHeader>
-                        <DialogTitle>Modifier le rôle de {user.fullName}</DialogTitle>
-                        <DialogDescription>
+                        <DialogTitle className="dark:text-white">Modifier le rôle de {user.fullName}</DialogTitle>
+                        <DialogDescription className="dark:text-slate-400">
                             Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="py-4">
                         <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
-                            <SelectTrigger>
+                            <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600 dark:text-white">
                                 <SelectValue placeholder="Choisir un rôle" />
                             </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="student">Étudiant</SelectItem>
-                                <SelectItem value="instructor">Instructeur</SelectItem>
-                                <SelectItem value="admin">Admin</SelectItem>
+                            <SelectContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                                <SelectItem value="student" className="cursor-pointer dark:focus:bg-slate-700">Étudiant</SelectItem>
+                                <SelectItem value="instructor" className="cursor-pointer dark:focus:bg-slate-700">Instructeur</SelectItem>
+                                <SelectItem value="admin" className="cursor-pointer dark:focus:bg-slate-700">Admin</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Annuler</Button>
+                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)} className="dark:hover:bg-slate-700">Annuler</Button>
                         <Button onClick={handleRoleChange} disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirmer
@@ -236,15 +233,15 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
 
             {/* Delete Confirmation Alert */}
             <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
-                <AlertDialogContent>
+                <AlertDialogContent className="dark:bg-slate-800 dark:border-slate-700">
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
-                        <AlertDialogDescription>
+                        <AlertDialogTitle className="dark:text-white">Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+                        <AlertDialogDescription className="dark:text-slate-400">
                             Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogCancel className="dark:bg-slate-700 dark:hover:bg-slate-600">Annuler</AlertDialogCancel>
                         <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
                              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
                         </AlertDialogAction>
@@ -290,7 +287,7 @@ export default function AdminUsersPage() {
         <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
       </header>
 
-      <Card className="dark:bg-slate-800 dark:border-slate-700">
+      <Card className="dark:bg-[#1e293b] dark:border-slate-700">
         <CardHeader>
           <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
           <CardDescription className="dark:text-slate-400">
@@ -308,7 +305,7 @@ export default function AdminUsersPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="hidden md:table">
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                   <TableHead className="dark:text-slate-400">Nom</TableHead>
@@ -336,7 +333,7 @@ export default function AdminUsersPage() {
                   ))
                 ) : filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700 tv:focus-within:bg-slate-700/50 tv:focus-within:scale-105 transition-transform duration-200">
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar>
@@ -345,11 +342,6 @@ export default function AdminUsersPage() {
                           </Avatar>
                           <div>
                             <span className="font-medium dark:text-slate-100">{user.fullName}</span>
-                            <div className="sm:hidden mt-1">
-                                <Badge variant={getStatusBadgeVariant(user.status)} className={cn('text-xs', user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
-                                    {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
-                                </Badge>
-                            </div>
                           </div>
                         </div>
                       </TableCell>
@@ -360,7 +352,7 @@ export default function AdminUsersPage() {
                         </Badge>
                       </TableCell>
                        <TableCell className="hidden sm:table-cell">
-                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
                             {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
                           </Badge>
                       </TableCell>
@@ -387,9 +379,43 @@ export default function AdminUsersPage() {
                 )}
               </TableBody>
             </Table>
+            
+            {/* Mobile Card View */}
+            <div className="grid grid-cols-1 gap-4 md:hidden">
+                 {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-32 w-full dark:bg-slate-800" />
+                  ))
+                 ) : filteredUsers.length > 0 ? (
+                    filteredUsers.map(user => (
+                        <Card key={user.uid} className="dark:bg-slate-800 dark:border-slate-700">
+                            <CardContent className="p-4 flex items-center gap-4">
+                                <Avatar className="h-12 w-12">
+                                    <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                                    <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="font-bold text-base dark:text-white">{user.fullName}</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">{user.email}</p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{user.role}</Badge>
+                                        <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
+                                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                        </Badge>
+                                    </div>
+                                </div>
+                                <UserActions user={user} adminId={adminUser?.uid} />
+                            </CardContent>
+                        </Card>
+                    ))
+                 ) : null}
+            </div>
+
           </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
