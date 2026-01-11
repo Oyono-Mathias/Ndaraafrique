@@ -11,7 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Lock, PlayCircle, BookOpen, ArrowLeft, Loader2, FileText } from 'lucide-react';
+import { CheckCircle, Lock, PlayCircle, BookOpen, ArrowLeft, Loader2, FileText, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Course, Section, Lecture, Enrollment } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,7 @@ import dynamic from 'next/dynamic';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { PdfViewerSkeleton } from '@/components/ui/PdfViewerClient';
+import Link from 'next/link';
 
 
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
@@ -190,7 +191,7 @@ export default function CoursePlayerPage() {
     const { courseId } = useParams();
     const router = useRouter();
     const db = getFirestore();
-    const { user, isUserLoading } = useRole();
+    const { user, formaAfriqueUser, isUserLoading } = useRole();
     const { toast } = useToast();
 
     const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
@@ -210,7 +211,9 @@ export default function CoursePlayerPage() {
     
     const { data: enrollments, isLoading: enrollmentLoading } = useCollection<Enrollment>(enrollmentQuery);
     const enrollment = useMemo(() => enrollments?.[0], [enrollments]);
-    const isEnrolled = !!enrollment;
+    
+    const isEnrolled = useMemo(() => !!enrollment || formaAfriqueUser?.role === 'admin', [enrollment, formaAfriqueUser]);
+    
     const completedLessons = useMemo(() => enrollment?.completedLessons || [], [enrollment]);
 
     useEffect(() => {
@@ -240,7 +243,7 @@ export default function CoursePlayerPage() {
 
     const isLoading = courseLoading || isUserLoading || enrollmentLoading || lecturesLoading;
 
-    // Redirect if not enrolled or if free enrollment needs to become paid
+    // Redirect if not enrolled (and not admin)
     useEffect(() => {
         if (!isLoading && course) {
             if (!isEnrolled) {
@@ -253,8 +256,8 @@ export default function CoursePlayerPage() {
                 return;
             }
 
-            // CRITICAL BUSINESS LOGIC: If course is now paid, but was free on enrollment, block access.
-            if (enrollment && course.price > 0 && enrollment.priceAtEnrollment === 0) {
+            // CRITICAL BUSINESS LOGIC: If course is now paid, but was free on enrollment, block access (admins are exempt).
+            if (enrollment && course.price > 0 && enrollment.priceAtEnrollment === 0 && formaAfriqueUser?.role !== 'admin') {
                 toast({
                     title: "Accès mis à jour",
                     description: "Désolé, la période de gratuité de ce cours est terminée. Le cours est devenu payant, veuillez l'acheter pour continuer votre progression.",
@@ -265,7 +268,7 @@ export default function CoursePlayerPage() {
                 return;
             }
         }
-    }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast]);
+    }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast, formaAfriqueUser]);
 
     const handleLessonCompletion = async () => {
         if (!enrollment || !activeLesson) return;
@@ -338,6 +341,13 @@ export default function CoursePlayerPage() {
 
     return (
         <div className="flex flex-col lg:flex-row h-screen bg-slate-50 -m-6">
+            {formaAfriqueUser?.role === 'admin' && (
+                 <Button asChild className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg" variant="destructive">
+                    <Link href={`/admin/courses/edit/${courseId}`} title="Accès Modérateur">
+                        <Shield className="h-6 w-6" />
+                    </Link>
+                </Button>
+            )}
             <main className="flex-1 flex flex-col p-4 lg:p-6 space-y-6">
                 <div className="flex items-center justify-between">
                      <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)}>
@@ -387,3 +397,4 @@ export default function CoursePlayerPage() {
         </div>
     );
 }
+

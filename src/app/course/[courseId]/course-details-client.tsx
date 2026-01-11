@@ -301,7 +301,7 @@ export default function CourseDetailsClient() {
   }, [db, user, courseId]);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
-  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0, [enrollments]);
+  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0 || formaAfriqueUser?.role === 'admin', [enrollments, formaAfriqueUser]);
   
   const wishlistRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'users', user.uid, 'wishlist', courseId) : null, [user, courseId, db]);
   const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
@@ -342,14 +342,24 @@ export default function CourseDetailsClient() {
                 updatedAt: serverTimestamp(),
             };
             
-            const messagePayload = {
+            const userMessagePayload = {
                 senderId: user.uid,
                 text: data.message,
                 createdAt: serverTimestamp(),
             };
 
-            await setDoc(newTicketRef, ticketPayload);
-            await addDoc(collection(newTicketRef, 'messages'), messagePayload);
+            const welcomeMessagePayload = {
+                senderId: 'SYSTEM',
+                text: "Bienvenue au support de FormaAfrique ! Votre question a été envoyée au formateur. Il vous répondra dans les plus brefs délais.",
+                createdAt: serverTimestamp(),
+            };
+            
+            const batch = writeBatch(db);
+            batch.set(newTicketRef, ticketPayload);
+            batch.set(doc(collection(newTicketRef, 'messages')), userMessagePayload);
+            batch.set(doc(collection(newTicketRef, 'messages')), welcomeMessagePayload);
+
+            await batch.commit();
 
             toast({ title: 'Question envoyée !', description: "L'instructeur a été notifié." });
             setIsQuestionModalOpen(false);
