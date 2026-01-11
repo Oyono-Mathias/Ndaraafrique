@@ -123,30 +123,36 @@ export default function LoginPage() {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
-    let userData: Partial<FormaAfriqueUser> = {
-      lastLogin: serverTimestamp() as any,
-    };
+    let finalUserData: Partial<FormaAfriqueUser>;
+    let targetRoute = '/dashboard';
 
-    if (!userDocSnap.exists()) {
-      // User is new, create the full document
-      userData = {
-        ...userData,
-        uid: firebaseUser.uid,
-        email: firebaseUser.email || '',
-        fullName: firebaseUser.displayName || firebaseUser.phoneNumber || 'Utilisateur',
-        role: 'student',
-        isInstructorApproved: false,
-        createdAt: serverTimestamp() as any,
-        profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-        country: detectedCountry?.name,
-        countryCode: detectedCountry?.code?.toLowerCase(),
-      };
+    if (userDocSnap.exists()) {
+        finalUserData = {
+            lastLogin: serverTimestamp() as any,
+        };
+        const existingData = userDocSnap.data() as FormaAfriqueUser;
+        if (existingData.role === 'admin') {
+            targetRoute = '/admin';
+        }
+    } else {
+        finalUserData = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            fullName: firebaseUser.displayName || firebaseUser.phoneNumber || 'Utilisateur',
+            role: 'student',
+            isInstructorApproved: false,
+            createdAt: serverTimestamp() as any,
+            lastLogin: serverTimestamp() as any,
+            profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
+            country: detectedCountry?.name,
+            countryCode: detectedCountry?.code?.toLowerCase(),
+        };
     }
     
-    await setDoc(userDocRef, userData, { merge: true });
+    await setDoc(userDocRef, finalUserData, { merge: true });
 
     toast({ title: t('loginSuccessTitle') });
-    router.push('/dashboard');
+    router.push(targetRoute);
   };
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {

@@ -1,193 +1,395 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Skeleton } from '@/components/ui/skeleton';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, where, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Ticket, Clock, Search, Inbox, Users } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
+import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/use-mobile';
-import AdminTicketDetailsContent from './[ticketId]/page';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useToast } from '@/hooks/use-toast';
+import { deleteUserAccount } from '@/app/actions/userActions';
 
-interface SupportTicket {
-    id: string;
-    subject: string;
-    lastMessage: string;
-    status: 'open' | 'closed';
-    priority?: 'urgent' | 'normal';
-    userId: string;
-    userName?: string;
-    userAvatar?: string;
-    updatedAt: any; // Firestore Timestamp
-}
 
-const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string; value: string; icon: React.ElementType; isLoading?: boolean; }) => (
-  <Card className="bg-white border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700">
-    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</CardTitle>
-      <Icon className="h-4 w-4 text-slate-400" />
-    </CardHeader>
-    <CardContent>
-      {isLoading ? <Skeleton className="h-8 w-3/4 dark:bg-slate-700" /> : <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>}
-    </CardContent>
-  </Card>
-);
+const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
+  switch (role) {
+    case 'admin':
+      return 'destructive';
+    case 'instructor':
+      return 'default';
+    default:
+      return 'secondary';
+  }
+};
 
-const TicketListItem = ({ ticket, isActive, onClick }: { ticket: SupportTicket, isActive: boolean, onClick: (id: string) => void }) => {
-    const [lastActivity, setLastActivity] = useState('');
+const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
+    return status === 'suspended' ? 'destructive' : 'default';
+};
+
+const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
+    const { toast } = useToast();
     const router = useRouter();
-    const isMobile = useIsMobile();
+    const db = getFirestore();
+    const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
+    
+    const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
 
-    const handleClick = () => {
-        if (isMobile) {
-            router.push(`/admin/support/${ticket.id}`);
-        } else {
-            onClick(ticket.id);
+    const handleRoleChange = async () => {
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { role: selectedRole });
+            toast({ title: "Rôle mis à jour", description: `Le rôle de ${user.fullName} est maintenant ${selectedRole}.` });
+            setIsRoleDialogOpen(false);
+        } catch (error) {
+            console.error("Failed to update role:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le rôle." });
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    useEffect(() => {
-        if (ticket.updatedAt?.toDate) {
-            setLastActivity(formatDistanceToNow(ticket.updatedAt.toDate(), { locale: fr, addSuffix: true }));
+    const handleStatusToggle = async () => {
+        const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { status: newStatus });
+            toast({ title: "Statut mis à jour", description: `${user.fullName} est maintenant ${newStatus === 'active' ? 'actif' : 'suspendu'}.` });
+        } catch (error) {
+            console.error("Failed to toggle status:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le statut." });
+        } finally {
+            setIsSubmitting(false);
         }
-    }, [ticket.updatedAt]);
+    };
+
+    const handleDeleteUser = async () => {
+        setIsSubmitting(true);
+        const auth = getAuth();
+        const adminUser = auth.currentUser;
+
+        if (!adminUser) {
+            toast({ variant: "destructive", title: "Erreur d'authentification", description: "Administrateur non connecté." });
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            const token = await adminUser.getIdToken();
+            const result = await deleteUserAccount({ userId: user.uid, idToken: token });
+            
+            if (result.success) {
+                toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été définitivement supprimé.` });
+                setIsDeleteAlertOpen(false);
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error: any) {
+            console.error("Failed to delete user:", error);
+            toast({ variant: "destructive", title: "Erreur de suppression", description: error.message || "Impossible de supprimer l'utilisateur." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     
+    const handleStartChat = async () => {
+        if (!adminId || adminId === user.uid) return;
+
+        const chatsRef = collection(db, 'chats');
+        const sortedParticipants = [adminId, user.uid].sort();
+        
+        const q = query(chatsRef, where('participants', '==', sortedParticipants));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            let chatId: string | null = null;
+            if (!querySnapshot.empty) {
+                chatId = querySnapshot.docs[0].id;
+            } else {
+                const newChatRef = doc(collection(db, 'chats'));
+                await setDoc(newChatRef, {
+                    participants: sortedParticipants,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: `Conversation initiée par un administrateur.`,
+                });
+                chatId = newChatRef.id;
+            }
+            router.push(`/messages/${chatId}`);
+        } catch (error) {
+            console.error("Error starting chat:", error);
+            toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
+        }
+    };
+
     return (
-        <button onClick={handleClick} className={cn("w-full text-left block p-4 rounded-2xl cursor-pointer transition-colors", isActive ? "bg-primary/10" : "hover:bg-slate-100 dark:hover:bg-slate-800")}>
-            <div className="flex justify-between items-start">
-                <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                        <AvatarImage src={ticket.userAvatar} />
-                        <AvatarFallback>{ticket.userName?.charAt(0) || 'U'}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className={cn("font-semibold text-sm", isActive && "text-primary")}>{ticket.userName}</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1">{ticket.subject}</p>
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
+                        <Eye className="mr-2 h-4 w-4"/>
+                        Voir le profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStartChat}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Contacter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
+                        <UserCog className="mr-2 h-4 w-4"/>
+                        Modifier le rôle
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting}>
+                        <Ban className="mr-2 h-4 w-4"/>
+                        {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4"/>
+                        Supprimer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Role Change Dialog */}
+            <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Modifier le rôle de {user.fullName}</DialogTitle>
+                        <DialogDescription>
+                            Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir un rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="student">Étudiant</SelectItem>
+                                <SelectItem value="instructor">Instructeur</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
                     </div>
-                </div>
-            </div>
-            <p className="text-xs text-slate-400 mt-2 pl-11 line-clamp-1">{ticket.lastMessage}</p>
-            <p className="text-[11px] text-slate-400 mt-1 pl-11">{lastActivity}</p>
-        </button>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Annuler</Button>
+                        <Button onClick={handleRoleChange} disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirmer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Alert */}
+            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
     );
 };
 
 
-export default function AdminSupportPage() {
-    const db = getFirestore();
-    const router = useRouter();
-    const isMobile = useIsMobile();
-    
-    const [activeTicketId, setActiveTicketId] = useState<string | null>(null);
-    const [searchTerm, setSearchTerm] = useState('');
+export default function AdminUsersPage() {
+  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const db = getFirestore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    const ticketsQuery = useMemoFirebase(() => query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc')), [db]);
-    const { data: rawTickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
+  const usersQuery = useMemoFirebase(
+    () => query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+    [db]
+  );
+  const { data: users, isLoading: usersLoading } = useCollection<FormaAfriqueUser & {createdAt?: any; status?: 'active' | 'suspended'}>(usersQuery);
 
-    const [tickets, setTickets] = useState<SupportTicket[]>([]);
-
-    useEffect(() => {
-      if(!rawTickets) return;
-      
-      const populateTickets = async () => {
-          const userIds = [...new Set(rawTickets.map(t => t.userId))];
-          if(userIds.length === 0) {
-              setTickets(rawTickets);
-              return;
-          }
-          const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30))));
-          const usersMap = new Map(usersSnap.docs.map(d => [d.id, d.data()]));
-          
-          const populated = rawTickets.map(t => {
-              const user = usersMap.get(t.userId);
-              return {
-                  ...t,
-                  userName: user?.fullName || 'Utilisateur inconnu',
-                  userAvatar: user?.profilePictureURL,
-              }
-          });
-          setTickets(populated);
-
-          if (!isMobile && !activeTicketId && populated.length > 0) {
-              setActiveTicketId(populated[0].id);
-          }
-      };
-
-      populateTickets();
-
-    }, [rawTickets, db, isMobile, activeTicketId]);
-
-    const openTicketsCount = useMemo(() => tickets?.filter(t => t.status === 'open').length || 0, [tickets]);
-    const averageResponseTime = "3h 15m"; // This would need a more complex calculation
-
-    const filteredTickets = useMemo(() => {
-        if (!tickets) return [];
-        return tickets.filter(t => 
-            t.subject.toLowerCase().includes(searchTerm.toLowerCase()) || 
-            t.userName?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }, [tickets, searchTerm]);
-    
-    return (
-        <div className="space-y-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Tickets ouverts" value={openTicketsCount.toString()} icon={Ticket} isLoading={ticketsLoading} />
-                <StatCard title="Temps de réponse moyen" value={averageResponseTime} icon={Clock} isLoading={ticketsLoading} />
-                <StatCard title="Total Utilisateurs" value={"342"} icon={Users} isLoading={ticketsLoading} />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-22rem)]">
-                <Card className="lg:col-span-1 rounded-2xl shadow-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 flex flex-col">
-                    <CardHeader className="border-b border-slate-100 dark:border-slate-700">
-                        <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                            placeholder="Rechercher..."
-                            className="pl-9 dark:bg-slate-700"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            />
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-2 flex-1">
-                        <ScrollArea className="h-full">
-                             {ticketsLoading ? (
-                                <div className="space-y-2 p-2">
-                                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl dark:bg-slate-700" />)}
-                                </div>
-                            ) : filteredTickets.length > 0 ? (
-                                <div>
-                                    {filteredTickets.map(ticket => <TicketListItem key={ticket.id} ticket={ticket} isActive={activeTicketId === ticket.id} onClick={setActiveTicketId} />)}
-                                </div>
-                            ): (
-                                 <div className="text-center pt-20 text-slate-500">
-                                    <Inbox className="mx-auto h-12 w-12" />
-                                    <p className="mt-4 font-semibold">Boîte de réception vide</p>
-                                </div>
-                            )}
-                        </ScrollArea>
-                    </CardContent>
-                </Card>
-                
-                 <div className="lg:col-span-2 hidden lg:block rounded-2xl shadow-sm bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
-                    {activeTicketId ? (
-                        <AdminTicketDetailsContent key={activeTicketId} ticketId={activeTicketId} />
-                    ) : (
-                         <div className="h-full flex items-center justify-center text-slate-500 flex-col">
-                            <Inbox className="h-16 w-16" />
-                            <p className="mt-4">Sélectionnez un ticket pour l'afficher</p>
-                         </div>
-                    )}
-                </div>
-            </div>
-        </div>
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!debouncedSearchTerm) return users;
+    return users.filter(user =>
+      user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
+  }, [users, debouncedSearchTerm]);
+
+  const isLoading = isUserLoading || usersLoading;
+
+  if (adminUser?.role !== 'admin') {
+    return <div className="p-8 text-center">Accès non autorisé.</div>;
+  }
+
+  return (
+    <div className="space-y-6 max-w-7xl mx-auto px-4">
+      <header>
+        <h1 className="text-3xl font-bold dark:text-white">Gestion des Utilisateurs</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
+      </header>
+
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
+          <CardDescription className="dark:text-slate-400">
+            Liste de tous les utilisateurs enregistrés.
+          </CardDescription>
+          <div className="relative pt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom ou email..."
+              className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                  <TableHead className="dark:text-slate-400">Nom</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
+                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={i} className="dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+                          <Skeleton className="h-4 w-32 dark:bg-slate-700" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                            <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
+                            <div className="sm:hidden mt-1">
+                                <Badge variant={getStatusBadgeVariant(user.status)} className={cn('text-xs', user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                                    {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                       <TableCell className="hidden sm:table-cell">
+                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                          <UserActions user={user} adminId={adminUser?.uid} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow className="dark:border-slate-700">
+                    <TableCell colSpan={5} className="h-48 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <UserX className="h-12 w-12" />
+                          <p className="font-medium">Aucun utilisateur trouvé</p>
+                          <p className="text-sm">
+                              {searchTerm 
+                                  ? `Aucun résultat pour "${searchTerm}".`
+                                  : "Il n'y a pas encore d'utilisateurs sur la plateforme."
+                              }
+                          </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
 }

@@ -20,6 +20,7 @@ export default function DashboardPage() {
       return;
     }
     
+    // If the user's primary role is admin AND they have selected the admin role, redirect to /admin
     if (!isUserLoading && user && formaAfriqueUser?.role === 'admin' && role === 'admin') {
       router.push('/admin');
     }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -32,12 +33,16 @@ export default function AdminLayout({
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!isUserLoading && formaAfriqueUser?.role !== 'admin') {
+      router.push('/dashboard');
+    }
+     // Automatically switch to admin role if the user is an admin but is in another role context
     if (!isUserLoading && formaAfriqueUser?.role === 'admin' && role !== 'admin') {
       switchRole('admin');
     }
-  }, [isUserLoading, formaAfriqueUser, role, switchRole]);
+  }, [isUserLoading, formaAfriqueUser, role, switchRole, router]);
 
-  if (isUserLoading) {
+  if (isUserLoading || role !== 'admin' || formaAfriqueUser?.role !== 'admin') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-900">
         <Loader2 className="h-8 w-8 animate-spin text-white" />
@@ -45,10 +50,6 @@ export default function AdminLayout({
     );
   }
 
-  if (formaAfriqueUser?.role !== 'admin' || role !== 'admin') {
-    return <AdminAccessRequiredScreen />;
-  }
-  
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr] bg-gray-900 text-white">
       <aside className="hidden border-r border-slate-700 bg-[#1e293b] md:block">

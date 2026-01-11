@@ -1,32 +1,24 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import Image from 'next/image';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, where, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  doc,
-  updateDoc,
-  deleteDoc,
-  getDocs,
-  Query,
-} from 'firebase/firestore';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  MoreHorizontal,
-  Trash2,
-  Edit,
-  Eye,
-  BookOpen,
-  Filter,
-} from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,10 +26,6 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  DropdownMenuSub,
-  DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
-  DropdownMenuPortal,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -49,249 +37,359 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useToast } from '@/hooks/use-toast';
-import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
+import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
+import { useToast } from '@/hooks/use-toast';
+import { deleteUserAccount } from '@/app/actions/userActions';
 
 
-const FILTERS = ['Tous', 'Published', 'Pending Review', 'Draft'] as const;
-type CourseStatusFilter = typeof FILTERS[number];
-
-const getStatusBadgeVariant = (status: Course['status']) => {
-  switch (status) {
-    case 'Published':
+const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
+  switch (role) {
+    case 'admin':
+      return 'destructive';
+    case 'instructor':
       return 'default';
-    case 'Pending Review':
-      return 'secondary';
-    case 'Draft':
-      return 'outline';
     default:
       return 'secondary';
   }
 };
 
-const getStatusBadgeText = (status: Course['status']) => {
-    switch (status) {
-        case 'Published': return 'Publié';
-        case 'Pending Review': return 'En révision';
-        case 'Draft': return 'Brouillon';
-        default: return status;
-    }
-}
+const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
+    return status === 'suspended' ? 'destructive' : 'default';
+};
 
-const CourseCard = ({
-  course,
-  instructor,
-  onStatusChange,
-  onDelete,
-}: {
-  course: Course;
-  instructor: FormaAfriqueUser | null;
-  onStatusChange: (id: string, status: Course['status']) => void;
-  onDelete: (id: string) => void;
-}) => {
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
+const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
+    const { toast } = useToast();
+    const router = useRouter();
+    const db = getFirestore();
+    const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
+    
+    const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
+
+    const handleRoleChange = async () => {
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { role: selectedRole });
+            toast({ title: "Rôle mis à jour", description: `Le rôle de ${user.fullName} est maintenant ${selectedRole}.` });
+            setIsRoleDialogOpen(false);
+        } catch (error) {
+            console.error("Failed to update role:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le rôle." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleStatusToggle = async () => {
+        const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { status: newStatus });
+            toast({ title: "Statut mis à jour", description: `${user.fullName} est maintenant ${newStatus === 'active' ? 'actif' : 'suspendu'}.` });
+        } catch (error) {
+            console.error("Failed to toggle status:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le statut." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        setIsSubmitting(true);
+        const auth = getAuth();
+        const adminUser = auth.currentUser;
+
+        if (!adminUser) {
+            toast({ variant: "destructive", title: "Erreur d'authentification", description: "Administrateur non connecté." });
+            setIsSubmitting(false);
+            return;
+        }
+
+        try {
+            const token = await adminUser.getIdToken();
+            const result = await deleteUserAccount({ userId: user.uid, idToken: token });
+            
+            if (result.success) {
+                toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été définitivement supprimé.` });
+                setIsDeleteAlertOpen(false);
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error: any) {
+            console.error("Failed to delete user:", error);
+            toast({ variant: "destructive", title: "Erreur de suppression", description: error.message || "Impossible de supprimer l'utilisateur." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    const handleStartChat = async () => {
+        if (!adminId || adminId === user.uid) return;
+
+        const chatsRef = collection(db, 'chats');
+        const sortedParticipants = [adminId, user.uid].sort();
+        
+        const q = query(chatsRef, where('participants', '==', sortedParticipants));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            let chatId: string | null = null;
+            if (!querySnapshot.empty) {
+                chatId = querySnapshot.docs[0].id;
+            } else {
+                const newChatRef = doc(collection(db, 'chats'));
+                await setDoc(newChatRef, {
+                    participants: sortedParticipants,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: `Conversation initiée par un administrateur.`,
+                });
+                chatId = newChatRef.id;
+            }
+            router.push(`/messages/${chatId}`);
+        } catch (error) {
+            console.error("Error starting chat:", error);
+            toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
+        }
+    };
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
+                        <Eye className="mr-2 h-4 w-4"/>
+                        Voir le profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStartChat}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Contacter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
+                        <UserCog className="mr-2 h-4 w-4"/>
+                        Modifier le rôle
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting}>
+                        <Ban className="mr-2 h-4 w-4"/>
+                        {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4"/>
+                        Supprimer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Role Change Dialog */}
+            <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Modifier le rôle de {user.fullName}</DialogTitle>
+                        <DialogDescription>
+                            Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir un rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="student">Étudiant</SelectItem>
+                                <SelectItem value="instructor">Instructeur</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Annuler</Button>
+                        <Button onClick={handleRoleChange} disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirmer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Alert */}
+            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+};
+
+
+export default function AdminUsersPage() {
+  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const db = getFirestore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const usersQuery = useMemoFirebase(
+    () => query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+    [db]
+  );
+  const { data: users, isLoading: usersLoading } = useCollection<FormaAfriqueUser & {createdAt?: any; status?: 'active' | 'suspended'}>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!debouncedSearchTerm) return users;
+    return users.filter(user =>
+      user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [users, debouncedSearchTerm]);
+
+  const isLoading = isUserLoading || usersLoading;
+
+  if (adminUser?.role !== 'admin') {
+    return <div className="p-8 text-center">Accès non autorisé.</div>;
+  }
 
   return (
-    <>
-      <Card className="overflow-hidden transition-shadow duration-300 hover:shadow-xl rounded-lg dark:bg-[#1e293b] dark:border-slate-700 flex flex-col h-full">
-        <div className="relative">
-          <Image
-            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/338`}
-            alt={course.title}
-            width={600}
-            height={338}
-            className="aspect-video object-cover w-full h-28"
-          />
-           <Badge
-            variant={getStatusBadgeVariant(course.status)}
-            className={cn(
-              "absolute top-2 right-2 text-xs",
-              course.status === 'Published' && "bg-green-600/80 text-white border-green-500",
-              course.status === 'Pending Review' && "bg-blue-500/80 text-white border-blue-400",
-              course.status === 'Draft' && "dark:bg-slate-700/80 dark:text-slate-300 dark:border-slate-600"
-            )}
-          >
-            {getStatusBadgeText(course.status)}
-          </Badge>
-        </div>
-        <CardContent className="p-2.5 flex flex-col flex-grow">
-          <h3 className="font-bold text-sm truncate dark:text-white h-5">{course.title}</h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Par {instructor?.fullName || '...'}</p>
-          <div className="flex-grow"></div>
-          <div className="flex items-center justify-between mt-1">
-            <p className="font-semibold text-sm dark:text-white">
-              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
-            </p>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="icon" className="h-8 w-8 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-white dark:border-slate-600 shadow-md">
-                  <MoreHorizontal className="h-5 w-5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem asChild className="dark:hover:bg-slate-700">
-                    <Link href={`/course/${course.id}`}><Eye className="mr-2 h-4 w-4"/>Voir la page</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild className="dark:hover:bg-slate-700">
-                    <Link href={`/instructor/courses/edit/${course.id}`}><Edit className="mr-2 h-4 w-4"/>Modifier</Link>
-                </DropdownMenuItem>
-                <DropdownMenuSeparator className="dark:bg-slate-700"/>
-                <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="dark:hover:bg-slate-700">
-                        <Edit className="mr-2 h-4 w-4" />
-                        <span>Changer le statut</span>
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuPortal>
-                    <DropdownMenuSubContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                        <DropdownMenuItem className="dark:hover:bg-slate-700" onClick={() => onStatusChange(course.id, 'Published')}>Publié</DropdownMenuItem>
-                        <DropdownMenuItem className="dark:hover:bg-slate-700" onClick={() => onStatusChange(course.id, 'Pending Review')}>En révision</DropdownMenuItem>
-                        <DropdownMenuItem className="dark:hover:bg-slate-700" onClick={() => onStatusChange(course.id, 'Draft')}>Brouillon</DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                    </DropdownMenuPortal>
-                </DropdownMenuSub>
-                <DropdownMenuItem className="text-red-500 dark:hover:bg-red-900/50" onSelect={() => setIsAlertOpen(true)}>
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Supprimer
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+    <div className="space-y-6 max-w-7xl mx-auto px-4">
+      <header>
+        <h1 className="text-3xl font-bold dark:text-white">Gestion des Utilisateurs</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
+      </header>
+
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
+          <CardDescription className="dark:text-slate-400">
+            Liste de tous les utilisateurs enregistrés.
+          </CardDescription>
+          <div className="relative pt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom ou email..."
+              className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                  <TableHead className="dark:text-slate-400">Nom</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
+                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={i} className="dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+                          <Skeleton className="h-4 w-32 dark:bg-slate-700" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                            <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
+                            <div className="sm:hidden mt-1">
+                                <Badge variant={getStatusBadgeVariant(user.status)} className={cn('text-xs', user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                                    {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                       <TableCell className="hidden sm:table-cell">
+                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                          <UserActions user={user} adminId={adminUser?.uid} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow className="dark:border-slate-700">
+                    <TableCell colSpan={5} className="h-48 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <UserX className="h-12 w-12" />
+                          <p className="font-medium">Aucun utilisateur trouvé</p>
+                          <p className="text-sm">
+                              {searchTerm 
+                                  ? `Aucun résultat pour "${searchTerm}".`
+                                  : "Il n'y a pas encore d'utilisateurs sur la plateforme."
+                              }
+                          </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
         </CardContent>
       </Card>
-      
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-        <AlertDialogContent className="dark:bg-[#1e293b] dark:border-slate-700">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="dark:text-white">Confirmer la suppression</AlertDialogTitle>
-            <AlertDialogDescription className="dark:text-slate-400">
-              Êtes-vous sûr de vouloir supprimer définitivement le cours "{course.title}" ? Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="dark:bg-slate-700 dark:text-white dark:hover:bg-slate-600 dark:border-slate-600">Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onDelete(course.id)} className="bg-destructive hover:bg-destructive/90">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-};
-
-export default function AdminCoursesPage() {
-  const db = getFirestore();
-  const { toast } = useToast();
-  const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
-  const [filter, setFilter] = useState<CourseStatusFilter>('Tous');
-
-  const coursesQuery = useMemoFirebase(() => {
-    let q: Query = query(collection(db, 'courses'));
-    if (filter !== 'Tous') {
-      q = query(q, where('status', '==', filter));
-    }
-    return q;
-  }, [db, filter]);
-
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
-
-  useEffect(() => {
-    if (!courses) return;
-
-    const fetchInstructors = async () => {
-      const instructorIds = [...new Set(courses.map(course => course.instructorId))];
-      const newInstructors = new Map(instructors);
-      const idsToFetch = instructorIds.filter(id => !newInstructors.has(id));
-
-      if (idsToFetch.length === 0) return;
-      
-      // Firestore 'in' query has a limit of 30. For more courses, batching would be needed.
-      const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
-      const snapshot = await getDocs(usersQuery);
-
-      snapshot.forEach(doc => {
-        newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser);
-      });
-      setInstructors(newInstructors);
-    };
-
-    fetchInstructors();
-  }, [courses, db, instructors]);
-
-  const handleStatusChange = async (courseId: string, status: Course['status']) => {
-    const courseRef = doc(db, 'courses', courseId);
-    try {
-      await updateDoc(courseRef, { status: status });
-      toast({ title: 'Statut mis à jour', description: `Le cours est maintenant : ${getStatusBadgeText(status)}` });
-    } catch (error) {
-      console.error("Failed to update status:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de changer le statut.' });
-    }
-  };
-
-  const handleDelete = async (courseId: string) => {
-    const courseRef = doc(db, 'courses', courseId);
-    try {
-      await deleteDoc(courseRef);
-      toast({ title: 'Cours supprimé', description: 'Le cours a été définitivement supprimé.' });
-    } catch (error) {
-      console.error("Failed to delete course:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer le cours.' });
-    }
-  };
-  
-  const isLoading = coursesLoading || (courses && courses.length > 0 && instructors.size === 0);
-
-  return (
-    <div className="space-y-6">
-      <header>
-        <h1 className="text-3xl font-bold dark:text-white">Gestion des Formations</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Consultez, filtrez et gérez tous les cours de la plateforme.</p>
-      </header>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Filter className="h-4 w-4 text-muted-foreground" />
-        {FILTERS.map(f => (
-          <Button
-            key={f}
-            variant={filter === f ? 'default' : 'outline'}
-            size="sm"
-            className="rounded-full text-xs h-7 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 data-[state=active]:dark:bg-primary data-[state=active]:dark:text-primary-foreground dark:hover:bg-slate-700"
-            onClick={() => setFilter(f)}
-          >
-            {f === 'Tous' ? 'Tous' : getStatusBadgeText(f as Course['status'])}
-          </Button>
-        ))}
-      </div>
-
-      {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-56 w-full rounded-lg dark:bg-slate-700" />)}
-        </div>
-      ) : courses && courses.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {courses.map(course => (
-            <CourseCard
-              key={course.id}
-              course={course}
-              instructor={instructors.get(course.instructorId) || null}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-20 border-2 border-dashed rounded-xl dark:border-slate-700">
-          <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold dark:text-white">Aucun cours trouvé</h3>
-          <p className="mt-1 text-sm text-muted-foreground dark:text-slate-400">
-            Aucun cours ne correspond au filtre '{filter}'.
-          </p>
-        </div>
-      )}
     </div>
   );
 }

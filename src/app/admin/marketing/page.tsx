@@ -1,233 +1,395 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Textarea } from '@/components/ui/textarea';
+import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useRole } from '@/context/RoleContext';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, where, getDocs, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Loader2, Sparkles, Percent, PlusCircle, Trash2, Megaphone, History } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
+import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
+import { cn } from '@/lib/utils';
+import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
-import { generateAnnouncement, type GenerateAnnouncementInput } from '@/ai/flows/generate-announcement-flow';
-import { generatePromoCode, type GeneratePromoCodeInput } from '@/ai/flows/generate-promo-code-flow';
-import { getFirestore, doc, setDoc, getDoc, addDoc, collection, serverTimestamp, query, orderBy, onSnapshot } from 'firebase/firestore';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { formatDistanceToNow } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { deleteUserAccount } from '@/app/actions/userActions';
 
-const announcementSchema = z.object({
-  message: z.string().min(10, 'Veuillez décrire l\'annonce que vous souhaitez générer.'),
-});
 
-const promoCodeSchema = z.object({
-  prompt: z.string().min(10, 'Veuillez décrire le code promo que vous souhaitez générer.'),
-});
+const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
+  switch (role) {
+    case 'admin':
+      return 'destructive';
+    case 'instructor':
+      return 'default';
+    default:
+      return 'secondary';
+  }
+};
 
-type AnnouncementFormValues = z.infer<typeof announcementSchema>;
-type PromoCodeFormValues = z.infer<typeof promoCodeSchema>;
+const getStatusBadgeVariant = (status?: 'active' | 'suspended') => {
+    return status === 'suspended' ? 'destructive' : 'default';
+};
 
-interface Announcement {
-    id: string;
-    text: string;
-    createdAt: any;
-}
+const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: string | undefined }) => {
+    const { toast } = useToast();
+    const router = useRouter();
+    const db = getFirestore();
+    const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
+    const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
+    
+    const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
 
-export default function MarketingAIPage() {
-  const { toast } = useToast();
-  const db = getFirestore();
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isGeneratingCode, setIsGeneratingCode] = useState(false);
-  const [generatedCodeResponse, setGeneratedCodeResponse] = useState('');
-  const [announcementsHistory, setAnnouncementsHistory] = useState<Announcement[]>([]);
-
-  const announcementForm = useForm<AnnouncementFormValues>({
-    resolver: zodResolver(announcementSchema),
-    defaultValues: { message: '' },
-  });
-
-  const promoCodeForm = useForm<PromoCodeFormValues>({
-    resolver: zodResolver(promoCodeSchema),
-    defaultValues: { prompt: '' },
-  });
-
-  useEffect(() => {
-    const settingsRef = doc(db, 'settings', 'global');
-    getDoc(settingsRef).then(docSnap => {
-        if (docSnap.exists()) {
-            announcementForm.setValue('message', docSnap.data().platform?.announcementMessage || '');
+    const handleRoleChange = async () => {
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { role: selectedRole });
+            toast({ title: "Rôle mis à jour", description: `Le rôle de ${user.fullName} est maintenant ${selectedRole}.` });
+            setIsRoleDialogOpen(false);
+        } catch (error) {
+            console.error("Failed to update role:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le rôle." });
+        } finally {
+            setIsSubmitting(false);
         }
-    });
+    };
 
-    const historyQuery = query(collection(db, 'announcements'), orderBy('createdAt', 'desc'));
-    const unsubscribe = onSnapshot(historyQuery, (snapshot) => {
-        setAnnouncementsHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Announcement)));
-    });
-    return () => unsubscribe();
-  }, [db, announcementForm]);
+    const handleStatusToggle = async () => {
+        const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+        setIsSubmitting(true);
+        try {
+            await updateDoc(userDocRef, { status: newStatus });
+            toast({ title: "Statut mis à jour", description: `${user.fullName} est maintenant ${newStatus === 'active' ? 'actif' : 'suspendu'}.` });
+        } catch (error) {
+            console.error("Failed to toggle status:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier le statut." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
-  const handleAiAssist = async () => {
-    const currentMessage = announcementForm.getValues('message');
-    if (!currentMessage.trim()) {
-        toast({ variant: 'destructive', title: 'Champ vide', description: 'Veuillez d\'abord saisir un sujet ou un message à améliorer.' });
-        return;
-    }
-    setIsAiLoading(true);
-    try {
-      const result = await generateAnnouncement({ topic: currentMessage });
-      announcementForm.setValue('message', result.announcement, { shouldValidate: true });
-      toast({ title: 'Message amélioré par Mathias !', description: 'La proposition a été insérée dans le champ ci-dessous.' });
-    } catch (error) {
-      console.error('AI generation failed:', error);
-      toast({ variant: 'destructive', title: 'Erreur IA', description: "Impossible de générer l'annonce." });
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
+    const handleDeleteUser = async () => {
+        setIsSubmitting(true);
+        const auth = getAuth();
+        const adminUser = auth.currentUser;
 
-  const onAnnouncementSubmit = async (data: AnnouncementFormValues) => {
-    setIsSaving(true);
-    const settingsRef = doc(db, 'settings', 'global');
-    try {
-        await setDoc(settingsRef, { platform: { announcementMessage: data.message } }, { merge: true });
-        await addDoc(collection(db, 'announcements'), { text: data.message, createdAt: serverTimestamp() });
-        toast({ title: 'Annonce mise à jour !', description: 'La nouvelle annonce est maintenant visible sur le site.' });
-    } catch (error) {
-        console.error('Error saving announcement:', error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder l\'annonce.' });
-    } finally {
-        setIsSaving(false);
-    }
-  };
+        if (!adminUser) {
+            toast({ variant: "destructive", title: "Erreur d'authentification", description: "Administrateur non connecté." });
+            setIsSubmitting(false);
+            return;
+        }
 
-  const onPromoCodeSubmit = async (data: PromoCodeFormValues) => {
-    setIsGeneratingCode(true);
-    setGeneratedCodeResponse('');
-    try {
-      const result = await generatePromoCode({ prompt: data.prompt });
-      setGeneratedCodeResponse(result.response);
-      toast({ title: 'Opération terminée !', description: result.response });
-      promoCodeForm.reset();
-    } catch (error) {
-      console.error('Error generating promo code:', error);
-      toast({ variant: 'destructive', title: 'Erreur de génération', description: "Une erreur est survenue lors de la communication avec l'IA." });
-    } finally {
-      setIsGeneratingCode(false);
-    }
-  };
+        try {
+            const token = await adminUser.getIdToken();
+            const result = await deleteUserAccount({ userId: user.uid, idToken: token });
+            
+            if (result.success) {
+                toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été définitivement supprimé.` });
+                setIsDeleteAlertOpen(false);
+            } else {
+                throw new Error(result.error || 'Unknown error');
+            }
+        } catch (error: any) {
+            console.error("Failed to delete user:", error);
+            toast({ variant: "destructive", title: "Erreur de suppression", description: error.message || "Impossible de supprimer l'utilisateur." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    const handleStartChat = async () => {
+        if (!adminId || adminId === user.uid) return;
+
+        const chatsRef = collection(db, 'chats');
+        const sortedParticipants = [adminId, user.uid].sort();
+        
+        const q = query(chatsRef, where('participants', '==', sortedParticipants));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            let chatId: string | null = null;
+            if (!querySnapshot.empty) {
+                chatId = querySnapshot.docs[0].id;
+            } else {
+                const newChatRef = doc(collection(db, 'chats'));
+                await setDoc(newChatRef, {
+                    participants: sortedParticipants,
+                    createdAt: serverTimestamp(),
+                    updatedAt: serverTimestamp(),
+                    lastMessage: `Conversation initiée par un administrateur.`,
+                });
+                chatId = newChatRef.id;
+            }
+            router.push(`/messages/${chatId}`);
+        } catch (error) {
+            console.error("Error starting chat:", error);
+            toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
+        }
+    };
+
+    return (
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)}>
+                        <Eye className="mr-2 h-4 w-4"/>
+                        Voir le profil
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStartChat}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Contacter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsRoleDialogOpen(true)}>
+                        <UserCog className="mr-2 h-4 w-4"/>
+                        Modifier le rôle
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={handleStatusToggle} disabled={isSubmitting}>
+                        <Ban className="mr-2 h-4 w-4"/>
+                        {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onSelect={() => setIsDeleteAlertOpen(true)} className="text-destructive">
+                        <Trash2 className="mr-2 h-4 w-4"/>
+                        Supprimer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+            
+            {/* Role Change Dialog */}
+            <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Modifier le rôle de {user.fullName}</DialogTitle>
+                        <DialogDescription>
+                            Sélectionnez le nouveau rôle pour l'utilisateur. Ce changement prendra effet immédiatement.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4">
+                        <Select value={selectedRole} onValueChange={(value: UserRole) => setSelectedRole(value)}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir un rôle" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="student">Étudiant</SelectItem>
+                                <SelectItem value="instructor">Instructeur</SelectItem>
+                                <SelectItem value="admin">Admin</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="ghost" onClick={() => setIsRoleDialogOpen(false)}>Annuler</Button>
+                        <Button onClick={handleRoleChange} disabled={isSubmitting}>
+                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Confirmer
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Delete Confirmation Alert */}
+            <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet utilisateur ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le compte et les données associées de {user.fullName} seront définitivement supprimés.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDeleteUser} className="bg-destructive hover:bg-destructive/90">
+                             {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Supprimer'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </>
+    );
+};
+
+
+export default function AdminUsersPage() {
+  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const db = getFirestore();
+  const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+  const usersQuery = useMemoFirebase(
+    () => query(collection(db, 'users'), orderBy('createdAt', 'desc')),
+    [db]
+  );
+  const { data: users, isLoading: usersLoading } = useCollection<FormaAfriqueUser & {createdAt?: any; status?: 'active' | 'suspended'}>(usersQuery);
+
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!debouncedSearchTerm) return users;
+    return users.filter(user =>
+      user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [users, debouncedSearchTerm]);
+
+  const isLoading = isUserLoading || usersLoading;
+
+  if (adminUser?.role !== 'admin') {
+    return <div className="p-8 text-center">Accès non autorisé.</div>;
+  }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 max-w-7xl mx-auto px-4">
       <header>
-        <h1 className="text-3xl font-bold text-white">Marketing par IA</h1>
-        <p className="text-slate-400">Utilisez Mathias pour vous assister dans vos tâches marketing.</p>
+        <h1 className="text-3xl font-bold dark:text-white">Gestion des Utilisateurs</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Recherchez, consultez et gérez tous les utilisateurs de la plateforme.</p>
       </header>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Announcement Management Card */}
-        <Card className="bg-[#1e293b] border-slate-700 flex flex-col">
-            <CardHeader>
-                <CardTitle className="text-white flex items-center gap-2"><Megaphone className="h-5 w-5"/> Gestion de l'Annonce Globale</CardTitle>
-                <CardDescription className="text-slate-400">
-                    Saisissez ou améliorez le message qui s'affichera en bannière sur tout le site.
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4 flex-grow">
-              <Form {...announcementForm}>
-                <form id="announcement-form" onSubmit={announcementForm.handleSubmit(onAnnouncementSubmit)} className="space-y-4">
-                  <FormField
-                    control={announcementForm.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-white">Message de l'annonce</FormLabel>
-                        <FormControl>
-                          <Textarea
-                            placeholder="Ex: -50% sur tous les cours ce weekend !"
-                            {...field}
-                            rows={5}
-                            className="bg-slate-700 border-slate-600 text-white"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="flex flex-col sm:flex-row gap-2">
-                    <Button type="button" variant="outline" onClick={handleAiAssist} disabled={isAiLoading} className="w-full sm:w-auto bg-slate-800 border-slate-600 hover:bg-slate-700">
-                        {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                        Améliorer avec Mathias
-                    </Button>
-                     <Button type="submit" form="announcement-form" disabled={isSaving} className="w-full sm:w-auto">
-                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Mettre à jour l'annonce
-                    </Button>
-                  </div>
-                </form>
-              </Form>
-            </CardContent>
-            <CardFooter className="mt-4 border-t border-slate-700 pt-4 flex-col items-start">
-                 <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-2"><History className="h-4 w-4"/> Historique des annonces</h3>
-                 <ScrollArea className="h-32 w-full">
-                    <div className="space-y-2 pr-4">
-                        {announcementsHistory.map(ann => (
-                            <div key={ann.id} onClick={() => announcementForm.setValue('message', ann.text)} className="text-xs p-2 rounded-md bg-slate-800 hover:bg-slate-700 cursor-pointer">
-                                <p className="text-slate-300 line-clamp-2">{ann.text}</p>
-                                <p className="text-slate-500">{formatDistanceToNow(ann.createdAt.toDate(), { locale: fr, addSuffix: true })}</p>
-                            </div>
-                        ))}
-                    </div>
-                 </ScrollArea>
-            </CardFooter>
-        </Card>
 
-        {/* Promo Code Generation Card */}
-        <Card className="bg-[#1e293b] border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2"><Percent className="h-5 w-5"/> Générateur de Codes Promo</CardTitle>
-            <CardDescription className="text-slate-400">
-              Décrivez une promotion et Mathias créera le code pour vous.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Form {...promoCodeForm}>
-              <form onSubmit={promoCodeForm.handleSubmit(onPromoCodeSubmit)} className="space-y-4">
-                <FormField
-                  control={promoCodeForm.control}
-                  name="prompt"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-white">Votre demande à Mathias</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="Ex: Crée un code de 25% pour la fête de la jeunesse, valable une semaine."
-                          {...field}
-                          rows={3}
-                          className="bg-slate-700 border-slate-600 text-white"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <Button type="submit" disabled={isGeneratingCode}>
-                  {isGeneratingCode ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                  Générer le code promo
-                </Button>
-              </form>
-            </Form>
-             {generatedCodeResponse && (
-                <div className="mt-4 w-full rounded-md bg-slate-800 p-4 text-sm text-slate-300">
-                    <p className="font-semibold text-white mb-2">Réponse de Mathias :</p>
-                    <p>{generatedCodeResponse}</p>
-                </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
+        <CardHeader>
+          <CardTitle className="dark:text-white">Utilisateurs de FormaAfrique</CardTitle>
+          <CardDescription className="dark:text-slate-400">
+            Liste de tous les utilisateurs enregistrés.
+          </CardDescription>
+          <div className="relative pt-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par nom ou email..."
+              className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                  <TableHead className="dark:text-slate-400">Nom</TableHead>
+                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
+                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  [...Array(5)].map((_, i) => (
+                    <TableRow key={i} className="dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+                          <Skeleton className="h-4 w-32 dark:bg-slate-700" />
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : filteredUsers.length > 0 ? (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                            <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
+                            <div className="sm:hidden mt-1">
+                                <Badge variant={getStatusBadgeVariant(user.status)} className={cn('text-xs', user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                                    {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
+                      <TableCell className="hidden lg:table-cell">
+                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                       <TableCell className="hidden sm:table-cell">
+                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800')}>
+                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                          </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                          <UserActions user={user} adminId={adminUser?.uid} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow className="dark:border-slate-700">
+                    <TableCell colSpan={5} className="h-48 text-center">
+                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <UserX className="h-12 w-12" />
+                          <p className="font-medium">Aucun utilisateur trouvé</p>
+                          <p className="text-sm">
+                              {searchTerm 
+                                  ? `Aucun résultat pour "${searchTerm}".`
+                                  : "Il n'y a pas encore d'utilisateurs sur la plateforme."
+                              }
+                          </p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
