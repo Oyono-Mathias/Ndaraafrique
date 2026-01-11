@@ -382,6 +382,19 @@ const SupportButton = () => {
     );
 };
 
+const Header = () => {
+    return (
+        <div className="flex items-center gap-4 w-full">
+            <div className="w-full flex-1">
+                {/* Search can be added back here if needed */}
+            </div>
+            <LanguageSelector />
+            <HeaderNotificationButton />
+            <UserNav />
+        </div>
+    );
+}
+
 const HeaderNotificationButton = () => {
   const router = useRouter();
   const isMobile = useIsMobile();
@@ -550,11 +563,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                               {getPageTitle(pathname)}
                           </h1>
                       </div>
-                      <div className="flex items-center gap-2">
-                          <LanguageSelector />
-                          <HeaderNotificationButton />
-                          <UserNav />
-                      </div>
+                      <Header />
                   </header>
                 )}
                 

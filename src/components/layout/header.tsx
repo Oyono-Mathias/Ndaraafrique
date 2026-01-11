@@ -159,10 +159,8 @@ const HeaderNotificationButton = () => {
 
 export function Header() {
     return (
-        <div className="flex items-center gap-4 w-full">
-            <div className="w-full flex-1">
-                {/* Search can be added back here if needed */}
-            </div>
+        <div className="flex items-center gap-2">
+            <div className="flex-1" />
             <LanguageSelector />
             <HeaderNotificationButton />
             <UserNav />
