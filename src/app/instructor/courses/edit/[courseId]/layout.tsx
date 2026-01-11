@@ -60,7 +60,7 @@ export default function CourseEditLayout({
     const { courseId } = useParams();
     const db = getFirestore();
     const { toast } = useToast();
-    const { formaAfriqueUser } = useRole();
+    const { formaAfriqueUser, role } = useRole();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const courseRef = useMemoFirebase(() => doc(db, 'courses', courseId as string), [db, courseId]);
@@ -92,7 +92,7 @@ export default function CourseEditLayout({
         let successTitle = '';
         let successDescription = '';
 
-        if (formaAfriqueUser.role === 'admin') {
+        if (role === 'admin') {
             newStatus = 'Published';
             successTitle = 'Cours approuvé et publié !';
             successDescription = 'Le cours est maintenant visible par tous les étudiants.';
@@ -121,7 +121,7 @@ export default function CourseEditLayout({
     const renderActionButton = () => {
         if (!course || !formaAfriqueUser) return null;
 
-        if (formaAfriqueUser.role === 'admin') {
+        if (role === 'admin') {
             if (course.status === 'Published') return null;
             return (
                 <Button size="sm" onClick={handleAction} disabled={isSubmitting}>
@@ -131,7 +131,7 @@ export default function CourseEditLayout({
             );
         }
         
-        if (formaAfriqueUser.role === 'instructor') {
+        if (role === 'instructor') {
              if (course.status === 'Published' || course.status === 'Pending Review') return null;
             return (
                  <Button size="sm" onClick={handleAction} disabled={isSubmitting}>
