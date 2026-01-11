@@ -23,6 +23,9 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+
 
 interface Payment {
   id: string;
@@ -44,19 +47,24 @@ const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(amount);
 };
 
-const getStatusBadge = (status: Payment['status']) => {
-    switch(status) {
-        case 'Completed': return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Complété</Badge>;
-        case 'Failed': return <Badge variant="destructive">Échoué</Badge>;
-        case 'Refunded': return <Badge variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">Remboursé</Badge>;
-        default: return <Badge variant="outline">En attente</Badge>
-    }
+const StatusBadge = ({ status }: { status: Payment['status'] }) => {
+    const { t } = useTranslation();
+    const statusMap = {
+        'Completed': { text: t('statusCompleted'), className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+        'Failed': { text: t('statusFailed'), className: 'bg-red-100 text-red-800' },
+        'Refunded': { text: t('statusRefunded'), className: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' },
+        'Pending': { text: t('statusPending'), className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
+    };
+    const { text, className } = statusMap[status] || { text: status, className: 'bg-slate-100 text-slate-800' };
+
+    return <Badge className={cn(className)}>{text}</Badge>;
 }
 
 
 export default function AdminPaymentsPage() {
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -114,27 +122,27 @@ export default function AdminPaymentsPage() {
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Transactions</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Historique de toutes les transactions de la plateforme.</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('navTransactions')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('transactionsDescription')}</p>
       </header>
 
       {paymentsError && (
         <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
             <AlertCircle className="h-5 w-5" />
-            <p>Une erreur est survenue lors du chargement des transactions. Un index Firestore est peut-être manquant.</p>
+            <p>{t('firestoreIndexError')}</p>
         </div>
       )}
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white">Journal des paiements</CardTitle>
+          <CardTitle className="dark:text-white">{t('sales_history')}</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            Recherchez des paiements par ID de transaction, nom ou email de l'acheteur.
+            {t('transactionsSearchDescription')}
           </CardDescription>
           <div className="relative pt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher..."
+              placeholder={t('searchPlaceholder')}
               className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -146,11 +154,11 @@ export default function AdminPaymentsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Acheteur</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Cours</TableHead>
-                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Montant</TableHead>
-                   <TableHead className="hidden md:table-cell dark:text-slate-400">Date</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('buyer')}</TableHead>
+                  <TableHead className="hidden lg:table-cell dark:text-slate-400">{t('courseTitle')}</TableHead>
+                  <TableHead className="hidden sm:table-cell dark:text-slate-400">{t('amount')}</TableHead>
+                   <TableHead className="hidden md:table-cell dark:text-slate-400">{t('date')}</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">{t('status')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -184,7 +192,7 @@ export default function AdminPaymentsPage() {
                         {payment.date ? format(payment.date.toDate(), 'dd MMM yyyy, HH:mm', { locale: fr }) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
-                        {getStatusBadge(payment.status)}
+                        <StatusBadge status={payment.status} />
                       </TableCell>
                     </TableRow>
                   ))
@@ -193,11 +201,11 @@ export default function AdminPaymentsPage() {
                     <TableCell colSpan={5} className="h-48 text-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <ShoppingCart className="h-12 w-12" />
-                          <p className="font-medium">Aucune transaction trouvée</p>
+                          <p className="font-medium">{t('noTransactionsFound')}</p>
                           <p className="text-sm">
                               {searchTerm 
-                                  ? `Aucun résultat pour "${searchTerm}".`
-                                  : "Il n'y a pas encore de transactions sur la plateforme."
+                                  ? t('noResultsFor', { term: searchTerm })
+                                  : t('noTransactionsYet')
                               }
                           </p>
                       </div>
@@ -226,7 +234,7 @@ export default function AdminPaymentsPage() {
                             </div>
                             <div className="text-right">
                                 <p className="font-bold text-green-600 dark:text-green-400 text-lg">+{formatCurrency(payment.amount, payment.currency)}</p>
-                                {getStatusBadge(payment.status)}
+                                <StatusBadge status={payment.status} />
                             </div>
                         </div>
                     </Card>
@@ -235,7 +243,7 @@ export default function AdminPaymentsPage() {
                  <div className="h-48 text-center flex items-center justify-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                       <ShoppingCart className="h-12 w-12" />
-                      <p className="font-medium">Aucune transaction</p>
+                      <p className="font-medium">{t('noTransactionsFound')}</p>
                     </div>
                 </div>
              )}
