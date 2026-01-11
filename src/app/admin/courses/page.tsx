@@ -30,6 +30,7 @@ import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-reac
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useTranslation } from 'react-i18next';
 
 const getStatusBadgeVariant = (status?: Course['status']) => {
   switch (status) {
@@ -73,7 +74,18 @@ const CourseActions = ({ course }: { course: Course }) => {
     );
 };
 
-const CourseCard = ({ course, instructorName }: { course: Course, instructorName: string }) => (
+const CourseCard = ({ course, instructorName, t }: { course: Course, instructorName: string, t: (key: string) => string }) => {
+    
+    const getStatusText = (status: Course['status'] = 'Draft') => {
+        switch(status) {
+            case 'Published': return t('published');
+            case 'Pending Review': return t('review');
+            case 'Draft': return t('draft');
+            default: return status;
+        }
+    }
+
+    return (
     <Card className="dark:bg-slate-800 dark:border-slate-700 flex flex-col">
         <div className="relative aspect-video">
             <Image
@@ -91,7 +103,7 @@ const CourseCard = ({ course, instructorName }: { course: Course, instructorName
              <div className="flex justify-between items-center text-xs text-muted-foreground dark:text-slate-400">
                 <span>{course.category}</span>
                 <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize">
-                  {course.status === 'Pending Review' ? 'En révision' : course.status === 'Draft' ? 'Brouillon' : 'Publié'}
+                    {getStatusText(course.status)}
                 </Badge>
             </div>
             <div className="flex justify-between items-center mt-2 pt-2 border-t dark:border-slate-700">
@@ -102,9 +114,20 @@ const CourseCard = ({ course, instructorName }: { course: Course, instructorName
             </div>
         </CardContent>
     </Card>
-);
+)};
 
-const CourseRow = ({ course, instructorName }: { course: Course, instructorName: string }) => (
+const CourseRow = ({ course, instructorName, t }: { course: Course, instructorName: string, t: (key: string) => string }) => {
+    
+    const getStatusText = (status: Course['status'] = 'Draft') => {
+        switch(status) {
+            case 'Published': return t('published');
+            case 'Pending Review': return t('review');
+            case 'Draft': return t('draft');
+            default: return status;
+        }
+    }
+    
+    return (
      <div className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
         <Image
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/160/90`}
@@ -118,7 +141,7 @@ const CourseRow = ({ course, instructorName }: { course: Course, instructorName:
             <p className="text-xs text-muted-foreground dark:text-slate-400">Par {instructorName}</p>
             <div className="flex items-center gap-2 mt-1">
                  <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize text-xs">
-                  {course.status === 'Pending Review' ? 'En révision' : course.status === 'Draft' ? 'Brouillon' : 'Publié'}
+                  {getStatusText(course.status)}
                 </Badge>
                 <p className="font-bold text-xs dark:text-white">
                     {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
@@ -127,12 +150,13 @@ const CourseRow = ({ course, instructorName }: { course: Course, instructorName:
         </div>
         <CourseActions course={course} />
      </div>
-);
+)};
 
 
 export default function AdminCoursesPage() {
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
+  const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
@@ -181,7 +205,7 @@ export default function AdminCoursesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Gestion des Formations</h1>
+        <h1 className="text-3xl font-bold dark:text-white">{t('course_mgmt')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">Consultez et gérez toutes les formations de la plateforme.</p>
       </header>
 
@@ -208,7 +232,7 @@ export default function AdminCoursesPage() {
                     [...Array(8)].map((_, i) => <Skeleton key={i} className="h-80 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
                     filteredCourses.map(course => (
-                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
+                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-10">
@@ -224,7 +248,7 @@ export default function AdminCoursesPage() {
                     [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
                      filteredCourses.map(course => (
-                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
+                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-10">
