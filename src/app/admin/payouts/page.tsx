@@ -34,6 +34,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
+import { useTranslation } from 'react-i18next';
 
 interface Payout {
   id: string;
@@ -48,14 +49,14 @@ interface EnrichedPayout extends Payout {
     instructor?: Pick<FormaAfriqueUser, 'fullName' | 'email' | 'profilePictureURL'>;
 }
 
-const getStatusBadge = (status: Payout['status']) => {
+const getStatusBadge = (status: Payout['status'], t: (key: string) => string) => {
   switch (status) {
     case 'en_attente':
-      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">En attente</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">{t('pending')}</Badge>;
     case 'valide':
-      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Validé</Badge>;
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">{t('approved')}</Badge>;
     case 'rejete':
-      return <Badge variant="destructive">Rejeté</Badge>;
+      return <Badge variant="destructive">{t('rejected')}</Badge>;
     default:
       return <Badge variant="secondary">Inconnu</Badge>;
   }
@@ -66,6 +67,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function PayoutsPage() {
+  const { t } = useTranslation();
   const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
@@ -119,10 +121,10 @@ export default function PayoutsPage() {
     const payoutRef = doc(db, 'payouts', payoutId);
     try {
       await updateDoc(payoutRef, { status: status });
-      toast({ title: 'Statut mis à jour', description: `La demande de retrait a été marquée comme ${status}.` });
+      toast({ title: t('payoutStatusUpdated'), description: t('payoutMarkedAs', { status }) });
     } catch (error) {
       console.error("Error updating payout status:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le statut.' });
+      toast({ variant: 'destructive', title: t('errorTitle'), description: t('payoutUpdateError') });
     } finally {
       setUpdatingId(null);
     }
@@ -133,17 +135,17 @@ export default function PayoutsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Demandes de Retrait</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Gérez les demandes de paiement des instructeurs.</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('payout_requests')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('payoutsManagementDescription')}</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
              <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
-                    <TabsTrigger value="en_attente">En attente</TabsTrigger>
-                    <TabsTrigger value="valide">Validées</TabsTrigger>
-                    <TabsTrigger value="rejete">Rejetées</TabsTrigger>
+                    <TabsTrigger value="en_attente">{t('pending')}</TabsTrigger>
+                    <TabsTrigger value="valide">{t('approved')}</TabsTrigger>
+                    <TabsTrigger value="rejete">{t('rejected')}</TabsTrigger>
                 </TabsList>
             </Tabs>
         </CardHeader>
@@ -152,11 +154,11 @@ export default function PayoutsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Instructeur</TableHead>
-                  <TableHead className="dark:text-slate-400">Montant</TableHead>
-                  <TableHead className="dark:text-slate-400">Date</TableHead>
-                   <TableHead className="dark:text-slate-400">Méthode</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('instructor')}</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('amount')}</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('date')}</TableHead>
+                   <TableHead className="dark:text-slate-400">{t('method')}</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -194,14 +196,14 @@ export default function PayoutsPage() {
                              <div className="flex justify-end gap-2">
                                 <Button onClick={() => handleUpdateStatus(payout.id, 'rejete')} size="sm" variant="destructive" disabled={updatingId === payout.id}>
                                     {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
-                                    Rejeter
+                                    {t('reject')}
                                 </Button>
                                 <Button onClick={() => handleUpdateStatus(payout.id, 'valide')} size="sm" variant="default" disabled={updatingId === payout.id}>
-                                    {updatingId === payout.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
-                                    Valider
+                                    {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                                    {t('approve_pay')}
                                 </Button>
                              </div>
-                         ) : getStatusBadge(payout.status)}
+                         ) : getStatusBadge(payout.status, t)}
                       </TableCell>
                     </TableRow>
                   ))
@@ -210,8 +212,8 @@ export default function PayoutsPage() {
                     <TableCell colSpan={5} className="h-48 text-center">
                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <Wallet className="h-12 w-12" />
-                          <p className="font-medium">Aucune demande de retrait</p>
-                          <p className="text-sm">Il n'y a aucune demande de retrait avec le statut "{activeTab}".</p>
+                          <p className="font-medium">{t('noPayoutRequests')}</p>
+                          <p className="text-sm">{t('noPayoutsForStatus', { status: activeTab })}</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -243,17 +245,17 @@ export default function PayoutsPage() {
                              <CardContent className="flex justify-between gap-2">
                                 <Button onClick={() => handleUpdateStatus(payout.id, 'rejete')} variant="destructive" className="flex-1" disabled={updatingId === payout.id}>
                                     {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <X className="mr-2 h-4 w-4"/>}
-                                    Rejeter
+                                    {t('reject')}
                                 </Button>
                                 <Button onClick={() => handleUpdateStatus(payout.id, 'valide')} className="flex-1" disabled={updatingId === payout.id}>
                                     {updatingId === payout.id ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
-                                    Valider
+                                    {t('approve_pay')}
                                 </Button>
                             </CardContent>
                         )}
                          {payout.status !== 'en_attente' && (
                             <CardContent className="flex justify-center">
-                                {getStatusBadge(payout.status)}
+                                {getStatusBadge(payout.status, t)}
                             </CardContent>
                          )}
                     </Card>
@@ -262,7 +264,7 @@ export default function PayoutsPage() {
                 <div className="h-48 text-center flex items-center justify-center">
                     <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                         <Wallet className="h-12 w-12" />
-                        <p className="font-medium">Aucune demande de retrait</p>
+                        <p className="font-medium">{t('noPayoutRequests')}</p>
                     </div>
                 </div>
              )}
