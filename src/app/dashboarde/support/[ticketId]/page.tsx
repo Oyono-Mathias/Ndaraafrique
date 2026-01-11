@@ -260,7 +260,7 @@ function AdminTicketDetailsPage({ ticketId }: { ticketId: string }) {
 }
 
 // Default export needed for Next.js pages. This is the main component for the page.
-export default function TicketDetailsPage() {
+export default function TicketDetailsWrapper() {
   const { ticketId } = useParams();
   if (!ticketId || typeof ticketId !== 'string') {
     return (

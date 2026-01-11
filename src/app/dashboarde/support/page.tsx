@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -17,8 +17,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import TicketDetailsPage from './[ticketId]/page';
+import TicketDetailsWrapper from './[ticketId]/page';
 
 interface SupportTicket {
     id: string;
@@ -180,7 +179,7 @@ export default function AdminSupportPage() {
                 
                  <div className="lg:col-span-2 hidden lg:block rounded-2xl shadow-sm bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700 overflow-hidden">
                     {activeTicketId ? (
-                        <TicketDetailsPage ticketId={activeTicketId} />
+                        <TicketDetailsWrapper key={activeTicketId} />
                     ) : (
                          <div className="h-full flex items-center justify-center text-slate-500 flex-col">
                             <Inbox className="h-16 w-16" />
