@@ -19,6 +19,7 @@ import {
   LogIn,
   Shield,
   Briefcase,
+  UserCheck,
 } from "lucide-react";
 import { getAuth, signOut } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -28,6 +29,7 @@ import { Button } from "../ui/button";
 const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, text: "Tableau de bord" },
     { href: "/admin/users", icon: Users, text: "Utilisateurs" },
+    { href: "/admin/instructors", icon: UserCheck, text: "Candidatures" },
     { href: "/admin/moderation", icon: ShieldAlert, text: "Modération" },
     { href: "/admin/courses", icon: BookOpen, text: "Formations" },
     { href: "/admin/payments", icon: CreditCard, text: "Finances" },
