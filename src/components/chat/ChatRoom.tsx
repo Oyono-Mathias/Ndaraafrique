@@ -30,6 +30,7 @@ import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
 
 interface Message {
   id: string;
@@ -58,6 +59,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { t } = useTranslation();
 
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
@@ -278,7 +280,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {otherParticipant?.isOnline ? 'En ligne' : `Vu ${timeSinceLastSeen}`}
+                    {otherParticipant?.isOnline ? t('online') : `Vu ${timeSinceLastSeen}`}
                 </p>
             </div>
             <div className="flex items-center gap-2">
@@ -323,7 +325,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Écrivez votre message..."
+                    placeholder={t('write_msg')}
                     className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base shadow-md"
                 />
                 <Button type="submit" size="icon" disabled={!newMessage.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">

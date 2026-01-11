@@ -37,6 +37,7 @@ import {
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatRoom } from '@/components/chat/ChatRoom';
+import { useTranslation } from 'react-i18next';
 
 // --- INTERFACES ---
 interface Chat {
@@ -56,6 +57,7 @@ export default function MessagesPage() {
   const db = getFirestore();
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { t } = useTranslation();
   
   const [chatList, setChatList] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -214,11 +216,11 @@ export default function MessagesPage() {
             {/* Left Column: Chat List */}
             <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800">
                  <div className="p-4 border-b border-slate-800">
-                    <h1 className="font-bold text-xl text-white">Messagerie</h1>
+                    <h1 className="font-bold text-xl text-white">{t('navMessages')}</h1>
                      <div className="relative pt-2">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                         <Input
-                            placeholder="Rechercher une discussion..."
+                            placeholder={t('search_chat')}
                             className="pl-10 h-9 rounded-full bg-slate-800 border-slate-700 text-white"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -330,11 +332,11 @@ export default function MessagesPage() {
     <>
     <Card className="dark:bg-slate-900 dark:border-slate-800 flex flex-col h-full">
         <CardHeader className="border-b dark:border-slate-800">
-            <CardTitle className="dark:text-white">Messagerie</CardTitle>
+            <CardTitle className="dark:text-white">{t('navMessages')}</CardTitle>
              <div className="relative pt-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input
-                    placeholder="Rechercher une discussion..."
+                    placeholder={t('search_chat')}
                     className="pl-10 h-9 rounded-full bg-slate-800 border-slate-700 text-white"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
