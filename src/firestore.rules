@@ -39,6 +39,7 @@ service cloud.firestore {
 
     // --- Règles pour 'users' ---
     match /users/{userId} {
+      allow list: if isAdmin();
       allow read: if isSignedIn();
       allow create: if request.auth != null && request.auth.uid == userId;
       
@@ -200,5 +201,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
