@@ -1,7 +1,9 @@
 
+
 'use server';
 
 import { adminAuth, adminDb } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
     if (!idToken) {
@@ -43,3 +45,28 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
         return { success: false, error: error.message || 'Une erreur inconnue est survenue.' };
     }
 }
+
+export async function sendEncouragementMessage({ studentId }: { studentId: string }): Promise<{ success: boolean, error?: string }> {
+    if (!studentId) {
+        return { success: false, error: "L'ID de l'étudiant est manquant." };
+    }
+    
+    const message = "Félicitations pour votre progression ! Continuez comme ça, vous êtes sur la bonne voie.";
+
+    try {
+        const chatHistoryRef = adminDb.collection('users').doc(studentId).collection('chatHistory');
+        
+        await chatHistoryRef.add({
+            sender: 'ai',
+            text: message,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true };
+
+    } catch (error: any) {
+        console.error("Error sending encouragement message:", error);
+        return { success: false, error: error.message || "Une erreur inconnue est survenue lors de l'envoi du message." };
+    }
+}
+

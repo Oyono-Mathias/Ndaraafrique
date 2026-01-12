@@ -49,12 +49,12 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare } from 'lucide-react';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare, Sparkles } from 'lucide-react';
 import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
-import { deleteUserAccount } from '@/app/actions/userActions';
+import { deleteUserAccount, sendEncouragementMessage } from '@/app/actions/userActions';
 import { useTranslation } from 'react-i18next';
 
 
@@ -171,6 +171,22 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
             toast({ variant: 'destructive', title: 'Erreur de messagerie', description: 'Impossible de démarrer la conversation.' });
         }
     };
+    
+    const handleCongratulate = async () => {
+        setIsSubmitting(true);
+        try {
+            const result = await sendEncouragementMessage({ studentId: user.uid });
+            if (result.success) {
+                toast({ title: t('congrats_sent_title'), description: t('congrats_sent_desc', { name: user.fullName }) });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
+             toast({ variant: 'destructive', title: t('errorTitle'), description: error.message || t('congrats_sent_error') });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     return (
         <>
@@ -183,6 +199,10 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
                     <DropdownMenuLabel>{t('actions')}</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={handleCongratulate} disabled={isSubmitting} className="cursor-pointer dark:focus:bg-slate-700">
+                        <Sparkles className="mr-2 h-4 w-4 text-amber-400" />
+                        {t('congratulate')}
+                    </DropdownMenuItem>
                     <DropdownMenuItem onSelect={handleStartChat} className="cursor-pointer dark:focus:bg-slate-700">
                         <MessageSquare className="mr-2 h-4 w-4" />
                         {t('contact')}
