@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -66,12 +67,19 @@ export default function AdminLayout({
       </div>
     );
   }
+  
+  const handleSidebarLinkClick = () => {
+    if (open) {
+      setOpen(false);
+    }
+  };
+
 
   return (
     <div className="admin-grid-layout bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
         {/* --- Sidebar for Tablet and Desktop --- */}
         <aside className="admin-sidebar-container hidden md:block border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
-             <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} />
+             <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
         </aside>
 
         {/* --- Main Content Area --- */}
@@ -89,7 +97,7 @@ export default function AdminLayout({
                     </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="flex flex-col p-0 bg-white dark:bg-slate-950 border-r dark:border-slate-800 text-slate-900 dark:text-slate-100 w-full max-w-[280px]">
-                        <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} />
+                        <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
                     </SheetContent>
                 </Sheet>
                 <Header />
@@ -101,3 +109,5 @@ export default function AdminLayout({
     </div>
   )
 }
+
+    
