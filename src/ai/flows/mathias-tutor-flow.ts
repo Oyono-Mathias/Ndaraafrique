@@ -71,6 +71,44 @@ const getCourseCatalog = ai.defineTool(
     }
 );
 
+const searchFaq = ai.defineTool(
+    {
+        name: 'searchFaq',
+        description: 'Searches the FAQ for a given query to find a relevant answer.',
+        inputSchema: z.object({
+            query: z.string().describe("The user's question to search for in the FAQ."),
+        }),
+        outputSchema: z.object({
+            answer: z.string().optional().describe("The answer found in the FAQ, if any."),
+        }),
+    },
+    async ({ query }) => {
+        try {
+            const faqsRef = adminDb.collection('faqs');
+            const snapshot = await faqsRef.get();
+            if (snapshot.empty) return { answer: undefined };
+
+            const queryWords = query.toLowerCase().split(/\s+/);
+            
+            for (const doc of snapshot.docs) {
+                const faq = doc.data();
+                const questionWords = faq.question_fr.toLowerCase().split(/\s+/);
+                const tags = faq.tags || [];
+
+                const match = queryWords.some(qw => questionWords.includes(qw) || tags.includes(qw));
+
+                if (match) {
+                    return { answer: faq.answer_fr };
+                }
+            }
+            
+            return { answer: undefined };
+        } catch (error) {
+            console.error('TOOL ERROR: Failed to search FAQ in Firestore:', error);
+            return { answer: undefined };
+        }
+    }
+);
 
 export async function mathiasTutor(input: MathiasTutorInput): Promise<MathiasTutorOutput> {
   return mathiasTutorFlow(input);
@@ -80,14 +118,18 @@ const mathiasTutorPrompt = ai.definePrompt({
   name: 'mathiasTutorPrompt',
   input: {schema: MathiasTutorInputSchema},
   output: {schema: MathiasTutorOutputSchema},
-  tools: [getCourseCatalog],
+  tools: [getCourseCatalog, searchFaq],
   prompt: `You are MATHIAS, an AI tutor for a platform called FormaAfrique, targeting students in French-speaking Africa.
   Your role is to act as an educational tutor.
   **You must respond exclusively in French.**
-  Answer questions, explain complex concepts, and provide additional context strictly related to the course content.
-  Be encouraging, clear, and professional. Always refer to yourself as MATHIAS.
+
+  **Your process is as follows:**
+  1.  **First, ALWAYS use the 'searchFaq' tool** to check if the user's question can be answered by the Frequently Asked Questions.
+  2.  If the 'searchFaq' tool returns an answer, provide that exact answer to the user, starting with "J'ai trouvé une réponse dans notre FAQ :".
+  3.  If the 'searchFaq' tool does not return an answer, then proceed to answer the question yourself based on your general knowledge and the provided context.
+  4.  If the user asks about available courses, their prices, or the catalog, you MUST use the 'getCourseCatalog' tool to get the most up-to-date information. Do not invent courses or prices.
   
-  If the user asks about available courses, their prices, or the catalog, you MUST use the 'getCourseCatalog' tool to get the most up-to-date information. Do not invent courses or prices.
+  Be encouraging, clear, and professional. Always refer to yourself as MATHIAS.
   
   If the user asks a question about a specific course he is currently on, use the provided course context to answer.
   

@@ -629,6 +629,24 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["type", "message", "isRead", "createdAt"]
+    },
+    "FAQ": {
+      "title": "FAQ",
+      "type": "object",
+      "description": "Represents a frequently asked question entry.",
+      "properties": {
+        "question_fr": { "type": "string" },
+        "answer_fr": { "type": "string" },
+        "question_sg": { "type": "string" },
+        "answer_sg": { "type": "string" },
+        "tags": { 
+            "type": "array", 
+            "items": { "type": "string" } 
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["question_fr", "answer_fr"]
     }
   },
   "auth": {
@@ -721,6 +739,10 @@
     "/admin_notifications/{notificationId}": {
       "schema": { "$ref": "#/entities/AdminNotification" },
       "description": "A collection for storing system-wide notifications for administrators."
+    },
+    "/faqs/{faqId}": {
+      "schema": { "$ref": "#/entities/FAQ" },
+      "description": "Stores frequently asked questions and their answers."
     },
     "/settings/global": {
       "schema": {

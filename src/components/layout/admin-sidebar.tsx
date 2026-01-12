@@ -23,6 +23,7 @@ import {
   UserCheck,
   Landmark,
   BarChart3,
+  MessageCircleQuestion,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -78,6 +79,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/marketing", icon: Sparkles, textKey: "navMarketing" },
     { href: "/admin/support", icon: HelpCircle, textKey: "navSupport" },
     { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
+    { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "FAQ" },
     { href: "/admin/settings", icon: Settings, textKey: "navSettings" },
 ];
 
@@ -132,7 +134,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
                 key={item.href} 
                 href={item.href} 
                 icon={item.icon} 
-                label={t(item.textKey)}
+                label={item.textKey === 'FAQ' ? item.textKey : t(item.textKey)}
                 count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
                 onClick={onLinkClick}
             />
