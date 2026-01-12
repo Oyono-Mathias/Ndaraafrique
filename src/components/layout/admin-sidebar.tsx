@@ -24,6 +24,7 @@ import {
   Landmark,
   BarChart3,
   MessageCircleQuestion,
+  GalleryHorizontal,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -77,6 +78,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/payments", icon: CreditCard, textKey: "navTransactions" },
     { href: "/admin/payouts", icon: Landmark, textKey: "navPayouts", countId: 'pendingPayouts' },
     { href: "/admin/marketing", icon: Sparkles, textKey: "navMarketing" },
+    { href: "/admin/carousel", icon: GalleryHorizontal, textKey: "navCarousel" },
     { href: "/admin/support", icon: HelpCircle, textKey: "navSupport" },
     { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
     { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "FAQ" },

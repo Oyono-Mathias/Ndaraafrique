@@ -22,7 +22,7 @@ export function DynamicCarousel() {
   const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, [
-    Autoplay({ delay: 5000, stopOnInteraction: false }),
+    Autoplay({ delay: 5000, stopOnInteraction: true }),
   ]);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
