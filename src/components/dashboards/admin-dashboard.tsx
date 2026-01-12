@@ -170,20 +170,20 @@ export function AdminDashboard() {
       
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Évolution des revenus</h2>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_evolution')}</h2>
             <Card className="dark:bg-[#1e293b] dark:border-slate-700 h-80 flex items-center justify-center">
                 <CardContent className="pt-6 text-center text-muted-foreground">
                     <Activity className="h-10 w-10 mx-auto mb-2"/>
-                    <p>Graphique bientôt disponible</p>
+                    <p>{t('graph_coming_soon')}</p>
                 </CardContent>
             </Card>
         </div>
         <div>
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Répartition des revenus</h2>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_distribution')}</h2>
             <Card className="dark:bg-[#1e293b] dark:border-slate-700 h-80 flex items-center justify-center">
                  <CardContent className="pt-6 text-center text-muted-foreground">
                     <DollarSign className="h-10 w-10 mx-auto mb-2"/>
-                    <p>Graphique bientôt disponible</p>
+                    <p>{t('graph_coming_soon')}</p>
                 </CardContent>
             </Card>
         </div>
@@ -220,7 +220,7 @@ export function AdminDashboard() {
                 ) : (
                     <div className="text-center py-10 text-muted-foreground dark:text-slate-500">
                         <ShoppingCart className="h-10 w-10 mx-auto mb-2"/>
-                        <p>Aucune activité récente à afficher.</p>
+                        <p>{t('no_recent_activity')}</p>
                     </div>
                 )}
             </CardContent>

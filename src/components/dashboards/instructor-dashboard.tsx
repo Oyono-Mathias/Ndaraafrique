@@ -178,13 +178,13 @@ function InstructorDashboardContent() {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold dark:text-white">{t('dashboardTitle')}</h1>
-                <p className="text-muted-foreground dark:text-slate-400">Bienvenue, {instructor?.fullName || 'Instructeur'}! Voici un aperçu de vos activités.</p>
+                <h1 className="text-3xl font-bold dark:text-white">{t('navInstructorDashboard')}</h1>
+                <p className="text-muted-foreground dark:text-slate-400">{t('welcome_message', { name: instructor?.fullName || 'Instructeur' })}</p>
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
-                    title={t('total_students')}
+                    title={t('active_students')}
                     value={stats.totalStudents.toLocaleString()} 
                     icon={Users} 
                     isLoading={isLoading} 
@@ -195,18 +195,18 @@ function InstructorDashboardContent() {
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
-                    change={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"}
+                    change={stats.totalReviews > 0 ? `${t('based_on_reviews', { count: stats.totalReviews })}` : t('waiting_for_reviews')}
                     accentColor="border-t-amber-500"
                 />
                 <StatCard 
-                    title={t('publishedCourses')}
+                    title={t('active_courses')}
                     value={stats.publishedCourses.toString()} 
                     icon={BookOpen} 
                     isLoading={isLoading}
                     accentColor="border-t-purple-500"
                 />
                 <StatCard 
-                    title={t('monthlyRevenue')}
+                    title={t('monthly_revenue')}
                     value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={DollarSign} 
                     isLoading={isLoading}
