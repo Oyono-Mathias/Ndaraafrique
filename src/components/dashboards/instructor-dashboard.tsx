@@ -15,7 +15,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { I18nProvider } from '@/context/I18nProvider';
 
 interface RevenueDataPoint {
     month: string;
@@ -275,11 +274,6 @@ function InstructorDashboardContent() {
     );
 }
 
-
 export function InstructorDashboard() {
-    return (
-        <I18nProvider>
-            <InstructorDashboardContent />
-        </I18nProvider>
-    )
+    return <InstructorDashboardContent />;
 }
