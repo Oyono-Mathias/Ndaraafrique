@@ -56,6 +56,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUserAccount, sendEncouragementMessage } from '@/app/actions/userActions';
 import { useTranslation } from 'react-i18next';
+import Link from 'next/link';
 
 
 const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
@@ -84,6 +85,13 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
     const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
     
     const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
+    
+    // Sync local state when dialog opens
+    useEffect(() => {
+        if (isRoleDialogOpen) {
+            setSelectedRole(user.role);
+        }
+    }, [isRoleDialogOpen, user.role]);
 
     const handleRoleChange = async () => {
         setIsSubmitting(true);
@@ -282,6 +290,7 @@ export default function AdminUsersPage() {
   const db = getFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const router = useRouter();
 
   const usersQuery = useMemoFirebase(
     () => query(collection(db, 'users'), where('role', 'in', ['student', 'instructor', 'admin'])),
@@ -357,17 +366,17 @@ export default function AdminUsersPage() {
                   ))
                 ) : filteredUsers.length > 0 ? (
                   filteredUsers.map((user) => (
-                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 dark:border-slate-700 tv:focus-within:bg-slate-700/50 tv:focus-within:scale-105 transition-transform duration-200">
+                    <TableRow key={user.uid} className="dark:hover:bg-slate-700/50 tv:focus-within:bg-slate-700/50 tv:focus-within:scale-105 transition-transform duration-200">
                       <TableCell>
-                        <div className="flex items-center gap-3">
+                        <Link href={`/instructor/${user.uid}`} className="flex items-center gap-3 group">
                           <Avatar>
                             <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
                             <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
+                            <span className="font-medium dark:text-slate-100 group-hover:underline">{user.fullName}</span>
                           </div>
-                        </div>
+                        </Link>
                       </TableCell>
                       <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
                       <TableCell className="hidden lg:table-cell">
@@ -412,7 +421,7 @@ export default function AdminUsersPage() {
                   ))
                  ) : filteredUsers.length > 0 ? (
                     filteredUsers.map(user => (
-                        <Card key={user.uid} className="dark:bg-slate-800 dark:border-slate-700">
+                        <Card key={user.uid} className="dark:bg-slate-800 dark:border-slate-700" onClick={() => router.push(`/instructor/${user.uid}`)}>
                             <CardContent className="p-4 flex items-center gap-4">
                                 <Avatar className="h-12 w-12">
                                     <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
@@ -443,3 +452,4 @@ export default function AdminUsersPage() {
 }
 
     
+
