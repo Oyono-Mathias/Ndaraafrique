@@ -87,13 +87,22 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
 
   const instructorMenu = [
     {
-      label: t('navInteraction'),
+      label: t('navCreation'),
       items: [
         { href: '/dashboard', icon: LayoutDashboard, text: t('navInstructorDashboard') },
         { href: '/instructor/courses', icon: BookOpen, text: t('navMyCourses') },
+        { href: '/instructor/devoirs', icon: ClipboardCheck, text: t('navAssignments') },
+        { href: '/instructor/quiz', icon: FileQuestion, text: t('navQuiz') },
+        { href: '/instructor/ressources', icon: Folder, text: t('navResources') },
+      ],
+    },
+    {
+      label: t('navFollowUp'),
+      items: [
         { href: '/instructor/students', icon: Users, text: t('navMyStudents') },
         { href: '/mes-revenus', icon: DollarSign, text: t('navMyRevenue') },
         { href: '/statistiques', icon: BarChart3, text: t('navStatistics') },
+        { href: '/certificats-instructor', icon: Award, text: t('navCertificates') },
       ],
     },
     {
@@ -102,18 +111,14 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         { href: '/messages', icon: MessagesSquare, text: t('navMessages') },
         { href: '/questions-reponses', icon: MessagesSquare, text: t('navQA') },
         { href: '/avis', icon: Star, text: t('navReviews') },
-        { href: '/instructor/devoirs', icon: ClipboardCheck, text: t('navAssignments') },
       ],
     },
-    {
-      label: t('navTools'),
+     {
+      label: t('navSettings'),
       items: [
-        { href: '/instructor/quiz', icon: FileQuestion, text: t('navQuiz') },
-        { href: '/certificats-instructor', icon: Award, text: t('navCertificates') },
-        { href: '/instructor/ressources', icon: Folder, text: t('navResources') },
-        { href: '/account', icon: Settings, text: t('navSettings') },
-      ],
-    },
+         { href: '/account', icon: Settings, text: t('navSettings') },
+      ]
+    }
   ];
   
   const handleSwitchToAdmin = () => {

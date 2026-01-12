@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
@@ -15,15 +15,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ClipboardList, AlertCircle } from 'lucide-react';
+import { AlertCircle, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
+import { useTranslation } from 'react-i18next';
 
 
 export default function AssignmentsDashboardPage() {
     const { formaAfriqueUser, isUserLoading } = useRole();
     const db = getFirestore();
+    const { t } = useTranslation();
 
     const coursesQuery = useMemoFirebase(
         () => formaAfriqueUser?.uid
@@ -41,46 +43,45 @@ export default function AssignmentsDashboardPage() {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Suivi des Devoirs</h1>
-                <p className="text-muted-foreground">Consultez les devoirs et les soumissions pour chacun de vos cours.</p>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('assignments_tracking')}</h1>
+                <p className="text-muted-foreground dark:text-slate-400">{t('assignments_description')}</p>
             </header>
 
              {error && (
                 <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
                     <p>
-                        Une erreur est survenue lors du chargement des cours. 
-                        Un index Firestore est peut-être manquant.
+                       {t('firestoreIndexError')}
                     </p>
                 </div>
             )}
 
-            <Card className="bg-card shadow-sm">
+            <Card className="bg-card shadow-sm dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
-                    <CardTitle>Liste des cours</CardTitle>
+                    <CardTitle className="dark:text-white">{t('course_list')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                      <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Titre du cours</TableHead>
-                                <TableHead>Statut</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                            <TableRow className="dark:border-slate-700">
+                                <TableHead className="dark:text-slate-300">{t('courseTitle')}</TableHead>
+                                <TableHead className="dark:text-slate-300">{t('status')}</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">{t('actions')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                              {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                     <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                        <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
+                                     <TableRow key={i} className="dark:border-slate-700">
+                                        <TableCell><Skeleton className="h-5 w-48 dark:bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-32 dark:bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : courses && courses.length > 0 ? (
                                 courses.map((course) => (
-                                    <TableRow key={course.id} className="hover:bg-muted/50">
-                                        <TableCell className="font-medium">{course.title}</TableCell>
+                                    <TableRow key={course.id} className="hover:bg-muted/50 dark:hover:bg-slate-700/50 dark:border-slate-700">
+                                        <TableCell className="font-medium dark:text-slate-100">{course.title}</TableCell>
                                         <TableCell>
                                             <Badge variant={course.status === 'Published' ? 'default' : 'secondary'}>
                                                 {course.status}
@@ -88,18 +89,18 @@ export default function AssignmentsDashboardPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Link href={`/instructor/devoirs/${course.id}`} className="text-sm font-semibold text-primary hover:underline">
-                                                Voir les devoirs
+                                                {t('see_assignments')}
                                             </Link>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow>
+                                <TableRow className="dark:border-slate-700">
                                     <TableCell colSpan={3} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <ClipboardList className="h-10 w-10" />
-                                            <span className="font-medium">Aucun cours trouvé</span>
-                                            <span className="text-sm">Créez un cours pour pouvoir ajouter des devoirs.</span>
+                                            <span className="font-medium">{t('no_courses_found')}</span>
+                                            <span className="text-sm">{t('create_course_for_assignments')}</span>
                                         </div>
                                     </TableCell>
                                 </TableRow>
