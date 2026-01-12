@@ -22,7 +22,6 @@ const languages: LanguageOption[] = [
     { code: 'fr', name: 'Français', flag: '/flags/fr.svg' },
     { code: 'en', name: 'English', flag: '/flags/gb.svg' },
     { code: 'sg', name: 'Sango', flag: '/flags/cf.svg' },
-    { code: 'ln', name: 'Lingala', flag: '/flags/cd.svg' },
 ];
 
 export function LanguageSelector() {

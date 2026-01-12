@@ -89,7 +89,7 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
         setIsSubmitting(true);
         try {
             await updateDoc(userDocRef, { role: selectedRole });
-            toast({ title: t('roleUpdatedTitle'), description: t('roleUpdatedMessage', { name: user.fullName, role: selectedRole }) });
+            toast({ title: t('roleUpdatedTitle'), description: t('roleUpdatedMessage', { name: user.fullName, role: t(`role${selectedRole.charAt(0).toUpperCase() + selectedRole.slice(1)}` as any) }) });
             setIsRoleDialogOpen(false);
         } catch (error) {
             console.error("Failed to update role:", error);
@@ -372,7 +372,7 @@ export default function AdminUsersPage() {
                       <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
-                          {t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`)}
+                          {t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}` as any)}
                         </Badge>
                       </TableCell>
                        <TableCell className="hidden sm:table-cell">
@@ -422,7 +422,7 @@ export default function AdminUsersPage() {
                                     <p className="font-bold text-base dark:text-white">{user.fullName}</p>
                                     <p className="text-xs text-muted-foreground dark:text-slate-400">{user.email}</p>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}`)}</Badge>
+                                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}` as any)}</Badge>
                                         <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
                                             {user.status === 'suspended' ? t('banned') : t('active')}
                                         </Badge>

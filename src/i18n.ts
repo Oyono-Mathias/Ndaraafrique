@@ -10,12 +10,12 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'fr',
+    supportedLngs: ['fr', 'en', 'sg'], // Removed 'ln'
     debug: false,
     interpolation: {
       escapeValue: false, // React already safes from xss
     },
     react: {
-      // Configure i18next to not use React's Suspense
       useSuspense: false,
     },
     backend: {
