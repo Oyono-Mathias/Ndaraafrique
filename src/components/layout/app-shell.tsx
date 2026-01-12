@@ -203,47 +203,74 @@ const BottomNavBar = () => {
     );
 };
 
-const useUnreadNotifications = (userId?: string) => {
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-    const [hasUnread, setHasUnread] = useState(false);
-    const db = getFirestore();
+const Header = () => {
+    const router = useRouter();
+    return (
+        <div className="flex items-center gap-4 w-full justify-end">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/search')}>
+                <Search className="h-5 w-5" />
+            </Button>
+            <LanguageSelector />
+            <HeaderNotificationButton />
+            <UserNav />
+        </div>
+    );
+}
 
-    useEffect(() => {
-        if (!userId) {
-            setHasUnread(false);
-            setNotifications([]);
-            return;
-        }
+const HeaderNotificationButton = () => {
+  const router = useRouter();
+  const isMobile = useIsMobile();
+  const { user } = useRole();
+  const { notifications, hasUnread, markAllAsRead } = useUnreadNotifications(user?.uid);
+  
+  if (isMobile) {
+    return (
+      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-card-foreground">
+        <Bell className="h-4 w-4" />
+        {hasUnread && (
+          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+          </span>
+        )}
+        <span className="sr-only">Notifications</span>
+      </Button>
+    )
+  }
 
-        const q = query(
-          collection(db, `users/${userId}/notifications`),
-          orderBy('createdAt', 'desc'),
-          limit(10)
-        );
-        
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-            const fetchedNotifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Notification);
-            setNotifications(fetchedNotifs);
-            setHasUnread(fetchedNotifs.some(n => !n.read));
-        }, (error) => {
-            console.error("Failed to listen for notifications:", error);
-        });
-
-        return () => unsubscribe();
-    }, [userId, db]);
-
-    const markAllAsRead = async () => {
-      if (!userId || notifications.length === 0) return;
-      const unreadNotifs = notifications.filter(n => !n.read);
-      if (unreadNotifs.length === 0) return;
-      const batch = writeBatch(db);
-      unreadNotifs.forEach(notif => {
-        batch.update(doc(db, `users/${userId}/notifications`, notif.id), { read: true });
-      });
-      await batch.commit();
-    };
-
-    return { notifications, hasUnread, markAllAsRead };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative text-foreground dark:text-white">
+          <Bell className="h-5 w-5" />
+          {hasUnread && (
+            <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
+            </span>
+          )}
+          <span className="sr-only">Notifications</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 dark:border-b dark:border-slate-700">
+                <CardTitle className="text-base font-semibold dark:text-white">Notifications</CardTitle>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
+            </CardHeader>
+            <CardContent className="p-2">
+              {notifications.length > 0 ? (
+                <div className="space-y-1">
+                  {notifications.map(n => <NotificationItem key={n.id} notif={n} />)}
+                </div>
+              ) : (
+                <p className="text-sm text-center text-muted-foreground py-8">Aucune notification.</p>
+              )}
+            </CardContent>
+          </Card>
+      </PopoverContent>
+    </Popover>
+  );
 };
 
 
@@ -390,73 +417,6 @@ const SupportButton = () => {
         </Popover>
     );
 };
-
-const Header = () => {
-    return (
-        <div className="flex items-center gap-4 w-full justify-end">
-            <LanguageSelector />
-            <HeaderNotificationButton />
-            <UserNav />
-        </div>
-    );
-}
-
-const HeaderNotificationButton = () => {
-  const router = useRouter();
-  const isMobile = useIsMobile();
-  const { user } = useRole();
-  const { notifications, hasUnread, markAllAsRead } = useUnreadNotifications(user?.uid);
-  
-  if (isMobile) {
-    return (
-      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-card-foreground">
-        <Bell className="h-4 w-4" />
-        {hasUnread && (
-          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-          </span>
-        )}
-        <span className="sr-only">Notifications</span>
-      </Button>
-    )
-  }
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-foreground dark:text-white">
-          <Bell className="h-5 w-5" />
-          {hasUnread && (
-            <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-            </span>
-          )}
-          <span className="sr-only">Notifications</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 dark:border-b dark:border-slate-700">
-                <CardTitle className="text-base font-semibold dark:text-white">Notifications</CardTitle>
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
-            </CardHeader>
-            <CardContent className="p-2">
-              {notifications.length > 0 ? (
-                <div className="space-y-1">
-                  {notifications.map(n => <NotificationItem key={n.id} notif={n} />)}
-                </div>
-              ) : (
-                <p className="text-sm text-center text-muted-foreground py-8">Aucune notification.</p>
-              )}
-            </CardContent>
-          </Card>
-      </PopoverContent>
-    </Popover>
-  );
-};
-
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading: isRoleLoading, user, isUserLoading, formaAfriqueUser, switchRole } = useRole();
