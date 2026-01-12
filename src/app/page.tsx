@@ -3,13 +3,11 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Search, Menu, Star, BookOpen, Users, Award, Briefcase, ChevronRight, Frown, Loader2 } from 'lucide-react';
+import { Search, Star, BookOpen, Users, Award, ChevronRight, Frown, Loader2, UserPlus, CheckCircle, GraduationCap, Video } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useEffect, useState, useMemo } from 'react';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useTranslation } from 'react-i18next';
 import { LanguageSelector } from '@/components/layout/language-selector';
 import { Footer } from '@/components/layout/footer';
@@ -18,6 +16,8 @@ import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
+import { Header } from '@/components/layout/header';
 
 const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => {
     const { user } = useRole();
@@ -37,18 +37,18 @@ const CourseCard = ({ course, instructor }: { course: Course, instructor: Partia
     };
     
     return (
-      <div className="bg-background-alt rounded-xl overflow-hidden border border-border shadow-sm hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+      <div className="w-full h-full bg-[#1e293b] rounded-2xl overflow-hidden border border-slate-700/80 shadow-lg hover:shadow-primary/10 transition-all duration-300 transform hover:-translate-y-1 flex flex-col">
         <Link href={`/course/${course.id}`} onClick={handleClick} className="block">
           <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`} alt={course.title} width={300} height={170} className="w-full aspect-video object-cover" />
-          <div className="p-4">
-            <h3 className="font-bold text-base text-foreground line-clamp-2 h-12">{course.title}</h3>
-            <p className="text-xs text-muted-foreground mt-1">{instructor?.fullName || 'Instructeur FormaAfrique'}</p>
+          <div className="p-4 flex flex-col flex-grow">
+            <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12">{course.title}</h3>
+            <p className="text-xs text-slate-400 mt-1 flex-grow">{instructor?.fullName || 'Instructeur Ndara Afrique'}</p>
             <div className="flex items-center gap-1 mt-2">
-              <span className="font-bold text-sm text-amber-500">4.8</span>
+              <span className="font-bold text-sm text-amber-400">4.8</span>
               <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span className="text-xs text-slate-500">({(Math.random() * 2000 + 50).toFixed(0)})</span>
+              <span className="text-xs text-slate-400">({(Math.random() * 2000 + 50).toFixed(0)})</span>
             </div>
-            <p className="font-extrabold text-lg text-foreground mt-2">
+            <p className="font-extrabold text-lg text-white mt-2">
               {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
             </p>
           </div>
@@ -119,86 +119,65 @@ export default function LandingPage() {
     }
   };
 
-
   if (isUserLoading || user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-[#0f172a]">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="w-full bg-background text-foreground flex flex-col">
-       <header className="sticky top-0 z-50 p-4 bg-background/80 backdrop-blur-sm border-b border-border">
+    <div className="w-full bg-[#0f172a] text-slate-200 flex flex-col">
+       <header className="sticky top-0 z-50 p-4 bg-[#0f172a]/80 backdrop-blur-sm border-b border-slate-700/50">
         <div className="container mx-auto flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2">
-            <Image src="/icon.svg" alt="FormaAfrique Logo" width={32} height={32} />
-            <span className="font-bold text-xl text-foreground">FormaAfrique</span>
+          <Link href="/" className="flex items-center gap-3">
+            <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
+            <span className="font-bold text-xl text-white">Ndara Afrique</span>
           </Link>
-          <div className="hidden md:flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Se connecter</Link>
+          <div className="flex items-center gap-2">
+            <div className="hidden md:block"><LanguageSelector /></div>
+            <Button variant="ghost" asChild className="hidden md:inline-flex text-white hover:bg-slate-800">
+              <Link href="/login">{t('loginButton')}</Link>
             </Button>
-            <Button asChild className="rounded-full">
-              <Link href="/login?tab=register">S'inscrire</Link>
+            <Button asChild className="rounded-full bg-primary hover:bg-primary/90 text-white">
+              <Link href="/login?tab=register">{t('registerButton')}</Link>
             </Button>
+             <div className="md:hidden"><Header /></div>
           </div>
-           <div className="md:hidden">
-                <Sheet>
-                    <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                            <Menu className="h-6 w-6"/>
-                            <span className="sr-only">Ouvrir le menu</span>
-                        </Button>
-                    </SheetTrigger>
-                    <SheetContent side="right" className="w-full max-w-sm bg-background">
-                        <nav className="flex flex-col h-full p-4">
-                            <div className="flex flex-col gap-4 text-lg font-medium mt-8">
-                                <Link href="/search" onClick={(e) => { e.preventDefault(); router.push('/login'); toast({title: "Veuillez vous connecter."})}}>Tous les cours</Link>
-                                <Link href="/devenir-instructeur" onClick={handleBecomeInstructorClick}>Devenir Formateur</Link>
-                            </div>
-                            <div className="mt-auto space-y-4">
-                                <Button asChild size="lg" className="w-full rounded-full">
-                                    <Link href="/login?tab=register">S'inscrire gratuitement</Link>
-                                </Button>
-                                <Button asChild size="lg" variant="outline" className="w-full rounded-full">
-                                    <Link href="/login">Se connecter</Link>
-                                </Button>
-                            </div>
-                        </nav>
-                    </SheetContent>
-                </Sheet>
-           </div>
         </div>
       </header>
       <main className="flex-grow">
-        <section className="relative pt-20 pb-28 md:pt-32 md:pb-40 w-full">
-            <div className="absolute top-0 left-0 right-0 h-96 bg-gradient-to-b from-slate-100 to-transparent"></div>
+        <section className="relative pt-20 pb-28 md:pt-28 md:pb-36 w-full">
+            <div className="absolute inset-0 bg-gradient-to-b from-slate-900/10 via-[#0f172a] to-[#0f172a] -z-0"></div>
             <div className="container mx-auto px-4 z-10 relative text-center">
-              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-foreground !leading-tight max-w-4xl mx-auto">
-                Apprenez les compétences qui font bouger l'Afrique.
-              </h1>
-              <p className="max-w-3xl mx-auto mt-6 text-lg md:text-xl text-muted-foreground">
-                Des milliers de cours en ligne créés par des experts locaux. Payez par Mobile Money, apprenez à votre rythme.
-              </p>
-               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Button size="lg" asChild className="h-12 text-base w-full sm:w-auto rounded-full">
-                    <Link href="/login?tab=register">Créer un compte gratuitement</Link>
-                  </Button>
-                   <Button size="lg" asChild variant="secondary" className="h-12 text-base w-full sm:w-auto rounded-full">
-                    <Link href="/login">Parcourir le catalogue</Link>
-                  </Button>
+              <div className="hero-text">
+                <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white !leading-tight max-w-4xl mx-auto">
+                  <span className="block">{t('welcome')}</span>
+                  <span className="block text-primary">Tonga na ndara.</span>
+                </h1>
+                <p className="max-w-3xl mx-auto mt-6 text-lg md:text-xl text-slate-300">
+                  Des milliers de cours en ligne créés par des experts locaux. Payez par Mobile Money, apprenez à votre rythme.
+                </p>
+                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <Button size="lg" asChild className="h-14 text-base w-full sm:w-auto rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
+                      <Link href="/login?tab=register">{t('registerButton')}</Link>
+                    </Button>
+                </div>
               </div>
             </div>
+        </section>
+
+        <section className="container mx-auto px-4 -mt-16 z-20 relative">
+            <DynamicCarousel />
         </section>
         
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-10 text-foreground">Une sélection de cours pour démarrer</h2>
+                <h2 className="text-3xl font-bold text-center mb-10 text-white">Une sélection de cours pour démarrer</h2>
                 {coursesLoading ? (
                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-xl" />)}
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
                     </div>
                 ) : courses.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -207,47 +186,34 @@ export default function LandingPage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-10 px-4 border-2 border-dashed border-border rounded-xl">
-                        <Frown className="mx-auto h-10 w-10 text-slate-400" />
-                        <h3 className="mt-2 text-md font-semibold text-foreground">Aucun cours disponible pour le moment.</h3>
-                        <p className="text-sm text-muted-foreground">Revenez bientôt !</p>
+                    <div className="text-center py-10 px-4 border-2 border-dashed border-slate-700 rounded-xl">
+                        <Frown className="mx-auto h-10 w-10 text-slate-500" />
+                        <h3 className="mt-2 text-md font-semibold text-slate-300">Aucun cours disponible pour le moment.</h3>
+                        <p className="text-sm text-slate-400">Revenez bientôt !</p>
                     </div>
                 )}
             </div>
         </section>
 
-        <section className="py-16 md:py-24 bg-background-alt">
-            <div className="container mx-auto px-4">
-                <div className="grid md:grid-cols-3 gap-10 text-center">
-                    <div className="flex flex-col items-center">
-                        <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><BookOpen className="h-8 w-8 text-primary" /></div>
-                        <h3 className="font-bold text-lg text-foreground">Apprenez à votre rythme</h3>
-                        <p className="text-muted-foreground mt-2">Suivez les cours depuis n'importe quel appareil, sans contrainte de temps.</p>
-                    </div>
-                    <div className="flex flex-col items-center">
-                         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><Users className="h-8 w-8 text-primary" /></div>
-                        <h3 className="font-bold text-lg text-foreground">Experts locaux</h3>
-                        <p className="text-muted-foreground mt-2">Nos formations sont créées par des professionnels africains pour le marché africain.</p>
-                    </div>
-                    <div className="flex flex-col items-center">
-                         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><Award className="h-8 w-8 text-primary" /></div>
-                        <h3 className="font-bold text-lg text-foreground">Certificats reconnus</h3>
-                        <p className="text-muted-foreground mt-2">Validez vos compétences avec une certification à la fin de chaque formation.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
         <section className="py-16 md:py-24">
-             <div className="container mx-auto px-4 text-center">
-                <div className="bg-background-alt p-10 rounded-2xl flex flex-col items-center">
-                    <Briefcase className="h-10 w-10 text-primary mb-4" />
-                    <h2 className="text-3xl font-bold text-foreground">Devenez Formateur</h2>
-                    <p className="max-w-2xl mx-auto mt-4 text-muted-foreground">
-                        Partagez votre expertise, créez un impact et générez des revenus en formant les talents de demain.
-                    </p>
-                    <Button size="lg" asChild className="mt-8 h-12 text-base rounded-full">
-                        <Link href="/devenir-instructeur" onClick={handleBecomeInstructorClick}>Enseigner sur FormaAfrique <ChevronRight className="ml-2 h-4 w-4" /></Link>
-                    </Button>
+            <div className="container mx-auto px-4">
+                <h2 className="text-3xl font-bold text-center mb-12 text-white">Comment ça marche ?</h2>
+                <div className="grid md:grid-cols-3 gap-8">
+                    <div className="benefit-card text-center flex flex-col items-center">
+                        <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><UserPlus className="h-8 w-8 text-primary" /></div>
+                        <h3 className="font-bold text-lg text-white">1. S'inscrire</h3>
+                        <p className="text-slate-400 mt-2">Créez votre compte en quelques secondes et accédez à notre catalogue.</p>
+                    </div>
+                    <div className="benefit-card text-center flex flex-col items-center">
+                         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><Video className="h-8 w-8 text-primary" /></div>
+                        <h3 className="font-bold text-lg text-white">2. Apprendre</h3>
+                        <p className="text-slate-400 mt-2">Suivez les cours vidéo à votre rythme, sur mobile ou ordinateur.</p>
+                    </div>
+                    <div className="benefit-card text-center flex flex-col items-center">
+                         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><GraduationCap className="h-8 w-8 text-primary" /></div>
+                        <h3 className="font-bold text-lg text-white">3. Être Certifié</h3>
+                        <p className="text-slate-400 mt-2">Validez vos compétences avec une certification à la fin de chaque formation.</p>
+                    </div>
                 </div>
             </div>
         </section>

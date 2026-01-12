@@ -158,13 +158,16 @@ const HeaderNotificationButton = () => {
 };
 
 export function Header() {
+    const router = useRouter();
     return (
         <div className="flex w-full items-center gap-4 ml-auto">
             <div className="flex-1" />
             <div className="flex items-center gap-2">
                 <LanguageSelector />
-                <HeaderNotificationButton />
-                <UserNav />
+                <div className='flex items-center gap-2'>
+                  <HeaderNotificationButton />
+                  <UserNav />
+                </div>
             </div>
         </div>
     );

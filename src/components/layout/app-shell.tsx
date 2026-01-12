@@ -69,12 +69,12 @@ const NotificationItem = ({ notif }: { notif: Notification }) => {
 }
 
 const pageTitleKeys: { [key: string]: string } = {
-    '/dashboard': 'navSelection',
+    '/dashboard': 'navDashboard',
     '/tutor': 'navTutor',
     '/mes-formations': 'navMyLearning',
     '/mes-certificats': 'navMyCertificates',
     '/mes-devoirs': 'navMyAssignments',
-    '/questions-reponses': 'navMyQuestions',
+    '/questions-reponses': 'navQA',
     '/messages': 'navMessages',
     '/annuaire': 'navDirectory',
     '/profil': 'profil',
@@ -184,7 +184,9 @@ const BottomNavBar = () => {
     }, [user, db]);
     
     const currentPath = `/${pathname.split('/')[1]}`;
-    if (!BOTTOM_NAV_ROUTES.includes(currentPath) || role === 'instructor' || role === 'admin') {
+    const shouldShow = BOTTOM_NAV_ROUTES.includes(currentPath) && role !== 'instructor' && role !== 'admin';
+
+    if (!shouldShow) {
         return null;
     }
 
@@ -411,7 +413,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isChatPage = pathname.startsWith('/messages');
-  const isInstructorDashboard = role === 'instructor';
   
   if (isAdminPage) {
     return <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>{children}</div>;
@@ -422,12 +423,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const showHeader = !isChatPage && !isFullScreenPage;
-  const showTitleInHeader = !isInstructorDashboard && !pathname.startsWith('/instructor/');
+  const isInstructorDashboard = role === 'instructor';
+  const isStudentDashboard = role === 'student' && pathname === '/dashboard';
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
       <OnboardingGuide />
-      <div className={cn('flex flex-col min-h-screen', (role === 'instructor' || role === 'admin') ? 'dark bg-background' : 'bg-slate-100' )}>
+      <div className={cn('flex flex-col min-h-screen', (role === 'instructor' || role === 'admin') ? 'dark bg-[#0f172a]' : 'bg-slate-50' )}>
           <div className="flex flex-1">
               <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
                 {renderSidebar()}
@@ -440,8 +442,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <main className={cn("flex-1 overflow-y-auto", 
                   isChatPage && !isMobile ? "" : (role === 'instructor' || role === 'admin') ? "p-4 sm:p-6" : "p-4 sm:p-6",
                   isMobile && !showHeader ? "" : "pt-4",
-                  isMobile ? "pb-24" : "")
-                }>
+                  isMobile && !isStudentDashboard ? "pb-24" : isMobile ? "pb-0" : "",
+                  isStudentDashboard && "p-0"
+                )}>
                     <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
                       {children}
                     </div>
