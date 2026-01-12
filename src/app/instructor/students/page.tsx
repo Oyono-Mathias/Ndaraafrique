@@ -47,6 +47,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
+import { useTranslation } from 'react-i18next';
 
 interface Enrollment {
   id: string;
@@ -78,6 +79,7 @@ export default function MyStudentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const db = getFirestore();
   const router = useRouter();
+  const { t } = useTranslation();
 
   // State to force re-render for time updates
   const [time, setTime] = useState(Date.now());
@@ -224,7 +226,7 @@ export default function MyStudentsPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-            <h1 className="text-3xl font-bold">Mes Étudiants</h1>
+            <h1 className="text-3xl font-bold">{t('navMyStudents')}</h1>
             <p className="text-muted-foreground">
               Gérez et suivez les progrès de vos étudiants.
             </p>
@@ -284,12 +286,12 @@ export default function MyStudentsPage() {
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-muted/50">
-              <TableHead className="w-[250px]">Nom de l'étudiant</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Formation suivie</TableHead>
-              <TableHead className="w-[150px]">Progrès (%)</TableHead>
-              <TableHead>Activité</TableHead>
-              <TableHead className="text-right">Contact</TableHead>
+              <TableHead className="w-[250px]">{t('name')}</TableHead>
+              <TableHead>{t('emailLabel')}</TableHead>
+              <TableHead>{t('course')}</TableHead>
+              <TableHead className="w-[150px]">{t('progress')}</TableHead>
+              <TableHead>{t('activity')}</TableHead>
+              <TableHead className="text-right">{t('contact')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -317,7 +319,7 @@ export default function MyStudentsPage() {
                     <TableCell>
                       {student.isOnline ? (
                         <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
-                          En ligne
+                          {t('online')}
                         </Badge>
                       ) : (
                         <span className="text-xs text-muted-foreground">

@@ -185,14 +185,14 @@ function InstructorDashboardContent() {
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
-                    title={t('navMyStudents')}
+                    title={t('total_students')}
                     value={stats.totalStudents.toLocaleString()} 
                     icon={Users} 
                     isLoading={isLoading} 
                     accentColor="border-t-blue-500"
                 />
                 <StatCard 
-                    title={t('navReviews')}
+                    title={t('average_rating')}
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
@@ -217,7 +217,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-semibold mb-4 dark:text-white">Tendance des revenus</h2>
+                    <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_evolution')}</h2>
                     <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full dark:bg-slate-700" /> : (
@@ -243,14 +243,14 @@ function InstructorDashboardContent() {
                     </Card>
                 </div>
                 <div>
-                     <h2 className="text-2xl font-semibold mb-4 dark:text-white">Top 5 des Cours</h2>
+                     <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('top_courses')}</h2>
                       <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="dark:border-slate-700">
-                                        <TableHead className="dark:text-slate-400">Cours</TableHead>
-                                        <TableHead className="text-right dark:text-slate-400">Inscriptions</TableHead>
+                                        <TableHead className="dark:text-slate-400">{t('course')}</TableHead>
+                                        <TableHead className="text-right dark:text-slate-400">{t('enrollments')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
