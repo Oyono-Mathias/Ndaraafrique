@@ -100,7 +100,7 @@ export default function MyCertificatesPage() {
   const isLoading = isUserLoading || dataLoading;
 
   const generateShareLinks = (course: CompletedCourse) => {
-    const certificateUrl = `https://formaafrique.com/verify/${course.certificateId}`;
+    const certificateUrl = `https://formaafrique-app.web.app/verify/${course.certificateId}`;
     const encodedUrl = encodeURIComponent(certificateUrl);
     
     const whatsAppText = encodeURIComponent(`Je suis fier de vous annoncer que j'ai obtenu mon certificat en ${course.title} sur FormaAfrique ! ${certificateUrl}`);
