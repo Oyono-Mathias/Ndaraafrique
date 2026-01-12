@@ -193,7 +193,7 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
             <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
-                        <span className="sr-only">Ouvrir le menu</span>
+                        <span className="sr-only">{t('openMenu')}</span>
                         <MoreHorizontal className="h-4 w-4" />
                     </Button>
                 </DropdownMenuTrigger>
