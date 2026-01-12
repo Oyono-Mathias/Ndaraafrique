@@ -17,7 +17,6 @@ export default function LegalPage() {
         const docSnap = await getDoc(settingsRef);
         if (docSnap.exists()) {
           const settings = docSnap.data();
-          // Assuming privacyPolicy content is for "Mentions Légales"
           setContent(settings.legal?.privacyPolicy || 'Contenu non disponible.');
         } else {
           setContent('Contenu non disponible.');

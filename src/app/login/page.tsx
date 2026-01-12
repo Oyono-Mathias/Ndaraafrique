@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -40,6 +39,9 @@ const registerSchema = z.object({
   fullName: z.string().min(2, { message: "Le nom complet est requis." }),
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
   password: z.string().min(6, { message: "Le mot de passe doit contenir au moins 6 caractères." }),
+  terms: z.boolean().refine(val => val === true, {
+    message: "Vous devez accepter les conditions d'utilisation.",
+  }),
 });
 
 const phoneSchema = z.object({
@@ -88,7 +90,7 @@ export default function LoginPage() {
   const recaptchaVerifier = useRef<RecaptchaVerifier | null>(null);
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', rememberMe: false } });
-  const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '' } });
+  const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
   const phoneForm = useForm<z.infer<typeof phoneSchema>>({ resolver: zodResolver(phoneSchema) });
   const otpForm = useForm<z.infer<typeof otpSchema>>({ resolver: zodResolver(otpSchema) });
 
@@ -143,6 +145,7 @@ export default function LoginPage() {
             isInstructorApproved: false,
             createdAt: serverTimestamp() as any,
             lastLogin: serverTimestamp() as any,
+            termsAcceptedAt: serverTimestamp() as any, // Store terms acceptance timestamp
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
             country: detectedCountry?.name,
             countryCode: detectedCountry?.code?.toLowerCase(),
@@ -291,7 +294,18 @@ export default function LoginPage() {
                         <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel>Nom complet</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
                         <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
                         <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>Mot de passe</FormLabel><FormControl><Input type="password" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
-                        <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>Créer mon compte</Button>
+                        <FormField control={registerForm.control} name="terms" render={({ field }) => (
+                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                             <div className="space-y-1 leading-none">
+                                <FormLabel className="text-sm font-normal">
+                                  J'accepte les <Link href="/cgu" target="_blank" className="underline text-primary">Conditions d'Utilisation</Link> et la <Link href="/mentions-legales" target="_blank" className="underline text-primary">Politique de Confidentialité</Link>.
+                                </FormLabel>
+                                <FormMessage />
+                             </div>
+                          </FormItem>
+                        )} />
+                        <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading || !registerForm.watch('terms')}>Créer mon compte</Button>
                         </form>
                     </Form>
                 </TabsContent>

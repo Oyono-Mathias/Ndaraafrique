@@ -140,6 +140,11 @@
           "type": "array",
           "description": "A list of achievement badges earned by the user.",
           "items": { "type": "string" }
+        },
+        "termsAcceptedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp indicating when the user accepted the Terms of Service."
         }
       },
       "required": [
