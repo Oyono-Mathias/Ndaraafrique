@@ -118,9 +118,9 @@ export function AdminDashboard() {
             const course = coursesMap.get(payment.courseId);
             return {
                 id: doc.id,
-                userName: user?.fullName || 'Un utilisateur',
+                userName: user?.fullName || t('a_user'),
                 userAvatar: user?.profilePictureURL,
-                courseTitle: course?.title || 'un cours',
+                courseTitle: course?.title || t('a_course'),
                 amount: payment.amount,
                 date: payment.date.toDate(),
             };
@@ -170,20 +170,20 @@ export function AdminDashboard() {
       
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2">
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Évolution des inscriptions</h2>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_evolution')}</h2>
             <Card className="dark:bg-[#1e293b] dark:border-slate-700 h-80 flex items-center justify-center">
                 <CardContent className="pt-6 text-center text-muted-foreground">
                     <Activity className="h-10 w-10 mx-auto mb-2"/>
-                    <p>Graphique à venir</p>
+                    <p>{t('chart_soon')}</p>
                 </CardContent>
             </Card>
         </div>
         <div>
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Répartition des revenus</h2>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_repartition')}</h2>
             <Card className="dark:bg-[#1e293b] dark:border-slate-700 h-80 flex items-center justify-center">
                  <CardContent className="pt-6 text-center text-muted-foreground">
                     <DollarSign className="h-10 w-10 mx-auto mb-2"/>
-                    <p>Graphique à venir</p>
+                    <p>{t('chart_soon')}</p>
                 </CardContent>
             </Card>
         </div>
@@ -207,7 +207,7 @@ export function AdminDashboard() {
                                 </Avatar>
                                 <div className="flex-1 space-y-1">
                                     <p className="text-sm font-medium leading-none dark:text-slate-200">
-                                        <span className="font-semibold">{activity.userName}</span> a acheté le cours <span className="font-semibold">"{activity.courseTitle}"</span>.
+                                        <span className="font-semibold">{activity.userName}</span> {t('has_purchased')} <span className="font-semibold">"{activity.courseTitle}"</span>.
                                     </p>
                                     <p className="text-xs text-muted-foreground dark:text-slate-400">
                                         {format(activity.date, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
@@ -220,7 +220,7 @@ export function AdminDashboard() {
                 ) : (
                     <div className="text-center py-10 text-muted-foreground dark:text-slate-500">
                         <ShoppingCart className="h-10 w-10 mx-auto mb-2"/>
-                        <p>Aucune activité de paiement récente.</p>
+                        <p>{t('no_recent_activity')}</p>
                     </div>
                 )}
             </CardContent>
@@ -229,5 +229,3 @@ export function AdminDashboard() {
     </div>
   );
 }
-
-    
