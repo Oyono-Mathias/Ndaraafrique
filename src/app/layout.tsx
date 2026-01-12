@@ -7,7 +7,8 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
-import '@/i18n'; // Directly import i18n configuration
+// L'importation de i18n est déplacée vers un composant client (AppShell)
+// import '@/i18n'; 
 
 export const metadata: Metadata = {
   title: "FormaAfrique | Formations en ligne pour le marché Africain",

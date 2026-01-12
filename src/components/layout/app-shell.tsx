@@ -28,6 +28,7 @@ import { UserNav } from './user-nav';
 import { OnboardingGuide } from '../onboarding-guide';
 import { SplashScreen } from '../splash-screen';
 import { Header } from './header';
+import '@/i18n'; // Import i18n configuration here in a client component
 
 interface Notification {
   id: string;
