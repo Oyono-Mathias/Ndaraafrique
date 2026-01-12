@@ -157,7 +157,7 @@ const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { hre
             {label}
         </span>
         {unreadCount !== undefined && unreadCount > 0 && (
-            <span className="absolute top-0 right-1.5 h-4 min-w-[1rem] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
+            <span className="absolute top-1 right-2.5 h-2.5 w-2.5 bg-red-500 rounded-full border-2 border-background"></span>
         )}
     </Link>
 );
@@ -180,7 +180,8 @@ const BottomNavBar = () => {
         return () => unsubscribe();
     }, [user, db]);
     
-    if (!BOTTOM_NAV_ROUTES.includes(pathname)) {
+    const currentPath = `/${pathname.split('/')[1]}`;
+    if (!BOTTOM_NAV_ROUTES.includes(currentPath)) {
         return null;
     }
 
