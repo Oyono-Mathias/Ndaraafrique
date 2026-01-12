@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -108,7 +109,7 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
             </div>
             <div className="flex justify-between items-center mt-2 pt-2 border-t dark:border-slate-700">
                  <p className="font-bold text-lg dark:text-white">
-                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
+                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : t('price_free')}
                 </p>
                 <CourseActions course={course} />
             </div>
@@ -144,7 +145,7 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
                   {getStatusText(course.status)}
                 </Badge>
                 <p className="font-bold text-xs dark:text-white">
-                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
+                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : t('price_free')}
                 </p>
             </div>
         </div>
@@ -263,3 +264,5 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
+
+    

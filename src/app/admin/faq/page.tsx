@@ -129,7 +129,7 @@ export default function AdminFaqPage() {
         handleCloseDialog();
     } catch (error) {
         console.error("Error saving FAQ:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder la FAQ.' });
+        toast({ variant: 'destructive', title: t('errorTitle'), description: 'Impossible de sauvegarder la FAQ.' });
     } finally {
         setIsSubmitting(false);
     }
@@ -147,7 +147,7 @@ export default function AdminFaqPage() {
         toast({ title: 'FAQ supprimée avec succès.' });
     } catch (error) {
         console.error("Error deleting FAQ:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de supprimer la FAQ.' });
+        toast({ variant: 'destructive', title: t('errorTitle'), description: 'Impossible de supprimer la FAQ.' });
     } finally {
         setDeleteAlertOpen(false);
         setFaqToDelete(null);
@@ -220,10 +220,10 @@ export default function AdminFaqPage() {
                        <FormItem><FormLabel className="dark:text-slate-300">Tags</FormLabel><FormControl><Input placeholder="paiement, certificat, ..." {...field} className="dark:bg-slate-800 dark:border-slate-700"/></FormControl><FormDescription className="dark:text-slate-500">Séparez les tags par des virgules.</FormDescription><FormMessage /></FormItem>
                     )} />
                     <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose>
+                        <DialogClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></DialogClose>
                         <Button type="submit" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            Enregistrer
+                            {t('save_button')}
                         </Button>
                     </DialogFooter>
                 </form>
@@ -240,9 +240,9 @@ export default function AdminFaqPage() {
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogCancel>{t('cancelButton')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                      Supprimer
+                      {t('deleteButton')}
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
@@ -250,3 +250,5 @@ export default function AdminFaqPage() {
     </>
   );
 }
+
+    
