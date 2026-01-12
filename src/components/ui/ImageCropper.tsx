@@ -57,17 +57,19 @@ export function ImageCropper({ image, onCropComplete, onClose }: ImageCropperPro
             image={image}
             crop={crop}
             zoom={zoom}
-            aspect={16 / 9}
+            aspect={1 / 1}
+            cropShape="round"
+            showGrid={false}
             onCropChange={onCropChange}
             onZoomChange={onZoomChange}
             onCropComplete={onCropFull}
           />
         </div>
         <DialogFooter className="p-4 border-t dark:border-slate-700">
-          <Button variant="destructive" onClick={onClose} className="bg-red-600 hover:bg-red-700">Annuler</Button>
-          <Button onClick={handleCrop} disabled={isCropping} className="bg-blue-600 hover:bg-blue-700">
+          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button onClick={handleCrop} disabled={isCropping}>
             {isCropping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Leke ni
+            Enregistrer
           </Button>
         </DialogFooter>
       </DialogContent>

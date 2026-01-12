@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
 import { useCollection } from '@/firebase';
 import { useRouter } from 'next/navigation';
+import { ImageCropper } from '@/components/ui/ImageCropper';
 
 
 // --- PAN-AFRICAN Country and Payment Data ---
@@ -214,11 +215,12 @@ export default function AccountPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [avatarVersion, setAvatarVersion] = useState(0);
   const [isClient, setIsClient] = useState(false);
   const [stats, setStats] = useState({ enrolled: 0, completed: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
   const db = getFirestore();
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     setIsClient(true);
@@ -284,6 +286,7 @@ export default function AccountPage() {
             youtube: formaAfriqueUser.socialLinks?.youtube || '',
         }
       });
+      setImagePreview(formaAfriqueUser.profilePictureURL || null);
       const payoutData = (formaAfriqueUser as any).payoutMethod;
       if (payoutData) {
           paymentForm.reset({
@@ -365,20 +368,26 @@ export default function AccountPage() {
     }
   };
 
-  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (!event.target.files || event.target.files.length === 0 || !formaAfriqueUser) {
-      return;
+  const handleAvatarFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const reader = new FileReader();
+      reader.onload = () => setImageToCrop(reader.result as string);
+      reader.readAsDataURL(event.target.files[0]);
     }
-    const file = event.target.files[0];
+  };
+
+  const handleAvatarUpload = async (croppedImage: File) => {
+    if (!formaAfriqueUser) return;
+    setImageToCrop(null);
     setIsUploading(true);
 
     const storage = getStorage();
     const auth = getAuth();
-    const filePath = `avatars/${formaAfriqueUser.uid}/${file.name}`;
+    const filePath = `avatars/${formaAfriqueUser.uid}/${Date.now()}.webp`;
     const storageRef = ref(storage, filePath);
 
     try {
-      const snapshot = await uploadBytes(storageRef, file);
+      const snapshot = await uploadBytes(storageRef, croppedImage);
       const downloadURL = await getDownloadURL(snapshot.ref);
 
       if (auth.currentUser) {
@@ -388,7 +397,7 @@ export default function AccountPage() {
       await updateDoc(userDocRef, { profilePictureURL: downloadURL });
 
       toast({ title: t('avatar_updated') });
-      setAvatarVersion(v => v + 1);
+      setImagePreview(downloadURL); // Update preview immediately
 
     } catch (error) {
       toast({ variant: 'destructive', title: t('upload_error_title'), description: t('avatar_update_error') });
@@ -407,337 +416,337 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="space-y-8">
-      <header className="flex flex-col sm:flex-row items-center gap-6">
-         <Avatar className="h-24 w-24 border-4 border-amber-300 shadow-lg" key={avatarVersion}>
-            <AvatarImage src={formaAfriqueUser.profilePictureURL} />
-            <AvatarFallback className="text-3xl">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <div className="text-center sm:text-left">
-            <h1 className="text-3xl font-bold text-foreground">{t('hello')}, {formaAfriqueUser.fullName} !</h1>
-            <p className="text-muted-foreground">{formaAfriqueUser.email}</p>
+    <>
+      <ImageCropper 
+        image={imageToCrop}
+        onCropComplete={handleAvatarUpload}
+        onClose={() => setImageToCrop(null)}
+      />
+      <div className="space-y-8">
+        <header className="flex flex-col sm:flex-row items-center gap-6">
+          <div className="relative group">
+            <Avatar className="h-24 w-24 border-4 border-primary/50 shadow-lg">
+                <AvatarImage src={imagePreview || formaAfriqueUser.profilePictureURL} />
+                <AvatarFallback className="text-3xl">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
+            </Avatar>
+            <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+              <Edit3 className="h-6 w-6" />
+            </label>
+            <Input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarFileSelect} disabled={isUploading}/>
+          </div>
+          <div className="text-center sm:text-left">
+              <h1 className="text-3xl font-bold text-foreground">{t('hello')}, {formaAfriqueUser.fullName} !</h1>
+              <p className="text-muted-foreground">{formaAfriqueUser.email}</p>
+          </div>
+        </header>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <StatCard title={t('enrolled_courses')} icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
+          <StatCard title={t('certificates_earned')} icon={Award} value={stats.completed} isLoading={statsLoading} />
+          <StatCard title={t('badge')} icon={Sparkles} value={(formaAfriqueUser as any).badges?.includes('pioneer') ? t('pioneer') : t('active_member')} isLoading={false} />
         </div>
-      </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title={t('enrolled_courses')} icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
-        <StatCard title={t('certificates_earned')} icon={Award} value={stats.completed} isLoading={statsLoading} />
-        <StatCard title={t('badge')} icon={Sparkles} value={(formaAfriqueUser as any).badges?.includes('pioneer') ? t('pioneer') : t('active_member')} isLoading={false} />
-      </div>
-
-      <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="profile"><Edit3 className="mr-2 h-4 w-4"/>{t('tab_profile')}</TabsTrigger>
-          {role === 'instructor' && <TabsTrigger value="payment"><CreditCard className="mr-2 h-4 w-4"/>{t('tab_payments')}</TabsTrigger>}
-          <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4"/>{t('tab_notifications')}</TabsTrigger>
-          <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4"/>{t('tab_security')}</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="profile">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('public_profile_title')}</CardTitle>
-              <CardDescription>{t('public_profile_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="relative">
-                  <Button asChild variant="outline">
-                    <label htmlFor="avatar-upload" className="cursor-pointer">
-                      {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Edit3 className="mr-2 h-4 w-4" />}
-                      {t('change_avatar')}
-                    </label>
-                  </Button>
-                   <Input id="avatar-upload" type="file" accept="image/*" className="absolute w-full h-full top-0 left-0 opacity-0 cursor-pointer" onChange={handleAvatarUpload} disabled={isUploading}/>
-                </div>
-              </div>
-              <Form {...profileForm}>
-                <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
-                  <FormField control={profileForm.control} name="fullName" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('full_name')}</FormLabel>
-                      <FormControl><Input {...field} /></FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={profileForm.control} name="bio" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>{t('bio')}</FormLabel>
-                      <FormControl><Textarea placeholder={t('bio_placeholder')} {...field} rows={4} /></FormControl>
-                       <FormMessage />
-                    </FormItem>
-                  )} />
-
-                  <div className="space-y-4 pt-4 border-t">
-                     <h3 className="text-sm font-medium">{t('social_media')}</h3>
-                     <FormField control={profileForm.control} name="socialLinks.linkedin" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2"><Linkedin className="h-4 w-4"/> LinkedIn</FormLabel>
-                          <FormControl><Input placeholder="https://www.linkedin.com/in/..." {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                     )} />
-                     <FormField control={profileForm.control} name="socialLinks.twitter" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2"><Twitter className="h-4 w-4"/> Twitter / X</FormLabel>
-                          <FormControl><Input placeholder="https://twitter.com/..." {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                     )} />
-                     <FormField control={profileForm.control} name="socialLinks.youtube" render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2"><Youtube className="h-4 w-4"/> YouTube</FormLabel>
-                          <FormControl><Input placeholder="https://www.youtube.com/channel/..." {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                     )} />
-                  </div>
-
-                  <Button type="submit" disabled={isSavingProfile}>
-                    {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {t('save_changes')}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {role === 'instructor' && (
-          <TabsContent value="payment">
+        <Tabs defaultValue="profile" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="profile"><Edit3 className="mr-2 h-4 w-4"/>{t('tab_profile')}</TabsTrigger>
+            {role === 'instructor' && <TabsTrigger value="payment"><CreditCard className="mr-2 h-4 w-4"/>{t('tab_payments')}</TabsTrigger>}
+            <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4"/>{t('tab_notifications')}</TabsTrigger>
+            <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4"/>{t('tab_security')}</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="profile">
             <Card>
-                <CardHeader>
-                    <CardTitle>{t('payment_info_title')}</CardTitle>
-                    <CardDescription>{t('payment_info_desc')}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                     {isClient ? (
-                       <Form {...paymentForm}>
-                          <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-6">
-                               {paymentDetails && (selectedPaymentMethod && ((selectedPaymentMethod.startsWith("mobile") && paymentDetails.phoneNumber) || (selectedPaymentMethod === "bank_transfer" && paymentDetails.iban) || (selectedPaymentMethod === "paypal" && paymentDetails.paypalEmail) ) ) && (
-                                  <Card className="bg-muted/50 border-dashed">
-                                      <CardHeader>
-                                          <CardTitle className="text-base flex items-center justify-between">
-                                              <span>{t('active_payout_method')}</span>
-                                              <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => paymentForm.reset()}>{t('change')}</Button>
-                                          </CardTitle>
-                                      </CardHeader>
-                                      <CardContent className="flex items-center gap-4">
-                                          <PaymentMethodLogo method={selectedPaymentMethod} className="h-12 w-12" />
-                                          <div>
-                                              <p className="font-semibold">{availablePaymentMethods.find(m => m.value === selectedPaymentMethod)?.label}</p>
-                                              <p className="text-muted-foreground text-sm font-mono">
-                                                  {selectedPaymentMethod.startsWith('mobile_money') ? `+${selectedCountry?.prefix} ${paymentDetails.phoneNumber}` :
-                                                   selectedPaymentMethod === 'bank_transfer' ? `${paymentDetails.iban}` :
-                                                   paymentDetails.paypalEmail
-                                                  }
-                                              </p>
-                                          </div>
-                                      </CardContent>
-                                  </Card>
-                              )}
-  
-                              <FormField
-                                  control={paymentForm.control}
-                                  name="country"
-                                  render={({ field }) => (
-                                      <FormItem>
-                                          <FormLabel>{t('country_of_residence')}</FormLabel>
-                                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                              <FormControl>
-                                                  <SelectTrigger>
-                                                      <SelectValue placeholder={t('select_country')}>
-                                                          {selectedCountry && <span>{selectedCountry.emoji} {selectedCountry.name}</span>}
-                                                      </SelectValue>
-                                                  </SelectTrigger>
-                                              </FormControl>
-                                              <SelectContent>
-                                                  {africanCountries.map(c => (
-                                                      <SelectItem key={c.code} value={c.code}>
-                                                          <div className="flex items-center gap-2">
-                                                              <span>{c.emoji}</span>
-                                                              <span>{c.name}</span>
-                                                          </div>
-                                                      </SelectItem>
-                                                  ))}
-                                              </SelectContent>
-                                          </Select>
-                                          <FormMessage />
-                                      </FormItem>
-                                  )}
-                              />
-  
-                              {selectedCountry && (
-                                  <FormField
-                                      control={paymentForm.control}
-                                      name="method"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>{t('payout_method')}</FormLabel>
-                                              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                                  <FormControl>
-                                                      <SelectTrigger>
-                                                          <SelectValue placeholder={t('select_method')} />
-                                                      </SelectTrigger>
-                                                  </FormControl>
-                                                  <SelectContent>
-                                                      {availablePaymentMethods.map(m => (
-                                                          <SelectItem key={m.value} value={m.value}>
-                                                              <div className="flex items-center gap-2">
-                                                                  <PaymentMethodLogo method={m.value} />
-                                                                  <span>{m.label}</span>
-                                                              </div>
-                                                          </SelectItem>
-                                                      ))}
-                                                  </SelectContent>
-                                              </Select>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                              )}
-  
-                              {selectedPaymentMethod?.startsWith('mobile_money') && selectedCountry && (
-                                  <FormField
-                                      control={paymentForm.control}
-                                      name="details.phoneNumber"
-                                      render={({ field }) => (
-                                          <FormItem>
-                                              <FormLabel>{t('phone_number')}</FormLabel>
-                                              <FormControl>
-                                                  <div className="flex items-center">
-                                                      <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm h-10">+{selectedCountry.prefix}</span>
-                                                      <Input placeholder={t('number_without_prefix')} {...field} className="rounded-l-none" />
-                                                  </div>
-                                              </FormControl>
-                                              <FormMessage />
-                                          </FormItem>
-                                      )}
-                                  />
-                              )}
-  
-                               {selectedPaymentMethod === 'paypal' && (
-                                  <FormField control={paymentForm.control} name="details.paypalEmail" render={({ field }) => (
-                                      <FormItem><FormLabel>{t('paypal_email')}</FormLabel><FormControl><Input placeholder="votre.email@paypal.com" {...field} /></FormControl><FormMessage /></FormItem>
-                                  )} />
-                               )}
-  
-                              {selectedPaymentMethod === 'bank_transfer' && (
-                                  <div className="space-y-4 p-4 border rounded-lg">
-                                       <FormField control={paymentForm.control} name="details.bankName" render={({ field }) => (
-                                          <FormItem><FormLabel>{t('bank_name')}</FormLabel><FormControl><Input placeholder={t('bank_name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
-                                       )} />
-                                       <FormField control={paymentForm.control} name="details.iban" render={({ field }) => (
-                                          <FormItem><FormLabel>IBAN / RIB</FormLabel><FormControl><Input placeholder={t('account_number_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
-                                       )} />
-                                       <FormField control={paymentForm.control} name="details.swiftCode" render={({ field }) => (
-                                          <FormItem><FormLabel>Code SWIFT</FormLabel><FormControl><Input placeholder={t('swift_code_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
-                                       )} />
-                                  </div>
-                              )}
-  
-                               <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
-                                  <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5"/>
-                                  <p className="text-xs text-muted-foreground">
-                                      {t('payment_info_disclaimer')}
-                                  </p>
-                              </div>
-                               <Button type="submit" disabled={isSavingPayment}>
-                                  {isSavingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                  {t('save_button')}
-                               </Button>
-                          </form>
-                      </Form>
-                     ) : (
-                        <div className="space-y-4">
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-full" />
-                            <Skeleton className="h-10 w-24" />
-                        </div>
-                     )}
-                </CardContent>
+              <CardHeader>
+                <CardTitle>{t('public_profile_title')}</CardTitle>
+                <CardDescription>{t('public_profile_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Form {...profileForm}>
+                  <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
+                    <FormField control={profileForm.control} name="fullName" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('full_name')}</FormLabel>
+                        <FormControl><Input {...field} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <FormField control={profileForm.control} name="bio" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>{t('bio')}</FormLabel>
+                        <FormControl><Textarea placeholder={t('bio_placeholder')} {...field} rows={4} /></FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+
+                    <div className="space-y-4 pt-4 border-t">
+                      <h3 className="text-sm font-medium">{t('social_media')}</h3>
+                      <FormField control={profileForm.control} name="socialLinks.linkedin" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2"><Linkedin className="h-4 w-4"/> LinkedIn</FormLabel>
+                            <FormControl><Input placeholder="https://www.linkedin.com/in/..." {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )} />
+                      <FormField control={profileForm.control} name="socialLinks.twitter" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2"><Twitter className="h-4 w-4"/> Twitter / X</FormLabel>
+                            <FormControl><Input placeholder="https://twitter.com/..." {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )} />
+                      <FormField control={profileForm.control} name="socialLinks.youtube" render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="flex items-center gap-2"><Youtube className="h-4 w-4"/> YouTube</FormLabel>
+                            <FormControl><Input placeholder="https://www.youtube.com/channel/..." {...field} /></FormControl>
+                            <FormMessage />
+                          </FormItem>
+                      )} />
+                    </div>
+
+                    <Button type="submit" disabled={isSavingProfile}>
+                      {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {t('save_changes')}
+                    </Button>
+                  </form>
+                </Form>
+              </CardContent>
             </Card>
           </TabsContent>
-        )}
-        
-        <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('notification_prefs_title')}</CardTitle>
-              <CardDescription>{t('notification_prefs_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <Form {...notificationForm}>
-                    <form className="space-y-4">
-                        <FormField
-                            control={notificationForm.control}
-                            name="promotions"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="text-base">{t('promos_title')}</FormLabel>
-                                        <FormDescription>{t('promos_desc')}</FormDescription>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                                field.onChange(checked);
-                                                onNotificationChange({ ...notificationForm.getValues(), promotions: checked });
-                                            }}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={notificationForm.control}
-                            name="reminders"
-                            render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="text-base">{t('reminders_title')}</FormLabel>
-                                        <FormDescription>{t('reminders_desc')}</FormDescription>
-                                    </div>
-                                    <FormControl>
-                                         <Switch
-                                            checked={field.value}
-                                            onCheckedChange={(checked) => {
-                                                field.onChange(checked);
-                                                onNotificationChange({ ...notificationForm.getValues(), reminders: checked });
-                                            }}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                            )}
-                        />
-                    </form>
-                </Form>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="security">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('security_title')}</CardTitle>
-              <CardDescription>{t('security_desc')}</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-medium">{t('password')}</h3>
-                <p className="text-sm text-muted-foreground">{t('password_desc')}</p>
-                <Button variant="outline" className="mt-2" onClick={handlePasswordReset}>
-                  {t('password_reset_button')}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-        
-      </Tabs>
-    </div>
+          {role === 'instructor' && (
+            <TabsContent value="payment">
+              <Card>
+                  <CardHeader>
+                      <CardTitle>{t('payment_info_title')}</CardTitle>
+                      <CardDescription>{t('payment_info_desc')}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      {isClient ? (
+                        <Form {...paymentForm}>
+                            <form onSubmit={paymentForm.handleSubmit(onPaymentSubmit)} className="space-y-6">
+                                {paymentDetails && (selectedPaymentMethod && ((selectedPaymentMethod.startsWith("mobile") && paymentDetails.phoneNumber) || (selectedPaymentMethod === "bank_transfer" && paymentDetails.iban) || (selectedPaymentMethod === "paypal" && paymentDetails.paypalEmail) ) ) && (
+                                    <Card className="bg-muted/50 border-dashed">
+                                        <CardHeader>
+                                            <CardTitle className="text-base flex items-center justify-between">
+                                                <span>{t('active_payout_method')}</span>
+                                                <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => paymentForm.reset()}>{t('change')}</Button>
+                                            </CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="flex items-center gap-4">
+                                            <PaymentMethodLogo method={selectedPaymentMethod} className="h-12 w-12" />
+                                            <div>
+                                                <p className="font-semibold">{availablePaymentMethods.find(m => m.value === selectedPaymentMethod)?.label}</p>
+                                                <p className="text-muted-foreground text-sm font-mono">
+                                                    {selectedPaymentMethod.startsWith('mobile_money') ? `+${selectedCountry?.prefix} ${paymentDetails.phoneNumber}` :
+                                                    selectedPaymentMethod === 'bank_transfer' ? `${paymentDetails.iban}` :
+                                                    paymentDetails.paypalEmail
+                                                    }
+                                                </p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+    
+                                <FormField
+                                    control={paymentForm.control}
+                                    name="country"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('country_of_residence')}</FormLabel>
+                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger>
+                                                        <SelectValue placeholder={t('select_country')}>
+                                                            {selectedCountry && <span>{selectedCountry.emoji} {selectedCountry.name}</span>}
+                                                        </SelectValue>
+                                                    </SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent>
+                                                    {africanCountries.map(c => (
+                                                        <SelectItem key={c.code} value={c.code}>
+                                                            <div className="flex items-center gap-2">
+                                                                <span>{c.emoji}</span>
+                                                                <span>{c.name}</span>
+                                                            </div>
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+    
+                                {selectedCountry && (
+                                    <FormField
+                                        control={paymentForm.control}
+                                        name="method"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('payout_method')}</FormLabel>
+                                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger>
+                                                            <SelectValue placeholder={t('select_method')} />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {availablePaymentMethods.map(m => (
+                                                            <SelectItem key={m.value} value={m.value}>
+                                                                <div className="flex items-center gap-2">
+                                                                    <PaymentMethodLogo method={m.value} />
+                                                                    <span>{m.label}</span>
+                                                                </div>
+                                                            </SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+    
+                                {selectedPaymentMethod?.startsWith('mobile_money') && selectedCountry && (
+                                    <FormField
+                                        control={paymentForm.control}
+                                        name="details.phoneNumber"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>{t('phone_number')}</FormLabel>
+                                                <FormControl>
+                                                    <div className="flex items-center">
+                                                        <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm h-10">+{selectedCountry.prefix}</span>
+                                                        <Input placeholder={t('number_without_prefix')} {...field} className="rounded-l-none" />
+                                                    </div>
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                )}
+    
+                                {selectedPaymentMethod === 'paypal' && (
+                                    <FormField control={paymentForm.control} name="details.paypalEmail" render={({ field }) => (
+                                        <FormItem><FormLabel>{t('paypal_email')}</FormLabel><FormControl><Input placeholder="votre.email@paypal.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                    )} />
+                                )}
+    
+                                {selectedPaymentMethod === 'bank_transfer' && (
+                                    <div className="space-y-4 p-4 border rounded-lg">
+                                        <FormField control={paymentForm.control} name="details.bankName" render={({ field }) => (
+                                            <FormItem><FormLabel>{t('bank_name')}</FormLabel><FormControl><Input placeholder={t('bank_name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={paymentForm.control} name="details.iban" render={({ field }) => (
+                                            <FormItem><FormLabel>IBAN / RIB</FormLabel><FormControl><Input placeholder={t('account_number_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                        <FormField control={paymentForm.control} name="details.swiftCode" render={({ field }) => (
+                                            <FormItem><FormLabel>Code SWIFT</FormLabel><FormControl><Input placeholder={t('swift_code_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
+                                        )} />
+                                    </div>
+                                )}
+    
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
+                                    <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5"/>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t('payment_info_disclaimer')}
+                                    </p>
+                                </div>
+                                <Button type="submit" disabled={isSavingPayment}>
+                                    {isSavingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    {t('save_button')}
+                                </Button>
+                            </form>
+                        </Form>
+                      ) : (
+                          <div className="space-y-4">
+                              <Skeleton className="h-10 w-full" />
+                              <Skeleton className="h-10 w-full" />
+                              <Skeleton className="h-10 w-24" />
+                          </div>
+                      )}
+                  </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+          
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('notification_prefs_title')}</CardTitle>
+                <CardDescription>{t('notification_prefs_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                  <Form {...notificationForm}>
+                      <form className="space-y-4">
+                          <FormField
+                              control={notificationForm.control}
+                              name="promotions"
+                              render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                      <div className="space-y-0.5">
+                                          <FormLabel className="text-base">{t('promos_title')}</FormLabel>
+                                          <FormDescription>{t('promos_desc')}</FormDescription>
+                                      </div>
+                                      <FormControl>
+                                          <Switch
+                                              checked={field.value}
+                                              onCheckedChange={(checked) => {
+                                                  field.onChange(checked);
+                                                  onNotificationChange({ ...notificationForm.getValues(), promotions: checked });
+                                              }}
+                                          />
+                                      </FormControl>
+                                  </FormItem>
+                              )}
+                          />
+                          <FormField
+                              control={notificationForm.control}
+                              name="reminders"
+                              render={({ field }) => (
+                                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                      <div className="space-y-0.5">
+                                          <FormLabel className="text-base">{t('reminders_title')}</FormLabel>
+                                          <FormDescription>{t('reminders_desc')}</FormDescription>
+                                      </div>
+                                      <FormControl>
+                                          <Switch
+                                              checked={field.value}
+                                              onCheckedChange={(checked) => {
+                                                  field.onChange(checked);
+                                                  onNotificationChange({ ...notificationForm.getValues(), reminders: checked });
+                                              }}
+                                          />
+                                      </FormControl>
+                                  </FormItem>
+                              )}
+                          />
+                      </form>
+                  </Form>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="security">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('security_title')}</CardTitle>
+                <CardDescription>{t('security_desc')}</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h3 className="font-medium">{t('password')}</h3>
+                  <p className="text-sm text-muted-foreground">{t('password_desc')}</p>
+                  <Button variant="outline" className="mt-2" onClick={handlePasswordReset}>
+                    {t('password_reset_button')}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+        </Tabs>
+      </div>
+    </>
   );
 }
-
-    
