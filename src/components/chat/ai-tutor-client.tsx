@@ -160,7 +160,7 @@ export function AiTutorClient() {
           )}
         </div>
       </ScrollArea>
-      <div className="p-2 border-t bg-[#f0f0f0] dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
+      <div className="p-2 border-t bg-slate-100 dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-4xl mx-auto">
             <Input
             value={input}
