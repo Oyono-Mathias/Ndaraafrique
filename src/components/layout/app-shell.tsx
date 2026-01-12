@@ -151,8 +151,8 @@ const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { hre
     <Link href={href} className="flex flex-col items-center justify-center flex-1 gap-1 p-1 relative transition-all duration-200 ease-in-out min-w-0">
         <Icon className={cn("h-6 w-6 transition-transform", isActive ? 'text-primary scale-110 mb-1' : 'text-slate-500 mb-0.5')} strokeWidth={isActive ? 2.5 : 2} />
         <span className={cn(
-            "text-[10px] leading-none text-center w-full max-w-[65px] word-wrap-break-word tracking-tight", 
-            isActive ? 'font-bold text-primary' : 'text-slate-600 font-medium'
+            "text-[8.5px] leading-tight text-center w-full max-w-[65px] font-semibold tracking-tighter", 
+            isActive ? 'font-bold text-primary' : 'text-slate-600'
         )}>
             {label}
         </span>
@@ -162,7 +162,7 @@ const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { hre
     </Link>
 );
 
-const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/liste-de-souhaits', '/account'];
+const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/messages', '/account'];
 
 const BottomNavBar = () => {
     const pathname = usePathname();
@@ -188,14 +188,14 @@ const BottomNavBar = () => {
         { href: '/dashboard', icon: Star, label: t('navSelection') },
         { href: '/search', icon: Search, label: t('navSearch') },
         { href: '/mes-formations', icon: Play, label: t('navMyLearning') },
-        { href: '/liste-de-souhaits', icon: Heart, label: t('navWishlist') },
+        { href: '/messages', icon: MessageSquare, label: t('navMessages'), unreadCount: unreadMessages },
         { href: '/account', icon: User, label: t('navAccount') },
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-[75px] bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex justify-around items-end md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
+        <div className="fixed bottom-0 left-0 right-0 h-[75px] bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex justify-around items-center md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
             {items.map(item => (
-                <BottomNavItem key={item.href} {...item} isActive={pathname === item.href} />
+                <BottomNavItem key={item.href} {...item} isActive={pathname === item.href} unreadCount={item.unreadCount} />
             ))}
         </div>
     );
@@ -567,7 +567,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         </SheetContent>
                       </Sheet>
                       <div className="flex-1 overflow-hidden">
-                          <h1 className={cn("text-lg font-semibold md:text-xl truncate", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
+                          <h1 className={cn("text-lg font-semibold md:text-xl truncate max-w-[150px] sm:max-w-full", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
                               {t(pageTitleKey)}
                           </h1>
                       </div>
