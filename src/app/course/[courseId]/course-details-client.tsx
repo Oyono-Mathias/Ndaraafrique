@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -662,10 +663,11 @@ export default function CourseDetailsClient() {
                 className="opacity-80"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
-                 <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
+                <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
+                    {!isEnrolled && <Lock className="h-4 w-4 mr-2" />}
                     <PlayCircle className="h-5 w-5 mr-2"/>
                     Afficher un aperçu
-                 </Button>
+                </Button>
              </div>
            </div>
            <div className="p-4 space-y-3">
@@ -777,6 +779,7 @@ export default function CourseDetailsClient() {
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
+                                  {!isEnrolled && <Lock className="h-4 w-4 mr-2" />}
                                   <PlayCircle className="h-5 w-5 mr-2"/>
                                   Afficher un aperçu
                                </Button>
