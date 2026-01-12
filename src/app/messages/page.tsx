@@ -272,14 +272,14 @@ export default function MessagesPage() {
                     ) : (
                         <div className="p-8 text-center text-slate-500 h-full flex flex-col justify-center items-center">
                             <MessageSquareDashed className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                            <h3 className="font-semibold text-lg">Aucune conversation</h3>
+                            <h3 className="font-semibold text-lg">{t('no_conversations')}</h3>
                         </div>
                     )}
                 </ScrollArea>
                 <div className="p-2 border-t border-slate-800">
                     <Button variant="ghost" className="w-full" onClick={() => setIsNewChatModalOpen(true)}>
                         <Plus className="h-4 w-4 mr-2" />
-                        Nouvelle discussion
+                        {t('new_discussion')}
                     </Button>
                 </div>
             </div>
@@ -289,20 +289,20 @@ export default function MessagesPage() {
                 {activeChatId ? <ChatRoom chatId={activeChatId} /> : (
                     <div className="h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500">
                         <MessageSquareDashed className="h-16 w-16 mb-4" />
-                        <p>Sélectionnez une conversation pour commencer</p>
+                        <p>{t('select_conversation')}</p>
                     </div>
                 )}
             </div>
              <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
               <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
                   <DialogHeader>
-                      <DialogTitle>Démarrer une nouvelle discussion</DialogTitle>
-                      <DialogDescription>Sélectionnez un étudiant pour commencer à discuter.</DialogDescription>
+                      <DialogTitle>{t('start_new_discussion')}</DialogTitle>
+                      <DialogDescription>{t('select_student_to_chat')}</DialogDescription>
                   </DialogHeader>
                   <div className="relative">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                       <Input 
-                          placeholder="Rechercher un étudiant..." 
+                          placeholder={t('search_student')} 
                           className="pl-10 dark:bg-slate-800 dark:border-slate-700" 
                           value={modalSearchTerm}
                           onChange={e => setModalSearchTerm(e.target.value)}
@@ -390,8 +390,8 @@ export default function MessagesPage() {
                 ) : (
                     <div className="p-8 text-center text-slate-500 h-full flex flex-col justify-center items-center">
                         <MessageSquareDashed className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                        <h3 className="font-semibold text-lg">Aucune conversation</h3>
-                        <p className="text-sm">Commencez une nouvelle discussion pour la voir apparaître ici.</p>
+                        <h3 className="font-semibold text-lg">{t('no_conversations')}</h3>
+                        <p className="text-sm">{t('start_new_discussion_prompt')}</p>
                     </div>
                 )}
             </ScrollArea>
@@ -401,13 +401,13 @@ export default function MessagesPage() {
     <Dialog open={isNewChatModalOpen} onOpenChange={setIsNewChatModalOpen}>
         <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
             <DialogHeader>
-                <DialogTitle>Démarrer une nouvelle discussion</DialogTitle>
-                <DialogDescription>Sélectionnez un étudiant pour commencer à discuter.</DialogDescription>
+                <DialogTitle>{t('start_new_discussion')}</DialogTitle>
+                <DialogDescription>{t('select_student_to_chat')}</DialogDescription>
             </DialogHeader>
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
-                    placeholder="Rechercher un étudiant..." 
+                    placeholder={t('search_student')} 
                     className="pl-10 dark:bg-slate-800 dark:border-slate-700" 
                     value={modalSearchTerm}
                     onChange={e => setModalSearchTerm(e.target.value)}

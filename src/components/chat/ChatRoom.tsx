@@ -280,7 +280,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {otherParticipant?.isOnline ? t('online') : `Vu ${timeSinceLastSeen}`}
+                    {otherParticipant?.isOnline ? t('online') : `${t('seen')} ${timeSinceLastSeen}`}
                 </p>
             </div>
             <div className="flex items-center gap-2">
@@ -330,7 +330,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 />
                 <Button type="submit" size="icon" disabled={!newMessage.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
                     <Send className="h-5 w-5" />
-                    <span className="sr-only">Envoyer</span>
+                    <span className="sr-only">{t('send')}</span>
                 </Button>
             </form>
         </div>
