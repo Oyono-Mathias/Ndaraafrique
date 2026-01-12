@@ -77,33 +77,33 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: t('navPersonal'),
       items: [
-        { href: "/dashboard", icon: Star, text: t('navSelection') },
-        { href: "/search", icon: Search, text: t('navSearch') },
-        { href: "/mes-formations", icon: Play, text: t('navMyLearning') },
-        { href: "/tutor", icon: Bot, text: t('navTutor') },
+        { href: "/dashboard", icon: Star, textKey: 'navSelection' },
+        { href: "/search", icon: Search, textKey: 'navSearch' },
+        { href: "/mes-formations", icon: Play, textKey: 'navMyLearning' },
+        { href: "/tutor", icon: Bot, textKey: 'navTutor' },
       ],
     },
     {
       label: t('navFollowUp'),
       items: [
-        { href: "/mes-certificats", icon: Award, text: t('navMyCertificates') },
-        { href: "/liste-de-souhaits", icon: Heart, text: t('navWishlist') },
-        { href: "/mes-devoirs", icon: ClipboardCheck, text: t('navMyAssignments') },
+        { href: "/mes-certificats", icon: Award, textKey: 'navMyCertificates' },
+        { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navMyAssignments' },
       ],
     },
     {
       label: t('navCommunity'),
       items: [
-        { href: "/annuaire", icon: Users, text: t('navDirectory') },
-        { href: "/questions-reponses", icon: HelpCircle, text: t('navMyQuestions') },
-        { href: "/messages", icon: MessageSquare, text: t('navMessages') },
+        { href: "/annuaire", icon: Users, textKey: 'navDirectory' },
+        { href: "/questions-reponses", icon: HelpCircle, textKey: 'navMyQuestions' },
+        { href: "/messages", icon: MessageSquare, textKey: 'navMessages' },
       ]
     },
     {
       label: t('navAccount'),
       items: [
-        { href: "/account", icon: User, text: t('navAccount') },
-        { href: "/notifications", icon: Bell, text: t('navNotifications') },
+        { href: "/account", icon: User, textKey: 'navAccount' },
+        { href: "/notifications", icon: Bell, textKey: 'navNotifications' },
       ],
     },
   ];
@@ -153,7 +153,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
                 key={item.href}
                 href={item.href}
                 icon={item.icon}
-                label={item.text}
+                label={t(item.textKey)}
                 unreadCount={item.href === '/messages' ? unreadMessages : undefined}
                 onClick={onLinkClick}
               />
@@ -172,7 +172,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
              <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" asChild>
                 <Link href="/devenir-instructeur">
                     <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
-                    Devenir Instructeur
+                    {t('be_instructor')}
                 </Link>
             </Button>
         )}

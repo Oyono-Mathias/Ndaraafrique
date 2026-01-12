@@ -14,6 +14,7 @@ import { BookOpen } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { StudentCourseCard } from '@/components/cards/student-course-card';
+import { useTranslation } from 'react-i18next';
 
 interface EnrolledCourse extends Course {
   progress: number;
@@ -23,6 +24,7 @@ interface EnrolledCourse extends Course {
 export default function MyLearningPage() {
   const { formaAfriqueUser, isUserLoading } = useRole();
   const db = getFirestore();
+  const { t } = useTranslation();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -101,14 +103,14 @@ export default function MyLearningPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900">Mon apprentissage</h1>
+        <h1 className="text-3xl font-bold text-slate-900">{t('navMyLearning')}</h1>
       </header>
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="all">Tous les cours</TabsTrigger>
-          <TabsTrigger value="in-progress">En cours</TabsTrigger>
-          <TabsTrigger value="completed">Terminés</TabsTrigger>
+          <TabsTrigger value="all">{t('all')}</TabsTrigger>
+          <TabsTrigger value="in-progress">{t('in_progress')}</TabsTrigger>
+          <TabsTrigger value="completed">{t('completed')}</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -128,6 +130,7 @@ export default function MyLearningPage() {
 }
 
 const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit à aucun cours." }: { courses: EnrolledCourse[], isLoading: boolean, emptyMessage?: string }) => {
+    const { t } = useTranslation();
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -144,7 +147,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit �
                 <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-600">{emptyMessage}</h3>
                 <Button asChild variant="link" className="mt-2">
-                    <Link href="/dashboard">Parcourir les cours</Link>
+                    <Link href="/dashboard">{t('browseCourses')}</Link>
                 </Button>
             </div>
         );

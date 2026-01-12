@@ -20,6 +20,7 @@ import type { Course, Enrollment, Assignment, Submission } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 
 interface StudentAssignment {
@@ -35,21 +36,22 @@ interface StudentAssignment {
     submission?: Submission;
 }
 
-const getStatusInfo = (status: StudentAssignment['status']) => {
+const getStatusInfo = (status: StudentAssignment['status'], t: (key: string) => string) => {
     switch (status) {
         case 'pending':
-            return { text: 'À Rendre', icon: <Edit className="h-4 w-4" />, color: 'text-blue-600' };
+            return { text: t('todo'), icon: <Edit className="h-4 w-4" />, color: 'text-blue-600' };
         case 'submitted':
-            return { text: 'En Attente de Note', icon: <Clock className="h-4 w-4" />, color: 'text-orange-500' };
+            return { text: t('in_progress'), icon: <Clock className="h-4 w-4" />, color: 'text-orange-500' };
         case 'graded':
-            return { text: 'Corrigé', icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-600' };
+            return { text: t('graded'), icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-600' };
         default:
             return { text: 'Indéfini', icon: <ClipboardList className="h-4 w-4" />, color: 'text-gray-500' };
     }
 };
 
 function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssignment, onOpenSubmit: (assignment: StudentAssignment) => void }) {
-  const statusInfo = getStatusInfo(assignment.status);
+  const { t } = useTranslation();
+  const statusInfo = getStatusInfo(assignment.status, t);
   const isOverdue = assignment.dueDate ? isPast(assignment.dueDate) : false;
 
   return (
@@ -71,7 +73,7 @@ function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssig
       </CardContent>
        <CardFooter>
         <Button onClick={() => onOpenSubmit(assignment)} size="sm" className="w-full">
-            {assignment.status === 'pending' ? 'Ouvrir et Rendre' : 'Voir le devoir'}
+            {assignment.status === 'pending' ? t('openAndSubmit') : t('viewAssignment')}
         </Button>
       </CardFooter>
     </Card>
@@ -89,6 +91,7 @@ const SubmissionModal = ({
 }) => {
     const { user } = useRole();
     const { toast } = useToast();
+    const { t } = useTranslation();
     const [file, setFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const storage = getStorage();
@@ -149,18 +152,18 @@ const SubmissionModal = ({
                     <DialogDescription>{assignment.courseTitle}</DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <h4 className="font-semibold">Instructions</h4>
+                    <h4 className="font-semibold">{t('instructions')}</h4>
                     <p className="text-sm text-muted-foreground">{assignment.description || 'Aucune instruction supplémentaire.'}</p>
                     
                     <div className="border-t pt-4">
-                        <h4 className="font-semibold mb-2">Votre travail</h4>
+                        <h4 className="font-semibold mb-2">{t('yourWork')}</h4>
                         {assignment.status === 'pending' ? (
                              <div>
                                 {!file && (
                                      <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
-                                            <p className="text-sm text-muted-foreground">Cliquez pour uploader (PDF, Word, Image)</p>
+                                            <p className="text-sm text-muted-foreground">{t('clickToUpload')}</p>
                                         </div>
                                         <input type="file" className="hidden" onChange={handleFileChange} />
                                     </label>
@@ -178,19 +181,19 @@ const SubmissionModal = ({
                             </div>
                         ) : (
                             <div>
-                                <p className="text-sm">Vous avez déjà soumis ce devoir.</p>
+                                <p className="text-sm">{t('alreadySubmitted')}</p>
                                 <a href={assignment.submission?.fileURL} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                    Voir votre soumission
+                                    {t('viewSubmission')}
                                 </a>
                             </div>
                         )}
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>Fermer</Button>
+                    <Button variant="outline" onClick={onClose}>{t('close')}</Button>
                     {assignment.status === 'pending' && (
                         <Button onClick={handleSubmit} disabled={!file || uploadProgress !== null}>
-                            {uploadProgress !== null ? 'Envoi en cours...' : 'Envoyer le devoir'}
+                            {uploadProgress !== null ? t('sending') : t('submit')}
                         </Button>
                     )}
                 </DialogFooter>
@@ -202,6 +205,7 @@ const SubmissionModal = ({
 export default function MyAssignmentsPage() {
     const { user, isUserLoading } = useRole();
     const db = getFirestore();
+    const { t } = useTranslation();
     const [assignments, setAssignments] = useState<StudentAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedAssignment, setSelectedAssignment] = useState<StudentAssignment | null>(null);
@@ -280,26 +284,26 @@ export default function MyAssignmentsPage() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold text-slate-900">Mes Devoirs</h1>
-                <p className="text-slate-500">Suivez vos travaux à rendre et vos notes.</p>
+                <h1 className="text-3xl font-bold text-slate-900">{t('navMyAssignments')}</h1>
+                <p className="text-slate-500">{t('assignmentsDescription')}</p>
             </header>
 
             <Tabs defaultValue="todo" className="w-full">
                 <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="todo">À faire ({todo.length})</TabsTrigger>
-                    <TabsTrigger value="in-progress">En attente ({inProgress.length})</TabsTrigger>
-                    <TabsTrigger value="graded">Corrigés ({graded.length})</TabsTrigger>
+                    <TabsTrigger value="todo">{t('todo')} ({todo.length})</TabsTrigger>
+                    <TabsTrigger value="in-progress">{t('in_progress')} ({inProgress.length})</TabsTrigger>
+                    <TabsTrigger value="graded">{t('graded')} ({graded.length})</TabsTrigger>
                 </TabsList>
 
                 <div className="mt-6">
                     <TabsContent value="todo">
-                        <AssignmentsGrid assignments={todo} isLoading={isLoading} onOpenSubmit={setSelectedAssignment} emptyMessage="Vous n'avez aucun devoir à faire pour le moment." />
+                        <AssignmentsGrid assignments={todo} isLoading={isLoading} onOpenSubmit={setSelectedAssignment} emptyMessage={t('noAssignmentsTodo')} />
                     </TabsContent>
                     <TabsContent value="in-progress">
-                        <AssignmentsGrid assignments={inProgress} isLoading={isLoading} onOpenSubmit={setSelectedAssignment} emptyMessage="Aucun devoir en attente de correction." />
+                        <AssignmentsGrid assignments={inProgress} isLoading={isLoading} onOpenSubmit={setSelectedAssignment} emptyMessage={t('noAssignmentsInProgress')} />
                     </TabsContent>
                     <TabsContent value="graded">
-                        <AssignmentsGrid assignments={graded} isLoading={isLoading} onOpenSubmit={setSelectedAssignment} emptyMessage="Aucun de vos devoirs n'a été corrigé." />
+                        <AssignmentsGrid assignments={graded} isLoading={isLoading} onOpenSubmit={setSelectedAssignment} emptyMessage={t('noAssignmentsGraded')} />
                     </TabsContent>
                 </div>
             </Tabs>
@@ -338,4 +342,3 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
         </div>
     );
 }
-

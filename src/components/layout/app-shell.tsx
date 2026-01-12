@@ -64,46 +64,46 @@ const NotificationItem = ({ notif }: { notif: Notification }) => {
   return notif.link ? <Link href={notif.link}>{content}</Link> : <div>{content}</div>;
 }
 
-
-const pageTitles: { [key: string]: string } = {
-    '/dashboard': 'Sélection',
-    '/tutor': 'Tuteur IA',
-    '/mes-formations': 'Mon apprentissage',
-    '/mes-certificats': 'Mes Certificats',
-    '/mes-devoirs': 'Mes Devoirs',
-    '/questions-reponses': 'Questions & Réponses',
-    '/messages': 'Messagerie',
-    '/annuaire': 'Annuaire',
-    '/profil': 'Profil',
-    '/account': 'Mon Compte',
-    '/liste-de-souhaits': 'Liste de souhaits',
-    '/paiements': 'Paiements',
-    '/notifications': 'Notifications',
-    '/instructor/courses': 'Mes Cours',
-    '/instructor/courses/create': 'Créer un cours',
-    '/instructor/students': 'Mes Étudiants',
-    '/mes-revenus': 'Mes Revenus',
-    '/statistiques': 'Statistiques',
-    '/avis': 'Avis',
-    '/instructor/devoirs': 'Devoirs',
-    '/quiz': 'Quiz',
-    '/certificats-instructor': 'Certificats',
-    '/ressources': 'Ressources',
-    '/mentions-legales': 'Mentions Légales',
-    '/cgu': 'Conditions Générales d\'Utilisation',
+const pageTitleKeys: { [key: string]: string } = {
+    '/dashboard': 'navSelection',
+    '/tutor': 'navTutor',
+    '/mes-formations': 'navMyLearning',
+    '/mes-certificats': 'navMyCertificates',
+    '/mes-devoirs': 'navMyAssignments',
+    '/questions-reponses': 'navMyQuestions',
+    '/messages': 'navMessages',
+    '/annuaire': 'navDirectory',
+    '/profil': 'profil', // Assurez-vous que 'profil' est dans vos fichiers de traduction
+    '/account': 'navAccount',
+    '/liste-de-souhaits': 'navWishlist',
+    '/paiements': 'Paiements', // Assurez-vous que 'Paiements' est dans vos fichiers de traduction
+    '/notifications': 'navNotifications',
+    '/instructor/courses': 'navMyCourses',
+    '/instructor/courses/create': 'Créer un cours', // Traduire
+    '/instructor/students': 'navMyStudents',
+    '/mes-revenus': 'navMyRevenue',
+    '/statistiques': 'navStatistics',
+    '/avis': 'navReviews',
+    '/instructor/devoirs': 'navAssignments',
+    '/instructor/quiz': 'navQuiz',
+    '/certificats-instructor': 'navCertificates',
+    '/instructor/ressources': 'navResources',
+    '/mentions-legales': 'Mentions Légales', // Traduire
+    '/cgu': 'Conditions Générales d\'Utilisation', // Traduire
 };
 
-function getPageTitle(pathname: string): string {
-    if (pathname.startsWith('/course/')) return 'Détails du cours';
-    if (pathname.startsWith('/courses/')) return 'Lecteur de cours';
-    if (pathname.startsWith('/instructor/courses/edit')) return 'Éditeur de cours';
-    if (pathname.startsWith('/instructor/courses/create')) return 'Créer un cours';
-    if (pathname.startsWith('/messages/')) return 'Messagerie';
-    if (pathname.startsWith('/questions-reponses/')) return 'Questions & Réponses';
-    if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur';
-    if (pathname.startsWith('/admin/support/')) return 'Détails du Ticket';
-    return pageTitles[pathname] || 'FormaAfrique';
+function getPageTitleKey(pathname: string): string {
+    if (pathname.startsWith('/course/')) return 'Détails du cours'; // Traduire
+    if (pathname.startsWith('/courses/')) return 'Lecteur de cours'; // Traduire
+    if (pathname.startsWith('/instructor/courses/edit')) return 'Éditeur de cours'; // Traduire
+    if (pathname.startsWith('/instructor/courses/create')) return 'Créer un cours'; // Traduire
+    if (pathname.startsWith('/messages/')) return 'navMessages';
+    if (pathname.startsWith('/questions-reponses/')) return 'navMyQuestions';
+    if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur'; // Traduire
+    if (pathname.startsWith('/admin/support/')) return 'Détails du Ticket'; // Traduire
+    return pageTitleKeys[pathname] || 'FormaAfrique';
 }
+
 
 function MaintenancePage() {
     return (
@@ -161,6 +161,7 @@ const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/liste-d
 const BottomNavBar = () => {
     const pathname = usePathname();
     const { user } = useRole();
+    const { t } = useTranslation();
     const [unreadMessages, setUnreadMessages] = useState(0);
     const db = getFirestore();
 
@@ -178,11 +179,11 @@ const BottomNavBar = () => {
     }
 
     const items = [
-        { href: '/dashboard', icon: Star, label: 'Sélection' },
-        { href: '/search', icon: Search, label: 'Rechercher' },
-        { href: '/mes-formations', icon: Play, label: 'Apprentissage' },
-        { href: '/liste-de-souhaits', icon: Heart, label: 'Souhaits' },
-        { href: '/account', icon: User, label: 'Compte' },
+        { href: '/dashboard', icon: Star, label: t('navSelection') },
+        { href: '/search', icon: Search, label: t('navSearch') },
+        { href: '/mes-formations', icon: Play, label: t('navMyLearning') },
+        { href: '/liste-de-souhaits', icon: Heart, label: t('navWishlist') },
+        { href: '/account', icon: User, label: t('navAccount') },
     ];
 
     return (
@@ -419,8 +420,8 @@ const HeaderNotificationButton = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-card-foreground">
-          <Bell className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="relative text-foreground dark:text-white">
+          <Bell className="h-5 w-5" />
           {hasUnread && (
             <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
@@ -431,12 +432,12 @@ const HeaderNotificationButton = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-          <Card className="border-0">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-semibold">Notifications</CardTitle>
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread}>Marquer comme lu</Button>
+          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 dark:border-b dark:border-slate-700">
+                <CardTitle className="text-base font-semibold dark:text-white">Notifications</CardTitle>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-2">
               {notifications.length > 0 ? (
                 <div className="space-y-1">
                   {notifications.map(n => <NotificationItem key={n.id} notif={n} />)}
@@ -457,6 +458,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
@@ -528,6 +530,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const showHeader = !isChatPage && !isFullScreenPage;
+  const pageTitleKey = getPageTitleKey(pathname);
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
@@ -560,7 +563,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       </Sheet>
                       <div className="flex-1">
                           <h1 className={cn("text-lg font-semibold md:text-xl", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
-                              {getPageTitle(pathname)}
+                              {t(pageTitleKey)}
                           </h1>
                       </div>
                       <Header />
