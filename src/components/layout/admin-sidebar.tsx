@@ -22,6 +22,7 @@ import {
   Briefcase,
   UserCheck,
   Landmark,
+  BarChart3,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -67,6 +68,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, textKey: "navDashboard" },
+    { href: "/admin/statistiques", icon: BarChart3, textKey: "navStatistics" },
     { href: "/admin/users", icon: Users, textKey: "navUsers" },
     { href: "/admin/instructors", icon: UserCheck, textKey: "navApplications", countId: 'pendingInstructors' },
     { href: "/admin/moderation", icon: ShieldAlert, textKey: "navModeration", countId: 'pendingCourses' },
