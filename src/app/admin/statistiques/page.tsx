@@ -22,17 +22,17 @@ interface RevenueDataPoint {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("dark:bg-[#1e293b] dark:border-slate-700", accentColor)}>
+    <Card className={cn("border-t-4 bg-slate-800/50 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</CardTitle>
+            <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
             {isLoading ? (
-                <Skeleton className="h-8 w-3/4 dark:bg-slate-700" />
+                <Skeleton className="h-8 w-3/4 bg-slate-700" />
             ) : (
                 <>
-                    <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
+                    <div className="text-2xl font-bold text-white">{value}</div>
                     {change && <p className="text-xs text-muted-foreground dark:text-slate-500">{change}</p>}
                 </>
             )}
