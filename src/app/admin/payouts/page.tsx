@@ -27,14 +27,16 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Check, X, Landmark, AlertTriangle, Wallet } from 'lucide-react';
+import { Loader2, Check, X, Landmark, AlertTriangle, Wallet, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
-import { formatDistanceToNow } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import * as XLSX from 'xlsx';
+
 
 interface Payout {
   id: string;
@@ -130,6 +132,21 @@ export default function PayoutsPage() {
     }
   };
 
+  const handleExport = () => {
+    const dataToExport = filteredPayouts.map(p => ({
+        Date: p.date ? format(p.date.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A',
+        Instructeur: p.instructor?.fullName || 'Inconnu',
+        Montant: p.amount,
+        Méthode: p.method,
+        Statut: t(p.status),
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Retraits");
+    XLSX.writeFile(workbook, `FormaAfrique_Retraits_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+  };
+
   const isLoading = isUserLoading || payoutsLoading || usersLoading;
 
   return (
@@ -141,13 +158,19 @@ export default function PayoutsPage() {
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                    <TabsTrigger value="en_attente">{t('pending')}</TabsTrigger>
-                    <TabsTrigger value="valide">{t('approved')}</TabsTrigger>
-                    <TabsTrigger value="rejete">{t('rejected')}</TabsTrigger>
-                </TabsList>
-            </Tabs>
+             <div className="flex justify-between items-center">
+                 <Tabs value={activeTab} onValueChange={setActiveTab}>
+                    <TabsList>
+                        <TabsTrigger value="en_attente">{t('pending')}</TabsTrigger>
+                        <TabsTrigger value="valide">{t('approved')}</TabsTrigger>
+                        <TabsTrigger value="rejete">{t('rejected')}</TabsTrigger>
+                    </TabsList>
+                </Tabs>
+                <Button variant="outline" onClick={handleExport} disabled={filteredPayouts.length === 0}>
+                    <FileDown className="mr-2 h-4 w-4" />
+                    {t('export')}
+                </Button>
+             </div>
         </CardHeader>
         <CardContent>
           <div className="hidden md:block overflow-x-auto">
