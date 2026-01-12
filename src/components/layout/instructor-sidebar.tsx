@@ -28,6 +28,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getAuth, signOut } from "firebase/auth";
 import { cn } from "@/lib/utils";
 import { I18nProvider } from '@/context/I18nProvider';
+import { UserNav } from "./user-nav";
+import { LanguageSelector } from "./language-selector";
 
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
@@ -150,6 +152,10 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         </nav>
 
         <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
+          <div className="flex items-center justify-center p-2 rounded-lg bg-slate-800/50 gap-2">
+            <UserNav />
+            <LanguageSelector />
+          </div>
           <Button
             variant="outline"
             className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white"

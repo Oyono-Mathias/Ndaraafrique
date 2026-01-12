@@ -393,10 +393,7 @@ const SupportButton = () => {
 
 const Header = () => {
     return (
-        <div className="flex items-center gap-4 w-full">
-            <div className="w-full flex-1">
-                {/* Search can be added back here if needed */}
-            </div>
+        <div className="flex items-center gap-4 w-full justify-end">
             <LanguageSelector />
             <HeaderNotificationButton />
             <UserNav />
@@ -532,7 +529,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const showHeader = !isChatPage && !isFullScreenPage;
-  const pageTitleKey = getPageTitleKey(pathname);
+  const showTitleInHeader = !isInstructorDashboard;
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
@@ -547,7 +544,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                  {showHeader && (
                   <header className={cn(
                       "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
-                      isInstructorDashboard ? 'bg-[#1e293b] border-slate-700' : 'bg-card border-border'
+                      isInstructorDashboard ? 'bg-[#111827] border-slate-700' : 'bg-card border-border'
                   )}>
                       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>
@@ -564,11 +561,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           {renderSidebar()}
                         </SheetContent>
                       </Sheet>
-                      <div className="flex-1 overflow-hidden">
-                          <h1 className={cn("text-lg font-semibold md:text-xl truncate max-w-[150px] sm:max-w-full", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
-                              {t(pageTitleKey)}
-                          </h1>
-                      </div>
+                      {showTitleInHeader && (
+                        <div className="flex-1 overflow-hidden">
+                            <h1 className={cn("text-lg font-semibold md:text-xl truncate max-w-[150px] sm:max-w-full", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
+                                {t(getPageTitleKey(pathname))}
+                            </h1>
+                        </div>
+                      )}
                       <Header />
                   </header>
                 )}
