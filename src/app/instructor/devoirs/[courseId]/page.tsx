@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -67,13 +66,13 @@ const AssignmentRow = ({ courseId, assignment }: { courseId: string; assignment:
     }, [db, courseId, assignment.id]);
 
     return (
-        <TableRow>
-            <TableCell className="font-medium">{assignment.title}</TableCell>
-            <TableCell>
-                {loading ? <Skeleton className="h-5 w-5" /> : submissionCount}
+        <TableRow className="dark:border-slate-700 dark:hover:bg-slate-800/50">
+            <TableCell className="font-medium dark:text-slate-100">{assignment.title}</TableCell>
+            <TableCell className="dark:text-slate-300">
+                {loading ? <Skeleton className="h-5 w-5 dark:bg-slate-700" /> : submissionCount}
             </TableCell>
             <TableCell className="text-right">
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="dark:bg-slate-700 dark:hover:bg-slate-600 dark:border-slate-600">
                     <Link href={`/instructor/devoirs/${courseId}/submissions/${assignment.id}`}>
                         Voir les rendus
                     </Link>
@@ -171,19 +170,19 @@ export default function CourseAssignmentsPage() {
     return (
         <div className="space-y-8">
             <header>
-                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/devoirs')} className="mb-2">
+                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/devoirs')} className="mb-2 dark:text-slate-300 dark:hover:bg-slate-800">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour à la liste des cours
                 </Button>
                 {courseLoading ? (
                     <>
-                        <Skeleton className="h-8 w-1/2" />
-                        <Skeleton className="h-4 w-1/3 mt-2" />
+                        <Skeleton className="h-8 w-1/2 dark:bg-slate-700" />
+                        <Skeleton className="h-4 w-1/3 mt-2 dark:bg-slate-700" />
                     </>
                 ) : (
                     <>
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Devoirs pour "{course?.title}"</h1>
-                        <p className="text-muted-foreground">Créez et gérez les devoirs pour ce cours.</p>
+                        <p className="text-muted-foreground dark:text-slate-400">Créez et gérez les devoirs pour ce cours.</p>
                     </>
                 )}
             </header>
@@ -195,11 +194,11 @@ export default function CourseAssignmentsPage() {
                 </div>
             )}
 
-            <Card className="bg-card shadow-sm">
+            <Card className="dark:bg-slate-800 dark:border-slate-700 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Liste des devoirs</CardTitle>
-                        <CardDescription>Cliquez sur "Voir les rendus" pour noter les étudiants.</CardDescription>
+                        <CardTitle className="dark:text-white">Liste des devoirs</CardTitle>
+                        <CardDescription className="dark:text-slate-400">Cliquez sur "Voir les rendus" pour noter les étudiants.</CardDescription>
                     </div>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
@@ -208,10 +207,10 @@ export default function CourseAssignmentsPage() {
                                 Créer un devoir
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="sm:max-w-2xl">
+                        <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800 dark:text-white">
                             <DialogHeader>
                                 <DialogTitle>Créer un nouveau devoir</DialogTitle>
-                                <DialogDescription>Renseignez les informations du devoir ci-dessous.</DialogDescription>
+                                <DialogDescription className="dark:text-slate-400">Renseignez les informations du devoir ci-dessous.</DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(handleCreateAssignment)} className="space-y-4">
@@ -220,9 +219,9 @@ export default function CourseAssignmentsPage() {
                                         name="title"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Titre du devoir</FormLabel>
+                                                <FormLabel className="dark:text-slate-300">Titre du devoir</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Ex: Étude de cas marketing" {...field} />
+                                                    <Input placeholder="Ex: Étude de cas marketing" {...field} className="dark:bg-slate-800 dark:border-slate-700" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -233,15 +232,15 @@ export default function CourseAssignmentsPage() {
                                         name="description"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="flex justify-between items-center">
+                                                <FormLabel className="flex justify-between items-center dark:text-slate-300">
                                                     <span>Consignes pour l'étudiant</span>
-                                                    <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading}>
+                                                    <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading} className="dark:bg-slate-800 dark:border-slate-700">
                                                         {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                                                         Assistance IA
                                                     </Button>
                                                 </FormLabel>
                                                 <FormControl>
-                                                    <Textarea placeholder="Décrivez les consignes du devoir..." {...field} rows={5} />
+                                                    <Textarea placeholder="Décrivez les consignes du devoir..." {...field} rows={5} className="dark:bg-slate-800 dark:border-slate-700" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -252,19 +251,19 @@ export default function CourseAssignmentsPage() {
                                         name="correctionGuide"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="flex items-center gap-2">
+                                                <FormLabel className="flex items-center gap-2 dark:text-slate-300">
                                                     <Bot className="h-4 w-4 text-primary" />
                                                     Instructions pour MATHIAS (Correction IA)
                                                 </FormLabel>
                                                 <FormControl>
-                                                    <Textarea placeholder="Ex: L'étudiant doit citer au moins 3 avantages. Vérifier la présence des mots-clés 'ROI', 'conversion'..." {...field} rows={4} />
+                                                    <Textarea placeholder="Ex: L'étudiant doit citer au moins 3 avantages. Vérifier la présence des mots-clés 'ROI', 'conversion'..." {...field} rows={4} className="dark:bg-slate-800 dark:border-slate-700" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
                                     <DialogFooter>
-                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
+                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="dark:text-slate-300 dark:hover:bg-slate-800">Annuler</Button>
                                         <Button type="submit" disabled={isSubmitting}>
                                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Enregistrer
@@ -278,19 +277,19 @@ export default function CourseAssignmentsPage() {
                 <CardContent>
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Titre</TableHead>
-                                <TableHead>Soumissions</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                            <TableRow className="dark:border-slate-700">
+                                <TableHead className="dark:text-slate-300">Titre</TableHead>
+                                <TableHead className="dark:text-slate-300">Soumissions</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-5" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-28" /></TableCell>
+                                    <TableRow key={i} className="dark:border-slate-700">
+                                        <TableCell><Skeleton className="h-5 w-48 dark:bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-5 dark:bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-28 dark:bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : assignments && assignments.length > 0 ? (
@@ -298,9 +297,9 @@ export default function CourseAssignmentsPage() {
                                     <AssignmentRow key={assignment.id} courseId={courseId as string} assignment={assignment} />
                                 ))
                             ) : (
-                                <TableRow>
+                                <TableRow className="dark:border-slate-700">
                                     <TableCell colSpan={3} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <ClipboardList className="h-10 w-10" />
                                             <span className="font-medium">Aucun devoir pour ce cours</span>
                                             <span className="text-sm">Cliquez sur "Créer un devoir" pour commencer.</span>
