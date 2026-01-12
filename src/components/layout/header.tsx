@@ -159,11 +159,13 @@ const HeaderNotificationButton = () => {
 
 export function Header() {
     return (
-        <div className="flex items-center gap-2">
+        <div className="flex w-full items-center gap-4">
             <div className="flex-1" />
-            <LanguageSelector />
-            <HeaderNotificationButton />
-            <UserNav />
+            <div className="flex items-center gap-2">
+                <LanguageSelector />
+                <HeaderNotificationButton />
+                <UserNav />
+            </div>
         </div>
     );
 }
