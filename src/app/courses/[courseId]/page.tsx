@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -273,7 +273,7 @@ export default function CoursePlayerPage() {
     }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast, formaAfriqueUser]);
 
     const handleLessonCompletion = async () => {
-        if (!enrollment || !activeLesson) return;
+        if (!enrollment || !activeLesson || !user) return;
     
         const totalLessons = Array.from(allLectures.values()).reduce((acc, val) => acc + val.length, 0);
         let updatedCompletedLessons = [...completedLessons];
@@ -296,6 +296,18 @@ export default function CoursePlayerPage() {
         }
     
         if (updatedCompletedLessons.length === totalLessons && totalLessons > 0) {
+            // Check for pioneer badge
+            const q = query(collection(db, 'enrollments'), where('studentId', '==', user.uid), where('progress', '==', 100));
+            const completedCoursesSnap = await getDocs(q);
+            if (completedCoursesSnap.size === 1 && !formaAfriqueUser?.badges?.includes('pioneer')) {
+                const userRef = doc(db, 'users', user.uid);
+                await updateDoc(userRef, { badges: arrayUnion('pioneer') });
+                toast({
+                    title: "Badge débloqué : Pionnier !",
+                    description: "Félicitations pour avoir terminé votre premier cours !",
+                });
+            }
+
             setIsCompletionModalOpen(true);
         } else {
             handleNextLesson();

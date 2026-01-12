@@ -190,7 +190,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 
-const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number, isLoading: boolean }) => {
+const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number | string, isLoading: boolean }) => {
     const Icon = icon;
     return (
         <Card>
@@ -420,7 +420,7 @@ export default function AccountPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <StatCard title="Cours Inscrits" icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
         <StatCard title="Certificats Obtenus" icon={Award} value={stats.completed} isLoading={statsLoading} />
-        <StatCard title="Badge" icon={Sparkles} value={1} isLoading={false} />
+        <StatCard title="Badge" icon={Sparkles} value={formaAfriqueUser.badges?.includes('pioneer') ? 'Pionnier' : 'Membre Actif'} isLoading={false} />
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">

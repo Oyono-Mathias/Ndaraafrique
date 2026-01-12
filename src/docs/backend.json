@@ -135,6 +135,11 @@
         "countryCode": {
           "type": "string",
           "description": "The ISO 3166-1 alpha-2 country code."
+        },
+        "badges": {
+          "type": "array",
+          "description": "A list of achievement badges earned by the user.",
+          "items": { "type": "string" }
         }
       },
       "required": [
@@ -583,19 +588,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["resourceId", "courseId", "instructorId", "title", "type", "url", "createdAt"]
-    },
-     "Notification": {
-      "title": "Notification",
-      "type": "object",
-      "description": "Represents a notification for a user.",
-      "properties": {
-        "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "read": { "type": "boolean" },
-        "link": { "type": "string", "format": "uri" },
-        "type": {"type": "string", "enum": ["success", "info", "reminder", "alert"]}
-      },
-      "required": ["text", "createdAt", "read"]
     },
     "PromoCode": {
       "title": "Promo Code",
