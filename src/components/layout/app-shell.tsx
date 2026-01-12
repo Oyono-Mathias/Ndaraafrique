@@ -169,7 +169,7 @@ const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/message
 
 const BottomNavBar = () => {
     const pathname = usePathname();
-    const { user } = useRole();
+    const { user, role } = useRole();
     const { t } = useTranslation();
     const [unreadMessages, setUnreadMessages] = useState(0);
     const db = getFirestore();
@@ -184,7 +184,7 @@ const BottomNavBar = () => {
     }, [user, db]);
     
     const currentPath = `/${pathname.split('/')[1]}`;
-    if (!BOTTOM_NAV_ROUTES.includes(currentPath)) {
+    if (!BOTTOM_NAV_ROUTES.includes(currentPath) || role === 'instructor') {
         return null;
     }
 
