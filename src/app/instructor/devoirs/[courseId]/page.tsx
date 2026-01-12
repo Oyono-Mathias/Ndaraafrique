@@ -27,7 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ClipboardList, PlusCircle, ArrowLeft, Loader2, AlertCircle, Sparkles } from 'lucide-react';
+import { ClipboardList, PlusCircle, ArrowLeft, Loader2, AlertCircle, Sparkles, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
@@ -45,6 +45,7 @@ import { assistAssignmentCreation } from '@/ai/flows/assist-assignment-creation'
 const assignmentSchema = z.object({
     title: z.string().min(3, { message: 'Le titre doit contenir au moins 3 caractères.' }),
     description: z.string().optional(),
+    correctionGuide: z.string().optional(),
 });
 
 
@@ -105,7 +106,7 @@ export default function CourseAssignmentsPage() {
 
     const form = useForm<z.infer<typeof assignmentSchema>>({
         resolver: zodResolver(assignmentSchema),
-        defaultValues: { title: '', description: '' },
+        defaultValues: { title: '', description: '', correctionGuide: '' },
     });
 
     const handleCreateAssignment = async (values: z.infer<typeof assignmentSchema>) => {
@@ -207,7 +208,7 @@ export default function CourseAssignmentsPage() {
                                 Créer un devoir
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="sm:max-w-2xl">
                             <DialogHeader>
                                 <DialogTitle>Créer un nouveau devoir</DialogTitle>
                                 <DialogDescription>Renseignez les informations du devoir ci-dessous.</DialogDescription>
@@ -233,7 +234,7 @@ export default function CourseAssignmentsPage() {
                                         render={({ field }) => (
                                             <FormItem>
                                                 <FormLabel className="flex justify-between items-center">
-                                                    <span>Description (facultatif)</span>
+                                                    <span>Consignes pour l'étudiant</span>
                                                     <Button type="button" variant="outline" size="sm" onClick={handleAiAssist} disabled={isAiLoading}>
                                                         {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
                                                         Assistance IA
@@ -241,6 +242,22 @@ export default function CourseAssignmentsPage() {
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Textarea placeholder="Décrivez les consignes du devoir..." {...field} rows={5} />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    <FormField
+                                        control={form.control}
+                                        name="correctionGuide"
+                                        render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2">
+                                                    <Bot className="h-4 w-4 text-primary" />
+                                                    Instructions pour MATHIAS (Correction IA)
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Textarea placeholder="Ex: L'étudiant doit citer au moins 3 avantages. Vérifier la présence des mots-clés 'ROI', 'conversion'..." {...field} rows={4} />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>

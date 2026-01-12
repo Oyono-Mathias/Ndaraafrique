@@ -524,7 +524,11 @@
       "description": "Represents an assignment for a course.",
       "properties": {
         "title": { "type": "string" },
-        "description": { "type": "string" }
+        "description": { "type": "string" },
+        "correctionGuide": {
+          "type": "string",
+          "description": "Instructions for the AI (MATHIAS) on how to correct the assignment."
+        }
       },
       "required": ["title"]
     },
