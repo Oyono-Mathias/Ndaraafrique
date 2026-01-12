@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useDoc, useCollection, useMemoFirebase, useUser } from '@/firebase';
+import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,13 +50,13 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
             width="100%" 
             height="100%" 
             controls 
-            playing={false}
+            playing={true}
             playsinline={true}
             config={{
                 youtube: {
                     playerVars: { 
                         origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app',
-                        autoplay: 0,
+                        autoplay: 1,
                     }
                 }
             }}
@@ -105,16 +105,16 @@ const CourseSidebar = ({ courseId, activeLesson, onLessonClick, isEnrolled, comp
     });
 
     return (
-        <Card className="h-full shadow-lg">
+        <Card className="h-full shadow-lg bg-white dark:bg-slate-900/50 dark:border-slate-800">
             <CardContent className="p-2 h-full">
                 <div className="p-2 mb-2">
-                    <h2 className="font-bold">Programme du cours</h2>
-                    <p className="text-xs text-muted-foreground">{completedLessons.length} / {totalLessons} leçons terminées</p>
+                    <h2 className="font-bold dark:text-white">Programme du cours</h2>
+                    <p className="text-xs text-muted-foreground dark:text-slate-400">{completedLessons.length} / {totalLessons} leçons terminées</p>
                 </div>
                  <Accordion type="multiple" defaultValue={sections?.map(s => s.id)} className="w-full">
                     {sections?.map(section => (
-                        <AccordionItem value={section.id} key={section.id}>
-                            <AccordionTrigger className="px-3 text-sm font-semibold hover:no-underline">{section.title}</AccordionTrigger>
+                        <AccordionItem value={section.id} key={section.id} className="border-b-0">
+                            <AccordionTrigger className="px-3 py-3 text-sm font-semibold hover:no-underline hover:bg-slate-100 dark:hover:bg-slate-800/60 rounded-lg dark:text-slate-200">{section.title}</AccordionTrigger>
                             <AccordionContent className="p-1 space-y-1">
                                 {(allLectures.get(section.id) || []).map(lesson => {
                                     const isLocked = !isEnrolled && !lesson.isFreePreview;
@@ -128,13 +128,13 @@ const CourseSidebar = ({ courseId, activeLesson, onLessonClick, isEnrolled, comp
                                             onClick={() => onLessonClick(lesson)}
                                             className={cn(
                                                 "w-full text-left flex items-center gap-2 p-2 rounded-md text-xs transition-colors",
-                                                isActive ? "bg-primary/10 text-primary font-semibold" : "hover:bg-slate-100",
+                                                isActive ? "bg-primary/10 text-primary font-semibold" : "hover:bg-slate-100 dark:hover:bg-slate-800",
                                                 isLocked && "text-slate-400 cursor-not-allowed",
                                                 isCompleted && !isActive && "text-slate-500"
                                             )}
                                         >
                                             {isCompleted ? <CheckCircle className="h-4 w-4 text-green-500 shrink-0" /> : (isLocked ? <Lock className="h-3 w-3 shrink-0" /> : <PlayCircle className="h-3 w-3 shrink-0" />)}
-                                            <span className="flex-1 line-clamp-1">{lesson.title}</span>
+                                            <span className="flex-1 line-clamp-1 dark:text-slate-300">{lesson.title}</span>
                                             {lesson.isFreePreview && <Badge variant="secondary" className="text-xs">Aperçu</Badge>}
                                         </button>
                                     );
@@ -160,7 +160,7 @@ const CourseContentTabs = ({ courseId }: { courseId: string }) => {
                 <TabsTrigger value="qa">Q&R</TabsTrigger>
                 <TabsTrigger value="resources">Ressources</TabsTrigger>
             </TabsList>
-            <TabsContent value="overview" className="mt-4 prose prose-sm max-w-none">
+            <TabsContent value="overview" className="mt-4 prose prose-sm max-w-none dark:prose-invert">
                 <p>Bienvenue dans cette leçon. Suivez attentivement la vidéo pour comprendre les concepts clés abordés par l'instructeur.</p>
                 <p>N'oubliez pas de consulter l'onglet "Ressources" pour tout matériel supplémentaire et de poser vos questions dans l'onglet "Q&R" si vous êtes bloqué.</p>
             </TabsContent>
@@ -173,14 +173,14 @@ const CourseContentTabs = ({ courseId }: { courseId: string }) => {
                         <ul className="space-y-2">
                             {resources.map((res: any) => (
                                 <li key={res.id}>
-                                    <a href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg hover:bg-slate-100 border">
+                                    <a href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 border dark:border-slate-700">
                                         <FileText className="h-4 w-4 text-primary" />
-                                        <span className="text-sm font-medium">{res.title}</span>
+                                        <span className="text-sm font-medium dark:text-slate-200">{res.title}</span>
                                     </a>
                                 </li>
                             ))}
                         </ul>
-                    ) : <p className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg text-center">Aucune ressource pour ce cours.</p>
+                    ) : <p className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg text-center dark:border-slate-700">Aucune ressource pour ce cours.</p>
                  )}
             </TabsContent>
         </Tabs>
@@ -321,9 +321,9 @@ export default function CoursePlayerPage() {
 
     if (isLoading) {
         return (
-             <div className="flex flex-col lg:flex-row h-screen bg-slate-50">
-                <main className="flex-1 p-4 lg:p-6"><Skeleton className="aspect-video w-full rounded-lg" /></main>
-                <aside className="hidden lg:block w-96 border-l p-4"><Skeleton className="h-full w-full" /></aside>
+             <div className="flex flex-col lg:flex-row h-screen bg-slate-100 dark:bg-slate-900">
+                <main className="flex-1 p-4 lg:p-6"><Skeleton className="aspect-video w-full rounded-lg dark:bg-slate-800" /></main>
+                <aside className="hidden lg:block w-96 border-l p-4 dark:border-slate-800"><Skeleton className="h-full w-full dark:bg-slate-800" /></aside>
             </div>
         );
     }
@@ -340,17 +340,17 @@ export default function CoursePlayerPage() {
     const isEbook = course.contentType === 'ebook';
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen bg-slate-50 -m-6">
+        <div className="flex flex-col lg:flex-row h-screen bg-slate-100 dark:bg-slate-900 -m-6">
             {formaAfriqueUser?.role === 'admin' && (
                  <Button asChild className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg" variant="destructive">
-                    <Link href={`/admin/courses/edit/${courseId}`} title="Accès Modérateur">
+                    <Link href={`/instructor/courses/edit/${courseId}`} title="Accès Modérateur">
                         <Shield className="h-6 w-6" />
                     </Link>
                 </Button>
             )}
             <main className="flex-1 flex flex-col p-4 lg:p-6 space-y-6">
                 <div className="flex items-center justify-between">
-                     <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)}>
+                     <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)} className="dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
                         <ArrowLeft className="h-4 w-4 mr-2" />
                         Retour aux détails du cours
                     </Button>
@@ -363,25 +363,25 @@ export default function CoursePlayerPage() {
                      <VideoPlayer videoUrl={activeLesson?.videoUrl} onEnded={handleLessonCompletion} />
                 )}
                 <div className="mt-4">
-                     <h1 className="text-xl lg:text-2xl font-bold">{isEbook ? course.title : activeLesson?.title || course.title}</h1>
+                     <h1 className="text-xl lg:text-2xl font-bold dark:text-white">{isEbook ? course.title : activeLesson?.title || course.title}</h1>
                     {activeLesson && !isEbook ? (
                         <div className="flex justify-between items-center mt-2">
-                            <p className="text-slate-500 text-sm">Leçon actuelle</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm">Leçon actuelle</p>
                             <Button onClick={handleLessonCompletion} size="sm" disabled={completedLessons.includes(activeLesson.id)}>
                                 <CheckCircle className="h-4 w-4 mr-2" />
                                 {completedLessons.includes(activeLesson.id) ? 'Terminée' : 'Marquer comme terminée'}
                             </Button>
                         </div>
-                    ) : <p className="text-slate-500 text-sm">{isEbook ? 'Livre Électronique' : 'Bienvenue dans votre cours'}</p>}
+                    ) : <p className="text-slate-500 dark:text-slate-400 text-sm">{isEbook ? 'Livre Électronique' : 'Bienvenue dans votre cours'}</p>}
                 </div>
                 {!isEbook && (
-                    <div className="mt-6 flex-grow bg-white p-6 rounded-2xl shadow-inner">
+                    <div className="mt-6 flex-grow bg-white dark:bg-slate-900/50 p-6 rounded-2xl shadow-inner dark:border dark:border-slate-800">
                       <CourseContentTabs courseId={courseId as string}/>
                     </div>
                 )}
             </main>
             {!isEbook && (
-                <aside className="w-full lg:w-96 lg:h-screen border-t lg:border-t-0 lg:border-l shrink-0 bg-white">
+                <aside className="w-full lg:w-96 lg:h-screen border-t lg:border-t-0 lg:border-l shrink-0 bg-white dark:bg-slate-900/50 dark:border-slate-800">
                     <div className="p-4 h-full overflow-y-auto">
                        <CourseSidebar 
                             courseId={courseId as string} 
