@@ -83,11 +83,13 @@ function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssig
 const SubmissionModal = ({
     assignment,
     isOpen,
-    onClose
+    onClose,
+    onSubmissionSuccess
 }: {
     assignment: StudentAssignment | null,
     isOpen: boolean,
-    onClose: () => void
+    onClose: () => void,
+    onSubmissionSuccess: (assignmentId: string, submission: Submission) => void;
 }) => {
     const { user } = useRole();
     const { toast } = useToast();
@@ -96,6 +98,14 @@ const SubmissionModal = ({
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const storage = getStorage();
     const db = getFirestore();
+
+    useEffect(() => {
+        // Reset state when modal is opened for a new assignment
+        if (isOpen) {
+            setFile(null);
+            setUploadProgress(null);
+        }
+    }, [isOpen]);
 
     if (!assignment) return null;
 
@@ -129,16 +139,17 @@ const SubmissionModal = ({
                 const submissionId = `${user.uid}_${assignment.assignmentId}`;
                 const submissionRef = doc(db, `courses/${assignment.courseId}/assignments/${assignment.assignmentId}/submissions`, submissionId);
 
-                await setDoc(submissionRef, {
+                const newSubmissionData = {
                     userId: user.uid,
                     fileURL: downloadURL,
                     submittedAt: serverTimestamp(),
                     status: 'Envoyé',
-                }, { merge: true });
+                };
+                
+                await setDoc(submissionRef, newSubmissionData, { merge: true });
 
                 toast({ title: 'Devoir envoyé avec succès !' });
-                setFile(null);
-                setUploadProgress(null);
+                onSubmissionSuccess(assignment.assignmentId, { id: submissionId, ...newSubmissionData, submittedAt: new Date() } as Submission);
                 onClose();
             }
         );
@@ -182,9 +193,11 @@ const SubmissionModal = ({
                         ) : (
                             <div>
                                 <p className="text-sm">{t('alreadySubmitted')}</p>
-                                <a href={assignment.submission?.fileURL} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                    {t('viewSubmission')}
-                                </a>
+                                {assignment.submission?.fileURL && (
+                                    <a href={assignment.submission.fileURL} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
+                                        {t('viewSubmission')}
+                                    </a>
+                                )}
                             </div>
                         )}
                     </div>
@@ -273,6 +286,19 @@ export default function MyAssignmentsPage() {
         fetchAllData();
     }, [user, isUserLoading, db]);
 
+    const handleSubmissionSuccess = (assignmentId: string, submission: Submission) => {
+        setAssignments(prev => prev.map(a => {
+            if (a.assignmentId === assignmentId) {
+                return {
+                    ...a,
+                    status: 'submitted',
+                    submission,
+                };
+            }
+            return a;
+        }));
+    };
+
     const { todo, inProgress, graded } = useMemo(() => {
         return {
             todo: assignments.filter(a => a.status === 'pending'),
@@ -312,6 +338,7 @@ export default function MyAssignmentsPage() {
                 isOpen={!!selectedAssignment}
                 onClose={() => setSelectedAssignment(null)}
                 assignment={selectedAssignment}
+                onSubmissionSuccess={handleSubmissionSuccess}
             />
         </div>
     );
