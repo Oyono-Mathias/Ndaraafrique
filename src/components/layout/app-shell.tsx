@@ -531,7 +531,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
-      <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background-alt' : 'bg-background-alt' )}>
+      <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background' : 'bg-background' )}>
         <AnnouncementBanner />
           <div className="flex flex-1">
               <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>

@@ -5,27 +5,37 @@
 
 @layer base {
   :root {
-    --background: 222 84% 98%; /* slate-50 ~ #F8FAFC */
-    --background-alt: 220 14% 96%; /* A slightly darker background */
-    --foreground: 224 71% 4%; /* slate-900 */
+    --background: 220 20% 97%; /* Light Gray - Your --bg-light: #f4f7f6 */
+    --foreground: 224 71% 10%; /* Dark Blue/Black - Your --text-main: #333333 */
+    
     --card: 0 0% 100%;
-    --card-foreground: 224 71% 4%;
+    --card-foreground: 224 71% 10%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 224 71% 4%;
-    --primary: 221 83% 53%; /* Royal Blue: #2563EB */
+    --popover-foreground: 224 71% 10%;
+    
+    --primary: 211 100% 50%; /* Royal Blue - Your --primary-blue: #007bff */
     --primary-foreground: 210 20% 98%;
-    --secondary: 263 70% 50%; /* Indigo: #7C3AED */
+    
+    --secondary: 142 76% 56%; /* Bright Green - Your --success-green: #25D366 */
     --secondary-foreground: 210 20% 98%;
+    
     --muted: 220 13% 91%;
     --muted-foreground: 220 9% 46%;
+    
     --accent: 220 14% 96%;
     --accent-foreground: 224 71% 4%;
+    
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 220 13% 91%; /* darker border for inputs */
+    
+    --border: 220 13% 91%;
     --input: 220 13% 84%;
-    --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    
+    --ring: 211 100% 50%; /* Corresponds to primary blue */
+    
+    --radius: 0.75rem; /* Your --radius: 12px */
+
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -35,25 +45,33 @@
 
   .dark {
     --background: 222 47% 11%;
-    --background-alt: 222 47% 11%; /* Same as background in dark mode for now */
     --foreground: 0 0% 98%;
+
     --card: 222 47% 14%;
     --card-foreground: 0 0% 98%;
+
     --popover: 215 39% 18%;
     --popover-foreground: 0 0% 98%;
-    --primary: 221 83% 63%;
+
+    --primary: 211 100% 60%; /* Brighter blue for dark mode */
     --primary-foreground: 210 20% 98%;
-    --secondary: 263 70% 60%;
+    
+    --secondary: 142 70% 60%; /* Brighter green for dark mode */
     --secondary-foreground: 210 20% 98%;
+
     --muted: 215 28% 15%;
     --muted-foreground: 215 20% 65%;
+
     --accent: 215 28% 15%;
     --accent-foreground: 0 0% 98%;
+
     --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
+
     --border: 215 28% 25%;
     --input: 215 28% 25%;
-    --ring: 221 83% 63%;
+    
+    --ring: 211 100% 60%;
   }
 }
 
@@ -65,8 +83,31 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
-  .tv {
-    font-size: 125%;
+  
+  /* === Custom Scrollbar === */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--primary) / 0.5);
+    border-radius: 10px;
+    border: 2px solid hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+
+  /* === TV & Accessibility Focus Outline === */
+  .tv [role="row"]:focus-within, .tv [role="button"]:focus-visible, .tv a:focus-visible, .tv input:focus-visible, .tv textarea:focus-visible, .tv [tabindex="0"]:focus-visible {
+      outline: 3px solid hsl(var(--primary));
+      outline-offset: 3px;
+      box-shadow: 0 0 0 6px hsl(var(--primary) / 0.25);
+      border-radius: var(--radius);
+      transition: outline-offset 0.1s ease, box-shadow 0.1s ease;
   }
 }
 
@@ -120,12 +161,6 @@
     .tv .admin-sidebar-container {
         width: 350px;
     }
-    .tv [role="row"]:focus-within, .tv [role="button"]:focus-visible, .tv input:focus-visible, .tv textarea:focus-visible {
-        outline: 3px solid hsl(var(--primary));
-        outline-offset: 2px;
-        box-shadow: 0 0 0 6px hsl(var(--primary) / 0.3);
-        transform: scale(1.01);
-    }
     .tv .sidebar-label {
         padding: 0.5rem 0;
     }
@@ -159,16 +194,16 @@
     .chat-bubble-sent::after {
         top: 0;
         right: -8px;
-        background: radial-gradient(circle at 0 0, transparent, transparent 7px, hsl(var(--primary) / 0.2) 8px);
+        background: radial-gradient(circle at 0 0, transparent, transparent 7px, #dcf8c6 8px);
     }
     .dark .chat-bubble-sent::after {
-         background: radial-gradient(circle at 0 0, transparent, transparent 7px, hsl(var(--primary) / 0.2) 8px);
+         background: radial-gradient(circle at 0 0, transparent, transparent 7px, #075e54 8px);
     }
     
     .chat-bubble-received::after {
         top: 0;
         left: -8px;
-        background: radial-gradient(circle at 100% 0, transparent, transparent 7px, hsl(var(--muted)) 8px);
+        background: radial-gradient(circle at 100% 0, transparent, transparent 7px, white 8px);
     }
     .dark .chat-bubble-received::after {
         background: radial-gradient(circle at 100% 0, transparent, transparent 7px, hsl(var(--muted)) 8px);
