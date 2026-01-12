@@ -22,6 +22,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { PdfViewerSkeleton } from '@/components/ui/PdfViewerClient';
 import Link from 'next/link';
+import { CourseCompletionModal } from '@/components/modals/course-completion-modal';
 
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
@@ -86,13 +87,13 @@ const CourseSidebar = ({ courseId, activeLesson, onLessonClick, isEnrolled, comp
     }, [sections, allLectures, activeLesson, onLessonClick, isEnrolled]);
 
     if (sectionsLoading) {
-        return <Skeleton className="h-full w-full" />;
+        return <Skeleton className="h-full w-full dark:bg-slate-800" />;
     }
     
     if (!sections || sections.length === 0) {
         return (
-            <Card>
-                <CardContent className="p-4 text-center text-muted-foreground text-sm">
+            <Card className="dark:bg-slate-900/50 dark:border-slate-800">
+                <CardContent className="p-4 text-center text-muted-foreground text-sm dark:text-slate-400">
                     Le programme du cours n'est pas encore disponible.
                 </CardContent>
             </Card>
@@ -168,7 +169,7 @@ const CourseContentTabs = ({ courseId }: { courseId: string }) => {
                 <p>Section Questions/Réponses ici...</p>
             </TabsContent>
             <TabsContent value="resources" className="mt-4">
-                 {isLoading ? <Skeleton className="h-20 w-full"/> : (
+                 {isLoading ? <Skeleton className="h-20 w-full dark:bg-slate-800"/> : (
                     resources && resources.length > 0 ? (
                         <ul className="space-y-2">
                             {resources.map((res: any) => (
@@ -197,6 +198,7 @@ export default function CoursePlayerPage() {
     const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
     const [allLectures, setAllLectures] = useState<Map<string, Lecture[]>>(new Map());
     const [lecturesLoading, setLecturesLoading] = useState(true);
+    const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
 
     const courseRef = useMemoFirebase(() => doc(db, 'courses', courseId as string), [db, courseId]);
     const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -273,31 +275,33 @@ export default function CoursePlayerPage() {
     const handleLessonCompletion = async () => {
         if (!enrollment || !activeLesson) return;
     
-        if (completedLessons.includes(activeLesson.id)) {
-            // No toast needed if already complete, just proceed to next lesson
-            handleNextLesson();
-            return;
-        }
-
         const totalLessons = Array.from(allLectures.values()).reduce((acc, val) => acc + val.length, 0);
-        const updatedCompletedLessons = [...completedLessons, activeLesson.id];
+        let updatedCompletedLessons = [...completedLessons];
     
-        const newProgress = totalLessons > 0 ? Math.round((updatedCompletedLessons.length / totalLessons) * 100) : 0;
-        const enrollmentRef = doc(db, 'enrollments', enrollment.id);
-        
-        await updateDoc(enrollmentRef, {
-            completedLessons: updatedCompletedLessons,
-            progress: newProgress,
-            lastWatchedLesson: activeLesson.id,
-        });
+        if (!completedLessons.includes(activeLesson.id)) {
+            updatedCompletedLessons.push(activeLesson.id);
+            const newProgress = totalLessons > 0 ? Math.round((updatedCompletedLessons.length / totalLessons) * 100) : 0;
+            const enrollmentRef = doc(db, 'enrollments', enrollment.id);
+            
+            await updateDoc(enrollmentRef, {
+                completedLessons: updatedCompletedLessons,
+                progress: newProgress,
+                lastWatchedLesson: activeLesson.id,
+            });
 
-        toast({
-            title: "Leçon terminée !",
-            description: `Votre progression est maintenant de ${newProgress}%.`,
-        });
-        
-        handleNextLesson();
+            toast({
+                title: "Leçon terminée !",
+                description: `Votre progression est maintenant de ${newProgress}%.`,
+            });
+        }
+    
+        if (updatedCompletedLessons.length === totalLessons && totalLessons > 0) {
+            setIsCompletionModalOpen(true);
+        } else {
+            handleNextLesson();
+        }
     };
+    
 
     const handleNextLesson = () => {
         if (!activeLesson || !sections) return;
@@ -340,60 +344,72 @@ export default function CoursePlayerPage() {
     const isEbook = course.contentType === 'ebook';
 
     return (
-        <div className="flex flex-col lg:flex-row h-screen bg-slate-100 dark:bg-slate-900 -m-6">
-            {formaAfriqueUser?.role === 'admin' && (
-                 <Button asChild className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg" variant="destructive">
-                    <Link href={`/instructor/courses/edit/${courseId}`} title="Accès Modérateur">
-                        <Shield className="h-6 w-6" />
-                    </Link>
-                </Button>
-            )}
-            <main className="flex-1 flex flex-col p-4 lg:p-6 space-y-6">
-                <div className="flex items-center justify-between">
-                     <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)} className="dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
-                        <ArrowLeft className="h-4 w-4 mr-2" />
-                        Retour aux détails du cours
+        <>
+            <div className="flex flex-col lg:flex-row h-screen bg-slate-100 dark:bg-slate-900 -m-6">
+                {formaAfriqueUser?.role === 'admin' && (
+                    <Button asChild className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg" variant="destructive">
+                        <Link href={`/instructor/courses/edit/${courseId}`} title="Accès Modérateur">
+                            <Shield className="h-6 w-6" />
+                        </Link>
                     </Button>
-                </div>
-                 {isEbook ? (
-                    <div className="flex-1 w-full bg-slate-900 rounded-lg overflow-hidden">
-                        <PdfViewerClient fileUrl={course.ebookUrl || ''} />
-                    </div>
-                ) : (
-                     <VideoPlayer videoUrl={activeLesson?.videoUrl} onEnded={handleLessonCompletion} />
                 )}
-                <div className="mt-4">
-                     <h1 className="text-xl lg:text-2xl font-bold dark:text-white">{isEbook ? course.title : activeLesson?.title || course.title}</h1>
-                    {activeLesson && !isEbook ? (
-                        <div className="flex justify-between items-center mt-2">
-                            <p className="text-slate-500 dark:text-slate-400 text-sm">Leçon actuelle</p>
-                            <Button onClick={handleLessonCompletion} size="sm" disabled={completedLessons.includes(activeLesson.id)}>
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                {completedLessons.includes(activeLesson.id) ? 'Terminée' : 'Marquer comme terminée'}
-                            </Button>
+                <main className="flex-1 flex flex-col p-4 lg:p-6 space-y-6">
+                    <div className="flex items-center justify-between">
+                        <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)} className="dark:text-slate-300 dark:hover:bg-slate-800 dark:hover:text-white">
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Retour aux détails du cours
+                        </Button>
+                    </div>
+                    {isEbook ? (
+                        <div className="flex-1 w-full bg-slate-900 rounded-lg overflow-hidden">
+                            <PdfViewerClient fileUrl={course.ebookUrl || ''} />
                         </div>
-                    ) : <p className="text-slate-500 dark:text-slate-400 text-sm">{isEbook ? 'Livre Électronique' : 'Bienvenue dans votre cours'}</p>}
-                </div>
+                    ) : (
+                        <VideoPlayer videoUrl={activeLesson?.videoUrl} onEnded={handleLessonCompletion} />
+                    )}
+                    <div className="mt-4">
+                        <h1 className="text-xl lg:text-2xl font-bold dark:text-white">{isEbook ? course.title : activeLesson?.title || course.title}</h1>
+                        {activeLesson && !isEbook ? (
+                            <div className="flex justify-between items-center mt-2">
+                                <p className="text-slate-500 dark:text-slate-400 text-sm">Leçon actuelle</p>
+                                <Button onClick={handleLessonCompletion} size="sm" disabled={completedLessons.includes(activeLesson.id)}>
+                                    <CheckCircle className="h-4 w-4 mr-2" />
+                                    {completedLessons.includes(activeLesson.id) ? 'Terminée' : 'Marquer comme terminée'}
+                                </Button>
+                            </div>
+                        ) : <p className="text-slate-500 dark:text-slate-400 text-sm">{isEbook ? 'Livre Électronique' : 'Bienvenue dans votre cours'}</p>}
+                    </div>
+                    {!isEbook && (
+                        <div className="mt-6 flex-grow bg-white dark:bg-slate-900/50 p-6 rounded-2xl shadow-inner dark:border dark:border-slate-800">
+                        <CourseContentTabs courseId={courseId as string}/>
+                        </div>
+                    )}
+                </main>
                 {!isEbook && (
-                    <div className="mt-6 flex-grow bg-white dark:bg-slate-900/50 p-6 rounded-2xl shadow-inner dark:border dark:border-slate-800">
-                      <CourseContentTabs courseId={courseId as string}/>
-                    </div>
+                    <aside className="w-full lg:w-96 lg:h-screen border-t lg:border-t-0 lg:border-l shrink-0 bg-white dark:bg-slate-900/50 dark:border-slate-800">
+                        <div className="p-4 h-full overflow-y-auto">
+                        <CourseSidebar 
+                                courseId={courseId as string} 
+                                activeLesson={activeLesson} 
+                                onLessonClick={setActiveLesson} 
+                                isEnrolled={isEnrolled}
+                                completedLessons={completedLessons}
+                                allLectures={allLectures}
+                            />
+                        </div>
+                    </aside>
                 )}
-            </main>
-            {!isEbook && (
-                <aside className="w-full lg:w-96 lg:h-screen border-t lg:border-t-0 lg:border-l shrink-0 bg-white dark:bg-slate-900/50 dark:border-slate-800">
-                    <div className="p-4 h-full overflow-y-auto">
-                       <CourseSidebar 
-                            courseId={courseId as string} 
-                            activeLesson={activeLesson} 
-                            onLessonClick={setActiveLesson} 
-                            isEnrolled={isEnrolled}
-                            completedLessons={completedLessons}
-                            allLectures={allLectures}
-                        />
-                    </div>
-                </aside>
+            </div>
+            {formaAfriqueUser && course && (
+                 <CourseCompletionModal
+                    isOpen={isCompletionModalOpen}
+                    onClose={() => setIsCompletionModalOpen(false)}
+                    studentName={formaAfriqueUser.fullName}
+                    courseName={course.title}
+                    onDownload={() => router.push('/mes-certificats')}
+                    onShare={() => { /* Implement sharing logic */ toast({ title: "Partage bientôt disponible!" })}}
+                />
             )}
-        </div>
+        </>
     );
 }
