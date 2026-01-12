@@ -561,8 +561,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           {renderSidebar()}
                         </SheetContent>
                       </Sheet>
-                      <div className="flex-1">
-                          <h1 className={cn("text-lg font-semibold md:text-xl", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
+                      <div className="flex-1 overflow-hidden">
+                          <h1 className={cn("text-lg font-semibold md:text-xl truncate", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
                               {t(pageTitleKey)}
                           </h1>
                       </div>
