@@ -199,14 +199,14 @@ function InstructorDashboardContent() {
                     accentColor="border-t-amber-500"
                 />
                 <StatCard 
-                    title={t('active_courses')}
+                    title={t('publishedCourses')}
                     value={stats.publishedCourses.toString()} 
                     icon={BookOpen} 
                     isLoading={isLoading}
                     accentColor="border-t-purple-500"
                 />
                 <StatCard 
-                    title={t('monthly_revenue')}
+                    title={t('monthlyRevenue')}
                     value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={DollarSign} 
                     isLoading={isLoading}

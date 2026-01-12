@@ -28,7 +28,11 @@ export function LanguageSelector() {
     const { i18n } = useTranslation();
 
     const changeLanguage = (lng: string) => {
-        i18n.changeLanguage(lng);
+        i18n.changeLanguage(lng).then(() => {
+          // Force a reload to ensure all components re-render with the new language
+          // This is a robust way to handle state inconsistencies in complex apps.
+          window.location.reload();
+        });
     };
 
     const selectedLanguage = languages.find(l => i18n.language.startsWith(l.code)) || languages[0];
