@@ -184,6 +184,7 @@
       background-color: #0b141a;
       background-image: url('/backgrounds/whatsapp-bg-dark.png');
     }
+    
     .chat-bubble-sent::after, .chat-bubble-received::after {
         content: '';
         position: absolute;

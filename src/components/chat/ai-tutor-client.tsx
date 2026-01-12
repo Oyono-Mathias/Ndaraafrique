@@ -15,7 +15,6 @@ import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore } fro
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
-
 type Message = {
   id: string;
   sender: "user" | "ai";
@@ -26,7 +25,6 @@ type Message = {
 export function AiTutorClient() {
   const { user, isUserLoading } = useRole();
   const db = getFirestore();
-  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isAiResponding, setIsAiResponding] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -36,57 +34,40 @@ export function AiTutorClient() {
     return query(collection(db, `users/${user.uid}/chatHistory`), orderBy("timestamp", "asc"));
   }, [db, user]);
 
-  const { data: initialMessages, isLoading: isHistoryLoading } = useCollection<{
-    sender: 'user' | 'ai';
-    text: string;
-    timestamp: any;
-  }>(chatHistoryQuery);
+  const { data: messages, isLoading: isHistoryLoading } = useCollection<Message>(chatHistoryQuery);
 
-  useEffect(() => {
-    const greetingMessage = { id: 'initial-greeting', sender: "ai" as const, text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", timestamp: new Date() };
+  const initialGreeting = { id: 'initial-greeting', sender: "ai" as const, text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", timestamp: new Date() };
 
-    if (initialMessages) {
-      const formattedMessages = initialMessages.map(msg => ({
-        id: msg.id,
-        sender: msg.sender,
-        text: msg.text,
-        timestamp: msg.timestamp?.toDate() || new Date(),
-      }));
-       // Add initial greeting if history is empty
-      if (formattedMessages.length === 0) {
-        setMessages([greetingMessage]);
-      } else {
-        setMessages([greetingMessage, ...formattedMessages]);
-      }
-    } else if (!isHistoryLoading && !isUserLoading) {
-      // If there are no initial messages after loading, and we are logged in, show greeting.
-      setMessages([greetingMessage]);
-    }
-  }, [initialMessages, isHistoryLoading, isUserLoading]);
-
+  const displayedMessages = useMemo(() => {
+    const history = messages?.map(msg => ({
+      ...msg,
+      timestamp: msg.timestamp?.toDate() || new Date(),
+    })) || [];
+    return [initialGreeting, ...history];
+  }, [messages]);
 
   useEffect(() => {
     if (scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('div');
+      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (viewport) {
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [messages]);
+  }, [displayedMessages]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isAiResponding || !user) return;
 
-    const currentInput = input;
+    const userMessageText = input;
     setInput("");
 
-    const userMessage: Omit<Message, 'id'> = { sender: "user", text: currentInput };
-    setMessages((prev) => [...prev, { ...userMessage, id: `temp-user-${Date.now()}`, timestamp: new Date() }]);
-
-    // Save user message to Firestore
+    // 1. Save user message to Firestore
     const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
-    const userMessagePayload = { ...userMessage, timestamp: serverTimestamp() };
+    const userMessagePayload = { sender: "user", text: userMessageText, timestamp: serverTimestamp() };
+    
+    // The useCollection hook will automatically display the new message.
+    // We don't need to manually update state.
     addDoc(chatCollectionRef, userMessagePayload).catch(err => {
        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: chatCollectionRef.path,
@@ -98,12 +79,12 @@ export function AiTutorClient() {
     setIsAiResponding(true);
 
     try {
-      const chatInput: MathiasTutorInput = { query: currentInput };
+      // 2. Call the AI flow
+      const chatInput: MathiasTutorInput = { query: userMessageText };
       const result = await mathiasTutor(chatInput);
-      const aiMessage: Omit<Message, 'id'> = { sender: "ai", text: result.response };
       
-      // Save AI message to Firestore
-      const aiMessagePayload = { ...aiMessage, timestamp: serverTimestamp() };
+      // 3. Save AI message to Firestore
+      const aiMessagePayload = { sender: "ai", text: result.response, timestamp: serverTimestamp() };
       addDoc(chatCollectionRef, aiMessagePayload).catch(err => {
          errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: chatCollectionRef.path,
@@ -111,11 +92,11 @@ export function AiTutorClient() {
             requestResourceData: aiMessagePayload,
         }));
       });
-      // The useCollection hook will add the new messages to the UI automatically, so we don't manually add the AI response to the state here.
+
     } catch (error) {
       console.error("AI chat error:", error);
-      const errorMessage: Omit<Message, 'id'> = { sender: "ai", text: "Désolé, une erreur est survenue. Veuillez réessayer." };
-      setMessages((prev) => [...prev, {...errorMessage, id: `error-${Date.now()}`, timestamp: new Date()}]);
+      const errorMessagePayload = { sender: "ai" as const, text: "Désolé, une erreur est survenue. Veuillez réessayer.", timestamp: serverTimestamp() };
+      addDoc(chatCollectionRef, errorMessagePayload);
     } finally {
       setIsAiResponding(false);
     }
@@ -144,7 +125,7 @@ export function AiTutorClient() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           )}
-          {!isLoading && messages.map((message, index) => (
+          {!isLoading && displayedMessages.map((message) => (
             <div
               key={message.id}
               className={cn(
