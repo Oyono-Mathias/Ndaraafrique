@@ -138,7 +138,7 @@ export function AiTutorClient() {
       </header>
 
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
-        <div className="space-y-3 p-4 sm:p-6">
+        <div className="space-y-1 p-4 sm:p-6">
           {isLoading && (
             <div className="flex justify-center items-center h-full">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -154,10 +154,10 @@ export function AiTutorClient() {
             >
               <div
                 className={cn(
-                  "message-bubble rounded-lg px-3 py-2 text-[14.5px] leading-snug shadow-sm relative",
+                  "rounded-lg px-3 py-2 text-[14.5px] leading-snug shadow-sm relative",
                   message.sender === "user"
-                    ? "message-user bg-[#dcf8c6] dark:bg-[#075e54] text-slate-800 dark:text-slate-100 rounded-br-none"
-                    : "message-ai bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none"
+                    ? "chat-bubble-sent bg-[#dcf8c6] dark:bg-[#075e54] text-slate-800 dark:text-slate-100 rounded-br-none"
+                    : "chat-bubble-received bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none"
                 )}
               >
                 <p className="whitespace-pre-wrap">{message.text}</p>
@@ -191,8 +191,8 @@ export function AiTutorClient() {
             disabled={isLoading || isAiResponding}
             className="input-field flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base"
             />
-            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="send-btn shrink-0 h-12 w-12 rounded-full bg-[#075E54] hover:bg-[#064e46] dark:bg-primary dark:hover:bg-primary/90 shadow-md">
-            <Send className="h-5 w-5 icon-send" />
+            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="send-btn shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
+            <Send className="h-5 w-5" />
             <span className="sr-only">Envoyer</span>
             </Button>
         </form>
