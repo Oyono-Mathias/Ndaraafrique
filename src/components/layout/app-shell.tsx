@@ -26,6 +26,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { UserNav } from './user-nav';
 import { OnboardingGuide } from '../onboarding-guide';
+import { SplashScreen } from '../splash-screen';
 
 interface Notification {
   id: string;
@@ -494,11 +495,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   if (isUserLoading || isRoleLoading) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-[#0f172a]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
+    return <SplashScreen />;
   }
 
   if (siteSettings.maintenanceMode && formaAfriqueUser?.role !== 'admin') {

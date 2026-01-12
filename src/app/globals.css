@@ -220,11 +220,26 @@
         animation: ai-pulse 2s infinite ease-in-out;
         z-index: 1;
     }
+    
+    .splash-logo {
+        animation: logoPulse 2.5s infinite ease-in-out;
+    }
 
-    @keyframes ai-pulse {
-        0% { transform: scale(1); opacity: 0.6; }
-        70% { transform: scale(1.6); opacity: 0; }
-        100% { transform: scale(1); opacity: 0; }
+    .splash-logo::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(
+            to right,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.5) 50%,
+            rgba(255, 255, 255, 0) 100%
+        );
+        transform: rotate(25deg);
+        animation: logoSheen 3s infinite;
     }
 }
 
@@ -232,5 +247,14 @@
     @keyframes marquee-fast {
         0% { transform: translateX(0%); }
         100% { transform: translateX(-100%); }
+    }
+    @keyframes logoPulse {
+      0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
+      50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255,255,255,0.5)); }
+      100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
+    }
+    @keyframes logoSheen {
+        0% { transform: translateX(-150%) rotate(25deg); }
+        100% { transform: translateX(150%) rotate(25deg); }
     }
 }
