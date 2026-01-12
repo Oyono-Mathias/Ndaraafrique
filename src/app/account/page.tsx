@@ -10,6 +10,7 @@ import { getAuth, updateProfile, sendPasswordResetEmail, signOut } from 'firebas
 import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -209,6 +210,7 @@ const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: Reac
 export default function AccountPage() {
   const { user, formaAfriqueUser, isUserLoading, role } = useRole();
   const router = useRouter();
+  const { t } = useTranslation();
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -312,9 +314,9 @@ export default function AccountPage() {
         bio: data.bio,
         socialLinks: data.socialLinks,
       });
-      toast({ title: 'Profil mis à jour !' });
+      toast({ title: t('profile_updated') });
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le profil.' });
+      toast({ variant: 'destructive', title: t('error_title'), description: t('profile_update_error') });
       console.error(error);
     } finally {
       setIsSavingProfile(false);
@@ -326,9 +328,9 @@ export default function AccountPage() {
     if (auth.currentUser?.email) {
       try {
         await sendPasswordResetEmail(auth, auth.currentUser.email);
-        toast({ title: 'E-mail envoyé', description: 'Vérifiez votre boîte de réception pour réinitialiser votre mot de passe.' });
+        toast({ title: t('password_reset_sent_title'), description: t('password_reset_sent_desc') });
       } catch (error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'envoyer l\'e-mail.' });
+        toast({ variant: 'destructive', title: t('error_title'), description: t('password_reset_error') });
       }
     }
   };
@@ -341,9 +343,9 @@ export default function AccountPage() {
 
     try {
         await updateDoc(userDocRef, { payoutMethod: data });
-        toast({ title: 'Informations de paiement mises à jour !' });
+        toast({ title: t('payment_info_updated') });
     } catch (error) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les informations.'});
+        toast({ variant: 'destructive', title: t('error_title'), description: t('payment_info_error')});
     } finally {
         setIsSavingPayment(false);
     }
@@ -356,10 +358,10 @@ export default function AccountPage() {
       await updateDoc(userDocRef, {
         notificationPreferences: data
       });
-      toast({ title: 'Préférences sauvegardées' });
+      toast({ title: t('prefs_saved') });
     } catch (error) {
       console.error("Failed to save notification preferences:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les préférences.' });
+      toast({ variant: 'destructive', title: t('error_title'), description: t('prefs_save_error') });
     }
   };
 
@@ -385,11 +387,11 @@ export default function AccountPage() {
       const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
       await updateDoc(userDocRef, { profilePictureURL: downloadURL });
 
-      toast({ title: 'Avatar mis à jour !' });
+      toast({ title: t('avatar_updated') });
       setAvatarVersion(v => v + 1);
 
     } catch (error) {
-      toast({ variant: 'destructive', title: 'Erreur d\'upload', description: 'Impossible de changer l\'avatar.' });
+      toast({ variant: 'destructive', title: t('upload_error_title'), description: t('avatar_update_error') });
       console.error(error);
     } finally {
       setIsUploading(false);
@@ -412,30 +414,30 @@ export default function AccountPage() {
             <AvatarFallback className="text-3xl">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
         </Avatar>
         <div className="text-center sm:text-left">
-            <h1 className="text-3xl font-bold text-foreground">Bonjour, {formaAfriqueUser.fullName} !</h1>
+            <h1 className="text-3xl font-bold text-foreground">{t('hello')}, {formaAfriqueUser.fullName} !</h1>
             <p className="text-muted-foreground">{formaAfriqueUser.email}</p>
         </div>
       </header>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Cours Inscrits" icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
-        <StatCard title="Certificats Obtenus" icon={Award} value={stats.completed} isLoading={statsLoading} />
-        <StatCard title="Badge" icon={Sparkles} value={formaAfriqueUser.badges?.includes('pioneer') ? 'Pionnier' : 'Membre Actif'} isLoading={false} />
+        <StatCard title={t('enrolled_courses')} icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
+        <StatCard title={t('certificates_earned')} icon={Award} value={stats.completed} isLoading={statsLoading} />
+        <StatCard title={t('badge')} icon={Sparkles} value={(formaAfriqueUser as any).badges?.includes('pioneer') ? t('pioneer') : t('active_member')} isLoading={false} />
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="profile"><Edit3 className="mr-2 h-4 w-4"/>Profil</TabsTrigger>
-          {role === 'instructor' && <TabsTrigger value="payment"><CreditCard className="mr-2 h-4 w-4"/>Paiements</TabsTrigger>}
-          <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4"/>Notifications</TabsTrigger>
-          <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4"/>Sécurité</TabsTrigger>
+          <TabsTrigger value="profile"><Edit3 className="mr-2 h-4 w-4"/>{t('tab_profile')}</TabsTrigger>
+          {role === 'instructor' && <TabsTrigger value="payment"><CreditCard className="mr-2 h-4 w-4"/>{t('tab_payments')}</TabsTrigger>}
+          <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4"/>{t('tab_notifications')}</TabsTrigger>
+          <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4"/>{t('tab_security')}</TabsTrigger>
         </TabsList>
         
         <TabsContent value="profile">
           <Card>
             <CardHeader>
-              <CardTitle>Profil Public</CardTitle>
-              <CardDescription>Ces informations seront visibles par les autres utilisateurs.</CardDescription>
+              <CardTitle>{t('public_profile_title')}</CardTitle>
+              <CardDescription>{t('public_profile_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
@@ -443,7 +445,7 @@ export default function AccountPage() {
                   <Button asChild variant="outline">
                     <label htmlFor="avatar-upload" className="cursor-pointer">
                       {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Edit3 className="mr-2 h-4 w-4" />}
-                      Changer l'avatar
+                      {t('change_avatar')}
                     </label>
                   </Button>
                    <Input id="avatar-upload" type="file" accept="image/*" className="absolute w-full h-full top-0 left-0 opacity-0 cursor-pointer" onChange={handleAvatarUpload} disabled={isUploading}/>
@@ -453,21 +455,21 @@ export default function AccountPage() {
                 <form onSubmit={profileForm.handleSubmit(onProfileSubmit)} className="space-y-4">
                   <FormField control={profileForm.control} name="fullName" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nom complet</FormLabel>
+                      <FormLabel>{t('full_name')}</FormLabel>
                       <FormControl><Input {...field} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={profileForm.control} name="bio" render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Biographie</FormLabel>
-                      <FormControl><Textarea placeholder="Parlez un peu de vous..." {...field} rows={4} /></FormControl>
+                      <FormLabel>{t('bio')}</FormLabel>
+                      <FormControl><Textarea placeholder={t('bio_placeholder')} {...field} rows={4} /></FormControl>
                        <FormMessage />
                     </FormItem>
                   )} />
 
                   <div className="space-y-4 pt-4 border-t">
-                     <h3 className="text-sm font-medium">Réseaux Sociaux</h3>
+                     <h3 className="text-sm font-medium">{t('social_media')}</h3>
                      <FormField control={profileForm.control} name="socialLinks.linkedin" render={({ field }) => (
                         <FormItem>
                           <FormLabel className="flex items-center gap-2"><Linkedin className="h-4 w-4"/> LinkedIn</FormLabel>
@@ -493,7 +495,7 @@ export default function AccountPage() {
 
                   <Button type="submit" disabled={isSavingProfile}>
                     {isSavingProfile && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Enregistrer les modifications
+                    {t('save_changes')}
                   </Button>
                 </form>
               </Form>
@@ -505,8 +507,8 @@ export default function AccountPage() {
           <TabsContent value="payment">
             <Card>
                 <CardHeader>
-                    <CardTitle>Informations de Paiement</CardTitle>
-                    <CardDescription>Configurez la réception de vos revenus de manière internationale.</CardDescription>
+                    <CardTitle>{t('payment_info_title')}</CardTitle>
+                    <CardDescription>{t('payment_info_desc')}</CardDescription>
                 </CardHeader>
                 <CardContent>
                      {isClient ? (
@@ -516,8 +518,8 @@ export default function AccountPage() {
                                   <Card className="bg-muted/50 border-dashed">
                                       <CardHeader>
                                           <CardTitle className="text-base flex items-center justify-between">
-                                              <span>Méthode de retrait active</span>
-                                              <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => paymentForm.reset()}>Changer</Button>
+                                              <span>{t('active_payout_method')}</span>
+                                              <Button variant="link" size="sm" className="p-0 h-auto" onClick={() => paymentForm.reset()}>{t('change')}</Button>
                                           </CardTitle>
                                       </CardHeader>
                                       <CardContent className="flex items-center gap-4">
@@ -540,11 +542,11 @@ export default function AccountPage() {
                                   name="country"
                                   render={({ field }) => (
                                       <FormItem>
-                                          <FormLabel>Pays de résidence</FormLabel>
+                                          <FormLabel>{t('country_of_residence')}</FormLabel>
                                           <Select onValueChange={field.onChange} defaultValue={field.value}>
                                               <FormControl>
                                                   <SelectTrigger>
-                                                      <SelectValue placeholder="Sélectionnez votre pays">
+                                                      <SelectValue placeholder={t('select_country')}>
                                                           {selectedCountry && <span>{selectedCountry.emoji} {selectedCountry.name}</span>}
                                                       </SelectValue>
                                                   </SelectTrigger>
@@ -571,11 +573,11 @@ export default function AccountPage() {
                                       name="method"
                                       render={({ field }) => (
                                           <FormItem>
-                                              <FormLabel>Méthode de retrait</FormLabel>
+                                              <FormLabel>{t('payout_method')}</FormLabel>
                                               <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                                   <FormControl>
                                                       <SelectTrigger>
-                                                          <SelectValue placeholder="Sélectionnez une méthode" />
+                                                          <SelectValue placeholder={t('select_method')} />
                                                       </SelectTrigger>
                                                   </FormControl>
                                                   <SelectContent>
@@ -601,11 +603,11 @@ export default function AccountPage() {
                                       name="details.phoneNumber"
                                       render={({ field }) => (
                                           <FormItem>
-                                              <FormLabel>Numéro de téléphone</FormLabel>
+                                              <FormLabel>{t('phone_number')}</FormLabel>
                                               <FormControl>
                                                   <div className="flex items-center">
                                                       <span className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-input bg-muted text-muted-foreground text-sm h-10">+{selectedCountry.prefix}</span>
-                                                      <Input placeholder="Numéro sans l'indicatif" {...field} className="rounded-l-none" />
+                                                      <Input placeholder={t('number_without_prefix')} {...field} className="rounded-l-none" />
                                                   </div>
                                               </FormControl>
                                               <FormMessage />
@@ -616,20 +618,20 @@ export default function AccountPage() {
   
                                {selectedPaymentMethod === 'paypal' && (
                                   <FormField control={paymentForm.control} name="details.paypalEmail" render={({ field }) => (
-                                      <FormItem><FormLabel>Adresse e-mail PayPal</FormLabel><FormControl><Input placeholder="votre.email@paypal.com" {...field} /></FormControl><FormMessage /></FormItem>
+                                      <FormItem><FormLabel>{t('paypal_email')}</FormLabel><FormControl><Input placeholder="votre.email@paypal.com" {...field} /></FormControl><FormMessage /></FormItem>
                                   )} />
                                )}
   
                               {selectedPaymentMethod === 'bank_transfer' && (
                                   <div className="space-y-4 p-4 border rounded-lg">
                                        <FormField control={paymentForm.control} name="details.bankName" render={({ field }) => (
-                                          <FormItem><FormLabel>Nom de la banque</FormLabel><FormControl><Input placeholder="Nom de votre banque" {...field} /></FormControl><FormMessage /></FormItem>
+                                          <FormItem><FormLabel>{t('bank_name')}</FormLabel><FormControl><Input placeholder={t('bank_name_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
                                        )} />
                                        <FormField control={paymentForm.control} name="details.iban" render={({ field }) => (
-                                          <FormItem><FormLabel>IBAN / RIB</FormLabel><FormControl><Input placeholder="Votre numéro de compte" {...field} /></FormControl><FormMessage /></FormItem>
+                                          <FormItem><FormLabel>IBAN / RIB</FormLabel><FormControl><Input placeholder={t('account_number_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
                                        )} />
                                        <FormField control={paymentForm.control} name="details.swiftCode" render={({ field }) => (
-                                          <FormItem><FormLabel>Code SWIFT</FormLabel><FormControl><Input placeholder="Code SWIFT/BIC de votre banque" {...field} /></FormControl><FormMessage /></FormItem>
+                                          <FormItem><FormLabel>Code SWIFT</FormLabel><FormControl><Input placeholder={t('swift_code_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
                                        )} />
                                   </div>
                               )}
@@ -637,12 +639,12 @@ export default function AccountPage() {
                                <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50">
                                   <AlertTriangle className="h-5 w-5 text-muted-foreground mt-0.5"/>
                                   <p className="text-xs text-muted-foreground">
-                                      Ces informations sont cryptées et ne seront utilisées que pour le traitement de vos paiements. Les montants affichés en XOF (FCFA) seront convertis dans votre devise locale au taux du jour lors du retrait.
+                                      {t('payment_info_disclaimer')}
                                   </p>
                               </div>
                                <Button type="submit" disabled={isSavingPayment}>
                                   {isSavingPayment && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                  Enregistrer
+                                  {t('save_button')}
                                </Button>
                           </form>
                       </Form>
@@ -661,8 +663,8 @@ export default function AccountPage() {
         <TabsContent value="notifications">
           <Card>
             <CardHeader>
-              <CardTitle>Préférences de notification</CardTitle>
-              <CardDescription>Gérez les e-mails que vous recevez de notre part.</CardDescription>
+              <CardTitle>{t('notification_prefs_title')}</CardTitle>
+              <CardDescription>{t('notification_prefs_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <Form {...notificationForm}>
@@ -673,8 +675,8 @@ export default function AccountPage() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
-                                        <FormLabel className="text-base">Promotions et nouveautés</FormLabel>
-                                        <FormDescription>Recevez des e-mails sur les nouveaux cours, les offres et les actualités.</FormDescription>
+                                        <FormLabel className="text-base">{t('promos_title')}</FormLabel>
+                                        <FormDescription>{t('promos_desc')}</FormDescription>
                                     </div>
                                     <FormControl>
                                         <Switch
@@ -694,8 +696,8 @@ export default function AccountPage() {
                             render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                                     <div className="space-y-0.5">
-                                        <FormLabel className="text-base">Rappels d'apprentissage</FormLabel>
-                                        <FormDescription>Recevez des rappels pour continuer votre progression dans les cours.</FormDescription>
+                                        <FormLabel className="text-base">{t('reminders_title')}</FormLabel>
+                                        <FormDescription>{t('reminders_desc')}</FormDescription>
                                     </div>
                                     <FormControl>
                                          <Switch
@@ -718,15 +720,15 @@ export default function AccountPage() {
         <TabsContent value="security">
           <Card>
             <CardHeader>
-              <CardTitle>Sécurité du compte</CardTitle>
-              <CardDescription>Gérez la sécurité de votre compte.</CardDescription>
+              <CardTitle>{t('security_title')}</CardTitle>
+              <CardDescription>{t('security_desc')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-medium">Mot de passe</h3>
-                <p className="text-sm text-muted-foreground">Vous n'avez pas de mot de passe ? Configurez-en un ou utilisez la connexion via Google.</p>
+                <h3 className="font-medium">{t('password')}</h3>
+                <p className="text-sm text-muted-foreground">{t('password_desc')}</p>
                 <Button variant="outline" className="mt-2" onClick={handlePasswordReset}>
-                  Réinitialiser le mot de passe par e-mail
+                  {t('password_reset_button')}
                 </Button>
               </div>
             </CardContent>
@@ -737,3 +739,5 @@ export default function AccountPage() {
     </div>
   );
 }
+
+    
