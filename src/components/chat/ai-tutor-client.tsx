@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { mathiasTutor, type MathiasTutorInput } from "@/ai/flows/mathias-tutor-flow";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -39,13 +39,10 @@ export function AiTutorClient() {
   const initialGreeting = { id: 'initial-greeting', sender: "ai" as const, text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", timestamp: new Date() };
 
   const displayedMessages = useMemo(() => {
-    const history = messages?.map(msg => ({
-      ...msg,
-      timestamp: msg.timestamp?.toDate() || new Date(),
-    })) || [];
+    const history = messages || [];
     // We only want to show the initial greeting if there's no history yet.
     return history.length > 0 ? history : [initialGreeting];
-  }, [messages, initialGreeting]);
+  }, [messages]);
 
 
   useEffect(() => {
@@ -150,8 +147,8 @@ export function AiTutorClient() {
           ))}
           {isAiResponding && (
             <div className="flex items-end gap-2 max-w-[85%] mr-auto">
-               <div className="relative ai-avatar-container self-end">
-                    <Avatar className="h-8 w-8 ai-avatar z-10 relative">
+               <div className="relative">
+                    <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
                 </div>
@@ -173,8 +170,8 @@ export function AiTutorClient() {
             className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base"
             />
             <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
-            <Send className="h-5 w-5" />
-            <span className="sr-only">Envoyer</span>
+                <Send className="h-5 w-5" />
+                <span className="sr-only">Envoyer</span>
             </Button>
         </form>
       </div>
