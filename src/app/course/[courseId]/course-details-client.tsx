@@ -320,6 +320,14 @@ export default function CourseDetailsClient() {
   }, [isUserLoading, user, router, toast]);
 
   const handlePreviewClick = (lesson: Lecture) => {
+    if (!isEnrolled) {
+        toast({
+            title: "Contenu protégé",
+            description: "Ce contenu est réservé aux membres inscrits au cours.",
+            variant: "default",
+        });
+        return;
+    }
     setPreviewLesson(lesson);
     setIsPreviewModalOpen(true);
   }
