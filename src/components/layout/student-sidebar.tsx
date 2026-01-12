@@ -42,18 +42,18 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick }: { href: 
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
+        "flex items-center justify-between px-4 py-3 my-1 cursor-pointer transition-all duration-300 rounded-lg mx-3 group relative",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-sm'
-          : 'text-slate-700 hover:bg-slate-100'
+          ? "bg-primary/10 text-primary font-bold shadow-sm before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-2/3 before:w-1 before:bg-primary before:rounded-r-full"
+          : "text-slate-600 hover:bg-slate-100/80"
       )}
     >
       <div className="flex items-center">
         <Icon className={cn(
-          "w-5 h-5 mr-4",
-          isActive ? 'text-white' : 'text-slate-500 group-hover:text-primary'
+          "w-5 h-5 mr-4 text-slate-500 group-hover:text-primary transition-colors duration-300 tv:w-7 tv:h-7",
+          isActive && "text-primary"
         )} />
-        <span className="font-medium text-sm">{label}</span>
+        <span className="font-medium text-sm tv:text-lg">{label}</span>
       </div>
       {unreadCount !== undefined && unreadCount > 0 && (
         <Badge className="bg-red-500 text-white h-5 px-1.5 text-xs">{unreadCount}</Badge>
@@ -169,16 +169,16 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
                 Mode Instructeur
             </Button>
         ) : showInstructorSignup && (
-             <Button variant="outline" className="w-full justify-center" asChild>
+             <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" asChild>
                 <Link href="/devenir-instructeur">
-                    <Briefcase className="mr-2 h-4 w-4" />
+                    <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
                     Devenir Instructeur
                 </Link>
             </Button>
         )}
         {isAdmin && (
-             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
-                <Shield className="mr-2 h-4 w-4" />
+             <Button variant="secondary" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToAdmin}>
+                <Shield className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
                 Mode Admin
             </Button>
         )}

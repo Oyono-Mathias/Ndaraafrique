@@ -6,6 +6,7 @@
 @layer base {
   :root {
     --background: 222 84% 98%; /* slate-50 ~ #F8FAFC */
+    --background-alt: 220 14% 96%; /* A slightly darker background */
     --foreground: 224 71% 4%; /* slate-900 */
     --card: 0 0% 100%;
     --card-foreground: 224 71% 4%;
@@ -34,6 +35,7 @@
 
   .dark {
     --background: 222 47% 11%;
+    --background-alt: 222 47% 11%; /* Same as background in dark mode for now */
     --foreground: 0 0% 98%;
     --card: 222 47% 14%;
     --card-foreground: 0 0% 98%;
