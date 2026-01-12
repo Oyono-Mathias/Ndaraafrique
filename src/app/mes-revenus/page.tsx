@@ -74,9 +74,9 @@ const formatCurrency = (amount: number) => {
 const getStatusBadge = (status: 'valide' | 'en_attente' | 'rejete') => {
   switch (status) {
     case 'valide':
-      return <Badge className="bg-green-100 text-green-800">Validé</Badge>;
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Validé</Badge>;
     case 'en_attente':
-      return <Badge className="bg-yellow-100 text-yellow-800">En attente</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">En attente</Badge>;
     case 'rejete':
       return <Badge variant="destructive">Rejeté</Badge>;
     default:
@@ -271,63 +271,59 @@ export default function MyRevenuePage() {
       </header>
 
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="col-span-1 lg:col-span-2 dark:bg-slate-800 dark:border-slate-700">
-           <CardHeader>
-                <CardTitle className="text-sm font-medium dark:text-slate-400">Solde Disponible</CardTitle>
-            </CardHeader>
-            <CardContent>
-                {isLoading ? <Skeleton className="h-12 w-3/4 dark:bg-slate-700" /> : (
-                  <p className="text-5xl font-bold font-mono tracking-tighter dark:text-white">{formatCurrency(availableBalance)}</p>
+        <Card className="lg:col-span-2 dark:bg-slate-800/80 dark:border-slate-700 p-6 flex flex-col justify-between">
+           <div>
+                <CardTitle className="text-sm font-medium text-slate-400">Solde Disponible pour Retrait</CardTitle>
+                {isLoading ? <Skeleton className="h-16 w-3/4 mt-2 bg-slate-700" /> : (
+                  <p className="text-5xl font-bold font-mono tracking-tighter text-white mt-2">{formatCurrency(availableBalance)}</p>
                 )}
-            </CardContent>
-            <CardFooter>
-                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                       <Button disabled={availableBalance < WITHDRAWAL_THRESHOLD || isLoading} className="w-full sm:w-auto">
-                            <Landmark className="mr-2 h-4 w-4" />
-                            Demander un retrait
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px] dark:bg-slate-900 dark:border-slate-700">
-                        <DialogHeader>
-                            <DialogTitle className="dark:text-white">Demande de Retrait</DialogTitle>
-                            <DialogDescription className="dark:text-slate-400">
-                                Le montant minimum est de {formatCurrency(WITHDRAWAL_THRESHOLD)}. Votre solde est de <strong className="font-mono">{formatCurrency(availableBalance)}</strong>.
-                            </DialogDescription>
-                        </DialogHeader>
-                        <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
-                                <FormField control={form.control} name="amount" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="dark:text-slate-300">Montant du retrait</FormLabel>
-                                        <FormControl><Input type="number" placeholder="5000" {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <FormField control={form.control} name="method" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel className="dark:text-slate-300">Méthode de paiement</FormLabel>
-                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                            <FormControl><SelectTrigger className="dark:bg-slate-800 dark:border-slate-700"><SelectValue placeholder="Sélectionnez une méthode" /></SelectTrigger></FormControl>
-                                            <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
-                                                <SelectItem value="Mobile Money">Mobile Money (Orange, Moov)</SelectItem>
-                                                <SelectItem value="Virement">Virement bancaire</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )} />
-                                <DialogFooter>
-                                    <Button type="submit" disabled={isSubmitting}>
-                                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Soumettre la demande
-                                    </Button>
-                                </DialogFooter>
-                            </form>
-                        </Form>
-                    </DialogContent>
-                </Dialog>
-            </CardFooter>
+           </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                    <Button disabled={availableBalance < WITHDRAWAL_THRESHOLD || isLoading} className="w-full sm:w-auto mt-4 h-12 text-base">
+                        <Landmark className="mr-2 h-4 w-4" />
+                        Demander un retrait
+                    </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px] dark:bg-slate-900 dark:border-slate-700">
+                    <DialogHeader>
+                        <DialogTitle className="dark:text-white">Demande de Retrait</DialogTitle>
+                        <DialogDescription className="dark:text-slate-400">
+                            Le montant minimum est de {formatCurrency(WITHDRAWAL_THRESHOLD)}. Votre solde est de <strong className="font-mono">{formatCurrency(availableBalance)}</strong>.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
+                            <FormField control={form.control} name="amount" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="dark:text-slate-300">Montant du retrait</FormLabel>
+                                    <FormControl><Input type="number" placeholder="5000" {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="method" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="dark:text-slate-300">Méthode de paiement</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl><SelectTrigger className="dark:bg-slate-800 dark:border-slate-700"><SelectValue placeholder="Sélectionnez une méthode" /></SelectTrigger></FormControl>
+                                        <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
+                                            <SelectItem value="Mobile Money">Mobile Money (Orange, Moov)</SelectItem>
+                                            <SelectItem value="Virement">Virement bancaire</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <DialogFooter>
+                                <Button type="submit" disabled={isSubmitting}>
+                                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Soumettre la demande
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
         </Card>
         <StatCard title="Revenu Brut (ce mois-ci)" value={formatCurrency(monthlyRevenue)} icon={Calendar} isLoading={isLoading} />
         <StatCard title="Revenu Brut (Total)" value={formatCurrency(totalRevenue)} icon={DollarSign} isLoading={isLoading} />
