@@ -148,9 +148,9 @@ function AdminAccessRequiredScreen() {
 }
 
 const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { href: string; icon: React.ElementType; label: string; isActive: boolean; unreadCount?: number }) => (
-    <Link href={href} className="flex flex-col items-center justify-center flex-1 gap-1 p-1 relative">
-        <Icon className={cn("h-5 w-5", isActive ? 'text-primary' : 'text-slate-500')} strokeWidth={isActive ? 2.5 : 2} />
-        <span className={cn("text-xs", isActive ? 'font-bold text-primary' : 'text-slate-600')}>{label}</span>
+    <Link href={href} className="flex flex-col items-center justify-center flex-1 gap-1 p-1 relative transition-all duration-200 ease-in-out">
+        <Icon className={cn("h-5 w-5 transition-transform", isActive ? 'text-primary scale-110 -translate-y-0.5' : 'text-slate-500')} strokeWidth={isActive ? 2.5 : 2} />
+        <span className={cn("text-xs transition-colors", isActive ? 'font-bold text-primary' : 'text-slate-600')}>{label}</span>
         {unreadCount !== undefined && unreadCount > 0 && (
             <span className="absolute top-1 right-3.5 h-4 min-w-[1rem] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
         )}
@@ -188,7 +188,7 @@ const BottomNavBar = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-16 bg-background/80 backdrop-blur-sm border-t border-slate-200/80 flex md:hidden z-40">
+        <div className="fixed bottom-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
             {items.map(item => (
                 <BottomNavItem key={item.href} {...item} isActive={pathname === item.href} />
             ))}
