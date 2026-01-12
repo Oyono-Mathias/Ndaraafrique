@@ -34,13 +34,16 @@ export function AiTutorClient() {
     return query(collection(db, `users/${user.uid}/chatHistory`), orderBy("timestamp", "asc"));
   }, [db, user]);
 
+  // Firestore is the single source of truth for messages.
   const { data: messages, isLoading: isHistoryLoading } = useCollection<Message>(chatHistoryQuery);
 
   const initialGreeting = { id: 'initial-greeting', sender: "ai" as const, text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", timestamp: new Date() };
 
+  // Use a memoized value to decide which messages to display.
+  // This prevents re-renders from creating duplicate greetings.
   const displayedMessages = useMemo(() => {
     const history = messages || [];
-    // We only want to show the initial greeting if there's no history yet.
+    // Only show the initial greeting if there's no actual history from Firestore.
     return history.length > 0 ? history : [initialGreeting];
   }, [messages]);
 
@@ -52,7 +55,7 @@ export function AiTutorClient() {
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [displayedMessages]);
+  }, [displayedMessages]); // Scroll when displayedMessages change
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,17 +64,20 @@ export function AiTutorClient() {
     const userMessageText = input;
     setInput("");
 
-    // 1. Save user message to Firestore
+    // 1. Save user message to Firestore. UI will update via useCollection listener.
     const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
-    const userMessagePayload = { sender: "user", text: userMessageText, timestamp: serverTimestamp() };
+    const userMessagePayload = { sender: "user" as const, text: userMessageText, timestamp: serverTimestamp() };
     
-    addDoc(chatCollectionRef, userMessagePayload).catch(err => {
+    try {
+      await addDoc(chatCollectionRef, userMessagePayload);
+    } catch(err) {
        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: chatCollectionRef.path,
             operation: 'create',
             requestResourceData: userMessagePayload,
         }));
-    });
+        return; // Stop if user can't even send a message
+    }
 
     setIsAiResponding(true);
 
@@ -80,20 +86,14 @@ export function AiTutorClient() {
       const chatInput: MathiasTutorInput = { query: userMessageText };
       const result = await mathiasTutor(chatInput);
       
-      // 3. Save AI message to Firestore
-      const aiMessagePayload = { sender: "ai", text: result.response, timestamp: serverTimestamp() };
-      addDoc(chatCollectionRef, aiMessagePayload).catch(err => {
-         errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: chatCollectionRef.path,
-            operation: 'create',
-            requestResourceData: aiMessagePayload,
-        }));
-      });
+      // 3. Save AI message to Firestore. UI will update via useCollection listener.
+      const aiMessagePayload = { sender: "ai" as const, text: result.response, timestamp: serverTimestamp() };
+      await addDoc(chatCollectionRef, aiMessagePayload);
 
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessagePayload = { sender: "ai" as const, text: "Désolé, une erreur est survenue. Veuillez réessayer.", timestamp: serverTimestamp() };
-      addDoc(chatCollectionRef, errorMessagePayload);
+      await addDoc(chatCollectionRef, errorMessagePayload);
     } finally {
       setIsAiResponding(false);
     }
@@ -122,9 +122,9 @@ export function AiTutorClient() {
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           )}
-          {!isLoading && displayedMessages.map((message) => (
+          {!isLoading && displayedMessages.map((message, index) => (
             <div
-              key={message.id}
+              key={message.id || `msg-${index}`}
               className={cn(
                 "flex items-end gap-2 max-w-[85%]",
                 message.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto"
@@ -140,18 +140,13 @@ export function AiTutorClient() {
               >
                 <p className="whitespace-pre-wrap">{message.text}</p>
                  <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
-                    {message.timestamp ? new Date(message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    {message.timestamp ? new Date(message.timestamp.toDate ? message.timestamp.toDate() : message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                 </span>
               </div>
             </div>
           ))}
           {isAiResponding && (
             <div className="flex items-end gap-2 max-w-[85%] mr-auto">
-               <div className="relative">
-                    <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
-                    </Avatar>
-                </div>
               <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm chat-bubble-received rounded-bl-none">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 MATHIAS est en train d'écrire...
