@@ -33,7 +33,7 @@ import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
 
 
-const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void }) => {
+const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string }) => {
   const pathname = usePathname();
   const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
 
@@ -41,6 +41,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick }: { href: 
     <Link
       href={href}
       onClick={onClick}
+      id={id}
       className={cn(
         "flex items-center justify-between px-4 py-3 my-1 cursor-pointer transition-all duration-300 rounded-lg mx-3 group relative",
         isActive
@@ -77,33 +78,33 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: t('navPersonal'),
       items: [
-        { href: "/dashboard", icon: Star, textKey: 'navSelection' },
-        { href: "/search", icon: Search, textKey: 'navSearch' },
-        { href: "/mes-formations", icon: Play, textKey: 'navMyLearning' },
-        { href: "/tutor", icon: Bot, textKey: 'navTutor' },
+        { href: "/dashboard", icon: Star, textKey: 'navSelection', id: 'sidebar-nav-dashboard' },
+        { href: "/search", icon: Search, textKey: 'navSearch', id: 'sidebar-nav-search' },
+        { href: "/mes-formations", icon: Play, textKey: 'navMyLearning', id: 'sidebar-nav-mes-formations' },
+        { href: "/tutor", icon: Bot, textKey: 'navTutor', id: 'sidebar-nav-tutor' },
       ],
     },
     {
       label: t('navFollowUp'),
       items: [
-        { href: "/mes-certificats", icon: Award, textKey: 'navMyCertificates' },
-        { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navMyAssignments' },
+        { href: "/mes-certificats", icon: Award, textKey: 'navMyCertificates', id: 'sidebar-nav-mes-certificats' },
+        { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist', id: 'sidebar-nav-liste-de-souhaits' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navMyAssignments', id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {
       label: t('navCommunity'),
       items: [
-        { href: "/annuaire", icon: Users, textKey: 'navDirectory' },
-        { href: "/questions-reponses", icon: HelpCircle, textKey: 'navMyQuestions' },
-        { href: "/messages", icon: MessageSquare, textKey: 'navMessages' },
+        { href: "/annuaire", icon: Users, textKey: 'navDirectory', id: 'sidebar-nav-annuaire' },
+        { href: "/questions-reponses", icon: HelpCircle, textKey: 'navMyQuestions', id: 'sidebar-nav-questions-reponses' },
+        { href: "/messages", icon: MessageSquare, textKey: 'navMessages', id: 'sidebar-nav-messages' },
       ]
     },
     {
       label: t('navAccount'),
       items: [
-        { href: "/account", icon: User, textKey: 'navAccount' },
-        { href: "/notifications", icon: Bell, textKey: 'navNotifications' },
+        { href: "/account", icon: User, textKey: 'navAccount', id: 'sidebar-nav-account' },
+        { href: "/notifications", icon: Bell, textKey: 'navNotifications', id: 'sidebar-nav-notifications' },
       ],
     },
   ];
@@ -154,6 +155,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
                 href={item.href}
                 icon={item.icon}
                 label={t(item.textKey)}
+                id={item.id}
                 unreadCount={item.href === '/messages' ? unreadMessages : undefined}
                 onClick={onLinkClick}
               />

@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { UserNav } from './user-nav';
+import { OnboardingGuide } from '../onboarding-guide';
 
 interface Notification {
   id: string;
@@ -457,10 +458,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading: isRoleLoading, user, isUserLoading, formaAfriqueUser, switchRole } = useRole();
   const router = useRouter();
   const pathname = usePathname();
-  const { toast } = useToast();
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const [isSendingVerification, setIsSendingVerification] = useState(false);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -534,6 +533,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
+      <OnboardingGuide />
       <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background' : 'bg-background' )}>
         <AnnouncementBanner />
           <div className="flex flex-1">
