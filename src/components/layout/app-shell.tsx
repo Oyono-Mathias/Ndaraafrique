@@ -149,8 +149,13 @@ function AdminAccessRequiredScreen() {
 
 const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { href: string; icon: React.ElementType; label: string; isActive: boolean; unreadCount?: number }) => (
     <Link href={href} className="flex flex-col items-center justify-center flex-1 gap-1 p-1 relative transition-all duration-200 ease-in-out min-w-0">
-        <Icon className={cn("h-6 w-6 transition-transform mb-0.5", isActive ? 'text-primary scale-110 -translate-y-0.5' : 'text-slate-500')} strokeWidth={isActive ? 2.5 : 2} />
-        <span className={cn("text-[10px] transition-colors leading-tight text-center break-words w-full", isActive ? 'font-bold text-primary' : 'text-slate-600')}>{label}</span>
+        <Icon className={cn("h-6 w-6 transition-transform", isActive ? 'text-primary scale-110 mb-1' : 'text-slate-500 mb-0.5')} strokeWidth={isActive ? 2.5 : 2} />
+        <span className={cn(
+            "text-[10px] leading-none text-center w-full max-w-[65px] word-wrap-break-word tracking-tight", 
+            isActive ? 'font-bold text-primary' : 'text-slate-600 font-medium'
+        )}>
+            {label}
+        </span>
         {unreadCount !== undefined && unreadCount > 0 && (
             <span className="absolute top-0 right-1.5 h-4 min-w-[1rem] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
         )}
@@ -188,7 +193,7 @@ const BottomNavBar = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-[70px] bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex justify-around md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
+        <div className="fixed bottom-0 left-0 right-0 h-[75px] bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex justify-around items-end md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
             {items.map(item => (
                 <BottomNavItem key={item.href} {...item} isActive={pathname === item.href} />
             ))}
