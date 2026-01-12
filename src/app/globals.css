@@ -110,13 +110,7 @@
       transition: outline-offset 0.1s ease, box-shadow 0.1s ease;
   }
 
-  /* Glassmorphism Card Style */
-  .glassmorphic-card {
-      @apply bg-white/5 border border-white/10 rounded-2xl shadow-lg;
-      -webkit-backdrop-filter: blur(10px);
-      backdrop-filter: blur(10px);
-  }
-
+  /* === Landing Page Specific Styles === */
   .hero-text {
       animation: fadeInUp 1s ease-out;
   }
@@ -136,9 +130,44 @@
   }
 
   .benefit-card:hover {
-      background: rgba(0, 123, 255, 0.1); /* Teinte bleue au survol */
+      background: rgba(0, 123, 255, 0.1);
       border-color: #007bff;
       transform: scale(1.05);
+  }
+
+  /* === Footer Styles === */
+  .footer-container {
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 3rem 1rem 1.5rem;
+    color: #9ca3af;
+  }
+
+  .footer-brand {
+      color: #ffffff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+  }
+
+  .footer-link {
+      display: block;
+      margin-bottom: 0.5rem;
+      transition: color 0.3s;
+      text-decoration: none;
+      color: #9ca3af;
+  }
+
+  .footer-link:hover {
+      color: #007bff; /* Bleu Ndara */
+  }
+
+  .copyright {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
   }
 }
 
