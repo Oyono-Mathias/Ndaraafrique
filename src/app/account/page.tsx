@@ -15,14 +15,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Edit3, Shield, CreditCard, Linkedin, Twitter, Youtube, AlertTriangle, Wallet } from 'lucide-react';
+import { Loader2, Edit3, Shield, CreditCard, Linkedin, Twitter, Youtube, AlertTriangle, Wallet, Bell } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+
 
 // --- PAN-AFRICAN Country and Payment Data ---
 type Region = 'UEMOA' | 'CEMAC' | 'EAST_AFRICA' | 'NORTH_AFRICA' | 'SOUTHERN_AFRICA' | 'OTHER_WEST' | 'OTHER';
@@ -176,8 +178,15 @@ const paymentFormSchema = z.object({
     path: ["details"],
 });
 
+const notificationFormSchema = z.object({
+  promotions: z.boolean().default(false),
+  reminders: z.boolean().default(false),
+});
+
+
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
+type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 
 export default function AccountPage() {
   const { formaAfriqueUser, isUserLoading, role } = useRole();
@@ -186,6 +195,7 @@ export default function AccountPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const db = getFirestore();
 
   useEffect(() => {
     setIsClient(true);
@@ -199,6 +209,14 @@ export default function AccountPage() {
   const paymentForm = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: { country: undefined, method: undefined, details: { phoneNumber: '', bankName: '', iban: '', swiftCode: '', paypalEmail: '' } },
+  });
+  
+  const notificationForm = useForm<NotificationFormValues>({
+    resolver: zodResolver(notificationFormSchema),
+    defaultValues: {
+      promotions: true,
+      reminders: true,
+    },
   });
 
   const selectedCountryCode = paymentForm.watch('country');
@@ -227,15 +245,17 @@ export default function AccountPage() {
               details: payoutData.details || {},
           });
       }
+      if (formaAfriqueUser.notificationPreferences) {
+        notificationForm.reset(formaAfriqueUser.notificationPreferences);
+      }
     }
-  }, [formaAfriqueUser, profileForm, paymentForm]);
+  }, [formaAfriqueUser, profileForm, paymentForm, notificationForm]);
   
   const onProfileSubmit = async (data: ProfileFormValues) => {
     if (!formaAfriqueUser) return;
     setIsSavingProfile(true);
 
     const auth = getAuth();
-    const db = getFirestore();
     const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
 
     try {
@@ -272,7 +292,6 @@ export default function AccountPage() {
     if (!formaAfriqueUser) return;
     setIsSavingPayment(true);
     
-    const db = getFirestore();
     const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
 
     try {
@@ -282,6 +301,20 @@ export default function AccountPage() {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les informations.'});
     } finally {
         setIsSavingPayment(false);
+    }
+  };
+  
+  const onNotificationChange = async (data: NotificationFormValues) => {
+    if (!formaAfriqueUser) return;
+    try {
+      const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
+      await updateDoc(userDocRef, {
+        notificationPreferences: data
+      });
+      toast({ title: 'Préférences sauvegardées' });
+    } catch (error) {
+      console.error("Failed to save notification preferences:", error);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les préférences.' });
     }
   };
 
@@ -294,7 +327,6 @@ export default function AccountPage() {
 
     const storage = getStorage();
     const auth = getAuth();
-    const db = getFirestore();
     const filePath = `avatars/${formaAfriqueUser.uid}/${file.name}`;
     const storageRef = ref(storage, filePath);
 
@@ -339,6 +371,7 @@ export default function AccountPage() {
         <TabsList>
           <TabsTrigger value="profile"><Edit3 className="mr-2 h-4 w-4"/>Profil</TabsTrigger>
           {role === 'instructor' && <TabsTrigger value="payment"><CreditCard className="mr-2 h-4 w-4"/>Paiements</TabsTrigger>}
+          <TabsTrigger value="notifications"><Bell className="mr-2 h-4 w-4"/>Notifications</TabsTrigger>
           <TabsTrigger value="security"><Shield className="mr-2 h-4 w-4"/>Sécurité</TabsTrigger>
         </TabsList>
         
@@ -572,6 +605,63 @@ export default function AccountPage() {
             </Card>
           </TabsContent>
         )}
+        
+        <TabsContent value="notifications">
+          <Card>
+            <CardHeader>
+              <CardTitle>Préférences de notification</CardTitle>
+              <CardDescription>Gérez les e-mails que vous recevez de notre part.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+                <Form {...notificationForm}>
+                    <form className="space-y-4">
+                        <FormField
+                            control={notificationForm.control}
+                            name="promotions"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Promotions et nouveautés</FormLabel>
+                                        <FormDescription>Recevez des e-mails sur les nouveaux cours, les offres et les actualités.</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked);
+                                                onNotificationChange({ ...notificationForm.getValues(), promotions: checked });
+                                            }}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={notificationForm.control}
+                            name="reminders"
+                            render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="text-base">Rappels d'apprentissage</FormLabel>
+                                        <FormDescription>Recevez des rappels pour continuer votre progression dans les cours.</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                         <Switch
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => {
+                                                field.onChange(checked);
+                                                onNotificationChange({ ...notificationForm.getValues(), reminders: checked });
+                                            }}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                            )}
+                        />
+                    </form>
+                </Form>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
         <TabsContent value="security">
           <Card>
