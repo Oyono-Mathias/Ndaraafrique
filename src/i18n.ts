@@ -10,9 +10,13 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'fr',
-    debug: false, // Set to true for development debugging
+    debug: false,
     interpolation: {
       escapeValue: false, // React already safes from xss
+    },
+    react: {
+      // Configure i18next to not use React's Suspense
+      useSuspense: false,
     },
     backend: {
       loadPath: '/locales/{{lng}}/translation.json',
