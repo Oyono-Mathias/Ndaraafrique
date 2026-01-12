@@ -65,7 +65,7 @@ export default function AdminModerationPage() {
         const courseRef = doc(db, 'courses', course.id);
         batch.update(courseRef, {
             status: 'Published',
-            publishedAt: new Date(),
+            publishedAt: serverTimestamp(),
         });
 
         // 2. Create notifications for all users
