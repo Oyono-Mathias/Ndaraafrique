@@ -421,22 +421,24 @@ export default function AdminUsersPage() {
                   ))
                  ) : filteredUsers.length > 0 ? (
                     filteredUsers.map(user => (
-                        <Card key={user.uid} className="dark:bg-slate-800 dark:border-slate-700" onClick={() => router.push(`/instructor/${user.uid}`)}>
+                        <Card key={user.uid} className="dark:bg-slate-800 dark:border-slate-700">
                             <CardContent className="p-4 flex items-center gap-4">
-                                <Avatar className="h-12 w-12">
-                                    <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
-                                    <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1">
-                                    <p className="font-bold text-base dark:text-white">{user.fullName}</p>
-                                    <p className="text-xs text-muted-foreground dark:text-slate-400">{user.email}</p>
-                                    <div className="flex items-center gap-2 mt-2">
-                                        <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}` as any)}</Badge>
-                                        <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
-                                            {user.status === 'suspended' ? t('banned') : t('active')}
-                                        </Badge>
-                                    </div>
-                                </div>
+                                <Link href={`/instructor/${user.uid}`} className="flex-1 flex items-center gap-4">
+                                  <Avatar className="h-12 w-12">
+                                      <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                                      <AvatarFallback>{user.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                      <p className="font-bold text-base dark:text-white">{user.fullName}</p>
+                                      <p className="text-xs text-muted-foreground dark:text-slate-400">{user.email}</p>
+                                      <div className="flex items-center gap-2 mt-2">
+                                          <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{t(`role${user.role.charAt(0).toUpperCase() + user.role.slice(1)}` as any)}</Badge>
+                                          <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
+                                              {user.status === 'suspended' ? t('banned') : t('active')}
+                                          </Badge>
+                                      </div>
+                                  </div>
+                                </Link>
                                 <UserActions user={user} adminId={adminUser?.uid} />
                             </CardContent>
                         </Card>
@@ -452,4 +454,5 @@ export default function AdminUsersPage() {
 }
 
     
+
 
