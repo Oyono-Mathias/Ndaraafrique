@@ -529,7 +529,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const showHeader = !isChatPage && !isFullScreenPage;
-  const showTitleInHeader = !isInstructorDashboard;
+  const showTitleInHeader = !isInstructorDashboard && !pathname.startsWith('/instructor/');
 
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
@@ -561,19 +561,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           {renderSidebar()}
                         </SheetContent>
                       </Sheet>
-                      {showTitleInHeader && (
-                        <div className="flex-1 overflow-hidden">
+                      
+                      <div className="flex-1 overflow-hidden">
+                        {showTitleInHeader && (
                             <h1 className={cn("text-lg font-semibold md:text-xl truncate max-w-[150px] sm:max-w-full", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
                                 {t(getPageTitleKey(pathname))}
                             </h1>
-                        </div>
-                      )}
+                        )}
+                       </div>
+
                       <Header />
                   </header>
                 )}
                 
                 <main className={cn("flex-1 overflow-y-auto", 
-                  isChatPage && !isMobile ? "" : "p-4 sm:p-6", 
+                  isChatPage && !isMobile ? "" : isInstructorDashboard ? "p-4 sm:p-6" : "p-4 sm:p-6",
+                  isMobile && !showHeader ? "" : "pt-4",
                   isMobile ? "pb-24" : "")
                 }>
                     <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
