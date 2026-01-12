@@ -148,11 +148,11 @@ function AdminAccessRequiredScreen() {
 }
 
 const BottomNavItem = ({ href, icon: Icon, label, isActive, unreadCount }: { href: string; icon: React.ElementType; label: string; isActive: boolean; unreadCount?: number }) => (
-    <Link href={href} className="flex flex-col items-center justify-center flex-1 gap-1 p-1 relative transition-all duration-200 ease-in-out">
-        <Icon className={cn("h-5 w-5 transition-transform", isActive ? 'text-primary scale-110 -translate-y-0.5' : 'text-slate-500')} strokeWidth={isActive ? 2.5 : 2} />
-        <span className={cn("text-xs transition-colors", isActive ? 'font-bold text-primary' : 'text-slate-600')}>{label}</span>
+    <Link href={href} className="flex flex-col items-center justify-center flex-1 gap-1 p-1 relative transition-all duration-200 ease-in-out min-w-0">
+        <Icon className={cn("h-6 w-6 transition-transform mb-0.5", isActive ? 'text-primary scale-110 -translate-y-0.5' : 'text-slate-500')} strokeWidth={isActive ? 2.5 : 2} />
+        <span className={cn("text-[10px] transition-colors leading-tight text-center break-words w-full", isActive ? 'font-bold text-primary' : 'text-slate-600')}>{label}</span>
         {unreadCount !== undefined && unreadCount > 0 && (
-            <span className="absolute top-1 right-3.5 h-4 min-w-[1rem] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
+            <span className="absolute top-0 right-1.5 h-4 min-w-[1rem] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">{unreadCount}</span>
         )}
     </Link>
 );
@@ -188,7 +188,7 @@ const BottomNavBar = () => {
     ];
 
     return (
-        <div className="fixed bottom-0 left-0 right-0 h-16 bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
+        <div className="fixed bottom-0 left-0 right-0 h-[70px] bg-background/95 backdrop-blur-sm border-t border-slate-200/80 flex justify-around md:hidden z-40" style={{paddingBottom: 'env(safe-area-inset-bottom)'}}>
             {items.map(item => (
                 <BottomNavItem key={item.href} {...item} isActive={pathname === item.href} />
             ))}
@@ -572,7 +572,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 
                 <main className={cn("flex-1 overflow-y-auto", 
                   isChatPage && !isMobile ? "" : "p-4 sm:p-6", 
-                  isMobile ? "pb-20" : "")
+                  isMobile ? "pb-24" : "")
                 }>
                     <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>
                       {children}
