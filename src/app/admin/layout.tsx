@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -76,27 +77,27 @@ export default function AdminLayout({
 
 
   return (
-    <div className="admin-grid-layout bg-slate-100 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
+    <div className="admin-grid-layout bg-background text-foreground">
         {/* --- Sidebar for Tablet and Desktop --- */}
-        <aside className="admin-sidebar-container hidden md:block border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950">
+        <aside className="admin-sidebar-container hidden md:block border-r border-border">
              <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
         </aside>
 
         {/* --- Main Content Area --- */}
         <div className="flex flex-col min-h-screen">
-            <header className="admin-header flex h-16 items-center gap-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm px-4 lg:px-6">
+            <header className="admin-header flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-sm px-4 lg:px-6">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
                     <Button
                         variant="outline"
                         size="icon"
-                        className="shrink-0 md:hidden bg-transparent border-slate-300 dark:border-slate-700"
+                        className="shrink-0 md:hidden bg-transparent"
                     >
                         <PanelLeft className="h-5 w-5" />
                         <span className="sr-only">Ouvrir le menu</span>
                     </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="flex flex-col p-0 bg-white dark:bg-slate-950 border-r dark:border-slate-800 text-slate-900 dark:text-slate-100 w-full max-w-[280px]">
+                    <SheetContent side="left" className="flex flex-col p-0 bg-card border-r w-full max-w-[280px]">
                         <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
                     </SheetContent>
                 </Sheet>
@@ -109,5 +110,3 @@ export default function AdminLayout({
     </div>
   )
 }
-
-    

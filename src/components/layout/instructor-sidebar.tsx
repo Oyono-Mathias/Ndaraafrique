@@ -65,13 +65,13 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
       className={cn(
         "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
-          ? 'bg-primary text-white shadow-md'
+          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
           : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
       )}
     >
       <Icon className={cn(
         "w-5 h-5 mr-4",
-        isActive ? 'text-white' : 'text-slate-400 group-hover:text-primary'
+        isActive ? 'text-primary-foreground' : 'text-slate-400 group-hover:text-primary'
       )} />
       <span className="font-medium text-sm">{label}</span>
     </Link>
@@ -128,7 +128,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
 
   return (
     <I18nProvider>
-      <div className="w-full h-full bg-[#1e293b] border-r border-slate-700 flex flex-col shadow-sm">
+      <div className="w-full h-full bg-[#111827] border-r border-slate-700 flex flex-col shadow-sm">
         <header className="p-4 border-b border-slate-700/50">
           <Link href="/dashboard" className="flex items-center gap-2">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />

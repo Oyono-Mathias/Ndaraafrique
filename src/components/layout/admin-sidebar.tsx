@@ -43,14 +43,14 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
       className={cn(
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-md'
-          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
+          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
       )}
     >
         <div className="flex items-center">
             <Icon className={cn(
                 "sidebar-icon w-5 h-5 mr-4 tv:w-7 tv:h-7",
-                isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400 group-hover:text-primary'
+                isActive ? 'text-primary-foreground' : 'text-slate-400 group-hover:text-primary'
             )} />
             <span className="sidebar-label font-medium text-sm tv:text-lg">{label}</span>
         </div>
@@ -122,10 +122,10 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   }
 
   return (
-    <div className="w-full h-full flex flex-col">
-       <header className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-3 sidebar-header">
+    <div className="w-full h-full flex flex-col bg-[#111827]">
+       <header className="p-4 border-b border-border/10 flex items-center gap-3 sidebar-header">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full sidebar-logo tv:w-10 tv:h-10" />
-            <span className="sidebar-label font-bold text-lg text-slate-900 dark:text-white tv:text-2xl">{siteName || 'Admin Panel'}</span>
+            <span className="sidebar-label font-bold text-lg text-white tv:text-2xl">{siteName || 'Admin Panel'}</span>
       </header>
 
       <nav className="flex-1 py-2 overflow-y-auto">
@@ -141,12 +141,12 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
           ))}
       </nav>
 
-      <footer className="p-4 mt-auto space-y-2 border-t border-slate-200 dark:border-slate-800">
-        <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToInstructor}>
+      <footer className="p-4 mt-auto space-y-2 border-t border-border/10">
+        <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToInstructor}>
             <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
             <span className="sidebar-label">Mode Instructeur</span>
         </Button>
-         <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToStudent}>
+         <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToStudent}>
             <Users className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
             <span className="sidebar-label">Mode Étudiant</span>
         </Button>

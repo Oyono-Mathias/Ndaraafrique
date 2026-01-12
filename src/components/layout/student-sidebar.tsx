@@ -43,16 +43,16 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id }: { hr
       onClick={onClick}
       id={id}
       className={cn(
-        "flex items-center justify-between px-4 py-3 my-1 cursor-pointer transition-all duration-300 rounded-lg mx-3 group relative",
+        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
-          ? "bg-primary/10 text-primary font-bold shadow-sm before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-2/3 before:w-1 before:bg-primary before:rounded-r-full"
+          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
           : "text-slate-600 hover:bg-slate-100/80"
       )}
     >
       <div className="flex items-center">
         <Icon className={cn(
           "w-5 h-5 mr-4 text-slate-500 group-hover:text-primary transition-colors duration-300 tv:w-7 tv:h-7",
-          isActive && "text-primary"
+          isActive && "text-primary-foreground"
         )} />
         <span className="font-medium text-sm tv:text-lg">{label}</span>
       </div>
