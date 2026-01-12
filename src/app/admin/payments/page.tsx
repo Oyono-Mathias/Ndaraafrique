@@ -1,4 +1,5 @@
 
+      
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -50,14 +51,14 @@ const formatCurrency = (amount: number, currency: string) => {
 const StatusBadge = ({ status }: { status: Payment['status'] }) => {
     const { t } = useTranslation();
     const statusMap = {
-        'Completed': { text: t('statusCompleted'), className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-        'Failed': { text: t('statusFailed'), className: 'bg-red-100 text-red-800' },
-        'Refunded': { text: t('statusRefunded'), className: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' },
-        'Pending': { text: t('statusPending'), className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
+        Completed: { text: t('statusCompleted'), className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+        Failed: { text: t('statusFailed'), className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
+        Refunded: { text: t('statusRefunded'), className: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' },
+        Pending: { text: t('statusPending'), className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
     };
     const { text, className } = statusMap[status] || { text: status, className: 'bg-slate-100 text-slate-800' };
 
-    return <Badge className={cn(className)}>{text}</Badge>;
+    return <Badge className={cn('font-semibold', className)}>{text}</Badge>;
 }
 
 
@@ -150,70 +151,52 @@ export default function AdminPaymentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="hidden sm:block overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">{t('buyer')}</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">{t('courseTitle')}</TableHead>
-                  <TableHead className="hidden sm:table-cell dark:text-slate-400">{t('amount')}</TableHead>
-                   <TableHead className="hidden md:table-cell dark:text-slate-400">{t('date')}</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">{t('status')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+          <div className="hidden sm:block">
+             <div className="space-y-1">
                 {isLoading ? (
                   [...Array(5)].map((_, i) => (
-                    <TableRow key={i} className="dark:border-slate-700">
-                      <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" /><Skeleton className="h-4 w-32 dark:bg-slate-700" /></div></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden sm:table-cell"><Skeleton className="h-4 w-24 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-32 dark:bg-slate-700" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
-                    </TableRow>
+                    <div key={i} className="flex items-center gap-4 p-3 rounded-lg border-b border-transparent">
+                      <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+                      <div className="flex-1 space-y-1">
+                        <Skeleton className="h-4 w-3/5 dark:bg-slate-700" />
+                        <Skeleton className="h-3 w-2/5 dark:bg-slate-700" />
+                      </div>
+                       <Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" />
+                    </div>
                   ))
                 ) : filteredPayments.length > 0 ? (
                   filteredPayments.map((payment) => (
-                    <TableRow key={payment.id} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                          <Avatar>
-                            <AvatarImage src={payment.user?.profilePictureURL} alt={payment.user?.fullName} />
-                            <AvatarFallback>{payment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <span className="font-medium dark:text-slate-100">{payment.user?.fullName}</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell dark:text-slate-300">{payment.courseTitle}</TableCell>
-                      <TableCell className="hidden sm:table-cell font-mono dark:text-slate-200">{formatCurrency(payment.amount, payment.currency)}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground dark:text-slate-400">
-                        {payment.date ? format(payment.date.toDate(), 'dd MMM yyyy, HH:mm', { locale: fr }) : 'N/A'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <StatusBadge status={payment.status} />
-                      </TableCell>
-                    </TableRow>
+                    <div key={payment.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-800/50 border-b border-slate-800 last:border-b-0">
+                      <Avatar>
+                        <AvatarImage src={payment.user?.profilePictureURL} alt={payment.user?.fullName} />
+                        <AvatarFallback>{payment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm dark:text-white">{payment.user?.fullName}</p>
+                        <p className="text-xs text-muted-foreground dark:text-slate-400">{payment.courseTitle}</p>
+                      </div>
+                      <div className="hidden md:block text-xs text-center text-muted-foreground dark:text-slate-500">
+                         {payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}
+                      </div>
+                      <StatusBadge status={payment.status} />
+                      <div className="font-mono text-sm text-right font-semibold dark:text-slate-200">
+                        {formatCurrency(payment.amount, payment.currency)}
+                      </div>
+                    </div>
                   ))
                 ) : (
-                  <TableRow className="dark:border-slate-700">
-                    <TableCell colSpan={5} className="h-48 text-center">
-                      <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                          <ShoppingCart className="h-12 w-12" />
-                          <p className="font-medium">{t('noTransactionsFound')}</p>
-                          <p className="text-sm">
-                              {searchTerm 
-                                  ? t('noResultsFor', { term: searchTerm })
-                                  : t('noTransactionsYet')
-                              }
-                          </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                   <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                      <ShoppingCart className="h-12 w-12" />
+                      <p className="font-medium">{t('noTransactionsFound')}</p>
+                      <p className="text-sm">
+                          {searchTerm 
+                              ? t('noResultsFor', { term: searchTerm })
+                              : t('noTransactionsYet')
+                          }
+                      </p>
+                  </div>
                 )}
-              </TableBody>
-            </Table>
+             </div>
           </div>
 
           <div className="sm:hidden space-y-4">
@@ -254,3 +237,5 @@ export default function AdminPaymentsPage() {
     </div>
   );
 }
+
+    

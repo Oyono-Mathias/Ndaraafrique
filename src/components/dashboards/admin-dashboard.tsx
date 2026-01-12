@@ -1,4 +1,5 @@
 
+      
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -198,9 +199,9 @@ export function AdminDashboard() {
                         {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full dark:bg-slate-700" />)}
                     </div>
                 ) : activities.length > 0 ? (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                         {activities.map(activity => (
-                            <div key={activity.id} className="flex items-center gap-4 p-2 rounded-md hover:bg-slate-800/50">
+                            <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-800/50 border-b border-slate-800 last:border-b-0">
                                 <Avatar className="h-9 w-9">
                                     <AvatarImage src={activity.userAvatar} />
                                     <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
@@ -213,7 +214,7 @@ export function AdminDashboard() {
                                         {format(activity.date, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
                                     </p>
                                 </div>
-                                <div className="ml-auto font-medium text-sm dark:text-white">{formatCurrency(activity.amount)}</div>
+                                <div className="ml-auto font-medium text-sm text-green-400 font-mono">+{formatCurrency(activity.amount)}</div>
                             </div>
                         ))}
                     </div>
@@ -229,3 +230,5 @@ export function AdminDashboard() {
     </div>
   );
 }
+
+    
