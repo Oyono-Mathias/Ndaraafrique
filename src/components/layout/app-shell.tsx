@@ -27,6 +27,7 @@ import { fr } from 'date-fns/locale';
 import { UserNav } from './user-nav';
 import { OnboardingGuide } from '../onboarding-guide';
 import { SplashScreen } from '../splash-screen';
+import { Header } from './header';
 
 interface Notification {
   id: string;
@@ -203,75 +204,6 @@ const BottomNavBar = () => {
     );
 };
 
-const Header = () => {
-    const router = useRouter();
-    return (
-        <div className="flex items-center gap-4 w-full justify-end">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/search')}>
-                <Search className="h-5 w-5" />
-            </Button>
-            <LanguageSelector />
-            <HeaderNotificationButton />
-            <UserNav />
-        </div>
-    );
-}
-
-const HeaderNotificationButton = () => {
-  const router = useRouter();
-  const isMobile = useIsMobile();
-  const { user } = useRole();
-  const { notifications, hasUnread, markAllAsRead } = useUnreadNotifications(user?.uid);
-  
-  if (isMobile) {
-    return (
-      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-card-foreground">
-        <Bell className="h-4 w-4" />
-        {hasUnread && (
-          <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-          </span>
-        )}
-        <span className="sr-only">Notifications</span>
-      </Button>
-    )
-  }
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-foreground dark:text-white">
-          <Bell className="h-5 w-5" />
-          {hasUnread && (
-            <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-            </span>
-          )}
-          <span className="sr-only">Notifications</span>
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 dark:border-b dark:border-slate-700">
-                <CardTitle className="text-base font-semibold dark:text-white">Notifications</CardTitle>
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
-            </CardHeader>
-            <CardContent className="p-2">
-              {notifications.length > 0 ? (
-                <div className="space-y-1">
-                  {notifications.map(n => <NotificationItem key={n.id} notif={n} />)}
-                </div>
-              ) : (
-                <p className="text-sm text-center text-muted-foreground py-8">Aucune notification.</p>
-              )}
-            </CardContent>
-          </Card>
-      </PopoverContent>
-    </Popover>
-  );
-};
 
 
 const AnnouncementBanner = () => {
