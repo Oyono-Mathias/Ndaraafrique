@@ -6,8 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
-import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { getAuth, updateProfile, sendPasswordResetEmail, signOut } from 'firebase/auth';
+import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 
@@ -19,11 +19,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, Edit3, Shield, CreditCard, Linkedin, Twitter, Youtube, AlertTriangle, Wallet, Bell } from 'lucide-react';
+import { Loader2, Edit3, Shield, CreditCard, Linkedin, Twitter, Youtube, AlertTriangle, Wallet, Bell, BookOpen, Award, Sparkles } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { Switch } from '@/components/ui/switch';
+import { useCollection } from '@/firebase';
+import { useRouter } from 'next/navigation';
 
 
 // --- PAN-AFRICAN Country and Payment Data ---
@@ -188,18 +190,61 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 type PaymentFormValues = z.infer<typeof paymentFormSchema>;
 type NotificationFormValues = z.infer<typeof notificationFormSchema>;
 
+const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number, isLoading: boolean }) => {
+    const Icon = icon;
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{value}</div>}
+            </CardContent>
+        </Card>
+    );
+};
+
+
 export default function AccountPage() {
-  const { formaAfriqueUser, isUserLoading, role } = useRole();
+  const { user, formaAfriqueUser, isUserLoading, role } = useRole();
+  const router = useRouter();
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const [isClient, setIsClient] = useState(false);
+  const [stats, setStats] = useState({ enrolled: 0, completed: 0 });
+  const [statsLoading, setStatsLoading] = useState(true);
   const db = getFirestore();
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    if(user){
+        const fetchStats = async () => {
+            setStatsLoading(true);
+            const enrollmentsRef = collection(db, 'enrollments');
+            const q = query(enrollmentsRef, where('studentId', '==', user.uid));
+            const completedQuery = query(q, where('progress', '==', 100));
+
+            try {
+                const [totalSnapshot, completedSnapshot] = await Promise.all([
+                    getCountFromServer(q),
+                    getCountFromServer(completedQuery)
+                ]);
+                setStats({
+                    enrolled: totalSnapshot.data().count,
+                    completed: completedSnapshot.data().count
+                });
+            } catch (e) {
+                console.error("Could not fetch user stats", e);
+            } finally {
+                setStatsLoading(false);
+            }
+        };
+        fetchStats();
+    }
+  }, [user, db]);
 
   const profileForm = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -341,7 +386,6 @@ export default function AccountPage() {
       await updateDoc(userDocRef, { profilePictureURL: downloadURL });
 
       toast({ title: 'Avatar mis à jour !' });
-      // Force a re-render of the avatar component by updating its key
       setAvatarVersion(v => v + 1);
 
     } catch (error) {
@@ -362,10 +406,22 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold text-foreground">Mon Compte</h1>
-        <p className="text-muted-foreground">Gérez vos informations personnelles, vos paramètres et plus encore.</p>
+      <header className="flex flex-col sm:flex-row items-center gap-6">
+         <Avatar className="h-24 w-24 border-4 border-amber-300 shadow-lg" key={avatarVersion}>
+            <AvatarImage src={formaAfriqueUser.profilePictureURL} />
+            <AvatarFallback className="text-3xl">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
+        </Avatar>
+        <div className="text-center sm:text-left">
+            <h1 className="text-3xl font-bold text-foreground">Bonjour, {formaAfriqueUser.fullName} !</h1>
+            <p className="text-muted-foreground">{formaAfriqueUser.email}</p>
+        </div>
       </header>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard title="Cours Inscrits" icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
+        <StatCard title="Certificats Obtenus" icon={Award} value={stats.completed} isLoading={statsLoading} />
+        <StatCard title="Badge" icon={Sparkles} value={1} isLoading={false} />
+      </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList>
@@ -383,10 +439,6 @@ export default function AccountPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20" key={avatarVersion}>
-                  <AvatarImage src={formaAfriqueUser.profilePictureURL} />
-                  <AvatarFallback>{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
-                </Avatar>
                 <div className="relative">
                   <Button asChild variant="outline">
                     <label htmlFor="avatar-upload" className="cursor-pointer">
