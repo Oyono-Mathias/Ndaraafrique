@@ -66,7 +66,8 @@
     "i18next-http-backend": "^2.5.2",
     "react-phone-number-input": "^3.4.3",
     "canvas-confetti": "^1.9.3",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "react-easy-crop": "^5.0.7"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.6.4",
