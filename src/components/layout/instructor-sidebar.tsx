@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -32,18 +31,15 @@ import { UserNav } from "./user-nav";
 import { LanguageSelector } from "./language-selector";
 
 
-const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
+const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { href: string, icon: React.ElementType, sangoLabel: string, frenchLabel: string, onClick: () => void }) => {
   const pathname = usePathname();
   const { formaAfriqueUser } = useRole();
   const { toast } = useToast();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
   const isAllowedPath = (path: string) => {
-    // Allow dashboard and account pages for all instructors
     const alwaysAllowed = ['/dashboard', '/account', '/messages'];
     if (alwaysAllowed.includes(path)) return true;
-    
-    // For other paths, check for approval
     return formaAfriqueUser?.isInstructorApproved;
   };
 
@@ -65,7 +61,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
       href={href}
       onClick={handleClick}
       className={cn(
-        "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
+        "flex items-center px-4 py-2 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
           ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
           : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
@@ -75,7 +71,10 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
         "w-5 h-5 mr-4",
         isActive ? 'text-primary-foreground' : 'text-slate-400 group-hover:text-primary'
       )} />
-      <span className="font-medium text-sm">{label}</span>
+      <div className="flex flex-col">
+        <span className="font-semibold text-sm leading-tight">{sangoLabel}</span>
+        <span className={cn("text-xs leading-tight", isActive ? 'text-primary-foreground/80' : 'text-slate-400/70')}>{frenchLabel}</span>
+      </div>
     </Link>
   );
 };
@@ -89,36 +88,36 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
 
   const instructorMenu = [
     {
-      label: t('navCreation'),
+      label: 'Kua',
       items: [
-        { href: '/dashboard', icon: LayoutDashboard, text: t('navInstructorDashboard') },
-        { href: '/instructor/courses', icon: BookOpen, text: t('navMyCourses') },
-        { href: '/instructor/devoirs', icon: ClipboardCheck, text: t('navAssignments') },
-        { href: '/instructor/quiz', icon: FileQuestion, text: t('navQuiz') },
-        { href: '/instructor/ressources', icon: Folder, text: t('navResources') },
+        { href: '/dashboard', icon: LayoutDashboard, textKey: 'navInstructorDashboard', sangoKey: 'sango_dashboard' },
+        { href: '/instructor/courses', icon: BookOpen, textKey: 'navMyCourses', sangoKey: 'sango_my_courses' },
+        { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'navAssignments', sangoKey: 'sango_assignments' },
+        { href: '/instructor/quiz', icon: FileQuestion, textKey: 'navQuiz', sangoKey: 'sango_quiz' },
+        { href: '/instructor/ressources', icon: Folder, textKey: 'navResources', sangoKey: 'sango_resources' },
       ],
     },
     {
-      label: t('navFollowUp'),
+      label: 'Ndâpë',
       items: [
-        { href: '/instructor/students', icon: Users, text: t('navMyStudents') },
-        { href: '/mes-revenus', icon: DollarSign, text: t('navMyRevenue') },
-        { href: '/statistiques', icon: BarChart3, text: t('navStatistics') },
-        { href: '/certificats-instructor', icon: Award, text: t('navCertificates') },
+        { href: '/instructor/students', icon: Users, textKey: 'navMyStudents', sangoKey: 'sango_my_students' },
+        { href: '/mes-revenus', icon: DollarSign, textKey: 'navMyRevenue', sangoKey: 'sango_my_revenue' },
+        { href: '/statistiques', icon: BarChart3, textKey: 'navStatistics', sangoKey: 'sango_statistics' },
+        { href: '/certificats-instructor', icon: Award, textKey: 'navCertificates', sangoKey: 'sango_certificates' },
       ],
     },
     {
-      label: t('navInteraction'),
+      label: 'Tene',
       items: [
-        { href: '/messages', icon: MessagesSquare, text: t('navMessages') },
-        { href: '/questions-reponses', icon: MessagesSquare, text: t('navQA') },
-        { href: '/avis', icon: Star, text: t('navReviews') },
+        { href: '/messages', icon: MessagesSquare, textKey: 'navMessages', sangoKey: 'sango_messages' },
+        { href: '/questions-reponses', icon: MessagesSquare, textKey: 'navQA', sangoKey: 'sango_qa' },
+        { href: '/avis', icon: Star, textKey: 'navReviews', sangoKey: 'sango_reviews' },
       ],
     },
      {
-      label: t('navSettings'),
+      label: 'Mbëlä',
       items: [
-         { href: '/account', icon: Settings, text: t('navSettings') },
+         { href: '/account', icon: Settings, textKey: 'navSettings', sangoKey: 'sango_settings' },
       ]
     }
   ];
@@ -145,7 +144,13 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
             <div key={group.label} className="py-2">
               <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
               {group.items.map((item) => (
-                <SidebarItem key={item.href} href={item.href} icon={item.icon} label={item.text} onClick={onLinkClick} />
+                <SidebarItem 
+                  key={item.href} 
+                  href={item.href} 
+                  icon={item.icon} 
+                  sangoLabel={t(item.sangoKey)} 
+                  frenchLabel={t(item.textKey)}
+                  onClick={onLinkClick} />
               ))}
             </div>
           ))}
