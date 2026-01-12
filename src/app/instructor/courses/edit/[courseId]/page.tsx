@@ -7,6 +7,8 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import Image from 'next/image';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { assistCourseCreation, AssistCourseCreationOutput } from '@/ai/flows/assist-course-creation';
@@ -18,9 +20,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, PlusCircle, Trash2, Video, Book } from 'lucide-react';
+import { Loader2, Sparkles, PlusCircle, Trash2, Video, Book, Image as ImageIcon } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useTranslation } from 'react-i18next';
 
 const courseEditSchema = z.object({
   title: z.string().min(5, 'Le titre doit contenir au moins 5 caractères.'),
@@ -40,10 +43,15 @@ export default function EditCoursePage() {
   const { courseId } = useParams();
   const { toast } = useToast();
   const db = getFirestore();
+  const storage = getStorage();
+  const { t } = useTranslation();
   const { formaAfriqueUser, isUserLoading } = useRole();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
 
   const courseRef = useMemoFirebase(
     () => (courseId ? doc(db, 'courses', courseId as string) : null),
@@ -91,9 +99,24 @@ export default function EditCoursePage() {
         contentType: course.contentType || 'video',
         ebookUrl: course.ebookUrl || '',
       });
+      if(course.imageUrl) {
+          setImagePreview(course.imageUrl);
+      }
     }
   }, [course, form]);
   
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  }
+
   const handleAiAssist = async () => {
     const title = form.getValues('title');
     if (!title) {
@@ -127,17 +150,31 @@ export default function EditCoursePage() {
   const onSubmit = async (data: CourseEditFormValues) => {
     if (!courseId) return;
     setIsSaving(true);
+    let finalImageUrl = course?.imageUrl || '';
+
     try {
+      // 1. Upload image if a new one is selected
+      if (imageFile) {
+        const filePath = `course_covers/${courseId}/${imageFile.name}`;
+        const storageRef = ref(storage, filePath);
+        const uploadResult = await uploadBytes(storageRef, imageFile);
+        finalImageUrl = await getDownloadURL(uploadResult.ref);
+      }
+      
+      // 2. Prepare payload for Firestore
       const courseDocRef = doc(db, 'courses', courseId as string);
       const updatePayload = {
         ...data,
+        imageUrl: finalImageUrl, // Use the new URL or the existing one
         learningObjectives: data.learningObjectives?.map(obj => obj.value),
         prerequisites: data.prerequisites?.map(pre => pre.value),
       };
+
+      // 3. Update Firestore document
       await updateDoc(courseDocRef, updatePayload);
       toast({
-        title: 'Informations enregistrées !',
-        description: 'Vos modifications ont été sauvegardées.',
+        title: t('m_update_success'),
+        description: t('course_update_success_desc'),
       });
 
     } catch (error) {
@@ -184,6 +221,32 @@ export default function EditCoursePage() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          
+          <Card className="bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm dark:border-slate-700">
+            <CardHeader>
+                <FormLabel className="text-base text-gray-700 dark:text-slate-300 font-medium">Mû foto ti lê ti fango ye ni</FormLabel>
+            </CardHeader>
+            <CardContent>
+                <label htmlFor="cover-image-upload" className="cursor-pointer group">
+                    <div className="w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:border-primary group-hover:text-primary dark:group-hover:text-primary transition-all relative overflow-hidden">
+                        {imagePreview ? (
+                            <Image src={imagePreview} alt="Aperçu de la couverture" fill className="object-cover" />
+                        ) : (
+                            <div className="text-center">
+                                <ImageIcon className="mx-auto h-12 w-12"/>
+                                <p className="mt-2 text-sm font-semibold">Cliquer pour importer</p>
+                                <p className="text-xs">JPG, PNG, WEBP</p>
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <p className="text-white font-bold">Changer l'image</p>
+                        </div>
+                    </div>
+                </label>
+                <Input id="cover-image-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp" onChange={handleImageChange} />
+            </CardContent>
+          </Card>
+          
           <Card className="bg-white dark:bg-[#1e293b] rounded-2xl shadow-sm border-gray-200/80 dark:border-slate-700 transition-shadow hover:shadow-md">
           <CardHeader>
               <CardTitle className="text-xl dark:text-white">Informations Générales</CardTitle>
@@ -273,19 +336,6 @@ export default function EditCoursePage() {
                   </FormItem>
               )}
               />
-                <FormField
-                  control={form.control}
-                  name="imageUrl"
-                  render={({ field }) => (
-                      <FormItem>
-                      <FormLabel className="text-gray-700 dark:text-slate-300 font-medium">URL de l'image de couverture</FormLabel>
-                      <FormControl>
-                          <Input placeholder="https://picsum.photos/seed/..." {...field} className="dark:bg-slate-700 dark:border-slate-600" />
-                      </FormControl>
-                      <FormMessage />
-                      </FormItem>
-                  )}
-                  />
               <FormField
               control={form.control}
               name="category"
@@ -406,5 +456,3 @@ export default function EditCoursePage() {
     </Form>
   );
 }
-
-    
