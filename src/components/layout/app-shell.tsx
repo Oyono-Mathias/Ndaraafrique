@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
 import { InstructorSidebar } from './instructor-sidebar';
 import { AdminSidebar } from './admin-sidebar';
@@ -77,13 +77,13 @@ const pageTitleKeys: { [key: string]: string } = {
     '/questions-reponses': 'navMyQuestions',
     '/messages': 'navMessages',
     '/annuaire': 'navDirectory',
-    '/profil': 'profil', // Assurez-vous que 'profil' est dans vos fichiers de traduction
+    '/profil': 'profil',
     '/account': 'navAccount',
     '/liste-de-souhaits': 'navWishlist',
-    '/paiements': 'Paiements', // Assurez-vous que 'Paiements' est dans vos fichiers de traduction
+    '/paiements': 'Paiements',
     '/notifications': 'navNotifications',
     '/instructor/courses': 'navMyCourses',
-    '/instructor/courses/create': 'Créer un cours', // Traduire
+    '/instructor/courses/create': 'Créer un cours',
     '/instructor/students': 'navMyStudents',
     '/mes-revenus': 'navMyRevenue',
     '/statistiques': 'navStatistics',
@@ -92,20 +92,20 @@ const pageTitleKeys: { [key: string]: string } = {
     '/instructor/quiz': 'navQuiz',
     '/certificats-instructor': 'navCertificates',
     '/instructor/ressources': 'navResources',
-    '/mentions-legales': 'Mentions Légales', // Traduire
-    '/cgu': 'Conditions Générales d\'Utilisation', // Traduire
+    '/mentions-legales': 'Mentions Légales',
+    '/cgu': 'Conditions Générales d\'Utilisation',
 };
 
 function getPageTitleKey(pathname: string): string {
-    if (pathname.startsWith('/course/')) return 'Détails du cours'; // Traduire
-    if (pathname.startsWith('/courses/')) return 'Lecteur de cours'; // Traduire
-    if (pathname.startsWith('/instructor/courses/edit')) return 'Éditeur de cours'; // Traduire
-    if (pathname.startsWith('/instructor/courses/create')) return 'Créer un cours'; // Traduire
+    if (pathname.startsWith('/course/')) return 'Détails du cours';
+    if (pathname.startsWith('/courses/')) return 'Lecteur de cours';
+    if (pathname.startsWith('/instructor/courses/edit')) return 'Éditeur de cours';
+    if (pathname.startsWith('/instructor/courses/create')) return 'Créer un cours';
     if (pathname.startsWith('/messages/')) return 'navMessages';
     if (pathname.startsWith('/questions-reponses/')) return 'navMyQuestions';
-    if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur'; // Traduire
-    if (pathname.startsWith('/admin/support/')) return 'Détails du Ticket'; // Traduire
-    return pageTitleKeys[pathname] || 'FormaAfrique';
+    if (pathname.startsWith('/admin/users/')) return 'Profil Utilisateur';
+    if (pathname.startsWith('/admin/support/')) return 'Détails du Ticket';
+    return pageTitleKeys[pathname] || 'Ndara Afrique';
 }
 
 
@@ -184,7 +184,7 @@ const BottomNavBar = () => {
     }, [user, db]);
     
     const currentPath = `/${pathname.split('/')[1]}`;
-    if (!BOTTOM_NAV_ROUTES.includes(currentPath) || role === 'instructor') {
+    if (!BOTTOM_NAV_ROUTES.includes(currentPath) || role === 'instructor' || role === 'admin') {
         return null;
     }
 
@@ -280,7 +280,7 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const SupportButton = () => {
     const { user, formaAfriqueUser } = useRole();
-    const [supportInfo, setSupportInfo] = useState({ email: 'support@formaafrique.com', phone: '+237600000000' });
+    const [supportInfo, setSupportInfo] = useState({ email: 'support@ndaraafrique.com', phone: '+237600000000' });
     const pathname = usePathname();
     const db = getFirestore();
     
@@ -357,7 +357,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg', maintenanceMode: false });
+  const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
@@ -371,7 +371,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
-                siteName: settingsData.general?.siteName || 'FormaAfrique',
+                siteName: settingsData.general?.siteName || 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
             });
@@ -427,48 +427,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className={cn(isMobile ? '' : 'tv:text-base text-sm')}>
       <OnboardingGuide />
-      <div className={cn('flex flex-col min-h-screen', isInstructorDashboard ? 'dark bg-background' : 'bg-background' )}>
-        <AnnouncementBanner />
+      <div className={cn('flex flex-col min-h-screen', (role === 'instructor' || role === 'admin') ? 'dark bg-background' : 'bg-slate-100' )}>
           <div className="flex flex-1">
               <aside className={cn("hidden md:flex md:flex-col h-screen sticky top-0", isFullScreenPage && "md:hidden")}>
                 {renderSidebar()}
               </aside>
               <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>
                  {showHeader && (
-                  <header className={cn(
-                      "flex h-14 items-center gap-4 border-b px-4 lg:h-[60px] lg:px-6 sticky top-0 z-30",
-                      isInstructorDashboard ? 'bg-[#111827] border-slate-700' : 'bg-card border-border'
-                  )}>
-                      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                        <SheetTrigger asChild>
-                          <Button variant="ghost" size="icon" className={cn("shrink-0 md:hidden", isFullScreenPage && "hidden", isInstructorDashboard ? 'text-white' : 'text-foreground')}>
-                            <PanelLeft />
-                            <span className="sr-only">Toggle Menu</span>
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className={cn("p-0 w-64", isInstructorDashboard && 'bg-[#1e293b] border-r-slate-700')}>
-                           <SheetHeader>
-                            <SheetTitle className="sr-only">Menu principal</SheetTitle>
-                            <SheetDescription className="sr-only">Navigation pour le profil utilisateur.</SheetDescription>
-                          </SheetHeader>
-                          {renderSidebar()}
-                        </SheetContent>
-                      </Sheet>
-                      
-                      <div className="flex-1 overflow-hidden">
-                        {showTitleInHeader && (
-                            <h1 className={cn("text-lg font-semibold md:text-xl truncate max-w-[150px] sm:max-w-full", isInstructorDashboard ? 'text-white' : 'text-card-foreground')}>
-                                {t(getPageTitleKey(pathname))}
-                            </h1>
-                        )}
-                       </div>
-
-                      <Header />
-                  </header>
+                  <Header />
                 )}
                 
                 <main className={cn("flex-1 overflow-y-auto", 
-                  isChatPage && !isMobile ? "" : isInstructorDashboard ? "p-4 sm:p-6" : "p-4 sm:p-6",
+                  isChatPage && !isMobile ? "" : (role === 'instructor' || role === 'admin') ? "p-4 sm:p-6" : "p-4 sm:p-6",
                   isMobile && !showHeader ? "" : "pt-4",
                   isMobile ? "pb-24" : "")
                 }>

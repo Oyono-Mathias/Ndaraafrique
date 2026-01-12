@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -9,8 +10,8 @@ export default function NotFound() {
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-background text-center p-4">
       <div className="flex items-center gap-4 mb-8">
-        <Image src="/icon.svg" alt="FormaAfrique Logo" width={48} height={48} />
-        <span className="text-3xl font-bold text-primary">FormaAfrique</span>
+        <Image src="/icon.svg" alt="Ndara Afrique Logo" width={48} height={48} />
+        <span className="text-3xl font-bold text-primary">Ndara Afrique</span>
       </div>
       <Frown className="h-20 w-20 text-slate-400 mb-4" />
       <h1 className="text-6xl font-extrabold text-foreground">404</h1>

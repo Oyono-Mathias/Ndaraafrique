@@ -19,8 +19,8 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
       <div className="container mx-auto px-4 py-12">
         <div className="mb-8 md:hidden">
             <Link href="/" className="flex items-center gap-2 mb-4">
-                <Image src="/icon.svg" alt="FormaAfrique Logo" width={28} height={28} />
-                <span className="font-bold text-lg text-primary">FormaAfrique</span>
+                <Image src="/icon.svg" alt="Ndara Afrique Logo" width={28} height={28} />
+                <span className="font-bold text-lg text-primary">Ndara Afrique</span>
             </Link>
         </div>
         
@@ -60,8 +60,8 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
         <div className="hidden md:grid md:grid-cols-12 gap-8">
           <div className="md:col-span-12 lg:col-span-5">
              <Link href="/" className="flex items-center gap-2 mb-4">
-                <Image src="/icon.svg" alt="FormaAfrique Logo" width={28} height={28} />
-                <span className="font-bold text-lg text-primary">FormaAfrique</span>
+                <Image src="/icon.svg" alt="Ndara Afrique Logo" width={28} height={28} />
+                <span className="font-bold text-lg text-primary">Ndara Afrique</span>
             </Link>
             <p className="text-sm max-w-md text-slate-600 dark:text-slate-400">
                 La plateforme n°1 pour apprendre un métier. Accédez à nos formations gratuites et premium, conçues par des experts locaux pour le marché africain.
@@ -97,7 +97,7 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
                   <a href="#" className="text-slate-500 hover:text-slate-900 dark:hover:text-white"><Youtube className="h-5 w-5" /></a>
                   <a href="#" className="text-slate-500 hover:text-slate-900 dark:hover:text-white"><Linkedin className="h-5 w-5" /></a>
               </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400">&copy; {new Date().getFullYear()} FormaAfrique. Tous droits réservés.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">&copy; {new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

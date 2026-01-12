@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -22,6 +23,7 @@ import {
   LogIn,
   Shield,
   LogOut,
+  User as UserIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, signOut } from "firebase/auth";
@@ -29,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { I18nProvider } from '@/context/I18nProvider';
 import { UserNav } from "./user-nav";
 import { LanguageSelector } from "./language-selector";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 
 const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { href: string, icon: React.ElementType, sangoLabel: string, frenchLabel: string, onClick: () => void }) => {
@@ -61,7 +64,7 @@ const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { h
       href={href}
       onClick={handleClick}
       className={cn(
-        "flex items-center px-4 py-2 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
+        "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
         isActive
           ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
           : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
@@ -114,12 +117,6 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         { href: '/avis', icon: Star, textKey: 'navReviews', sangoKey: 'sango_reviews' },
       ],
     },
-     {
-      label: 'Mbëlä',
-      items: [
-         { href: '/account', icon: Settings, textKey: 'navSettings', sangoKey: 'sango_settings' },
-      ]
-    }
   ];
   
   const handleSwitchToAdmin = () => {
@@ -128,55 +125,59 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   }
 
   return (
-    <I18nProvider>
-      <div className="w-full h-full bg-[#111827] border-r border-slate-700 flex flex-col shadow-sm">
-        <header className="p-4 border-b border-slate-700/50">
-          <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
-            <span className="font-bold text-lg text-white">
-              {siteName || 'FormaAfrique'}
-            </span>
-          </Link>
-        </header>
+    <div className="w-full h-full bg-[#0f172a] border-r border-slate-700/50 flex flex-col shadow-sm">
+      <header className="p-4 border-b border-slate-700/50 flex items-center gap-2">
+        <Image src={logoUrl || "/icon.svg"} width={28} height={28} alt={`${siteName} Logo`} className="rounded-full" />
+        <span className="font-bold text-lg text-white">
+          Ndara Afrique
+        </span>
+      </header>
 
-        <nav className="flex-1 py-2 overflow-y-auto">
-          {instructorMenu.map((group) => (
-            <div key={group.label} className="py-2">
-              <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
-              {group.items.map((item) => (
-                <SidebarItem 
-                  key={item.href} 
-                  href={item.href} 
-                  icon={item.icon} 
-                  sangoLabel={t(item.sangoKey)} 
-                  frenchLabel={t(item.textKey)}
-                  onClick={onLinkClick} />
-              ))}
-            </div>
-          ))}
-        </nav>
-
-        <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
-          <div className="flex items-center justify-center p-2 rounded-lg bg-slate-800/50 gap-2">
-            <UserNav />
-            <LanguageSelector />
+      <div className="p-4 space-y-2 border-b border-slate-700/50">
+          <Avatar className="h-16 w-16 mx-auto border-2 border-primary/50">
+              <AvatarImage src={formaAfriqueUser?.profilePictureURL} />
+              <AvatarFallback>{formaAfriqueUser?.fullName?.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="text-center">
+              <p className="font-bold text-white">{formaAfriqueUser?.fullName}</p>
+              <p className="text-xs text-slate-400">Wafango ye (Formateur)</p>
           </div>
-          <Button
-            variant="outline"
-            className="w-full justify-center bg-slate-700 border-slate-600 hover:bg-slate-600 text-white"
-            onClick={() => switchRole('student')}
-          >
-            <LogIn className="mr-2 h-4 w-4" />
-            Mode Étudiant
-          </Button>
-          {isAdmin && (
-              <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
-                  <Shield className="mr-2 h-4 w-4" />
-                  Mode Admin
-              </Button>
-          )}
-        </footer>
       </div>
-    </I18nProvider>
+
+      <nav className="flex-1 py-2 overflow-y-auto">
+        {instructorMenu.map((group) => (
+          <div key={group.label} className="py-2">
+            <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{group.label}</p>
+            {group.items.map((item) => (
+              <SidebarItem 
+                key={item.href} 
+                href={item.href} 
+                icon={item.icon} 
+                sangoLabel={t(item.sangoKey)} 
+                frenchLabel={t(item.textKey)}
+                onClick={onLinkClick} />
+            ))}
+          </div>
+        ))}
+      </nav>
+
+      <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
+         <SidebarItem href="/account" icon={Settings} sangoLabel={t('sango_settings')} frenchLabel={t('navSettings')} onClick={onLinkClick} />
+        <Button
+          variant="outline"
+          className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white"
+          onClick={() => switchRole('student')}
+        >
+          <LogIn className="mr-2 h-4 w-4" />
+          Mode Étudiant
+        </Button>
+        {isAdmin && (
+            <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
+                <Shield className="mr-2 h-4 w-4" />
+                Mode Admin
+            </Button>
+        )}
+      </footer>
+    </div>
   );
 }

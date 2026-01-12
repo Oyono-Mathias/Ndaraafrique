@@ -159,7 +159,7 @@ const HeaderNotificationButton = () => {
 
 export function Header() {
     return (
-        <div className="flex w-full items-center gap-4">
+        <div className="flex w-full items-center gap-4 ml-auto">
             <div className="flex-1" />
             <div className="flex items-center gap-2">
                 <LanguageSelector />
