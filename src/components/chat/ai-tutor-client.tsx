@@ -43,8 +43,10 @@ export function AiTutorClient() {
       ...msg,
       timestamp: msg.timestamp?.toDate() || new Date(),
     })) || [];
-    return [initialGreeting, ...history];
-  }, [messages]);
+    // We only want to show the initial greeting if there's no history yet.
+    return history.length > 0 ? history : [initialGreeting];
+  }, [messages, initialGreeting]);
+
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -66,8 +68,6 @@ export function AiTutorClient() {
     const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
     const userMessagePayload = { sender: "user", text: userMessageText, timestamp: serverTimestamp() };
     
-    // The useCollection hook will automatically display the new message.
-    // We don't need to manually update state.
     addDoc(chatCollectionRef, userMessagePayload).catch(err => {
        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: chatCollectionRef.path,
@@ -105,7 +105,7 @@ export function AiTutorClient() {
   const isLoading = isUserLoading || isHistoryLoading;
 
   return (
-    <div className="flex flex-col h-full bg-[#e5ddd5] dark:bg-[#0b141a] chat-background">
+    <div className="flex flex-col h-full chat-background dark:bg-[#0b141a]">
       <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-[#202c33] sticky top-0 z-10 dark:border-slate-700/80">
         <div className="relative ai-avatar-container">
           <Avatar className="h-10 w-10 ai-avatar z-10 relative">
@@ -149,13 +149,13 @@ export function AiTutorClient() {
             </div>
           ))}
           {isAiResponding && (
-            <div className="flex items-start gap-3">
+            <div className="flex items-end gap-2 max-w-[85%] mr-auto">
                <div className="relative ai-avatar-container self-end">
                     <Avatar className="h-8 w-8 ai-avatar z-10 relative">
                         <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
                     </Avatar>
                 </div>
-              <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm">
+              <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm chat-bubble-received rounded-bl-none">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 MATHIAS est en train d'écrire...
               </div>
@@ -163,16 +163,16 @@ export function AiTutorClient() {
           )}
         </div>
       </ScrollArea>
-      <div className="input-bar p-2 border-t bg-[#f0f0f0] dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
+      <div className="p-2 border-t bg-[#f0f0f0] dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-4xl mx-auto">
             <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={isLoading ? "Chargement de l'historique..." : "Posez votre question à MATHIAS..."}
             disabled={isLoading || isAiResponding}
-            className="input-field flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base"
+            className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base"
             />
-            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="send-btn shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
+            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
             <Send className="h-5 w-5" />
             <span className="sr-only">Envoyer</span>
             </Button>
