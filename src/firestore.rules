@@ -182,6 +182,13 @@ service cloud.firestore {
         allow create, update, delete: if isAdmin();
     }
 
+    // --- Règles pour le carrousel ---
+    match /carousel_slides/{slideId} {
+        allow read: if true;
+        allow list: if true;
+        allow create, update, delete: if isAdmin();
+    }
+
     // --- Règles pour 'chats' ---
     match /chats/{chatId} {
       allow create: if isSignedIn();

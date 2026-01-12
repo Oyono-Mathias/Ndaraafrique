@@ -13,6 +13,7 @@ import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { Badge } from '../ui/badge';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { DynamicCarousel } from '../ui/DynamicCarousel';
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
     <div className="flex items-center gap-1 text-xs text-slate-400">
@@ -130,6 +131,8 @@ export function StudentDashboard() {
 
   return (
     <div className="bg-slate-900 -m-6 p-6 min-h-screen space-y-12">
+        <DynamicCarousel />
+
         <CourseCarousel 
             title="Les nouveautés à ne pas rater"
             courses={newCourses}

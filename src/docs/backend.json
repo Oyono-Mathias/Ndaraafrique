@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -524,11 +523,7 @@
       "description": "Represents an assignment for a course.",
       "properties": {
         "title": { "type": "string" },
-        "description": { "type": "string" },
-        "correctionGuide": {
-          "type": "string",
-          "description": "Instructions for the AI (MATHIAS) on how to correct the assignment."
-        }
+        "description": { "type": "string" }
       },
       "required": ["title"]
     },
@@ -639,23 +634,27 @@
       },
       "required": ["type", "message", "isRead", "createdAt"]
     },
-    "FAQ": {
-      "title": "FAQ",
+    "CarouselSlide": {
+      "title": "Carousel Slide",
       "type": "object",
-      "description": "Represents a frequently asked question entry.",
+      "description": "Represents a single slide in the homepage carousel.",
       "properties": {
-        "question_fr": { "type": "string" },
-        "answer_fr": { "type": "string" },
-        "question_sg": { "type": "string" },
-        "answer_sg": { "type": "string" },
-        "tags": { 
-            "type": "array", 
-            "items": { "type": "string" } 
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the background image for the slide."
         },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "link": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional URL to navigate to when the slide is clicked."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the slide."
+        }
       },
-      "required": ["question_fr", "answer_fr"]
+      "required": ["imageUrl", "order"]
     }
   },
   "auth": {
@@ -749,10 +748,6 @@
       "schema": { "$ref": "#/entities/AdminNotification" },
       "description": "A collection for storing system-wide notifications for administrators."
     },
-    "/faqs/{faqId}": {
-      "schema": { "$ref": "#/entities/FAQ" },
-      "description": "Stores frequently asked questions and their answers."
-    },
     "/settings/global": {
       "schema": {
         "title": "Settings",
@@ -793,6 +788,10 @@
         }
       },
       "description": "Stores global configuration for the entire application."
+    },
+    "/carousel_slides/{slideId}": {
+      "schema": { "$ref": "#/entities/CarouselSlide" },
+      "description": "Stores slides for the main promotional carousel."
     }
   }
 }
