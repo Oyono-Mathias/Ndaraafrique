@@ -127,7 +127,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     <div className="w-full h-full flex flex-col bg-[#111827]">
        <header className="p-4 border-b border-border/10 flex items-center gap-3 sidebar-header">
             <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full sidebar-logo tv:w-10 tv:h-10" />
-            <span className="sidebar-label font-bold text-lg text-white tv:text-2xl">{siteName || 'Admin Panel'}</span>
+            <span className="sidebar-label font-bold text-lg text-white tv:text-2xl">{siteName || 'Ndara Afrique'}</span>
       </header>
 
       <nav className="flex-1 py-2 overflow-y-auto">
@@ -136,7 +136,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
                 key={item.href} 
                 href={item.href} 
                 icon={item.icon} 
-                label={item.textKey === 'FAQ' ? item.textKey : t(item.textKey)}
+                label={t(item.textKey)}
                 count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
                 onClick={onLinkClick}
             />

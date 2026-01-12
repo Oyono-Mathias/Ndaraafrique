@@ -43,9 +43,9 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
              <div>
               <h3 className="font-semibold text-slate-200 mb-4">{t('footer_help')}</h3>
               <ul className="space-y-2 text-sm">
-                  <li><a href="#" className="footer-link">{t('footer_faq')}</a></li>
-                  <li><a href="#" className="footer-link">{t('footer_contact')}</a></li>
-                  <li><a href="#" className="footer-link">{t('footer_support')}</a></li>
+                  <li><Link href="/admin/faq" className="footer-link">{t('footer_faq')}</Link></li>
+                  <li><Link href="/questions-reponses" className="footer-link">{t('footer_contact')}</Link></li>
+                  <li><Link href="/questions-reponses" className="footer-link">{t('footer_support')}</Link></li>
               </ul>
             </div>
              <div>

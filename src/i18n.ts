@@ -10,7 +10,7 @@ i18n
   .use(initReactI18next)
   .init({
     fallbackLng: 'fr',
-    supportedLngs: ['fr', 'en', 'sg'], // Removed 'ln'
+    supportedLngs: ['fr', 'en', 'sg'],
     debug: false,
     interpolation: {
       escapeValue: false, // React already safes from xss
@@ -24,7 +24,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'formaafrique-lang',
+      lookupLocalStorage: 'ndaraafrique-lang', // UPDATED KEY
     },
   });
 

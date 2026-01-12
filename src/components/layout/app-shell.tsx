@@ -184,7 +184,7 @@ const BottomNavBar = () => {
     }, [user, db]);
     
     const currentPath = `/${pathname.split('/')[1]}`;
-    const shouldShow = BOTTOM_NAV_ROUTES.includes(currentPath) && role !== 'instructor' && role !== 'admin';
+    const shouldShow = BOTTOM_NAV_ROUTES.includes(currentPath) && role === 'student';
 
     if (!shouldShow) {
         return null;

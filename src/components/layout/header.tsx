@@ -162,12 +162,10 @@ export function Header() {
     return (
         <div className="flex w-full items-center gap-4 ml-auto">
             <div className="flex-1" />
-            <div className="flex items-center gap-2">
+             <div className="flex items-center gap-2">
                 <LanguageSelector />
-                <div className='flex items-center gap-2'>
-                  <HeaderNotificationButton />
-                  <UserNav />
-                </div>
+                <HeaderNotificationButton />
+                <UserNav />
             </div>
         </div>
     );

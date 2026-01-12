@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer } from 'recharts';
+import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { Users, Star, BookOpen, DollarSign } from 'lucide-react';
@@ -22,7 +22,7 @@ interface RevenueDataPoint {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("dark:bg-[#1e293b] dark:border-slate-700", accentColor)}>
+    <Card className={cn("dark:bg-[#1e293b] backdrop-blur-xl border-white/10 dark:border-slate-700", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -83,7 +83,6 @@ function InstructorDashboardContent() {
                  return;
             }
 
-            // Firestore 'in' query is limited to 30 items. Batching is needed for larger scale.
             const courseIdChunks: string[][] = [];
             for (let i = 0; i < courseIds.length; i += 30) {
                 courseIdChunks.push(courseIds.slice(i, i + 30));
@@ -171,20 +170,20 @@ function InstructorDashboardContent() {
     }, [courses, enrollments]);
 
     const chartConfig = {
-        revenue: { label: t('navMyRevenue'), color: 'hsl(var(--primary))' },
+        revenue: { label: t('navFinance'), color: 'hsl(var(--primary))' },
     };
 
 
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold dark:text-white">{t('navInstructorDashboard')}</h1>
+                <h1 className="text-3xl font-bold dark:text-white">{t('navDashboard')}</h1>
                 <p className="text-muted-foreground dark:text-slate-400">{t('welcome_message', { name: instructor?.fullName || 'Instructeur' })}</p>
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatCard 
-                    title={t('total_students')}
+                    title={t('statStudents')}
                     value={stats.totalStudents.toLocaleString()} 
                     icon={Users} 
                     isLoading={isLoading} 
@@ -199,14 +198,14 @@ function InstructorDashboardContent() {
                     accentColor="border-t-amber-500"
                 />
                 <StatCard 
-                    title={t('publishedCourses')}
+                    title={t('statCourses')}
                     value={stats.publishedCourses.toString()} 
                     icon={BookOpen} 
                     isLoading={isLoading}
                     accentColor="border-t-purple-500"
                 />
                 <StatCard 
-                    title={t('monthlyRevenue')}
+                    title={t('statRevenue')}
                     value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={DollarSign} 
                     isLoading={isLoading}
@@ -216,7 +215,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_evolution')}</h2>
+                    <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('titleRevenue')}</h2>
                     <Card className="dark:bg-[#1e293b] dark:border-slate-700">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full dark:bg-slate-700" /> : (
@@ -226,14 +225,15 @@ function InstructorDashboardContent() {
                                             <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
                                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
                                             <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400"/>
-                                            <ChartTooltip
+                                            <Tooltip
                                                 cursor={false}
                                                 content={<ChartTooltipContent
                                                     indicator="dot"
                                                     className="dark:bg-slate-900 dark:border-slate-700"
+                                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
                                                 />}
                                             />
-                                            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
+                                            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </ChartContainer>
