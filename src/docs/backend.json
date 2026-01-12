@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -583,7 +584,7 @@
       },
       "required": ["resourceId", "courseId", "instructorId", "title", "type", "url", "createdAt"]
     },
-    "Notification": {
+     "Notification": {
       "title": "Notification",
       "type": "object",
       "description": "Represents a notification for a user.",
@@ -591,7 +592,8 @@
         "text": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" },
         "read": { "type": "boolean" },
-        "link": { "type": "string", "format": "uri" }
+        "link": { "type": "string", "format": "uri" },
+        "type": {"type": "string", "enum": ["success", "info", "reminder", "alert"]}
       },
       "required": ["text", "createdAt", "read"]
     },

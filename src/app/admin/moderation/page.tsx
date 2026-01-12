@@ -14,6 +14,9 @@ import {
   where,
   doc,
   updateDoc,
+  writeBatch,
+  serverTimestamp,
+  getDocs
 } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -51,18 +54,40 @@ export default function AdminModerationPage() {
 
   const isLoading = isUserLoading || coursesLoading;
   
-  const handleApprove = async (courseId: string) => {
-    setUpdatingId(courseId);
-    const courseRef = doc(db, 'courses', courseId);
+  const handleApprove = async (course: Course) => {
+    if (!course?.id) return;
+    setUpdatingId(course.id);
+    
     try {
-        await updateDoc(courseRef, {
+        const batch = writeBatch(db);
+
+        // 1. Update course status
+        const courseRef = doc(db, 'courses', course.id);
+        batch.update(courseRef, {
             status: 'Published',
             publishedAt: new Date(),
         });
+
+        // 2. Create notifications for all users
+        const usersSnapshot = await getDocs(query(collection(db, 'users')));
+        usersSnapshot.forEach(userDoc => {
+            const notifRef = doc(collection(db, `users/${userDoc.id}/notifications`));
+            batch.set(notifRef, {
+                text: `Nouveau cours disponible : "${course.title}"`,
+                link: `/course/${course.id}`,
+                createdAt: serverTimestamp(),
+                read: false,
+                type: 'success'
+            });
+        });
+
+        await batch.commit();
+
         toast({ title: t('courseApprovedTitle'), description: t('courseApprovedMessage') });
+
     } catch (error) {
-        console.error("Error approving course:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'approuver le cours.' });
+        console.error("Error approving course and creating notifications:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'approuver le cours et de notifier les utilisateurs.' });
     } finally {
         setUpdatingId(null);
     }
@@ -126,7 +151,7 @@ export default function AdminModerationPage() {
                             <Button asChild variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600">
                                 <Link href={`/course/${course.id}`} target="_blank"><Eye className="mr-2 h-4 w-4"/>{t('preview')}</Link>
                             </Button>
-                             <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" disabled={updatingId === course.id}>
+                             <Button onClick={() => handleApprove(course)} size="sm" variant="default" disabled={updatingId === course.id}>
                                 {updatingId === course.id ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>}
                                 {t('approve')}
                             </Button>
