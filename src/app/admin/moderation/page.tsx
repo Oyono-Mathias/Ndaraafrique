@@ -73,7 +73,7 @@ export default function AdminModerationPage() {
         usersSnapshot.forEach(userDoc => {
             const notifRef = doc(collection(db, `users/${userDoc.id}/notifications`));
             batch.set(notifRef, {
-                text: `Nouveau cours disponible : "${course.title}"`,
+                text: `${t('newCourseNotif')} : "${course.title}"`,
                 link: `/course/${course.id}`,
                 createdAt: serverTimestamp(),
                 read: false,
@@ -87,7 +87,7 @@ export default function AdminModerationPage() {
 
     } catch (error) {
         console.error("Error approving course and creating notifications:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'approuver le cours et de notifier les utilisateurs.' });
+        toast({ variant: 'destructive', title: t('errorTitle'), description: t('courseApprovalError') });
     } finally {
         setUpdatingId(null);
     }
@@ -95,7 +95,7 @@ export default function AdminModerationPage() {
 
 
   if (adminUser?.role !== 'admin') {
-    return <div className="p-8 text-center">Accès non autorisé.</div>;
+    return <div className="p-8 text-center">{t('unauthorizedAccess')}</div>;
   }
 
   return (
@@ -178,3 +178,4 @@ export default function AdminModerationPage() {
     </div>
   );
 }
+
