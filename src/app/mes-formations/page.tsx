@@ -130,9 +130,9 @@ export default function MyLearningPage() {
 const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit à aucun cours." }: { courses: EnrolledCourse[], isLoading: boolean, emptyMessage?: string }) => {
     if (isLoading) {
         return (
-            <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-[150px] w-full rounded-xl bg-slate-200" />
+                    <Skeleton key={i} className="h-[280px] w-full rounded-xl bg-slate-200" />
                 ))}
             </div>
         );
@@ -151,7 +151,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit �
     }
     
     return (
-        <div className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map(course => (
                 <StudentCourseCard key={course.id} course={course} />
             ))}
