@@ -16,6 +16,10 @@ export default {
       },
     },
     extend: {
+      backgroundImage: {
+        'whatsapp-light': "url('/backgrounds/whatsapp-bg.png')",
+        'whatsapp-dark': "url('/backgrounds/whatsapp-bg-dark.png')",
+      },
       screens: {
         'xs': '480px',      // Extra small devices (phones)
         'sm': '640px',      // Small devices (phones, landscape)

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from "react";
@@ -121,9 +122,9 @@ export function AiTutorClient() {
   const isLoading = isUserLoading || isHistoryLoading;
 
   return (
-    <div className="flex flex-col h-full bg-card">
+    <div className="flex flex-col h-full bg-[#e5ddd5] dark:bg-[#0b141a] bg-whatsapp-light dark:bg-whatsapp-dark">
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
-        <div className="space-y-6 p-6">
+        <div className="space-y-3 p-4 sm:p-6">
           {isLoading && (
             <div className="flex justify-center items-center h-full">
               <Loader2 className="h-8 w-8 animate-spin" />
@@ -132,36 +133,34 @@ export function AiTutorClient() {
           {!isLoading && messages.map((message) => (
             <div
               key={message.id}
-              className={cn("flex items-start gap-4", message.sender === "user" && "justify-end")}
+              className={cn("flex items-end gap-2 max-w-[85%]", message.sender === "user" ? "ml-auto flex-row-reverse" : "mr-auto")}
             >
               {message.sender === "ai" && (
-                <Avatar className="h-9 w-9 border">
-                  <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
-                </Avatar>
+                <div className="relative self-end">
+                    <div className="absolute inset-0 rounded-full bg-green-400 animate-ping opacity-70 z-0"></div>
+                     <Avatar className="h-8 w-8 border-2 border-white dark:border-slate-800 relative z-10">
+                        <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
+                    </Avatar>
+                </div>
               )}
               <div
                 className={cn(
-                  "rounded-lg px-4 py-2 max-w-[80%]",
+                  "rounded-lg px-3 py-2 text-[14.5px] leading-snug shadow-sm",
                   message.sender === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
+                    ? "bg-[#dcf8c6] dark:bg-[#075e54] text-slate-800 dark:text-slate-100 rounded-br-none"
+                    : "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none"
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.text}</p>
+                <p className="whitespace-pre-wrap">{message.text}</p>
               </div>
-              {message.sender === "user" && (
-                 <Avatar className="h-9 w-9 border">
-                  <AvatarFallback><User className="h-5 w-5" /></AvatarFallback>
-                </Avatar>
-              )}
             </div>
           ))}
           {isAiResponding && (
             <div className="flex items-start gap-3">
-              <Avatar className="h-9 w-9 border">
+              <Avatar className="h-8 w-8 border-2 border-white dark:border-slate-800">
                 <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-5 w-5" /></AvatarFallback>
               </Avatar>
-              <div className="rounded-lg px-4 py-3 bg-muted flex items-center text-sm text-muted-foreground">
+              <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 MATHIAS est en train de réfléchir...
               </div>
@@ -169,17 +168,17 @@ export function AiTutorClient() {
           )}
         </div>
       </ScrollArea>
-      <div className="p-4 border-t bg-background">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-4">
+      <div className="p-2 border-t bg-[#f0f0f0] dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
+        <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-4xl mx-auto">
             <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder={isLoading ? "Chargement de l'historique..." : "Posez votre question à MATHIAS..."}
             disabled={isLoading || isAiResponding}
-            className="flex-1"
+            className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base shadow-md"
             />
-            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()}>
-            <Send className="h-4 w-4" />
+            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="shrink-0 h-12 w-12 rounded-full bg-[#075E54] hover:bg-[#064e46] dark:bg-primary dark:hover:bg-primary/90 shadow-md">
+            <Send className="h-5 w-5" />
             <span className="sr-only">Envoyer</span>
             </Button>
         </form>
