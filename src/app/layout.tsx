@@ -7,7 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
-import { I18nProvider } from "@/context/I18nProvider";
+import '@/i18n'; // Directly import i18n configuration
 
 export const metadata: Metadata = {
   title: "FormaAfrique | Formations en ligne pour le marché Africain",
@@ -32,10 +32,8 @@ export default function RootLayout({
        <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         <FirebaseClientProvider>
           <RoleProvider>
-            <I18nProvider>
-              <AppShell>{children}</AppShell>
-              <Toaster />
-            </I18nProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
           </RoleProvider>
         </FirebaseClientProvider>
       </body>
