@@ -12,7 +12,9 @@ import {
   orderBy,
   Timestamp,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  getDoc,
+  doc,
 } from 'firebase/firestore';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -107,13 +109,14 @@ export default function MyRevenuePage() {
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [settings, setSettings] = useState({ platformCommission: 30, minPayoutThreshold: 5000 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
   const db = getFirestore();
-  const WITHDRAWAL_THRESHOLD = 5000;
+  
 
   const form = useForm<z.infer<typeof payoutFormSchema>>({
     resolver: zodResolver(payoutFormSchema),
@@ -130,46 +133,49 @@ export default function MyRevenuePage() {
 
     setIsLoading(true);
     
-    let paymentsUnsubscribe: () => void = () => {};
-    let payoutsUnsubscribe: () => void = () => {};
+    const unsubscribes: (() => void)[] = [];
 
-    try {
-        const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructor.uid), orderBy('date', 'desc'));
-        paymentsUnsubscribe = onSnapshot(paymentsQuery, (snapshot) => {
-            const fetchedTransactions = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-              courseTitle: doc.data().courseTitle || 'Cours non spécifié',
-              studentName: doc.data().studentName || 'Étudiant inconnu',
-            })) as Transaction[];
-            setTransactions(fetchedTransactions);
-            setError(null);
-        }, (err) => {
-            console.error("Erreur de chargement des revenus:", err);
-            setError(t('error_loading_transactions'));
-        });
-
-        const payoutsQuery = query(collection(db, 'payouts'), where('instructorId', '==', instructor.uid), orderBy('date', 'desc'));
-        payoutsUnsubscribe = onSnapshot(payoutsQuery, (snapshot) => {
-            const fetchedPayouts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Payout[];
-            setPayouts(fetchedPayouts);
-            setIsLoading(false);
-        }, (err) => {
-            console.error("Erreur de chargement des retraits:", err);
-            setError(t('error_loading_payouts'));
-            setIsLoading(false);
-        });
-
-    } catch (e) {
-        console.error("Erreur lors de la configuration des listeners:", e);
-        setError(t('error_unexpected'));
-        setIsLoading(false);
-    }
+    // Fetch settings
+    const settingsRef = doc(db, 'settings', 'global');
+    unsubscribes.push(onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            const commercialSettings = docSnap.data().commercial;
+            setSettings({
+                platformCommission: commercialSettings?.platformCommission || 30,
+                minPayoutThreshold: commercialSettings?.minPayoutThreshold || 5000,
+            });
+        }
+    }));
     
-    return () => {
-      paymentsUnsubscribe();
-      payoutsUnsubscribe();
-    };
+    // Fetch payments
+    const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructor.uid), orderBy('date', 'desc'));
+    unsubscribes.push(onSnapshot(paymentsQuery, (snapshot) => {
+        const fetchedTransactions = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          courseTitle: doc.data().courseTitle || 'Cours non spécifié',
+          studentName: doc.data().studentName || 'Étudiant inconnu',
+        })) as Transaction[];
+        setTransactions(fetchedTransactions);
+        setError(null);
+    }, (err) => {
+        console.error("Erreur de chargement des revenus:", err);
+        setError(t('error_loading_transactions'));
+    }));
+
+    // Fetch payouts
+    const payoutsQuery = query(collection(db, 'payouts'), where('instructorId', '==', instructor.uid), orderBy('date', 'desc'));
+    unsubscribes.push(onSnapshot(payoutsQuery, (snapshot) => {
+        const fetchedPayouts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Payout[];
+        setPayouts(fetchedPayouts);
+        setIsLoading(false); // Consider loading finished after all initial data is fetched
+    }, (err) => {
+        console.error("Erreur de chargement des retraits:", err);
+        setError(t('error_loading_payouts'));
+        setIsLoading(false);
+    }));
+    
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [instructor, isInstructorLoading, db, t]);
 
   const { totalRevenue, monthlyRevenue, availableBalance, revenueTrendData } = useMemo(() => {
@@ -188,7 +194,7 @@ export default function MyRevenuePage() {
         .filter(p => p.status === 'valide' || p.status === 'en_attente')
         .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     
-    const platformCommissionRate = 0.3;
+    const platformCommissionRate = settings.platformCommission / 100;
     const instructorShare = total * (1 - platformCommissionRate);
 
     const balance = instructorShare - totalPayouts;
@@ -204,7 +210,7 @@ export default function MyRevenuePage() {
 
     const trendData = Object.entries(monthlyAggregates)
         .map(([month, revenue]) => ({ month, revenue }))
-        .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime()); // This needs proper date parsing for sorting
+        .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
     return {
       totalRevenue: total,
@@ -212,7 +218,7 @@ export default function MyRevenuePage() {
       availableBalance: balance,
       revenueTrendData: trendData
     };
-  }, [transactions, payouts]);
+  }, [transactions, payouts, settings.platformCommission]);
 
   async function onSubmit(data: z.infer<typeof payoutFormSchema>) {
     if (!instructor) return;
@@ -225,11 +231,11 @@ export default function MyRevenuePage() {
         });
         return;
     }
-     if (data.amount < WITHDRAWAL_THRESHOLD) {
+     if (data.amount < settings.minPayoutThreshold) {
         toast({
             variant: "destructive",
             title: "Montant invalide",
-            description: `Le montant minimum pour un retrait est de ${formatCurrency(WITHDRAWAL_THRESHOLD)}.`,
+            description: `Le montant minimum pour un retrait est de ${formatCurrency(settings.minPayoutThreshold)}.`,
         });
         return;
     }
@@ -282,7 +288,7 @@ export default function MyRevenuePage() {
            </div>
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
-                    <Button disabled={availableBalance < WITHDRAWAL_THRESHOLD || isLoading} className="w-full sm:w-auto mt-4 h-12 text-base">
+                    <Button disabled={availableBalance < settings.minPayoutThreshold || isLoading} className="w-full sm:w-auto mt-4 h-12 text-base">
                         <Landmark className="mr-2 h-4 w-4" />
                         {t('revenue_request_payout_button')}
                     </Button>
@@ -291,7 +297,7 @@ export default function MyRevenuePage() {
                     <DialogHeader>
                         <DialogTitle className="dark:text-white">{t('revenue_request_payout_button')}</DialogTitle>
                         <DialogDescription className="dark:text-slate-400">
-                           {t('revenue_modal_desc', { threshold: formatCurrency(WITHDRAWAL_THRESHOLD), balance: formatCurrency(availableBalance) })}
+                           {t('revenue_modal_desc', { threshold: formatCurrency(settings.minPayoutThreshold), balance: formatCurrency(availableBalance) })}
                         </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
@@ -387,7 +393,7 @@ export default function MyRevenuePage() {
                           <TableRow key={tx.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
                             <TableCell className="text-muted-foreground dark:text-slate-400">{tx.date ? format(tx.date.toDate(), 'dd/MM/yy', { locale: fr }) : 'N/A'}</TableCell>
                             <TableCell className="font-medium max-w-xs truncate dark:text-slate-100">{tx.courseTitle}</TableCell>
-                            <TableCell className="text-right font-mono font-semibold text-green-600 dark:text-green-400">{formatCurrency(tx.amount * 0.7)}</TableCell>
+                            <TableCell className="text-right font-mono font-semibold text-green-600 dark:text-green-400">{formatCurrency(tx.amount * (1 - settings.platformCommission / 100))}</TableCell>
                           </TableRow>
                         ))
                       ) : (
@@ -408,7 +414,7 @@ export default function MyRevenuePage() {
                         <Card key={tx.id} className="p-3 dark:bg-slate-900/50 dark:border-slate-700">
                             <div className="flex justify-between items-start">
                                 <p className="font-semibold text-sm dark:text-white">{tx.courseTitle}</p>
-                                <p className="font-bold font-mono text-green-600 dark:text-green-400">{formatCurrency(tx.amount * 0.7)}</p>
+                                <p className="font-bold font-mono text-green-600 dark:text-green-400">{formatCurrency(tx.amount * (1 - settings.platformCommission / 100))}</p>
                             </div>
                             <p className="text-xs text-muted-foreground mt-1 dark:text-slate-400">{t('date_on')} {tx.date ? format(tx.date.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</p>
                         </Card>
