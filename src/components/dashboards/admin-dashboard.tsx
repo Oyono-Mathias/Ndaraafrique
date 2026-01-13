@@ -1,90 +1,135 @@
+'use client';
 
 import React from 'react';
-import { Users, DollarSign, BookOpen, MessageSquare, TrendingUp } from 'lucide-react';
+import { Users, DollarSign, BookOpen, MessageSquare, TrendingUp, MoreVertical } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
+// --- COMPOSANT DE CARTE STATISTIQUE ---
+interface StatCardProps {
+  title: string;
+  value: string | null;
+  icon: React.ElementType;
+  isLoading: boolean;
+}
+
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading }) => (
+  <Card className="bg-white dark:bg-card shadow-sm transition-transform hover:-translate-y-1">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <Skeleton className="h-8 w-3/5" />
+      ) : (
+        <div className="text-2xl font-bold">{value}</div>
+      )}
+    </CardContent>
+  </Card>
+);
+
+// --- COMPOSANT DU TABLEAU DE BORD PRINCIPAL ---
 const AdminDashboard = () => {
-  // Données fictives pour le design (à lier à Firebase plus tard)
-  const stats = [
-    { title: "Étudiants total", value: "7", trend: "+12%", icon: Users, color: "text-blue-500" },
-    { title: "Revenu mensuel", value: "0 XOF", trend: "+0%", icon: DollarSign, color: "text-emerald-500" },
-    { title: "Cours publiés", value: "3", trend: "+2", icon: BookOpen, color: "text-purple-500" },
-    { title: "Tickets Support", value: "0", trend: "0", icon: MessageSquare, color: "text-amber-500" },
+  // Les données seront chargées ici via des hooks (ex: useSWR, react-query, ou useEffect)
+  // Pour l'instant, l'état isLoading contrôle l'affichage des skeletons.
+  const isLoading = false; // Mettez à true pour voir les skeletons
+
+  // Données fictives pour la structure de l'activité récente
+  const recentActivities = [
+    { studentName: 'Amina Diallo', courseName: 'Introduction à l\'IA', time: 'il y a 5 minutes' },
+    { studentName: 'Kwame Nkrumah', courseName: 'Marketing Digital 101', time: 'il y a 22 minutes' },
   ];
+  
+  const hasActivities = recentActivities.length > 0;
 
   return (
-    <div className="p-4 sm:p-6 md:p-8 space-y-10 bg-[#020617] min-h-screen text-white">
+    <div className="space-y-6">
       
-      {/* 1. GRILLE DE STATISTIQUES - RESPONSIVE */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat, i) => (
-          <div 
-            key={i} 
-            className="bg-slate-800/50 border border-slate-700/80 p-6 rounded-2xl backdrop-blur-sm transition-transform duration-200 ease-in-out hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10"
-          >
-            <div className="flex justify-between items-center mb-4">
-              <div className={`p-2 rounded-lg bg-slate-700/50 ${stat.color}`}>
-                <stat.icon size={20} />
-              </div>
-              <span className="text-xs text-emerald-400 font-bold bg-emerald-400/10 px-2 py-1 rounded-full flex items-center gap-1">
-                <TrendingUp size={14}/>
-                {stat.trend}
-              </span>
-            </div>
-            <p className="text-gray-400 text-xs uppercase tracking-wider font-semibold">
-              {stat.title}
-            </p>
-            <p className="text-2xl font-bold mt-1">
-              {stat.value}
-            </p>
-          </div>
-        ))}
+      {/* 1. GRILLE DE CARTES STATISTIQUES */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Étudiants"
+          value={isLoading ? null : "0"}
+          icon={Users}
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Revenus (Mois en cours)"
+          value={isLoading ? null : "0 XOF"}
+          icon={DollarSign}
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Cours Publiés"
+          value={isLoading ? null : "0"}
+          icon={BookOpen}
+          isLoading={isLoading}
+        />
+        <StatCard
+          title="Tickets Support Ouverts"
+          value={isLoading ? null : "0"}
+          icon={MessageSquare}
+          isLoading={isLoading}
+        />
       </div>
 
-      {/* 2. GRAPHIQUE ET ACTIVITÉ - RESPONSIVE */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
-        {/* Section Graphique */}
-        <div className="xl:col-span-2 bg-slate-800/50 border border-slate-700/80 rounded-3xl p-6 md:p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h3 className="text-lg font-bold">Aperçu des revenus</h3>
-            <select className="bg-transparent text-xs text-gray-400 border border-slate-700 rounded-lg px-2 py-1 outline-none focus:ring-1 focus:ring-primary">
-              <option className="bg-slate-800">7 derniers jours</option>
-              <option className="bg-slate-800">30 derniers jours</option>
-            </select>
-          </div>
-          <div className="h-48 md:h-64 flex items-end gap-2 md:gap-3 px-2">
-            {[30, 45, 25, 60, 40, 50, 35, 80, 55, 70, 40, 60].map((h, i) => (
-              <div 
-                key={i} 
-                style={{ height: `${h}%` }} 
-                className="flex-1 bg-gradient-to-t from-blue-600/20 to-blue-500/50 border-t-2 border-blue-500 rounded-t-md hover:bg-blue-500/60 transition-all cursor-pointer"
-              ></div>
-            ))}
-          </div>
-        </div>
-
-        {/* Section Activité */}
-        <div className="bg-slate-800/50 border border-slate-700/80 rounded-3xl p-6 md:p-8">
-          <h3 className="text-lg font-bold mb-6">Activité en temps réel</h3>
-          <div className="space-y-4">
-            {[1, 2, 3, 4].map((item) => (
-              <div key={item} className="flex items-center gap-4 p-3 rounded-xl hover:bg-slate-700/50 transition-colors cursor-pointer border border-transparent hover:border-slate-700">
-                <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-blue-400 font-bold text-xs shadow-inner">
-                  N
-                </div>
-                <div className="overflow-hidden">
-                  <p className="text-sm font-medium truncate">Nouvel étudiant au cours "IA"</p>
-                  <p className="text-xs text-slate-500">Il y a 2 min</p>
-                </div>
-              </div>
-            ))}
-          </div>
-          <button className="w-full mt-6 py-3 text-xs text-blue-400 hover:text-blue-300 font-bold uppercase tracking-widest transition border-t border-slate-700/80">
-            Voir tout
-          </button>
-        </div>
-
-      </div>
+      {/* 2. SECTION ACTIVITÉ RÉCENTE */}
+      <Card className="bg-white dark:bg-card shadow-sm">
+        <CardHeader>
+          <CardTitle>Activité Récente</CardTitle>
+          <CardDescription>Les dernières inscriptions sur la plateforme.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Étudiant</TableHead>
+                <TableHead className="hidden sm:table-cell">Cours</TableHead>
+                <TableHead className="text-right">Date</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                // Skeleton pour le tableau
+                [...Array(3)].map((_, i) => (
+                  <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-24" /></TableCell>
+                  </TableRow>
+                ))
+              ) : hasActivities ? (
+                // Affichage des données réelles
+                recentActivities.map((activity, i) => (
+                  <TableRow key={i}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
+                        </Avatar>
+                        <span className="font-medium">{activity.studentName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="hidden sm:table-cell">{activity.courseName}</TableCell>
+                    <TableCell className="text-right text-muted-foreground text-xs">{activity.time}</TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                // État vide
+                <TableRow>
+                  <TableCell colSpan={3} className="h-24 text-center">
+                    Aucune activité récente à afficher.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 };
