@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle } from 'lucide-react';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
