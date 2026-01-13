@@ -169,6 +169,37 @@
     "providers": ["password", "google.com"]
   },
   "firestore": {
+    "indexes": [
+      {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "role", "order": "ASCENDING"},
+          {"fieldPath": "createdAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "date", "order": "DESCENDING"}
+        ]
+      },
+       {
+        "collectionGroup": "payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "date", "order": "DESCENDING"}
+        ]
+      },
+       {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      }
+    ],
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."

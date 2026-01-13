@@ -63,64 +63,66 @@ export default function AdminStatisticsPage() {
             return;
         };
 
-        setIsLoading(true);
-        const unsubs: (()=>void)[] = [];
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+                const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
+                const startOfMonthTimestamp = Timestamp.fromDate(startOfMonth(new Date()));
+                const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'));
+                
+                const [studentsSnap, coursesSnap, paymentsSnap] = await Promise.all([
+                    getDocs(studentsQuery),
+                    getDocs(coursesQuery),
+                    getDocs(paymentsSnap)
+                ]);
 
-        // Listener for total users
-        unsubs.push(onSnapshot(query(collection(db, 'users'), where('role', '==', 'student')), (snapshot) => {
-            setStats(prev => ({ ...prev, userCount: snapshot.size }));
-        }));
+                // User Count
+                setStats(prev => ({ ...prev, userCount: studentsSnap.size }));
 
-        // Listener for published courses
-        unsubs.push(onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published')), (snapshot) => {
-            const courseList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-            setCourses(courseList);
-            setStats(prev => ({ ...prev, courseCount: courseList.length }));
+                // Course Data
+                const courseList = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+                setCourses(courseList);
+                setStats(prev => ({ ...prev, courseCount: courseList.length }));
 
-            const courseIds = courseList.map(c => c.id);
-            if (courseIds.length === 0) {
-                 setEnrollments([]);
-                 return;
-            }
-             const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', courseIds.slice(0,30)));
-             const unsubEnrollments = onSnapshot(enrollmentsQuery, (enrollmentSnapshot) => {
-                 setEnrollments(enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment));
-             });
-             unsubs.push(unsubEnrollments);
-        }));
-
-        // Listener for payments to calculate revenue
-        unsubs.push(onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snapshot) => {
-            const now = new Date();
-            const startOfCurrentMonth = startOfMonth(now);
-            
-            let monthlyTotal = 0;
-            const monthlyAggregates: Record<string, number> = {};
-
-            snapshot.docs.forEach(doc => {
-                const payment = doc.data();
-                if (payment.date instanceof Timestamp) {
-                    const paymentDate = payment.date.toDate();
-                    if (paymentDate >= startOfCurrentMonth) {
-                        monthlyTotal += (payment.amount || 0);
-                    }
-                    const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
-                    monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
+                // Enrollments for top courses
+                const courseIds = courseList.map(c => c.id);
+                if (courseIds.length > 0) {
+                     const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', courseIds.slice(0,30)));
+                     const enrollmentSnapshot = await getDocs(enrollmentsQuery);
+                     setEnrollments(enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment));
                 }
-            });
 
-            const trendData = Object.entries(monthlyAggregates)
-                .map(([month, revenue]) => ({ month, revenue }))
-                .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+                // Revenue Data
+                let monthlyTotal = 0;
+                const monthlyAggregates: Record<string, number> = {};
 
-            setRevenueTrendData(trendData);
-            setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
-            if(isLoading) setIsLoading(false);
-        }));
+                paymentsSnap.docs.forEach(doc => {
+                    const payment = doc.data();
+                    if (payment.date instanceof Timestamp) {
+                        const paymentDate = payment.date.toDate();
+                        if (paymentDate >= startOfMonthTimestamp.toDate()) {
+                            monthlyTotal += (payment.amount || 0);
+                        }
+                        const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
+                        monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
+                    }
+                });
+                
+                const trendData = Object.entries(monthlyAggregates)
+                    .map(([month, revenue]) => ({ month, revenue }))
+                    .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
-        return () => {
-            unsubs.forEach(unsub => unsub());
+                setRevenueTrendData(trendData);
+                setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
+
+            } catch (e) {
+                console.error("Error fetching admin stats", e);
+            } finally {
+                setIsLoading(false);
+            }
         };
+        fetchData();
     }, [db, isUserLoading, formaAfriqueUser]);
 
     const topCourses = useMemo(() => {

@@ -3,8 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
 import { deleteUserAccount, importUsersAction } from '@/app/actions/userActions';
@@ -308,12 +307,29 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
   const db = getFirestore();
+  const [users, setUsers] = useState<FormaAfriqueUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
 
-  const usersQuery = useMemoFirebase(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
-  const { data: users, isLoading, error } = useCollection<FormaAfriqueUser>(usersQuery);
+  useEffect(() => {
+    const fetchUsers = async () => {
+        setIsLoading(true);
+        const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
+        try {
+            const snapshot = await getDocs(usersQuery);
+            const userList = snapshot.docs.map(doc => doc.data() as FormaAfriqueUser);
+            setUsers(userList);
+        } catch (error) {
+            console.error("Error fetching users:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchUsers();
+  }, [db]);
+
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -463,5 +479,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    

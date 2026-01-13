@@ -3,8 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where, getDocs, limit } from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -62,26 +61,42 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
 
 
 export default function AdminPaymentsPage() {
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { formaAfriqueUser: adminUser } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
-  const paymentsQuery = useMemoFirebase(
-    () => query(collection(db, 'payments'), orderBy('date', 'desc')),
-    [db]
-  );
-  const { data: payments, isLoading: paymentsLoading, error: paymentsError } = useCollection<Payment>(paymentsQuery);
-
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [enrichedPayments, setEnrichedPayments] = useState<EnrichedPayment[]>([]);
-  const [detailsLoading, setDetailsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!payments) return;
+    const fetchPayments = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const paymentsQuery = query(collection(db, 'payments'), orderBy('date', 'desc'), limit(100));
+            const snapshot = await getDocs(paymentsQuery);
+            const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
+            setPayments(paymentsData);
+        } catch (e: any) {
+            console.error("Error fetching payments", e);
+            setError(t('firestoreIndexError'));
+        }
+    }
+    fetchPayments();
+  }, [db, t]);
+
+
+  useEffect(() => {
+    if (payments.length === 0) {
+        setIsLoading(false);
+        return;
+    }
 
     const fetchDetails = async () => {
-        setDetailsLoading(true);
         const userIds = [...new Set(payments.map(p => p.userId))];
         const courseIds = [...new Set(payments.map(p => p.courseId))];
 
@@ -103,7 +118,7 @@ export default function AdminPaymentsPage() {
             courseTitle: coursesMap.get(payment.courseId)?.title || 'Cours supprimé'
         }));
         setEnrichedPayments(enriched);
-        setDetailsLoading(false);
+        setIsLoading(false);
     }
     fetchDetails();
   }, [payments, db]);
@@ -117,7 +132,6 @@ export default function AdminPaymentsPage() {
     );
   }, [enrichedPayments, debouncedSearchTerm]);
 
-  const isLoading = isUserLoading || paymentsLoading || detailsLoading;
 
   return (
     <div className="space-y-6">
@@ -126,10 +140,10 @@ export default function AdminPaymentsPage() {
         <p className="text-muted-foreground dark:text-slate-400">{t('transactionsDescription')}</p>
       </header>
 
-      {paymentsError && (
+      {error && (
         <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
             <AlertCircle className="h-5 w-5" />
-            <p>{t('firestoreIndexError')}</p>
+            <p>{error}</p>
         </div>
       )}
 
@@ -254,5 +268,3 @@ export default function AdminPaymentsPage() {
     </div>
   );
 }
-
-    
