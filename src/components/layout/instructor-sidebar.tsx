@@ -33,6 +33,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const pathname = usePathname();
   const { formaAfriqueUser } = useRole();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
   const isAllowedPath = (path: string) => {
@@ -46,8 +47,8 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
         e.preventDefault();
         toast({
             variant: "destructive",
-            title: "Accès refusé",
-            description: "Votre compte instructeur est en attente d'approbation.",
+            title: t('access_denied_title'),
+            description: t('instructor_approval_required_sidebar'),
         });
     } else {
       onClick();
@@ -154,10 +155,12 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         {isAdmin && (
             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                 <Shield className="mr-2 h-4 w-4" />
-                Mode Admin
+                {t('admin_mode')}
             </Button>
         )}
       </footer>
     </div>
   );
 }
+
+    

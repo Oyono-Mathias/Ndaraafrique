@@ -43,8 +43,8 @@ export default function AssignmentsDashboardPage() {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('assignments_tracking')}</h1>
-                <p className="text-muted-foreground dark:text-slate-400">{t('assignments_description')}</p>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navAssignments')}</h1>
+                <p className="text-muted-foreground dark:text-slate-400">{t('assignments_description_instructor')}</p>
             </header>
 
              {error && (
@@ -64,9 +64,9 @@ export default function AssignmentsDashboardPage() {
                      <Table>
                         <TableHeader>
                             <TableRow className="dark:border-slate-700">
-                                <TableHead className="dark:text-slate-300">{t('courseTitle')}</TableHead>
+                                <TableHead className="dark:text-slate-300">{t('course_title')}</TableHead>
                                 <TableHead className="dark:text-slate-300">{t('status')}</TableHead>
-                                <TableHead className="text-right dark:text-slate-300">{t('actions')}</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">{t('action')}</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -89,7 +89,7 @@ export default function AssignmentsDashboardPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Link href={`/instructor/devoirs/${course.id}`} className="text-sm font-semibold text-primary hover:underline">
-                                                {t('see_assignments')}
+                                                {t('manage_assignments')}
                                             </Link>
                                         </TableCell>
                                     </TableRow>
@@ -112,3 +112,5 @@ export default function AssignmentsDashboardPage() {
         </div>
     );
 }
+
+    

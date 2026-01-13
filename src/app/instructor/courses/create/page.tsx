@@ -16,21 +16,23 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
+import { useTranslation } from 'react-i18next';
 
-const courseCreateSchema = z.object({
-  title: z.string().min(5, 'Le titre doit contenir au moins 5 caractères.'),
+const courseCreateSchema = (t: (key: string) => string) => z.object({
+  title: z.string().min(5, t('course_title_min_char')),
 });
 
-type CourseCreateFormValues = z.infer<typeof courseCreateSchema>;
+type CourseCreateFormValues = z.infer<ReturnType<typeof courseCreateSchema>>;
 
 export default function CreateCoursePage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useTranslation();
   const { formaAfriqueUser, isUserLoading } = useRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({
-    resolver: zodResolver(courseCreateSchema),
+    resolver: zodResolver(courseCreateSchema(t)),
     defaultValues: {
       title: '',
     },
@@ -40,8 +42,8 @@ export default function CreateCoursePage() {
     if (!formaAfriqueUser || !formaAfriqueUser.isInstructorApproved) {
       toast({
         variant: 'destructive',
-        title: 'Accès refusé',
-        description: 'Votre compte instructeur doit être approuvé pour créer un cours.',
+        title: t('access_denied_title'),
+        description: t('instructor_approval_required'),
       });
       return;
     }
@@ -74,8 +76,8 @@ export default function CreateCoursePage() {
       const docRef = await addDoc(coursesCollection, newCoursePayload);
       
       toast({
-        title: 'Cours créé avec succès !',
-        description: 'Vous allez être redirigé pour éditer le contenu.',
+        title: t('course_create_success_title'),
+        description: t('course_create_success_desc'),
       });
 
       router.push(`/instructor/courses/edit/${docRef.id}`);
@@ -94,16 +96,16 @@ export default function CreateCoursePage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-4xl mx-auto">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900">Créer un nouveau cours</h1>
-        <p className="text-slate-500 mt-1">Commençons par donner un titre à votre nouvelle formation.</p>
+        <h1 className="text-3xl font-bold text-slate-900">{t('create_new_course')}</h1>
+        <p className="text-slate-500 mt-1">{t('create_course_start_with_title')}</p>
       </header>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="bg-white">
             <CardHeader>
-              <CardTitle>Titre du cours</CardTitle>
+              <CardTitle>{t('course_title')}</CardTitle>
               <CardDescription>
-                Ne vous inquiétez pas, vous pourrez le modifier plus tard.
+                {t('create_course_title_desc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -112,10 +114,10 @@ export default function CreateCoursePage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="sr-only">Titre du cours</FormLabel>
+                    <FormLabel className="sr-only">{t('course_title')}</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="Ex: Apprenez le marketing digital de A à Z" 
+                        placeholder={t('course_title_placeholder')}
                         {...field} 
                         className="text-lg py-6"
                       />
@@ -127,11 +129,11 @@ export default function CreateCoursePage() {
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
                 <Button type="button" variant="ghost" onClick={() => router.back()}>
-                  Annuler
+                  {t('cancelButton')}
                 </Button>
                 <Button type="submit" disabled={isSubmitting || isUserLoading} className="bg-blue-600 hover:bg-blue-700">
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Continuer
+                  {t('continue')}
                 </Button>
             </CardFooter>
           </Card>

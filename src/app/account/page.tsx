@@ -24,19 +24,21 @@ import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, L
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+
 
 // --- Validation Schema ---
-const profileFormSchema = z.object({
+const profileFormSchema = (t: (key: string) => string) => z.object({
   username: z.string()
-    .min(3, { message: 'Le nom d\'utilisateur doit contenir au moins 3 caractères.' })
-    .max(20, { message: 'Le nom d\'utilisateur ne peut pas dépasser 20 caractères.' })
-    .regex(/^[a-zA-Z0-9_]+$/, { message: 'Seuls les lettres, chiffres et underscores sont autorisés.' }),
-  fullName: z.string().min(3, { message: 'Le nom complet doit contenir au moins 3 caractères.' }),
-  bio: z.string().max(300, 'La biographie ne peut pas dépasser 300 caractères.').optional(),
-  interestDomain: z.string().min(3, { message: "Veuillez choisir un domaine d'intérêt." })
+    .min(3, { message: t('username_min_char') })
+    .max(20, { message: t('username_max_char') })
+    .regex(/^[a-zA-Z0-9_]+$/, { message: t('username_regex') }),
+  fullName: z.string().min(3, { message: t('fullname_min_char') }),
+  bio: z.string().max(300, t('bio_max_char')).optional(),
+  interestDomain: z.string().min(3, { message: t('interest_domain_required') })
 });
 
-type ProfileFormValues = z.infer<typeof profileFormSchema>;
+type ProfileFormValues = z.infer<ReturnType<typeof profileFormSchema>>;
 
 const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number | string, isLoading: boolean }) => {
     const Icon = icon;
@@ -70,7 +72,7 @@ export default function AccountPage() {
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
   const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema),
+    resolver: zodResolver(profileFormSchema(t)),
     defaultValues: { username: '', fullName: '', bio: '', interestDomain: '' },
     mode: 'onChange'
   });
@@ -147,7 +149,7 @@ export default function AccountPage() {
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
     if (!formaAfriqueUser || !usernameAvailable) {
-        toast({ title: "Nom d'utilisateur invalide", description: "Veuillez choisir un nom d'utilisateur disponible.", variant: 'destructive'});
+        toast({ title: t('invalid_username_title'), description: t('invalid_username_desc'), variant: 'destructive'});
         return;
     }
     setIsSaving(true);
@@ -173,13 +175,13 @@ export default function AccountPage() {
           await updateProfile(auth.currentUser, { displayName: data.fullName });
         }
 
-        toast({ title: t('profile_updated') });
+        toast({ title: t('profile_updated_title') });
 
         if (wasIncomplete && isNowComplete) {
             confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             toast({
-                title: "Félicitations !",
-                description: `Tu peux maintenant rejoindre ton groupe de ${data.interestDomain}.`,
+                title: t('congrats_title'),
+                description: t('congrats_profile_complete_desc', { category: data.interestDomain }),
                 className: "bg-green-600 text-white"
             });
              setFormaAfriqueUser(prev => prev ? ({...prev, isProfileComplete: true, careerGoals: { ...prev.careerGoals, interestDomain: data.interestDomain }}) : null);
@@ -221,11 +223,11 @@ export default function AccountPage() {
       const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
       await updateDoc(userDocRef, { profilePictureURL: downloadURL });
 
-      toast({ title: t('avatar_updated') });
+      toast({ title: t('avatar_updated_title') });
       setImagePreview(downloadURL); // Update preview immediately
 
     } catch (error) {
-      toast({ variant: 'destructive', title: t('upload_error_title'), description: t('avatar_update_error') });
+      toast({ variant: 'destructive', title: t('error_upload_title'), description: t('avatar_update_error') });
       console.error(error);
     } finally {
       setIsUploading(false);
@@ -247,15 +249,15 @@ export default function AccountPage() {
         
         <header className="text-center">
             <h1 className="text-4xl font-bold text-white mb-2">{t('navAccount')}</h1>
-            <p className="text-lg text-slate-400">Gérez vos informations et préférences.</p>
+            <p className="text-lg text-slate-400">{t('account_description')}</p>
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
              {/* Left Column - Profile Form */}
             <Card className="glassmorphism-card">
               <CardHeader>
-                <CardTitle className="text-xl text-white">Mon Profil Public</CardTitle>
-                <CardDescription className="text-slate-400">Ces informations seront visibles par les autres membres.</CardDescription>
+                <CardTitle className="text-xl text-white">{t('public_profile_title')}</CardTitle>
+                <CardDescription className="text-slate-400">{t('public_profile_desc')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="relative w-28 h-28 mx-auto group">
@@ -274,20 +276,20 @@ export default function AccountPage() {
                   <form onSubmit={form.handleSubmit(onProfileSubmit)} className="space-y-6">
                      <FormField control={form.control} name="username" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-300">Iri ti mo ti lisoro (@username)</FormLabel>
+                        <FormLabel className="text-slate-300">{t('username_label')}</FormLabel>
                         <FormControl>
                             <div className="relative">
                                 <Input placeholder="mathias_oyono" {...field} className="pl-8 dark:bg-slate-800 dark:border-slate-700" />
                                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">@</span>
                             </div>
                         </FormControl>
-                        <FormDescription className="text-slate-500 text-xs">C'est le seul nom que les autres étudiants verront.</FormDescription>
+                        <FormDescription className="text-slate-500 text-xs">{t('username_desc')}</FormDescription>
                         {isCheckingUsername ? (
-                            <p className="text-xs text-slate-400 flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin"/> Vérification...</p>
+                            <p className="text-xs text-slate-400 flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin"/> {t('checking_availability')}</p>
                         ) : usernameAvailable === true ? (
-                             <p className="text-xs text-green-400 flex items-center gap-1.5"><CheckCircle className="h-3 w-3"/> Disponible</p>
+                             <p className="text-xs text-green-400 flex items-center gap-1.5"><CheckCircle className="h-3 w-3"/> {t('username_available')}</p>
                         ) : usernameAvailable === false ? (
-                            <p className="text-xs text-red-400 flex items-center gap-1.5"><AlertTriangle className="h-3 w-3"/> Déjà pris</p>
+                            <p className="text-xs text-red-400 flex items-center gap-1.5"><AlertTriangle className="h-3 w-3"/> {t('username_taken')}</p>
                         ) : null}
                         <FormMessage />
                       </FormItem>
@@ -295,9 +297,9 @@ export default function AccountPage() {
                     
                      <FormField control={form.control} name="interestDomain" render={({ field }) => (
                          <FormItem>
-                            <FormLabel className="text-slate-300">Votre domaine d'intérêt</FormLabel>
+                            <FormLabel className="text-slate-300">{t('interest_domain_label')}</FormLabel>
                             <select {...field} className="w-full h-10 px-3 rounded-md border border-slate-700 bg-slate-800 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                                <option value="" disabled>Sélectionnez votre filière...</option>
+                                <option value="" disabled>{t('interest_domain_placeholder')}</option>
                                 {domains.map(d => <option key={d} value={d}>{d}</option>)}
                             </select>
                             <FormMessage />
@@ -306,17 +308,17 @@ export default function AccountPage() {
                     
                     <FormField control={form.control} name="bio" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-slate-300">Tënë na ndö ti mo (Bio)</FormLabel>
-                        <FormControl><Textarea placeholder="Passionné par la technologie et l'éducation..." {...field} rows={3} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
+                        <FormLabel className="text-slate-300">{t('bio_label')}</FormLabel>
+                        <FormControl><Textarea placeholder={t('bio_placeholder')} {...field} rows={3} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )} />
 
                     <div className="border-t border-slate-700 pt-6">
-                        <h4 className="font-semibold mb-4 text-slate-200">Informations Privées</h4>
+                        <h4 className="font-semibold mb-4 text-slate-200">{t('private_info_title')}</h4>
                         <FormField control={form.control} name="fullName" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300">{t('full_name')}</FormLabel>
+                            <FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel>
                             <FormControl><Input {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
                             <FormMessage />
                           </FormItem>
@@ -325,7 +327,7 @@ export default function AccountPage() {
 
                     <Button type="submit" className="w-full h-11" disabled={isSaving || isUploading || usernameAvailable === false}>
                       {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      Bata ni (Sauvegarder)
+                      {t('save_button_alt')}
                     </Button>
                   </form>
                 </Form>
@@ -336,7 +338,7 @@ export default function AccountPage() {
             <div className="space-y-8">
                 <Card className="glassmorphism-card">
                     <CardHeader>
-                        <CardTitle className="text-xl text-white">Progression de votre Profil</CardTitle>
+                        <CardTitle className="text-xl text-white">{t('profile_progress_title')}</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Progress value={profileProgress} />
@@ -344,12 +346,12 @@ export default function AccountPage() {
                             {profileProgress < 100 ? (
                                  <div className="flex items-center justify-center gap-2 text-orange-400 font-semibold">
                                     <Lock className="h-4 w-4"/>
-                                    <span>Messagerie & Annuaire verrouillés</span>
+                                    <span>{t('messaging_locked')}</span>
                                 </div>
                             ) : (
                                 <div className="flex items-center justify-center gap-2 text-green-400 font-semibold">
                                     <CheckCircle className="h-4 w-4"/>
-                                    <span>Profil complet ! Accès débloqué.</span>
+                                    <span>{t('profile_complete_access_unlocked')}</span>
                                 </div>
                             )}
                         </div>
@@ -358,7 +360,7 @@ export default function AccountPage() {
 
                 <Card className="glassmorphism-card">
                     <CardHeader>
-                        <CardTitle className="text-xl text-white">Vos Statistiques</CardTitle>
+                        <CardTitle className="text-xl text-white">{t('your_stats_title')}</CardTitle>
                     </CardHeader>
                     <CardContent className="grid grid-cols-2 gap-4">
                          <StatCard title={t('enrolled_courses')} icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
@@ -372,3 +374,5 @@ export default function AccountPage() {
     </>
   );
 }
+
+    

@@ -50,7 +50,7 @@ export function UserNav({ className }: { className?: string }) {
                     <span className="text-sm font-semibold text-white truncate">@{formaAfriqueUser.username}</span>
                     {!formaAfriqueUser.isProfileComplete && (
                         <span className="text-xs text-amber-400 font-semibold flex items-center gap-1">
-                           <BadgeAlert className="h-3 w-3"/> Incomplet
+                           <BadgeAlert className="h-3 w-3"/> {t('profile_incomplete')}
                         </span>
                     )}
                 </div>

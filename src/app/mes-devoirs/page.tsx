@@ -39,13 +39,13 @@ interface StudentAssignment {
 const getStatusInfo = (status: StudentAssignment['status'], t: (key: string) => string) => {
     switch (status) {
         case 'pending':
-            return { text: t('todo'), icon: <Edit className="h-4 w-4" />, color: 'text-blue-600' };
+            return { text: t('assignment_status_pending'), icon: <Edit className="h-4 w-4" />, color: 'text-blue-600' };
         case 'submitted':
-            return { text: t('in_progress'), icon: <Clock className="h-4 w-4" />, color: 'text-orange-500' };
+            return { text: t('assignment_status_submitted'), icon: <Clock className="h-4 w-4" />, color: 'text-orange-500' };
         case 'graded':
-            return { text: t('graded'), icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-600' };
+            return { text: t('assignment_status_graded'), icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-600' };
         default:
-            return { text: 'Indéfini', icon: <ClipboardList className="h-4 w-4" />, color: 'text-gray-500' };
+            return { text: t('assignment_status_unknown'), icon: <ClipboardList className="h-4 w-4" />, color: 'text-gray-500' };
     }
 };
 
@@ -67,13 +67,13 @@ function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssig
         </div>
         {assignment.dueDate && (
             <p className={cn("text-xs", isOverdue && assignment.status === 'pending' ? "text-red-600 font-bold" : "text-slate-500")}>
-                Date limite : {format(assignment.dueDate, 'dd MMMM yyyy', { locale: fr })}
+                {t('due_date_on', { date: format(assignment.dueDate, 'dd MMMM yyyy', { locale: fr }) })}
             </p>
         )}
       </CardContent>
        <CardFooter>
         <Button onClick={() => onOpenSubmit(assignment)} size="sm" className="w-full">
-            {assignment.status === 'pending' ? t('openAndSubmit') : t('viewAssignment')}
+            {assignment.status === 'pending' ? t('open_and_submit') : t('view_assignment')}
         </Button>
       </CardFooter>
     </Card>
@@ -117,7 +117,7 @@ const SubmissionModal = ({
     
     const handleSubmit = async () => {
         if (!file || !user || !assignment) {
-            toast({ variant: 'destructive', title: 'Fichier manquant', description: 'Veuillez sélectionner un fichier.'});
+            toast({ variant: 'destructive', title: t('missing_file_title'), description: t('missing_file_desc')});
             return;
         }
 
@@ -131,7 +131,7 @@ const SubmissionModal = ({
             },
             (error) => {
                 console.error("Upload error:", error);
-                toast({ variant: 'destructive', title: 'Erreur d\'envoi', description: 'Impossible de téléverser le fichier.'});
+                toast({ variant: 'destructive', title: t('error_upload_title'), description: t('upload_error_desc')});
                 setUploadProgress(null);
             },
             async () => {
@@ -148,7 +148,7 @@ const SubmissionModal = ({
                 
                 await setDoc(submissionRef, newSubmissionData, { merge: true });
 
-                toast({ title: 'Devoir envoyé avec succès !' });
+                toast({ title: t('assignment_sent_title') });
                 onSubmissionSuccess(assignment.assignmentId, { id: submissionId, ...newSubmissionData, submittedAt: new Date() } as Submission);
                 onClose();
             }
@@ -164,7 +164,7 @@ const SubmissionModal = ({
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <h4 className="font-semibold">{t('instructions')}</h4>
-                    <p className="text-sm text-muted-foreground">{assignment.description || 'Aucune instruction supplémentaire.'}</p>
+                    <p className="text-sm text-muted-foreground">{assignment.description || t('no_instructions')}</p>
                     
                     <div className="border-t pt-4">
                         <h4 className="font-semibold mb-2">{t('yourWork')}</h4>
@@ -203,7 +203,7 @@ const SubmissionModal = ({
                     </div>
                 </div>
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>{t('close')}</Button>
+                    <Button variant="outline" onClick={onClose}>{t('close_button')}</Button>
                     {assignment.status === 'pending' && (
                         <Button onClick={handleSubmit} disabled={!file || uploadProgress !== null}>
                             {uploadProgress !== null ? t('sending') : t('submit')}
@@ -369,3 +369,5 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
         </div>
     );
 }
+
+    

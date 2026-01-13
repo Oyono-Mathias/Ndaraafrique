@@ -64,10 +64,8 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
 
 
 export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
-  const { switchRole } = useRole();
   const { t } = useTranslation();
   const db = getFirestore();
-  const router = useRouter();
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, textKey: "navDashboard" },
@@ -104,21 +102,11 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   );
   const { data: pendingPayouts } = useCollection(pendingPayoutsQuery);
 
-  const handleSwitchToInstructor = () => {
-    switchRole('instructor');
-    router.push('/dashboard');
-  }
-
-  const handleSwitchToStudent = () => {
-    switchRole('student');
-    router.push('/dashboard');
-  }
-  
   const counts = {
       pendingInstructors: pendingInstructors?.length || 0,
       pendingCourses: pendingCourses?.length || 0,
       pendingPayouts: pendingPayouts?.length || 0,
-  }
+  };
 
   return (
     <>
@@ -135,3 +123,5 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     </>
   );
 }
+
+    
