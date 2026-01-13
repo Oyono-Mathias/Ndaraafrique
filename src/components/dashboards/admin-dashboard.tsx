@@ -2,6 +2,7 @@ import React from 'react';
 import { Users, DollarSign, BookOpen, MessageSquare, TrendingUp } from 'lucide-react';
 
 const AdminDashboard = () => {
+  // Données fictives pour le design (à lier à Firebase plus tard)
   const stats = [
     { title: "Étudiants total", value: "7", trend: "+12%", icon: Users, color: "text-blue-500" },
     { title: "Revenu mensuel", value: "0 XOF", trend: "+0%", icon: DollarSign, color: "text-emerald-500" },
@@ -12,11 +13,7 @@ const AdminDashboard = () => {
   return (
     <div className="p-4 sm:p-6 md:p-8 space-y-6 md:space-y-10 bg-[#020617] min-h-screen text-white">
       
-      {/* 1. GRILLE DE STATISTIQUES - RESPONSIVE 
-          grid-cols-1 (mobile) 
-          sm:grid-cols-2 (tablette) 
-          lg:grid-cols-4 (ordinateur) 
-      */}
+      {/* 1. GRILLE DE STATISTIQUES - RESPONSIVE */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {stats.map((stat, i) => (
           <div key={i} className="bg-white/5 border border-white/10 p-5 md:p-6 rounded-2xl backdrop-blur-md hover:border-blue-500/30 transition-all">
@@ -38,9 +35,7 @@ const AdminDashboard = () => {
         ))}
       </div>
 
-      {/* 2. GRAPHIQUE ET ACTIVITÉ - RESPONSIVE
-          S'empile sur mobile, côte à côte sur grand écran (xl:grid-cols-3)
-      */}
+      {/* 2. GRAPHIQUE ET ACTIVITÉ - RESPONSIVE */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 md:gap-8">
         
         {/* Section Graphique */}
