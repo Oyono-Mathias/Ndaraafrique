@@ -78,10 +78,9 @@ service cloud.firestore {
     // --- Course Collection Rules ---
     match /courses/{courseId} {
       allow get: if true;
-      allow list: if isAdmin(); // SECURED: Only admins can list all courses
-      allow create: if isApprovedInstructor();
+      allow list: if isAdmin();
       
-      // Admins can update anything. Instructors can only update their own course if it's a draft.
+      allow create: if isApprovedInstructor();
       allow update: if isAdmin() || (isCourseOwner(courseId) && resource.data.status == 'Draft');
 
       match /sections/{sectionId} {
@@ -131,11 +130,9 @@ service cloud.firestore {
       allow list: if isSignedIn() && request.query.keys().hasAny(['courseId', 'instructorId']);
     }
 
+    // --- Règles pour 'payments' (SECURED) ---
     match /payments/{paymentId} {
-        allow get: if isAdmin() || isOwner(resource.data.userId);
-        allow list: if isAdmin();
-        allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-        allow update, delete: if isAdmin();
+        allow read, list, create, update, delete: if isAdmin();
     }
     
     match /payouts/{payoutId} {
