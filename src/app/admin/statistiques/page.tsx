@@ -5,10 +5,10 @@ import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer } from 'recharts';
+import { AreaChart, CartesianGrid, XAxis, YAxis, Area, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
@@ -22,22 +22,22 @@ interface RevenueDataPoint {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("border-t-4 bg-slate-800/50 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10", accentColor)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+    <div className={cn("bg-slate-900/50 border border-slate-800/80 p-6 rounded-2xl backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10 group", accentColor)}>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-0">
             <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+            <Icon className="h-5 w-5 text-slate-500" />
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
             {isLoading ? (
-                <Skeleton className="h-8 w-3/4 bg-slate-700" />
+                <Skeleton className="h-10 w-3/4 mt-2 bg-slate-700" />
             ) : (
                 <>
-                    <div className="text-2xl font-bold text-white">{value}</div>
-                    {change && <p className="text-xs text-muted-foreground dark:text-slate-500">{change}</p>}
+                    <div className="text-3xl font-bold text-white mt-1">{value}</div>
+                    {change && <p className="text-xs text-muted-foreground pt-1">{change}</p>}
                 </>
             )}
         </CardContent>
-    </Card>
+    </div>
 );
 
 
@@ -143,61 +143,94 @@ export default function AdminStatisticsPage() {
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <StatCard title={t('total_students')} value={stats.userCount.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} accentColor="border-blue-500" />
-                <StatCard title={t('monthly_revenue')} value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} accentColor="border-green-500" />
-                <StatCard title={t('active_courses')} value={stats.courseCount.toLocaleString('fr-FR')} icon={BookOpen} isLoading={isLoading} accentColor="border-purple-500" />
+                <StatCard title={t('total_students')} value={stats.userCount.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} />
+                <StatCard title={t('monthly_revenue')} value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+                <StatCard title={t('active_courses')} value={stats.courseCount.toLocaleString('fr-FR')} icon={BookOpen} isLoading={isLoading} />
             </section>
 
-            <section className="grid lg:grid-cols-3 gap-6">
+            <section className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_trend')}</h2>
-                    <Card className="dark:bg-[#1e293b] dark:border-slate-700">
-                        <CardContent className="pt-6">
-                            {isLoading ? <Skeleton className="h-72 w-full dark:bg-slate-700" /> : (
-                                <ChartContainer config={chartConfig} className="h-72 w-full">
-                                    <ResponsiveContainer>
-                                        <BarChart data={revenueTrendData}>
-                                            <CartesianGrid vertical={false} className="dark:stroke-slate-700" />
-                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400" />
-                                            <ChartTooltip content={<ChartTooltipContent formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`} className="dark:bg-slate-900 dark:border-slate-700" />} />
-                                            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            )}
-                        </CardContent>
-                    </Card>
+                     <h2 className="text-2xl font-bold text-white mb-4">Évolution des revenus</h2>
+                     <div className="h-[450px] bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
+                        {isLoading ? <Skeleton className="h-full w-full bg-slate-800" /> : (
+                            <ChartContainer config={chartConfig} className="w-full h-full">
+                                <AreaChart
+                                    accessibilityLayer
+                                    data={revenueTrendData}
+                                    margin={{ left: 12, right: 12, top: 10, bottom: 10 }}
+                                >
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-700/60" />
+                                    <XAxis
+                                        dataKey="month"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) => value.slice(0, 3)}
+                                        className="fill-slate-500 text-xs"
+                                    />
+                                    <YAxis 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        tickMargin={8} 
+                                        tickFormatter={(value) => `${Number(value) / 1000}k`}
+                                        className="fill-slate-500 text-xs"
+                                    />
+                                    <Tooltip
+                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                        content={<ChartTooltipContent 
+                                            formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                            className="bg-slate-900/80 backdrop-blur-sm border-slate-700 text-white" 
+                                        />}
+                                    />
+                                    <defs>
+                                        <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
+                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                                        </linearGradient>
+                                    </defs>
+                                    <Area
+                                        dataKey="revenue"
+                                        type="natural"
+                                        fill="url(#fillRevenue)"
+                                        stroke="hsl(var(--primary))"
+                                        stackId="a"
+                                    />
+                                </AreaChart>
+                            </ChartContainer>
+                        )}
+                    </div>
                 </div>
-                <div>
-                     <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('top_courses')}</h2>
-                      <Card className="dark:bg-[#1e293b] dark:border-slate-700">
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="dark:border-slate-700">
-                                        <TableHead className="dark:text-slate-400">Cours</TableHead>
-                                        <TableHead className="text-right dark:text-slate-400">Inscriptions</TableHead>
+                <div className="space-y-6">
+                     <h2 className="text-2xl font-bold text-white mb-4">Top des cours</h2>
+                      <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-b-slate-800">
+                                    <TableHead className="w-12 text-slate-400">Rang</TableHead>
+                                    <TableHead className="text-slate-400">Titre du cours</TableHead>
+                                    <TableHead className="text-right text-slate-400">Ventes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? [...Array(5)].map((_, i) => (
+                                    <TableRow key={i} className="border-0">
+                                        <TableCell><Skeleton className="h-5 w-5 rounded-full bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-full bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-10 bg-slate-700" /></TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? [...Array(5)].map((_, i) => (
-                                        <TableRow key={i} className="dark:border-slate-700">
-                                            <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-10 dark:bg-slate-700" /></TableCell>
-                                        </TableRow>
-                                    )) : topCourses.map(course => (
-                                        <TableRow key={course.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                                            <TableCell className="font-medium truncate max-w-xs dark:text-slate-200">{course.title}</TableCell>
-                                            <TableCell className="text-right font-bold dark:text-white">{course.enrollmentCount}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                      </Card>
+                                )) : topCourses.map((course, index) => (
+                                    <TableRow key={course.id} className="border-b-slate-800/50 font-medium hover:bg-slate-800/40">
+                                        <TableCell className="font-bold text-slate-500">{index + 1}</TableCell>
+                                        <TableCell className="text-slate-200">{course.title}</TableCell>
+                                        <TableCell className="text-right font-mono text-white">{course.enrollmentCount}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                      </div>
                 </div>
             </section>
         </div>
     );
 }
+
