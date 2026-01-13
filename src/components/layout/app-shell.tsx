@@ -184,7 +184,8 @@ const BottomNavBar = () => {
     }, [user, db]);
     
     const currentPath = `/${pathname.split('/')[1]}`;
-    const shouldShow = BOTTOM_NAV_ROUTES.includes(currentPath) && (role === 'student' || role === 'instructor');
+    // CORRECTED LOGIC: Only show for students.
+    const shouldShow = BOTTOM_NAV_ROUTES.includes(currentPath) && role === 'student';
 
     if (!shouldShow) {
         return null;
@@ -436,13 +437,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </aside>
               <div className={cn("flex flex-col flex-1", isChatPage && !isMobile && "overflow-hidden")}>
                  {showHeader && (
-                  <Header />
+                  <Header mobileSheet={
+                    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                      <SheetTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="shrink-0 md:hidden bg-transparent border-0"
+                        >
+                          <PanelLeft className="h-5 w-5" />
+                          <span className="sr-only">Ouvrir le menu</span>
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="flex flex-col p-0 bg-background w-full max-w-[280px]">
+                        {renderSidebar()}
+                      </SheetContent>
+                  </Sheet>
+                  }/>
                 )}
                 
                 <main className={cn("flex-1 overflow-y-auto", 
                   isChatPage && !isMobile ? "" : (role === 'instructor' || role === 'admin') ? "p-4 sm:p-6" : "p-4 sm:p-6",
                   isMobile && !showHeader ? "" : "pt-4",
-                  isMobile && !isStudentDashboard ? "pb-24" : isMobile ? "pb-0" : "",
+                  isMobile && role === 'student' ? "pb-24" : "", // Padding bottom for student on mobile
                   isStudentDashboard && "p-0"
                 )}>
                     <div className={cn(!isFullScreenPage && "w-full", isChatPage && !isMobile ? "h-full" : "")}>

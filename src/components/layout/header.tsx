@@ -157,15 +157,18 @@ const HeaderNotificationButton = () => {
   );
 };
 
-export function Header() {
+export function Header({ mobileSheet }: { mobileSheet?: React.ReactNode }) {
     const router = useRouter();
     return (
-        <div className="flex w-full items-center gap-4 ml-auto">
-            <div className="flex-1" />
-             <div className="flex items-center gap-2">
-                <LanguageSelector />
-                <HeaderNotificationButton />
-                <UserNav />
+        <div className="flex h-16 items-center gap-4 border-b bg-card/80 dark:bg-slate-900/80 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
+            {mobileSheet && <div className="md:hidden">{mobileSheet}</div>}
+            <div className="flex w-full items-center gap-4 ml-auto">
+                <div className="flex-1" />
+                <div className="flex items-center gap-2">
+                    <LanguageSelector />
+                    <HeaderNotificationButton />
+                    <UserNav />
+                </div>
             </div>
         </div>
     );
