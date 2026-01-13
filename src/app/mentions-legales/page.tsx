@@ -34,20 +34,20 @@ export default function LegalPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <Card>
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle>Mentions Légales & Politique de Confidentialité</CardTitle>
+          <CardTitle className="text-white">Mentions Légales & Politique de Confidentialité</CardTitle>
         </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
+              <Skeleton className="h-4 w-full bg-slate-700" />
+              <Skeleton className="h-4 w-full bg-slate-700" />
+              <Skeleton className="h-4 w-3/4 bg-slate-700" />
             </div>
           ) : (
             <div 
-              className="prose dark:prose-invert max-w-none" 
+              className="prose dark:prose-invert max-w-none text-slate-300" 
               dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br />') }} 
             />
           )}

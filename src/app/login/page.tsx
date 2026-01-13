@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -22,12 +21,10 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
-import { LanguageSelector } from '@/components/layout/language-selector';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
   password: z.string().min(1, { message: "Le mot de passe est requis." }),
-  rememberMe: z.boolean().default(false).optional(),
 });
 
 const registerSchema = z.object({
@@ -43,7 +40,7 @@ const PasswordInput = ({ field }: { field: any }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
       <div className="relative">
-          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 pr-10 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
+          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
           <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-400 hover:text-white" onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
           </Button>
@@ -66,9 +63,8 @@ export default function LoginPage() {
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading } = useRole();
-  const recaptchaVerifier = useRef<any>(null);
 
-  const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', rememberMe: false } });
+  const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
   
   useEffect(() => { if (!isUserLoading && user) router.push('/dashboard'); }, [user, isUserLoading, router]);
@@ -116,7 +112,7 @@ export default function LoginPage() {
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
             country: detectedCountry?.name,
             countryCode: detectedCountry?.code?.toLowerCase(),
-            preferredLanguage: i18n.language,
+            preferredLanguage: i18n.language as 'fr' | 'en' | 'sg',
         };
         await setDoc(userDocRef, finalUserData, { merge: true });
     } else {
@@ -155,18 +151,26 @@ export default function LoginPage() {
     }
     finally { setIsLoading(false); }
   };
+
+  const loginWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    setIsLoading(true);
+    try {
+      const result = await signInWithPopup(getAuth(), provider);
+      await handleAuthSuccess(result.user);
+    } catch (err) {
+      toast({ variant: 'destructive', title: "Erreur", description: "Erreur lors de la connexion avec Google." });
+    } finally {
+        setIsLoading(false);
+    }
+  };
   
   if (isUserLoading) return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   const containerStyle = loginBackground ? { backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url('${loginBackground}')` } : {};
 
-
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 auth-page-container" style={containerStyle}>
-        <div className="absolute top-4 right-4 z-10">
-          <LanguageSelector />
-        </div>
-        <div id="recaptcha-container" />
         <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-6">
                 <Link href="/" className="mb-4">
@@ -186,13 +190,20 @@ export default function LoginPage() {
                         <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                             <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
-                            <div className="flex items-center justify-between">
-                              <FormField control={loginForm.control} name="rememberMe" render={({ field }) => ( <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary" /></FormControl><FormLabel className="text-sm font-normal text-slate-400">{t('remember_me')}</FormLabel></FormItem> )} />
+                            <div className="flex items-center justify-end">
                               <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
                             <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
+                         <div className="relative my-4 text-center">
+                            <span className="absolute inset-x-0 top-1/2 h-px bg-white/10"></span>
+                            <span className="relative bg-[#161e2d] px-4 text-sm text-gray-500">OU</span>
+                        </div>
+                        <Button onClick={loginWithGoogle} variant="outline" className="w-full h-12 bg-transparent border-slate-700 text-white hover:bg-slate-800/70 hover:text-white" disabled={isLoading}>
+                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-3" />
+                            Continuer avec Google
+                        </Button>
                     </TabsContent>
 
                     <TabsContent value="register" className="mt-6">

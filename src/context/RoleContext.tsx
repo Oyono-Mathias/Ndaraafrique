@@ -58,10 +58,13 @@ export interface FormaAfriqueUser {
         submittedAt: Date;
     };
     createdAt?: Timestamp;
+    lastLogin?: Timestamp;
+    termsAcceptedAt?: Timestamp;
     country?: string;
     countryCode?: string;
     isProfileComplete?: boolean;
     preferredLanguage?: 'fr' | 'en' | 'sg';
+    badges?: string[];
 }
 
 interface RoleContextType {
