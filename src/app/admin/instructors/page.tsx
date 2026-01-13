@@ -214,9 +214,8 @@ export default function InstructorApplicationsPage() {
             await updateDoc(userRef, { isInstructorApproved: true });
             toast({ title: t('applicationApprovedTitle'), description: t('applicationApprovedMessage') });
         } else {
-            // Note: If rejecting, you might want to revert the role or handle it differently.
-            // For now, we just update the application status, but they remain a user with 'instructor' role.
-            await updateDoc(userRef, { role: 'student', isInstructorApproved: false }); // Revert role to student
+            // Revert role to student on rejection
+            await updateDoc(userRef, { role: 'student' }); 
             toast({ title: t('applicationRejectedTitle'), description: t('applicationRejectedMessage') });
         }
         // TODO: In a real app, send an email to the user with the `message` content.
