@@ -43,7 +43,11 @@ service cloud.firestore {
 
     // --- User Collection Rules ---
     match /users/{userId} {
-      allow list: if isAdmin();
+      // An admin can list users if they are querying for instructor applications.
+      allow list: if isAdmin() && (
+          request.query.where.role == 'instructor' &&
+          request.query.where.isInstructorApproved == false
+      );
       // An admin can get any user doc. A non-admin can only get their own.
       allow get: if isAdmin() || isOwner(userId);
       allow create: if isOwner(userId);
