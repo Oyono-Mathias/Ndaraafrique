@@ -23,6 +23,7 @@ import {
   import { useTranslation } from "react-i18next";
   import { LanguageSelector } from "./language-selector";
   import { cn } from "@/lib/utils";
+  import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
 
   
 export function UserNav() {
@@ -60,7 +61,10 @@ export function UserNav() {
                   <AvatarFallback className="bg-slate-600">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-semibold leading-none text-white">@{formaAfriqueUser.username}</p>
+                  <div className="flex items-center gap-2">
+                     <p className="text-sm font-semibold leading-none text-white">@{formaAfriqueUser.username}</p>
+                     <OnlineStatusIndicator />
+                  </div>
                    {!formaAfriqueUser.isProfileComplete && (
                         <span className="text-xs text-amber-400 font-semibold flex items-center gap-1">
                            <BadgeAlert className="h-3 w-3"/> {t('profile_incomplete')}
