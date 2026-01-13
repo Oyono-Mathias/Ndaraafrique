@@ -3,12 +3,42 @@
 
 import { adminDb, adminAuth } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
+import { FieldValue } from 'firebase-admin/firestore';
 
 interface NotificationPayload {
   title: string;
   body: string;
   link?: string;
 }
+
+const findUserByFCMToken = async (token: string): Promise<string | null> => {
+    const usersSnapshot = await adminDb.collection('users').where('fcmTokens', 'array-contains', token).limit(1).get();
+    if (!usersSnapshot.empty) {
+        return usersSnapshot.docs[0].id;
+    }
+    return null;
+}
+
+const cleanupInvalidTokens = async (tokensToRemove: string[]) => {
+    if (tokensToRemove.length === 0) return;
+    
+    console.log(`Cleaning up ${tokensToRemove.length} invalid tokens...`);
+    const batch = adminDb.batch();
+
+    for (const token of tokensToRemove) {
+        const userId = await findUserByFCMToken(token);
+        if (userId) {
+            const userRef = adminDb.collection('users').doc(userId);
+            batch.update(userRef, {
+                fcmTokens: FieldValue.arrayRemove(token)
+            });
+        }
+    }
+    
+    await batch.commit();
+    console.log("Token cleanup complete.");
+}
+
 
 // This function can only be called from a server environment
 export async function sendGlobalNotification(payload: NotificationPayload): Promise<{ success: boolean; message: string; }> {
@@ -23,15 +53,14 @@ export async function sendGlobalNotification(payload: NotificationPayload): Prom
     // }
 
     // 1. Get all FCM tokens from all users
-    const usersSnapshot = await adminDb.collection('users').get();
-    const tokenPromises = usersSnapshot.docs.map(userDoc => 
-        adminDb.collection('users').doc(userDoc.id).collection('fcmTokens').get()
-    );
-    
-    const allTokensSnapshots = await Promise.all(tokenPromises);
-    const allTokens = allTokensSnapshots.flatMap(snapshot => 
-        snapshot.docs.map(doc => doc.id)
-    );
+    const usersSnapshot = await adminDb.collection('users').where('fcmTokens', '!=', []).get();
+    let allTokens: string[] = [];
+    usersSnapshot.forEach(doc => {
+        const tokens = doc.data().fcmTokens;
+        if (Array.isArray(tokens)) {
+            allTokens.push(...tokens);
+        }
+    });
 
     const uniqueTokens = [...new Set(allTokens)];
 
@@ -62,21 +91,26 @@ export async function sendGlobalNotification(payload: NotificationPayload): Prom
 
     const successCount = batchResponse.successCount;
     const failureCount = batchResponse.failureCount;
-
-    console.log(`${successCount} notifications envoyées avec succès.`);
-    if (failureCount > 0) {
-        console.warn(`${failureCount} notifications ont échoué.`);
-        // Optional: Log detailed errors for debugging
-        batchResponse.responses.forEach((resp, idx) => {
-            if (!resp.success) {
-                console.error(`Token ${uniqueTokens[idx]}: ${resp.error}`);
+    
+    // 4. Cleanup invalid tokens
+    const tokensToRemove: string[] = [];
+    batchResponse.responses.forEach((resp, idx) => {
+        if (!resp.success) {
+            const errorCode = resp.error?.code;
+            // These error codes indicate that the token is no longer valid.
+            if (errorCode === 'messaging/registration-token-not-registered' || errorCode === 'messaging/invalid-registration-token') {
+                tokensToRemove.push(uniqueTokens[idx]);
+            } else {
+                 console.error(`Token ${uniqueTokens[idx]} failed:`, resp.error);
             }
-        });
-    }
+        }
+    });
+
+    await cleanupInvalidTokens(tokensToRemove);
 
     return { 
         success: true, 
-        message: `${successCount} notifications envoyées. ${failureCount} échecs.`
+        message: `${successCount} notifications envoyées. ${failureCount} échecs (${tokensToRemove.length} jetons invalides nettoyés).`
     };
 
   } catch (error: any) {

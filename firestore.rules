@@ -38,6 +38,7 @@ service cloud.firestore {
       allow create: if isOwner(userId);
       allow update: if isAdmin() || (
         isOwner(userId) && 
+        // User cannot change their own role or approval status.
         !('role' in request.resource.data) && 
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
@@ -60,7 +61,9 @@ service cloud.firestore {
         allow create: if isOwner(userId); // Users can create subscriptions for themselves
         allow update: if isAdmin(); // Only admins can update status (e.g., from a backend process)
       }
-      match /fcmTokens/{tokenId} {
+       match /fcmTokens/{tokenId} {
+        // Users can create/delete their own device tokens.
+        // No one can list them for privacy.
         allow read, delete: if isOwner(userId);
         allow create: if isOwner(userId) && tokenId == request.resource.id;
       }

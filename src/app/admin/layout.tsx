@@ -7,8 +7,10 @@ import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { getDoc, doc, getFirestore, onSnapshot } from "firebase/firestore";
+import { getDoc, doc, getFirestore, onSnapshot, updateDoc, arrayUnion } from "firebase/firestore";
 import { Header } from "@/components/layout/header";
+import { getMessaging, getToken } from 'firebase/messaging';
+import { initializeFirebase } from '@/firebase';
 
 function AdminAccessRequiredScreen() {
     const router = useRouter();
@@ -58,6 +60,33 @@ export default function AdminLayout({
       switchRole('admin');
     }
   }, [isUserLoading, formaAfriqueUser, role, switchRole, router]);
+
+   useEffect(() => {
+    const registerAdminFCMToken = async () => {
+      if (formaAfriqueUser && formaAfriqueUser.role === 'admin' && typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          const { firebaseApp } = initializeFirebase();
+          const messaging = getMessaging(firebaseApp);
+          const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+          
+          const currentToken = await getToken(messaging, { vapidKey });
+          if (currentToken) {
+            const userRef = doc(db, 'users', formaAfriqueUser.uid);
+            await updateDoc(userRef, {
+              fcmTokens: arrayUnion(currentToken)
+            });
+            console.log('Admin FCM token registered:', currentToken);
+          } else {
+            console.log('No registration token available. Request permission to generate one.');
+          }
+        } catch (err) {
+          console.error('An error occurred while retrieving token for admin. ', err);
+        }
+      }
+    };
+    registerAdminFCMToken();
+  }, [formaAfriqueUser, db]);
+
 
   if (isUserLoading || role !== 'admin' || formaAfriqueUser?.role !== 'admin') {
     return (
