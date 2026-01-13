@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -10,7 +11,8 @@ export default function ChatConversationPage() {
   const chatId = params.chatId as string;
   const isMobile = useIsMobile();
 
-  // On Desktop, the main MessagesPage handles the rendering. This page should not render anything.
+  // On Desktop, the main MessagesPage handles the rendering.
+  // We re-render the parent page to keep the URL in sync without duplicating layout logic.
   if (!isMobile) {
      return <MessagesPage />;
   }

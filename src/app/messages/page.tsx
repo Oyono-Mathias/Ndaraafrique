@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -85,7 +86,8 @@ export default function MessagesPage() {
   
   const isProfileComplete = useMemo(() => !!(formaAfriqueUser?.username && formaAfriqueUser?.careerGoals?.interestDomain), [formaAfriqueUser]);
 
-  const [activeChatId, setActiveChatId] = useState<string | null>(null);
+  const activeChatIdFromUrl = pathname.split('/messages/')[1];
+  const [activeChatId, setActiveChatId] = useState<string | null>(activeChatIdFromUrl);
 
   useEffect(() => {
     if (!user?.uid) {
@@ -250,8 +252,6 @@ export default function MessagesPage() {
     );
   }
   
-  const currentChatId = pathname.split('/').pop();
-  
   if (!isMobile) {
     return (
         <>
@@ -369,6 +369,7 @@ export default function MessagesPage() {
     );
   }
 
+  // Mobile view: Only show the list. Navigation to a chat will render ChatRoom in a separate page.
   return (
     <>
     <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
@@ -393,16 +394,14 @@ export default function MessagesPage() {
                             const otherId = chat.participants.find(p => p !== user?.uid);
                             const other = otherId ? chat.participantDetails[otherId] : null;
                             const isUnread = chat.unreadBy?.includes(user?.uid || '');
-                            const isActive = currentChatId === chat.id;
-
+                            
                             return (
                                 <Link
                                     key={chat.id}
                                     href={isProfileComplete ? `/messages/${chat.id}` : '#'}
                                     onClick={(e) => !isProfileComplete && e.preventDefault()}
                                     className={cn(
-                                        "block p-3 flex items-center gap-4 transition-all border-b dark:border-slate-800",
-                                        isActive ? "bg-primary/10 dark:bg-slate-800" : "hover:bg-slate-800/50"
+                                        "block p-3 flex items-center gap-4 transition-all border-b dark:border-slate-800 hover:bg-slate-800/50"
                                     )}
                                 >
                                     <div className="relative">
