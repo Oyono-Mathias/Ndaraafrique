@@ -43,8 +43,8 @@ export function UserNav({ className }: { className?: string }) {
         <div className={cn("p-2 rounded-lg bg-slate-800/50 flex items-center justify-between", className)}>
             <div className="flex items-center gap-2">
                 <Avatar className="h-9 w-9 border-2 border-slate-700">
-                  <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.username} />
-                  <AvatarFallback className="bg-slate-700 text-slate-300">{formaAfriqueUser.username?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.fullName} />
+                  <AvatarFallback className="bg-slate-700 text-slate-300">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col -space-y-1">
                     <span className="text-sm font-semibold text-white truncate">@{formaAfriqueUser.username}</span>
@@ -66,7 +66,7 @@ export function UserNav({ className }: { className?: string }) {
                     <DropdownMenuContent className="w-64 dark:bg-slate-800 dark:border-slate-700" align="end" forceMount>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-semibold leading-none text-white">@{formaAfriqueUser.username}</p>
+                          <p className="text-sm font-semibold leading-none text-white">{formaAfriqueUser.fullName}</p>
                           <p className="text-xs leading-none text-slate-400">
                             {formaAfriqueUser.email}
                           </p>
@@ -98,3 +98,5 @@ export function UserNav({ className }: { className?: string }) {
         </div>
     )
 }
+
+    

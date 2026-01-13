@@ -127,7 +127,7 @@ export function RegistrationForm() {
             Create an Account
           </CardTitle>
           <CardDescription className="pt-2">
-            Join FormaAfrique to start your learning journey
+            Join Ndara Afrique to start your learning journey
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -189,3 +189,5 @@ export function RegistrationForm() {
     </div>
   );
 }
+
+    

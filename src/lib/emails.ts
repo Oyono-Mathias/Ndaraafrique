@@ -17,7 +17,7 @@ const sendEmail = ({ to, subject, html }: { to: string, subject: string, html: s
 }
 
 const getStudentEmailTemplate = (studentName: string, courseName: string, courseId: string): string => {
-    const courseUrl = `https://formaafrique-app.web.app/courses/${courseId}`;
+    const courseUrl = `https://ndara-afrique.web.app/courses/${courseId}`;
     return `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 8px; overflow: hidden;">
         <div style="background-color: #020617; color: white; padding: 20px; text-align: center;">
@@ -37,7 +37,7 @@ const getStudentEmailTemplate = (studentName: string, courseName: string, course
           </p>
         </div>
         <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888;">
-          <p>&copy; ${new Date().getFullYear()} FormaAfrique. Tous droits réservés.</p>
+          <p>&copy; ${new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
         </div>
       </div>
     `;
@@ -59,7 +59,7 @@ const getInstructorEmailTemplate = (instructorName: string, studentName: string,
           <p>C'est une excellente occasion d'accueillir ce nouvel apprenant dans votre communauté.</p>
         </div>
         <div style="background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #888;">
-          <p>&copy; ${new Date().getFullYear()} FormaAfrique. Tous droits réservés.</p>
+          <p>&copy; ${new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
         </div>
       </div>
     `;
@@ -89,11 +89,11 @@ export const sendEnrollmentEmails = async (student: FormaAfriqueUser, course: Co
 };
 
 const getNewInstructorApplicationEmailTemplate = ({ applicantName, applicantEmail, specialty }: { applicantName: string; applicantEmail: string; specialty: string }): string => {
-    const adminUrl = 'https://formaafrique-app.web.app/admin/instructors';
+    const adminUrl = 'https://ndara-afrique.web.app/admin/instructors';
     return `
         <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
             <h1 style="color: #2563eb;">Nouvelle Candidature d'Instructeur</h1>
-            <p>Une nouvelle personne a postulé pour devenir instructeur sur FormaAfrique.</p>
+            <p>Une nouvelle personne a postulé pour devenir instructeur sur Ndara Afrique.</p>
             <ul>
                 <li><strong>Nom :</strong> ${applicantName}</li>
                 <li><strong>Email :</strong> ${applicantEmail}</li>
@@ -113,7 +113,9 @@ export const sendNewInstructorApplicationEmail = async ({ applicantName, applica
 
     await sendEmail({
         to: adminEmail,
-        subject: `[FormaAfrique] Nouvelle Candidature d'Instructeur : ${applicantName}`,
+        subject: `[Ndara Afrique] Nouvelle Candidature d'Instructeur : ${applicantName}`,
         html,
     });
 };
+
+    

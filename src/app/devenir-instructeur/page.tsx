@@ -124,7 +124,7 @@ export default function BecomeInstructorPage() {
     <div className="max-w-3xl mx-auto py-12 px-4">
       <Card>
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center">Devenez Formateur sur FormaAfrique</CardTitle>
+          <CardTitle className="text-3xl font-bold text-center">Devenez Formateur sur Ndara Afrique</CardTitle>
           <CardDescription className="text-center">Partagez votre expertise et générez des revenus en formant la prochaine génération de talents.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -205,3 +205,5 @@ export default function BecomeInstructorPage() {
     </div>
   );
 }
+
+    

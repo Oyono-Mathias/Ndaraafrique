@@ -66,9 +66,8 @@ export default function CreateCoursePage() {
       contentType: 'video',
       isPopular: false,
       ebookUrl: '',
-      // --- AJOUTS OBLIGATOIRES POUR ÉVITER LES CRASHS ---
-      participants: [],      // Indispensable pour "Mes Cours"
-      isPublished: false     // Indispensable pour la sécurité
+      participants: [],
+      isPublished: false
     };
 
     try {
@@ -141,3 +140,5 @@ export default function CreateCoursePage() {
     </div>
   );
 }
+
+    

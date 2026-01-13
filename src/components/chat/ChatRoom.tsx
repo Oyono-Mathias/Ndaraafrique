@@ -31,6 +31,7 @@ import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: string;
@@ -60,6 +61,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t } = useTranslation();
+  const { toast } = useToast();
 
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
@@ -318,7 +320,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        <div className="p-2 border-t bg-slate-100 dark:border-slate-800 dark:bg-slate-900/50">
+        <div className="p-2 border-t bg-slate-100 dark:border-slate-900/50">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
                 <Input
                     value={newMessage}
@@ -335,3 +337,5 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     </div>
   );
 }
+
+    

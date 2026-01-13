@@ -1,14 +1,14 @@
 
 import type { Metadata } from 'next';
 
-// Cette fonction parle directement à Google et s'exécute sur le serveur
+// This function communicates directly with Google and runs on the server.
 export async function generateMetadata({ params }: { params: { courseId: string } }): Promise<Metadata> {
-  // En l'absence d'un SDK admin initialisé, nous ne pouvons pas utiliser de fonctions client ici.
-  // Pour l'instant, on retourne des métadonnées génériques. Une implémentation future
-  // pourrait récupérer les données via une API ou le SDK admin Firebase.
+  // In the absence of an initialized admin SDK, we cannot use client functions here.
+  // For now, we return generic metadata. A future implementation
+  // could fetch data via an API or the Firebase admin SDK.
 
   return {
-    title: `Détails du Cours | FormaAfrique`,
+    title: `Détails du Cours | Ndara Afrique`,
     description: `Apprenez avec des experts. Accès immédiat et attestation de réussite.`,
   };
 }
@@ -20,3 +20,5 @@ export default function CourseDetailsLayout({
 }) {
     return <>{children}</>;
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useRouter } from 'next/navigation';
@@ -22,7 +23,7 @@ export function RoleSelector() {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md shadow-2xl">
         <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold text-primary">Welcome to FormaAfrique</CardTitle>
+          <CardTitle className="text-3xl font-bold text-primary">Welcome to Ndara Afrique</CardTitle>
           <CardDescription className="pt-2">Select a role to explore the application</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 pt-4">
@@ -54,3 +55,5 @@ export function RoleSelector() {
     </div>
   );
 }
+
+    

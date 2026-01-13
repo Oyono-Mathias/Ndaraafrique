@@ -165,3 +165,5 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     </div>
   );
 }
+
+    

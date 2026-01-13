@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -35,7 +36,7 @@ const gradeAssignmentPrompt = ai.definePrompt({
   name: 'gradeAssignmentPrompt',
   input: { schema: GradeAssignmentInputSchema },
   output: { schema: GradeAssignmentOutputSchema },
-  prompt: `You are MATHIAS, a fair and encouraging AI tutor for FormaAfrique, an online learning platform for French-speaking Africa.
+  prompt: `You are MATHIAS, a fair and encouraging AI tutor for Ndara Afrique, an online learning platform for French-speaking Africa.
   Your mission is to grade a student's assignment based STRICTLY on the instructor's provided guidelines.
 
   **Correction Rules:**
@@ -68,3 +69,5 @@ const gradeAssignmentFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    

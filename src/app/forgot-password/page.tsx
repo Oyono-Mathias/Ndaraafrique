@@ -27,7 +27,7 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
-  const [siteName, setSiteName] = useState('FormaAfrique');
+  const [siteName, setSiteName] = useState('Ndara Afrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
@@ -140,3 +140,5 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+
+    

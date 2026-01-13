@@ -1,10 +1,11 @@
+
 {
   "entities": {
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user in the FormaAfrique application.",
+      "description": "Represents a user in the Ndara Afrique application.",
       "properties": {
         "uid": {
           "type": "string",
@@ -149,7 +150,7 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Course",
       "type": "object",
-      "description": "Represents a course offered on the FormaAfrique platform.",
+      "description": "Represents a course offered on the Ndara Afrique platform.",
       "properties": {
         "courseId": {
           "type": "string",
@@ -759,3 +760,5 @@
     }
   }
 }
+
+    

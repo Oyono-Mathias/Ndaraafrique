@@ -86,7 +86,7 @@ const generatePromoCodePrompt = ai.definePrompt({
     input: { schema: GeneratePromoCodeInputSchema },
     output: { schema: GeneratePromoCodeOutputSchema },
     tools: [createPromoCode, generateAnnouncementTool],
-    prompt: `You are Mathias, an AI marketing assistant for FormaAfrique.
+    prompt: `You are Mathias, an AI marketing assistant for Ndara Afrique.
     Your task is to help an administrator with marketing tasks.
     - First, determine the user's primary intent from their prompt. Is the user asking to CREATE a promo code, or are they asking to WRITE an announcement/message?
 
@@ -119,3 +119,5 @@ export const generatePromoCode = ai.defineFlow(
         return output!;
     }
 );
+
+    

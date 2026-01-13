@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -359,7 +358,7 @@ export default function CourseDetailsClient() {
 
             const welcomeMessagePayload = {
                 senderId: 'SYSTEM',
-                text: "Bienvenue au support de FormaAfrique ! Votre question a été envoyée au formateur. Il vous répondra dans les plus brefs délais.",
+                text: "Bienvenue au support de Ndara Afrique ! Votre question a été envoyée au formateur. Il vous répondra dans les plus brefs délais.",
                 createdAt: serverTimestamp(),
             };
             
@@ -626,8 +625,8 @@ export default function CourseDetailsClient() {
     description: course.description,
     provider: {
       '@type': 'Organization',
-      name: 'FormaAfrique',
-      url: 'https://formaafrique-app.web.app',
+      name: 'Ndara Afrique',
+      url: 'https://ndara-afrique.web.app',
     },
     offers: {
       '@type': 'Offer',
@@ -691,7 +690,7 @@ export default function CourseDetailsClient() {
                 <StarRating rating={4.7} reviewCount={187212} size="sm" />
                 <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
               </div>
-              <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe FormaAfrique'}</Link></p>
+              <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe Ndara Afrique'}</Link></p>
                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
                 {(course.updatedAt || course.createdAt) && (
                   <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
@@ -718,7 +717,7 @@ export default function CourseDetailsClient() {
                       <StarRating rating={4.7} reviewCount={187212} size="sm" />
                       <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
                     </div>
-                     <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe FormaAfrique'}</Link></p>
+                     <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe Ndara Afrique'}</Link></p>
                      <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
                          {(course.updatedAt || course.createdAt) && (
                             <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
@@ -916,3 +915,5 @@ export default function CourseDetailsClient() {
     </>
   );
 }
+
+    

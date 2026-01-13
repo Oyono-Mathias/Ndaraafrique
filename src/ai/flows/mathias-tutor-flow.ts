@@ -27,7 +27,7 @@ export type MathiasTutorOutput = z.infer<typeof MathiasTutorOutputSchema>;
 const getCourseCatalog = ai.defineTool(
     {
         name: 'getCourseCatalog',
-        description: 'Get the list of available courses on the FormaAfrique platform, including their titles and prices.',
+        description: 'Get the list of available courses on the Ndara Afrique platform, including their titles and prices.',
         inputSchema: z.object({}),
         outputSchema: z.array(z.object({
             title: z.string(),
@@ -119,7 +119,7 @@ const mathiasTutorPrompt = ai.definePrompt({
   input: {schema: MathiasTutorInputSchema},
   output: {schema: MathiasTutorOutputSchema},
   tools: [getCourseCatalog, searchFaq],
-  prompt: `You are MATHIAS, an AI tutor for a platform called FormaAfrique, targeting students in French-speaking Africa.
+  prompt: `You are MATHIAS, an AI tutor for a platform called Ndara Afrique, targeting students in French-speaking Africa.
   Your role is to act as an educational tutor.
   **You must respond exclusively in French.**
 
@@ -153,3 +153,5 @@ const mathiasTutorFlow = ai.defineFlow(
     return output!;
   }
 );
+
+    

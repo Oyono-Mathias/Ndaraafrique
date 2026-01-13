@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -34,7 +33,7 @@ export default function AdminLayout({
   const { formaAfriqueUser, isUserLoading, role, switchRole } = useRole();
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [siteSettings, setSiteSettings] = useState({ siteName: 'FormaAfrique', logoUrl: '/icon.svg' });
+  const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg' });
   const db = getFirestore();
 
    useEffect(() => {
@@ -43,7 +42,7 @@ export default function AdminLayout({
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
-                siteName: settingsData.general?.siteName || 'FormaAfrique',
+                siteName: settingsData.general?.siteName || 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
             });
         }
@@ -110,3 +109,5 @@ export default function AdminLayout({
     </div>
   )
 }
+
+    

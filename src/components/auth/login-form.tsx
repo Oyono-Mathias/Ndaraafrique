@@ -127,7 +127,7 @@ export function LoginForm() {
             Content de te revoir
           </CardTitle>
           <CardDescription className="pt-2">
-            Sign in to continue to FormaAfrique
+            Sign in to continue to Ndara Afrique
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -190,3 +190,5 @@ export function LoginForm() {
     </div>
   );
 }
+
+    

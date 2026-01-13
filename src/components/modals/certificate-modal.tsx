@@ -54,7 +54,7 @@ export function CertificateModal({ isOpen, onClose, courseName, studentName, com
                     <p>{completionDate ? format(completionDate, 'dd MMMM yyyy', { locale: fr }) : 'Date inconnue'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <Image src="/icon.svg" alt="FormaAfrique Logo" width={40} height={40} />
+                    <Image src="/icon.svg" alt="Ndara Afrique Logo" width={40} height={40} />
                     <p className="font-bold text-lg">Ndara Afrique</p>
                 </div>
             </div>
@@ -64,3 +64,5 @@ export function CertificateModal({ isOpen, onClose, courseName, studentName, com
     </Dialog>
   );
 }
+
+    

@@ -47,10 +47,10 @@ export default function AdminSettingsPage() {
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
         defaultValues: {
-            siteName: 'FormaAfrique',
+            siteName: 'Ndara Afrique',
             logoUrl: '',
             loginBackgroundImage: '',
-            contactEmail: 'support@formaafrique.com',
+            contactEmail: 'support@ndara-afrique.com',
             supportPhone: '',
             platformCommission: 30,
             featuredCourseId: '',
