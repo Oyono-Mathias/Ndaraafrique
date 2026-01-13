@@ -127,6 +127,11 @@ service cloud.firestore {
         allow read, list: if true;
         allow create, update, delete: if isAdmin();
     }
+
+    // FAQS: Only admins can read or write.
+    match /faqs/{faqId} {
+      allow read, write: if isAdmin();
+    }
     
     // CHATS: Users can only access chats they are a part of.
     // Creation is only allowed between users of the same interest domain.
