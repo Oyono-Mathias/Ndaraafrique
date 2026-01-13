@@ -1,94 +1,73 @@
-import React from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import Image from 'next/image';
-import { Footer } from '@/components/layout/footer';
-import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
+'use client';
+
+import React, { useState } from 'react';
 
 const LandingPage = () => {
+  // État pour l'interactivité des étapes
+  const [activeStep, setActiveStep] = useState(1);
+
+  const steps = [
+    { id: 1, title: "Étape 1", desc: "Créez votre compte en quelques secondes." },
+    { id: 2, title: "Étape 2", desc: "Choisissez votre parcours de formation." },
+    { id: 3, title: "Étape 3", desc: "Commencez à apprendre et obtenez votre certificat." }
+  ];
+
   return (
     <div className="bg-[#020617] text-white min-h-screen font-sans">
-      {/* HEADER - Nettoyé */}
+      {/* HEADER */}
       <nav className="flex justify-between items-center p-6 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
-        <div className="text-2xl font-bold tracking-tighter">
-            <Link href="/" className="flex items-center gap-2">
-                <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
-                <span>Ndara Afrique</span>
-            </Link>
-        </div>
-        
-        <div className="flex items-center gap-6">
-          {/* Sélecteur de langue discret */}
-          <select className="bg-transparent border-none text-sm cursor-pointer focus:outline-none">
-            <option value="fr">Français</option>
-            <option value="sg">Sango</option>
-          </select>
-
-          {/* Bouton SE CONNECTER (Unique en haut) */}
-           <Link href="/login">
-            <Button variant="outline" size="sm">
-              Se connecter
-            </Button>
-          </Link>
-        </div>
+        <div className="text-2xl font-bold">Ndara Afrique</div>
+        <button className="px-5 py-2 text-sm border border-white/20 rounded-lg hover:bg-white/10 transition">
+          Se connecter
+        </button>
       </nav>
 
-      {/* SECTION HERO - Texte en Français */}
-      <main className="max-w-6xl mx-auto px-6 pt-20 pb-10 text-center">
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight hero-text">
-            Tonga na ndara
-        </h1>
-        
-        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text" style={{animationDelay: '0.2s'}}>
-          La première plateforme d'apprentissage panafricaine pour les métiers de demain.
-        </p>
+      {/* HERO SECTION */}
+      <header className="text-center pt-20 pb-10 px-6">
+        <h1 className="text-5xl font-extrabold mb-4">L'excellence numérique</h1>
+        <p className="text-gray-400 mb-8">La plateforme panafricaine pour les métiers de demain.</p>
+        <button className="px-8 py-4 bg-blue-600 rounded-full font-bold hover:scale-105 transition-transform">
+          S'inscrire maintenant
+        </button>
+      </header>
 
-        {/* Bouton INSCRIPTION (Unique au centre) */}
-        <Link href="/register">
-            <Button size="lg" className="px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
-                S'inscrire
-            </Button>
-        </Link>
-      </main>
-
-       {/* SECTION CAROUSEL */}
-       <section className="max-w-6xl mx-auto px-6 py-12">
-            <DynamicCarousel />
-       </section>
-
-      {/* SECTION : COURS PUBLICS DYNAMIQUES */}
-      <section className="py-20 max-w-6xl mx-auto px-6">
-        <div className="flex justify-between items-end mb-10">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">Cours Publics</h2>
-            <p className="text-gray-400">Découvrez nos formations accessibles à tous sans attendre.</p>
-          </div>
-          <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition whitespace-nowrap">
-            Voir tout →
-          </Link>
+      {/* --- SECTION INTERACTIVE (TES ÉTAPES) --- */}
+      <section className="py-16 px-6 max-w-4xl mx-auto">
+        <div className="flex justify-center gap-4 mb-8">
+          {steps.map((step) => (
+            <button
+              key={step.id}
+              onClick={() => setActiveStep(step.id)}
+              className={`px-6 py-3 rounded-xl border-2 transition-all duration-300 ${
+                activeStep === step.id 
+                ? "border-blue-500 bg-blue-500/20 shadow-[0_0_20px_rgba(59,130,246,0.5)]" 
+                : "border-white/10 bg-white/5 hover:border-white/30"
+              }`}
+            >
+              Setup {step.id}
+            </button>
+          ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all group">
-              <div className="h-48 bg-gradient-to-br from-blue-900/40 to-black flex items-center justify-center">
-                <span className="text-4xl">📚</span>
-              </div>
-              <div className="p-6">
-                <span className="bg-blue-600/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full uppercase">Gratuit</span>
-                <h3 className="text-xl font-semibold mt-3 mb-2 group-hover:text-blue-400 transition">Introduction à l'IA</h3>
-                <p className="text-gray-400 text-sm mb-4">Apprenez les bases de l'intelligence artificielle pour l'Afrique.</p>
-                <button className="w-full py-3 bg-white/10 hover:bg-blue-600 rounded-xl font-medium transition-colors">
-                  Consulter le cours
-                </button>
-              </div>
-            </div>
-          ))}
+        {/* AFFICHAGE DU CONTENU SELON L'ÉTAPE */}
+        <div className="bg-white/5 border border-white/10 p-8 rounded-3xl backdrop-blur-xl text-center animate-fadeIn">
+          <h3 className="text-2xl font-bold text-blue-400 mb-4">{steps[activeStep - 1].title}</h3>
+          <p className="text-gray-300 text-lg">{steps[activeStep - 1].desc}</p>
         </div>
       </section>
 
-      <Footer />
+      {/* COURS PUBLICS */}
+      <section className="py-10 px-6 max-w-6xl mx-auto">
+        <h2 className="text-2xl font-bold mb-8">Nos Cours Publics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+             <div className="h-32 bg-blue-900/20 rounded-lg mb-4"></div>
+             <h4 className="font-bold">Développement Web</h4>
+             <p className="text-sm text-gray-400">Apprenez HTML, CSS et JS.</p>
+          </div>
+          {/* Ajoute d'autres cartes ici */}
+        </div>
+      </section>
     </div>
   );
 };
