@@ -22,7 +22,7 @@ const LandingPage = () => {
   const db = getFirestore();
 
   useEffect(() => {
-    const q = query(collection(db, "courses"));
+    const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"), limit(3));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
       setCourses(coursesData);
@@ -70,7 +70,7 @@ const LandingPage = () => {
           <span className="text-blue-500">pour l'Afrique</span>
         </h1>
         <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text" style={{ animationDelay: '0.2s' }}>
-          Rejoignez la première plateforme panafricaine dédiée aux métiers de demain. Apprenez, pratiquez et certifiez vos compétences.
+          La première plateforme d'apprentissage panafricaine pour les métiers de demain.
         </p>
         <Button asChild size="lg" className="px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
            <Link href="/register">Commencer l'inscription</Link>
@@ -98,10 +98,10 @@ const LandingPage = () => {
       <section className="py-20 max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-end mb-10">
             <div>
-                <h2 className="text-3xl font-bold mb-2">Nos Formations Vedettes</h2>
+                <h2 className="text-3xl font-bold mb-2">Explorez nos formations</h2>
                 <p className="text-gray-400">Découvrez un aperçu de nos formations les plus populaires.</p>
             </div>
-            <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition">
+            <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition whitespace-nowrap">
                 Voir tout →
             </Link>
         </div>
@@ -111,30 +111,12 @@ const LandingPage = () => {
                     <div key={i} className="benefit-card"><Skeleton className="h-full w-full bg-slate-800" /></div>
                 ))
             ) : courses.length > 0 ? courses.map(course => (
-              <div key={course.id} className="bg-white/5 border border-white/10 rounded-2xl p-6">
-                {/* On utilise la catégorie comme badge */}
-                <span className="text-blue-400 text-xs font-bold uppercase">{course.category}</span>
-                
-                {/* On affiche le titre s'il existe, sinon la catégorie */}
-                <h4 className="font-bold text-xl mt-2 mb-3">
-                  {course.title || "Formation Ndara"} 
-                </h4>
-                
-                {/* On affiche ta description Firestore (tronquée pour rester propre) */}
-                <p className="text-gray-400 text-sm line-clamp-3">
-                  {course.description}
-                </p>
-                
-                <button className="w-full mt-6 py-2 bg-blue-600 rounded-lg font-medium hover:bg-blue-700 transition">
-                  Voir le cours
-                </button>
-              </div>
+              <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
             )) : (
-              <div className="col-span-3">
+                <div className="col-span-3">
                     <div className="text-center py-10 px-4 border-2 border-dashed border-slate-700 rounded-xl bg-slate-900/20">
                         <Frown className="mx-auto h-10 w-10 text-slate-500" />
                         <h3 className="mt-2 text-md font-semibold text-slate-300">Nos formations arrivent bientôt.</h3>
-                        <p className="text-sm text-slate-500">Revenez plus tard pour découvrir notre catalogue.</p>
                     </div>
                 </div>
             )}
