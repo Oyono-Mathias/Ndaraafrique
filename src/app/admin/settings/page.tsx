@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -6,13 +5,16 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useDoc, useMemoFirebase } from '@/firebase';
+import Image from 'next/image';
+
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, FileText, Percent, Building } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -39,7 +41,10 @@ export default function AdminSettingsPage() {
     const { t } = useTranslation();
     const { toast } = useToast();
     const db = getFirestore();
+    const storage = getStorage();
     const [isSaving, setIsSaving] = useState(false);
+    const [logoFile, setLogoFile] = useState<File | null>(null);
+    const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
     const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
     const { data: currentSettings, isLoading } = useDoc(settingsRef);
@@ -65,30 +70,50 @@ export default function AdminSettingsPage() {
     useEffect(() => {
         if (currentSettings) {
             const settingsData = {
-                siteName: currentSettings.general?.siteName,
-                logoUrl: currentSettings.general?.logoUrl,
-                loginBackgroundImage: currentSettings.general?.loginBackgroundImage,
-                contactEmail: currentSettings.general?.contactEmail,
-                supportPhone: currentSettings.general?.supportPhone,
+                siteName: currentSettings.general?.siteName || '',
+                logoUrl: currentSettings.general?.logoUrl || '',
+                loginBackgroundImage: currentSettings.general?.loginBackgroundImage || '',
+                contactEmail: currentSettings.general?.contactEmail || '',
+                supportPhone: currentSettings.general?.supportPhone || '',
                 platformCommission: currentSettings.commercial?.platformCommission,
-                featuredCourseId: currentSettings.commercial?.featuredCourseId,
-                announcementMessage: currentSettings.platform?.announcementMessage,
-                maintenanceMode: currentSettings.platform?.maintenanceMode,
-                allowInstructorSignup: currentSettings.platform?.allowInstructorSignup,
-                termsOfService: currentSettings.legal?.termsOfService,
-                privacyPolicy: currentSettings.legal?.privacyPolicy,
-            }
+                featuredCourseId: currentSettings.commercial?.featuredCourseId || '',
+                announcementMessage: currentSettings.platform?.announcementMessage || '',
+                maintenanceMode: currentSettings.platform?.maintenanceMode || false,
+                allowInstructorSignup: currentSettings.platform?.allowInstructorSignup ?? true,
+                termsOfService: currentSettings.legal?.termsOfService || '',
+                privacyPolicy: currentSettings.legal?.privacyPolicy || '',
+            };
             form.reset(settingsData);
+            if (settingsData.logoUrl) {
+                setLogoPreview(settingsData.logoUrl);
+            }
         }
     }, [currentSettings, form]);
+    
+    const handleLogoFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            setLogoFile(file);
+            setLogoPreview(URL.createObjectURL(file));
+        }
+    };
 
     const onSubmit = async (data: SettingsFormValues) => {
         setIsSaving(true);
+        let finalLogoUrl = form.getValues('logoUrl') || '';
+
         try {
+            if (logoFile) {
+                const filePath = `logos/site_logo_${Date.now()}`;
+                const storageRef = ref(storage, filePath);
+                const uploadResult = await uploadBytes(storageRef, logoFile);
+                finalLogoUrl = await getDownloadURL(uploadResult.ref);
+            }
+
             const settingsPayload = {
                 general: {
                     siteName: data.siteName,
-                    logoUrl: data.logoUrl,
+                    logoUrl: finalLogoUrl,
                     loginBackgroundImage: data.loginBackgroundImage,
                     contactEmail: data.contactEmail,
                     supportPhone: data.supportPhone,
@@ -146,7 +171,27 @@ export default function AdminSettingsPage() {
                            </CardHeader>
                            <CardContent className="space-y-4">
                                 <FormField control={form.control} name="siteName" render={({ field }) => ( <FormItem><FormLabel className="tv:text-lg">{t('site_name')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl><FormMessage /></FormItem> )} />
-                                <FormField control={form.control} name="logoUrl" render={({ field }) => ( <FormItem><FormLabel className="tv:text-lg">{t('logo_url')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl><FormMessage /></FormItem> )} />
+                                
+                                <FormItem>
+                                    <FormLabel className="tv:text-lg">{t('logo_url')}</FormLabel>
+                                    <div className="flex items-center gap-4">
+                                        <label htmlFor="logo-upload" className="cursor-pointer">
+                                            <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all relative overflow-hidden bg-slate-900">
+                                                {logoPreview ? (
+                                                    <Image src={logoPreview} alt="Aperçu du logo" fill className="object-contain p-2"/>
+                                                ) : (
+                                                    <ImageIcon className="h-8 w-8"/>
+                                                )}
+                                            </div>
+                                        </label>
+                                        <Input id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml" onChange={handleLogoFileSelect} />
+                                        <div className="w-full">
+                                            <p className="text-xs text-slate-400 mb-2">Cliquez sur l'icône pour importer un nouveau logo. L'URL sera générée automatiquement.</p>
+                                            <Input readOnly value={form.getValues('logoUrl') || 'Aucun logo défini'} className="dark:bg-slate-700 dark:border-slate-600 text-slate-400" />
+                                        </div>
+                                    </div>
+                                </FormItem>
+
                                 <FormField control={form.control} name="loginBackgroundImage" render={({ field }) => ( <FormItem><FormLabel className="tv:text-lg">{t('bg_image_url')}</FormLabel><FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary"/></FormControl><FormMessage /></FormItem> )} />
                                 <FormField control={form.control} name="contactEmail" render={({ field }) => ( <FormItem><FormLabel className="tv:text-lg">{t('contact_email')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary"/></FormControl><FormMessage /></FormItem> )} />
                                 <FormField control={form.control} name="supportPhone" render={({ field }) => ( <FormItem><FormLabel className="tv:text-lg">{t('support_phone')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary"/></FormControl><FormMessage /></FormItem> )} />
@@ -211,5 +256,3 @@ export default function AdminSettingsPage() {
         </Form>
     );
 }
-
-    

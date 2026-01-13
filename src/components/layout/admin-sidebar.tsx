@@ -109,19 +109,28 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   };
 
   return (
-    <>
-      {adminMenu.map((item) => (
-        <SidebarItem 
-            key={item.href} 
-            href={item.href} 
-            icon={item.icon} 
-            label={t(item.textKey)}
-            count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
-            onClick={onLinkClick}
-        />
-      ))}
-    </>
+    <div className="flex flex-col h-full bg-[#111827] border-r border-slate-700">
+      <header className="p-4 border-b border-slate-700 flex items-center gap-2">
+        <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
+        <span className="font-bold text-lg text-white">
+          {siteName}
+        </span>
+      </header>
+      <nav className="flex-1 py-4 overflow-y-auto">
+        {adminMenu.map((item) => (
+          <SidebarItem 
+              key={item.href} 
+              href={item.href} 
+              icon={item.icon} 
+              label={t(item.textKey)}
+              count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
+              onClick={onLinkClick}
+          />
+        ))}
+      </nav>
+       <footer className="p-4 mt-auto border-t border-slate-700 space-y-2">
+            <UserNav />
+       </footer>
+    </div>
   );
 }
-
-    
