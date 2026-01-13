@@ -1,3 +1,22 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "devweb",
+      "description": "Introduction au Développement Web",
+      "imageUrl": "https://images.unsplash.com/photo-1608742213509-815b97c30b36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2RlJTIwc2NyZWVufGVufDB8fHx8MTc2ODE5MTYxNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "code screen"
+    },
+    {
+      "id": "marketing",
+      "description": "Les Fondamentaux du Marketing Digital",
+      "imageUrl": "https://images.unsplash.com/photo-1722172597269-d911054badb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzb2NpYWwlMjBtZWRpYSUyMGNoYXJ0fGVufDB8fHx8MTc2ODI5MzM4Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "social media chart"
+    },
+    {
+      "id": "ai",
+      "description": "Initiation à l'Intelligence Artificielle",
+      "imageUrl": "https://images.unsplash.com/photo-1738082956254-1dd63ad1db71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMG5ldHdvcmt8ZW58MHx8fHwxNzY4MjUwMjEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "abstract network"
+    }
+  ]
 }
