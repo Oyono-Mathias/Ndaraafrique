@@ -15,10 +15,7 @@ import {
   HelpCircle,
   Settings,
   ShieldAlert,
-  LogOut,
   Sparkles,
-  LogIn,
-  Shield,
   Briefcase,
   UserCheck,
   Landmark,
@@ -32,6 +29,7 @@ import { Button } from "../ui/button";
 import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";
+import { UserNav } from "./user-nav";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
@@ -144,6 +142,9 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
       </nav>
 
       <footer className="p-4 mt-auto space-y-2 border-t border-border/10">
+        <div className="p-2 rounded-lg bg-slate-800/50">
+            <UserNav />
+        </div>
         <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToInstructor}>
             <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
             <span className="sidebar-label">{t('userRoleInstructor')}</span>
@@ -156,5 +157,3 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     </div>
   );
 }
-
-    

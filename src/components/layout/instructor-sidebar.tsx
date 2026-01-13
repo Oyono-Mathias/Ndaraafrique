@@ -22,15 +22,10 @@ import {
   Settings,
   LogIn,
   Shield,
-  LogOut,
-  User as UserIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { getAuth, signOut } from "firebase/auth";
 import { cn } from "@/lib/utils";
-import { I18nProvider } from '@/context/I18nProvider';
 import { UserNav } from "./user-nav";
-import { LanguageSelector } from "./language-selector";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 
@@ -85,7 +80,6 @@ const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { h
 export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, formaAfriqueUser, availableRoles } = useRole();
-  const { toast } = useToast();
   const { t } = useTranslation();
   const isAdmin = availableRoles.includes('admin');
 
@@ -125,24 +119,13 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   }
 
   return (
-    <div className="w-full h-full bg-[#0f172a] border-r border-slate-700/50 flex flex-col shadow-sm">
+    <div className="w-full h-full bg-[#111827] border-r border-slate-700/50 flex flex-col shadow-sm">
       <header className="p-4 border-b border-slate-700/50 flex items-center gap-2">
         <Image src={logoUrl || "/icon.svg"} width={28} height={28} alt={`${siteName} Logo`} className="rounded-full" />
         <span className="font-bold text-lg text-white">
           Ndara Afrique
         </span>
       </header>
-
-      <div className="p-4 space-y-2 border-b border-slate-700/50">
-          <Avatar className="h-16 w-16 mx-auto border-2 border-primary/50">
-              <AvatarImage src={formaAfriqueUser?.profilePictureURL} />
-              <AvatarFallback>{formaAfriqueUser?.fullName?.charAt(0)}</AvatarFallback>
-          </Avatar>
-          <div className="text-center">
-              <p className="font-bold text-white">{formaAfriqueUser?.fullName}</p>
-              <p className="text-xs text-slate-400">{t('userRoleInstructor')}</p>
-          </div>
-      </div>
 
       <nav className="flex-1 py-2 overflow-y-auto">
         {instructorMenu.map((group) => (
@@ -162,7 +145,9 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
       </nav>
 
       <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
-         <SidebarItem href="/account" icon={Settings} sangoLabel={t('sango_settings')} frenchLabel={t('navSettings')} onClick={onLinkClick} />
+        <div className="p-2 rounded-lg bg-slate-800/50">
+            <UserNav />
+        </div>
         <Button
           variant="outline"
           className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 text-white"
@@ -181,5 +166,3 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     </div>
   );
 }
-
-    

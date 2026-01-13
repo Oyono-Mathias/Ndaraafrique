@@ -19,11 +19,13 @@ import {
   import { useRole } from "@/context/RoleContext"
   import { getAuth, signOut } from "firebase/auth";
   import { useRouter } from "next/navigation";
-  import { LogOut, User as UserIcon } from 'lucide-react';
+  import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard } from 'lucide-react';
   import { useTranslation } from "react-i18next";
+  import { LanguageSelector } from "./language-selector";
+  import { cn } from "@/lib/utils";
 
   
-export function UserNav() {
+export function UserNav({ className }: { className?: string }) {
     const { t } = useTranslation();
     const { formaAfriqueUser, isUserLoading } = useRole();
     const router = useRouter();
@@ -38,39 +40,48 @@ export function UserNav() {
     }
     
     return (
-        <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-9 w-9 rounded-full">
-            <Avatar className="h-9 w-9">
-              <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.fullName} />
-              <AvatarFallback>{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
-            </Avatar>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-56" align="end" forceMount>
-          <DropdownMenuLabel className="font-normal">
-            <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{formaAfriqueUser.fullName}</p>
-              <p className="text-xs leading-none text-muted-foreground">
-                {formaAfriqueUser.email}
-              </p>
-            </div>
-          </DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => router.push('/account')}>
-              <UserIcon className="mr-2 h-4 w-4" />
-              <span>{t('navProfile')}</span>
-            </DropdownMenuItem>
-          </DropdownMenuGroup>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>{t('Déconnexion')}</span>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+        <div className={cn("flex items-center gap-2", className)}>
+            <LanguageSelector />
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                    <Avatar className="h-9 w-9 border-2 border-slate-700">
+                      <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.username} />
+                      <AvatarFallback className="bg-slate-700 text-slate-300">{formaAfriqueUser.username?.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-64 dark:bg-slate-800 dark:border-slate-700" align="end" forceMount>
+                  <DropdownMenuLabel className="font-normal">
+                    <div className="flex flex-col space-y-1">
+                      <p className="text-sm font-semibold leading-none text-white">@{formaAfriqueUser.username}</p>
+                      <p className="text-xs leading-none text-slate-400">
+                        {formaAfriqueUser.email}
+                      </p>
+                    </div>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="dark:bg-slate-700" />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer dark:focus:bg-slate-700">
+                      <UserIcon className="mr-2 h-4 w-4" />
+                      <span>{t('navAccount')}</span>
+                    </DropdownMenuItem>
+                     <DropdownMenuItem onClick={() => router.push('/paiements')} className="cursor-pointer dark:focus:bg-slate-700">
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      <span>{t('payments')}</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/questions-reponses')} className="cursor-pointer dark:focus:bg-slate-700">
+                      <LifeBuoy className="mr-2 h-4 w-4" />
+                      <span>{t('support')}</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                  <DropdownMenuSeparator className="dark:bg-slate-700"/>
+                  <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 dark:focus:bg-red-500/10 dark:focus:text-red-400">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{t('logout')}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+        </div>
     )
 }
-
-    

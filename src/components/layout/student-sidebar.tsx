@@ -12,30 +12,26 @@ import {
   Award,
   Bot,
   ClipboardCheck,
-  HelpCircle,
   MessageSquare,
   Users,
   User,
   Heart,
   LogIn,
   Shield,
-  LogOut,
   Star,
   Search,
   Play,
   Briefcase,
   Bell,
-  CheckCircle,
   Lock,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
 import { useEffect, useState, useMemo } from "react";
 import { Badge } from "../ui/badge";
-import { OnboardingGuide } from "../onboarding-guide";
 import { Progress } from "../ui/progress";
-
+import { OnboardingGuide } from "../onboarding-guide";
+import { UserNav } from "./user-nav";
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean }) => {
   const pathname = usePathname();
@@ -51,7 +47,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
-          : 'text-slate-600 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:bg-slate-800',
+          : 'text-slate-300 hover:bg-slate-800',
         disabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
       )}
     >
@@ -154,11 +150,11 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   return (
     <>
       <OnboardingGuide />
-      <div className="w-full h-full bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-sm">
-        <header className="p-4 border-b border-slate-100 dark:border-slate-800">
+      <div className="w-full h-full bg-[#111827] border-r border-slate-800 flex flex-col shadow-sm">
+        <header className="p-4 border-b border-slate-800">
           <Link href="/dashboard" className="flex items-center gap-2">
               <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
-              <span className="font-bold text-lg text-primary">{siteName || 'Ndara Afrique'}</span>
+              <span className="font-bold text-lg text-white">{siteName || 'Ndara Afrique'}</span>
           </Link>
         </header>
         
@@ -175,7 +171,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
         <nav className="flex-1 py-2 overflow-y-auto">
           {studentMenu.map((group) => (
             <div key={group.label} className="py-2">
-              <p className="px-4 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{group.label}</p>
+              <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{group.label}</p>
               {group.items.map((item) => (
                 <SidebarItem
                   key={item.href}
@@ -192,14 +188,17 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           ))}
         </nav>
 
-        <footer className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800 space-y-2">
+        <footer className="p-4 mt-auto border-t border-slate-800 space-y-2">
+           <div className="p-2 rounded-lg bg-slate-800/50">
+              <UserNav />
+           </div>
           {isInstructor ? (
-              <Button variant="outline" className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700" onClick={() => switchRole('instructor')}>
+              <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={() => switchRole('instructor')}>
                   <LogIn className="mr-2 h-4 w-4" />
                   {t('userRoleInstructor')}
               </Button>
           ) : showInstructorSignup && (
-              <Button variant="outline" className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700" asChild>
+              <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" asChild>
                   <Link href="/devenir-instructeur">
                       <Briefcase className="mr-2 h-4 w-4" />
                       {t('be_instructor')}
@@ -217,5 +216,3 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     </>
   );
 }
-
-    
