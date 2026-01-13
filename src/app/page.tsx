@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
@@ -11,6 +10,7 @@ import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Frown } from 'lucide-react';
+import { LanguageSelector } from '@/components/layout/language-selector';
 
 const CourseCard = ({ course, instructor }: { course: Course, instructor: FormaAfriqueUser | null }) => (
   <div className="benefit-card group flex flex-col">
@@ -50,13 +50,15 @@ const LandingPage = () => {
 
       if (coursesData.length > 0) {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
-        const instructorsQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
-        const instructorSnapshots = await getDocs(instructorsQuery);
-        const instructorsMap = new Map<string, FormaAfriqueUser>();
-        instructorSnapshots.forEach(doc => {
-          instructorsMap.set(doc.id, doc.data() as FormaAfriqueUser);
-        });
-        setInstructors(instructorsMap);
+        if (instructorIds.length > 0) {
+            const instructorsQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
+            const instructorSnapshots = await getDocs(instructorsQuery);
+            const instructorsMap = new Map<string, FormaAfriqueUser>();
+            instructorSnapshots.forEach(doc => {
+              instructorsMap.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+            });
+            setInstructors(instructorsMap);
+        }
       }
       setIsLoading(false);
     }, (error) => {
@@ -72,10 +74,7 @@ const LandingPage = () => {
       <nav className="flex justify-between items-center p-6 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
         <div className="text-2xl font-bold tracking-tighter">Ndara Afrique</div>
         <div className="flex items-center gap-6">
-          <select className="bg-transparent border-none text-sm cursor-pointer focus:outline-none">
-            <option value="fr">Français</option>
-            <option value="sg">Sango</option>
-          </select>
+          <LanguageSelector />
           <Button asChild variant="outline" className="px-4 py-2 text-sm font-medium rounded-lg bg-transparent border-white/20 hover:bg-white/10 hover:text-white transition">
             <Link href="/login">Se connecter</Link>
           </Button>
@@ -114,7 +113,7 @@ const LandingPage = () => {
               <CourseCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
             ))
           ) : (
-            <div className="md:col-span-3 text-center py-16 border-2 border-dashed border-slate-700 rounded-2xl">
+            <div className="md:col-span-3 text-center py-16 benefit-card">
               <Frown className="mx-auto h-12 w-12 text-slate-500" />
               <h3 className="mt-4 text-lg font-semibold text-slate-300">De nouveaux cours arrivent bientôt.</h3>
               <p className="mt-1 text-sm text-slate-400">Revenez plus tard pour découvrir nos formations.</p>
