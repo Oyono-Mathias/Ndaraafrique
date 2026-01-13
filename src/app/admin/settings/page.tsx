@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -161,7 +162,7 @@ export default function AdminSettingsPage() {
                         <TabsTrigger value="general" className="tv:text-xl tv:py-4"><Settings className="w-4 h-4 mr-2 tv:w-6 tv:h-6"/>{t('tab_general')}</TabsTrigger>
                         <TabsTrigger value="commercial" className="tv:text-xl tv:py-4"><Percent className="w-4 h-4 mr-2 tv:w-6 tv:h-6"/>{t('tab_commercial')}</TabsTrigger>
                         <TabsTrigger value="platform" className="tv:text-xl tv:py-4"><Building className="w-4 h-4 mr-2 tv:w-6 tv:h-6"/>{t('tab_platform')}</TabsTrigger>
-                        <TabsTrigger value="legal" className="tv:text-xl tv:py-4"><FileText className="w-4 h-4 mr-2 tv:w-6 tvh-6-"/>{t('tab_legal')}</TabsTrigger>
+                        <TabsTrigger value="legal" className="tv:text-xl tv:py-4"><FileText className="w-4 h-4 mr-2 tvh-6-"/>{t('tab_legal')}</TabsTrigger>
                     </TabsList>
                     
                     <TabsContent value="general" className="mt-6">
@@ -174,8 +175,8 @@ export default function AdminSettingsPage() {
                                 
                                 <FormItem>
                                     <FormLabel className="tv:text-lg">{t('logo_url')}</FormLabel>
-                                    <div className="flex items-center gap-4">
-                                        <label htmlFor="logo-upload" className="cursor-pointer">
+                                    <div className="flex items-start gap-4">
+                                        <label htmlFor="logo-upload" className="cursor-pointer shrink-0">
                                             <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all relative overflow-hidden bg-slate-900">
                                                 {logoPreview ? (
                                                     <Image src={logoPreview} alt="Aperçu du logo" fill className="object-contain p-2"/>
@@ -185,8 +186,8 @@ export default function AdminSettingsPage() {
                                             </div>
                                         </label>
                                         <Input id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml" onChange={handleLogoFileSelect} />
-                                        <div className="w-full">
-                                            <p className="text-xs text-slate-400 mb-2">Cliquez sur l'icône pour importer un nouveau logo. L'URL sera générée automatiquement.</p>
+                                        <div className="w-full space-y-2">
+                                            <p className="text-xs text-slate-400">Cliquez sur l'icône pour importer. L'URL sera générée automatiquement.</p>
                                             <Input readOnly value={form.getValues('logoUrl') || 'Aucun logo défini'} className="dark:bg-slate-700 dark:border-slate-600 text-slate-400" />
                                         </div>
                                     </div>
