@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -79,7 +80,7 @@ export default function ForgotPasswordPage() {
   };
 
   const containerStyle = loginBackground 
-    ? { backgroundImage: `linear-gradient(rgba(10, 10, 20, 0.8), rgba(0, 0, 0, 0.9)), url('${loginBackground}')` } 
+    ? { backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url('${loginBackground}')` } 
     : {};
 
   return (
@@ -139,3 +140,5 @@ export default function ForgotPasswordPage() {
     </div>
   );
 }
+
+    

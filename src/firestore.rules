@@ -147,6 +147,12 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
     }
+    
+     // --- Règles pour la configuration globale ---
+    match /settings/global {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
 
     // Default deny for any other collection not explicitly matched
     match /{path=**} {
@@ -154,3 +160,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

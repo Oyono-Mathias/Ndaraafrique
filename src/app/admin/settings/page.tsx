@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -20,6 +21,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from 'react-i18next';
 import { ImageCropper } from '@/components/ui/ImageCropper';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const settingsSchema = z.object({
     siteName: z.string().min(3, "Le nom du site est requis."),
@@ -168,6 +170,22 @@ export default function AdminSettingsPage() {
             setIsSaving(false);
         }
     };
+    
+     if (isLoading) {
+        return (
+            <div className="space-y-6">
+                <header className="flex justify-between items-center">
+                    <div>
+                        <Skeleton className="h-9 w-64" />
+                        <Skeleton className="h-4 w-96 mt-2" />
+                    </div>
+                     <Skeleton className="h-12 w-32" />
+                </header>
+                 <Skeleton className="h-12 w-full" />
+                 <Skeleton className="h-96 w-full" />
+            </div>
+        );
+    }
 
     return (
         <>
@@ -301,3 +319,5 @@ export default function AdminSettingsPage() {
         </>
     );
 }
+
+    
