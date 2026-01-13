@@ -60,6 +60,10 @@ service cloud.firestore {
         allow create: if isOwner(userId); // Users can create subscriptions for themselves
         allow update: if isAdmin(); // Only admins can update status (e.g., from a backend process)
       }
+      match /fcmTokens/{tokenId} {
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && tokenId == request.resource.id;
+      }
     }
     
     // --- Collection: courses ---

@@ -17,11 +17,12 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Tag, Speaker, AlertCircle } from 'lucide-react';
+import { Loader2, Sparkles, Tag, Speaker, AlertCircle, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { generatePromoCode } from '@/ai/flows/generate-promo-code-flow';
+import { sendGlobalNotification } from '@/app/actions/notificationActions';
 
 const marketingFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Veuillez entrer une instruction d\'au moins 10 caractères.' }),
@@ -43,10 +44,11 @@ export default function AdminMarketingPage() {
   const { toast } = useToast();
   const db = getFirestore();
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isNotifSending, setIsNotifSending] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
 
   const codesQuery = useMemoFirebase(() => query(collection(db, 'promoCodes'), orderBy('createdAt', 'desc')), [db]);
-  const { data: promoCodes, isLoading: codesLoading, error } = useCollection<PromoCode>(codesQuery);
+  const { data: promoCodes, isLoading: codesLoading, error } = useCollection<PromoCode>(promoCodes);
 
   const form = useForm<MarketingFormValues>({
     resolver: zodResolver(marketingFormSchema),
@@ -59,7 +61,6 @@ export default function AdminMarketingPage() {
         const result = await generatePromoCode({ prompt: data.prompt });
         setAiResponse(result.response);
         
-        // Let user know something happened, even if it's just a tool call
         if (!result.response.includes('Sango:')) {
             toast({ title: 'Action effectuée', description: result.response });
         }
@@ -70,6 +71,30 @@ export default function AdminMarketingPage() {
         setIsAiLoading(false);
     }
   };
+
+  const handleSendNotification = async () => {
+    if (!aiResponse) {
+        toast({ variant: 'destructive', title: 'Aucun message', description: "Veuillez d'abord générer une annonce avec l'assistant IA." });
+        return;
+    }
+    setIsNotifSending(true);
+    try {
+        const result = await sendGlobalNotification({
+            title: 'Annonce Ndara Afrique',
+            body: aiResponse.split('Sango:')[0].trim(), // Send only the French part
+        });
+
+        if (result.success) {
+            toast({ title: 'Notifications envoyées', description: result.message });
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Erreur d\'envoi', description: error.message });
+    } finally {
+        setIsNotifSending(false);
+    }
+  }
   
   const handleToggleActive = async (code: PromoCode) => {
       const codeRef = doc(db, 'promoCodes', code.id);
@@ -128,8 +153,14 @@ export default function AdminMarketingPage() {
             </div>
           )}
           {aiResponse && (
-            <div className="mt-6 p-4 rounded-lg bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700">
+            <div className="mt-6 p-4 rounded-lg bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 space-y-4">
                 <p className="text-sm font-medium text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{aiResponse}</p>
+                <div className="flex justify-end">
+                    <Button onClick={handleSendNotification} disabled={isNotifSending} size="sm">
+                        {isNotifSending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Bell className="mr-2 h-4 w-4"/>}
+                        Envoyer comme notification
+                    </Button>
+                </div>
             </div>
           )}
         </CardContent>

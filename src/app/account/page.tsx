@@ -7,8 +7,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, getDocs } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, getDocs, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getMessaging, getToken, deleteToken } from 'firebase/messaging';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
@@ -21,11 +22,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2 } from 'lucide-react';
+import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2, Bell } from 'lucide-react';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +68,95 @@ const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: Reac
         </Card>
     );
 };
+
+// --- NOTIFICATION PREFERENCES COMPONENT ---
+const NotificationPreferences = () => {
+    const { user } = useRole();
+    const { toast } = useToast();
+    const [isEnabled, setIsEnabled] = useState(false);
+    const [isSubscribing, setIsSubscribing] = useState(false);
+    const [isSupported, setIsSupported] = useState(true);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            setIsEnabled(Notification.permission === 'granted');
+        } else {
+            setIsSupported(false);
+        }
+    }, []);
+
+    const handleToggleNotifications = async (checked: boolean) => {
+        if (!user || !isSupported) return;
+
+        setIsSubscribing(true);
+
+        try {
+            const { initializeFirebase } = await import('@/firebase');
+            const { firebaseApp } = initializeFirebase();
+            const messaging = getMessaging(firebaseApp);
+            const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+
+            if (checked) {
+                // Request permission and get token
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    const currentToken = await getToken(messaging, { vapidKey });
+                    if (currentToken) {
+                        const tokenRef = doc(getFirestore(), `users/${user.uid}/fcmTokens`, currentToken);
+                        await setDoc(tokenRef, { createdAt: serverTimestamp() });
+                        setIsEnabled(true);
+                        toast({ title: 'Notifications activées', description: 'Vous recevrez désormais nos actualités.' });
+                    } else {
+                       throw new Error('Impossible de récupérer le jeton de notification.');
+                    }
+                } else {
+                    throw new Error('La permission de notification a été refusée.');
+                }
+            } else {
+                // Get current token and delete it
+                const currentToken = await getToken(messaging, { vapidKey });
+                if (currentToken) {
+                    await deleteToken(messaging);
+                    const tokenRef = doc(getFirestore(), `users/${user.uid}/fcmTokens`, currentToken);
+                    await deleteDoc(tokenRef);
+                }
+                setIsEnabled(false);
+                toast({ title: 'Notifications désactivées' });
+            }
+        } catch (error: any) {
+            console.error("Error managing notifications:", error);
+            toast({ variant: 'destructive', title: 'Erreur de notification', description: error.message });
+            setIsEnabled(false); // Revert UI state on error
+        } finally {
+            setIsSubscribing(false);
+        }
+    };
+
+    if (!isSupported) return null;
+
+    return (
+         <Card className="glassmorphism-card">
+            <CardHeader>
+                <CardTitle className="text-xl text-white">Notifications</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <div className="flex items-center space-x-4 rounded-md border p-4 dark:border-slate-700">
+                    <Bell />
+                    <div className="flex-1 space-y-1">
+                        <p className="text-sm font-medium leading-none text-slate-200">Notifications Push</p>
+                        <p className="text-sm text-slate-400">Recevez les annonces importantes directement sur votre appareil.</p>
+                    </div>
+                    <Switch
+                        checked={isEnabled}
+                        onCheckedChange={handleToggleNotifications}
+                        disabled={isSubscribing}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    );
+};
+
 
 const domains = ["Développement Web", "Marketing Digital", "Data Science", "Design UI/UX", "Entrepreneuriat", "Agriculture"];
 
@@ -396,6 +487,8 @@ export default function AccountPage() {
                          <StatCard title={t('certificates_earned')} icon={Sparkles} value={stats.completed} isLoading={statsLoading} />
                     </CardContent>
                 </Card>
+
+                <NotificationPreferences />
 
                  <Card className="border-destructive/50 glassmorphism-card">
                     <CardHeader>
