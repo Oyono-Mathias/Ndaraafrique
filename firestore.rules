@@ -91,6 +91,17 @@ service cloud.firestore {
       }
     }
     
+    // PROMO CODES: Only admins can manage promo codes.
+    match /promoCodes/{codeId} {
+      allow read, list, create, update, delete: if isAdmin();
+    }
+
+    // CAROUSEL SLIDES: Public read, admin write.
+    match /carousel_slides/{slideId} {
+        allow read, list: if true;
+        allow write: if isAdmin();
+    }
+    
     // CHATS: Users can only access chats they are a part of. Admins can access all for moderation.
     match /chats/{chatId} {
       allow create: if isSignedIn() && request.auth.uid in request.resource.data.participants;
