@@ -130,18 +130,19 @@ service cloud.firestore {
       allow list: if isSignedIn() && request.query.keys().hasAny(['courseId', 'instructorId']);
     }
 
-    // --- Règles pour 'payments' (SECURED) ---
+    // --- Payments Collection (SECURED) ---
     match /payments/{paymentId} {
         allow read, list, create, update, delete: if isAdmin();
     }
     
+    // --- Payouts Collection (SECURED) ---
     match /payouts/{payoutId} {
       allow create: if isApprovedInstructor() && isOwner(request.resource.data.instructorId);
-      allow read: if isOwner(resource.data.instructorId) || isAdmin();
-      allow list: if isAdmin();
+      allow read, list: if isAdmin(); // Only admins can read or list payouts
       allow update, delete: if isAdmin();
     }
 
+    // --- Support Tickets ---
     match /support_tickets/{ticketId} {
       allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
       allow list: if isAdmin();
@@ -154,6 +155,7 @@ service cloud.firestore {
       }
     }
     
+    // --- Resources ---
     match /resources/{resourceId} {
       allow create: if isApprovedInstructor() && isCourseOwner(request.resource.data.courseId);
       allow read: if (isStudentEnrolled(resource.data.courseId)) || isCourseOwner(resource.data.courseId) || isAdmin();
@@ -161,21 +163,25 @@ service cloud.firestore {
       allow list: if isSignedIn() && request.query.keys().hasAny(['courseId']);
     }
 
+    // --- Global Settings ---
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
     }
     
+    // --- Waitlist ---
     match /waitlist/{email} {
         allow create: if true;
     }
     
+    // --- Carousel Slides ---
     match /carousel_slides/{slideId} {
         allow read: if true;
         allow list: if true;
         allow write: if isAdmin();
     }
     
+    // --- FAQs ---
     match /faqs/{faqId} {
         allow read, list: if true;
         allow write: if isAdmin();
