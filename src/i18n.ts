@@ -1,12 +1,11 @@
 
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import LanguageDetector from 'i18next-browser-languagedetector';
 import Backend from 'i18next-http-backend';
 
 i18n
   .use(Backend)
-  .use(LanguageDetector)
+  // Le LanguageDetector est supprimé pour éviter les conflits de chargement avec le rendu serveur de Next.js
   .use(initReactI18next)
   .init({
     fallbackLng: 'fr',
@@ -21,17 +20,13 @@ i18n
     backend: {
       loadPath: '/locales/{{lng}}/translation.json',
     },
-    // i18next-browser-languagedetector options
+    // La détection est maintenant gérée manuellement pour plus de stabilité
     detection: {
-      // order and from where user language should be detected
-      order: ['localStorage', 'navigator'],
-
-      // keys or params to lookup language from
+      order: ['localStorage'],
       lookupLocalStorage: 'ndaraafrique-lang',
-
-      // cache user language on
       caches: ['localStorage'],
     },
   });
 
 export default i18n;
+
