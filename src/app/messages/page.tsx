@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageSquareDashed, Search, Plus } from 'lucide-react';
+import { MessageSquareDashed, Search, Plus, UserX } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { usePathname, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -38,21 +38,37 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { useTranslation } from 'react-i18next';
+import { toast } from '@/hooks/use-toast';
 
 // --- INTERFACES ---
 interface Chat {
   id: string;
   participants: string[];
-  participantDetails: Record<string, { fullName: string; profilePictureURL?: string; isOnline?: boolean }>;
+  participantDetails: Record<string, { username: string; profilePictureURL?: string; isOnline?: boolean }>;
   lastMessage?: string;
   updatedAt?: any;
   lastSenderId?: string;
   unreadBy?: string[];
 }
 
+const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, onGoToProfile: () => void }) => {
+    const { t } = useTranslation();
+    return (
+        <Dialog open={isOpen}>
+            <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
+                <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2"><UserX className="text-destructive"/> {t('profile_incomplete_title')}</DialogTitle>
+                    <DialogDescription className="pt-2">{t('profile_incomplete_desc_chat')}</DialogDescription>
+                </DialogHeader>
+                <Button onClick={onGoToProfile}>{t('complete_profile_btn')}</Button>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 // --- MAIN PAGE COMPONENT ---
 export default function MessagesPage() {
-  const { user, isUserLoading } = useRole();
+  const { user, formaAfriqueUser, isUserLoading } = useRole();
   const pathname = usePathname();
   const db = getFirestore();
   const router = useRouter();
@@ -67,6 +83,8 @@ export default function MessagesPage() {
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   
+  const isProfileComplete = useMemo(() => !!(formaAfriqueUser?.username && formaAfriqueUser?.careerGoals?.interestDomain), [formaAfriqueUser]);
+
   // This state is only relevant on desktop
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
@@ -104,7 +122,7 @@ export default function MessagesPage() {
         const populated = rawChats.map(chat => ({
             ...chat,
             participantDetails: chat.participants.reduce((acc: any, pid: string) => {
-              acc[pid] = detailsMap[pid] || { fullName: "Utilisateur inconnu" };
+              acc[pid] = detailsMap[pid] || { username: "Utilisateur inconnu" };
               return acc;
             }, {})
         }));
@@ -167,8 +185,9 @@ export default function MessagesPage() {
         } else {
             setActiveChatId(chatId);
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error starting chat:", error);
+         toast({ variant: 'destructive', title: 'Erreur', description: error.message.includes('permission-denied') ? t('chat_permission_denied') : "Impossible de démarrer la conversation." });
     } finally {
         setIsCreatingChat(false);
     }
@@ -177,13 +196,21 @@ export default function MessagesPage() {
   const filteredChatList = useMemo(() => chatList.filter(chat => {
     const otherId = chat.participants.find(p => p !== user?.uid);
     const other = otherId ? chat.participantDetails[otherId] : null;
-    return other?.fullName?.toLowerCase().includes(searchTerm.toLowerCase());
+    return other?.username?.toLowerCase().includes(searchTerm.toLowerCase());
   }), [chatList, user, searchTerm]);
 
   
-  const filteredStudents = useMemo(() => allStudents.filter(student => 
-      student.fullName.toLowerCase().includes(modalSearchTerm.toLowerCase())
-  ), [allStudents, modalSearchTerm]);
+  const filteredStudents = useMemo(() => {
+      if (!formaAfriqueUser) return [];
+      const userInterestDomain = formaAfriqueUser.careerGoals?.interestDomain;
+
+      return allStudents.filter(student => {
+          const nameMatch = student.username.toLowerCase().includes(modalSearchTerm.toLowerCase());
+          const categoryMatch = student.careerGoals?.interestDomain === userInterestDomain;
+          const isNotSelf = student.uid !== formaAfriqueUser.uid;
+          return nameMatch && categoryMatch && isNotSelf;
+      });
+  }, [allStudents, modalSearchTerm, formaAfriqueUser]);
 
   if (isLoading) {
     return (
@@ -212,6 +239,8 @@ export default function MessagesPage() {
   // On desktop, this component renders the split view
   if (!isMobile) {
     return (
+        <>
+        <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
         <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] lg:grid-cols-[400px_1fr] h-full">
             {/* Left Column: Chat List */}
             <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800">
@@ -247,15 +276,15 @@ export default function MessagesPage() {
                                     >
                                         <div className="relative">
                                             <Avatar className="h-12 w-12 border-2 border-slate-700">
-                                                <AvatarImage src={other?.profilePictureURL} alt={other?.fullName}/>
-                                                <AvatarFallback className="bg-slate-700 text-slate-300">{other?.fullName?.charAt(0) || '?'}</AvatarFallback>
+                                                <AvatarImage src={other?.profilePictureURL} alt={other?.username}/>
+                                                <AvatarFallback className="bg-slate-700 text-slate-300">{other?.username?.charAt(0) || '?'}</AvatarFallback>
                                             </Avatar>
                                             {other?.isOnline && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-slate-900" />}
                                         </div>
                                         <div className="flex-1 overflow-hidden">
                                             <div className="flex justify-between items-baseline">
                                                 <p className={cn("truncate text-sm text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
-                                                {other?.fullName || "Utilisateur"}
+                                                {other?.username || "Utilisateur"}
                                                 </p>
                                             </div>
                                             <div className="flex justify-between items-center">
@@ -277,7 +306,7 @@ export default function MessagesPage() {
                     )}
                 </ScrollArea>
                 <div className="p-2 border-t border-slate-800">
-                    <Button variant="ghost" className="w-full" onClick={() => setIsNewChatModalOpen(true)}>
+                    <Button variant="ghost" className="w-full" onClick={() => setIsNewChatModalOpen(true)} disabled={!isProfileComplete}>
                         <Plus className="h-4 w-4 mr-2" />
                         {t('new_discussion')}
                     </Button>
@@ -314,9 +343,9 @@ export default function MessagesPage() {
                               <button key={student.uid} onClick={() => handleStartChat(student.uid)} disabled={isCreatingChat} className="w-full text-left flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
                                   <Avatar className="h-9 w-9">
                                       <AvatarImage src={student.profilePictureURL} />
-                                      <AvatarFallback>{student.fullName.charAt(0)}</AvatarFallback>
+                                      <AvatarFallback>{student.username.charAt(0)}</AvatarFallback>
                                   </Avatar>
-                                  <span className="font-medium text-sm">{student.fullName}</span>
+                                  <span className="font-medium text-sm">@{student.username}</span>
                               </button>
                           ))}
                       </div>
@@ -324,12 +353,14 @@ export default function MessagesPage() {
               </DialogContent>
             </Dialog>
         </div>
+        </>
     );
   }
 
   // On mobile, this component renders just the list
   return (
     <>
+    <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
     <Card className="dark:bg-slate-900 dark:border-slate-800 flex flex-col h-full">
         <CardHeader className="border-b dark:border-slate-800">
             <CardTitle className="dark:text-white">{t('navMessages')}</CardTitle>
@@ -356,7 +387,8 @@ export default function MessagesPage() {
                             return (
                                 <Link
                                     key={chat.id}
-                                    href={`/messages/${chat.id}`}
+                                    href={isProfileComplete ? `/messages/${chat.id}` : '#'}
+                                    onClick={(e) => !isProfileComplete && e.preventDefault()}
                                     className={cn(
                                         "block p-3 flex items-center gap-4 transition-all border-b dark:border-slate-800",
                                         isActive ? "bg-primary/10 dark:bg-slate-800" : "hover:bg-slate-800/50"
@@ -364,8 +396,8 @@ export default function MessagesPage() {
                                 >
                                     <div className="relative">
                                       <Avatar className="h-12 w-12 border-2 dark:border-slate-700">
-                                          <AvatarImage src={other?.profilePictureURL} alt={other?.fullName}/>
-                                          <AvatarFallback className="dark:bg-slate-700 dark:text-slate-300">{other?.fullName?.charAt(0) || '?'}</AvatarFallback>
+                                          <AvatarImage src={other?.profilePictureURL} alt={other?.username}/>
+                                          <AvatarFallback className="dark:bg-slate-700 dark:text-slate-300">{other?.username?.charAt(0) || '?'}</AvatarFallback>
                                       </Avatar>
                                       {other?.isOnline && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-slate-900" />}
                                     </div>
@@ -373,7 +405,7 @@ export default function MessagesPage() {
                                     <div className="flex-1 overflow-hidden">
                                         <div className="flex justify-between items-baseline">
                                             <p className={cn("truncate text-sm dark:text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
-                                              {other?.fullName || "Utilisateur"}
+                                              {other?.username || "Utilisateur"}
                                             </p>
                                         </div>
                                         <div className="flex justify-between items-center">
@@ -419,9 +451,9 @@ export default function MessagesPage() {
                         <button key={student.uid} onClick={() => handleStartChat(student.uid)} disabled={isCreatingChat} className="w-full text-left flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800 disabled:opacity-50">
                             <Avatar className="h-9 w-9">
                                 <AvatarImage src={student.profilePictureURL} />
-                                <AvatarFallback>{student.fullName.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>{student.username.charAt(0)}</AvatarFallback>
                             </Avatar>
-                            <span className="font-medium text-sm">{student.fullName}</span>
+                            <span className="font-medium text-sm">@{student.username}</span>
                         </button>
                     ))}
                 </div>
@@ -429,7 +461,7 @@ export default function MessagesPage() {
         </DialogContent>
     </Dialog>
 
-    <Button onClick={() => setIsNewChatModalOpen(true)} className="fixed bottom-24 right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center">
+    <Button onClick={() => setIsNewChatModalOpen(true)} disabled={!isProfileComplete} className="fixed bottom-24 right-6 h-16 w-16 rounded-full shadow-lg z-50 flex items-center justify-center">
         <Plus className="h-8 w-8" />
         <span className="sr-only">Nouveau Message</span>
     </Button>

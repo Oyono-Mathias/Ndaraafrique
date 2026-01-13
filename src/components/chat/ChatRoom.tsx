@@ -41,7 +41,7 @@ interface Message {
 }
 
 interface ParticipantDetails {
-    fullName: string;
+    username: string;
     profilePictureURL?: string;
     role: UserRole;
     isOnline?: boolean;
@@ -222,11 +222,9 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
         await batch.commit();
 
-    } catch (err) {
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: chatDocRef.path,
-        operation: 'write'
-      }));
+    } catch (err: any) {
+      console.error(err);
+       toast({ variant: 'destructive', title: 'Erreur', description: err.message.includes('permission-denied') ? t('chat_permission_denied') : "Impossible d'envoyer le message." });
     }
   };
   
@@ -272,11 +270,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </Button>
             <Avatar className="h-10 w-10">
                 <AvatarImage src={otherParticipant?.profilePictureURL} />
-                <AvatarFallback>{otherParticipant?.fullName?.charAt(0) || '?'}</AvatarFallback>
+                <AvatarFallback>{otherParticipant?.username?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="ml-3 flex-1">
                 <h2 className="font-bold text-base flex items-center text-slate-900 dark:text-slate-100">
-                    {otherParticipant?.fullName || "Utilisateur"}
+                    {otherParticipant?.username || "Utilisateur"}
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-500 dark:text-slate-400">

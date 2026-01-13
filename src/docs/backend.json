@@ -5,21 +5,29 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
       "type": "object",
-      "description": "Represents a user in the FormaAfrique application.",
+      "description": "Represents a user in the Ndara Afrique application.",
       "properties": {
         "uid": {
           "type": "string",
-          "description": "Unique identifier for the user (Firebase Auth ID). This is the primary key for the User entity.",
+          "description": "Unique identifier for the user (Firebase Auth ID). This is the primary key.",
           "format": "uuid"
+        },
+        "username": {
+            "type": "string",
+            "description": "Unique, public-facing username for the user."
         },
         "email": {
           "type": "string",
-          "description": "Email address of the user.",
+          "description": "Email address of the user (private).",
           "format": "email"
         },
-        "fullName": {
+        "firstName": {
           "type": "string",
-          "description": "Full name of the user."
+          "description": "First name of the user (private)."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Last name of the user (private)."
         },
         "profilePictureURL": {
           "type": "string",
@@ -54,98 +62,24 @@
           "type": "boolean",
           "description": "Indicates whether the instructor's account has been approved by an admin."
         },
-        "instructorApplication": {
-            "type": "object",
-            "description": "Stores the application data for users who want to become instructors.",
-            "properties": {
-                "specialty": { "type": "string" },
-                "whatsappNumber": { "type": "string" },
-                "youtubeUrl": { "type": "string", "format": "uri" },
-                "facebookUrl": { "type": "string", "format": "uri" },
-                "presentationVideoUrl": { "type": "string", "format": "uri" },
-                "professionalExperience": { "type": "string" },
-                "linkedinUrl": { "type": "string", "format": "uri" },
-                "portfolioUrl": { "type": "string", "format": "uri" },
-                "firstCourseTitle": { "type": "string" },
-                "firstCourseDescription": { "type": "string" },
-                "hasEquipment": { "type": "boolean" },
-                "submittedAt": { "type": "string", "format": "date-time" }
-            }
-        },
-        "payoutMethod": {
-            "type": "object",
-            "description": "Configuration for instructor payouts.",
-            "properties": {
-                "method": {
-                    "type": "string",
-                    "enum": ["mobile_money_cm", "bank_transfer_cm"]
-                },
-                "details": {
-                    "type": "object",
-                    "properties": {
-                        "phoneNumber": { "type": "string" },
-                        "bankName": { "type": "string" },
-                        "iban": { "type": "string" },
-                        "swiftCode": { "type": "string" }
-                    }
-                }
-            }
-        },
-        "notificationPreferences": {
-          "type": "object",
-          "description": "User's notification settings.",
-          "properties": {
-            "promotions": {
-              "type": "boolean",
-              "description": "Receive emails about new courses, offers, and news."
-            },
-            "reminders": {
-              "type": "boolean",
-              "description": "Receive reminders to continue learning."
-            }
-          }
-        },
-        "videoPlaybackPreferences": {
-            "type": "object",
-            "description": "User's video playback settings.",
-            "properties": {
-                "defaultQuality": {
-                    "type": "string",
-                    "enum": ["auto", "1080p", "720p", "480p"]
-                },
-                "defaultSpeed": {
-                    "type": "string",
-                    "enum": ["0.75", "1.0", "1.25", "1.5", "2.0"]
-                }
-            }
-        },
         "careerGoals": {
             "type": "object",
-            "description": "User's career goals and interests.",
+            "description": "User's career goals and interests. The `interestDomain` is used for chat matchmaking.",
             "properties": {
                 "currentRole": { "type": "string" },
-                "interestDomain": { "type": "string" },
+                "interestDomain": { "type": "string", "description": "Used to match students with others in the same field of study." },
                 "mainGoal": { "type": "string" }
             }
         },
-        "country": {
-          "type": "string",
-          "description": "The country of the user, detected at signup."
-        },
-        "countryCode": {
-          "type": "string",
-          "description": "The ISO 3166-1 alpha-2 country code."
-        },
-        "badges": {
-          "type": "array",
-          "description": "A list of achievement badges earned by the user.",
-          "items": { "type": "string" }
+        "isProfileComplete": {
+            "type": "boolean",
+            "description": "Flag indicating if the user has completed the essential parts of their profile (e.g., username, career goals)."
         }
       },
       "required": [
         "uid",
         "email",
-        "fullName",
+        "username",
         "createdAt",
         "role",
         "isInstructorApproved"
@@ -155,264 +89,17 @@
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "Course",
       "type": "object",
-      "description": "Represents a course offered on the FormaAfrique platform.",
+      "description": "Represents a course offered on the Ndara Afrique platform.",
       "properties": {
-        "courseId": {
-          "type": "string",
-          "description": "Unique identifier for the course. This is the primary key for the Course entity.",
-          "format": "uuid"
-        },
-        "title": {
-          "type": "string",
-          "description": "Title of the course."
-        },
-        "description": {
-          "type": "string",
-          "description": "Description of the course."
-        },
-        "instructorId": {
-          "type": "string",
-          "description": "Reference to User.uid. (Relationship: User 1:N Course) Instructor who created the course."
-        },
-        "category": {
-          "type": "string",
-          "description": "Category of the course (e.g., Math, Science, History)."
-        },
-        "price": {
-          "type": "number",
-          "description": "Price of the course."
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the course (Draft, Published, Pending Review).",
-          "enum": ["Draft", "Published", "Pending Review"]
-        },
-        "imageUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL for the course's cover image."
-        },
-        "contentType": {
-            "type": "string",
-            "description": "The type of content, e.g., video course or e-book.",
-            "enum": ["video", "ebook"]
-        },
-        "ebookUrl": {
-            "type": "string",
-            "format": "uri",
-            "description": "URL for the e-book PDF file if contentType is 'ebook'."
-        },
-        "isPopular": {
-            "type": "boolean",
-            "description": "Indicates if the course is a popular or featured course."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Date and time when the course document was created.",
-          "format": "date-time"
-        },
-        "publishedAt": {
-          "type": "string",
-          "description": "Date and time when the course was published.",
-          "format": "date-time"
-        },
-        "learningObjectives": {
-          "type": "array",
-          "description": "A list of key learning objectives for the course.",
-          "items": { "type": "string" }
-        },
-        "prerequisites": {
-            "type": "array",
-            "description": "A list of prerequisites for taking the course.",
-            "items": { "type": "string" }
-        },
-        "targetAudience": {
-            "type": "string",
-            "description": "A description of the ideal student for this course."
-        }
+        "courseId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "category": { "type": "string" },
+        "price": { "type": "number" },
+        "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] }
       },
-      "required": [
-        "courseId",
-        "title",
-        "description",
-        "instructorId",
-        "category",
-        "price",
-        "status"
-      ]
-    },
-    "Section": {
-        "title": "Section",
-        "type": "object",
-        "description": "Represents a section within a course.",
-        "properties": {
-            "title": { "type": "string" },
-            "order": { "type": "number" }
-        },
-        "required": ["title", "order"]
-    },
-    "Lecture": {
-        "title": "Lecture",
-        "type": "object",
-        "description": "Represents a lecture within a section.",
-        "properties": {
-            "title": { "type": "string" },
-            "videoURL": { "type": "string", "format": "uri" },
-            "duration": { "type": "number" },
-            "resourceFile": { "type": "string", "format": "uri" },
-            "isFreePreview": { "type": "boolean", "description": "Indicates if the lecture is a free preview." }
-        },
-        "required": ["title", "videoURL"]
-    },
-    "Enrollment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Enrollment",
-      "type": "object",
-      "description": "Represents a student's enrollment in a course.",
-      "properties": {
-        "enrollmentId": {
-          "type": "string",
-          "description": "Unique identifier for the enrollment. This is the primary key for the Enrollment entity.",
-          "format": "uuid"
-        },
-        "studentId": {
-          "type": "string",
-          "description": "Reference to User.uid. (Relationship: User 1:N Enrollment) Student who is enrolled in the course."
-        },
-        "courseId": {
-          "type": "string",
-          "description": "Reference to Course.courseId. (Relationship: Course 1:N Enrollment) Course in which the student is enrolled."
-        },
-        "instructorId": {
-          "type": "string",
-          "description": "Reference to User.uid. (Relationship: User 1:N Enrollment) Instructor who owns the course."
-        },
-        "enrollmentDate": {
-          "type": "string",
-          "description": "Date when the student enrolled in the course.",
-          "format": "date-time"
-        },
-        "progress": {
-          "type": "number",
-          "description": "Percentage of the course completed by the student."
-        },
-        "priceAtEnrollment": {
-          "type": "number",
-          "description": "The price of the course at the time of enrollment (0 if free)."
-        }
-      },
-      "required": [
-        "enrollmentId",
-        "studentId",
-        "courseId",
-        "instructorId",
-        "enrollmentDate",
-        "progress",
-        "priceAtEnrollment"
-      ]
-    },
-    "Payment": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Payment",
-      "type": "object",
-      "description": "Represents a payment made for a course.",
-      "properties": {
-        "paymentId": {
-          "type": "string",
-          "description": "Unique identifier for the payment. This is the primary key for the Payment entity.",
-          "format": "uuid"
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User.uid. (Relationship: User 1:N Payment) User who made the payment (buyer)."
-        },
-        "instructorId": {
-          "type": "string",
-          "description": "Reference to User.uid. (Relationship: User 1:N Payment) Instructor who received the payment (recipient)."
-        },
-        "amount": {
-          "type": "number",
-          "description": "Amount of the payment."
-        },
-        "currency": {
-          "type": "string",
-          "description": "Currency of the payment (e.g., USD, EUR)."
-        },
-        "date": {
-          "type": "string",
-          "description": "Date of the payment.",
-          "format": "date-time"
-        },
-        "status": {
-          "type": "string",
-          "description": "Status of the payment (e.g., Completed, Pending, Failed, Refunded)."
-        }
-      },
-      "required": [
-        "paymentId",
-        "userId",
-        "instructorId",
-        "amount",
-        "currency",
-        "date",
-        "status"
-      ]
-    },
-    "Payout": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Payout",
-      "type": "object",
-      "description": "Represents an instructor's request for a payout.",
-      "properties": {
-        "payoutId": {
-          "type": "string",
-          "description": "Unique identifier for the payout request.",
-          "format": "uuid"
-        },
-        "instructorId": {
-          "type": "string",
-          "description": "Reference to User.uid. The instructor requesting the payout."
-        },
-        "amount": {
-          "type": "number",
-          "description": "The amount requested for withdrawal."
-        },
-        "method": {
-          "type": "string",
-          "description": "The method of payment for the withdrawal.",
-          "enum": ["Mobile Money", "Virement"]
-        },
-        "status": {
-          "type": "string",
-          "description": "The status of the payout request.",
-          "enum": ["en_attente", "valide", "rejete"]
-        },
-        "date": {
-          "type": "string",
-          "description": "Date the payout request was created.",
-          "format": "date-time"
-        }
-      },
-      "required": ["payoutId", "instructorId", "amount", "method", "status", "date"]
-    },
-    "ChatMessage": {
-      "title": "Chat Message",
-      "type": "object",
-      "description": "Represents a single message in the AI Tutor chat.",
-      "properties": {
-        "sender": {
-          "type": "string",
-          "enum": ["user", "ai"]
-        },
-        "text": {
-          "type": "string"
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        }
-      },
-      "required": ["sender", "text", "timestamp"]
+      "required": ["courseId", "title", "description", "instructorId", "category", "price", "status"]
     },
     "Chat": {
       "title": "Chat",
@@ -424,275 +111,35 @@
           "description": "An array containing the UIDs of the two users in the chat.",
           "items": { "type": "string" }
         },
-        "lastMessage": {
-          "type": "string",
-          "description": "The text of the most recent message in the chat."
+        "participantCategories": {
+            "type": "array",
+            "description": "An array containing the `interestDomain` of both participants. Used for security rules.",
+            "items": { "type": "string" }
         },
-        "updatedAt": {
-          "type": "string",
-          "description": "Timestamp of the last message, used for sorting conversations.",
-          "format": "date-time"
-        }
+        "lastMessage": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["participants", "updatedAt"]
+      "required": ["participants", "participantCategories", "updatedAt"]
     },
     "Message": {
       "title": "Message",
       "type": "object",
       "description": "Represents a single message within a chat.",
       "properties": {
-        "senderId": { "type": "string", "description": "The UID of the user who sent the message." },
-        "text": { "type": "string", "description": "The content of the message." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the message was sent." }
-      },
-      "required": ["senderId", "text", "createdAt"]
-    },
-    "Review": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
-      "title": "Review",
-      "type": "object",
-      "description": "Represents a student's review of a course.",
-      "properties": {
-        "reviewId": {
-          "type": "string",
-          "description": "Unique identifier for the review. This is the primary key.",
-          "format": "uuid"
-        },
-        "courseId": {
-          "type": "string",
-          "description": "Reference to Course.courseId."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User.uid. The student who wrote the review."
-        },
-        "rating": {
-          "type": "number",
-          "description": "Star rating from 1 to 5.",
-          "minimum": 1,
-          "maximum": 5
-        },
-        "comment": {
-          "type": "string",
-          "description": "The text content of the review."
-        },
-        "createdAt": {
-          "type": "string",
-          "description": "Timestamp when the review was submitted.",
-          "format": "date-time"
-        }
-      },
-      "required": ["courseId", "userId", "rating", "createdAt"]
-    },
-    "SupportTicket": {
-      "title": "Support Ticket",
-      "type": "object",
-      "description": "Represents a support question from a student to an instructor.",
-      "properties": {
-        "ticketId": { "type": "string", "format": "uuid" },
-        "userId": { "type": "string", "description": "The UID of the student who created the ticket." },
-        "instructorId": { "type": "string", "description": "The UID of the instructor to whom the ticket is addressed." },
-        "courseId": { "type": "string", "description": "Reference to the course this ticket is about." },
-        "subject": { "type": "string", "description": "The subject of the support question." },
-        "lastMessage": { "type": "string", "description": "A snippet of the last message for preview." },
-        "category": { "type": "string", "enum": ["Paiement", "Technique", "Pédagogique"], "description": "Category of the support request."},
-        "status": { "type": "string", "enum": ["ouvert", "fermé"], "description": "Status of the ticket."},
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["userId", "instructorId", "courseId", "subject", "status", "createdAt", "updatedAt"]
-    },
-    "SupportTicketMessage": {
-      "title": "Support Ticket Message",
-      "type": "object",
-      "description": "Represents a single message within a support ticket thread.",
-      "properties": {
-        "senderId": { "type": "string", "description": "UID of the message sender." },
+        "senderId": { "type": "string" },
         "text": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["senderId", "text", "createdAt"]
-    },
-    "Assignment": {
-      "title": "Assignment",
-      "type": "object",
-      "description": "Represents an assignment for a course.",
-      "properties": {
-        "title": { "type": "string" },
-        "description": { "type": "string" }
-      },
-      "required": ["title"]
-    },
-    "Submission": {
-      "title": "Submission",
-      "type": "object",
-      "description": "Represents a student's submission for an assignment.",
-      "properties": {
-        "userId": { "type": "string" },
-        "fileURL": { "type": "string", "format": "uri" },
-        "submittedAt": { "type": "string", "format": "date-time" },
-        "grade": { "type": "number" },
-        "feedback": { "type": "string" },
-        "status": { "type": "string", "enum": ["Envoyé", "Corrigé", "En retard"] }
-      },
-      "required": ["userId", "fileURL", "submittedAt", "status"]
-    },
-    "Quiz": {
-        "title": "Quiz",
-        "type": "object",
-        "description": "Represents a quiz for a course.",
-        "properties": {
-            "title": { "type": "string" },
-            "description": { "type": "string" },
-            "questions": {
-                "type": "array",
-                "items": {
-                    "type": "object",
-                    "properties": {
-                        "questionText": { "type": "string" },
-                        "options": {
-                            "type": "array",
-                            "items": { "type": "string" }
-                        },
-                        "correctAnswerIndex": { "type": "number" }
-                    },
-                    "required": ["questionText", "options", "correctAnswerIndex"]
-                }
-            }
-        },
-        "required": ["title"]
-    },
-    "QuizAttempt": {
-        "title": "Quiz Attempt",
-        "type": "object",
-        "description": "Represents a student's attempt at a quiz.",
-        "properties": {
-            "userId": { "type": "string" },
-            "quizId": { "type": "string" },
-            "score": { "type": "number" },
-            "completedAt": { "type": "string", "format": "date-time" }
-        },
-        "required": ["userId", "quizId", "score", "completedAt"]
-    },
-    "Resource": {
-      "title": "Resource",
-      "type": "object",
-      "description": "Represents a resource (file or link) for a course.",
-      "properties": {
-        "resourceId": { "type": "string", "format": "uuid" },
-        "courseId": { "type": "string" },
-        "instructorId": { "type": "string" },
-        "title": { "type": "string" },
-        "type": { "type": "string", "enum": ["link", "file"] },
-        "url": { "type": "string", "format": "uri" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["resourceId", "courseId", "instructorId", "title", "type", "url", "createdAt"]
-    },
-    "PromoCode": {
-      "title": "Promo Code",
-      "type": "object",
-      "description": "Represents a promotional code for discounts.",
-      "properties": {
-        "code": {
-          "type": "string",
-          "description": "The promo code string (e.g., 'AFRIQUE50')."
-        },
-        "discountPercentage": {
-          "type": "number",
-          "description": "The percentage discount (e.g., 50 for 50%)."
-        },
-        "isActive": {
-          "type": "boolean",
-          "description": "Whether the code is currently active."
-        },
-        "expiresAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Optional expiration date for the code."
-        }
-      },
-      "required": ["code", "discountPercentage", "isActive"]
-    },
-    "AdminNotification": {
-      "title": "Admin Notification",
-      "type": "object",
-      "description": "Represents a system notification for administrators.",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["new_instructor_application", "new_support_ticket", "new_course_for_review"]
-        },
-        "message": { "type": "string" },
-        "link": { "type": "string", "format": "uri" },
-        "isRead": { "type": "boolean" },
-        "createdAt": { "type": "string", "format": "date-time" }
-      },
-      "required": ["type", "message", "isRead", "createdAt"]
     }
   },
   "auth": {
-    "providers": [
-      "password",
-      "google.com"
-    ]
+    "providers": ["password", "google.com"]
   },
   "firestore": {
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
-      "description": "Stores user profiles. The 'userId' parameter corresponds to the user's Firebase Auth UID."
-    },
-    "/users/{userId}/chatHistory/{messageId}": {
-      "schema": { "$ref": "#/entities/ChatMessage" },
-      "description": "Stores the chat history for the AI tutor for each user."
-    },
-    "/users/{userId}/notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/Notification" },
-      "description": "Stores notifications for a specific user."
-    },
-    "/courses/{courseId}": {
-      "schema": { "$ref": "#/entities/Course" },
-      "description": "Stores course information. The 'courseId' is a unique identifier for each course."
-    },
-    "/courses/{courseId}/sections/{sectionId}": {
-        "schema": { "$ref": "#/entities/Section" },
-        "description": "Stores sections for a specific course."
-    },
-    "/courses/{courseId}/sections/{sectionId}/lectures/{lectureId}": {
-        "schema": { "$ref": "#/entities/Lecture" },
-        "description": "Stores lectures for a specific section."
-    },
-    "/courses/{courseId}/assignments/{assignmentId}": {
-      "schema": { "$ref": "#/entities/Assignment" },
-      "description": "Stores assignments for a specific course."
-    },
-    "/courses/{courseId}/assignments/{assignmentId}/submissions/{submissionId}": {
-      "schema": { "$ref": "#/entities/Submission" },
-      "description": "Stores student submissions for an assignment."
-    },
-    "/courses/{courseId}/quizzes/{quizId}": {
-        "schema": { "$ref": "#/entities/Quiz" },
-        "description": "Stores quizzes for a specific course."
-    },
-    "/courses/{courseId}/quizzes/{quizId}/attempts/{attemptId}": {
-        "schema": { "$ref": "#/entities/QuizAttempt" },
-        "description": "Stores student attempts for a quiz."
-    },
-    "/enrollments/{enrollmentId}": {
-      "schema": { "$ref": "#/entities/Enrollment" },
-      "description": "Stores enrollment information, linking students to courses."
-    },
-    "/payments/{paymentId}": {
-      "schema": { "$ref": "#/entities/Payment" },
-      "description": "Stores payment and revenue information for course transactions."
-    },
-    "/payouts/{payoutId}": {
-      "schema": { "$ref": "#/entities/Payout" },
-      "description": "Stores instructor payout requests."
-    },
-    "/reviews/{reviewId}": {
-      "schema": { "$ref": "#/entities/Review" },
-      "description": "Stores course reviews and ratings from students."
+      "description": "Stores user profiles."
     },
     "/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
@@ -702,66 +149,9 @@
       "schema": { "$ref": "#/entities/Message" },
       "description": "Stores all messages for a specific conversation."
     },
-    "/support_tickets/{ticketId}": {
-      "schema": { "$ref": "#/entities/SupportTicket" },
-      "description": "Stores student questions and support tickets for instructors."
-    },
-    "/support_tickets/{ticketId}/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/SupportTicketMessage" },
-      "description": "Stores all messages for a specific support ticket."
-    },
-    "/resources/{resourceId}": {
-      "schema": { "$ref": "#/entities/Resource" },
-      "description": "Stores course resources like files and links."
-    },
-    "/promoCodes/{codeId}": {
-      "schema": { "$ref": "#/entities/PromoCode" },
-      "description": "Stores promotional codes for discounts."
-    },
-    "/admin_notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/AdminNotification" },
-      "description": "A collection for storing system-wide notifications for administrators."
-    },
-    "/settings/global": {
-      "schema": {
-        "title": "Settings",
-        "type": "object",
-        "properties": {
-            "general": {
-                "type": "object",
-                "properties": {
-                    "siteName": { "type": "string" },
-                    "logoUrl": { "type": "string", "format": "uri" },
-                    "loginBackgroundImage": { "type": "string", "format": "uri" },
-                    "contactEmail": { "type": "string", "format": "email" },
-                    "supportPhone": { "type": "string" }
-                }
-            },
-            "commercial": {
-                "type": "object",
-                "properties": {
-                    "platformCommission": { "type": "number" },
-                    "featuredCourseId": { "type": "string" }
-                }
-            },
-            "platform": {
-                "type": "object",
-                "properties": {
-                    "announcementMessage": { "type": "string" },
-                    "maintenanceMode": { "type": "boolean" },
-                    "allowInstructorSignup": { "type": "boolean" }
-                }
-            },
-            "legal": {
-                "type": "object",
-                "properties": {
-                    "termsOfService": { "type": "string" },
-                    "privacyPolicy": { "type": "string" }
-                }
-            }
-        }
-      },
-      "description": "Stores global configuration for the entire application."
+    "/courses/{courseId}": {
+      "schema": { "$ref": "#/entities/Course" },
+      "description": "Stores course information."
     }
   }
 }

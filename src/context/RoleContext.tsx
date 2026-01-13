@@ -12,7 +12,10 @@ export type UserRole = 'student' | 'instructor' | 'admin';
 export interface FormaAfriqueUser {
     uid: string;
     email: string;
-    fullName: string;
+    username: string;
+    fullName?: string; // Kept for potential internal use, but username is primary
+    firstName?: string;
+    lastName?: string;
     role: UserRole;
     isInstructorApproved: boolean;
     availableRoles: UserRole[];
@@ -37,7 +40,7 @@ export interface FormaAfriqueUser {
     };
     careerGoals?: {
         currentRole?: string;
-        interestDomain?: string;
+        interestDomain?: string; // This is the category for matchmaking
         mainGoal?: string;
     };
     profilePictureURL?: string;
@@ -58,6 +61,7 @@ export interface FormaAfriqueUser {
     createdAt?: Timestamp;
     country?: string;
     countryCode?: string;
+    isProfileComplete?: boolean;
 }
 
 interface RoleContextType {
@@ -113,9 +117,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               ...userData,
               uid: user.uid,
               email: user.email || '',
+              username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
               availableRoles: roles,
               profilePictureURL: user.photoURL || userData.profilePictureURL || '',
               status: userData.status || 'active',
+              isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
           };
 
           setFormaAfriqueUser(resolvedUser);
@@ -125,11 +131,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           
           let newRole: UserRole;
           
-          // **CORRECTION LOGIC**: Prioritize the role chosen by the user if it's valid for them.
           if (lastRole && roles.includes(lastRole)) {
             newRole = lastRole;
           } else {
-            // Fallback to their highest permission role if no valid choice is stored.
             newRole = userData.role;
           }
 
@@ -138,15 +142,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
         } else {
             console.warn("User document not found in Firestore for UID:", user.uid);
+            const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
             const defaultUser: FormaAfriqueUser = {
                 uid: user.uid,
                 email: user.email || '',
-                fullName: user.displayName || 'New User',
+                username: defaultUsername,
                 role: 'student',
                 status: 'active',
                 isInstructorApproved: false,
                 availableRoles: ['student'],
                 profilePictureURL: user.photoURL || '',
+                isProfileComplete: false,
             };
             setFormaAfriqueUser(defaultUser);
             setAvailableRoles(['student']);
