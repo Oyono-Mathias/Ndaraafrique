@@ -43,10 +43,7 @@ service cloud.firestore {
 
     // --- User Collection Rules ---
     match /users/{userId} {
-      allow list: if isAdmin() && (
-          request.query.where.role == 'instructor' &&
-          request.query.where.isInstructorApproved == false
-      );
+      allow list: if isAdmin();
       allow get: if isAdmin() || isOwner(userId);
       allow create: if isOwner(userId);
       allow update: if isAdmin() || (isOwner(userId) && !('role' in request.resource.data) && !('isInstructorApproved' in request.resource.data));
@@ -81,7 +78,7 @@ service cloud.firestore {
     // --- Course Collection Rules ---
     match /courses/{courseId} {
       allow get: if true;
-      allow list: if isSignedIn();
+      allow list: if isAdmin(); // SECURED: Only admins can list all courses
       allow create: if isApprovedInstructor();
       
       // Admins can update anything. Instructors can only update their own course if it's a draft.
