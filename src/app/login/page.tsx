@@ -94,7 +94,7 @@ export default function LoginPage() {
   }, [db]);
   
 
-  const handleAuthSuccess = async (firebaseUser: FirebaseUser) => {
+  const handleAuthSuccess = async (firebaseUser: FirebaseUser, acceptedTerms?: boolean) => {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
@@ -109,12 +109,15 @@ export default function LoginPage() {
             isInstructorApproved: false,
             createdAt: serverTimestamp() as any,
             lastLogin: serverTimestamp() as any,
-            termsAcceptedAt: serverTimestamp() as any,
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
             country: detectedCountry?.name,
             countryCode: detectedCountry?.code?.toLowerCase(),
             preferredLanguage: i18n.language as 'fr' | 'en' | 'sg',
+            isProfileComplete: false,
         };
+        if (acceptedTerms) {
+            finalUserData.termsAcceptedAt = serverTimestamp() as any;
+        }
         await setDoc(userDocRef, finalUserData, { merge: true });
     } else {
         const existingData = userDocSnap.data() as FormaAfriqueUser;
@@ -142,7 +145,7 @@ export default function LoginPage() {
     try {
       const userCredential = await createUserWithEmailAndPassword(getAuth(), values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.fullName });
-      await handleAuthSuccess(userCredential.user);
+      await handleAuthSuccess(userCredential.user, values.terms);
     } catch (error) { 
         if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
             toast({ variant: 'destructive', title: t('errorTitle'), description: t('registerErrorEmailInUse') });
@@ -158,7 +161,7 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       const result = await signInWithPopup(getAuth(), provider);
-      await handleAuthSuccess(result.user);
+      await handleAuthSuccess(result.user, true); // Assume Google sign-in implies term acceptance for simplicity here
     } catch (err) {
       toast({ variant: 'destructive', title: "Erreur", description: "Erreur lors de la connexion avec Google." });
     } finally {
