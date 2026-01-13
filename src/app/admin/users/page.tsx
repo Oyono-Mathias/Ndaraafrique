@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -52,11 +51,12 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
+import React from 'react';
 
 
 // --- SKELETON LOADER ---
 const UserTableSkeleton = () => (
-    <>
+    <React.Fragment>
       {[...Array(5)].map((_, i) => (
         <TableRow key={i} className="dark:border-slate-700">
           <TableCell>
@@ -72,7 +72,7 @@ const UserTableSkeleton = () => (
           <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
         </TableRow>
       ))}
-    </>
+    </React.Fragment>
 );
 
 // --- COMPOSANTS DE L'INTERFACE ---
@@ -193,13 +193,25 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
             setFile(selectedFile);
             const reader = new FileReader();
             reader.onload = (event) => {
-                const data = new Uint8Array(event.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json = XLSX.utils.sheet_to_json<{ Nom: string; Email: string }>(worksheet);
-                const parsedUsers = json.map(row => ({ fullName: row.Nom, email: row.Email }));
-                setUsersToImport(parsedUsers);
+                try {
+                    const data = new Uint8Array(event.target?.result as ArrayBuffer);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const json = XLSX.utils.sheet_to_json<{ Nom: string; Email: string }>(worksheet);
+                    
+                    if (!json[0] || !('Nom' in json[0]) || !('Email' in json[0])) {
+                        alert("Format de fichier incorrect. Assurez-vous que les colonnes s'appellent 'Nom' et 'Email'.");
+                        reset();
+                        return;
+                    }
+
+                    const parsedUsers = json.map(row => ({ fullName: row.Nom, email: row.Email }));
+                    setUsersToImport(parsedUsers);
+                } catch (error) {
+                    alert("Erreur lors de la lecture du fichier. Est-il au bon format (.xlsx) ?");
+                    reset();
+                }
             };
             reader.readAsArrayBuffer(selectedFile);
         }

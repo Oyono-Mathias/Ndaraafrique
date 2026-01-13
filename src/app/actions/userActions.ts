@@ -89,7 +89,9 @@ export async function importUsersAction(users: { fullName: string; email: string
                 uid: userRecord.uid,
                 email: userData.email,
                 fullName: userData.fullName,
+                username: userData.email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '_'), // Generate a default username
                 role: 'student',
+                status: 'active',
                 createdAt: FieldValue.serverTimestamp(),
                 isInstructorApproved: false,
                 isProfileComplete: false,
@@ -100,7 +102,13 @@ export async function importUsersAction(users: { fullName: string; email: string
 
         } catch (error: any) {
             console.error(`Failed to import user ${userData.email}:`, error);
-            results.push({ email: userData.email, status: 'error', error: error.message });
+             let errorMessage = error.message;
+            if (error.code === 'auth/email-already-exists') {
+                errorMessage = "Cet email existe déjà dans le système.";
+            } else if (error.code === 'auth/invalid-email') {
+                errorMessage = "Le format de l'email est invalide.";
+            }
+            results.push({ email: userData.email, status: 'error', error: errorMessage });
         }
     }
     return { success: true, results };

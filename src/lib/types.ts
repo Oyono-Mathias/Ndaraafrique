@@ -83,3 +83,60 @@ export interface Review {
     comment: string;
     createdAt: Timestamp;
 }
+
+export type FormaAfriqueUser = {
+  uid: string;
+  email: string;
+  username: string;
+  fullName: string;
+  role: 'student' | 'instructor' | 'admin';
+  isInstructorApproved: boolean;
+  availableRoles: ('student' | 'instructor' | 'admin')[];
+  status?: 'active' | 'suspended';
+  bio?: string;
+  socialLinks?: {
+      website?: string;
+      twitter?: string;
+      linkedin?: string;
+      youtube?: string;
+  };
+  payoutInfo?: {
+      mobileMoneyNumber?: string;
+  };
+  notificationPreferences?: {
+    promotions: boolean;
+    reminders: boolean;
+  };
+  videoPlaybackPreferences?: {
+      defaultQuality: string;
+      defaultSpeed: string;
+  };
+  careerGoals?: {
+      currentRole?: string;
+      interestDomain?: string; 
+      mainGoal?: string;
+  };
+  profilePictureURL?: string;
+  instructorApplication?: {
+      specialty?: string;
+      whatsappNumber?: string;
+      youtubeUrl?: string;
+      facebookUrl?: string;
+      presentationVideoUrl?: string;
+      professionalExperience?: string;
+      linkedinUrl?: string;
+      portfolioUrl?: string;
+      firstCourseTitle?: string;
+      firstCourseDescription?: string;
+      hasEquipment?: boolean;
+      submittedAt: Date;
+  };
+  createdAt?: Timestamp;
+  lastLogin?: Timestamp;
+  termsAcceptedAt?: Timestamp;
+  country?: string;
+  countryCode?: string;
+  isProfileComplete?: boolean;
+  preferredLanguage?: 'fr' | 'en' | 'sg';
+  badges?: string[];
+};
