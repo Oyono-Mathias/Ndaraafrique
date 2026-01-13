@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -21,7 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -214,10 +213,12 @@ export default function InstructorApplicationsPage() {
             await updateDoc(userRef, { isInstructorApproved: true });
             toast({ title: t('applicationApprovedTitle'), description: t('applicationApprovedMessage') });
         } else {
-            await updateDoc(userRef, { role: 'student', isInstructorApproved: false });
+            // Note: If rejecting, you might want to revert the role or handle it differently.
+            // For now, we just update the application status, but they remain a user with 'instructor' role.
+            await updateDoc(userRef, { role: 'student', isInstructorApproved: false }); // Revert role to student
             toast({ title: t('applicationRejectedTitle'), description: t('applicationRejectedMessage') });
         }
-        // TODO: Send email with `message` content
+        // TODO: In a real app, send an email to the user with the `message` content.
     } catch (error) {
         console.error("Error updating application:", error);
         toast({ variant: 'destructive', title: t('errorTitle'), description: t('applicationUpdateError') });
@@ -302,4 +303,3 @@ export default function InstructorApplicationsPage() {
     </>
   );
 }
-
