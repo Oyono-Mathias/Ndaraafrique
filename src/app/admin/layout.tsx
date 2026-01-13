@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -62,8 +61,8 @@ export default function AdminLayout({
 
   if (isUserLoading || role !== 'admin' || formaAfriqueUser?.role !== 'admin') {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-gray-900">
-        <Loader2 className="h-8 w-8 animate-spin text-white" />
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -76,21 +75,21 @@ export default function AdminLayout({
 
 
   return (
-    <div className="md:grid md:grid-cols-[280px_1fr] bg-background text-foreground">
+    <div className="admin-grid-layout bg-background text-foreground">
         {/* --- Sidebar for Tablet and Desktop --- */}
-        <aside className="hidden md:block h-screen sticky top-0 border-r border-border">
+        <aside className="admin-sidebar-container hidden md:block border-r border-slate-700">
              <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
         </aside>
 
         {/* --- Main Content Area --- */}
         <div className="flex flex-col min-h-screen">
-             <header className="flex h-16 items-center gap-4 border-b border-slate-700 bg-slate-800/30 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
+             <header className="flex h-16 items-center gap-4 border-b border-slate-800 bg-card/50 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
                 <Sheet open={open} onOpenChange={setOpen}>
-                    <SheetTrigger asChild>
+                    <SheetTrigger asChild className="md:hidden">
                     <Button
                         variant="outline"
                         size="icon"
-                        className="shrink-0 md:hidden bg-transparent border-slate-700"
+                        className="shrink-0 bg-transparent border-slate-700"
                     >
                         <PanelLeft className="h-5 w-5" />
                         <span className="sr-only">Ouvrir le menu</span>

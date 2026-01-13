@@ -9,7 +9,7 @@
     --foreground: 210 20% 98%; /* #f8fafc - Almost White */
 
     /* Glassmorphism Card Style */
-    --card: 217 33% 17%; /* Base color for solid fallback */
+    --card: 222 47% 11%; /* Base color for solid fallback */
     --card-foreground: 210 20% 98%;
     
     --popover: 224 71.4% 4.1%;
@@ -48,7 +48,7 @@
     /* Same as :root for a dark-only theme */
     --background: 222 83% 4%;
     --foreground: 210 20% 98%;
-    --card: 217 33% 17%;
+    --card: 222 47% 11%;
     --card-foreground: 210 20% 98%;
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 215 20.2% 65.1%;
@@ -101,8 +101,15 @@
   /* Layout Grids */
   .admin-grid-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-rows: auto 1fr;
   }
+  @media (min-width: 768px) {
+    .admin-grid-layout {
+      grid-template-columns: 280px 1fr;
+      grid-template-rows: 1fr;
+    }
+  }
+
   .admin-sidebar-container {
     height: 100vh;
     position: sticky;
