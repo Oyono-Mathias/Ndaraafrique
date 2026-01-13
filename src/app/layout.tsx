@@ -7,12 +7,15 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
+import { PwaInstaller } from "@/components/PwaInstaller";
 
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
   description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
   keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  manifest: '/manifest.json',
+  themeColor: '#007bff',
 };
 
 const fontSans = Inter({
@@ -33,6 +36,7 @@ export default function RootLayout({
           <RoleProvider>
             <AppShell>{children}</AppShell>
             <Toaster />
+            <PwaInstaller />
           </RoleProvider>
         </FirebaseClientProvider>
       </body>
