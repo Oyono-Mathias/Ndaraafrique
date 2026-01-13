@@ -49,12 +49,12 @@ service cloud.firestore {
       
       // --- Règles pour les sous-collections (CONTENU PROTÉGÉ) ---
       match /sections/{sectionId} {
-        // Seuls les inscrits, le propriétaire ou un admin peuvent voir le programme
-        allow read: if isSignedIn() && (isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin());
+        // N'importe qui peut lire le programme (sections et leçons)
+        allow read: if true;
         allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
 
         match /lectures/{lectureId} {
-          allow read: if isSignedIn() && (isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin());
+          allow read: if true;
           allow create: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
           allow update, delete: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
         }
@@ -205,5 +205,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
