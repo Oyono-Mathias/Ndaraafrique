@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * * as z from 'zod';
+import * as z from 'zod';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useDoc, useMemoFirebase } from '@/firebase';
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign, MessageCircle } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,6 +35,8 @@ const settingsSchema = z.object({
     featuredCourseId: z.string().optional(),
     announcementMessage: z.string().optional(),
     allowInstructorSignup: z.boolean().default(true),
+    autoApproveCourses: z.boolean().default(false),
+    enableInternalMessaging: z.boolean().default(true),
     termsOfService: z.string().optional(),
     privacyPolicy: z.string().optional(),
 });
@@ -69,6 +71,8 @@ export default function AdminSettingsPage() {
             featuredCourseId: '',
             announcementMessage: '',
             allowInstructorSignup: true,
+            autoApproveCourses: false,
+            enableInternalMessaging: true,
             termsOfService: '',
             privacyPolicy: '',
         },
@@ -89,6 +93,9 @@ export default function AdminSettingsPage() {
                 featuredCourseId: currentSettings.commercial?.featuredCourseId || '',
                 announcementMessage: currentSettings.platform?.announcementMessage || '',
                 allowInstructorSignup: currentSettings.platform?.allowInstructorSignup ?? true,
+                autoApproveCourses: currentSettings.platform?.allowInstructorSignup ?? true,
+                autoApproveCourses: currentSettings.platform?.autoApproveCourses ?? false,
+                enableInternalMessaging: currentSettings.platform?.enableInternalMessaging ?? true,
                 termsOfService: currentSettings.legal?.termsOfService || '',
                 privacyPolicy: currentSettings.legal?.privacyPolicy || '',
             };
@@ -146,6 +153,8 @@ export default function AdminSettingsPage() {
                     announcementMessage: data.announcementMessage,
                     maintenanceMode: data.maintenanceMode,
                     allowInstructorSignup: data.allowInstructorSignup,
+                    autoApproveCourses: data.autoApproveCourses,
+                    enableInternalMessaging: data.enableInternalMessaging,
                 },
                 legal: {
                     termsOfService: data.termsOfService,
@@ -269,6 +278,12 @@ export default function AdminSettingsPage() {
                                     <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700 tv:p-6"><div className="space-y-0.5"><FormLabel className="tv:text-lg">{t('allow_applications')}</FormLabel><FormDescription className="tv:text-base">{t('allow_applications_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                                     )} />
+                                    <FormField control={form.control} name="autoApproveCourses" render={({ field }) => (
+                                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700 tv:p-6"><div className="space-y-0.5"><FormLabel className="tv:text-lg">Approbation automatique des cours</FormLabel><FormDescription className="tv:text-base">Si activé, les cours soumis par les instructeurs seront publiés immédiatement.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                    )} />
+                                     <FormField control={form.control} name="enableInternalMessaging" render={({ field }) => (
+                                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700 tv:p-6"><div className="space-y-0.5"><FormLabel className="tv:text-lg">Activer la messagerie interne</FormLabel><FormDescription className="tv:text-base">Permet aux étudiants de contacter les instructeurs et autres étudiants.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                    )} />
                                </CardContent>
                            </Card>
                         </TabsContent>
@@ -287,5 +302,5 @@ export default function AdminSettingsPage() {
             </Form>
         </>
     );
-    
+
     
