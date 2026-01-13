@@ -110,11 +110,17 @@ export default function TicketConversationPage() {
       createdAt: serverTimestamp()
     };
     
-    await addDoc(collection(db, `support_tickets/${ticketId}/messages`), messagePayload);
-    await updateDoc(ticketRef, {
+    const batch = writeBatch(db);
+    
+    const messageRef = doc(collection(db, `support_tickets/${ticketId}/messages`));
+    batch.set(messageRef, messagePayload);
+
+    batch.update(ticketRef, {
       lastMessage: textToSend,
       updatedAt: serverTimestamp(),
     });
+
+    await batch.commit();
 
     setIsSending(false);
   };

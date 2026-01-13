@@ -23,31 +23,29 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
 
   try {
     const enrollmentDoc = await enrollmentRef.get();
-    if (!enrollmentDoc.exists) {
-      // If enrollment doesn't exist, maybe it was already refunded. Close ticket and report success.
-      await ticketRef.update({ status: 'fermé', updatedAt: FieldValue.serverTimestamp() });
-      return { success: true };
-    }
     
-    // Find the related payment to mark as refunded.
-    // This assumes there's one payment per enrollment, which might need adjustment based on real logic.
-    const paymentsQuery = await adminDb.collection('payments')
-      .where('userId', '==', userId)
-      .where('courseId', '==', courseId)
-      .limit(1)
-      .get();
-      
     const batch = adminDb.batch();
 
-    if (!paymentsQuery.empty) {
-      const paymentDoc = paymentsQuery.docs[0];
-      batch.update(paymentDoc.ref, { status: 'Refunded' });
+    // Even if enrollment doesn't exist, close ticket and proceed
+    // This handles cases where access was already revoked manually
+    if (enrollmentDoc.exists) {
+        // Find the related payment to mark as refunded.
+        const paymentsQuery = await adminDb.collection('payments')
+          .where('userId', '==', userId)
+          .where('courseId', '==', courseId)
+          .limit(1)
+          .get();
+
+        if (!paymentsQuery.empty) {
+          const paymentDoc = paymentsQuery.docs[0];
+          batch.update(paymentDoc.ref, { status: 'Refunded' });
+        }
+
+        // Delete the enrollment document
+        batch.delete(enrollmentRef);
     }
-
-    // Delete the enrollment document
-    batch.delete(enrollmentRef);
-
-    // Update the support ticket status
+      
+    // Update the support ticket status to "closed"
     batch.update(ticketRef, { status: 'fermé', updatedAt: FieldValue.serverTimestamp() });
 
     await batch.commit();
@@ -59,5 +57,3 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
     return { success: false, error: error.message || 'Une erreur inconnue est survenue lors de la révocation.' };
   }
 }
-
-    
