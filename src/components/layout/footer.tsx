@@ -12,57 +12,37 @@ const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
     </svg>
 );
 
-
-export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: (e: React.MouseEvent) => void }) {
+export function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="footer">
-      <div className="container mx-auto px-4">
-        
-        <div className="grid md:grid-cols-12 gap-8">
-          <div className="md:col-span-12 lg:col-span-5">
-             <Link href="/" className="flex items-center gap-2 mb-4 footer-brand">
-                <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
-                <span>Ndara Afrique</span>
-            </Link>
-            <p className="text-sm max-w-md">
-                L'excellence par le savoir. La première plateforme panafricaine pour les métiers de demain.
+    <footer className="border-t border-white/10 bg-black/50 backdrop-blur-lg pt-16 pb-8">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+            <div className="col-span-1 md:col-span-2">
+            <h3 className="text-2xl font-bold mb-4">Ndara Afrique</h3>
+            <p className="text-gray-400 max-w-sm">
+                La plateforme d'excellence pour former la prochaine génération de leaders numériques sur le continent.
             </p>
-          </div>
-          <div className="md:col-span-7 lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-8">
+            </div>
             <div>
-              <h3 className="font-semibold text-slate-200 mb-4">Liens Rapides</h3>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/" className="footer-link">Accueil</Link></li>
-                <li><Link href="/search" className="footer-link">Cours</Link></li>
-                <li><Link href="/about" className="footer-link">À Propos</Link></li>
-              </ul>
+            <h4 className="font-bold mb-4 text-white">Navigation</h4>
+            <ul className="space-y-2 text-gray-400 text-sm">
+                <li className="hover:text-white cursor-pointer transition">Accueil</li>
+                <li className="hover:text-white cursor-pointer transition">Tous les cours</li>
+                <li className="hover:text-white cursor-pointer transition">Communauté</li>
+            </ul>
             </div>
-             <div>
-              <h3 className="font-semibold text-slate-200 mb-4">Contact</h3>
-              <ul className="space-y-2 text-sm">
-                  <li><a href="mailto:contact@ndara-afrique.com" className="footer-link">contact@ndara-afrique.com</a></li>
-              </ul>
+            <div>
+            <h4 className="font-bold mb-4 text-white">Contact</h4>
+            <ul className="space-y-2 text-gray-400 text-sm">
+                <li className="hover:text-white cursor-pointer transition text-xs">support@ndara-afrique.com</li>
+                <li className="hover:text-white cursor-pointer transition">Bangui, RCA</li>
+            </ul>
             </div>
-             <div>
-              <h3 className="font-semibold text-slate-200 mb-4">Légal</h3>
-              <ul className="space-y-2 text-sm">
-                  <li><Link href="/mentions-legales" className="footer-link">Mentions Légales</Link></li>
-                  <li><Link href="/cgu" className="footer-link">Conditions d'utilisation</Link></li>
-              </ul>
-            </div>
-          </div>
         </div>
-        <div className="copyright">
-             <div className="flex items-center justify-center gap-6 mb-6">
-                  <a href="#" className="text-slate-400 hover:text-primary"><Facebook className="h-6 w-6" /></a>
-                  <a href="#" className="text-slate-400 hover:text-primary"><WhatsAppIcon className="h-6 w-6" /></a>
-                  <a href="#" className="text-slate-400 hover:text-primary"><Linkedin className="h-6 w-6" /></a>
-              </div>
-            <p className="text-xs">© 2026 Ndara Afrique - Tous droits réservés.</p>
+        <div className="text-center text-gray-600 text-xs border-t border-white/5 pt-8">
+            © 2026 Ndara Afrique. Tous droits réservés.
         </div>
-      </div>
     </footer>
   );
 }

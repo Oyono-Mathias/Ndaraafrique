@@ -1,34 +1,32 @@
-
 import React from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Image from 'next/image';
 import { Footer } from '@/components/layout/footer';
-
-const CourseCard = ({ title, imageUrl }: { title: string, imageUrl: string }) => (
-  <div className="benefit-card text-left">
-    <Image src={imageUrl} width={400} height={225} alt={title} className="rounded-lg mb-4 w-full aspect-video object-cover" />
-    <Badge variant="secondary" className="mb-2">Gratuit</Badge>
-    <h3 className="font-bold text-xl mb-4 text-white">{title}</h3>
-    <Button variant="outline" className="w-full bg-white/10 border-white/20 text-white hover:bg-white/20">Consulter</Button>
-  </div>
-);
+import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 
 const LandingPage = () => {
   return (
     <div className="bg-[#020617] text-white min-h-screen font-sans">
-      {/* HEADER */}
+      {/* HEADER - Nettoyé */}
       <nav className="flex justify-between items-center p-6 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
         <div className="text-2xl font-bold tracking-tighter">
-          <Link href="/">Ndara Afrique</Link>
+            <Link href="/" className="flex items-center gap-2">
+                <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
+                <span>Ndara Afrique</span>
+            </Link>
         </div>
+        
         <div className="flex items-center gap-6">
+          {/* Sélecteur de langue discret */}
           <select className="bg-transparent border-none text-sm cursor-pointer focus:outline-none">
             <option value="fr">Français</option>
             <option value="sg">Sango</option>
           </select>
-          <Link href="/login">
+
+          {/* Bouton SE CONNECTER (Unique en haut) */}
+           <Link href="/login">
             <Button variant="outline" size="sm">
               Se connecter
             </Button>
@@ -36,30 +34,57 @@ const LandingPage = () => {
         </div>
       </nav>
 
-      {/* HERO SECTION */}
+      {/* SECTION HERO - Texte en Français */}
       <main className="max-w-6xl mx-auto px-6 pt-20 pb-10 text-center">
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight hero-text" style={{ animationDelay: '0s' }}>
-          L'excellence numérique <br /> 
-          <span className="text-blue-500">pour l'Afrique</span>
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight hero-text">
+            Tonga na ndara
         </h1>
-        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text" style={{ animationDelay: '0.2s' }}>
-          Rejoignez la première plateforme panafricaine dédiée aux métiers de demain. 
-          Apprenez, pratiquez et certifiez vos compétences.
+        
+        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text" style={{animationDelay: '0.2s'}}>
+          La première plateforme d'apprentissage panafricaine pour les métiers de demain.
         </p>
+
+        {/* Bouton INSCRIPTION (Unique au centre) */}
         <Link href="/register">
-          <Button size="lg" className="px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
-            Commencer l'inscription
-          </Button>
+            <Button size="lg" className="px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
+                S'inscrire
+            </Button>
         </Link>
       </main>
 
-      {/* EXPLORE COURSES SECTION */}
-      <section className="py-20 px-6">
-        <h2 className="text-4xl font-bold text-center mb-12 text-white">Explorez nos cours gratuits</h2>
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <CourseCard title="Introduction au Développement Web" imageUrl="https://picsum.photos/seed/devweb/400/225" />
-          <CourseCard title="Les Fondamentaux du Marketing Digital" imageUrl="https://picsum.photos/seed/marketing/400/225" />
-          <CourseCard title="Initiation à la Data Science avec Python" imageUrl="https://picsum.photos/seed/datascience/400/225" />
+       {/* SECTION CAROUSEL */}
+       <section className="max-w-6xl mx-auto px-6 py-12">
+            <DynamicCarousel />
+       </section>
+
+      {/* SECTION : COURS PUBLICS DYNAMIQUES */}
+      <section className="py-20 max-w-6xl mx-auto px-6">
+        <div className="flex justify-between items-end mb-10">
+          <div>
+            <h2 className="text-3xl font-bold mb-2">Cours Publics</h2>
+            <p className="text-gray-400">Découvrez nos formations accessibles à tous sans attendre.</p>
+          </div>
+          <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition whitespace-nowrap">
+            Voir tout →
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all group">
+              <div className="h-48 bg-gradient-to-br from-blue-900/40 to-black flex items-center justify-center">
+                <span className="text-4xl">📚</span>
+              </div>
+              <div className="p-6">
+                <span className="bg-blue-600/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full uppercase">Gratuit</span>
+                <h3 className="text-xl font-semibold mt-3 mb-2 group-hover:text-blue-400 transition">Introduction à l'IA</h3>
+                <p className="text-gray-400 text-sm mb-4">Apprenez les bases de l'intelligence artificielle pour l'Afrique.</p>
+                <button className="w-full py-3 bg-white/10 hover:bg-blue-600 rounded-xl font-medium transition-colors">
+                  Consulter le cours
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
 
