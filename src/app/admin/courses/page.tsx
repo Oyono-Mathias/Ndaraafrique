@@ -94,7 +94,7 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
 
     return (
     <Card 
-        className="dark:bg-slate-800 dark:border-slate-700 flex flex-col cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-primary/10 hover:shadow-lg"
+        className="dark:bg-[#1e293b] dark:border-slate-700 flex flex-col cursor-pointer transition-all duration-300 hover:scale-[1.03] hover:shadow-primary/10 hover:shadow-lg"
         onClick={() => router.push(`/instructor/courses/edit/${course.id}`)}
     >
         <div className="relative aspect-video">
@@ -109,10 +109,10 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
             <CardTitle className="text-base line-clamp-2 leading-tight dark:text-white">{course.title}</CardTitle>
             <CardDescription className="text-xs pt-1 dark:text-slate-400">Par {instructorName}</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col justify-end">
+        <CardContent className="flex flex-col justify-end pt-0">
              <div className="flex justify-between items-center text-xs text-muted-foreground dark:text-slate-400">
                 <span>{course.category}</span>
-                <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize">
+                <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600">
                     {getStatusText(course.status)}
                 </Badge>
             </div>
@@ -287,3 +287,5 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
+
+    

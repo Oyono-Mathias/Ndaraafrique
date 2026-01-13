@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -62,18 +63,41 @@ const UserTableSkeleton = () => (
           <TableCell>
             <div className="flex items-center gap-3">
               <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
-              <Skeleton className="h-4 w-32 dark:bg-slate-700" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-24 dark:bg-slate-700" />
+                <Skeleton className="h-3 w-32 dark:bg-slate-700" />
+              </div>
             </div>
           </TableCell>
-          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
           <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
-          <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-28 dark:bg-slate-700" /></TableCell>
           <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
         </TableRow>
       ))}
     </React.Fragment>
 );
+
+const UserCardSkeleton = () => (
+    <div className="space-y-4">
+        {[...Array(3)].map((_, i) => (
+             <Card key={i} className="p-4 dark:bg-slate-900/50 dark:border-slate-700">
+                <div className="flex items-start gap-4">
+                    <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+                    <div className="flex-1 space-y-2">
+                        <Skeleton className="h-4 w-3/5 dark:bg-slate-700" />
+                        <Skeleton className="h-3 w-4/5 dark:bg-slate-700" />
+                    </div>
+                     <Skeleton className="h-8 w-8 rounded-md dark:bg-slate-700" />
+                </div>
+                <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
+                    <Skeleton className="h-5 w-16 rounded-full dark:bg-slate-700" />
+                    <Skeleton className="h-5 w-20 rounded-full dark:bg-slate-700" />
+                </div>
+            </Card>
+        ))}
+    </div>
+);
+
 
 // --- COMPOSANTS DE L'INTERFACE ---
 const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
@@ -301,7 +325,7 @@ export default function AdminUsersPage() {
   }, [users, searchTerm]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4">
+    <div className="space-y-6">
       <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold dark:text-white">Utilisateurs</h1>
@@ -330,15 +354,16 @@ export default function AdminUsersPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="overflow-x-auto hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                   <TableHead className="dark:text-slate-400">Nom</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">Email</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Rôle</TableHead>
-                  <TableHead className="hidden sm:table-cell dark:text-slate-400">Statut</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">Date d'inscription</TableHead>
+                  <TableHead className="dark:text-slate-400">Email</TableHead>
+                  <TableHead className="dark:text-slate-400">Rôle</TableHead>
+                  <TableHead className="dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="dark:text-slate-400">Date d'inscription</TableHead>
                   <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -356,18 +381,18 @@ export default function AdminUsersPage() {
                             <span className="font-medium dark:text-slate-100">{user.fullName}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">{user.email}</TableCell>
-                        <TableCell className="hidden lg:table-cell">
+                        <TableCell className="text-muted-foreground dark:text-slate-400">{user.email}</TableCell>
+                        <TableCell>
                           <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
                             {user.role}
                           </Badge>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">
+                        <TableCell>
                            <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
                             {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="hidden lg:table-cell text-muted-foreground dark:text-slate-500">
+                        <TableCell className="text-muted-foreground dark:text-slate-500">
                            {user.createdAt ? format((user.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -395,9 +420,48 @@ export default function AdminUsersPage() {
               </TableBody>
             </Table>
           </div>
+          
+           {/* Mobile Card View */}
+           <div className="md:hidden space-y-4">
+              {isLoading ? <UserCardSkeleton /> : (
+                  filteredUsers.length > 0 ? (
+                      filteredUsers.map((user) => (
+                           <Card key={user.uid} className={cn("p-4 dark:bg-slate-900/50 dark:border-slate-700", isUpdating && 'opacity-50')}>
+                              <div className="flex items-start gap-4">
+                                  <Avatar>
+                                      <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                                      <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="flex-1">
+                                      <p className="font-bold dark:text-white">{user.fullName}</p>
+                                      <p className="text-sm text-muted-foreground dark:text-slate-400">{user.email}</p>
+                                  </div>
+                                  <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} />
+                              </div>
+                              <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
+                                   <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
+                                      {user.role}
+                                    </Badge>
+                                    <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
+                                      {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
+                                    </Badge>
+                              </div>
+                           </Card>
+                      ))
+                  ) : (
+                       <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <UserX className="h-12 w-12" />
+                          <p className="font-medium">Aucun utilisateur trouvé</p>
+                      </div>
+                  )
+              )}
+           </div>
+
         </CardContent>
       </Card>
       <ImportUsersDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} />
     </div>
   );
 }
+
+    

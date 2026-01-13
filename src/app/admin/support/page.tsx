@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -90,13 +91,14 @@ export default function AdminSupportPage() {
           </Tabs>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          {/* Desktop Table View */}
+          <div className="overflow-x-auto hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                   <TableHead className="dark:text-slate-400">{t('subject')}</TableHead>
-                  <TableHead className="hidden md:table-cell dark:text-slate-400">{t('category')}</TableHead>
-                  <TableHead className="hidden lg:table-cell dark:text-slate-400">{t('lastUpdate')}</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('category')}</TableHead>
+                  <TableHead className="dark:text-slate-400">{t('lastUpdate')}</TableHead>
                   <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -105,8 +107,8 @@ export default function AdminSupportPage() {
                   [...Array(5)].map((_, i) => (
                     <TableRow key={i} className="dark:border-slate-700">
                       <TableCell><div className="flex items-center gap-2"><Skeleton className="h-4 w-4 rounded-full dark:bg-slate-700"/><Skeleton className="h-4 w-48 dark:bg-slate-700"/></div></TableCell>
-                      <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
-                      <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-32 dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32 dark:bg-slate-700" /></TableCell>
                       <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto dark:bg-slate-700" /></TableCell>
                     </TableRow>
                   ))
@@ -123,10 +125,10 @@ export default function AdminSupportPage() {
                             <span className="font-medium dark:text-slate-100 truncate">{ticket.subject}</span>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden md:table-cell">
+                        <TableCell>
                            {getCategoryBadge(ticket.category, t)}
                         </TableCell>
-                        <TableCell className="text-muted-foreground hidden lg:table-cell dark:text-slate-400">
+                        <TableCell className="text-muted-foreground dark:text-slate-400">
                           {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -150,8 +152,49 @@ export default function AdminSupportPage() {
               </TableBody>
             </Table>
           </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+              {isLoading ? (
+                  [...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 w-full dark:bg-slate-700" />)
+              ) : filteredTickets.length > 0 ? (
+                  filteredTickets.map((ticket) => {
+                      const isOverdue = ticket.updatedAt && (new Date().getTime() - ticket.updatedAt.toDate().getTime()) > 24 * 60 * 60 * 1000;
+                      return (
+                          <Card key={ticket.id} className="dark:bg-slate-900/50 dark:border-slate-700">
+                              <CardContent className="p-4">
+                                  <div className="flex justify-between items-start gap-4">
+                                      <div className="flex-1">
+                                           <div className="flex items-center gap-2 mb-2">
+                                              {getCategoryBadge(ticket.category, t)}
+                                              {ticket.status === 'ouvert' && isOverdue && <Badge variant="destructive" className="animate-pulse">Urgent</Badge>}
+                                           </div>
+                                           <p className="font-bold text-sm text-white line-clamp-2">{ticket.subject}</p>
+                                      </div>
+                                      <Button asChild variant="default" size="sm">
+                                          <Link href={`/admin/support/${ticket.id}`}>{t('open')}</Link>
+                                      </Button>
+                                  </div>
+                                  <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-700">
+                                      Dernière activité: {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
+                                  </p>
+                              </CardContent>
+                          </Card>
+                      )
+                  })
+              ) : (
+                   <div className="h-48 text-center flex items-center justify-center">
+                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                          <MessageSquareDashed className="h-12 w-12" />
+                          <p className="font-medium">{t('noTickets', { status: activeTab })}</p>
+                      </div>
+                    </div>
+              )}
+          </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    

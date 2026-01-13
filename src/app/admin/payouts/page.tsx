@@ -209,7 +209,7 @@ export default function PayoutsPage() {
                   {isLoading ? (
                     [...Array(5)].map((_, i) => (
                       <TableRow key={i} className="dark:border-slate-700">
-                        <TableCell><Skeleton className="h-10 w-40 dark:bg-slate-700" /></TableCell>
+                        <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" /><Skeleton className="h-4 w-32 dark:bg-slate-700" /></div></TableCell>
                         <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-28 dark:bg-slate-700" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20 dark:bg-slate-700" /></TableCell>
@@ -340,3 +340,5 @@ export default function PayoutsPage() {
     </>
   );
 }
+
+    

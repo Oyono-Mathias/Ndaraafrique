@@ -150,55 +150,75 @@ export default function AdminPaymentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="hidden sm:block">
-             <div className="space-y-1">
+          <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                  <TableHead className="dark:text-slate-400">Client</TableHead>
+                  <TableHead className="dark:text-slate-400">Détails</TableHead>
+                  <TableHead className="dark:text-slate-400">Date</TableHead>
+                  <TableHead className="dark:text-slate-400">Statut</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">Montant</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {isLoading ? (
                   [...Array(5)].map((_, i) => (
-                    <div key={i} className="flex items-center gap-4 p-3 rounded-lg border-b border-transparent">
-                      <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
-                      <div className="flex-1 space-y-1">
-                        <Skeleton className="h-4 w-3/5 dark:bg-slate-700" />
-                        <Skeleton className="h-3 w-2/5 dark:bg-slate-700" />
-                      </div>
-                       <Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" />
-                    </div>
+                    <TableRow key={i} className="dark:border-slate-700">
+                      <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" /><Skeleton className="h-4 w-32 dark:bg-slate-700" /></div></TableCell>
+                      <TableCell><Skeleton className="h-4 w-40 dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28 dark:bg-slate-700" /></TableCell>
+                      <TableCell><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-20 dark:bg-slate-700" /></TableCell>
+                    </TableRow>
                   ))
                 ) : filteredPayments.length > 0 ? (
                   filteredPayments.map((payment) => (
-                    <div key={payment.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-800/50 border-b border-slate-800 last:border-b-0">
-                      <Avatar>
-                        <AvatarImage src={payment.user?.profilePictureURL} alt={payment.user?.fullName} />
-                        <AvatarFallback>{payment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-semibold text-sm dark:text-white">{payment.user?.fullName}</p>
-                        <p className="text-xs text-muted-foreground dark:text-slate-400">{payment.courseTitle}</p>
-                      </div>
-                      <div className="hidden md:block text-xs text-center text-muted-foreground dark:text-slate-500">
-                         {payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}
-                      </div>
-                      <StatusBadge status={payment.status} />
-                      <div className="font-mono text-sm text-right font-semibold dark:text-slate-200">
+                    <TableRow key={payment.id} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                      <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar>
+                              <AvatarImage src={payment.user?.profilePictureURL} alt={payment.user?.fullName} />
+                              <AvatarFallback>{payment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-semibold text-sm dark:text-white">{payment.user?.fullName}</p>
+                                <p className="text-xs text-muted-foreground dark:text-slate-500">{payment.user?.email}</p>
+                            </div>
+                          </div>
+                      </TableCell>
+                       <TableCell>
+                           <p className="font-semibold text-sm line-clamp-1 dark:text-white">{payment.courseTitle}</p>
+                           <p className="text-xs text-muted-foreground dark:text-slate-500 truncate">ID: {payment.id}</p>
+                       </TableCell>
+                       <TableCell className="text-xs text-muted-foreground dark:text-slate-400">
+                           {payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}
+                       </TableCell>
+                       <TableCell><StatusBadge status={payment.status} /></TableCell>
+                       <TableCell className="font-mono text-sm text-right font-semibold dark:text-slate-200">
                         {formatCurrency(payment.amount, payment.currency)}
-                      </div>
-                    </div>
+                      </TableCell>
+                    </TableRow>
                   ))
                 ) : (
-                   <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                      <ShoppingCart className="h-12 w-12" />
-                      <p className="font-medium">{t('noTransactionsFound')}</p>
-                      <p className="text-sm">
-                          {searchTerm 
-                              ? t('noResultsFor', { term: searchTerm })
-                              : t('noTransactionsYet')
-                          }
-                      </p>
-                  </div>
+                   <TableRow>
+                    <TableCell colSpan={5} className="h-48 text-center text-muted-foreground dark:text-slate-400">
+                        <ShoppingCart className="mx-auto h-12 w-12" />
+                        <p className="mt-2 font-medium">{t('noTransactionsFound')}</p>
+                        <p className="text-sm">
+                            {searchTerm 
+                                ? t('noResultsFor', { term: searchTerm })
+                                : t('noTransactionsYet')
+                            }
+                        </p>
+                    </TableCell>
+                   </TableRow>
                 )}
-             </div>
+              </TableBody>
+            </Table>
           </div>
 
-          <div className="sm:hidden space-y-4">
+          <div className="md:hidden space-y-4">
              {isLoading ? (
                 [...Array(5)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-lg dark:bg-slate-700" />)
              ) : filteredPayments.length > 0 ? (
@@ -210,23 +230,21 @@ export default function AdminPaymentsPage() {
                                 <AvatarFallback>{payment.user?.fullName?.charAt(0) || 'U'}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
-                                <p className="font-bold dark:text-white">{payment.user?.fullName}</p>
-                                <p className="text-sm text-muted-foreground dark:text-slate-400">{payment.courseTitle}</p>
+                                <p className="font-bold dark:text-white text-sm">{payment.user?.fullName}</p>
+                                <p className="text-xs text-muted-foreground dark:text-slate-400">{payment.courseTitle}</p>
                                  <p className="text-xs text-muted-foreground dark:text-slate-500 mt-1">{payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}</p>
                             </div>
-                            <div className="text-right">
-                                <p className="font-bold text-green-600 dark:text-green-400 text-lg">+{formatCurrency(payment.amount, payment.currency)}</p>
+                            <div className="text-right flex flex-col items-end gap-1">
+                                <p className="font-bold text-green-600 dark:text-green-400 text-base">+{formatCurrency(payment.amount, payment.currency)}</p>
                                 <StatusBadge status={payment.status} />
                             </div>
                         </div>
                     </Card>
                  ))
              ) : (
-                 <div className="h-48 text-center flex items-center justify-center">
-                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                      <ShoppingCart className="h-12 w-12" />
-                      <p className="font-medium">{t('noTransactionsFound')}</p>
-                    </div>
+                 <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                    <ShoppingCart className="h-12 w-12" />
+                    <p className="font-medium">{t('noTransactionsFound')}</p>
                 </div>
              )}
           </div>
@@ -236,3 +254,5 @@ export default function AdminPaymentsPage() {
     </div>
   );
 }
+
+    
