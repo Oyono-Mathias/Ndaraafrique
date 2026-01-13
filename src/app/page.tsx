@@ -22,7 +22,7 @@ const LandingPage = () => {
   const db = getFirestore();
 
   useEffect(() => {
-    const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, "courses"));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
       setCourses(coursesData);
@@ -146,7 +146,13 @@ const LandingPage = () => {
                 </div>
               </div>
             )) : (
-              <p className="col-span-3 text-center text-gray-500 italic">Tes vidéos arrivent...</p>
+              <div className="col-span-3">
+                    <div className="text-center py-10 px-4 border-2 border-dashed border-slate-700 rounded-xl bg-slate-900/20">
+                        <Frown className="mx-auto h-10 w-10 text-slate-500" />
+                        <h3 className="mt-2 text-md font-semibold text-slate-300">Nos formations arrivent bientôt.</h3>
+                        <p className="text-sm text-slate-500">Revenez plus tard pour découvrir notre catalogue.</p>
+                    </div>
+                </div>
             )}
         </div>
       </section>
