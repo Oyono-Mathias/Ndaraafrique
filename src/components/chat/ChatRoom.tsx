@@ -72,7 +72,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
       const lastMessage = messages[messages.length - 1];
       if (lastMessage.senderId !== user?.uid && lastMessage.status !== 'read') {
         if (document.hidden) {
-          document.title = '(1) Nouveau message | FormaAfrique';
+          document.title = '(1) Nouveau message | Ndara Afrique';
           audioRef.current?.play().catch(e => console.log("Audio play failed:", e));
         } else {
             audioRef.current?.play().catch(e => console.log("Audio play failed:", e));
@@ -84,7 +84,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        document.title = 'FormaAfrique | Messagerie';
+        document.title = 'Ndara Afrique | Messagerie';
       }
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
