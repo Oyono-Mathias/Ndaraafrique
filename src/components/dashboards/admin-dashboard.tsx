@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, onSnapshot, getFirestore, Timestamp, orderBy, limit, getDocs, doc } from 'firebase/firestore';
 import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
-import { formatDistanceToNow } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AreaChart, CartesianGrid, XAxis, Area, Tooltip, ResponsiveContainer } from 'recharts';
@@ -115,14 +115,14 @@ const AdminDashboard = () => {
                 if (paymentDate >= startOfMonthTimestamp.toDate()) {
                     monthlyTotal += (payment.amount || 0);
                 }
-                const monthKey = paymentDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+                const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
                 monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
             }
         });
         
         const trendData = Object.entries(monthlyAggregates)
             .map(([month, revenue]) => ({ month, revenue }))
-            .reverse(); // To get recent months first
+            .sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime()) // sort chronologically
 
         setRevenueTrendData(trendData);
         setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
@@ -218,91 +218,57 @@ const AdminDashboard = () => {
         />
       </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-             <Card className="xl:col-span-2 bg-white dark:bg-card shadow-sm">
-                <CardHeader>
-                    <CardTitle>Évolution des revenus</CardTitle>
-                    <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
-                </CardHeader>
-                <CardContent className="pl-2">
-                     {isLoading ? <Skeleton className="h-72 w-full" /> : (
-                        <ChartContainer config={chartConfig} className="h-72 w-full">
-                          <ResponsiveContainer>
-                            <AreaChart data={revenueTrendData}>
-                               <defs>
-                                  <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
-                                  </linearGradient>
-                                </defs>
-                              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                              <XAxis
-                                dataKey="month"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={8}
-                                tickFormatter={(value) => value.slice(0, 3)}
+        <Card className="bg-white dark:bg-card shadow-sm">
+            <CardHeader>
+                <CardTitle>Évolution des revenus</CardTitle>
+                <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
+            </CardHeader>
+            <CardContent className="pl-2">
+                 {isLoading ? <Skeleton className="h-80 w-full" /> : (
+                    <ChartContainer config={chartConfig} className="h-80 w-full">
+                      <ResponsiveContainer>
+                        <AreaChart data={revenueTrendData}>
+                           <defs>
+                              <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
+                                <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
+                              </linearGradient>
+                            </defs>
+                          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                          <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                            className="fill-muted-foreground text-xs"
+                          />
+                           <YAxis 
+                                tickLine={false} 
+                                axisLine={false} 
+                                tickMargin={8} 
+                                tickFormatter={(value) => `${Number(value) / 1000}k`}
                                 className="fill-muted-foreground text-xs"
-                              />
-                              <Tooltip
-                                content={<ChartTooltipContent
-                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
-                                    className="bg-background/80 backdrop-blur-sm"
-                                />}
-                              />
-                              <Area
-                                dataKey="revenue"
-                                type="natural"
-                                fill="url(#fillRevenue)"
-                                stroke="var(--color-revenue)"
-                                stackId="a"
-                              />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        </ChartContainer>
-                     )}
-                </CardContent>
-            </Card>
-             <Card className="bg-white dark:bg-card shadow-sm">
-                <CardHeader>
-                <CardTitle>Activité Récente</CardTitle>
-                <CardDescription>Les dernières inscriptions sur la plateforme.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                {isLoading ? (
-                    <div className="space-y-4">
-                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
-                    </div>
-                ) : recentActivities.length > 0 ? (
-                    <div className="space-y-4">
-                    {recentActivities.map((activity) => (
-                        <div key={activity.id} className="flex items-center gap-4">
-                        <Avatar className="h-9 w-9">
-                            <AvatarImage src={activity.studentAvatar} />
-                            <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1">
-                            <p className="text-sm font-medium leading-none">
-                            {activity.studentName}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                            s'est inscrit à "{activity.courseName}"
-                            </p>
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(activity.enrolledAt, { locale: fr, addSuffix: true })}
-                        </div>
-                        </div>
-                    ))}
-                    </div>
-                ) : (
-                    <p className="text-sm text-center text-muted-foreground py-8">
-                    Aucune activité récente.
-                    </p>
-                )}
-                </CardContent>
-            </Card>
-        </div>
+                            />
+                          <Tooltip
+                            content={<ChartTooltipContent
+                                formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                className="bg-background/80 backdrop-blur-sm"
+                            />}
+                          />
+                          <Area
+                            dataKey="revenue"
+                            type="natural"
+                            fill="url(#fillRevenue)"
+                            stroke="var(--color-revenue)"
+                            stackId="a"
+                          />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                 )}
+            </CardContent>
+        </Card>
     </div>
   );
 };
