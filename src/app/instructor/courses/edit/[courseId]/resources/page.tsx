@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection, useMemoFirebase, useIsMobile } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -29,6 +29,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Folder, PlusCircle, Loader2, AlertCircle, Link2, FileText, Trash2, BookText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -63,13 +64,80 @@ const ResourceIcon = ({ type }: { type: 'link' | 'file' }) => {
     }
 };
 
+const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: any, isSubmitting: boolean }) => {
+    const formType = form.watch('type');
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Titre de la ressource</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: Slides du chapitre 1" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600">
+                                        <SelectValue placeholder="Sélectionnez un type" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                                    <SelectItem value="link">Lien externe</SelectItem>
+                                    <SelectItem value="file" disabled>Fichier (bientôt disponible)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {formType === 'link' &&
+                    <FormField
+                        control={form.control}
+                        name="url"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>URL</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="https://example.com/ressource" {...field} className="dark:bg-slate-700 dark:border-slate-600"/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                }
+                <div className="flex justify-end pt-6 gap-2">
+                    <Button type="button" variant="ghost" className="dark:hover:bg-slate-700 dark:text-slate-300">Annuler</Button>
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Enregistrer
+                    </Button>
+                </div>
+            </form>
+        </Form>
+    );
+}
+
 export default function ResourcesPage() {
     const { courseId } = useParams();
     const { toast } = useToast();
     const db = getFirestore();
     const { formaAfriqueUser, isUserLoading } = useRole();
+    const isMobile = useIsMobile();
 
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const resourcesQuery = useMemoFirebase(
@@ -82,8 +150,6 @@ export default function ResourcesPage() {
         resolver: zodResolver(resourceSchema),
         defaultValues: { title: '', type: 'link', url: '' },
     });
-    
-    const formType = form.watch('type');
 
     const handleCreateResource = async (values: z.infer<typeof resourceSchema>) => {
         if (!formaAfriqueUser) return;
@@ -100,7 +166,7 @@ export default function ResourcesPage() {
             const resourcesCollection = collection(db, 'resources');
             await addDoc(resourcesCollection, resourcePayload);
             toast({ title: "Ressource ajoutée !", description: "La nouvelle ressource est disponible pour les étudiants." });
-            setIsDialogOpen(false);
+            setIsFormOpen(false);
             form.reset();
         } catch (error) {
             console.error("Error creating resource:", error);
@@ -127,10 +193,17 @@ export default function ResourcesPage() {
 
     const isLoading = resourcesLoading || isUserLoading;
 
+    const FormWrapper = isMobile ? Sheet : Dialog;
+    const FormContent = isMobile ? SheetContent : DialogContent;
+    const FormHeader = isMobile ? SheetHeader : DialogHeader;
+    const FormTitle = isMobile ? SheetTitle : DialogTitle;
+    const FormDescription = isMobile ? SheetDescription : DialogDescription;
+
+
     return (
         <div className="space-y-6">
             <Card className="dark:bg-[#1e293b] dark:border-slate-700">
-                <CardHeader className="flex flex-row items-center justify-between">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                      <div>
                         <CardTitle className="text-xl flex items-center gap-2 dark:text-white">
                             <BookText className="h-5 w-5" />
@@ -140,80 +213,21 @@ export default function ResourcesPage() {
                             Ajoutez et gérez les documents et liens pour ce cours.
                         </CardDescription>
                     </div>
-                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
+                     <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <SheetTrigger asChild>
+                             <Button className="w-full sm:w-auto">
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Ajouter
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                            <DialogHeader>
-                                <DialogTitle>Nouvelle ressource</DialogTitle>
-                                <DialogDescription className="dark:text-slate-400">Renseignez les informations de la ressource.</DialogDescription>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleCreateResource)} className="space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="title"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Titre de la ressource</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Ex: Slides du chapitre 1" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                     <FormField
-                                        control={form.control}
-                                        name="type"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Type</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600">
-                                                            <SelectValue placeholder="Sélectionnez un type" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
-                                                        <SelectItem value="link">Lien externe</SelectItem>
-                                                        <SelectItem value="file" disabled>Fichier (bientôt disponible)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    {formType === 'link' &&
-                                        <FormField
-                                            control={form.control}
-                                            name="url"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>URL</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="https://example.com/ressource" {...field} className="dark:bg-slate-700 dark:border-slate-600"/>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    }
-                                    <DialogFooter>
-                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="dark:hover:bg-slate-700 dark:text-slate-300">Annuler</Button>
-                                        <Button type="submit" disabled={isSubmitting}>
-                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Enregistrer
-                                        </Button>
-                                    </DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
+                        </SheetTrigger>
+                        <FormContent side={isMobile ? 'bottom' : 'right'} className="dark:bg-slate-900 dark:border-slate-800 dark:text-white">
+                            <FormHeader>
+                                <FormTitle>Nouvelle ressource</FormTitle>
+                                <FormDescription className="dark:text-slate-400">Renseignez les informations de la ressource.</FormDescription>
+                            </FormHeader>
+                            <ResourceForm form={form} onSubmit={handleCreateResource} isSubmitting={isSubmitting} />
+                        </FormContent>
+                    </FormWrapper>
                 </CardHeader>
                 <CardContent>
                     {resourcesError && (
@@ -226,8 +240,8 @@ export default function ResourcesPage() {
                         <TableHeader>
                             <TableRow className="dark:border-slate-700 hover:bg-slate-800/50">
                                 <TableHead className="dark:text-slate-300">Titre</TableHead>
-                                <TableHead className="dark:text-slate-300">Type</TableHead>
-                                <TableHead className="dark:text-slate-300">Date d'ajout</TableHead>
+                                <TableHead className="hidden sm:table-cell dark:text-slate-300">Type</TableHead>
+                                <TableHead className="hidden sm:table-cell dark:text-slate-300">Date d'ajout</TableHead>
                                 <TableHead className="text-right dark:text-slate-300">Action</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -236,8 +250,8 @@ export default function ResourcesPage() {
                                 [...Array(3)].map((_, i) => (
                                     <TableRow key={i} className="dark:border-slate-700">
                                         <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
+                                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
+                                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-8 w-8 bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
@@ -248,8 +262,8 @@ export default function ResourcesPage() {
                                             <ResourceIcon type={resource.type} />
                                             {resource.title}
                                         </TableCell>
-                                        <TableCell>{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
-                                        <TableCell>{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right">
                                             <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-red-500 hover:text-red-400">
                                                 <Trash2 className="h-4 w-4" />

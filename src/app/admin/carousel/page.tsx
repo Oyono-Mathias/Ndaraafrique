@@ -138,7 +138,7 @@ export default function AdminCarouselPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="pb-20 md:pb-0">
               <DragDropContext onDragEnd={onDragEnd}>
                 <StrictModeDroppable droppableId="slides">
                   {(provided: any) => (
@@ -211,8 +211,8 @@ export default function AdminCarouselPage() {
                 <Plus className="mr-2 h-4 w-4" /> Ajouter une diapositive
               </Button>
 
-              <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={isSaving}>
+               <div className="fixed bottom-0 left-0 right-0 md:relative bg-background/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-none p-4 md:p-0 md:flex md:justify-end mt-4 z-50">
+                <Button type="submit" disabled={isSaving} className="w-full md:w-auto h-12 text-base md:h-auto md:text-sm">
                   {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Enregistrer les modifications
                 </Button>

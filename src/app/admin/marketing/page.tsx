@@ -97,16 +97,16 @@ export default function AdminMarketingPage() {
         </CardHeader>
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col sm:flex-row gap-2">
               <FormField
                 control={form.control}
                 name="prompt"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex-1">
                     <FormControl>
                       <Input
                         placeholder={t('prompt_label')}
-                        className="dark:bg-slate-700 dark:border-slate-600"
+                        className="h-12 text-base md:text-sm dark:bg-slate-700 dark:border-slate-600"
                         {...field}
                       />
                     </FormControl>
@@ -114,7 +114,7 @@ export default function AdminMarketingPage() {
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isAiLoading}>
+              <Button type="submit" disabled={isAiLoading} className="w-full sm:w-auto h-12 text-base md:h-auto md:text-sm">
                 {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
                 {t('generate_btn')}
               </Button>

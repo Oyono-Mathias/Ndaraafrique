@@ -18,6 +18,7 @@ import {
   writeBatch,
 } from 'firebase/firestore';
 import { useCollection, useMemoFirebase } from '@/firebase';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,15 @@ import {
   DialogFooter,
   DialogClose
 } from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter,
+  SheetClose,
+} from '@/components/ui/sheet';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -65,12 +75,44 @@ const faqSchema = z.object({
 
 type FaqFormValues = z.infer<typeof faqSchema>;
 
+const FaqForm = ({ form, onSubmit, isSubmitting, t }: { form: any, onSubmit: (data: FaqFormValues) => void, isSubmitting: boolean, t: (key: string) => string }) => (
+    <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+            <FormField control={form.control} name="question_fr" render={({ field }) => (
+                <FormItem><FormLabel className="dark:text-slate-300">Question</FormLabel><FormControl><Input placeholder="Comment puis-je..." {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="answer_fr" render={({ field }) => (
+                <FormItem><FormLabel className="dark:text-slate-300">Réponse</FormLabel><FormControl><Textarea placeholder="Pour ce faire, vous devez..." {...field} rows={6} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl><FormMessage /></FormItem>
+            )} />
+            <FormField control={form.control} name="tags" render={({ field }) => (
+                <FormItem>
+                    <FormLabel className="dark:text-slate-300">Tags (pour l'IA)</FormLabel>
+                    <FormControl><Input placeholder="paiement, certificat, compte..." {...field} className="dark:bg-slate-800 dark:border-slate-700"/></FormControl>
+                    <FormDescription className="dark:text-slate-500">Séparez les mots-clés par des virgules. Cela aide MATHIAS à trouver la bonne réponse.</FormDescription>
+                    <FormMessage />
+                </FormItem>
+            )} />
+            
+            <div className="flex justify-end gap-2 pt-4">
+                <SheetClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></SheetClose>
+                <DialogClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></DialogClose>
+                <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                    {t('save_button')}
+                </Button>
+            </div>
+        </form>
+    </Form>
+);
+
+
 export default function AdminFaqPage() {
   const { t } = useTranslation();
   const db = getFirestore();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
@@ -95,19 +137,19 @@ export default function AdminFaqPage() {
         answer_fr: editingFaq.answer_fr,
         tags: editingFaq.tags?.join(', ') || '',
       });
-      setIsDialogOpen(true);
+      setIsFormOpen(true);
     } else {
       form.reset({ question_fr: '', answer_fr: '', tags: '' });
     }
   }, [editingFaq, form]);
 
-  const handleOpenDialog = (faq: FAQ | null = null) => {
+  const handleOpenForm = (faq: FAQ | null = null) => {
     setEditingFaq(faq);
-    setIsDialogOpen(true);
+    setIsFormOpen(true);
   };
 
-  const handleCloseDialog = () => {
-    setIsDialogOpen(false);
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
     setEditingFaq(null);
   };
 
@@ -132,7 +174,7 @@ export default function AdminFaqPage() {
             });
             toast({ title: 'Nouvelle FAQ ajoutée !' });
         }
-        handleCloseDialog();
+        handleCloseForm();
     } catch (error) {
         console.error("Error saving FAQ:", error);
         toast({ variant: 'destructive', title: t('errorTitle'), description: 'Impossible de sauvegarder la FAQ.' });
@@ -185,7 +227,13 @@ export default function AdminFaqPage() {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de réorganiser les questions.' });
     }
   };
-
+  
+  const FormWrapper = isMobile ? Sheet : Dialog;
+  const FormContent = isMobile ? SheetContent : DialogContent;
+  const FormHeader = isMobile ? SheetHeader : DialogHeader;
+  const FormTitle = isMobile ? SheetTitle : DialogTitle;
+  const FormDescription = isMobile ? SheetDescription : DialogDescription;
+  
   return (
     <>
       <div className="space-y-6">
@@ -194,7 +242,7 @@ export default function AdminFaqPage() {
                 <h1 className="text-3xl font-bold dark:text-white">Gestion de la FAQ</h1>
                 <p className="text-muted-foreground dark:text-slate-400">Ajoutez, modifiez et réorganisez les questions fréquentes.</p>
             </div>
-            <Button onClick={() => handleOpenDialog()}>
+            <Button onClick={() => handleOpenForm()}>
                 <Plus className="mr-2 h-4 w-4"/>
                 Ajouter une question
             </Button>
@@ -213,7 +261,7 @@ export default function AdminFaqPage() {
                                 <div className="flex items-center gap-1">
                                      <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'up')} disabled={index === 0}><ChevronUp className="h-4 w-4"/></Button>
                                      <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'down')} disabled={index === faqs.length - 1}><ChevronDown className="h-4 w-4"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(faq)}><Edit className="h-4 w-4 text-blue-500"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => handleOpenForm(faq)}><Edit className="h-4 w-4 text-blue-500"/></Button>
                                      <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(faq.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                                 </div>
                             </CardHeader>
@@ -239,38 +287,14 @@ export default function AdminFaqPage() {
 
       </div>
 
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
-            <DialogHeader>
-                <DialogTitle className="dark:text-white">{editingFaq ? 'Modifier la question' : 'Ajouter une question'}</DialogTitle>
-            </DialogHeader>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                    <FormField control={form.control} name="question_fr" render={({ field }) => (
-                       <FormItem><FormLabel className="dark:text-slate-300">Question</FormLabel><FormControl><Input placeholder="Comment puis-je..." {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl><FormMessage /></FormItem>
-                    )} />
-                    <FormField control={form.control} name="answer_fr" render={({ field }) => (
-                       <FormItem><FormLabel className="dark:text-slate-300">Réponse</FormLabel><FormControl><Textarea placeholder="Pour ce faire, vous devez..." {...field} rows={6} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl><FormMessage /></FormItem>
-                    )} />
-                     <FormField control={form.control} name="tags" render={({ field }) => (
-                       <FormItem>
-                           <FormLabel className="dark:text-slate-300">Tags (pour l'IA)</FormLabel>
-                           <FormControl><Input placeholder="paiement, certificat, compte..." {...field} className="dark:bg-slate-800 dark:border-slate-700"/></FormControl>
-                           <FormDescription className="dark:text-slate-500">Séparez les mots-clés par des virgules. Cela aide MATHIAS à trouver la bonne réponse.</FormDescription>
-                           <FormMessage />
-                        </FormItem>
-                    )} />
-                    <DialogFooter>
-                        <DialogClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></DialogClose>
-                        <Button type="submit" disabled={isSubmitting}>
-                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                            {t('save_button')}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </Form>
-        </DialogContent>
-      </Dialog>
+      <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
+        <FormContent className="dark:bg-slate-900 dark:border-slate-800">
+            <FormHeader>
+                <FormTitle className="dark:text-white">{editingFaq ? 'Modifier la question' : 'Ajouter une question'}</FormTitle>
+            </FormHeader>
+            <FaqForm form={form} onSubmit={onSubmit} isSubmitting={isSubmitting} t={t} />
+        </FormContent>
+      </FormWrapper>
       
       <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
           <AlertDialogContent>
