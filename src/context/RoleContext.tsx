@@ -4,9 +4,10 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, onSnapshot, getFirestore, Timestamp } from 'firebase/firestore';
-import { User } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp } from 'firebase/firestore';
+import { User, onIdTokenChanged } from 'firebase/auth';
 import i18n from '@/i18n';
+import { getAuth } from 'firebase/auth';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
@@ -59,6 +60,8 @@ export interface FormaAfriqueUser {
     };
     createdAt?: Timestamp;
     lastLogin?: Timestamp;
+    isOnline?: boolean;
+    lastSeen?: Timestamp;
     termsAcceptedAt?: Timestamp;
     country?: string;
     countryCode?: string;
@@ -88,6 +91,29 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
+  const db = getFirestore();
+
+   useEffect(() => {
+    const auth = getAuth();
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (user) {
+        // Set user presence to online
+        const userRef = doc(db, 'users', user.uid);
+        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+
+        // Set offline on disconnect
+        const presenceRef = doc(db, 'users', user.uid);
+        // This part needs a more robust solution like Cloud Functions + Realtime Database for production
+        // For client-side, this is a best-effort approach
+        window.addEventListener('beforeunload', () => {
+            setDoc(presenceRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [db]);
+
 
   useEffect(() => {
     if (isUserLoading) {
@@ -102,7 +128,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
 
     setLoading(true);
-    const db = getFirestore();
     const userDocRef = doc(db, 'users', user.uid);
 
     const unsubscribe = onSnapshot(userDocRef, (userDoc) => {
@@ -129,7 +154,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
           };
           
-          // Set i18n language from user profile if available
           if (resolvedUser.preferredLanguage && i18n.language !== resolvedUser.preferredLanguage) {
               i18n.changeLanguage(resolvedUser.preferredLanguage);
           }
@@ -176,7 +200,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user, isUserLoading]);
+  }, [user, isUserLoading, db]);
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {

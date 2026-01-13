@@ -12,6 +12,7 @@ import {
   setDoc,
   doc,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -84,10 +85,8 @@ export default function MessagesPage() {
   
   const isProfileComplete = useMemo(() => !!(formaAfriqueUser?.username && formaAfriqueUser?.careerGoals?.interestDomain), [formaAfriqueUser]);
 
-  // This state is only relevant on desktop
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
 
-  // Listen for user's conversations in real-time
   useEffect(() => {
     if (!user?.uid) {
       if (!isUserLoading) setIsLoading(false);
@@ -128,7 +127,6 @@ export default function MessagesPage() {
 
         setChatList(populated);
         
-        // On desktop, if no chat is selected, select the first one
         if (!isMobile && !activeChatId && populated.length > 0) {
           setActiveChatId(populated[0].id);
         }
@@ -141,7 +139,6 @@ export default function MessagesPage() {
     return () => unsubscribe();
   }, [user?.uid, db, isUserLoading, isMobile, activeChatId]);
   
-  // Fetch all students when opening the new chat modal
   useEffect(() => {
     if (isNewChatModalOpen && allStudents.length === 0) {
         const fetchStudents = async () => {
@@ -155,8 +152,19 @@ export default function MessagesPage() {
   }, [isNewChatModalOpen, allStudents.length, db]);
   
   const handleStartChat = async (studentId: string) => {
-    if (!user || user.uid === studentId) return;
+    if (!user || user.uid === studentId || !formaAfriqueUser || !formaAfriqueUser.careerGoals?.interestDomain) {
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de démarrer la conversation.' });
+      return;
+    }
     setIsCreatingChat(true);
+
+    const targetUserDoc = await getDoc(doc(db, 'users', studentId));
+    if (!targetUserDoc.exists()) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur introuvable.'});
+        setIsCreatingChat(false);
+        return;
+    }
+    const targetUserData = targetUserDoc.data() as FormaAfriqueUser;
 
     const chatsRef = collection(db, 'chats');
     const sortedParticipants = [user.uid, studentId].sort();
@@ -170,12 +178,18 @@ export default function MessagesPage() {
             chatId = querySnapshot.docs[0].id;
         } else {
             const newChatRef = doc(collection(db, 'chats'));
-            await setDoc(newChatRef, {
+            
+            const batch = writeBatch(db);
+
+            batch.set(newChatRef, {
                 participants: sortedParticipants,
+                participantCategories: [formaAfriqueUser.careerGoals.interestDomain, targetUserData.careerGoals?.interestDomain],
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 lastMessage: `Conversation initiée.`,
             });
+            
+            await batch.commit();
             chatId = newChatRef.id;
         }
         setIsNewChatModalOpen(false);
@@ -238,13 +252,11 @@ export default function MessagesPage() {
   
   const currentChatId = pathname.split('/').pop();
   
-  // On desktop, this component renders the split view
   if (!isMobile) {
     return (
         <>
         <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
         <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] lg:grid-cols-[400px_1fr] h-full">
-            {/* Left Column: Chat List */}
             <div className="flex flex-col h-full bg-slate-900 border-r border-slate-800">
                  <div className="p-4 border-b border-slate-800">
                     <h1 className="font-bold text-xl text-white">{t('navMessages')}</h1>
@@ -264,7 +276,7 @@ export default function MessagesPage() {
                             {filteredChatList.map(chat => {
                                 const otherId = chat.participants.find(p => p !== user?.uid);
                                 const other = otherId ? chat.participantDetails[otherId] : null;
-                                const isUnread = chat.lastSenderId !== user?.uid && (chat.unreadBy ? chat.unreadBy.includes(user?.uid || '') : true);
+                                const isUnread = chat.unreadBy?.includes(user?.uid || '');
                                 const isActive = activeChatId === chat.id;
 
                                 return (
@@ -284,13 +296,12 @@ export default function MessagesPage() {
                                             {other?.isOnline && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-slate-900" />}
                                         </div>
                                         <div className="flex-1 overflow-hidden">
-                                            <div className="flex justify-between items-baseline">
-                                                <p className={cn("truncate text-sm text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
-                                                {other?.username || "Utilisateur"}
-                                                </p>
-                                            </div>
+                                            <p className={cn("truncate text-sm text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
+                                              {other?.username || "Utilisateur"}
+                                            </p>
                                             <div className="flex justify-between items-center">
                                                 <p className={cn("text-sm truncate leading-relaxed", isUnread ? "font-medium text-slate-300" : "text-slate-400")}>
+                                                    {isUnread && chat.lastSenderId !== user?.uid ? <span className="font-bold">Nouveau message: </span> : null}
                                                     {chat.lastMessage || "Cliquez pour lire les messages"}
                                                 </p>
                                                 {isUnread && <div className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0"></div>}
@@ -315,7 +326,6 @@ export default function MessagesPage() {
                 </div>
             </div>
 
-            {/* Right Column: Active Chat */}
             <div className="h-full">
                 {activeChatId ? <ChatRoom chatId={activeChatId} /> : (
                     <div className="h-full flex flex-col items-center justify-center bg-slate-900 text-slate-500">
@@ -359,7 +369,6 @@ export default function MessagesPage() {
     );
   }
 
-  // On mobile, this component renders just the list
   return (
     <>
     <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
@@ -383,7 +392,7 @@ export default function MessagesPage() {
                         {filteredChatList.map(chat => {
                             const otherId = chat.participants.find(p => p !== user?.uid);
                             const other = otherId ? chat.participantDetails[otherId] : null;
-                            const isUnread = chat.lastSenderId !== user?.uid && (chat.unreadBy ? chat.unreadBy.includes(user?.uid || '') : true);
+                            const isUnread = chat.unreadBy?.includes(user?.uid || '');
                             const isActive = currentChatId === chat.id;
 
                             return (
@@ -405,13 +414,12 @@ export default function MessagesPage() {
                                     </div>
 
                                     <div className="flex-1 overflow-hidden">
-                                        <div className="flex justify-between items-baseline">
-                                            <p className={cn("truncate text-sm dark:text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
-                                              {other?.username || "Utilisateur"}
-                                            </p>
-                                        </div>
+                                        <p className={cn("truncate text-sm dark:text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
+                                          {other?.username || "Utilisateur"}
+                                        </p>
                                         <div className="flex justify-between items-center">
                                             <p className={cn("text-sm truncate leading-relaxed", isUnread ? "font-medium text-slate-300" : "text-slate-400")}>
+                                                {isUnread && chat.lastSenderId !== user?.uid ? <span className="font-bold">Nouveau: </span> : null}
                                                 {chat.lastMessage || "Cliquez pour lire les messages"}
                                             </p>
                                             {isUnread && <div className="w-2.5 h-2.5 rounded-full bg-primary flex-shrink-0"></div>}

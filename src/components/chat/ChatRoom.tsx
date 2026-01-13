@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -109,10 +108,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         if (otherId) {
           setOtherParticipantId(otherId);
           const userDocRef = doc(db, 'users', otherId);
-          const userDoc = await getDoc(userDocRef);
-          if (userDoc.exists()) {
-            setOtherParticipant(userDoc.data() as ParticipantDetails);
-          }
+          onSnapshot(userDocRef, (userDoc) => {
+            if (userDoc.exists()) {
+                setOtherParticipant(userDoc.data() as ParticipantDetails);
+            }
+          });
         }
       }
     };
@@ -144,28 +144,30 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     if (messages.length === 0 || !otherParticipantId) return;
 
     const markAsRead = async () => {
-        const batch = writeBatch(db);
-        let hasUnread = false;
-        
-        messages.forEach(msg => {
-            if (msg.senderId === otherParticipantId && msg.status !== 'read') {
-                const msgRef = doc(db, 'chats', chatId, 'messages', msg.id);
-                batch.update(msgRef, { status: 'read' });
-                hasUnread = true;
-            }
-        });
-
-        if (hasUnread) {
-            try {
-                await batch.commit();
-            } catch (error) {
-                console.error("Failed to mark messages as read:", error);
-            }
+        const chatRef = doc(db, 'chats', chatId);
+        const chatSnap = await getDoc(chatRef);
+        if (chatSnap.exists() && chatSnap.data().unreadBy?.includes(user?.uid || '')) {
+            const batch = writeBatch(db);
+            batch.update(chatRef, { unreadBy: [] });
+            await batch.commit();
         }
     };
 
-    markAsRead();
-  }, [messages, otherParticipantId, chatId, db]);
+    if (document.visibilityState === 'visible') {
+        markAsRead();
+    }
+    
+    const handleVisibility = () => {
+        if(document.visibilityState === 'visible') {
+            markAsRead();
+        }
+    }
+    
+    document.addEventListener('visibilitychange', handleVisibility);
+    
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
+
+  }, [messages, otherParticipantId, chatId, db, user?.uid]);
 
 
   useEffect(() => {
@@ -280,7 +282,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {otherParticipant?.isOnline ? t('online') : `${t('seen')} ${timeSinceLastSeen}`}
+                    {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">{t('online')}</span> : `${t('seen')} ${timeSinceLastSeen}`}
                 </p>
             </div>
             <div className="flex items-center gap-2">
@@ -312,6 +314,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                     </span>
                                     <ReadReceipt status={msg.status} />
                                   </div>
+                                )}
+                                {!isMe && (
+                                    <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
+                                      {msg.createdAt ? msg.createdAt.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                    </span>
                                 )}
                             </div>
                         </div>

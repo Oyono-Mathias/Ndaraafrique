@@ -37,7 +37,7 @@ export interface Submission {
 
 export interface Course {
     id: string;
-    courseId?: string; // Maintained for some legacy if needed, but primary is id
+    courseId?: string; 
     title: string;
     description: string;
     instructorId: string;
@@ -59,7 +59,7 @@ export interface Course {
     ebookUrl?: string;
     language?: string;
     participantsCount?: number;
-    previewVideoUrl?: string; // Added for course preview
+    previewVideoUrl?: string;
 }
 
 export interface Enrollment {
@@ -133,6 +133,8 @@ export type FormaAfriqueUser = {
   };
   createdAt?: Timestamp;
   lastLogin?: Timestamp;
+  isOnline?: boolean;
+  lastSeen?: Timestamp;
   termsAcceptedAt?: Timestamp;
   country?: string;
   countryCode?: string;
