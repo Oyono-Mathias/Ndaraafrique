@@ -87,17 +87,26 @@ export default function PayoutsPage() {
   const [activeTab, setActiveTab] = useState('en_attente');
   const [confirmationAction, setConfirmationAction] = useState<{payoutId: string, status: 'valide' | 'rejete'} | null>(null);
   
-  const payoutsQuery = useMemoFirebase(
-    () => query(collection(db, 'payouts'), orderBy('date', 'desc')),
-    [db]
-  );
-  const { data: payouts, isLoading: payoutsLoading } = useCollection<Payout>(payoutsQuery);
-  
+  const [payouts, setPayouts] = useState<Payout[]>([]);
   const [enrichedPayouts, setEnrichedPayouts] = useState<EnrichedPayout[]>([]);
+  const [payoutsLoading, setPayoutsLoading] = useState(true);
   const [usersLoading, setUsersLoading] = useState(true);
 
   useEffect(() => {
-    if (!payouts) return;
+    const q = query(collection(db, 'payouts'), orderBy('date', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        setPayouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payout)));
+        setPayoutsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [db]);
+  
+
+  useEffect(() => {
+    if (payoutsLoading || payouts.length === 0) {
+        if(!payoutsLoading) setUsersLoading(false);
+        return;
+    }
 
     const fetchInstructors = async () => {
         setUsersLoading(true);
@@ -123,7 +132,7 @@ export default function PayoutsPage() {
         setUsersLoading(false);
     }
     fetchInstructors();
-  }, [payouts, db]);
+  }, [payouts, payoutsLoading, db]);
   
   const filteredPayouts = useMemo(() => {
     return enrichedPayouts.filter(payout => payout.status === activeTab);
@@ -340,5 +349,3 @@ export default function PayoutsPage() {
     </>
   );
 }
-
-    

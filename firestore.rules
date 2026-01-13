@@ -42,7 +42,7 @@ service cloud.firestore {
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isOwner(userId);
 
       // --- Sous-collections de 'users' ---
       match /chatHistory/{messageId} {
@@ -80,7 +80,10 @@ service cloud.firestore {
     
     // --- Collection: payments ---
     match /payments/{paymentId} {
-      allow read, list, create, update, delete: if isAdmin();
+      allow get: if isAdmin() || isOwner(resource.data.userId);
+      allow list: if isAdmin();
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isAdmin();
     }
     
     // --- Collection: payouts ---
