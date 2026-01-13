@@ -13,18 +13,18 @@ export function Footer() {
   return (
     <footer className="mt-32 border-t border-white/10 bg-[#020617] pt-16 pb-8">
         <div className="max-w-6xl mx-auto px-6">
-            {/* Grille principale */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
             
-            {/* 1. Branding */}
             <div className="space-y-4">
-                <h3 className="text-2xl font-bold text-white">Ndara Afrique</h3>
+                <Link href="/" className="flex items-center gap-3 mb-4">
+                    <Image src="/icon.svg" alt="Ndara Afrique Logo" width={40} height={40} />
+                    <h3 className="text-2xl font-bold text-white">Ndara Afrique</h3>
+                </Link>
                 <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
                 L'excellence par le savoir. La plateforme panafricaine pour les leaders de demain.
                 </p>
             </div>
 
-            {/* 2. Navigation */}
             <div>
                 <h4 className="font-bold text-white mb-6 text-xs uppercase tracking-widest">Navigation</h4>
                 <ul className="space-y-3 text-gray-400 text-sm">
@@ -34,7 +34,6 @@ export function Footer() {
                 </ul>
             </div>
 
-            {/* 3. Contact & Réseaux */}
             <div>
                 <h4 className="font-bold text-white mb-6 text-xs uppercase tracking-widest">Contact & Suivez-nous</h4>
                 <p className="text-gray-400 text-sm mb-6 hover:text-blue-400 transition"><a href="mailto:support@ndara-afrique.com">support@ndara-afrique.com</a></p>
@@ -46,7 +45,6 @@ export function Footer() {
             </div>
             </div>
 
-            {/* Ligne de copyright - Tout en bas */}
             <div className="pt-8 border-t border-white/5 text-center">
             <p className="text-gray-500 text-xs">© {new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
             </div>
