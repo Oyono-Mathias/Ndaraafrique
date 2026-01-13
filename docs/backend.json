@@ -163,6 +163,37 @@
         "order": { "type": "number", "description": "The display order of the slide." }
       },
       "required": ["imageUrl", "order"]
+    },
+    "SubscriptionPlan": {
+        "title": "Subscription Plan",
+        "type": "object",
+        "description": "Represents a subscription plan offered on the platform.",
+        "properties": {
+            "planId": { "type": "string", "description": "Unique identifier for the plan." },
+            "name": { "type": "string", "description": "Public name of the plan (e.g., 'Ndara Pro')." },
+            "description": { "type": "string" },
+            "price": { "type": "number" },
+            "billingCycle": { "type": "string", "enum": ["monthly", "yearly"] },
+            "targetRole": { "type": "string", "enum": ["student", "instructor"] },
+            "features": { "type": "array", "items": { "type": "string" } },
+            "isActive": { "type": "boolean" }
+        },
+        "required": ["planId", "name", "price", "billingCycle", "targetRole", "isActive"]
+    },
+    "UserSubscription": {
+        "title": "User Subscription",
+        "type": "object",
+        "description": "Represents a user's subscription to a plan.",
+        "properties": {
+            "subscriptionId": { "type": "string" },
+            "userId": { "type": "string" },
+            "planId": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "canceled", "past_due", "expired"] },
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time", "description": "The date when the current paid period ends." },
+            "canceledAt": { "type": "string", "format": "date-time", "description": "The date when the user canceled the subscription." }
+        },
+        "required": ["subscriptionId", "userId", "planId", "status", "startDate", "endDate"]
     }
   },
   "auth": {
@@ -204,6 +235,10 @@
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."
     },
+    "/users/{userId}/subscriptions/{subscriptionId}": {
+      "schema": { "$ref": "#/entities/UserSubscription" },
+      "description": "Stores a user's subscription history."
+    },
     "/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
       "description": "Stores metadata for each conversation."
@@ -223,6 +258,10 @@
     "/carousel_slides/{slideId}": {
       "schema": { "$ref": "#/entities/CarouselSlide" },
       "description": "Stores the slides for the homepage carousel."
+    },
+    "/subscription_plans/{planId}": {
+      "schema": { "$ref": "#/entities/SubscriptionPlan" },
+      "description": "Stores available subscription plans."
     }
   }
 }

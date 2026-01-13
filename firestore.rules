@@ -54,6 +54,12 @@ service cloud.firestore {
       match /notifications/{notificationId} {
         allow read, write, list: if isOwner(userId);
       }
+      match /subscriptions/{subscriptionId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow list: if isOwner(userId) || isAdmin();
+        allow create: if isOwner(userId); // Users can create subscriptions for themselves
+        allow update: if isAdmin(); // Only admins can update status (e.g., from a backend process)
+      }
     }
     
     // --- Collection: courses ---
@@ -111,6 +117,12 @@ service cloud.firestore {
     match /carousel_slides/{slideId} {
         allow read, list: if true;
         allow create, update, delete: if isAdmin();
+    }
+
+    // --- Collection: subscription_plans ---
+    match /subscription_plans/{planId} {
+        allow get, list: if true; // Everyone can see available plans
+        allow create, update, delete: if isAdmin(); // Only admins can manage plans
     }
     
     // --- Collection: chats ---
