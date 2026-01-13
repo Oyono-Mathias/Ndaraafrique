@@ -3,7 +3,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -13,6 +12,7 @@ import {
   updateDoc,
   where,
   getDocs,
+  onSnapshot,
 } from 'firebase/firestore';
 import {
   Table,
@@ -59,6 +59,7 @@ interface Payout {
 
 interface EnrichedPayout extends Payout {
     instructor?: Pick<FormaAfriqueUser, 'fullName' | 'email' | 'profilePictureURL'>;
+    instructorBalance?: number;
 }
 
 const getStatusBadge = (status: Payout['status'], t: (key: string) => string) => {
@@ -90,7 +91,22 @@ export default function PayoutsPage() {
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [enrichedPayouts, setEnrichedPayouts] = useState<EnrichedPayout[]>([]);
   const [payoutsLoading, setPayoutsLoading] = useState(true);
-  const [usersLoading, setUsersLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(true);
+  
+  const [settings, setSettings] = useState({ platformCommission: 30 });
+
+  useEffect(() => {
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsub = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setSettings({
+                platformCommission: docSnap.data().commercial?.platformCommission || 30,
+            });
+        }
+    });
+    return () => unsub();
+  }, [db]);
+
 
   useEffect(() => {
     const q = query(collection(db, 'payouts'), orderBy('date', 'desc'));
@@ -104,16 +120,16 @@ export default function PayoutsPage() {
 
   useEffect(() => {
     if (payoutsLoading || payouts.length === 0) {
-        if(!payoutsLoading) setUsersLoading(false);
+        if(!payoutsLoading) setDataLoading(false);
         return;
     }
 
-    const fetchInstructors = async () => {
-        setUsersLoading(true);
+    const fetchDetails = async () => {
+        setDataLoading(true);
         const instructorIds = [...new Set(payouts.map(p => p.instructorId))];
         if (instructorIds.length === 0) {
             setEnrichedPayouts([]);
-            setUsersLoading(false);
+            setDataLoading(false);
             return;
         }
 
@@ -123,16 +139,32 @@ export default function PayoutsPage() {
         const usersSnap = await getDocs(q);
         usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as FormaAfriqueUser));
         
+        const instructorBalances = new Map<string, number>();
+
+        for (const id of instructorIds) {
+            const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', id), where('status', '==', 'Completed'));
+            const payoutsQuery = query(collection(db, 'payouts'), where('instructorId', '==', id), where('status', 'in', ['en_attente', 'valide']));
+            
+            const [paymentsSnap, payoutsSnap] = await Promise.all([getDocs(paymentsQuery), getDocs(payoutsQuery)]);
+            
+            const totalRevenue = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+            const totalPayouts = payoutsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+            
+            const instructorShare = totalRevenue * (1 - settings.platformCommission / 100);
+            instructorBalances.set(id, instructorShare - totalPayouts);
+        }
+
         const enriched = payouts.map(payout => ({
             ...payout,
-            instructor: usersMap.get(payout.instructorId)
+            instructor: usersMap.get(payout.instructorId),
+            instructorBalance: instructorBalances.get(payout.instructorId) || 0
         }));
 
         setEnrichedPayouts(enriched);
-        setUsersLoading(false);
+        setDataLoading(false);
     }
-    fetchInstructors();
-  }, [payouts, payoutsLoading, db]);
+    fetchDetails();
+  }, [payouts, payoutsLoading, db, settings.platformCommission]);
   
   const filteredPayouts = useMemo(() => {
     return enrichedPayouts.filter(payout => payout.status === activeTab);
@@ -171,7 +203,7 @@ export default function PayoutsPage() {
     XLSX.writeFile(workbook, `NdaraAfrique_Retraits_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
-  const isLoading = isUserLoading || payoutsLoading || usersLoading;
+  const isLoading = isUserLoading || payoutsLoading || dataLoading;
   
   const confirmationMessages = {
       valide: { title: "Confirmer l'approbation ?", description: "Cette action marquera le retrait comme payé et déplacera la transaction. Êtes-vous sûr ?" },
@@ -209,7 +241,7 @@ export default function PayoutsPage() {
                   <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                     <TableHead className="dark:text-slate-400">{t('instructor')}</TableHead>
                     <TableHead className="dark:text-slate-400">{t('amount')}</TableHead>
-                    <TableHead className="dark:text-slate-400">{t('date')}</TableHead>
+                    <TableHead className="dark:text-slate-400">Solde Instructeur</TableHead>
                     <TableHead className="dark:text-slate-400">{t('method')}</TableHead>
                     <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
                   </TableRow>
@@ -220,7 +252,7 @@ export default function PayoutsPage() {
                       <TableRow key={i} className="dark:border-slate-700">
                         <TableCell><div className="flex items-center gap-3"><Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" /><Skeleton className="h-4 w-32 dark:bg-slate-700" /></div></TableCell>
                         <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-28 dark:bg-slate-700" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20 dark:bg-slate-700" /></TableCell>
                         <TableCell className="text-right"><div className="flex justify-end gap-2"><Skeleton className="h-8 w-20 dark:bg-slate-700" /><Skeleton className="h-8 w-20 dark:bg-slate-700" /></div></TableCell>
                       </TableRow>
@@ -236,12 +268,13 @@ export default function PayoutsPage() {
                             </Avatar>
                             <div>
                               <span className="font-medium dark:text-slate-100">{payout.instructor?.fullName}</span>
+                               <p className="text-xs text-muted-foreground">{payout.date ? formatDistanceToNow(payout.date.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}</p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="font-mono dark:text-slate-200">{formatCurrency(payout.amount)}</TableCell>
-                        <TableCell className="text-muted-foreground dark:text-slate-400">
-                            {payout.date ? formatDistanceToNow(payout.date.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
+                        <TableCell className={cn("font-mono dark:text-slate-400", (payout.instructorBalance ?? 0) < payout.amount ? 'text-destructive dark:text-destructive' : '')}>
+                            {formatCurrency(payout.instructorBalance ?? 0)}
                         </TableCell>
                         <TableCell className="dark:text-slate-300">{payout.method}</TableCell>
                         <TableCell className="text-right">
@@ -293,6 +326,9 @@ export default function PayoutsPage() {
                           </CardHeader>
                           <CardContent className="text-center">
                               <p className="text-4xl font-extrabold tracking-tighter dark:text-white">{formatCurrency(payout.amount)}</p>
+                              <p className={cn("text-xs font-mono", (payout.instructorBalance ?? 0) < 0 ? "text-destructive" : "text-muted-foreground")}>
+                                Solde: {formatCurrency(payout.instructorBalance ?? 0)}
+                              </p>
                           </CardContent>
                           {payout.status === 'en_attente' && (
                               <CardContent className="flex justify-between gap-2">

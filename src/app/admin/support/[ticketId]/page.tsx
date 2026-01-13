@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, Shield, ArrowLeft, User, BookOpen, Trash2, CheckCircle } from 'lucide-react';
+import { Loader2, Send, Shield, ArrowLeft, User, BookOpen, Trash2, CheckCircle, Percent } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { format } from 'date-fns';
@@ -32,6 +32,7 @@ import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import { refundAndRevokeAccess } from '@/app/actions/supportActions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
 
 
 interface Message {
@@ -65,6 +66,12 @@ export default function TicketConversationPage() {
   const ticketRef = useMemoFirebase(() => doc(db, "support_tickets", ticketId as string), [db, ticketId]);
   const { data: ticket, isLoading: isTicketLoading } = useDoc(ticketRef);
   
+  const enrollmentRef = useMemoFirebase(() => {
+    if (!ticket?.userId || !ticket?.courseId) return null;
+    return doc(db, 'enrollments', `${ticket.userId}_${ticket.courseId}`);
+  }, [ticket, db]);
+  const { data: enrollment, isLoading: enrollmentLoading } = useDoc(enrollmentRef);
+
   const messagesQuery = useMemoFirebase(() => query(collection(db, "support_tickets", ticketId as string, "messages"), orderBy("createdAt", "asc")), [db, ticketId]);
   const { data: messages, isLoading: areMessagesLoading } = useCollection<Message>(messagesQuery);
   
@@ -168,7 +175,7 @@ export default function TicketConversationPage() {
     setIsRefundAlertOpen(false);
   };
   
-  const isLoading = isTicketLoading || areMessagesLoading || participants.size === 0;
+  const isLoading = isTicketLoading || areMessagesLoading || participants.size === 0 || enrollmentLoading;
 
   const student = ticket ? participants.get(ticket.userId) : null;
   const instructor = ticket ? participants.get(ticket.instructorId) : null;
@@ -185,6 +192,12 @@ export default function TicketConversationPage() {
               <div className="text-xs text-slate-400 flex items-center gap-4 mt-1">
                 <span className="flex items-center gap-1.5"><User className="h-3 w-3"/> {student?.fullName || '...'}</span>
                 <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3"/> {instructor?.fullName || '...'}</span>
+                {enrollment && (
+                    <div className="flex items-center gap-1.5 font-semibold text-orange-400">
+                        <Percent className="h-3 w-3"/>
+                        <span>Progression: {enrollment.progress}%</span>
+                    </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
