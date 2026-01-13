@@ -57,6 +57,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
+  const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { t } = useTranslation();
@@ -199,6 +200,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     e.preventDefault();
     if (!newMessage.trim() || !user || !otherParticipantId) return;
     
+    setIsSending(true);
     const textToSend = newMessage.trim();
     setNewMessage("");
     
@@ -229,6 +231,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     } catch (err: any) {
       console.error(err);
        toast({ variant: 'destructive', title: 'Erreur', description: err.message.includes('permission-denied') ? t('chat_permission_denied') : "Impossible d'envoyer le message." });
+    } finally {
+        setIsSending(false);
     }
   };
   
@@ -333,10 +337,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder={t('write_msg')}
+                    disabled={isSending}
                     className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base shadow-md"
                 />
-                <Button type="submit" size="icon" disabled={!newMessage.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
-                    <Send className="h-5 w-5" />
+                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
+                    {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                     <span className="sr-only">{t('send')}</span>
                 </Button>
             </form>
