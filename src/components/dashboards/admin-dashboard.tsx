@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -162,7 +163,7 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           title="Total Étudiants"
           value={stats.totalStudents?.toLocaleString('fr-FR') ?? '...'}
@@ -195,50 +196,83 @@ const AdminDashboard = () => {
           <CardDescription>Les dernières inscriptions sur la plateforme.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Étudiant</TableHead>
-                <TableHead className="hidden sm:table-cell">Cours</TableHead>
-                <TableHead className="text-right">Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(3)].map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                    <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-48" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-5 w-24" /></TableCell>
-                  </TableRow>
-                ))
-              ) : recentActivities.length > 0 ? (
-                recentActivities.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                           <AvatarImage src={activity.studentAvatar} />
-                          <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <span className="font-medium">{activity.studentName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">{activity.courseName}</TableCell>
-                    <TableCell className="text-right text-muted-foreground text-xs">
-                       {formatDistanceToNow(activity.enrolledAt, { locale: fr, addSuffix: true })}
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
+          {/* Desktop Table View */}
+          <div className="hidden sm:block">
+            <Table>
+                <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={3} className="h-24 text-center">
-                    Aucune activité récente à afficher.
-                  </TableCell>
+                    <TableHead>Étudiant</TableHead>
+                    <TableHead>Cours</TableHead>
+                    <TableHead className="text-right">Date</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {isLoading ? (
+                    [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-24" /></TableCell>
+                    </TableRow>
+                    ))
+                ) : recentActivities.length > 0 ? (
+                    recentActivities.map((activity) => (
+                    <TableRow key={activity.id}>
+                        <TableCell>
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-8 w-8">
+                            <AvatarImage src={activity.studentAvatar} />
+                            <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <span className="font-medium">{activity.studentName}</span>
+                        </div>
+                        </TableCell>
+                        <TableCell>{activity.courseName}</TableCell>
+                        <TableCell className="text-right text-muted-foreground text-xs">
+                        {formatDistanceToNow(activity.enrolledAt, { locale: fr, addSuffix: true })}
+                        </TableCell>
+                    </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">
+                        Aucune activité récente à afficher.
+                    </TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+          </div>
+          {/* Mobile Card View */}
+           <div className="sm:hidden space-y-4">
+             {isLoading ? (
+                [...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
+             ) : recentActivities.length > 0 ? (
+                recentActivities.map(activity => (
+                    <Card key={activity.id} className="p-3">
+                        <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                                <AvatarImage src={activity.studentAvatar} />
+                                <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-semibold text-sm">{activity.studentName}</p>
+                                <p className="text-xs text-muted-foreground">s'est inscrit à</p>
+                            </div>
+                        </div>
+                        <p className="font-medium text-sm mt-2">{activity.courseName}</p>
+                        <p className="text-right text-xs text-muted-foreground mt-1">
+                            {formatDistanceToNow(activity.enrolledAt, { locale: fr, addSuffix: true })}
+                        </p>
+                    </Card>
+                ))
+             ) : (
+                 <div className="h-24 text-center text-muted-foreground flex items-center justify-center">
+                    Aucune activité récente.
+                 </div>
+             )}
+           </div>
+
         </CardContent>
       </Card>
     </div>
@@ -246,3 +280,5 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
+
+    
