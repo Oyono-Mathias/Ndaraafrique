@@ -5,9 +5,6 @@ import { useState } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { generatePromoCode, GeneratePromoCodeInput } from '@/ai/flows/generate-promo-code-flow';
-import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, orderBy, updateDoc, doc } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -43,47 +40,35 @@ export default function AdminMarketingPage() {
   const { toast } = useToast();
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
-  const db = getFirestore();
+  const [codesLoading, setCodesLoading] = useState(true); // Faux loading state
+  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]); // Faux data state
+  const [codesError, setCodesError] = useState(false);
 
   const form = useForm<MarketingFormValues>({
     resolver: zodResolver(marketingFormSchema),
   });
   
-  const promoCodesQuery = useMemoFirebase(() => query(collection(db, 'promoCodes'), orderBy('createdAt', 'desc')), [db]);
-  const { data: promoCodes, isLoading: codesLoading, error: codesError } = useCollection<PromoCode>(promoCodesQuery);
-
   const onSubmit: SubmitHandler<MarketingFormValues> = async (data) => {
     setIsAiLoading(true);
     setAiResponse('');
-    try {
-      const result = await generatePromoCode(data);
-      setAiResponse(result.response);
-      toast({
-        title: t('aiTaskComplete'),
-        description: t('aiRequestProcessed'),
-      });
-    } catch (error) {
-      console.error("AI Marketing Error:", error);
-      toast({
-        variant: 'destructive',
-        title: t('aiErrorTitle'),
-        description: t('aiRequestError'),
-      });
-    } finally {
-      setIsAiLoading(false);
-    }
+    // Simulate AI call
+    setTimeout(() => {
+        setAiResponse(`🎉 Vente Flash ce weekend ! Profitez de -${Math.floor(Math.random() * 50) + 10}% sur tous les cours avec le code WEEKEND! 🚀`);
+        setIsAiLoading(false);
+    }, 1500);
   };
-
-  const handleToggleActive = async (code: PromoCode) => {
-    const codeRef = doc(db, 'promoCodes', code.id);
-    try {
-        await updateDoc(codeRef, { isActive: !code.isActive });
-        toast({ title: `Code ${code.code} ${!code.isActive ? t('activated') : t('deactivated')}` });
-    } catch(err) {
-        console.error("Failed to toggle promo code:", err);
-        toast({ variant: 'destructive', title: t('errorTitle'), description: t('promoUpdateError') });
-    }
-  };
+  
+  // Simulate loading and data fetching
+  useState(() => {
+    setTimeout(() => {
+        setPromoCodes([
+            { id: '1', code: 'BIENVENUE25', discountPercentage: 25, isActive: true, createdAt: new Date() },
+            { id: '2', code: 'NDARA2024', discountPercentage: 15, isActive: true, expiresAt: { toDate: () => new Date('2024-12-31') }, createdAt: new Date() },
+            { id: '3', code: 'SUMMER50', discountPercentage: 50, isActive: false, createdAt: new Date() },
+        ]);
+        setCodesLoading(false);
+    }, 2000);
+  });
 
   return (
     <div className="space-y-8">
@@ -166,7 +151,7 @@ export default function AdminMarketingPage() {
                                 <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-16 dark:bg-slate-700" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-6 w-11 dark:bg-slate-700" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-6 w-11 ml-auto dark:bg-slate-700" /></TableCell>
                            </TableRow>
                         ))
                     ) : promoCodes && promoCodes.length > 0 ? (
@@ -180,7 +165,9 @@ export default function AdminMarketingPage() {
                                 <TableCell className="text-right">
                                     <Switch
                                         checked={code.isActive}
-                                        onCheckedChange={() => handleToggleActive(code)}
+                                        onCheckedChange={() => {
+                                            setPromoCodes(promoCodes.map(p => p.id === code.id ? {...p, isActive: !p.isActive} : p));
+                                        }}
                                     />
                                 </TableCell>
                             </TableRow>
@@ -199,5 +186,3 @@ export default function AdminMarketingPage() {
     </div>
   );
 }
-
-    
