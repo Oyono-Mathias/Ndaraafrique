@@ -44,9 +44,11 @@ service cloud.firestore {
     // --- User Collection Rules ---
     match /users/{userId} {
       allow list: if isAdmin();
-      allow get: if isOwner(userId) || isAdmin() || getUserData(request.auth.uid).role == 'instructor';
+      // An admin can get any user doc. A non-admin can only get their own.
+      allow get: if isAdmin() || isOwner(userId);
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && !('role' in request.resource.data || 'isInstructorApproved' in request.resource.data);
+      // An admin can update anything. A non-admin can only update their own doc, and cannot change their role or approval status.
+      allow update: if isAdmin() || (isOwner(userId) && !('role' in request.resource.data) && !('isInstructorApproved' in request.resource.data));
       allow delete: if isAdmin();
 
       match /chatHistory/{messageId} {
@@ -72,7 +74,7 @@ service cloud.firestore {
         allow read, update: if isSignedIn() && request.auth.uid in chatData.participants;
 
         match /messages/{messageId} {
-            allow read, write: if isSignedIn() && request.auth.uid in chatData.participants;
+            allow read, write: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
         }
     }
 
