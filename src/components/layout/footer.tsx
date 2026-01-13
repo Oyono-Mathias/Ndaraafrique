@@ -4,7 +4,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Linkedin } from 'lucide-react';
-import { LanguageSelector } from './language-selector';
 import { useTranslation } from 'react-i18next';
 
 const WhatsAppIcon = (props: React.SVGProps<SVGSVGElement>) => (
@@ -18,14 +17,14 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
   const { t } = useTranslation();
 
   return (
-    <footer className="bg-[#0f172a] border-t border-white/5 pt-12 pb-6 text-slate-400">
+    <footer className="footer">
       <div className="container mx-auto px-4">
         
         <div className="grid md:grid-cols-12 gap-8">
           <div className="md:col-span-12 lg:col-span-5">
-             <Link href="/" className="flex items-center gap-2 mb-4">
+             <Link href="/" className="flex items-center gap-2 mb-4 footer-brand">
                 <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
-                <span className="font-bold text-xl text-white">Ndara Afrique</span>
+                <span>Ndara Afrique</span>
             </Link>
             <p className="text-sm max-w-md">
                 {t('footer_subtitle')}
@@ -35,29 +34,29 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
             <div>
               <h3 className="font-semibold text-slate-200 mb-4">{t('footer_links')}</h3>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/" className="hover:text-primary transition-colors">{t('footer_home')}</Link></li>
-                <li><Link href="/search" className="hover:text-primary transition-colors">{t('footer_catalog')}</Link></li>
-                <li><Link href="/devenir-instructeur" onClick={onBecomeInstructorClick} className="hover:text-primary transition-colors">{t('footer_instructors')}</Link></li>
+                <li><Link href="/" className="footer-link">{t('footer_home')}</Link></li>
+                <li><Link href="/search" className="footer-link">{t('footer_catalog')}</Link></li>
+                <li><Link href="/devenir-instructeur" onClick={onBecomeInstructorClick} className="footer-link">{t('footer_instructors')}</Link></li>
               </ul>
             </div>
              <div>
               <h3 className="font-semibold text-slate-200 mb-4">{t('footer_help')}</h3>
               <ul className="space-y-2 text-sm">
-                  <li><Link href="/admin/faq" className="hover:text-primary transition-colors">{t('footer_faq')}</Link></li>
-                  <li><Link href="/questions-reponses" className="hover:text-primary transition-colors">{t('footer_contact')}</Link></li>
-                  <li><Link href="/questions-reponses" className="hover:text-primary transition-colors">{t('footer_support')}</Link></li>
+                  <li><Link href="/admin/faq" className="footer-link">{t('footer_faq')}</Link></li>
+                  <li><Link href="/questions-reponses" className="footer-link">{t('footer_contact')}</Link></li>
+                  <li><Link href="/questions-reponses" className="footer-link">{t('footer_support')}</Link></li>
               </ul>
             </div>
              <div>
               <h3 className="font-semibold text-slate-200 mb-4">{t('footer_legal')}</h3>
               <ul className="space-y-2 text-sm">
-                  <li><Link href="/mentions-legales" className="hover:text-primary transition-colors">{t('footer_legal_notice')}</Link></li>
-                  <li><Link href="/cgu" className="hover:text-primary transition-colors">{t('footer_terms')}</Link></li>
+                  <li><Link href="/mentions-legales" className="footer-link">{t('footer_legal_notice')}</Link></li>
+                  <li><Link href="/cgu" className="footer-link">{t('footer_terms')}</Link></li>
               </ul>
             </div>
           </div>
         </div>
-        <div className="text-center mt-12 pt-6 border-t border-white/5">
+        <div className="copyright">
              <div className="flex items-center justify-center gap-6 mb-6">
                   <a href="#" className="text-slate-400 hover:text-primary"><Facebook className="h-6 w-6" /></a>
                   <a href="#" className="text-slate-400 hover:text-primary"><WhatsAppIcon className="h-6 w-6" /></a>

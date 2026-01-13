@@ -6,14 +6,13 @@ import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
-
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
-import { StudentCourseCard } from '@/components/cards/student-course-card';
+import { CourseCard } from '@/components/cards/CourseCard';
 import { useTranslation } from 'react-i18next';
 
 interface EnrolledCourse extends Course {
@@ -54,7 +53,6 @@ export default function MyLearningPage() {
       const coursesMap = new Map<string, Course>();
       if (courseIds.length > 0) {
           const coursesRef = collection(db, 'courses');
-          // Firestore 'in' query limit is 30.
           const q = query(coursesRef, where('__name__', 'in', courseIds.slice(0, 30)));
           const courseSnap = await getDocs(q);
           courseSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
@@ -63,7 +61,6 @@ export default function MyLearningPage() {
       const instructorsMap = new Map<string, FormaAfriqueUser>();
       if (instructorIds.length > 0) {
           const instructorsRef = collection(db, 'users');
-          // Firestore 'in' query limit is 30.
           const q = query(instructorsRef, where('uid', 'in', instructorIds.slice(0, 30)));
           const instructorSnap = await getDocs(q);
           instructorSnap.forEach(doc => instructorsMap.set(doc.data().uid, doc.data() as FormaAfriqueUser));
@@ -103,7 +100,7 @@ export default function MyLearningPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900">{t('navMyLearning')}</h1>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navMyLearning')}</h1>
       </header>
 
       <Tabs defaultValue="all" className="w-full">
@@ -143,9 +140,9 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
 
     if (courses.length === 0) {
         return (
-            <div className="text-center py-20 border-2 border-dashed border-slate-200 rounded-xl mt-8">
+            <div className="text-center py-20 border-2 border-dashed border-slate-700 rounded-xl mt-8">
                 <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-                <h3 className="mt-4 text-lg font-semibold text-slate-600">{emptyMessage}</h3>
+                <h3 className="mt-4 text-lg font-semibold text-slate-300">{emptyMessage}</h3>
                 <Button asChild variant="link" className="mt-2">
                     <Link href="/dashboard">{t('browseCourses')}</Link>
                 </Button>
@@ -156,10 +153,13 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {courses.map(course => (
-                <StudentCourseCard key={course.id} course={course} />
+                 <CourseCard 
+                    key={course.id}
+                    course={course} 
+                    instructor={{ fullName: course.instructorName }}
+                    variant="student" 
+                />
             ))}
         </div>
     );
 };
-
-    

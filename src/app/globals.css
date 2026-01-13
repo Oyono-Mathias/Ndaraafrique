@@ -5,10 +5,10 @@
 
 @layer base {
   :root {
-    --background: 222 83% 4%; /* #020817 - Deepest Navy */
+    --background: 222 83% 4%; /* #0f172a - Dark Navy */
     --foreground: 210 20% 98%; /* #f8fafc - Almost White */
 
-    --card: 222 83% 4%;
+    --card: 222 83% 10%; /* Slightly lighter navy for cards */
     --card-foreground: 210 20% 98%;
     
     --popover: 224 71.4% 4.1%;
@@ -44,10 +44,10 @@
   }
 
   .dark {
-    --background: 222 83% 4%;
+    --background: 222 83% 4%; /* #0f172a - Dark Navy */
     --foreground: 210 20% 98%;
 
-    --card: 222 83% 4%;
+    --card: 222 83% 10%;
     --card-foreground: 210 20% 98%;
 
     --popover: 224 71.4% 4.1%;
@@ -116,6 +116,46 @@
     top: 0;
     z-index: 40;
   }
+  
+  .glassmorphism-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+  }
+
+  .footer {
+    background: rgba(15, 23, 42, 0.95);
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 3rem 1rem 1.5rem;
+    color: #9ca3af;
+  }
+
+  .footer-brand {
+      color: #ffffff;
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+  }
+
+  .footer-link {
+      display: block;
+      margin-bottom: 0.5rem;
+      transition: color 0.3s;
+      text-decoration: none;
+      color: #9ca3af;
+  }
+
+  .footer-link:hover {
+      color: #007bff; /* Bleu Ndara */
+  }
+
+  .copyright {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.85rem;
+  }
 }
 
 @layer utilities {
@@ -136,5 +176,21 @@
     @keyframes marquee-fast {
         0% { transform: translateX(0%); }
         100% { transform: translateX(-100%); }
+    }
+    .hero-text {
+        animation: fadeInUp 1s ease-out;
+    }
+    .benefit-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        padding: 2rem;
+        transition: all 0.4s ease;
+    }
+    .benefit-card:hover {
+        background: rgba(0, 123, 255, 0.1); /* Teinte bleue au survol */
+        border-color: #007bff;
+        transform: scale(1.05);
     }
 }

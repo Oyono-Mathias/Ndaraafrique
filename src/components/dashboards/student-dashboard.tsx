@@ -14,45 +14,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { Badge } from '../ui/badge';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
-
-const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
-    <div className="flex items-center gap-1 text-xs text-slate-400">
-        <span className="font-bold text-amber-400">{rating.toFixed(1)}</span>
-        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-        <span>({reviewCount.toLocaleString()})</span>
-    </div>
-);
-
-const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => {
-    const isEbook = course.contentType === 'ebook';
-    return (
-        <div className="w-full">
-            <Link href={`/course/${course.id}`} className="block group">
-                <div className="overflow-hidden">
-                    <div className="relative">
-                        <Image
-                            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}
-                            alt={course.title}
-                            width={300}
-                            height={170}
-                            className="aspect-video object-cover w-full rounded-lg"
-                        />
-                    </div>
-                    <div className="pt-2 space-y-1">
-                        <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{course.title}</h3>
-                        <p className="text-xs text-slate-400 truncate">Par {instructor?.fullName || 'un instructeur'}</p>
-                        <div className="flex items-center pt-1">
-                            <StarRating rating={4.7} reviewCount={123} />
-                        </div>
-                        <p className="font-bold text-lg text-white">
-                            {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
-                        </p>
-                    </div>
-                </div>
-            </Link>
-        </div>
-    );
-};
+import { CourseCard } from '../cards/CourseCard';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     return (
@@ -60,14 +22,14 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
             <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
             {isLoading ? (
                 <div className="flex space-x-6">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-72 w-64 rounded-2xl bg-slate-800" />)}
+                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 w-64 rounded-2xl bg-slate-800" />)}
                 </div>
             ) : courses && courses.length > 0 ? (
                  <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                    <CarouselContent className="-ml-4">
+                    <CarouselContent className="-ml-6">
                         {courses.map(course => (
-                            <CarouselItem key={course.id} className="pl-4 basis-[60%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                                <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} />
+                            <CarouselItem key={course.id} className="pl-6 basis-[70%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                                <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
                             </CarouselItem>
                         ))}
                     </CarouselContent>

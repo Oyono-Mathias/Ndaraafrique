@@ -18,45 +18,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { Header } from '@/components/layout/header';
-
-const CourseCard = ({ course, instructor }: { course: Course, instructor: Partial<FormaAfriqueUser> | null }) => {
-    const { user } = useRole();
-    const router = useRouter();
-    const { toast } = useToast();
-
-    const handleClick = (e: React.MouseEvent) => {
-        if (!user) {
-            e.preventDefault();
-            toast({
-                title: "Accès réservé",
-                description: "Veuillez vous connecter ou créer un compte pour voir les détails du cours.",
-                variant: 'destructive',
-            });
-            router.push('/login');
-        }
-    };
-    
-    return (
-      <div className="w-full h-full bg-[#1e293b] rounded-2xl overflow-hidden border border-slate-700/80 shadow-lg hover:shadow-primary/10 transition-all duration-300 transform hover:-translate-y-1 flex flex-col">
-        <Link href={`/course/${course.id}`} onClick={handleClick} className="block">
-          <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`} alt={course.title} width={300} height={170} className="w-full aspect-video object-cover" />
-          <div className="p-4 flex flex-col flex-grow">
-            <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12">{course.title}</h3>
-            <p className="text-xs text-slate-400 mt-1 flex-grow">{instructor?.fullName || 'Instructeur Ndara Afrique'}</p>
-            <div className="flex items-center gap-1 mt-2">
-              <span className="font-bold text-sm text-amber-400">4.8</span>
-              <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span className="text-xs text-slate-400">({(Math.random() * 2000 + 50).toFixed(0)})</span>
-            </div>
-            <p className="font-extrabold text-lg text-white mt-2">
-              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
-            </p>
-          </div>
-        </Link>
-      </div>
-    );
-};
-
+import { CourseCard } from '@/components/cards/CourseCard';
 
 export default function LandingPage() {
   const router = useRouter();
