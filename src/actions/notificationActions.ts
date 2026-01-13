@@ -3,12 +3,13 @@
 
 import { adminDb } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
-import { FieldValue, query, where, getDocs } from 'firebase-admin/firestore';
+import { FieldValue, query, where, getDocs, DocumentData } from 'firebase-admin/firestore';
 
 interface NotificationPayload {
   title: string;
   body: string;
   link?: string;
+  type?: 'newPayouts' | 'newApplications' | 'newSupportTickets' | 'financialAnomalies' | 'general';
 }
 
 const findUserByFCMToken = async (token: string): Promise<string | null> => {
@@ -149,15 +150,24 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
     
     let adminTokens: string[] = [];
     adminSnapshot.forEach(doc => {
-        const tokens = doc.data().fcmTokens;
-        if (Array.isArray(tokens) && tokens.length > 0) {
-            adminTokens.push(...tokens);
+        const userData = doc.data();
+        const preferences = userData.notificationPreferences;
+        const notifType = payload.type;
+        
+        // Default to true if preferences are not set.
+        const shouldReceiveNotification = !notifType || notifType === 'general' || preferences?.[notifType] !== false;
+
+        if (shouldReceiveNotification) {
+            const tokens = userData.fcmTokens;
+            if (Array.isArray(tokens) && tokens.length > 0) {
+                adminTokens.push(...tokens);
+            }
         }
     });
 
     if(adminTokens.length === 0) {
-        console.log("Aucun token de notification trouvé pour les administrateurs.");
-        return { success: false, message: "Aucun token de notification admin." };
+        console.log("Aucun token de notification trouvé pour les administrateurs (ou préférences désactivées).");
+        return { success: false, message: "Aucun administrateur à notifier." };
     }
 
     const uniqueTokens = [...new Set(adminTokens)];

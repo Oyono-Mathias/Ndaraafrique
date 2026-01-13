@@ -257,7 +257,8 @@ export default function MyRevenuePage() {
         await sendAdminNotification({
             title: '💰 Nouvelle demande de retrait',
             body: `${instructor.fullName} a demandé un retrait de ${formatCurrency(data.amount)}.`,
-            link: '/admin/payouts'
+            link: '/admin/payouts',
+            type: 'newPayouts'
         });
 
         toast({

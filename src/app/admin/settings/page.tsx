@@ -5,9 +5,10 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useDoc, useMemoFirebase } from '@/firebase';
+import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -15,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign, MessageCircle } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign, MessageCircle, Bell } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -43,6 +44,97 @@ const settingsSchema = z.object({
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
+
+const notificationPreferencesSchema = z.object({
+  newPayouts: z.boolean().default(true),
+  newApplications: z.boolean().default(true),
+  newSupportTickets: z.boolean().default(true),
+  financialAnomalies: z.boolean().default(true),
+});
+
+type NotificationPreferencesValues = z.infer<typeof notificationPreferencesSchema>;
+
+
+const NotificationPreferences = () => {
+    const { formaAfriqueUser } = useRole();
+    const { toast } = useToast();
+    const db = getFirestore();
+
+    const form = useForm<NotificationPreferencesValues>({
+        resolver: zodResolver(notificationPreferencesSchema),
+        defaultValues: {
+            newPayouts: true,
+            newApplications: true,
+            newSupportTickets: true,
+            financialAnomalies: true,
+        },
+    });
+
+    useEffect(() => {
+        if (formaAfriqueUser?.notificationPreferences) {
+            form.reset(formaAfriqueUser.notificationPreferences);
+        }
+    }, [formaAfriqueUser, form]);
+
+    const handlePreferenceChange = async (field: keyof NotificationPreferencesValues, value: boolean) => {
+        if (!formaAfriqueUser) return;
+        
+        form.setValue(field, value); // Update form state
+        
+        try {
+            const userRef = doc(db, 'users', formaAfriqueUser.uid);
+            await updateDoc(userRef, {
+                [`notificationPreferences.${field}`]: value
+            });
+            toast({ title: "Préférence mise à jour", description: "Vos choix ont été sauvegardés." });
+        } catch (error) {
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de sauvegarder la préférence." });
+        }
+    };
+    
+    const preferences: { key: keyof NotificationPreferencesValues; label: string; description: string }[] = [
+        { key: 'newPayouts', label: 'Nouvelles demandes de retrait', description: 'Recevoir une alerte pour chaque demande de paiement d\'un instructeur.' },
+        { key: 'newApplications', label: 'Nouvelles candidatures d\'instructeur', description: 'Être notifié lorsqu\'un utilisateur postule pour devenir instructeur.' },
+        { key: 'newSupportTickets', label: 'Nouveaux tickets de support', description: 'Recevoir une alerte pour chaque nouveau ticket de support ouvert.' },
+        { key: 'financialAnomalies', label: 'Anomalies financières', description: 'Alertes de sécurité pour les transactions de paiement suspectes ou échouées.' },
+    ];
+
+    return (
+        <Card className="dark:bg-slate-800 dark:border-slate-700">
+            <CardHeader>
+                <CardTitle className="dark:text-white flex items-center gap-2"><Bell /> Préférences de Notifications Push</CardTitle>
+                <CardDescription>Choisissez les notifications que vous souhaitez recevoir sur vos appareils.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                 <Form {...form}>
+                    <form className="space-y-4">
+                        {preferences.map((pref) => (
+                             <FormField
+                                key={pref.key}
+                                control={form.control}
+                                name={pref.key}
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="dark:text-slate-200">{pref.label}</FormLabel>
+                                        <FormDescription className="dark:text-slate-400">{pref.description}</FormDescription>
+                                    </div>
+                                    <FormControl>
+                                        <Switch
+                                            checked={field.value}
+                                            onCheckedChange={(checked) => handlePreferenceChange(pref.key, checked)}
+                                        />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+                        ))}
+                    </form>
+                 </Form>
+            </CardContent>
+        </Card>
+    );
+}
 
 export default function AdminSettingsPage() {
     const { t } = useTranslation();
@@ -292,130 +384,136 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                 onCropComplete={handleCropComplete}
                 onClose={() => setImageToCrop(null)}
             />
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                    <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                        <div>
-                            <h1 className="text-3xl font-bold dark:text-white">{t('site_settings')}</h1>
-                            <p className="text-muted-foreground dark:text-slate-400">{t('settings_desc')}</p>
-                        </div>
-                         <Button type="submit" disabled={isSaving} className="w-full sm:w-auto h-12 text-base md:text-sm">
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            {t('save_btn')}
-                        </Button>
-                    </header>
+            <div className="space-y-8">
+                <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                    <div>
+                        <h1 className="text-3xl font-bold dark:text-white">{t('site_settings')}</h1>
+                        <p className="text-muted-foreground dark:text-slate-400">{t('settings_desc')}</p>
+                    </div>
+                     <Button onClick={form.handleSubmit(onSubmit)} disabled={isSaving} className="w-full sm:w-auto h-12 text-base md:text-sm">
+                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {t('save_btn')}
+                    </Button>
+                </header>
+                
+                <Tabs defaultValue="general" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
+                        <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>{t('tab_general')}</TabsTrigger>
+                        <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2"/>Notifications</TabsTrigger>
+                        <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>{t('tab_commercial')}</TabsTrigger>
+                        <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>{t('tab_platform')}</TabsTrigger>
+                        <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>{t('tab_legal')}</TabsTrigger>
+                    </TabsList>
                     
-                    <Tabs defaultValue="general" className="w-full">
-                        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 dark:bg-slate-800 dark:border-slate-700">
-                            <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>{t('tab_general')}</TabsTrigger>
-                            <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>{t('tab_commercial')}</TabsTrigger>
-                            <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>{t('tab_platform')}</TabsTrigger>
-                            <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>{t('tab_legal')}</TabsTrigger>
-                        </TabsList>
-                        
-                        <TabsContent value="general" className="mt-6">
-                            <Card className="dark:bg-slate-800 dark:border-slate-700">
-                               <CardHeader>
-                                   <CardTitle className="dark:text-white">{t('platform_identity')}</CardTitle>
-                               </CardHeader>
-                               <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="siteName" render={({ field }) => ( <FormItem><FormLabel>{t('site_name')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl><FormMessage /></FormItem> )} />
-                                    
-                                    <FormItem>
-                                        <FormLabel>{t('logo_url')}</FormLabel>
-                                        <div className="flex items-start gap-4">
-                                            <label htmlFor="logo-upload" className="cursor-pointer shrink-0">
-                                                <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all relative overflow-hidden bg-slate-900">
-                                                    {imagePreview ? (
-                                                        <Image src={imagePreview} alt="Aperçu du logo" fill className="object-contain p-2"/>
-                                                    ) : (
-                                                        <ImageIcon className="h-8 w-8"/>
-                                                    )}
+                     <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                            <TabsContent value="general" className="mt-6">
+                                <Card className="dark:bg-slate-800 dark:border-slate-700">
+                                <CardHeader>
+                                    <CardTitle className="dark:text-white">{t('platform_identity')}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="siteName" render={({ field }) => ( <FormItem><FormLabel>{t('site_name')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl><FormMessage /></FormItem> )} />
+                                        
+                                        <FormItem>
+                                            <FormLabel>{t('logo_url')}</FormLabel>
+                                            <div className="flex items-start gap-4">
+                                                <label htmlFor="logo-upload" className="cursor-pointer shrink-0">
+                                                    <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all relative overflow-hidden bg-slate-900">
+                                                        {imagePreview ? (
+                                                            <Image src={imagePreview} alt="Aperçu du logo" fill className="object-contain p-2"/>
+                                                        ) : (
+                                                            <ImageIcon className="h-8 w-8"/>
+                                                        )}
+                                                    </div>
+                                                </label>
+                                                <Input id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml" onChange={handleLogoFileSelect} />
+                                                <div className="w-full space-y-2">
+                                                    <p className="text-xs text-slate-400">Cliquez sur l'icône pour importer une nouvelle image. L'URL sera générée automatiquement.</p>
+                                                    <Input readOnly value={form.getValues('logoUrl') || 'Aucun logo défini'} className="dark:bg-slate-700 dark:border-slate-600 text-slate-400" />
                                                 </div>
-                                            </label>
-                                            <Input id="logo-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/webp, image/svg+xml" onChange={handleLogoFileSelect} />
-                                            <div className="w-full space-y-2">
-                                                <p className="text-xs text-slate-400">Cliquez sur l'icône pour importer une nouvelle image. L'URL sera générée automatiquement.</p>
-                                                <Input readOnly value={form.getValues('logoUrl') || 'Aucun logo défini'} className="dark:bg-slate-700 dark:border-slate-600 text-slate-400" />
                                             </div>
-                                        </div>
-                                    </FormItem>
+                                        </FormItem>
 
-                                    <FormField control={form.control} name="contactEmail" render={({ field }) => ( <FormItem><FormLabel>{t('contact_email')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
-                               </CardContent>
-                           </Card>
-                        </TabsContent>
+                                        <FormField control={form.control} name="contactEmail" render={({ field }) => ( <FormItem><FormLabel>{t('contact_email')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                </CardContent>
+                            </Card>
+                            </TabsContent>
+                            
+                            <TabsContent value="notifications" className="mt-6">
+                                <NotificationPreferences />
+                            </TabsContent>
 
-                        <TabsContent value="commercial" className="mt-6">
-                           <Card className="dark:bg-slate-800 dark:border-slate-700">
-                               <CardHeader>
-                                   <CardTitle className="dark:text-white">{t('commercial_settings')}</CardTitle>
-                               </CardHeader>
-                               <CardContent className="space-y-6">
-                                    <FormField control={form.control} name="platformCommission" render={({ field }) => ( 
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2"><Percent className="h-4 w-4"/> {t('commission_rate')}</FormLabel>
-                                            <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
-                                            <FormDescription>{t('commission_desc')}</FormDescription>
-                                            <FormMessage />
-                                        </FormItem> 
-                                    )} />
-                                    <FormField control={form.control} name="currency" render={({ field }) => ( 
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2"><DollarSign className="h-4 w-4"/> {t('currency')}</FormLabel>
-                                            <FormControl><Input readOnly {...field} className="dark:bg-slate-900/50 dark:border-slate-700 cursor-not-allowed" /></FormControl>
-                                            <FormDescription>{t('currency_desc')}</FormDescription>
-                                            <FormMessage />
-                                        </FormItem> 
-                                    )} />
-                                    <FormField control={form.control} name="minPayoutThreshold" render={({ field }) => ( 
-                                        <FormItem>
-                                            <FormLabel className="flex items-center gap-2"><Wallet className="h-4 w-4"/> {t('payout_threshold')}</FormLabel>
-                                            <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
-                                            <FormDescription>{t('payout_threshold_desc')}</FormDescription>
-                                            <FormMessage />
-                                        </FormItem> 
-                                    )} />
-                               </CardContent>
-                           </Card>
-                        </TabsContent>
-                        
-                        <TabsContent value="platform" className="mt-6">
+                            <TabsContent value="commercial" className="mt-6">
                             <Card className="dark:bg-slate-800 dark:border-slate-700">
-                               <CardHeader>
-                                   <CardTitle className="dark:text-white">{t('platform_config')}</CardTitle>
-                               </CardHeader>
-                               <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>{t('maintenance')}</FormLabel><FormDescription>{t('maintenance_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
-                                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>{t('allow_applications')}</FormLabel><FormDescription>{t('allow_applications_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                                    <FormField control={form.control} name="autoApproveCourses" render={({ field }) => (
-                                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Approbation automatique des cours</FormLabel><FormDescription>Si activé, les cours soumis par les instructeurs seront publiés immédiatement.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                                     <FormField control={form.control} name="enableInternalMessaging" render={({ field }) => (
-                                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Activer la messagerie interne</FormLabel><FormDescription>Permet aux étudiants de contacter les instructeurs et autres étudiants.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
-                                    )} />
-                               </CardContent>
-                           </Card>
-                        </TabsContent>
+                                <CardHeader>
+                                    <CardTitle className="dark:text-white">{t('commercial_settings')}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-6">
+                                        <FormField control={form.control} name="platformCommission" render={({ field }) => ( 
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Percent className="h-4 w-4"/> {t('commission_rate')}</FormLabel>
+                                                <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
+                                                <FormDescription>{t('commission_desc')}</FormDescription>
+                                                <FormMessage />
+                                            </FormItem> 
+                                        )} />
+                                        <FormField control={form.control} name="currency" render={({ field }) => ( 
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><DollarSign className="h-4 w-4"/> {t('currency')}</FormLabel>
+                                                <FormControl><Input readOnly {...field} className="dark:bg-slate-900/50 dark:border-slate-700 cursor-not-allowed" /></FormControl>
+                                                <FormDescription>{t('currency_desc')}</FormDescription>
+                                                <FormMessage />
+                                            </FormItem> 
+                                        )} />
+                                        <FormField control={form.control} name="minPayoutThreshold" render={({ field }) => ( 
+                                            <FormItem>
+                                                <FormLabel className="flex items-center gap-2"><Wallet className="h-4 w-4"/> {t('payout_threshold')}</FormLabel>
+                                                <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
+                                                <FormDescription>{t('payout_threshold_desc')}</FormDescription>
+                                                <FormMessage />
+                                            </FormItem> 
+                                        )} />
+                                </CardContent>
+                            </Card>
+                            </TabsContent>
+                            
+                            <TabsContent value="platform" className="mt-6">
+                                <Card className="dark:bg-slate-800 dark:border-slate-700">
+                                <CardHeader>
+                                    <CardTitle className="dark:text-white">{t('platform_config')}</CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>{t('maintenance')}</FormLabel><FormDescription>{t('maintenance_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>{t('allow_applications')}</FormLabel><FormDescription>{t('allow_applications_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="autoApproveCourses" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Approbation automatique des cours</FormLabel><FormDescription>Si activé, les cours soumis par les instructeurs seront publiés immédiatement.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                        <FormField control={form.control} name="enableInternalMessaging" render={({ field }) => (
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Activer la messagerie interne</FormLabel><FormDescription>Permet aux étudiants de contacter les instructeurs et autres étudiants.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        )} />
+                                </CardContent>
+                            </Card>
+                            </TabsContent>
 
-                        <TabsContent value="legal" className="mt-6">
-                           <Card className="dark:bg-slate-800 dark:border-slate-700">
-                               <CardHeader><CardTitle className="dark:text-white">{t('legal_texts')}</CardTitle></CardHeader>
-                               <CardContent className="space-y-4">
-                                    <FormField control={form.control} name="termsOfService" render={({ field }) => ( <FormItem><FormLabel>{t('cgu')}</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu des CGU ici..." className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem> )} />
-                                    <FormField control={form.control} name="privacyPolicy" render={({ field }) => ( <FormItem><FormLabel>{t('privacy_policy')}</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu de la politique de confidentialité ici..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
-                               </CardContent>
-                           </Card>
-                        </TabsContent>
-                    </Tabs>
-                </form>
-            </Form>
+                            <TabsContent value="legal" className="mt-6">
+                            <Card className="dark:bg-slate-800 dark:border-slate-700">
+                                <CardHeader><CardTitle className="dark:text-white">{t('legal_texts')}</CardTitle></CardHeader>
+                                <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="termsOfService" render={({ field }) => ( <FormItem><FormLabel>{t('cgu')}</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu des CGU ici..." className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="privacyPolicy" render={({ field }) => ( <FormItem><FormLabel>{t('privacy_policy')}</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu de la politique de confidentialité ici..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                </CardContent>
+                            </Card>
+                            </TabsContent>
+                        </form>
+                    </Form>
+                </Tabs>
+            </div>
         </>
     );
 }
 
-    

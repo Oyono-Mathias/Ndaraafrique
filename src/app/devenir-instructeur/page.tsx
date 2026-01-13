@@ -87,7 +87,8 @@ export default function BecomeInstructorPage() {
       await sendAdminNotification({
         title: "🎓 Nouvelle candidature d'instructeur",
         body: `${formaAfriqueUser.fullName} souhaite devenir instructeur.`,
-        link: '/admin/instructors'
+        link: '/admin/instructors',
+        type: 'newApplications'
       });
 
       toast({

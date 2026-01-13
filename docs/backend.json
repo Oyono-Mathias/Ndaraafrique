@@ -70,6 +70,16 @@
         "isProfileComplete": {
             "type": "boolean",
             "description": "Flag indicating if the user has completed the essential parts of their profile (e.g., username, career goals)."
+        },
+        "notificationPreferences": {
+          "type": "object",
+          "description": "Admin preferences for receiving push notifications.",
+          "properties": {
+            "newPayouts": { "type": "boolean", "default": true },
+            "newApplications": { "type": "boolean", "default": true },
+            "newSupportTickets": { "type": "boolean", "default": true },
+            "financialAnomalies": { "type": "boolean", "default": true }
+          }
         }
       },
       "required": [

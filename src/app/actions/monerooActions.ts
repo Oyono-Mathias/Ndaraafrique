@@ -64,6 +64,7 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
                 title: '⚠️ Anomalie de Paiement Détectée',
                 body: `Échec de la vérification Moneroo pour la transaction ID: ${transactionId}. Statut: ${response.data?.status || 'inconnu'}.`,
                 link: '/admin/payments',
+                type: 'financialAnomalies'
             });
             return { success: false, error: response?.message || `Paiement non finalisé. Statut : ${response.data?.status}` };
         }
@@ -74,6 +75,7 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
             title: '🔥 Erreur Critique de Paiement',
             body: `Le service de vérification Moneroo a échoué. Cause: ${error.message}`,
             link: '/admin/settings',
+            type: 'financialAnomalies'
         });
         return { success: false, error: error.message || 'Erreur de vérification du paiement.' };
     }
