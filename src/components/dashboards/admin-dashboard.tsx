@@ -12,6 +12,8 @@ import { collection, query, where, onSnapshot, getFirestore, Timestamp, orderBy,
 import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
+import { AreaChart, CartesianGrid, XAxis, Area, Tooltip, ResponsiveContainer } from 'recharts';
 
 // --- TYPES ---
 interface Stats {
@@ -69,6 +71,7 @@ const AdminDashboard = () => {
     stats: true,
     activity: true,
   });
+   const [revenueTrendData, setRevenueTrendData] = useState<any[]>([]);
 
   // --- FETCHING LOGIC ---
   useEffect(() => {
@@ -77,45 +80,63 @@ const AdminDashboard = () => {
     const unsubscribes: (() => void)[] = [];
 
     // --- Statistiques ---
-    // Total Students
     const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
     unsubscribes.push(onSnapshot(studentsQuery, snapshot => {
       setStats(prev => ({ ...prev, totalStudents: snapshot.size }));
       setLoadingState(prev => ({...prev, stats: false}));
     }));
 
-    // Published Courses
     const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
     unsubscribes.push(onSnapshot(coursesQuery, snapshot => {
       setStats(prev => ({ ...prev, publishedCourses: snapshot.size }));
     }));
 
-    // Open Support Tickets
     const ticketsQuery = query(collection(db, 'support_tickets'), where('status', '==', 'ouvert'));
     unsubscribes.push(onSnapshot(ticketsQuery, snapshot => {
       setStats(prev => ({ ...prev, openSupportTickets: snapshot.size }));
     }));
 
-    // Monthly Revenue
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-    const startOfMonthTimestamp = Timestamp.fromDate(startOfMonth);
-
     const paymentsQuery = query(
       collection(db, 'payments'),
       where('status', '==', 'Completed'),
-      where('date', '>=', startOfMonthTimestamp)
+      orderBy('date', 'desc')
     );
     unsubscribes.push(onSnapshot(paymentsQuery, snapshot => {
-      const total = snapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-      setStats(prev => ({ ...prev, monthlyRevenue: total }));
+        const now = new Date();
+        const startOfMonthTimestamp = Timestamp.fromDate(new Date(now.getFullYear(), now.getMonth(), 1));
+        
+        let monthlyTotal = 0;
+        const monthlyAggregates: Record<string, number> = {};
+
+        snapshot.docs.forEach(doc => {
+            const payment = doc.data();
+            if (payment.date instanceof Timestamp) {
+                const paymentDate = payment.date.toDate();
+                if (paymentDate >= startOfMonthTimestamp.toDate()) {
+                    monthlyTotal += (payment.amount || 0);
+                }
+                const monthKey = paymentDate.toLocaleString('default', { month: 'short', year: '2-digit' });
+                monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
+            }
+        });
+        
+        const trendData = Object.entries(monthlyAggregates)
+            .map(([month, revenue]) => ({ month, revenue }))
+            .reverse(); // To get recent months first
+
+        setRevenueTrendData(trendData);
+        setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
     }));
 
     // --- Recent Activity ---
     const activityQuery = query(collection(db, 'enrollments'), orderBy('enrollmentDate', 'desc'), limit(5));
     unsubscribes.push(onSnapshot(activityQuery, async (snapshot) => {
         const enrollments = snapshot.docs.map(d => ({id: d.id, ...d.data()} as Enrollment));
+        if (enrollments.length === 0) {
+            setLoadingState(prev => ({...prev, activity: false}));
+            setRecentActivities([]);
+            return;
+        }
         
         const userIds = [...new Set(enrollments.map(e => e.studentId))];
         const courseIds = [...new Set(enrollments.map(e => e.courseId))];
@@ -160,6 +181,13 @@ const AdminDashboard = () => {
   }
 
   const isLoading = isUserLoading || loadingState.stats || loadingState.activity;
+  
+  const chartConfig = {
+    revenue: {
+      label: "Revenus",
+      color: "hsl(var(--primary))",
+    },
+  };
 
   return (
     <div className="space-y-6">
@@ -190,91 +218,91 @@ const AdminDashboard = () => {
         />
       </div>
 
-      <Card className="bg-white dark:bg-card shadow-sm">
-        <CardHeader>
-          <CardTitle>Activité Récente</CardTitle>
-          <CardDescription>Les dernières inscriptions sur la plateforme.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Desktop Table View */}
-          <div className="hidden sm:block">
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>Étudiant</TableHead>
-                    <TableHead>Cours</TableHead>
-                    <TableHead className="text-right">Date</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+             <Card className="xl:col-span-2 bg-white dark:bg-card shadow-sm">
+                <CardHeader>
+                    <CardTitle>Évolution des revenus</CardTitle>
+                    <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                     {isLoading ? <Skeleton className="h-72 w-full" /> : (
+                        <ChartContainer config={chartConfig} className="h-72 w-full">
+                          <ResponsiveContainer>
+                            <AreaChart data={revenueTrendData}>
+                               <defs>
+                                  <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
+                                    <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
+                                  </linearGradient>
+                                </defs>
+                              <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                              <XAxis
+                                dataKey="month"
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                tickFormatter={(value) => value.slice(0, 3)}
+                                className="fill-muted-foreground text-xs"
+                              />
+                              <Tooltip
+                                content={<ChartTooltipContent
+                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                    className="bg-background/80 backdrop-blur-sm"
+                                />}
+                              />
+                              <Area
+                                dataKey="revenue"
+                                type="natural"
+                                fill="url(#fillRevenue)"
+                                stroke="var(--color-revenue)"
+                                stackId="a"
+                              />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </ChartContainer>
+                     )}
+                </CardContent>
+            </Card>
+             <Card className="bg-white dark:bg-card shadow-sm">
+                <CardHeader>
+                <CardTitle>Activité Récente</CardTitle>
+                <CardDescription>Les dernières inscriptions sur la plateforme.</CardDescription>
+                </CardHeader>
+                <CardContent>
                 {isLoading ? (
-                    [...Array(3)].map((_, i) => (
-                    <TableRow key={i}>
-                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                        <TableCell className="text-right"><Skeleton className="h-5 w-24" /></TableCell>
-                    </TableRow>
-                    ))
+                    <div className="space-y-4">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                    </div>
                 ) : recentActivities.length > 0 ? (
-                    recentActivities.map((activity) => (
-                    <TableRow key={activity.id}>
-                        <TableCell>
-                        <div className="flex items-center gap-3">
-                            <Avatar className="h-8 w-8">
+                    <div className="space-y-4">
+                    {recentActivities.map((activity) => (
+                        <div key={activity.id} className="flex items-center gap-4">
+                        <Avatar className="h-9 w-9">
                             <AvatarImage src={activity.studentAvatar} />
                             <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium">{activity.studentName}</span>
+                        </Avatar>
+                        <div className="flex-1">
+                            <p className="text-sm font-medium leading-none">
+                            {activity.studentName}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                            s'est inscrit à "{activity.courseName}"
+                            </p>
                         </div>
-                        </TableCell>
-                        <TableCell>{activity.courseName}</TableCell>
-                        <TableCell className="text-right text-muted-foreground text-xs">
-                        {formatDistanceToNow(activity.enrolledAt, { locale: fr, addSuffix: true })}
-                        </TableCell>
-                    </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">
-                        Aucune activité récente à afficher.
-                    </TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-            </Table>
-          </div>
-          {/* Mobile Card View */}
-           <div className="sm:hidden space-y-4">
-             {isLoading ? (
-                [...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)
-             ) : recentActivities.length > 0 ? (
-                recentActivities.map(activity => (
-                    <Card key={activity.id} className="p-3">
-                        <div className="flex items-center gap-3">
-                            <Avatar className="h-9 w-9">
-                                <AvatarImage src={activity.studentAvatar} />
-                                <AvatarFallback>{activity.studentName.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <div>
-                                <p className="font-semibold text-sm">{activity.studentName}</p>
-                                <p className="text-xs text-muted-foreground">s'est inscrit à</p>
-                            </div>
-                        </div>
-                        <p className="font-medium text-sm mt-2">{activity.courseName}</p>
-                        <p className="text-right text-xs text-muted-foreground mt-1">
+                        <div className="text-xs text-muted-foreground">
                             {formatDistanceToNow(activity.enrolledAt, { locale: fr, addSuffix: true })}
-                        </p>
-                    </Card>
-                ))
-             ) : (
-                 <div className="h-24 text-center text-muted-foreground flex items-center justify-center">
+                        </div>
+                        </div>
+                    ))}
+                    </div>
+                ) : (
+                    <p className="text-sm text-center text-muted-foreground py-8">
                     Aucune activité récente.
-                 </div>
-             )}
-           </div>
-
-        </CardContent>
-      </Card>
+                    </p>
+                )}
+                </CardContent>
+            </Card>
+        </div>
     </div>
   );
 };
