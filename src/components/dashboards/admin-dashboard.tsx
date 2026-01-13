@@ -13,7 +13,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
-import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { BarChart, Bar, ResponsiveContainer, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 
 interface ActivityItem {

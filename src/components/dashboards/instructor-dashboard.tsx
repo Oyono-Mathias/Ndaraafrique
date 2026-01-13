@@ -83,6 +83,7 @@ function InstructorDashboardContent() {
                  return;
             }
 
+            // Firestore 'in' query is limited to 30 items. Batching is needed for larger scale.
             const courseIdChunks: string[][] = [];
             for (let i = 0; i < courseIds.length; i += 30) {
                 courseIdChunks.push(courseIds.slice(i, i + 30));
