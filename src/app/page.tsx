@@ -2,73 +2,56 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Footer } from '@/components/layout/footer';
-import Image from 'next/image';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
-import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Frown } from 'lucide-react';
 import { LanguageSelector } from '@/components/layout/language-selector';
-
-const CourseCard = ({ course, instructor }: { course: Course, instructor: FormaAfriqueUser | null }) => (
-  <div className="benefit-card group flex flex-col">
-    <div className="relative h-48 rounded-lg overflow-hidden mb-6">
-      <Image
-        src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
-        alt={course.title}
-        fill
-        className="object-cover group-hover:scale-105 transition-transform duration-300"
-      />
-    </div>
-    <div className="flex-grow">
-      <span className="bg-blue-600/20 text-blue-400 text-xs font-bold px-3 py-1 rounded-full uppercase">
-        {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
-      </span>
-      <h3 className="text-xl font-semibold mt-4 mb-2 text-white">{course.title}</h3>
-      <p className="text-gray-400 text-sm mb-4 line-clamp-2">{course.description}</p>
-    </div>
-    <Button asChild className="w-full mt-4 bg-white/10 hover:bg-blue-600 rounded-xl font-medium transition-colors">
-      <Link href={`/course/${course.id}`}>Consulter</Link>
-    </Button>
-  </div>
-);
+import type { Course } from '@/lib/types';
+import type { FormaAfriqueUser } from '@/context/RoleContext';
+import { CourseCard } from '@/components/cards/CourseCard';
+import { Footer } from '@/components/layout/footer';
 
 const LandingPage = () => {
-  const [publicCourses, setPublicCourses] = useState<Course[]>([]);
-  const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeStep, setActiveStep] = useState(1);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
+  const [loading, setLoading] = useState(true);
   const db = getFirestore();
 
   useEffect(() => {
-    const q = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
-    
-    const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-      const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-      setPublicCourses(coursesData);
-
+    // Correction: Le statut pour les cours visibles est "Published", et non "public".
+    const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+      setCourses(coursesData);
+      
       if (coursesData.length > 0) {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
-        if (instructorIds.length > 0) {
-            const instructorsQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
-            const instructorSnapshots = await getDocs(instructorsQuery);
-            const instructorsMap = new Map<string, FormaAfriqueUser>();
-            instructorSnapshots.forEach(doc => {
-              instructorsMap.set(doc.data().uid, doc.data() as FormaAfriqueUser);
-            });
-            setInstructors(instructorsMap);
-        }
+        const instructorsQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
+        const instructorSnapshots = await getDocs(instructorsQuery);
+        const newInstructorsMap = new Map<string, Partial<FormaAfriqueUser>>();
+        instructorSnapshots.forEach(doc => {
+          newInstructorsMap.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+        });
+        setInstructorsMap(newInstructorsMap);
       }
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching public courses: ", error);
-      setIsLoading(false);
-    });
 
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching courses: ", error);
+      setLoading(false);
+    });
     return () => unsubscribe();
   }, [db]);
+
+  const steps = [
+    { id: 1, title: "Inscription", desc: "Créez votre compte Ndara en quelques secondes." },
+    { id: 2, title: "Choix du parcours", desc: "Explorez nos formations en IA, Design ou Code." },
+    { id: 3, title: "Certification", desc: "Apprenez et obtenez un certificat reconnu." }
+  ];
 
   return (
     <div className="bg-[#020617] text-white min-h-screen font-sans">
@@ -95,23 +78,42 @@ const LandingPage = () => {
         </Button>
       </main>
 
+      <section className="py-16 px-6 max-w-4xl mx-auto">
+        <div className="flex justify-center gap-4 mb-10">
+          {steps.map((s) => (
+            <button 
+              key={s.id}
+              onClick={() => setActiveStep(s.id)}
+              className={`px-6 py-2 rounded-full border-2 transition-all duration-300 ${activeStep === s.id ? "border-blue-500 bg-blue-500/20 shadow-lg shadow-blue-500/50" : "bg-white/5 border-white/10"}`}
+            >
+              Setup {s.id}
+            </button>
+          ))}
+        </div>
+        <div className="bg-white/5 p-8 rounded-3xl border border-white/10 text-center">
+          <h3 className="text-2xl font-bold mb-4 text-blue-400">{steps[activeStep-1].title}</h3>
+          <p className="text-gray-300">{steps[activeStep-1].desc}</p>
+        </div>
+      </section>
+
       <section className="py-20 max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-end mb-10">
-          <div>
-            <h2 className="text-3xl font-bold mb-2">Explorez nos formations</h2>
-          </div>
-          <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition">
-            Voir tout →
-          </Link>
+            <div>
+                <h2 className="text-3xl font-bold mb-2">Nos Cours Publics</h2>
+                <p className="text-gray-400">Découvrez nos formations accessibles à tous.</p>
+            </div>
+            <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition">
+                Voir tout →
+            </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {isLoading ? (
+          {loading ? (
             [...Array(3)].map((_, i) => (
               <div key={i} className="benefit-card"><Skeleton className="h-full w-full bg-slate-800" /></div>
             ))
-          ) : publicCourses.length > 0 ? (
-            publicCourses.slice(0, 3).map((course) => (
-              <CourseCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
+          ) : courses.length > 0 ? (
+            courses.slice(0, 3).map((course) => (
+              <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
             ))
           ) : (
              <div className="md:col-span-3 text-center py-16 benefit-card">
