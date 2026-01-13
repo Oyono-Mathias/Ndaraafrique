@@ -346,7 +346,7 @@ export default function AdminUsersPage() {
                 {isLoading ? <UserTableSkeleton /> : (
                   filteredUsers.length > 0 ? (
                     filteredUsers.map((user) => (
-                      <TableRow key={user.uid} className={cn("dark:hover:bg-slate-700/50", isUpdating && 'opacity-50')}>
+                      <TableRow key={user.uid} className={cn("dark:hover:bg-slate-700/50 dark:border-b dark:border-slate-700", isUpdating && 'opacity-50')}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>

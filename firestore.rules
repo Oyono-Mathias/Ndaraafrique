@@ -26,23 +26,25 @@ service cloud.firestore {
       return userData.role == 'instructor' && userData.isInstructorApproved == true;
     }
     
-    // --- Collection Rules ---
+    function isProfileComplete() {
+        let userData = getUserData(request.auth.uid);
+        return userData.username != null && 'careerGoals' in userData && 'interestDomain' in userData.careerGoals;
+    }
 
-    // USERS: 
-    // - Admins can list pending instructors.
-    // - Users can read/create their own data.
-    // - Admins can update anything.
-    // - Users can update their own data BUT CANNOT change their role or approval status.
+    // --- Collection: users ---
     match /users/{userId} {
-      allow list: if isAdmin() && (
-          request.query.where.role == 'instructor' &&
-          request.query.where.isInstructorApproved == false
-      ) || (isSignedIn() && request.query.keys().hasAny(['uid']));
       allow get: if isAdmin() || isOwner(userId);
+      allow list: if isAdmin(); // Seuls les admins peuvent lister tous les utilisateurs.
       allow create: if isOwner(userId);
-      allow update: if isAdmin() || (isOwner(userId) && !('role' in request.resource.data) && !('isInstructorApproved' in request.resource.data));
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        !('role' in request.resource.data) && 
+        !('isInstructorApproved' in request.resource.data) &&
+        !('status' in request.resource.data)
+      );
       allow delete: if isAdmin();
 
+      // --- Sous-collections de 'users' ---
       match /chatHistory/{messageId} {
         allow read, write: if isOwner(userId);
       }
@@ -54,7 +56,7 @@ service cloud.firestore {
       }
     }
     
-    // COURSES: Admins and owners can manage courses. All can read published.
+    // --- Collection: courses ---
     match /courses/{courseId} {
         allow get: if true;
         allow list: if true;
@@ -62,7 +64,7 @@ service cloud.firestore {
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
     }
     
-    // ENROLLMENTS: Admins can read all enrollments.
+    // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
       allow create: if isOwner(request.resource.data.studentId);
       allow read, list: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
@@ -70,60 +72,78 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
-    // PAYMENTS: Only admins can access payment records.
+    // --- Collection: payments ---
     match /payments/{paymentId} {
       allow read, list, create, update, delete: if isAdmin();
     }
     
-    // PAYOUTS: Admins manage payouts, instructors can create/read their own.
+    // --- Collection: payouts ---
     match /payouts/{payoutId} {
       allow create: if isApprovedInstructor() && isOwner(request.resource.data.instructorId);
       allow read: if isOwner(resource.data.instructorId) || isAdmin();
       allow list, update, delete: if isAdmin();
     }
 
-    // SUPPORT_TICKETS: Users can interact with their own tickets. Admins can manage all.
+    // --- Collection: support_tickets ---
     match /support_tickets/{ticketId} {
-      allow create: if isOwner(request.resource.data.userId);
-      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
-      allow update: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin());
-      allow list: if isAdmin() || (isSignedIn() && request.query.keys().hasAny(['userId', 'instructorId']));
+      function isTicketParticipant() {
+        let ticket = get(/databases/$(database)/documents/support_tickets/$(ticketId)).data;
+        return isOwner(ticket.userId) || isOwner(ticket.instructorId);
+      }
+      
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
+      allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
+      allow list: if isAdmin();
 
       match /messages/{messageId} {
-        allow read, write: if isSignedIn() && (
-          isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId) || 
-          isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.instructorId) || 
-          isAdmin()
-        );
+        allow create: if isSignedIn() && isTicketParticipant() && isOwner(request.resource.data.senderId);
+        allow read: if isSignedIn() && (isTicketParticipant() || isAdmin());
       }
     }
     
-    // PROMO CODES: Only admins can manage promo codes.
+    // --- Collection: promoCodes ---
     match /promoCodes/{codeId} {
       allow read, list, create, update, delete: if isAdmin();
     }
 
-    // CAROUSEL SLIDES: Public read, admin write.
+    // --- Collection: carousel_slides ---
     match /carousel_slides/{slideId} {
         allow read, list: if true;
         allow create, update, delete: if isAdmin();
     }
     
-    // CHATS: Users can only access chats they are a part of. Admins can access all for moderation.
+    // --- Collection: chats ---
     match /chats/{chatId} {
-      function isParticipant() {
+      function isChatParticipant() {
         return request.auth.uid in resource.data.participants;
       }
       
-      allow create: if isSignedIn();
-      allow read, update: if isSignedIn() && isParticipant();
+      allow create: if isSignedIn() 
+                      && isProfileComplete()
+                      && request.auth.uid in request.resource.data.participants
+                      && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
+                      
+      allow read, update: if isSignedIn() && isChatParticipant();
       
       match /messages/{messageId} {
-        allow read, write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow read: if isSignedIn() && isChatParticipant();
+        allow create: if isSignedIn() && isChatParticipant() && isOwner(request.resource.data.senderId);
       }
     }
 
-    // Default deny for any other collection not explicitly matched
+    // --- Collection: faqs ---
+    match /faqs/{faqId} {
+      allow read, write: if isAdmin();
+    }
+    
+    // --- Collection: settings ---
+    match /settings/global {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // --- Règle par défaut ---
     match /{path=**} {
       allow read, write: if false;
     }
