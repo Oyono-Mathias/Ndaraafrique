@@ -111,8 +111,7 @@ service cloud.firestore {
     
     // --- Promo Codes ---
     match /promoCodes/{codeId} {
-        allow read, list: if isAdmin();
-        allow create, update, delete: if isAdmin();
+        allow read, list, create, update, delete: if isAdmin();
     }
     
     // --- Other Collections ---
@@ -132,7 +131,7 @@ service cloud.firestore {
 
     // --- Payments Collection (SECURED) ---
     match /payments/{paymentId} {
-        allow read, list, create, update, delete: if isAdmin();
+      allow read, list, create, update, delete: if isAdmin();
     }
     
     // --- Payouts Collection (SECURED) ---
