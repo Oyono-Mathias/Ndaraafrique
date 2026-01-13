@@ -31,7 +31,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Badge } from "../ui/badge";
 import { OnboardingGuide } from "../onboarding-guide";
 import { Progress } from "../ui/progress";
