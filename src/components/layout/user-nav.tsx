@@ -75,7 +75,7 @@ export function UserNav() {
               <UserIcon className="mr-2 h-4 w-4" />
               <span>{t('navAccount')}</span>
             </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => router.push('/paiements')} className="cursor-pointer dark:focus:bg-slate-700">
+             <DropdownMenuItem onClick={() => router.push('/historique-paiements')} className="cursor-pointer dark:focus:bg-slate-700">
               <CreditCard className="mr-2 h-4 w-4" />
               <span>{t('payments')}</span>
             </DropdownMenuItem>

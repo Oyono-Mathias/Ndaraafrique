@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -117,12 +118,12 @@ function PaymentPageContent() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center h-screen">
-                <Card className="w-full max-w-md">
-                    <CardHeader><Skeleton className="h-8 w-3/4" /></CardHeader>
+            <div className="flex justify-center items-center h-screen dark:bg-slate-900">
+                <Card className="w-full max-w-md dark:bg-slate-800 dark:border-slate-700">
+                    <CardHeader><Skeleton className="h-8 w-3/4 dark:bg-slate-700" /></CardHeader>
                     <CardContent className="space-y-4">
-                        <Skeleton className="h-6 w-full" />
-                        <Skeleton className="h-10 w-full" />
+                        <Skeleton className="h-6 w-full dark:bg-slate-700" />
+                        <Skeleton className="h-10 w-full dark:bg-slate-700" />
                     </CardContent>
                 </Card>
             </div>
@@ -131,8 +132,8 @@ function PaymentPageContent() {
     
     if (!course) {
         return (
-             <div className="flex flex-col justify-center items-center h-screen gap-4">
-                <h1 className="text-2xl font-bold">Cours non trouvé</h1>
+             <div className="flex flex-col justify-center items-center h-screen gap-4 dark:bg-slate-900">
+                <h1 className="text-2xl font-bold text-white">Cours non trouvé</h1>
                 <Button onClick={() => router.push('/dashboard')}>Retour à l'accueil</Button>
             </div>
         )
@@ -142,13 +143,13 @@ function PaymentPageContent() {
         <>
             <Script src="https://cdn.moneroo.io/checkout/v1/moneroo.js" strategy="afterInteractive" />
             <div className="flex justify-center items-center min-h-screen bg-slate-50 dark:bg-slate-900 p-4">
-                <Card className="w-full max-w-md shadow-lg rounded-2xl">
+                <Card className="w-full max-w-md shadow-lg rounded-2xl dark:bg-slate-800 dark:border-slate-700">
                     <CardHeader className="text-center">
-                        <CardTitle className="text-2xl font-bold">Finaliser votre achat</CardTitle>
-                        <CardDescription>Vous êtes sur le point de vous inscrire à un cours exceptionnel.</CardDescription>
+                        <CardTitle className="text-2xl font-bold dark:text-white">Finaliser votre achat</CardTitle>
+                        <CardDescription className="dark:text-slate-400">Vous êtes sur le point de vous inscrire à un cours exceptionnel.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-6">
-                        <div className="p-4 border rounded-xl bg-slate-50 dark:bg-slate-800 flex items-center gap-4">
+                        <div className="p-4 border rounded-xl bg-slate-100 dark:bg-slate-800/50 dark:border-slate-700 flex items-center gap-4">
                             <Image 
                                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
                                 alt={course.title}
@@ -157,11 +158,11 @@ function PaymentPageContent() {
                                 className="rounded-lg aspect-video object-cover"
                             />
                             <div className="flex-1">
-                                <h3 className="font-bold text-sm line-clamp-2">{course.title}</h3>
+                                <h3 className="font-bold text-sm line-clamp-2 dark:text-white">{course.title}</h3>
                                 <p className="text-lg font-bold text-primary mt-1">{course.price.toLocaleString('fr-FR')} XOF</p>
                             </div>
                         </div>
-                        <p className="text-xs text-center text-muted-foreground">
+                        <p className="text-xs text-center text-muted-foreground dark:text-slate-500">
                             Vous serez redirigé vers la passerelle de paiement sécurisée de Moneroo pour finaliser votre transaction.
                         </p>
                         <Button onClick={handlePayment} disabled={isLoading} size="lg" className="w-full h-12 text-base">
