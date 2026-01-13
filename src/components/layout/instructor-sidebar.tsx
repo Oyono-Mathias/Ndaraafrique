@@ -59,10 +59,10 @@ const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { h
       href={href}
       onClick={handleClick}
       className={cn(
-        "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
+        "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+          : 'text-slate-300 hover:bg-slate-800'
       )}
     >
       <Icon className={cn(
@@ -73,6 +73,7 @@ const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { h
         <span className="font-semibold text-sm leading-tight">{sangoLabel}</span>
         <span className={cn("text-xs leading-tight", isActive ? 'text-primary-foreground/80' : 'text-slate-400/70')}>{frenchLabel}</span>
       </div>
+      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
     </Link>
   );
 };
@@ -119,8 +120,8 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   }
 
   return (
-    <div className="w-full h-full bg-[#111827] border-r border-slate-700/50 flex flex-col shadow-sm">
-      <header className="p-4 border-b border-slate-700/50 flex items-center gap-2">
+    <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
+      <header className="p-4 border-b border-white/10 flex items-center gap-2">
         <Image src={logoUrl || "/icon.svg"} width={28} height={28} alt={`${siteName} Logo`} className="rounded-full" />
         <span className="font-bold text-lg text-white">
           Ndara Afrique
@@ -144,13 +145,11 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         ))}
       </nav>
 
-      <footer className="p-4 mt-auto border-t border-slate-700/50 space-y-2">
-        <div className="p-2 rounded-lg bg-slate-800/50">
-            <UserNav />
-        </div>
+      <footer className="p-4 mt-auto border-t border-white/10 space-y-2">
+        <UserNav />
         <Button
           variant="outline"
-          className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 text-white"
+          className="w-full justify-center bg-slate-800/50 border-slate-700 hover:bg-slate-700/80 text-white"
           onClick={() => switchRole('student')}
         >
           <LogIn className="mr-2 h-4 w-4" />

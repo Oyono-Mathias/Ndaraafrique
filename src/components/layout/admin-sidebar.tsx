@@ -30,6 +30,7 @@ import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";
 import { UserNav } from "./user-nav";
+import { LanguageSelector } from "./language-selector";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
@@ -40,10 +41,10 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
       href={href}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group",
+        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
-          ? 'bg-primary text-primary-foreground shadow-md shadow-primary/20'
-          : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
+          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+          : 'text-slate-300 hover:bg-slate-800'
       )}
     >
         <div className="flex items-center">
@@ -56,6 +57,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
         {count !== undefined && count > 0 && (
             <Badge className="bg-red-500 text-white h-5 px-2 text-xs tv:h-7 tv:px-3 tv:text-base">{count}</Badge>
         )}
+        {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
     </Link>
   );
 };
@@ -65,6 +67,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   const { switchRole } = useRole();
   const { t } = useTranslation();
   const db = getFirestore();
+  const router = useRouter();
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, textKey: "navDashboard" },
@@ -81,7 +84,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
     { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "FAQ" },
     { href: "/admin/settings", icon: Settings, textKey: "navSettings" },
-];
+  ];
 
   const pendingInstructorsQuery = useMemoFirebase(() => 
     query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)),
@@ -103,16 +106,12 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
 
   const handleSwitchToInstructor = () => {
     switchRole('instructor');
-    if (typeof window !== 'undefined') {
-        window.location.assign('/dashboard');
-    }
+    router.push('/dashboard');
   }
 
   const handleSwitchToStudent = () => {
     switchRole('student');
-    if (typeof window !== 'undefined') {
-        window.location.assign('/dashboard');
-    }
+    router.push('/dashboard');
   }
   
   const counts = {
@@ -122,38 +121,17 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-[#111827]">
-       <header className="p-4 border-b border-border/10 flex items-center gap-3 sidebar-header">
-            <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full sidebar-logo tv:w-10 tv:h-10" />
-            <span className="sidebar-label font-bold text-lg text-white tv:text-2xl">{siteName || 'Ndara Afrique'}</span>
-      </header>
-
-      <nav className="flex-1 py-2 overflow-y-auto">
-          {adminMenu.map((item) => (
-            <SidebarItem 
-                key={item.href} 
-                href={item.href} 
-                icon={item.icon} 
-                label={t(item.textKey)}
-                count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
-                onClick={onLinkClick}
-            />
-          ))}
-      </nav>
-
-      <footer className="p-4 mt-auto space-y-2 border-t border-border/10">
-        <div className="p-2 rounded-lg bg-slate-800/50">
-            <UserNav />
-        </div>
-        <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToInstructor}>
-            <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
-            <span className="sidebar-label">{t('userRoleInstructor')}</span>
-        </Button>
-         <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToStudent}>
-            <Users className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
-            <span className="sidebar-label">{t('userRoleStudent')}</span>
-        </Button>
-      </footer>
-    </div>
+    <>
+      {adminMenu.map((item) => (
+        <SidebarItem 
+            key={item.href} 
+            href={item.href} 
+            icon={item.icon} 
+            label={t(item.textKey)}
+            count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
+            onClick={onLinkClick}
+        />
+      ))}
+    </>
   );
 }

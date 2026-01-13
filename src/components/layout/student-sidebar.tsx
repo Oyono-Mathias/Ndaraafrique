@@ -27,7 +27,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";
 import { OnboardingGuide } from "../onboarding-guide";
@@ -63,6 +63,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
         <Badge className="bg-red-500 text-white h-5 px-1.5 text-xs">{unreadCount}</Badge>
       )}
        {disabled && <Lock className="h-3 w-3 text-slate-500"/>}
+       {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
     </Link>
   );
 };
@@ -92,9 +93,9 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: t('navFollowUp'),
       items: [
-        { href: "/mes-certificats", icon: Award, textKey: 'navMyCertificates', id: 'sidebar-nav-mes-certificats' },
+        { href: "/mes-certificats", icon: Award, textKey: 'navCertificates', id: 'sidebar-nav-mes-certificats' },
         { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navMyAssignments', id: 'sidebar-nav-mes-devoirs' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navAssignments', id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {
@@ -150,8 +151,8 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   return (
     <>
       <OnboardingGuide />
-      <div className="w-full h-full bg-[#111827] border-r border-slate-800 flex flex-col shadow-sm">
-        <header className="p-4 border-b border-slate-800">
+      <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
+        <header className="p-4 border-b border-white/10">
           <Link href="/dashboard" className="flex items-center gap-2">
               <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
               <span className="font-bold text-lg text-white">{siteName || 'Ndara Afrique'}</span>
@@ -188,10 +189,8 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           ))}
         </nav>
 
-        <footer className="p-4 mt-auto border-t border-slate-800 space-y-2">
-           <div className="p-2 rounded-lg bg-slate-800/50">
-              <UserNav />
-           </div>
+        <footer className="p-4 mt-auto border-t border-white/10 space-y-2">
+           <UserNav />
           {isInstructor ? (
               <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={() => switchRole('instructor')}>
                   <LogIn className="mr-2 h-4 w-4" />
