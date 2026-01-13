@@ -11,26 +11,32 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
     }
     
     try {
-        // 1. Verify the token of the user making the request (the admin)
         const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const adminUid = decodedToken.uid;
+        const requestorUid = decodedToken.uid;
 
-        // 2. Verify that the user making the request is an admin
-        const adminUserDoc = await adminDb.collection('users').doc(adminUid).get();
-        if (!adminUserDoc.exists || adminUserDoc.data()?.role !== 'admin') {
-            return { success: false, error: 'Accès non autorisé. Seuls les administrateurs peuvent supprimer des utilisateurs.' };
+        // An admin can delete any user except themselves.
+        // A regular user can only delete themselves.
+        const adminUserDoc = await adminDb.collection('users').doc(requestorUid).get();
+        const isAdmin = adminUserDoc.exists && adminUserDoc.data()?.role === 'admin';
+
+        if (isAdmin) {
+             if (requestorUid === userId) {
+                return { success: false, error: 'Un administrateur ne peut pas se supprimer lui-même via cette action.' };
+            }
+            // Admin is allowed to delete the target user.
+        } else {
+            // If not an admin, user can only delete themselves.
+            if (requestorUid !== userId) {
+                 return { success: false, error: 'Accès non autorisé.' };
+            }
         }
         
-        // Prevent admin from deleting themselves
-        if (adminUid === userId) {
-            return { success: false, error: 'Un administrateur ne peut pas se supprimer lui-même.' };
-        }
-
-        // 3. Delete user from Firebase Authentication
+        // Proceed with deletion
         await adminAuth.deleteUser(userId);
-
-        // 4. Delete user document from Firestore
         await adminDb.collection('users').doc(userId).delete();
+        
+        // TODO: In a real app, you'd also want to clean up user's content from other collections
+        // (e.g., enrollments, submissions etc.) via a Cloud Function triggered on user deletion.
 
         return { success: true };
 

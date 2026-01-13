@@ -12,19 +12,31 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
+import { useToast } from '@/hooks/use-toast';
+import { deleteUserAccount } from '@/app/actions/userActions';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { toast } from '@/hooks/use-toast';
-import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock } from 'lucide-react';
+import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2 } from 'lucide-react';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 
 // --- Validation Schema ---
@@ -60,8 +72,10 @@ const domains = ["Développement Web", "Marketing Digital", "Data Science", "Des
 export default function AccountPage() {
   const { user, formaAfriqueUser, isUserLoading, setFormaAfriqueUser } = useRole();
   const { t } = useTranslation();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [stats, setStats] = useState({ enrolled: 0, completed: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
   const db = getFirestore();
@@ -234,6 +248,21 @@ export default function AccountPage() {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    setIsDeleting(true);
+    const idToken = await user.getIdToken(true);
+    const result = await deleteUserAccount({ userId: user.uid, idToken });
+    if (!result.success) {
+        toast({
+            variant: 'destructive',
+            title: 'Erreur de suppression',
+            description: result.error || 'Une erreur est survenue.',
+        });
+        setIsDeleting(false);
+    }
+  };
+
   if (isUserLoading || !formaAfriqueUser) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -367,6 +396,38 @@ export default function AccountPage() {
                          <StatCard title={t('certificates_earned')} icon={Sparkles} value={stats.completed} isLoading={statsLoading} />
                     </CardContent>
                 </Card>
+
+                 <Card className="border-destructive/50 glassmorphism-card">
+                    <CardHeader>
+                        <CardTitle className="text-xl text-destructive/90">Zone de Danger</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-slate-400 mb-4">La suppression de votre compte est une action définitive et irréversible.</p>
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="destructive" className="w-full">
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Supprimer mon compte
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        Cette action est irréversible. Toutes vos données, y compris votre progression, vos cours et vos certificats seront définitivement supprimés.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                         {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                        Oui, supprimer mon compte
+                                    </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
+                    </CardContent>
+                 </Card>
             </div>
 
         </div>
@@ -374,5 +435,3 @@ export default function AccountPage() {
     </>
   );
 }
-
-    
