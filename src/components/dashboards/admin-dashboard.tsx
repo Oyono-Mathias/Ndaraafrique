@@ -13,7 +13,7 @@ import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
 import { format, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { AreaChart, CartesianGrid, XAxis, Area, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, CartesianGrid, XAxis, YAxis, Area, Tooltip, ResponsiveContainer } from 'recharts';
 import { Progress } from '@/components/ui/progress';
 
 // --- TYPES ---
@@ -313,5 +313,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-    
