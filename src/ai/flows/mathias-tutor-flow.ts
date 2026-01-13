@@ -11,7 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import { adminDb } from '@/firebase/admin';
+// import { adminDb } from '@/firebase/admin';
 
 const MathiasTutorInputSchema = z.object({
   query: z.string().describe('The student’s question or request for the AI tutor.'),
@@ -35,39 +35,9 @@ const getCourseCatalog = ai.defineTool(
         })),
     },
     async () => {
-        if (!adminDb) {
-            console.error("TOOL ERROR: Firestore admin is not initialized. Check firebase/admin.ts.");
-            return [];
-        }
-
-        try {
-            console.log('Tool "getCourseCatalog" triggered. Fetching published courses...');
-            const coursesCol = adminDb.collection('courses');
-            // OPTIMIZATION: Only query for published courses to keep the context relevant and the query fast.
-            const q = coursesCol.where('status', '==', 'Published');
-            const courseSnapshot = await q.get();
-
-            if (courseSnapshot.empty) {
-                console.log('Tool "getCourseCatalog": No published courses found.');
-                return [];
-            }
-            
-            const courseList = courseSnapshot.docs.map(doc => {
-                const data = doc.data();
-                return {
-                    title: data.title,
-                    price: data.price
-                };
-            });
-            
-            console.log(`Tool "getCourseCatalog": Found ${courseList.length} courses.`);
-            return courseList;
-
-        } catch (error) {
-            console.error('TOOL ERROR: Failed to fetch course catalog from Firestore:', error);
-            // Return an empty array to the LLM to indicate no data is available, preventing a crash.
-            return [];
-        }
+        // This functionality is temporarily disabled as it requires the Admin SDK.
+        console.warn("[getCourseCatalog Tool] Admin SDK not initialized. Returning empty array.");
+        return [];
     }
 );
 
@@ -83,30 +53,9 @@ const searchFaq = ai.defineTool(
         }),
     },
     async ({ query }) => {
-        try {
-            const faqsRef = adminDb.collection('faqs');
-            const snapshot = await faqsRef.get();
-            if (snapshot.empty) return { answer: undefined };
-
-            const queryWords = query.toLowerCase().split(/\s+/);
-            
-            for (const doc of snapshot.docs) {
-                const faq = doc.data();
-                const questionWords = faq.question_fr.toLowerCase().split(/\s+/);
-                const tags = faq.tags || [];
-
-                const match = queryWords.some(qw => questionWords.includes(qw) || tags.includes(qw));
-
-                if (match) {
-                    return { answer: faq.answer_fr };
-                }
-            }
-            
-            return { answer: undefined };
-        } catch (error) {
-            console.error('TOOL ERROR: Failed to search FAQ in Firestore:', error);
-            return { answer: undefined };
-        }
+       // This functionality is temporarily disabled as it requires the Admin SDK.
+       console.warn("[searchFaq Tool] Admin SDK not initialized. Returning undefined.");
+       return { answer: undefined };
     }
 );
 
@@ -153,5 +102,3 @@ const mathiasTutorFlow = ai.defineFlow(
     return output!;
   }
 );
-
-    
