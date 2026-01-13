@@ -10,9 +10,10 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-2xl border bg-card text-card-foreground",
-      "bg-white/5 border-white/10 shadow-lg", // Glassmorphism styles
-      "backdrop-blur-xl",
+      "rounded-2xl border text-card-foreground",
+      "border-white/10 bg-white/5 shadow-lg", // Base Glassmorphism styles
+      "md:backdrop-blur-xl", // Performance: Apply blur only on medium screens and up
+      "transition-all duration-300 hover:border-white/20 hover:-translate-y-1",
       className
     )}
     {...props}

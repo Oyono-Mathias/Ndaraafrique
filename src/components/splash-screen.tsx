@@ -12,10 +12,10 @@ export function SplashScreen() {
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
-    const sessionStarted = sessionStorage.getItem('ndaraafrique-session-started');
+    const sessionStarted = sessionStorage.getItem('ndara-session-started');
     if (!sessionStarted) {
       setIsVisible(true);
-      sessionStorage.setItem('ndaraafrique-session-started', 'true');
+      sessionStorage.setItem('ndara-session-started', 'true');
 
       const fadeTimer = setTimeout(() => {
         setIsFading(true);

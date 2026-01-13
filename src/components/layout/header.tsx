@@ -3,7 +3,6 @@
 
 import { Bell, Search } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Input } from '../ui/input';
 import { LanguageSelector } from './language-selector';
 import { UserNav } from './user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
@@ -109,7 +108,7 @@ const HeaderNotificationButton = () => {
   
   if (isMobile) {
     return (
-      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-foreground dark:text-white">
+      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-foreground">
         <Bell className="h-5 w-5" />
         {hasUnread && (
           <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -125,7 +124,7 @@ const HeaderNotificationButton = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-foreground dark:text-white">
+        <Button variant="ghost" size="icon" className="relative text-foreground">
           <Bell className="h-5 w-5" />
           {hasUnread && (
             <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -137,10 +136,10 @@ const HeaderNotificationButton = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 dark:border-b dark:border-slate-700">
-                <CardTitle className="text-base font-semibold dark:text-white">Notifications</CardTitle>
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
+          <Card className="border-0 bg-slate-800 border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-700">
+                <CardTitle className="text-base font-semibold text-white">Notifications</CardTitle>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="text-slate-300 hover:bg-slate-700">Marquer comme lu</Button>
             </CardHeader>
             <CardContent className="p-2">
               {notifications.length > 0 ? (
@@ -157,19 +156,13 @@ const HeaderNotificationButton = () => {
   );
 };
 
-export function Header({ mobileSheet }: { mobileSheet?: React.ReactNode }) {
-    const router = useRouter();
+export function Header() {
     return (
-        <div className="flex h-16 items-center gap-4">
-            {mobileSheet && <div className="md:hidden">{mobileSheet}</div>}
-            <div className="flex w-full items-center gap-4 ml-auto">
-                <div className="flex-1" />
-                <div className="flex items-center gap-2">
-                    <LanguageSelector />
-                    <HeaderNotificationButton />
-                    <UserNav />
-                </div>
-            </div>
+        <div className="flex w-full items-center gap-2">
+            <div className="flex-1" />
+            <LanguageSelector />
+            <HeaderNotificationButton />
+            <UserNav />
         </div>
     );
 }

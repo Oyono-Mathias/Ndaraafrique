@@ -27,7 +27,7 @@ export default function RootLayout({
 }) {
 
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className="dark" style={{ colorScheme: 'dark' }}>
        <body className={cn("min-h-screen bg-background font-sans antialiased", fontSans.variable)}>
         <FirebaseClientProvider>
           <RoleProvider>

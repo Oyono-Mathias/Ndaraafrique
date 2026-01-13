@@ -32,7 +32,7 @@ interface RevenueDataPoint {
 
 
 const StatCard = ({ title, value, icon: Icon, isLoading, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, accentColor?: string }) => (
-    <Card className={cn("border-t-4 bg-slate-800/50 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10", accentColor)}>
+    <Card className={cn("border-t-4", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -187,17 +187,17 @@ export function AdminDashboard() {
       </section>
       
       <section>
-        <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('titleRevenue')}</h2>
-        <Card className="dark:bg-[#1e293b] dark:border-slate-700">
+        <h2 className="text-2xl font-semibold mb-4 text-white">{t('titleRevenue')}</h2>
+        <Card>
             <CardContent className="pt-6">
-                {isLoading ? <Skeleton className="h-80 w-full dark:bg-slate-700" /> : (
+                {isLoading ? <Skeleton className="h-80 w-full bg-slate-700" /> : (
                     <ChartContainer config={chartConfig} className="h-80 w-full">
                         <ResponsiveContainer>
                             <BarChart data={revenueTrendData}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" className="dark:stroke-slate-700" />
+                                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-700" />
                                 <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                 <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                                <Tooltip content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} className="dark:bg-slate-900 dark:border-slate-700" />} />
+                                <Tooltip content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} className="bg-slate-900 border-slate-700" />} />
                                 <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
                             </BarChart>
                         </ResponsiveContainer>
@@ -208,12 +208,12 @@ export function AdminDashboard() {
       </section>
 
       <section>
-        <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('recentActivity')}</h2>
-        <Card className="dark:bg-[#1e293b] dark:border-slate-700">
+        <h2 className="text-2xl font-semibold mb-4 text-white">{t('recentActivity')}</h2>
+        <Card>
             <CardContent className="pt-6">
                 {isLoading ? (
                     <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full dark:bg-slate-700" />)}
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full bg-slate-700" />)}
                     </div>
                 ) : activities.length > 0 ? (
                     <div className="space-y-2">
@@ -224,10 +224,10 @@ export function AdminDashboard() {
                                     <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 space-y-1">
-                                    <p className="text-sm font-medium leading-none dark:text-slate-200">
+                                    <p className="text-sm font-medium leading-none text-slate-200">
                                         <span className="font-semibold">{activity.userName}</span> a acheté <span className="font-semibold">"{activity.courseTitle}"</span>.
                                     </p>
-                                    <p className="text-xs text-muted-foreground dark:text-slate-400">
+                                    <p className="text-xs text-muted-foreground">
                                         {format(activity.date, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
                                     </p>
                                 </div>
@@ -236,7 +236,7 @@ export function AdminDashboard() {
                         ))}
                     </div>
                 ) : (
-                    <div className="text-center py-10 text-muted-foreground dark:text-slate-500">
+                    <div className="text-center py-10 text-muted-foreground">
                         <ShoppingCart className="h-10 w-10 mx-auto mb-2"/>
                         <p>{t('no_recent_activity')}</p>
                     </div>
