@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '../splash-screen';
 import { Header } from './header';
-import '@/i18n';
+import i18n from '@/i18n';
 
 function MaintenancePage() {
     return (
@@ -162,3 +162,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
   );
 }
+
+    

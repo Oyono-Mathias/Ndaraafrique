@@ -51,13 +51,15 @@ export function LanguageSelector() {
                     <DropdownMenuItem
                         key={lang.code}
                         onClick={() => changeLanguage(lang.code)}
-                        className="flex items-center gap-2 cursor-pointer dark:hover:bg-slate-700"
+                        className="flex items-center gap-2 cursor-pointer dark:focus:bg-slate-700 dark:text-white"
                     >
                         <Image src={lang.flag} alt={lang.name} width={20} height={15} />
-                        <span className="dark:text-white">{lang.name}</span>
+                        <span>{lang.name}</span>
                     </DropdownMenuItem>
                 ))}
             </DropdownMenuContent>
         </DropdownMenu>
     );
 }
+
+    

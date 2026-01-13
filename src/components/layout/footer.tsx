@@ -44,7 +44,6 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
               <ul className="space-y-2 text-sm">
                   <li><Link href="/faq" className="footer-link">{t('footer_faq')}</Link></li>
                   <li><Link href="/messages" className="footer-link">{t('footer_contact')}</Link></li>
-                  <li><Link href="/support" className="footer-link">{t('footer_support')}</Link></li>
               </ul>
             </div>
              <div>
@@ -62,9 +61,11 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
                   <a href="#" className="text-slate-400 hover:text-primary"><WhatsAppIcon className="h-6 w-6" /></a>
                   <a href="#" className="text-slate-400 hover:text-primary"><Linkedin className="h-6 w-6" /></a>
               </div>
-            <p className="text-xs">{t('footer_copyright')}</p>
+            <p className="text-xs">{t('footerCopyright')}</p>
         </div>
       </div>
     </footer>
   );
 }
+
+    

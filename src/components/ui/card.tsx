@@ -10,10 +10,7 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-2xl border text-card-foreground",
-      "border-white/10 bg-white/5 shadow-lg", // Base Glassmorphism styles
-      "md:backdrop-blur-xl", // Performance: Apply blur only on medium screens and up
-      "transition-all duration-300 hover:border-white/20 hover:-translate-y-1",
+      "rounded-2xl border bg-card text-card-foreground",
       className
     )}
     {...props}
@@ -81,3 +78,5 @@ const CardFooter = React.forwardRef<
 CardFooter.displayName = "CardFooter"
 
 export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+
+    

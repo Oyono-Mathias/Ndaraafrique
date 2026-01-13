@@ -91,7 +91,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
 
   const instructorMenu = [
     {
-      label: 'Kua',
+      label: t('Kua'),
       items: [
         { href: '/dashboard', icon: LayoutDashboard, textKey: 'navDashboard', sangoKey: 'sango_dashboard' },
         { href: '/instructor/courses', icon: BookOpen, textKey: 'navMyCourses', sangoKey: 'sango_my_courses' },
@@ -101,16 +101,16 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
       ],
     },
     {
-      label: 'Ndâpë',
+      label: t('Ndâpë'),
       items: [
         { href: '/instructor/students', icon: Users, textKey: 'navMyStudents', sangoKey: 'sango_my_students' },
-        { href: '/mes-revenus', icon: DollarSign, textKey: 'navMyRevenue', sangoKey: 'sango_my_revenue' },
+        { href: '/mes-revenus', icon: DollarSign, textKey: 'navFinance', sangoKey: 'sango_my_revenue' },
         { href: '/statistiques', icon: BarChart3, textKey: 'navStatistics', sangoKey: 'sango_statistics' },
         { href: '/certificats-instructor', icon: Award, textKey: 'navCertificates', sangoKey: 'sango_certificates' },
       ],
     },
     {
-      label: 'Tene',
+      label: t('Tene'),
       items: [
         { href: '/messages', icon: MessagesSquare, textKey: 'navMessages', sangoKey: 'sango_messages' },
         { href: '/questions-reponses', icon: MessagesSquare, textKey: 'navQA', sangoKey: 'sango_qa' },
@@ -140,7 +140,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
           </Avatar>
           <div className="text-center">
               <p className="font-bold text-white">{formaAfriqueUser?.fullName}</p>
-              <p className="text-xs text-slate-400">Wafango ye (Formateur)</p>
+              <p className="text-xs text-slate-400">{t('userRoleInstructor')}</p>
           </div>
       </div>
 
@@ -165,11 +165,11 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
          <SidebarItem href="/account" icon={Settings} sangoLabel={t('sango_settings')} frenchLabel={t('navSettings')} onClick={onLinkClick} />
         <Button
           variant="outline"
-          className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white"
+          className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700 text-white"
           onClick={() => switchRole('student')}
         >
           <LogIn className="mr-2 h-4 w-4" />
-          Mode Étudiant
+          {t('userRoleStudent')}
         </Button>
         {isAdmin && (
             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
@@ -181,3 +181,5 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     </div>
   );
 }
+
+    

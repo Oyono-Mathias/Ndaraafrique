@@ -146,13 +146,15 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
       <footer className="p-4 mt-auto space-y-2 border-t border-border/10">
         <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToInstructor}>
             <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
-            <span className="sidebar-label">Mode Instructeur</span>
+            <span className="sidebar-label">{t('userRoleInstructor')}</span>
         </Button>
          <Button variant="outline" className="w-full justify-center bg-gray-800/50 border-gray-700 hover:bg-gray-700/80 text-white tv:py-6 tv:text-lg" onClick={handleSwitchToStudent}>
             <Users className="mr-2 h-4 w-4 tv:h-6 tv:w-6"/>
-            <span className="sidebar-label">Mode Étudiant</span>
+            <span className="sidebar-label">{t('userRoleStudent')}</span>
         </Button>
       </footer>
     </div>
   );
 }
+
+    

@@ -89,7 +89,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/dashboard", icon: Star, textKey: 'navSelection', id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, textKey: 'navSearch', id: 'sidebar-nav-search' },
-        { href: "/mes-formations", icon: Play, textKey: 'navMyLearning', id: 'sidebar-nav-mes-formations' },
+        { href: "/mes-formations", icon: Play, textKey: 'navMyCourses', id: 'sidebar-nav-mes-formations' },
         { href: "/tutor", icon: Bot, textKey: 'navTutor', id: 'sidebar-nav-tutor' },
       ],
     },
@@ -196,7 +196,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           {isInstructor ? (
               <Button variant="outline" className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700" onClick={() => switchRole('instructor')}>
                   <LogIn className="mr-2 h-4 w-4" />
-                  Mode Instructeur
+                  {t('userRoleInstructor')}
               </Button>
           ) : showInstructorSignup && (
               <Button variant="outline" className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700" asChild>
@@ -217,3 +217,5 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     </>
   );
 }
+
+    

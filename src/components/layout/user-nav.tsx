@@ -20,9 +20,11 @@ import {
   import { getAuth, signOut } from "firebase/auth";
   import { useRouter } from "next/navigation";
   import { LogOut, User as UserIcon } from 'lucide-react';
+  import { useTranslation } from "react-i18next";
 
   
 export function UserNav() {
+    const { t } = useTranslation();
     const { formaAfriqueUser, isUserLoading } = useRole();
     const router = useRouter();
 
@@ -41,7 +43,7 @@ export function UserNav() {
           <Button variant="ghost" className="relative h-9 w-9 rounded-full">
             <Avatar className="h-9 w-9">
               <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.fullName} />
-              <AvatarFallback>{formaAfriqueUser.fullName.charAt(0)}</AvatarFallback>
+              <AvatarFallback>{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
             </Avatar>
           </Button>
         </DropdownMenuTrigger>
@@ -58,15 +60,17 @@ export function UserNav() {
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/account')}>
               <UserIcon className="mr-2 h-4 w-4" />
-              <span>Profil</span>
+              <span>{t('navProfile')}</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuItem onClick={handleLogout}>
             <LogOut className="mr-2 h-4 w-4" />
-            <span>Déconnexion</span>
+            <span>{t('Déconnexion')}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
     )
 }
+
+    
