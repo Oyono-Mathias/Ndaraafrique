@@ -49,7 +49,7 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
               </ul>
             </div>
              <div>
-              <h3 className="font-semibold text-slate-200 mb-4">Légal</h3>
+              <h3 className="font-semibold text-slate-200 mb-4">{t('footer_legal')}</h3>
               <ul className="space-y-2 text-sm">
                   <li><Link href="/mentions-legales" className="footer-link">{t('footer_legal_notice')}</Link></li>
                   <li><Link href="/cgu" className="footer-link">{t('footer_terms')}</Link></li>
