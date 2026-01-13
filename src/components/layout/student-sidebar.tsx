@@ -25,6 +25,8 @@ import {
   Play,
   Briefcase,
   Bell,
+  CheckCircle,
+  Lock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -32,34 +34,39 @@ import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from 
 import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
 import { OnboardingGuide } from "../onboarding-guide";
+import { Progress } from "../ui/progress";
 
 
-const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string }) => {
+const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean }) => {
   const pathname = usePathname();
   const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
 
   return (
     <Link
-      href={href}
-      onClick={onClick}
+      href={disabled ? '#' : href}
+      onClick={disabled ? (e) => e.preventDefault() : onClick}
       id={id}
+      aria-disabled={disabled}
       className={cn(
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
-          ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-          : "text-slate-600 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:bg-slate-800"
+          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+          : 'text-slate-600 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:bg-slate-800',
+        disabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
       )}
     >
       <div className="flex items-center">
         <Icon className={cn(
           "w-5 h-5 mr-4 text-slate-500 group-hover:text-primary transition-colors duration-300",
-          isActive && "text-primary-foreground"
+          isActive && "text-primary-foreground",
+          disabled && "text-slate-600 group-hover:text-slate-600"
         )} />
         <span className="font-medium text-sm">{label}</span>
       </div>
       {unreadCount !== undefined && unreadCount > 0 && (
         <Badge className="bg-red-500 text-white h-5 px-1.5 text-xs">{unreadCount}</Badge>
       )}
+       {disabled && <Lock className="h-3 w-3 text-slate-500"/>}
     </Link>
   );
 };
@@ -67,13 +74,14 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id }: { hr
 
 export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
-  const { switchRole, availableRoles, user } = useRole();
+  const { switchRole, availableRoles, user, formaAfriqueUser } = useRole();
   const { t } = useTranslation();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
   const [unreadMessages, setUnreadMessages] = useState(0);
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
+  const isProfileComplete = formaAfriqueUser?.isProfileComplete || false;
 
   const studentMenu = [
     {
@@ -96,9 +104,8 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: t('navCommunity'),
       items: [
-        { href: "/annuaire", icon: Users, textKey: 'navDirectory', id: 'sidebar-nav-annuaire' },
-        { href: "/questions-reponses", icon: HelpCircle, textKey: 'navMyQuestions', id: 'sidebar-nav-questions-reponses' },
-        { href: "/messages", icon: MessageSquare, textKey: 'navMessages', id: 'sidebar-nav-messages' },
+        { href: "/annuaire", icon: Users, textKey: 'navDirectory', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
+        { href: "/messages", icon: MessageSquare, textKey: 'navMessages', id: 'sidebar-nav-messages', disabled: !isProfileComplete },
       ]
     },
     {
@@ -136,6 +143,13 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     switchRole('admin');
     router.push('/admin');
   }
+  
+  const profileProgress = useMemo(() => {
+      let progress = 0;
+      if (formaAfriqueUser?.username) progress += 50;
+      if (formaAfriqueUser?.careerGoals?.interestDomain) progress += 50;
+      return progress;
+  }, [formaAfriqueUser]);
 
   return (
     <>
@@ -147,6 +161,16 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
               <span className="font-bold text-lg text-primary">{siteName || 'Ndara Afrique'}</span>
           </Link>
         </header>
+        
+        {!isProfileComplete && (
+            <div className="p-4 space-y-2 border-b border-slate-800">
+                <Link href="/account" className="block text-center">
+                    <p className="text-sm font-semibold text-white">Complète ton profil</p>
+                    <Progress value={profileProgress} className="h-1.5 mt-2" />
+                    <p className="text-xs text-slate-400 mt-1">Débloque la messagerie et l'annuaire !</p>
+                </Link>
+            </div>
+        )}
 
         <nav className="flex-1 py-2 overflow-y-auto">
           {studentMenu.map((group) => (
@@ -160,6 +184,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
                   label={t(item.textKey)}
                   id={item.id}
                   unreadCount={item.href === '/messages' ? unreadMessages : undefined}
+                  disabled={item.disabled}
                   onClick={onLinkClick}
                 />
               ))}

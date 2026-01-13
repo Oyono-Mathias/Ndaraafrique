@@ -21,13 +21,9 @@
           "description": "Email address of the user (private).",
           "format": "email"
         },
-        "firstName": {
+        "fullName": {
           "type": "string",
-          "description": "First name of the user (private)."
-        },
-        "lastName": {
-          "type": "string",
-          "description": "Last name of the user (private)."
+          "description": "Full name of the user (private)."
         },
         "profilePictureURL": {
           "type": "string",

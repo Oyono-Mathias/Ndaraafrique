@@ -15,6 +15,7 @@ import {
   getDocs,
   doc,
   setDoc,
+  onSnapshot,
 } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,7 +37,7 @@ import {
 
 const MemberCard = ({ member, onContact }: { member: FormaAfriqueUser; onContact: (memberId: string) => void; }) => {
   return (
-    <Card className="text-center p-4 bg-slate-800/50 border border-slate-700 shadow-sm hover:shadow-lg hover:border-primary/50 transition-shadow">
+    <Card className="text-center p-4 glassmorphism-card">
       <Avatar className="mx-auto h-16 w-16 mb-3 border-2 border-primary/20">
         <AvatarImage src={member.profilePictureURL} />
         <AvatarFallback className="text-xl bg-slate-700 text-primary font-semibold">
