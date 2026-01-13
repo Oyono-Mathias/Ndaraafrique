@@ -56,7 +56,7 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
             config={{
                 youtube: {
                     playerVars: { 
-                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app',
+                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://ndara-afrique.app',
                         autoplay: 1,
                     }
                 }
@@ -417,5 +417,3 @@ export default function CoursePlayerPage() {
         </>
     );
 }
-
-    

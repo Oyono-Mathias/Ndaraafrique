@@ -30,7 +30,7 @@ const generateAnnouncementPrompt = ai.definePrompt({
   name: 'generateAnnouncementPrompt',
   input: { schema: GenerateAnnouncementInputSchema },
   output: { schema: GenerateAnnouncementOutputSchema },
-  prompt: `You are a marketing expert for FormaAfrique, an online learning platform for French-speaking Africa.
+  prompt: `You are a marketing expert for Ndara Afrique, an online learning platform for French-speaking Africa.
   Your task is to take a given topic or an existing announcement text and rewrite it to be a short, engaging, and professional marketing message.
   This message will be displayed in a banner on top of the website.
   The tone should be exciting and create a sense of urgency or opportunity.

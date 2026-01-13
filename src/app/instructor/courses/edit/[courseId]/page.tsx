@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -223,13 +224,11 @@ export default function EditCoursePage() {
 
   return (
     <>
-      {imageToCrop && (
-        <ImageCropper
-          image={imageToCrop}
-          onCropComplete={handleCropComplete}
-          onClose={() => setImageToCrop(null)}
-        />
-      )}
+      <ImageCropper
+        image={imageToCrop}
+        onCropComplete={handleCropComplete}
+        onClose={() => setImageToCrop(null)}
+      />
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
             

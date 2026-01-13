@@ -2,7 +2,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://ndara-afrique.web.app'; 
+  const baseUrl = 'https://ndara-afrique.app'; 
 
   return [
     {
@@ -31,5 +31,3 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
   ];
 }
-
-    

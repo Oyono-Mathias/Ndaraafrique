@@ -144,7 +144,7 @@ export default function PayoutsPage() {
     const worksheet = XLSX.utils.json_to_sheet(dataToExport);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Retraits");
-    XLSX.writeFile(workbook, `FormaAfrique_Retraits_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    XLSX.writeFile(workbook, `NdaraAfrique_Retraits_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
 
   const isLoading = isUserLoading || payoutsLoading || usersLoading;

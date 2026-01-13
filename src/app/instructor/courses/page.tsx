@@ -147,10 +147,10 @@ export default function InstructorCoursesPage() {
   const isLoading = isUserLoading || coursesLoading;
 
   return (
-    <div className="p-4 md:p-6 space-y-6 bg-slate-50 dark:bg-[#0f172a] min-h-screen">
+    <div className="p-4 md:p-6 space-y-6 dark:bg-[#0f172a] min-h-screen">
       <header className="flex justify-between items-center">
         <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navMyCourses')}</h1>
+            <h1 className="text-3xl font-bold dark:text-white">{t('navMyCourses')}</h1>
             <p className="text-slate-500 dark:text-slate-400">{t('myCoursesDescription')}</p>
         </div>
          <Button asChild className="hidden md:flex">
@@ -165,7 +165,7 @@ export default function InstructorCoursesPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
           placeholder={t('searchCoursePlaceholder')}
-          className="pl-10 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder:text-slate-500 focus-visible:ring-primary"
+          className="pl-10 dark:bg-slate-800 border-slate-200 dark:border-slate-700 dark:text-white placeholder:text-slate-500 focus-visible:ring-primary"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />

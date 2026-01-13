@@ -96,14 +96,14 @@ export default function CreateCoursePage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-4xl mx-auto">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900">{t('create_new_course')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">{t('create_new_course')}</h1>
         <p className="text-slate-500 mt-1">{t('create_course_start_with_title')}</p>
       </header>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
-          <Card className="bg-white">
+          <Card className="bg-white dark:bg-card">
             <CardHeader>
-              <CardTitle>{t('course_title')}</CardTitle>
+              <CardTitle className="dark:text-white">{t('course_title')}</CardTitle>
               <CardDescription>
                 {t('create_course_title_desc')}
               </CardDescription>
@@ -142,5 +142,3 @@ export default function CreateCoursePage() {
     </div>
   );
 }
-
-    

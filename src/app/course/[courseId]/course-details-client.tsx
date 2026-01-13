@@ -626,7 +626,7 @@ export default function CourseDetailsClient() {
     provider: {
       '@type': 'Organization',
       name: 'Ndara Afrique',
-      url: 'https://ndara-afrique.web.app',
+      url: 'https://ndara-afrique.app',
     },
     offers: {
       '@type': 'Offer',
@@ -915,5 +915,3 @@ export default function CourseDetailsClient() {
     </>
   );
 }
-
-    

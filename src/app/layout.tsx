@@ -1,3 +1,4 @@
+
 import type { Metadata } from "next";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
@@ -8,7 +9,7 @@ import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
 
 export const metadata: Metadata = {
-  title: "Ndara Afrique | Formations en ligne pour le marché Africain",
+  title: "Ndara Afrique - L'excellence par le savoir",
   description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
   keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
