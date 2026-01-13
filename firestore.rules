@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -28,11 +27,30 @@ service cloud.firestore {
     
     // --- Collection Rules ---
 
-    // USERS: Admins can list users. Users can read/update their own data.
+    // USERS: 
+    // - Admins can list pending instructors.
+    // - Users can read/create their own data.
+    // - Admins can update anything.
+    // - Users can update their own data BUT CANNOT change their role or approval status.
     match /users/{userId} {
-      allow list: if isAdmin();
-      allow read, update: if isOwner(userId) || isAdmin();
-      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow list: if isAdmin() && (
+          request.query.where.role == 'instructor' &&
+          request.query.where.isInstructorApproved == false
+      );
+      allow get: if isAdmin() || isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isAdmin() || (isOwner(userId) && !('role' in request.resource.data) && !('isInstructorApproved' in request.resource.data));
+      allow delete: if isAdmin();
+
+      match /chatHistory/{messageId} {
+        allow read, write: if isOwner(userId);
+      }
+      match /wishlist/{courseId} {
+        allow read, write, delete: if isOwner(userId);
+      }
+      match /notifications/{notificationId} {
+        allow read, write, list: if isOwner(userId);
+      }
     }
     
     // COURSES: Admins and owners can manage courses. All can read published.
