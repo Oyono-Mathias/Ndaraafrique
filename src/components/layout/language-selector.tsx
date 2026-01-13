@@ -11,6 +11,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Globe } from 'lucide-react';
 import Image from 'next/image';
+import { useRole } from '@/context/RoleContext';
+import { doc, updateDoc, getFirestore } from 'firebase/firestore';
 
 interface LanguageOption {
     code: string;
@@ -26,13 +28,24 @@ const languages: LanguageOption[] = [
 
 export function LanguageSelector() {
     const { i18n } = useTranslation();
+    const { user } = useRole();
+    const db = getFirestore();
 
-    const changeLanguage = (lng: string) => {
-        i18n.changeLanguage(lng).then(() => {
-          // Force a reload to ensure all components re-render with the new language
-          // This is a robust way to handle state inconsistencies in complex apps.
-          window.location.reload();
-        });
+    const changeLanguage = async (lng: string) => {
+        // Change language instantly via i18next
+        await i18n.changeLanguage(lng);
+        
+        // If user is logged in, save preference to their profile
+        if (user) {
+            try {
+                const userDocRef = doc(db, "users", user.uid);
+                await updateDoc(userDocRef, {
+                    preferredLanguage: lng
+                });
+            } catch (error) {
+                console.error("Failed to save language preference:", error);
+            }
+        }
     };
 
     const selectedLanguage = languages.find(l => i18n.language.startsWith(l.code)) || languages[0];
@@ -40,9 +53,9 @@ export function LanguageSelector() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="gap-2 px-2">
-                    <Image src={selectedLanguage.flag} alt={selectedLanguage.name} width={20} height={15} />
-                    <span className="hidden md:inline text-sm">{selectedLanguage.name}</span>
+                <Button variant="ghost" className="gap-2 px-2 text-slate-300 hover:bg-slate-700/50 hover:text-white">
+                    <Image src={selectedLanguage.flag} alt={selectedLanguage.name} width={20} height={15} className="rounded-sm"/>
+                    <span className="hidden md:inline text-sm">{selectedLanguage.code.toUpperCase()}</span>
                     <Globe className="h-4 w-4 md:hidden" />
                 </Button>
             </DropdownMenuTrigger>
@@ -53,7 +66,7 @@ export function LanguageSelector() {
                         onClick={() => changeLanguage(lang.code)}
                         className="flex items-center gap-2 cursor-pointer dark:focus:bg-slate-700 dark:text-white"
                     >
-                        <Image src={lang.flag} alt={lang.name} width={20} height={15} />
+                        <Image src={lang.flag} alt={lang.name} width={20} height={15} className="rounded-sm"/>
                         <span>{lang.name}</span>
                     </DropdownMenuItem>
                 ))}
@@ -61,5 +74,3 @@ export function LanguageSelector() {
         </DropdownMenu>
     );
 }
-
-    

@@ -6,6 +6,7 @@ import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
 import { doc, onSnapshot, getFirestore, Timestamp } from 'firebase/firestore';
 import { User } from 'firebase/auth';
+import i18n from '@/i18n';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
@@ -13,9 +14,7 @@ export interface FormaAfriqueUser {
     uid: string;
     email: string;
     username: string;
-    fullName?: string; // Kept for potential internal use, but username is primary
-    firstName?: string;
-    lastName?: string;
+    fullName: string;
     role: UserRole;
     isInstructorApproved: boolean;
     availableRoles: UserRole[];
@@ -62,6 +61,7 @@ export interface FormaAfriqueUser {
     country?: string;
     countryCode?: string;
     isProfileComplete?: boolean;
+    preferredLanguage?: 'fr' | 'en' | 'sg';
 }
 
 interface RoleContextType {
@@ -74,6 +74,7 @@ interface RoleContextType {
   formaAfriqueUser: FormaAfriqueUser | null;
   user: User | null; // From Firebase Auth
   isUserLoading: boolean; // From Firebase Auth
+  setFormaAfriqueUser: React.Dispatch<React.SetStateAction<FormaAfriqueUser | null>>;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
@@ -118,16 +119,22 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               uid: user.uid,
               email: user.email || '',
               username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
+              fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
               availableRoles: roles,
-              profilePictureURL: user.photoURL || userData.profilePictureURL || '',
+              profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
           };
+          
+          // Set i18n language from user profile if available
+          if (resolvedUser.preferredLanguage && i18n.language !== resolvedUser.preferredLanguage) {
+              i18n.changeLanguage(resolvedUser.preferredLanguage);
+          }
 
           setFormaAfriqueUser(resolvedUser);
           setAvailableRoles(roles);
 
-          const lastRole = localStorage.getItem('formaafrique-role') as UserRole;
+          const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           
           let newRole: UserRole;
           
@@ -138,7 +145,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
           setRole(newRole);
-          localStorage.setItem('formaafrique-role', newRole);
+          localStorage.setItem('ndaraafrique-role', newRole);
 
         } else {
             console.warn("User document not found in Firestore for UID:", user.uid);
@@ -147,6 +154,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 uid: user.uid,
                 email: user.email || '',
                 username: defaultUsername,
+                fullName: user.displayName || 'Utilisateur Ndara',
                 role: 'student',
                 status: 'active',
                 isInstructorApproved: false,
@@ -170,7 +178,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
-      localStorage.setItem('formaafrique-role', newRole);
+      localStorage.setItem('ndaraafrique-role', newRole);
     } else {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
@@ -184,6 +192,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     switchRole,
     loading: isUserLoading || loading,
     formaAfriqueUser,
+    setFormaAfriqueUser,
     user,
     isUserLoading
   }), [role, availableRoles, switchRole, loading, formaAfriqueUser, user, isUserLoading]);

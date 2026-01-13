@@ -21,13 +21,17 @@ i18n
     backend: {
       loadPath: '/locales/{{lng}}/translation.json',
     },
+    // i18next-browser-languagedetector options
     detection: {
+      // order and from where user language should be detected
       order: ['localStorage', 'navigator'],
-      caches: ['localStorage'],
+
+      // keys or params to lookup language from
       lookupLocalStorage: 'ndaraafrique-lang',
+
+      // cache user language on
+      caches: ['localStorage'],
     },
   });
 
 export default i18n;
-
-    
