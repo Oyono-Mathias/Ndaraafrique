@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -337,5 +336,3 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     </div>
   );
 }
-
-    
