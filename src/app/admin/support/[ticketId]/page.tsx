@@ -17,13 +17,14 @@ import {
   where,
   getDocs,
   deleteDoc,
-  writeBatch
+  writeBatch,
+  FieldValue
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, Shield, ArrowLeft, User, BookOpen, Trash2 } from 'lucide-react';
+import { Loader2, Send, Shield, ArrowLeft, User, BookOpen, Trash2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { format } from 'date-fns';
@@ -55,7 +56,9 @@ export default function TicketConversationPage() {
 
   const [newMessage, setNewMessage] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [isRefunding, setIsRefunding] = useState(false);
+  const [isCloseAlertOpen, setIsCloseAlertOpen] = useState(false);
   const [isRefundAlertOpen, setIsRefundAlertOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   
@@ -124,6 +127,24 @@ export default function TicketConversationPage() {
 
     setIsSending(false);
   };
+  
+  const handleCloseTicket = async () => {
+    if (!ticket) return;
+    setIsClosing(true);
+    try {
+        await updateDoc(ticketRef, {
+            status: 'fermé',
+            updatedAt: serverTimestamp()
+        });
+        toast({ title: 'Ticket clôturé', description: 'Cette conversation est maintenant archivée.' });
+        router.push('/admin/support');
+    } catch(error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de clôturer le ticket.' });
+    } finally {
+        setIsClosing(false);
+        setIsCloseAlertOpen(false);
+    }
+  };
 
   const handleRefund = async () => {
     if (!ticket?.userId || !ticket?.courseId) {
@@ -166,10 +187,16 @@ export default function TicketConversationPage() {
                 <span className="flex items-center gap-1.5"><BookOpen className="h-3 w-3"/> {instructor?.fullName || '...'}</span>
               </div>
             </div>
-            <Button variant="destructive" size="sm" onClick={() => setIsRefundAlertOpen(true)}>
-                <Trash2 className="h-4 w-4 mr-2"/>
-                Rembourser & Révoquer
-            </Button>
+            <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => setIsCloseAlertOpen(true)} disabled={ticket?.status === 'fermé'}>
+                    <CheckCircle className="h-4 w-4 mr-2"/>
+                    Clôturer le ticket
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setIsRefundAlertOpen(true)}>
+                    <Trash2 className="h-4 w-4 mr-2"/>
+                    Rembourser & Révoquer
+                </Button>
+            </div>
           </header>
 
           <ScrollArea className="flex-1">
@@ -223,6 +250,23 @@ export default function TicketConversationPage() {
           </div>
         </>
       )}
+
+        <AlertDialog open={isCloseAlertOpen} onOpenChange={setIsCloseAlertOpen}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Confirmer la clôture ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Cette action marquera le ticket comme résolu et l'archivera. Vous pourrez toujours le consulter plus tard.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleCloseTicket} disabled={isClosing}>
+                         {isClosing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Confirmer la clôture'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
 
         <AlertDialog open={isRefundAlertOpen} onOpenChange={setIsRefundAlertOpen}>
             <AlertDialogContent>
