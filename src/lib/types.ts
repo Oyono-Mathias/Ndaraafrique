@@ -84,6 +84,14 @@ export interface Review {
     createdAt: Timestamp;
 }
 
+export interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  createdAt?: any;
+  status?: 'sent' | 'delivered' | 'read';
+}
+
 export type FormaAfriqueUser = {
   uid: string;
   email: string;
@@ -104,8 +112,10 @@ export type FormaAfriqueUser = {
       mobileMoneyNumber?: string;
   };
   notificationPreferences?: {
-    promotions: boolean;
-    reminders: boolean;
+    newPayouts: boolean;
+    newApplications: boolean;
+    newSupportTickets: boolean;
+    financialAnomalies: boolean;
   };
   videoPlaybackPreferences?: {
       defaultQuality: string;
@@ -142,3 +152,4 @@ export type FormaAfriqueUser = {
   preferredLanguage?: 'fr' | 'en' | 'sg';
   badges?: string[];
 };
+

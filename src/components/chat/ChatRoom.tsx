@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -31,14 +32,8 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
+import type { Message } from '@/lib/types';
 
-interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt?: any;
-  status?: 'sent' | 'delivered' | 'read';
-}
 
 interface ParticipantDetails {
     username: string;
@@ -210,7 +205,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     try {
         const batch = writeBatch(db);
         
-        const messagePayload = {
+        const messagePayload: Omit<Message, 'id'> = {
             text: textToSend,
             senderId: user.uid,
             createdAt: serverTimestamp(),
@@ -259,6 +254,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     if (status === 'delivered') {
       return <CheckCheck className="h-4 w-4 text-slate-400" />;
     }
+    // Default to 'sent'
     return <Check className="h-4 w-4 text-slate-400" />;
   };
 
