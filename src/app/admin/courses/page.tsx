@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -208,7 +209,7 @@ export default function AdminCoursesPage() {
         setDataLoading(false);
     };
     fetchInstructors();
-  }, [courses, coursesLoading, db, instructors]);
+  }, [courses, coursesLoading, db]);
 
 
   const filteredCourses = useMemo(() => {

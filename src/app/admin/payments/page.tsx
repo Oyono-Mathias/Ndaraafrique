@@ -120,7 +120,7 @@ export default function AdminPaymentsPage() {
   const isLoading = isUserLoading || paymentsLoading || detailsLoading;
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto px-4">
+    <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">{t('navTransactions')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">{t('transactionsDescription')}</p>
@@ -236,5 +236,3 @@ export default function AdminPaymentsPage() {
     </div>
   );
 }
-
-    

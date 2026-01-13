@@ -76,15 +76,15 @@ export default function AdminLayout({
 
 
   return (
-    <div className="admin-grid-layout bg-background text-foreground">
+    <div className="md:grid md:grid-cols-[280px_1fr] bg-background text-foreground">
         {/* --- Sidebar for Tablet and Desktop --- */}
-        <aside className="admin-sidebar-container hidden md:block border-r border-border">
+        <aside className="hidden md:block h-screen sticky top-0 border-r border-border">
              <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
         </aside>
 
         {/* --- Main Content Area --- */}
         <div className="flex flex-col min-h-screen">
-             <header className="admin-header flex h-16 items-center gap-4 border-b border-slate-700 bg-slate-800/30 backdrop-blur-sm px-4 lg:px-6">
+             <header className="flex h-16 items-center gap-4 border-b border-slate-700 bg-slate-800/30 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
                     <Button
@@ -111,5 +111,3 @@ export default function AdminLayout({
     </div>
   )
 }
-
-    

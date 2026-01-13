@@ -121,7 +121,7 @@ export default function AdminStatisticsPage() {
         return () => {
             unsubs.forEach(unsub => unsub());
         };
-    }, [db, isUserLoading, formaAfriqueUser, isLoading]);
+    }, [db, isUserLoading, formaAfriqueUser]);
 
     const topCourses = useMemo(() => {
         const courseEnrollmentCounts = enrollments.reduce((acc, enrollment) => {
