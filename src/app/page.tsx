@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -90,7 +91,7 @@ const LandingPage = () => {
           Rejoignez la première plateforme panafricaine dédiée aux métiers de demain. Apprenez, pratiquez et certifiez vos compétences.
         </p>
         <Button asChild size="lg" className="px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
-          <Link href="/register">Commencer l'inscription</Link>
+           <Link href="/login?tab=register">Commencer l'inscription</Link>
         </Button>
       </main>
 
@@ -113,7 +114,7 @@ const LandingPage = () => {
               <CourseCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
             ))
           ) : (
-            <div className="md:col-span-3 text-center py-16 benefit-card">
+             <div className="md:col-span-3 text-center py-16 benefit-card">
               <Frown className="mx-auto h-12 w-12 text-slate-500" />
               <h3 className="mt-4 text-lg font-semibold text-slate-300">De nouveaux cours arrivent bientôt.</h3>
               <p className="mt-1 text-sm text-slate-400">Revenez plus tard pour découvrir nos formations.</p>
