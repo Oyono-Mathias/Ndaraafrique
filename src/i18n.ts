@@ -24,7 +24,7 @@ i18n
     detection: {
       order: ['localStorage', 'navigator'],
       caches: ['localStorage'],
-      lookupLocalStorage: 'ndaraafrique-lang', // UPDATED KEY
+      lookupLocalStorage: 'ndaraafrique-lang',
     },
   });
 

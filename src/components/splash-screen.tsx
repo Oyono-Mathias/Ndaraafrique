@@ -54,9 +54,6 @@ export function SplashScreen() {
         />
          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[logoSheen_2.5s_ease-in-out_infinite] mix-blend-soft-light"></div>
       </div>
-       <p className="absolute bottom-10 text-slate-400 text-sm tracking-wider">
-        {t('welcome')}
-      </p>
     </div>
   );
 }

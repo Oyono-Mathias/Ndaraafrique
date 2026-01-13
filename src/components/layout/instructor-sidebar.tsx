@@ -93,7 +93,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: 'Kua',
       items: [
-        { href: '/dashboard', icon: LayoutDashboard, textKey: 'navInstructorDashboard', sangoKey: 'sango_dashboard' },
+        { href: '/dashboard', icon: LayoutDashboard, textKey: 'navDashboard', sangoKey: 'sango_dashboard' },
         { href: '/instructor/courses', icon: BookOpen, textKey: 'navMyCourses', sangoKey: 'sango_my_courses' },
         { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'navAssignments', sangoKey: 'sango_assignments' },
         { href: '/instructor/quiz', icon: FileQuestion, textKey: 'navQuiz', sangoKey: 'sango_quiz' },

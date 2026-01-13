@@ -5,11 +5,11 @@
 
 @layer base {
   :root {
-    --background: 222 47% 11%; /* #0f172a - Dark Navy */
-    --foreground: 220 14% 71%; /* #a1a1aa - Zinc 400 */
+    --background: 222 83% 4%; /* #020817 - Deepest Navy */
+    --foreground: 210 20% 98%; /* #f8fafc - Almost White */
 
-    --card: 222 47% 11%;
-    --card-foreground: 215 20.2% 65.1%;
+    --card: 222 83% 4%;
+    --card-foreground: 210 20% 98%;
     
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 215 20.2% 65.1%;
@@ -17,7 +17,7 @@
     --primary: 211 100% 50%; /* #007bff - Royal Blue */
     --primary-foreground: 210 20% 98%;
     
-    --secondary: 142 76% 56%; 
+    --secondary: 222 47% 11%;
     --secondary-foreground: 210 20% 98%;
     
     --muted: 223 47% 11%;
@@ -26,11 +26,11 @@
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 210 40% 98%;
     
-    --destructive: 0 62.8% 50.6%; /* Adjusted for better contrast */
+    --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 0 0% 98%;
     
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
     
     --ring: 211 100% 50%;
     
@@ -44,20 +44,20 @@
   }
 
   .dark {
-    --background: 222 47% 11%; /* #0f172a - Dark Navy */
-    --foreground: 220 14% 71%; /* #a1a1aa - Zinc 400 */
+    --background: 222 83% 4%;
+    --foreground: 210 20% 98%;
 
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
+    --card: 222 83% 4%;
+    --card-foreground: 210 20% 98%;
 
     --popover: 224 71.4% 4.1%;
     --popover-foreground: 215 20.2% 65.1%;
 
-    --primary: 211 100% 50%; /* #007bff - Royal Blue */
+    --primary: 211 100% 50%;
     --primary-foreground: 0 0% 98%;
     
-    --secondary: 220 14.3% 95.9%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 222 47% 11%;
+    --secondary-foreground: 210 20% 98%;
 
     --muted: 223 47% 11%;
     --muted-foreground: 215.4 16.3% 56.9%;
@@ -68,8 +68,8 @@
     --destructive: 0 62.8% 50.6%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
     
     --ring: 212 100% 50%;
   }
@@ -84,7 +84,7 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
-  /* === Custom Scrollbar === */
+  /* Custom Scrollbar */
   ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
@@ -101,88 +101,40 @@
     background: hsl(var(--primary));
   }
 
-  /* === TV & Accessibility Focus Outline === */
-  .tv [role="row"]:focus-within, .tv [role="button"]:focus-visible, .tv a:focus-visible, .tv input:focus-visible, .tv textarea:focus-visible, .tv [tabindex="0"]:focus-visible {
-      outline: 3px solid hsl(var(--primary));
-      outline-offset: 3px;
-      box-shadow: 0 0 0 6px hsl(var(--primary) / 0.25);
-      border-radius: var(--radius);
-      transition: outline-offset 0.1s ease, box-shadow 0.1s ease;
+  /* Layout Grids */
+  .admin-grid-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
   }
-
-  /* === Landing Page Specific Styles === */
-  .hero-text {
-      animation: fadeInUp 1s ease-out;
+  .admin-sidebar-container {
+    height: 100vh;
+    position: sticky;
+    top: 0;
   }
-
-  @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
-  }
-
-  .benefit-card {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(15px);
-      border-radius: 20px;
-      padding: 2rem;
-      transition: all 0.4s ease;
-  }
-
-  .benefit-card:hover {
-      background: rgba(0, 123, 255, 0.1);
-      border-color: #007bff;
-      transform: scale(1.05);
-  }
-
-  /* === Footer Styles === */
-  .footer-container {
-    background: rgba(15, 23, 42, 0.95);
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    padding: 3rem 1rem 1.5rem;
-    color: #9ca3af;
-  }
-
-  .footer-brand {
-      color: #ffffff;
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
-  }
-
-  .footer-link {
-      display: block;
-      margin-bottom: 0.5rem;
-      transition: color 0.3s;
-      text-decoration: none;
-      color: #9ca3af;
-  }
-
-  .footer-link:hover {
-      color: #007bff; /* Bleu Ndara */
-  }
-
-  .copyright {
-      text-align: center;
-      margin-top: 3rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      font-size: 0.85rem;
+  .admin-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
   }
 }
 
 @layer utilities {
-    @keyframes marquee-fast {
-        0% { transform: translateX(0%); }
-        100% { transform: translateX(-100%); }
+    /* Animations */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     @keyframes logoPulse {
-      0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
-      50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(255,255,255,0.5)); }
-      100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(255,255,255,0.2)); }
+      0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.2)); }
+      50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(0, 123, 255, 0.5)); }
+      100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.2)); }
     }
     @keyframes logoSheen {
         0% { transform: translateX(-150%) rotate(25deg); }
         100% { transform: translateX(150%) rotate(25deg); }
+    }
+    @keyframes marquee-fast {
+        0% { transform: translateX(0%); }
+        100% { transform: translateX(-100%); }
     }
 }
