@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
 import { InstructorSidebar } from './instructor-sidebar';
 import { AdminSidebar } from './admin-sidebar';
@@ -184,7 +184,6 @@ const BottomNavBar = () => {
     }, [user, db]);
     
     const currentPath = `/${pathname.split('/')[1]}`;
-    // CORRECTED LOGIC: Only show for students.
     const shouldShow = BOTTOM_NAV_ROUTES.includes(currentPath) && role === 'student';
 
     if (!shouldShow) {
@@ -443,7 +442,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="shrink-0 md:hidden bg-transparent border-0"
+                          className="shrink-0 md:hidden bg-transparent border-0 text-slate-900 dark:text-white"
                         >
                           <PanelLeft className="h-5 w-5" />
                           <span className="sr-only">Ouvrir le menu</span>
