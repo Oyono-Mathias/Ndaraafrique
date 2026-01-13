@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Users, BookOpen, DollarSign, Activity, ShoppingCart, MessageSquare } from "lucide-react";
 import { getFirestore, collection, query, where, onSnapshot, Timestamp, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Skeleton } from '../ui/skeleton';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
@@ -31,17 +31,30 @@ interface RevenueDataPoint {
 }
 
 
-const StatCard = ({ title, value, icon: Icon, isLoading, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, accentColor?: string }) => (
-    <Card className={cn("border-t-4", accentColor)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            {isLoading ? <Skeleton className="h-8 w-3/4 bg-slate-700" /> : <div className="text-2xl font-bold text-white">{value}</div>}
-        </CardContent>
-    </Card>
+const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
+    <div className={cn("glassmorphism-card rounded-2xl p-6 transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10", accentColor)}>
+        <div className="flex justify-between items-start">
+            <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-400">{title}</p>
+                 {isLoading ? (
+                    <Skeleton className="h-9 w-32 bg-slate-700" />
+                ) : (
+                    <p className="text-3xl font-bold text-white">{value}</p>
+                )}
+            </div>
+            <div className="p-2 bg-slate-900/50 rounded-lg border border-slate-700">
+                <Icon className="h-5 w-5 text-slate-300" />
+            </div>
+        </div>
+        {!isLoading && change && (
+             <p className="text-xs text-green-400 mt-3 flex items-center gap-1">
+                <Activity className="h-3 w-3" />
+                {change}
+            </p>
+        )}
+    </div>
 );
+
 
 const formatCurrency = (amount: number) => {
   return `${amount.toLocaleString('fr-FR')} XOF`;
@@ -154,95 +167,95 @@ export function AdminDashboard() {
   const chartConfig = { revenue: { label: t('statRevenue'), color: 'hsl(var(--primary))' }};
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in-50">
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard 
             title={t('statStudents')}
             value={stats.userCount.toLocaleString('fr-FR')} 
             icon={Users} 
             isLoading={isLoading} 
-            accentColor="border-blue-500"
+            change="+12% ce mois-ci"
         />
         <StatCard 
             title={t('statRevenue')} 
             value={formatCurrency(stats.monthlyRevenue)} 
             icon={DollarSign} 
-            isLoading={isLoading} 
-            accentColor="border-green-500"
+            isLoading={isLoading}
+            change="+23% vs mois dernier"
         />
          <StatCard 
             title={t('statCourses')}
             value={stats.courseCount.toLocaleString('fr-FR')}
             icon={BookOpen} 
-            isLoading={isLoading} 
-            accentColor="border-purple-500"
+            isLoading={isLoading}
+            change="+5 nouveaux cours"
         />
         <StatCard 
             title={t('statTickets')}
             value={stats.openSupportTickets.toString()}
             icon={MessageSquare} 
             isLoading={isLoading}
-            accentColor="border-orange-500"
+            change="2 nouveaux aujourd'hui"
         />
       </section>
       
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-white">{t('titleRevenue')}</h2>
-        <Card>
-            <CardContent className="pt-6">
-                {isLoading ? <Skeleton className="h-80 w-full bg-slate-700" /> : (
-                    <ChartContainer config={chartConfig} className="h-80 w-full">
-                        <ResponsiveContainer>
-                            <BarChart data={revenueTrendData}>
-                                <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-700" />
-                                <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                                <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                                <Tooltip content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} className="bg-slate-900 border-slate-700" />} />
-                                <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </ChartContainer>
-                )}
-            </CardContent>
-        </Card>
-      </section>
-
-      <section>
-        <h2 className="text-2xl font-semibold mb-4 text-white">{t('recentActivity')}</h2>
-        <Card>
-            <CardContent className="pt-6">
-                {isLoading ? (
-                    <div className="space-y-4">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full bg-slate-700" />)}
-                    </div>
-                ) : activities.length > 0 ? (
-                    <div className="space-y-2">
-                        {activities.map(activity => (
-                            <div key={activity.id} className="flex items-center gap-4 p-3 rounded-lg hover:bg-slate-800/50 border-b border-slate-800 last:border-b-0">
-                                <Avatar className="h-9 w-9">
-                                    <AvatarImage src={activity.userAvatar} />
-                                    <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div className="flex-1 space-y-1">
-                                    <p className="text-sm font-medium leading-none text-slate-200">
-                                        <span className="font-semibold">{activity.userName}</span> a acheté <span className="font-semibold">"{activity.courseTitle}"</span>.
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                        {format(activity.date, "dd MMMM yyyy 'à' HH:mm", { locale: fr })}
+      <section className="grid lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2">
+            <h2 className="text-2xl font-semibold mb-4 text-white">{t('titleRevenue')}</h2>
+            <Card className="glassmorphism-card rounded-2xl">
+                <CardContent className="pt-6">
+                    {isLoading ? <Skeleton className="h-80 w-full bg-slate-700" /> : (
+                        <ChartContainer config={chartConfig} className="h-80 w-full">
+                            <ResponsiveContainer>
+                                <BarChart data={revenueTrendData}>
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-700" />
+                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                    <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                    <Tooltip content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} className="bg-slate-900 border-slate-700" />} />
+                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </ChartContainer>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
+        <div>
+            <h2 className="text-2xl font-semibold mb-4 text-white">{t('recentActivity')}</h2>
+            <Card className="glassmorphism-card rounded-2xl">
+                <CardContent className="pt-6">
+                    {isLoading ? (
+                        <div className="space-y-4">
+                            {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full bg-slate-700" />)}
+                        </div>
+                    ) : activities.length > 0 ? (
+                        <div className="space-y-2">
+                            {activities.map(activity => (
+                                <div key={activity.id} className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-800/50">
+                                    <Avatar className="h-9 w-9">
+                                        <AvatarImage src={activity.userAvatar} />
+                                        <AvatarFallback>{activity.userName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1 space-y-1">
+                                        <p className="text-sm font-medium leading-none text-slate-200">
+                                            <span className="font-semibold">{activity.userName}</span> a acheté <span className="font-semibold">"{activity.courseTitle}"</span>.
+                                        </p>
+                                    </div>
+                                    <p className="text-xs text-blue-400 whitespace-nowrap">
+                                        {formatDistanceToNow(activity.date, { locale: fr, addSuffix: true })}
                                     </p>
                                 </div>
-                                <div className="ml-auto font-medium text-sm text-green-400 font-mono">+{formatCurrency(activity.amount)}</div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-10 text-muted-foreground">
-                        <ShoppingCart className="h-10 w-10 mx-auto mb-2"/>
-                        <p>{t('no_recent_activity')}</p>
-                    </div>
-                )}
-            </CardContent>
-        </Card>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-10 text-muted-foreground">
+                            <ShoppingCart className="h-10 w-10 mx-auto mb-2"/>
+                            <p>{t('no_recent_activity')}</p>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+        </div>
       </section>
     </div>
   );
