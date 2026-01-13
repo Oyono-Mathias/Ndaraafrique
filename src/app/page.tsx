@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs, limit } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
