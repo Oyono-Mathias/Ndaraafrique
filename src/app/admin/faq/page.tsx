@@ -8,18 +8,18 @@ import * as z from 'zod';
 import {
   getFirestore,
   collection,
-  onSnapshot,
   query,
   orderBy,
   addDoc,
   updateDoc,
   deleteDoc,
   doc,
-  serverTimestamp
+  serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { useCollection, useMemoFirebase } from '@/firebase';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,7 +46,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion } from 'lucide-react';
+import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion, ChevronUp, ChevronDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface FAQ {
@@ -54,6 +54,7 @@ interface FAQ {
   question_fr: string;
   answer_fr: string;
   tags: string[];
+  order: number;
 }
 
 const faqSchema = z.object({
@@ -75,7 +76,7 @@ export default function AdminFaqPage() {
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
   const [faqToDelete, setFaqToDelete] = useState<string | null>(null);
 
-  const faqsQuery = useMemoFirebase(() => query(collection(db, 'faqs'), orderBy('createdAt', 'desc')), [db]);
+  const faqsQuery = useMemoFirebase(() => query(collection(db, 'faqs'), orderBy('order', 'asc')), [db]);
   const { data: faqs, isLoading } = useCollection<FAQ>(faqsQuery);
   
   const form = useForm<FaqFormValues>({
@@ -92,7 +93,7 @@ export default function AdminFaqPage() {
       form.reset({
         question_fr: editingFaq.question_fr,
         answer_fr: editingFaq.answer_fr,
-        tags: editingFaq.tags.join(', '),
+        tags: editingFaq.tags?.join(', ') || '',
       });
       setIsDialogOpen(true);
     } else {
@@ -123,7 +124,12 @@ export default function AdminFaqPage() {
         } else {
             // Create new FAQ
             const faqCollection = collection(db, 'faqs');
-            await addDoc(faqCollection, { ...data, tags: tagsArray, createdAt: serverTimestamp() });
+            await addDoc(faqCollection, { 
+                ...data, 
+                tags: tagsArray, 
+                order: faqs?.length || 0, // Set order to the end of the list
+                createdAt: serverTimestamp() 
+            });
             toast({ title: 'Nouvelle FAQ ajoutée !' });
         }
         handleCloseDialog();
@@ -154,13 +160,39 @@ export default function AdminFaqPage() {
     }
   };
 
+  const handleMove = async (currentIndex: number, direction: 'up' | 'down') => {
+    if (!faqs) return;
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+
+    if (targetIndex < 0 || targetIndex >= faqs.length) return;
+
+    const currentFaq = faqs[currentIndex];
+    const targetFaq = faqs[targetIndex];
+
+    const batch = writeBatch(db);
+    const currentFaqRef = doc(db, 'faqs', currentFaq.id);
+    const targetFaqRef = doc(db, 'faqs', targetFaq.id);
+
+    // Swap order values
+    batch.update(currentFaqRef, { order: targetFaq.order });
+    batch.update(targetFaqRef, { order: currentFaq.order });
+
+    try {
+        await batch.commit();
+        toast({ title: 'Ordre mis à jour !'});
+    } catch (error) {
+        console.error("Error reordering FAQs:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de réorganiser les questions.' });
+    }
+  };
+
   return (
     <>
       <div className="space-y-6">
         <header className="flex items-center justify-between">
             <div>
                 <h1 className="text-3xl font-bold dark:text-white">Gestion de la FAQ</h1>
-                <p className="text-muted-foreground dark:text-slate-400">Ajoutez, modifiez et supprimez les questions fréquentes.</p>
+                <p className="text-muted-foreground dark:text-slate-400">Ajoutez, modifiez et réorganisez les questions fréquentes.</p>
             </div>
             <Button onClick={() => handleOpenDialog()}>
                 <Plus className="mr-2 h-4 w-4"/>
@@ -174,20 +206,24 @@ export default function AdminFaqPage() {
                 {isLoading ? (
                     [...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full dark:bg-slate-700" />)
                 ) : faqs && faqs.length > 0 ? (
-                    faqs.map(faq => (
+                    faqs.map((faq, index) => (
                         <Card key={faq.id} className="dark:bg-slate-900/50 dark:border-slate-700">
                             <CardHeader className="flex flex-row items-start justify-between">
                                 <CardTitle className="text-base dark:text-slate-200">{faq.question_fr}</CardTitle>
-                                <div className="flex gap-2">
+                                <div className="flex items-center gap-1">
+                                     <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'up')} disabled={index === 0}><ChevronUp className="h-4 w-4"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'down')} disabled={index === faqs.length - 1}><ChevronDown className="h-4 w-4"/></Button>
                                      <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(faq)}><Edit className="h-4 w-4 text-blue-500"/></Button>
                                      <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(faq.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <p className="text-sm text-muted-foreground dark:text-slate-400">{faq.answer_fr}</p>
-                                <div className="flex gap-2 mt-4">
-                                    {faq.tags.map(tag => <Badge key={tag} variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">{tag}</Badge>)}
-                                </div>
+                                {faq.tags && (
+                                    <div className="flex gap-2 mt-4">
+                                        {faq.tags.map(tag => <Badge key={tag} variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">{tag}</Badge>)}
+                                    </div>
+                                )}
                             </CardContent>
                         </Card>
                     ))
