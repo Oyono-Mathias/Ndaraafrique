@@ -161,10 +161,10 @@ export default function DirectoryPage() {
 
   const filteredMembers = useMemo(() => {
     if (!members) return [];
-    if (!debouncedSearchTerm) return members;
-    return members.filter(member =>
-      member.username.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-    );
+    return members.filter(member => {
+        if (!member.username) return false;
+        return member.username.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
+    });
   }, [members, debouncedSearchTerm]);
 
 

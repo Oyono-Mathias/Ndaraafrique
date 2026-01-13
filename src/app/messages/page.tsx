@@ -195,8 +195,10 @@ export default function MessagesPage() {
 
   const filteredChatList = useMemo(() => chatList.filter(chat => {
     const otherId = chat.participants.find(p => p !== user?.uid);
-    const other = otherId ? chat.participantDetails[otherId] : null;
-    return other?.username?.toLowerCase().includes(searchTerm.toLowerCase());
+    if (!otherId) return false;
+    const other = chat.participantDetails[otherId];
+    if (!other || !other.username) return false;
+    return other.username.toLowerCase().includes(searchTerm.toLowerCase());
   }), [chatList, user, searchTerm]);
 
   
@@ -205,6 +207,7 @@ export default function MessagesPage() {
       const userInterestDomain = formaAfriqueUser.careerGoals?.interestDomain;
 
       return allStudents.filter(student => {
+          if (!student.username) return false;
           const nameMatch = student.username.toLowerCase().includes(modalSearchTerm.toLowerCase());
           const categoryMatch = student.careerGoals?.interestDomain === userInterestDomain;
           const isNotSelf = student.uid !== formaAfriqueUser.uid;
