@@ -1,5 +1,6 @@
 
 import React from 'react';
+import Link from 'next/link';
 
 const LandingPage = () => {
   return (
@@ -16,28 +17,32 @@ const LandingPage = () => {
           </select>
 
           {/* Bouton SE CONNECTER (Unique en haut) */}
-          <button className="px-4 py-2 text-sm font-medium border border-white/20 rounded-lg hover:bg-white/10 transition">
-            Se connecter
-          </button>
+          <Link href="/login">
+            <button className="px-4 py-2 text-sm font-medium border border-white/20 rounded-lg hover:bg-white/10 transition">
+              Se connecter
+            </button>
+          </Link>
         </div>
       </nav>
 
       {/* SECTION HERO - Texte en Français */}
       <main className="max-w-6xl mx-auto px-6 pt-20 pb-10 text-center">
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 leading-tight hero-text">
           L'excellence numérique <br /> 
           <span className="text-blue-500">pour l'Afrique</span>
         </h1>
         
-        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10">
+        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text" style={{ animationDelay: '0.2s' }}>
           Rejoignez la première plateforme panafricaine dédiée aux métiers de demain. 
           Apprenez, pratiquez et certifiez vos compétences.
         </p>
 
         {/* Bouton INSCRIPTION (Unique au centre) */}
-        <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105">
-          Commencer l'inscription
-        </button>
+        <Link href="/register">
+            <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
+            Commencer l'inscription
+            </button>
+        </Link>
       </main>
 
       {/* SECTION STEPS (Tes interactions préservées) */}

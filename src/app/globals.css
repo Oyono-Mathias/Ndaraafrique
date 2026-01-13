@@ -177,7 +177,8 @@
   
   /* Hero section animation */
   .hero-text {
-      animation: fadeInUp 1s ease-out;
+      animation: fadeInUp 1s ease-out forwards;
+      opacity: 0;
   }
 
   /* Benefit card styles for landing page */
@@ -195,12 +196,20 @@
       border-color: #007bff;
       transform: scale(1.05);
   }
+  
+  .page-transition {
+    animation: fadeInPage 0.5s ease-out forwards;
+  }
 }
 
 @layer utilities {
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(30px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInPage {
+        from { opacity: 0; }
+        to { opacity: 1; }
     }
     @keyframes logoPulse {
       0% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(0, 123, 255, 0.2)); }
@@ -212,4 +221,3 @@
         100% { transform: translateX(150%) rotate(25deg); }
     }
 }
-
