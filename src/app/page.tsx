@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -119,7 +118,7 @@ export default function LandingPage() {
                   <span className="block text-primary">Tonga na ndara.</span>
                 </h1>
                 <p className="max-w-3xl mx-auto mt-6 text-lg md:text-xl text-slate-300">
-                  Des milliers de cours en ligne créés par des experts locaux. Payez par Mobile Money, apprenez à votre rythme.
+                  {t('hero_subtitle')}
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button size="lg" asChild className="h-14 text-base w-full sm:w-auto rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
@@ -136,7 +135,7 @@ export default function LandingPage() {
         
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-10 text-white">Une sélection de cours pour démarrer</h2>
+                <h2 className="text-3xl font-bold text-center mb-10 text-white">{t('featured_courses_title')}</h2>
                 {coursesLoading ? (
                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                         {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
@@ -150,8 +149,8 @@ export default function LandingPage() {
                 ) : (
                     <div className="text-center py-10 px-4 border-2 border-dashed border-slate-700 rounded-xl">
                         <Frown className="mx-auto h-10 w-10 text-slate-500" />
-                        <h3 className="mt-2 text-md font-semibold text-slate-300">Aucun cours disponible pour le moment.</h3>
-                        <p className="text-sm text-slate-400">Revenez bientôt !</p>
+                        <h3 className="mt-2 text-md font-semibold text-slate-300">{t('no_courses_yet')}</h3>
+                        <p className="text-sm text-slate-400">{t('check_back_soon')}</p>
                     </div>
                 )}
             </div>
@@ -159,22 +158,22 @@ export default function LandingPage() {
 
         <section className="py-16 md:py-24">
             <div className="container mx-auto px-4">
-                <h2 className="text-3xl font-bold text-center mb-12 text-white">Comment ça marche ?</h2>
+                <h2 className="text-3xl font-bold text-center mb-12 text-white">{t('how_it_works_title')}</h2>
                 <div className="grid md:grid-cols-3 gap-8">
                     <div className="benefit-card text-center flex flex-col items-center">
                         <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><UserPlus className="h-8 w-8 text-primary" /></div>
-                        <h3 className="font-bold text-lg text-white">1. S'inscrire</h3>
-                        <p className="text-slate-400 mt-2">Créez votre compte en quelques secondes et accédez à notre catalogue.</p>
+                        <h3 className="font-bold text-lg text-white">{t('step1_title')}</h3>
+                        <p className="text-slate-400 mt-2">{t('step1_desc')}</p>
                     </div>
                     <div className="benefit-card text-center flex flex-col items-center">
                          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><Video className="h-8 w-8 text-primary" /></div>
-                        <h3 className="font-bold text-lg text-white">2. Apprendre</h3>
-                        <p className="text-slate-400 mt-2">Suivez les cours vidéo à votre rythme, sur mobile ou ordinateur.</p>
+                        <h3 className="font-bold text-lg text-white">{t('step2_title')}</h3>
+                        <p className="text-slate-400 mt-2">{t('step2_desc')}</p>
                     </div>
                     <div className="benefit-card text-center flex flex-col items-center">
                          <div className="flex items-center justify-center h-16 w-16 rounded-full bg-primary/10 mb-4"><GraduationCap className="h-8 w-8 text-primary" /></div>
-                        <h3 className="font-bold text-lg text-white">3. Être Certifié</h3>
-                        <p className="text-slate-400 mt-2">Validez vos compétences avec une certification à la fin de chaque formation.</p>
+                        <h3 className="font-bold text-lg text-white">{t('step3_title')}</h3>
+                        <p className="text-slate-400 mt-2">{t('step3_desc')}</p>
                     </div>
                 </div>
             </div>

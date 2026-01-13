@@ -1,4 +1,3 @@
-
 import type { Metadata } from "next";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
@@ -10,7 +9,7 @@ import { Inter } from "next/font/google";
 
 export const metadata: Metadata = {
   title: "Ndara Afrique | Formations en ligne pour le marché Africain",
-  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Orange Money et MTN MoMo.",
+  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
   keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
@@ -39,5 +38,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-    
