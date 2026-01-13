@@ -15,13 +15,13 @@ interface NotificationPayload {
 const findUserByFCMToken = async (token: string): Promise<string | null> => {
     // This is inefficient. A better approach would be a reverse-lookup collection.
     // For now, we'll search within user documents.
-    const querySnapshot = await adminDb.collectionGroup('fcmTokens').where('token', '==', token).limit(1).get();
+    const querySnapshot = await adminDb.collectionGroup('fcmTokens').where('__name__', 'like', `users/%/${token}`).limit(1).get();
     if (!querySnapshot.empty) {
         // The parent of an fcmToken is the user document
         return querySnapshot.docs[0].ref.parent.parent?.id || null;
     }
 
-    // Fallback to searching the root collection if needed
+    // Fallback to searching the root collection if needed (old structure)
     const usersSnapshot = await adminDb.collection('users').where('fcmTokens', 'array-contains', token).limit(1).get();
     if (!usersSnapshot.empty) {
         return usersSnapshot.docs[0].id;
@@ -40,13 +40,21 @@ const cleanupInvalidTokens = async (tokensToRemove: string[]) => {
     // For now, we'll do it inline but without waiting for it to complete in the main flow.
     const cleanupPromises = tokensToRemove.map(async (token) => {
         try {
-            const usersSnapshot = await adminDb.collectionGroup('fcmTokens').where('__name__', '==', `users/${token}`).limit(1).get();
-            if(!usersSnapshot.empty){
-                const userRef = usersSnapshot.docs[0].ref;
-                await userRef.update({
-                  fcmTokens: FieldValue.arrayRemove(token)
-                });
-                console.log(`[FCM Cleanup] Token supprimé pour l'utilisateur.`);
+            const userId = await findUserByFCMToken(token);
+            if (userId) {
+                const userRef = adminDb.collection('users').doc(userId);
+                // This could be a subcollection or a field in the user doc
+                const tokenRef = userRef.collection('fcmTokens').doc(token);
+                const tokenDoc = await tokenRef.get();
+                if(tokenDoc.exists) {
+                    await tokenRef.delete();
+                } else {
+                    // Fallback for old array structure
+                    await userRef.update({ fcmTokens: FieldValue.arrayRemove(token) });
+                }
+                console.log(`[FCM Cleanup] Token supprimé pour l'utilisateur ${userId}.`);
+            } else {
+                 console.warn(`[FCM Cleanup] Impossible de trouver l'utilisateur pour le token invalide: ${token.substring(0,20)}...`);
             }
         } catch(error) {
              console.error(`[FCM Cleanup] Erreur lors de la suppression du token ${token.substring(0,20)}...`, error);
@@ -119,8 +127,11 @@ const sendNotifications = async (tokens: string[], payload: NotificationPayload)
 // --- Global Notification to ALL users with a token ---
 export async function sendGlobalNotification(payload: NotificationPayload): Promise<{ success: boolean; message: string; }> {
   try {
+    const fcmTokensSnapshot = await adminDb.collectionGroup('fcmTokens').get();
+    let allTokens = fcmTokensSnapshot.docs.map(doc => doc.id);
+    
+    // Fallback for old array structure
     const usersSnapshot = await adminDb.collection('users').where('fcmTokens', '!=', []).get();
-    let allTokens: string[] = [];
     usersSnapshot.forEach(doc => {
         const tokens = doc.data().fcmTokens;
         if (Array.isArray(tokens)) {
@@ -149,7 +160,7 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
     }
     
     let adminTokens: string[] = [];
-    adminSnapshot.forEach(doc => {
+    for (const doc of adminSnapshot.docs) {
         const userData = doc.data();
         const preferences = userData.notificationPreferences;
         const notifType = payload.type;
@@ -158,12 +169,18 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
         const shouldReceiveNotification = !notifType || notifType === 'general' || preferences?.[notifType] !== false;
 
         if (shouldReceiveNotification) {
-            const tokens = userData.fcmTokens;
-            if (Array.isArray(tokens) && tokens.length > 0) {
-                adminTokens.push(...tokens);
+            // Fetch from subcollection
+            const tokensSnapshot = await doc.ref.collection('fcmTokens').get();
+            if (!tokensSnapshot.empty) {
+                adminTokens.push(...tokensSnapshot.docs.map(d => d.id));
+            }
+            // Fallback for old array structure
+            const oldTokens = userData.fcmTokens;
+            if (Array.isArray(oldTokens) && oldTokens.length > 0) {
+                 adminTokens.push(...oldTokens);
             }
         }
-    });
+    }
 
     if(adminTokens.length === 0) {
         console.log("Aucun token de notification trouvé pour les administrateurs (ou préférences désactivées).");
@@ -188,13 +205,24 @@ export async function sendUserNotification(userId: string, payload: Notification
       return { success: false, message: "Utilisateur non trouvé." };
     }
     
-    const tokens = userDoc.data()?.fcmTokens;
+    let tokens: string[] = [];
+    const tokensSnapshot = await userDoc.ref.collection('fcmTokens').get();
+    if (!tokensSnapshot.empty) {
+        tokens.push(...tokensSnapshot.docs.map(d => d.id));
+    }
+    
+    // Fallback for old array structure
+    const oldTokens = userDoc.data()?.fcmTokens;
+    if (Array.isArray(oldTokens) && oldTokens.length > 0) {
+         tokens.push(...oldTokens);
+    }
 
-    if (!Array.isArray(tokens) || tokens.length === 0) {
+    if (tokens.length === 0) {
       return { success: false, message: "Aucun appareil à notifier pour cet utilisateur." };
     }
     
-    return await sendNotifications(tokens, payload);
+    const uniqueTokens = [...new Set(tokens)];
+    return await sendNotifications(uniqueTokens, payload);
 
   } catch (error: any) {
     console.error(`Error sending notification to user ${userId}:`, error);
