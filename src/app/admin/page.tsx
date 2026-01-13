@@ -1,8 +1,6 @@
-
-
 'use client';
 
-import { AdminDashboard } from "@/components/dashboards/admin-dashboard";
+import AdminDashboard from "@/components/dashboards/admin-dashboard";
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -31,4 +29,3 @@ export default function AdminRootPage() {
 
   return <AdminDashboard />;
 }
-
