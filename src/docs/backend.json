@@ -152,6 +152,17 @@
         }
       },
       "required": ["code", "discountPercentage", "isActive"]
+    },
+    "CarouselSlide": {
+      "title": "Carousel Slide",
+      "type": "object",
+      "description": "Represents a single slide in the homepage carousel.",
+      "properties": {
+        "imageUrl": { "type": "string", "format": "uri", "description": "URL of the slide image." },
+        "link": { "type": "string", "format": "uri", "description": "Optional URL the slide links to." },
+        "order": { "type": "number", "description": "The display order of the slide." }
+      },
+      "required": ["imageUrl", "order"]
     }
   },
   "auth": {
@@ -177,6 +188,44 @@
     "/promoCodes/{codeId}": {
         "schema": { "$ref": "#/entities/PromoCode" },
         "description": "Stores promotional codes for discounts."
+    },
+    "/carousel_slides/{slideId}": {
+      "schema": { "$ref": "#/entities/CarouselSlide" },
+      "description": "Stores the slides for the homepage carousel."
     }
-  }
+  },
+  "indexes": [
+    {
+      "collectionGroup": "payments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "instructorId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "payouts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "instructorId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "role", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+     {
+      "collectionGroup": "support_tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    }
+  ]
 }
