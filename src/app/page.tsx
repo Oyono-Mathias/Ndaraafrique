@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -72,8 +73,8 @@ export default function LandingPage() {
     if (!user) {
         e.preventDefault();
         toast({
-            title: "Accès réservé",
-            description: "Veuillez créer un compte ou vous connecter pour devenir formateur.",
+            title: t('unauthorized_access'),
+            description: t('must_be_logged_in_instructor'),
             variant: "destructive",
         });
         router.push('/login');
@@ -101,9 +102,6 @@ export default function LandingPage() {
             <Button variant="ghost" asChild className="hidden md:inline-flex text-white hover:bg-slate-800">
               <Link href="/login">{t('loginButton')}</Link>
             </Button>
-            <Button asChild className="rounded-full bg-primary hover:bg-primary/90 text-white">
-              <Link href="/login?tab=register">{t('registerButton')}</Link>
-            </Button>
              <div className="md:hidden"><Header /></div>
           </div>
         </div>
@@ -118,7 +116,7 @@ export default function LandingPage() {
                   <span className="block text-primary">Tonga na ndara.</span>
                 </h1>
                 <p className="max-w-3xl mx-auto mt-6 text-lg md:text-xl text-slate-300">
-                  {t('hero_subtitle')}
+                  La première plateforme d'apprentissage panafricaine pour les métiers de demain.
                 </p>
                 <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button size="lg" asChild className="h-14 text-base w-full sm:w-auto rounded-full bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
@@ -184,3 +182,4 @@ export default function LandingPage() {
   );
 }
 
+    
