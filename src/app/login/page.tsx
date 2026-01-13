@@ -43,7 +43,7 @@ const PasswordInput = ({ field }: { field: any }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
       <div className="relative">
-          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 pr-10 bg-slate-800/50 border-slate-700 text-white" />
+          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 pr-10 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
           <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-400 hover:text-white" onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
           </Button>
@@ -136,7 +136,7 @@ export default function LoginPage() {
     try {
       const userCredential = await signInWithEmailAndPassword(getAuth(), values.email, values.password);
       await handleAuthSuccess(userCredential.user);
-    } catch (error) { toast({ variant: 'destructive', title: "Erreur", description: "Email ou mot de passe incorrect." }); }
+    } catch (error) { toast({ variant: 'destructive', title: t('errorTitle'), description: t('loginError') }); }
     finally { setIsLoading(false); }
   };
 
@@ -148,9 +148,9 @@ export default function LoginPage() {
       await handleAuthSuccess(userCredential.user);
     } catch (error) { 
         if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
-            toast({ variant: 'destructive', title: "Erreur d'inscription", description: "Cet email est déjà utilisé." });
+            toast({ variant: 'destructive', title: t('errorTitle'), description: t('registerErrorEmailInUse') });
         } else {
-            toast({ variant: 'destructive', title: "Erreur d'inscription" });
+            toast({ variant: 'destructive', title: t('errorTitle'), description: t('registerError') });
         }
     }
     finally { setIsLoading(false); }
@@ -184,7 +184,7 @@ export default function LoginPage() {
                     <TabsContent value="login" className="space-y-6 mt-6">
                         <Form {...loginForm}>
                         <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-between">
                               <FormField control={loginForm.control} name="rememberMe" render={({ field }) => ( <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary" /></FormControl><FormLabel className="text-sm font-normal text-slate-400">{t('remember_me')}</FormLabel></FormItem> )} />
@@ -198,8 +198,8 @@ export default function LoginPage() {
                     <TabsContent value="register" className="mt-6">
                         <Form {...registerForm}>
                             <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="terms" render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
@@ -212,7 +212,7 @@ export default function LoginPage() {
                                  </div>
                               </FormItem>
                             )} />
-                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{t('create_account')}</Button>
+                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
                             </form>
                         </Form>
                     </TabsContent>
@@ -222,5 +222,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

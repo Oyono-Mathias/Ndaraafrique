@@ -11,6 +11,7 @@ import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ const forgotPasswordSchema = z.object({
 });
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
@@ -65,15 +67,13 @@ export default function ForgotPasswordPage() {
       await sendPasswordResetEmail(auth, values.email);
       setIsSubmitted(true); // Show success message instead of toast
     } catch (error) {
-       let description = 'Une erreur inattendue est survenue.';
+       let description = t('forgotPasswordErrorDefault');
        if (error instanceof FirebaseError) {
          if (error.code === 'auth/user-not-found') {
-           description = 'Aucun utilisateur trouvé avec cet e-mail.';
-         } else {
-            description = 'Impossible d\'envoyer l\'e-mail. Veuillez réessayer.';
+           description = t('forgotPasswordErrorUserNotFound');
          }
        }
-       toast({ variant: 'destructive', title: 'Échec de l\'envoi', description });
+       toast({ variant: 'destructive', title: t('errorTitle'), description });
     } finally {
       setIsLoading(false);
     }
@@ -86,59 +86,57 @@ export default function ForgotPasswordPage() {
   return (
     <div className="auth-page-container" style={containerStyle}>
         <div className="min-h-screen w-full flex items-center justify-center p-4">
-            <Card className="auth-card rounded-xl shadow-lg w-full max-w-md">
+            <div className="auth-card rounded-2xl shadow-lg w-full max-w-md p-6 sm:p-8">
                 {isSubmitted ? (
                     <div className="animate-in fade-in-50 duration-500">
-                        <CardHeader className="items-center text-center pb-4">
-                            <MailCheck className="h-12 w-12 text-green-400 mb-2"/>
-                            <CardTitle className="text-2xl font-bold text-white">E-mail envoyé !</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pb-4 text-center">
+                        <div className="text-center pb-4">
+                            <MailCheck className="h-12 w-12 text-green-400 mb-4 mx-auto"/>
+                            <h1 className="text-2xl font-bold text-white">{t('forgotPasswordSuccessTitle')}</h1>
+                        </div>
+                        <div className="space-y-4 pb-4 text-center">
                             <p className="text-slate-300">
-                                📧 Un lien de réinitialisation a été envoyé à votre adresse email. Pensez à vérifier vos courriers indésirables (spams).
+                                {t('forgotPasswordSuccessMessage')}
                             </p>
-                            <Button onClick={() => router.push('/')} className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5">
-                                OK, j'ai compris
+                            <Button onClick={() => router.push('/login')} className="w-full bg-primary hover:bg-primary/90 h-11 text-base !mt-5">
+                                {t('okGotIt')}
                             </Button>
-                        </CardContent>
+                        </div>
                     </div>
                 ) : (
                     <>
-                        <CardHeader className="items-center pb-4">
-                            {logoUrl && <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-2 rounded-full" />}
-                            <CardTitle className="text-2xl font-bold text-white">Mot de passe oublié ?</CardTitle>
-                            <CardDescription className="text-slate-300 text-center">Entrez votre email pour recevoir un lien de réinitialisation.</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4 pb-4">
+                        <div className="text-center pb-4">
+                             {logoUrl ? <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-4 mx-auto rounded-full" /> : <Link href="/" className="mb-4 inline-block"><Image src="/icon.svg" alt="Ndara Afrique Logo" width={40} height={40}/></Link>}
+                            <h1 className="text-2xl font-bold text-white">{t('password_forgot')}</h1>
+                            <p className="text-slate-300 text-center text-sm pt-2">{t('forgotPasswordDescription')}</p>
+                        </div>
+                        <div className="space-y-4 pb-4">
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                     <FormField control={form.control} name="email" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-white">Email</FormLabel>
+                                            <FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel>
                                             <FormControl>
-                                                <Input placeholder="votre.email@exemple.com" {...field} className="bg-white border-slate-300 text-slate-900 h-9" />
+                                                <Input placeholder="votre.email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
                                     )} />
-                                    <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 h-10 text-base !mt-5" disabled={isLoading}>
+                                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 h-12 text-lg font-semibold !mt-6" disabled={isLoading}>
                                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        Envoyer le lien
+                                        {t('forgotPasswordSendLink')}
                                     </Button>
                                 </form>
                             </Form>
-                        </CardContent>
-                        <CardContent className="p-4 pt-0 text-center text-sm">
-                            <Link href="/" className="font-semibold text-blue-400 hover:underline">
-                                Retour à la connexion
+                        </div>
+                        <div className="p-4 pt-0 text-center text-sm">
+                            <Link href="/login" className="font-semibold text-primary hover:underline">
+                                {t('backToLogin')}
                             </Link>
-                        </CardContent>
+                        </div>
                     </>
                 )}
-            </Card>
+            </div>
         </div>
     </div>
   );
 }
-
-    
