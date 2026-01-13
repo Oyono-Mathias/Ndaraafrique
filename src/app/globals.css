@@ -198,7 +198,6 @@
 }
 
 @layer utilities {
-    /* Animations for UI feedback */
     @keyframes fadeInUp {
         from { opacity: 0; transform: translateY(30px); }
         to { opacity: 1; transform: translateY(0); }
@@ -212,8 +211,5 @@
         0% { transform: translateX(-150%) rotate(25deg); }
         100% { transform: translateX(150%) rotate(25deg); }
     }
-    
-    .hero-text {
-        animation: fadeInUp 1s ease-out;
-    }
 }
+
