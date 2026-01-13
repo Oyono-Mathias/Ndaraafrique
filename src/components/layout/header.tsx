@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bell, Search } from 'lucide-react';
+import { Bell, Search, Download } from 'lucide-react';
 import { Button } from '../ui/button';
 import { LanguageSelector } from './language-selector';
 import { UserNav } from './user-nav';
@@ -156,9 +156,51 @@ const HeaderNotificationButton = () => {
   );
 };
 
+const PWAInstallButton = () => {
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the A2HS prompt');
+      } else {
+        console.log('User dismissed the A2HS prompt');
+      }
+      setDeferredPrompt(null);
+    }
+  };
+
+  if (!deferredPrompt) {
+    return null;
+  }
+
+  return (
+    <Button variant="ghost" size="icon" onClick={handleInstallClick} className="text-foreground" aria-label="Installer l'application">
+      <Download className="h-5 w-5" />
+    </Button>
+  );
+};
+
+
 export function Header() {
     return (
         <div className="flex items-center gap-2">
+            <PWAInstallButton />
             <LanguageSelector />
             <HeaderNotificationButton />
             <UserNav />
