@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, MapPin, BookOpen, Smartphone, Mail } from 'lucide-react';
+import { Loader2, MapPin, BookOpen, Smartphone, Mail, Eye, EyeOff } from 'lucide-react';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
@@ -27,8 +27,12 @@ import { africanCountries } from '@/lib/countries';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PhoneInput from 'react-phone-number-input/react-hook-form-input';
 import 'react-phone-number-input/style.css';
+import { LanguageSelector } from '@/components/layout/language-selector';
 
-// --- SCHÉMAS DE VALIDATION ---
+const passwordVisibilitySchema = z.object({
+  password: z.string().min(1, { message: "Le mot de passe est requis." }),
+});
+
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
   password: z.string().min(1, { message: "Le mot de passe est requis." }),
@@ -43,6 +47,7 @@ const registerSchema = z.object({
     message: "Vous devez accepter les conditions d'utilisation.",
   }),
 });
+
 
 const phoneSchema = z.object({
   phoneNumber: z.string().min(10, { message: "Veuillez entrer un numéro de téléphone valide." }),
@@ -64,24 +69,28 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const africanCountryCodes = africanCountries.map(c => c.code as any);
-const prioritizedCountries = ['CM', 'CI', 'SN', 'CD', 'GA', 'BJ', 'TG', 'GN', 'ML', 'BF'];
+const PasswordInput = ({ field }: { field: any }) => {
+  const [showPassword, setShowPassword] = useState(false);
+  return (
+      <div className="relative">
+          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 pr-10" />
+          <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-500 hover:text-slate-800" onClick={() => setShowPassword(!showPassword)}>
+              {showPassword ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
+          </Button>
+      </div>
+  );
+};
+
 
 export default function LoginPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [isSocialLoading, setIsSocialLoading] = useState(false);
-  const [siteName, setSiteName] = useState('FormaAfrique');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [loginImageUrl, setLoginImageUrl] = useState<string | null>(null);
+  
   const [detectedCountry, setDetectedCountry] = useState<{name: string; code: string; flag: string} | null>(null);
-  const [countryError, setCountryError] = useState(false);
-  const [loginMode, setLoginMode] = useState<LoginMode>('email');
-  const [phoneAuthState, setPhoneAuthState] = useState<PhoneAuthState>('enter-number');
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   const router = useRouter();
   const { toast } = useToast();
@@ -91,35 +100,20 @@ export default function LoginPage() {
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '', rememberMe: false } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
-  const phoneForm = useForm<z.infer<typeof phoneSchema>>({ resolver: zodResolver(phoneSchema) });
-  const otpForm = useForm<z.infer<typeof otpSchema>>({ resolver: zodResolver(otpSchema) });
-
+  
   useEffect(() => { if (!isUserLoading && user) router.push('/dashboard'); }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    const fetchSettingsAndGeo = async () => {
-        const settingsRef = doc(db, 'settings', 'global');
-        const settingsSnap = await getDoc(settingsRef);
-        if (settingsSnap.exists()) {
-            const settingsData = settingsSnap.data()?.general;
-            if (settingsData?.logoUrl) setLogoUrl(settingsData.logoUrl);
-            if (settingsData?.siteName) setSiteName(settingsData.siteName);
-            if (settingsData?.loginBackgroundImage) setLoginImageUrl(settingsData.loginBackgroundImage);
-        }
+    const fetchGeo = async () => {
         try {
             const response = await fetch('https://ipapi.co/json/');
             const data = await response.json();
             setDetectedCountry({ name: data.country_name, code: data.country_code, flag: data.country_calling_code });
-        } catch (error) { setCountryError(true); }
+        } catch (error) { console.error("Could not fetch geo location"); }
     };
-    fetchSettingsAndGeo();
-  }, [db]);
+    fetchGeo();
+  }, []);
   
-  const setupRecaptcha = () => {
-    if (recaptchaVerifier.current) return;
-    const auth = getAuth();
-    recaptchaVerifier.current = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'invisible' });
-  };
 
   const handleAuthSuccess = async (firebaseUser: FirebaseUser) => {
     const userDocRef = doc(db, "users", firebaseUser.uid);
@@ -149,6 +143,7 @@ export default function LoginPage() {
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
             country: detectedCountry?.name,
             countryCode: detectedCountry?.code?.toLowerCase(),
+            preferredLanguage: i18n.language,
         };
     }
     
@@ -182,136 +177,86 @@ export default function LoginPage() {
       const userCredential = await createUserWithEmailAndPassword(getAuth(), values.email, values.password);
       await updateProfile(userCredential.user, { displayName: values.fullName });
       await handleAuthSuccess(userCredential.user);
-    } catch (error) { toast({ variant: 'destructive', title: "Erreur d'inscription" }); }
-    finally { setIsLoading(false); }
-  };
-
-  const onPhoneSubmit = async (values: z.infer<typeof phoneSchema>) => {
-    setIsLoading(true); setupRecaptcha();
-    try {
-        const confirmation = await signInWithPhoneNumber(getAuth(), values.phoneNumber, recaptchaVerifier.current!);
-        setConfirmationResult(confirmation);
-        setPhoneAuthState('enter-otp');
-    } catch (error) { toast({ variant: "destructive", title: "Erreur SMS" }); }
-    finally { setIsLoading(false); }
-  };
-
-  const onOtpSubmit = async (values: z.infer<typeof otpSchema>) => {
-    if (!confirmationResult) return;
-    setIsLoading(true);
-    try {
-        const result = await confirmationResult.confirm(values.otp);
-        await handleAuthSuccess(result.user);
-    } catch (error) { toast({ variant: "destructive", title: "Code incorrect" }); }
+    } catch (error) { 
+        if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
+            toast({ variant: 'destructive', title: "Erreur d'inscription", description: "Cet email est déjà utilisé." });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur d'inscription" });
+        }
+    }
     finally { setIsLoading(false); }
   };
   
-  if (isUserLoading) return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isUserLoading) return <div className="flex h-screen w-full items-center justify-center bg-[#0f172a]"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   return (
-    <div className="grid min-h-screen w-full lg:grid-cols-2">
-      <div id="recaptcha-container" />
-
-      {/* --- COLONNE GAUCHE : IMAGE --- */}
-       <div className="hidden bg-muted lg:block relative">
-        <Image 
-          src={loginImageUrl || "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=2073&auto=format&fit=crop"} 
-          alt="Illustration" 
-          fill
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      </div>
-
-      {/* --- COLONNE DROITE : FORMULAIRE --- */}
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-white">
-        <div className="mx-auto w-full max-w-sm">
-            <div className="flex flex-col items-center text-center mb-8">
-              {logoUrl ? <Image src={logoUrl} alt={siteName} width={60} height={60} className="mb-4" /> : 
-                <div className="flex items-center gap-2 text-3xl font-bold text-primary mb-4"><BookOpen className="h-10 w-10" /><span>FormaAfrique</span></div>}
-              <h1 className="text-2xl font-bold text-slate-900">Content de vous revoir !</h1>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-dark-navy radial-gradient-background">
+        <div className="absolute top-4 right-4 z-10">
+          <LanguageSelector />
+        </div>
+        <div id="recaptcha-container" />
+        <div className="w-full max-w-md">
+            <div className="flex flex-col items-center text-center mb-6">
+                <Link href="/" className="mb-4">
+                  <Image src="/icon.svg" alt="Ndara Afrique Logo" width={60} height={60} />
+                </Link>
             </div>
             
-           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-8">
-                    <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
-                    <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
-                </TabsList>
+            <div className="glassmorphism-card rounded-2xl p-6 sm:p-8">
+               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                    <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 text-slate-300">
+                        <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
+                        <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
+                    </TabsList>
 
-                <TabsContent value="login" className="space-y-6">
-                    {loginMode === 'email' ? (
+                    <TabsContent value="login" className="space-y-6 mt-6">
                         <Form {...loginForm}>
                         <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>{t('passwordLabel')}</FormLabel><FormControl><Input type="password" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-between">
-                              <FormField control={loginForm.control} name="rememberMe" render={({ field }) => ( <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl><FormLabel className="text-sm font-normal">Se souvenir de moi</FormLabel></FormItem> )} />
-                              <Link href="/forgot-password" style={{color: '#2563EB'}} className="text-sm font-semibold hover:underline">Oublié ?</Link>
+                              <FormField control={loginForm.control} name="rememberMe" render={({ field }) => ( <FormItem className="flex items-center space-x-2 space-y-0"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary" /></FormControl><FormLabel className="text-sm font-normal text-slate-400">{t('remember_me')}</FormLabel></FormItem> )} />
+                              <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
-                            <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
+                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
-                    ) : (
-                        phoneAuthState === 'enter-number' ? (
-                            <Form {...phoneForm}>
-                                <form onSubmit={phoneForm.handleSubmit(onPhoneSubmit)} className="space-y-4">
-                                     <Controller control={phoneForm.control} name="phoneNumber" render={({ field }) => (
-                                        <FormItem>
-                                            <FormLabel>Numéro de téléphone</FormLabel>
-                                            <FormControl>
-                                                <PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-12 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm" countries={africanCountryCodes} countryOptionsOrder={prioritizedCountries} />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                     )}/>
-                                    <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>Envoyer le code</Button>
-                                    <p className="text-xs text-center text-slate-500">Uniquement pour nos utilisateurs en Afrique.</p>
-                                </form>
-                            </Form>
-                         ) : (
-                            <Form {...otpForm}>
-                                <form onSubmit={otpForm.handleSubmit(onOtpSubmit)} className="space-y-4">
-                                    <FormField control={otpForm.control} name="otp" render={({ field }) => (
-                                        <FormItem><FormLabel>Code SMS</FormLabel><FormControl><Input placeholder="000000" {...field} className="h-12 text-center text-xl tracking-widest" maxLength={6} /></FormControl><FormMessage /></FormItem>
-                                    )} />
-                                    <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>Confirmer</Button>
-                                </form>
-                            </Form>
-                         )
-                    )}
+                    </TabsContent>
 
-                    <div className="relative my-6"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-white px-2 text-slate-500">Ou continuer avec</span></div></div>
-                    
-                    <div className='flex gap-4 justify-center'>
-                      <Button variant="outline" className="h-14 w-14 shadow-sm" onClick={() => setLoginMode('email')} title="Email"><Mail className="h-6 w-6 text-slate-600"/></Button>
-                      <Button variant="outline" className="h-14 w-14 shadow-sm" onClick={handleGoogleSignIn} disabled={isSocialLoading} title="Google">{isSocialLoading ? <Loader2 className="animate-spin" /> : <GoogleIcon />}</Button>
-                      <Button variant="outline" className="h-14 w-14 shadow-sm" onClick={() => setLoginMode('phone')} title="Téléphone"><Smartphone className="h-6 w-6 text-slate-600"/></Button>
-                    </div>
-                </TabsContent>
-
-                <TabsContent value="register">
-                    <Form {...registerForm}>
-                        <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4 pt-4">
-                        <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel>Nom complet</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
-                        <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
-                        <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel>Mot de passe</FormLabel><FormControl><Input type="password" {...field} className="h-12" /></FormControl><FormMessage /></FormItem> )} />
-                        <FormField control={registerForm.control} name="terms" render={({ field }) => (
-                          <FormItem className="flex flex-row items-start space-x-3 space-y-0">
-                             <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                             <div className="space-y-1 leading-none">
-                                <FormLabel className="text-sm font-normal">
-                                  J'accepte les <Link href="/cgu" target="_blank" className="underline text-primary">Conditions d'Utilisation</Link> et la <Link href="/mentions-legales" target="_blank" className="underline text-primary">Politique de Confidentialité</Link>.
-                                </FormLabel>
-                                <FormMessage />
-                             </div>
-                          </FormItem>
-                        )} />
-                        <Button style={{backgroundColor: '#2563EB'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading || !registerForm.watch('terms')}>Créer mon compte</Button>
-                        </form>
-                    </Form>
-                </TabsContent>
-            </Tabs>
+                    <TabsContent value="register" className="mt-6">
+                        <Form {...registerForm}>
+                            <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="terms" render={({ field }) => (
+                              <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-1" /></FormControl>
+                                 <div className="space-y-1 leading-none">
+                                    <FormLabel className="text-xs font-normal text-slate-400">
+                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>.
+                                    </FormLabel>
+                                    <FormMessage />
+                                 </div>
+                              </FormItem>
+                            )} />
+                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading || !registerForm.watch('terms')}>{t('create_account')}</Button>
+                            </form>
+                        </Form>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div>
-      </div>
+        <style jsx>{`
+            .radial-gradient-background {
+                background: radial-gradient(circle at 30% 70%, #0f172a, #0b1120 40%, #0f172a 80%);
+            }
+            .glassmorphism-card {
+                background: rgba(30, 41, 59, 0.5); /* bg-slate-800/50 */
+                backdrop-filter: blur(15px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+        `}</style>
     </div>
   );
 }
