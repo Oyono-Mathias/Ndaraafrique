@@ -27,30 +27,29 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
                 <span>Ndara Afrique</span>
             </Link>
             <p className="text-sm max-w-md">
-                {t('footer_subtitle')}
+                L'excellence par le savoir. La première plateforme panafricaine pour les métiers de demain.
             </p>
           </div>
           <div className="md:col-span-7 lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="font-semibold text-slate-200 mb-4">{t('footer_links')}</h3>
+              <h3 className="font-semibold text-slate-200 mb-4">Liens Rapides</h3>
               <ul className="space-y-2 text-sm">
-                <li><Link href="/" className="footer-link">{t('footer_home')}</Link></li>
-                <li><Link href="/search" className="footer-link">{t('footer_catalog')}</Link></li>
-                <li><Link href="/devenir-instructeur" onClick={onBecomeInstructorClick} className="footer-link">{t('footer_instructors')}</Link></li>
+                <li><Link href="/" className="footer-link">Accueil</Link></li>
+                <li><Link href="/search" className="footer-link">Cours</Link></li>
+                <li><Link href="/about" className="footer-link">À Propos</Link></li>
               </ul>
             </div>
              <div>
-              <h3 className="font-semibold text-slate-200 mb-4">{t('footer_help')}</h3>
+              <h3 className="font-semibold text-slate-200 mb-4">Contact</h3>
               <ul className="space-y-2 text-sm">
-                  <li><Link href="/faq" className="footer-link">{t('footer_faq')}</Link></li>
-                  <li><Link href="/messages" className="footer-link">{t('footer_contact')}</Link></li>
+                  <li><a href="mailto:contact@ndara-afrique.com" className="footer-link">contact@ndara-afrique.com</a></li>
               </ul>
             </div>
              <div>
-              <h3 className="font-semibold text-slate-200 mb-4">{t('footer_legal')}</h3>
+              <h3 className="font-semibold text-slate-200 mb-4">Légal</h3>
               <ul className="space-y-2 text-sm">
-                  <li><Link href="/mentions-legales" className="footer-link">{t('footer_legal_notice')}</Link></li>
-                  <li><Link href="/cgu" className="footer-link">{t('footer_terms')}</Link></li>
+                  <li><Link href="/mentions-legales" className="footer-link">Mentions Légales</Link></li>
+                  <li><Link href="/cgu" className="footer-link">Conditions d'utilisation</Link></li>
               </ul>
             </div>
           </div>
@@ -61,11 +60,9 @@ export function Footer({ onBecomeInstructorClick }: { onBecomeInstructorClick?: 
                   <a href="#" className="text-slate-400 hover:text-primary"><WhatsAppIcon className="h-6 w-6" /></a>
                   <a href="#" className="text-slate-400 hover:text-primary"><Linkedin className="h-6 w-6" /></a>
               </div>
-            <p className="text-xs">{t('footerCopyright')}</p>
+            <p className="text-xs">© 2026 Ndara Afrique - Tous droits réservés.</p>
         </div>
       </div>
     </footer>
   );
 }
-
-    
