@@ -13,7 +13,7 @@ import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
 import { format, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { AreaChart, CartesianGrid, XAxis, YAxis, Area, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer } from 'recharts';
 import { Progress } from '@/components/ui/progress';
 
 // --- TYPES ---
@@ -255,6 +255,7 @@ const AdminDashboard = () => {
                                     className="fill-muted-foreground text-xs"
                                 />
                             <Tooltip
+                                cursor={false}
                                 content={<ChartTooltipContent
                                     formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
                                     className="bg-background/80 backdrop-blur-sm"
