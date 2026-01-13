@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -257,7 +258,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   if (isLoading) {
     return (
-        <div className="flex h-full w-full items-center justify-center bg-slate-100 dark:bg-slate-900">
+        <div className="flex h-full w-full items-center justify-center bg-slate-900">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
     );
@@ -265,7 +266,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full chat-background dark:bg-slate-900">
-       <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-slate-800/80 backdrop-blur-sm sticky top-0 z-10 dark:border-slate-700">
+       <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-[#202c33] backdrop-blur-sm sticky top-0 z-10 dark:border-slate-700/80">
             <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => router.push('/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -319,7 +320,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        <div className="p-2 border-t bg-slate-100 dark:border-slate-900/50">
+        <div className="p-2 border-t bg-slate-100 dark:bg-[#202c33] border-slate-200 dark:border-slate-900/50">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
                 <Input
                     value={newMessage}

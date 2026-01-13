@@ -134,8 +134,8 @@ export function AiTutorClient() {
                 className={cn(
                   "rounded-lg px-3 py-2 text-[14.5px] leading-snug shadow-sm relative",
                   message.sender === "user"
-                    ? "chat-bubble-sent bg-[#dcf8c6] dark:bg-[#075e54] text-slate-800 dark:text-slate-100 rounded-br-none"
-                    : "chat-bubble-received bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none"
+                    ? "chat-bubble-sent bg-[#dcf8c6] dark:bg-[#075e54] text-slate-800 dark:text-slate-100"
+                    : "chat-bubble-received bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
                 )}
               >
                 <p className="whitespace-pre-wrap">{message.text}</p>
@@ -147,7 +147,7 @@ export function AiTutorClient() {
           ))}
           {isAiResponding && (
             <div className="flex items-end gap-2 max-w-[85%] mr-auto">
-              <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm chat-bubble-received rounded-bl-none">
+              <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm chat-bubble-received">
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 MATHIAS est en train d'écrire...
               </div>
@@ -173,5 +173,3 @@ export function AiTutorClient() {
     </div>
   );
 }
-
-    
