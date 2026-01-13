@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -93,7 +92,6 @@ export default function AdminSettingsPage() {
                 featuredCourseId: currentSettings.commercial?.featuredCourseId || '',
                 announcementMessage: currentSettings.platform?.announcementMessage || '',
                 allowInstructorSignup: currentSettings.platform?.allowInstructorSignup ?? true,
-                autoApproveCourses: currentSettings.platform?.allowInstructorSignup ?? true,
                 autoApproveCourses: currentSettings.platform?.autoApproveCourses ?? false,
                 enableInternalMessaging: currentSettings.platform?.enableInternalMessaging ?? true,
                 termsOfService: currentSettings.legal?.termsOfService || '',
@@ -302,5 +300,4 @@ export default function AdminSettingsPage() {
             </Form>
         </>
     );
-
-    
+}
