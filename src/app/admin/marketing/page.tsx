@@ -1,10 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { getFirestore, collection, orderBy, doc, updateDoc } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
@@ -19,6 +21,7 @@ import { Loader2, Sparkles, Tag, Speaker, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { generatePromoCode } from '@/ai/flows/generate-promo-code-flow';
 
 const marketingFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Veuillez entrer une instruction d\'au moins 10 caractères.' }),
@@ -38,11 +41,12 @@ interface PromoCode {
 export default function AdminMarketingPage() {
   const { t } = useTranslation();
   const { toast } = useToast();
+  const db = getFirestore();
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiResponse, setAiResponse] = useState('');
-  const [codesLoading, setCodesLoading] = useState(true); // Faux loading state
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]); // Faux data state
-  const [codesError, setCodesError] = useState(false);
+
+  const codesQuery = useMemoFirebase(() => query(collection(db, 'promoCodes'), orderBy('createdAt', 'desc')), [db]);
+  const { data: promoCodes, isLoading: codesLoading, error } = useCollection<PromoCode>(codesQuery);
 
   const form = useForm<MarketingFormValues>({
     resolver: zodResolver(marketingFormSchema),
@@ -51,24 +55,31 @@ export default function AdminMarketingPage() {
   const onSubmit: SubmitHandler<MarketingFormValues> = async (data) => {
     setIsAiLoading(true);
     setAiResponse('');
-    // Simulate AI call
-    setTimeout(() => {
-        setAiResponse(`🎉 Vente Flash ce weekend ! Profitez de -${Math.floor(Math.random() * 50) + 10}% sur tous les cours avec le code WEEKEND! 🚀`);
+    try {
+        const result = await generatePromoCode({ prompt: data.prompt });
+        setAiResponse(result.response);
+        
+        // Let user know something happened, even if it's just a tool call
+        if (!result.response.includes('Sango:')) {
+            toast({ title: 'Action effectuée', description: result.response });
+        }
+    } catch(error) {
+        console.error("AI Generation Error:", error);
+        toast({ variant: 'destructive', title: 'Erreur IA', description: 'Une erreur est survenue.' });
+    } finally {
         setIsAiLoading(false);
-    }, 1500);
+    }
   };
   
-  // Simulate loading and data fetching
-  useState(() => {
-    setTimeout(() => {
-        setPromoCodes([
-            { id: '1', code: 'BIENVENUE25', discountPercentage: 25, isActive: true, createdAt: new Date() },
-            { id: '2', code: 'NDARA2024', discountPercentage: 15, isActive: true, expiresAt: { toDate: () => new Date('2024-12-31') }, createdAt: new Date() },
-            { id: '3', code: 'SUMMER50', discountPercentage: 50, isActive: false, createdAt: new Date() },
-        ]);
-        setCodesLoading(false);
-    }, 2000);
-  });
+  const handleToggleActive = async (code: PromoCode) => {
+      const codeRef = doc(db, 'promoCodes', code.id);
+      try {
+          await updateDoc(codeRef, { isActive: !code.isActive });
+          toast({ title: 'Statut mis à jour', description: `Le code ${code.code} est maintenant ${!code.isActive ? 'actif' : 'inactif'}.` });
+      } catch (e) {
+          toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le statut.' });
+      }
+  }
 
   return (
     <div className="space-y-8">
@@ -129,7 +140,7 @@ export default function AdminMarketingPage() {
           <CardTitle className="dark:text-white flex items-center gap-2"><Tag className="h-5 w-5"/> {t('existingPromoCodes')}</CardTitle>
         </CardHeader>
         <CardContent>
-           {codesError && (
+           {error && (
                 <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
                     <p>{t('promoLoadError')}</p>
@@ -165,9 +176,7 @@ export default function AdminMarketingPage() {
                                 <TableCell className="text-right">
                                     <Switch
                                         checked={code.isActive}
-                                        onCheckedChange={() => {
-                                            setPromoCodes(promoCodes.map(p => p.id === code.id ? {...p, isActive: !p.isActive} : p));
-                                        }}
+                                        onCheckedChange={() => handleToggleActive(code)}
                                     />
                                 </TableCell>
                             </TableRow>

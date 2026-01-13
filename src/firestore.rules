@@ -138,8 +138,7 @@ service cloud.firestore {
     // --- Payouts Collection (SECURED) ---
     match /payouts/{payoutId} {
       allow create: if isApprovedInstructor() && isOwner(request.resource.data.instructorId);
-      allow read, list: if isAdmin(); // Only admins can read or list payouts
-      allow update, delete: if isAdmin();
+      allow read, list, update, delete: if isAdmin();
     }
 
     // --- Support Tickets ---
