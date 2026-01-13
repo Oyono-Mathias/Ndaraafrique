@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -22,33 +22,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Eye, CheckCircle, XCircle, Clock, ShieldAlert, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection, doc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where, orderBy } from 'firebase/firestore';
+import type { Course, FormaAfriqueUser } from '@/lib/types';
 
-
-// --- MOCK DATA (to be replaced with Firestore logic) ---
-const MOCK_COURSES = [
-  { id: '1', title: 'Introduction à l\'IA Générative avec Gemini', instructor: 'Amina Diallo', submittedAt: new Date(Date.now() - 86400000 * 1), status: 'Pending Review' },
-  { id: '2', title: 'Créer un business en ligne profitable en Afrique', instructor: 'Kwame Nkrumah', submittedAt: new Date(Date.now() - 86400000 * 3), status: 'Pending Review' },
-  { id: '3', title: 'Le guide complet du Design UI/UX pour les nuls', instructor: 'Fanta Kébé', submittedAt: new Date(Date.now() - 86400000 * 5), status: 'Pending Review' },
-];
-
-type CourseForReview = typeof MOCK_COURSES[0];
 
 // --- REFUSAL MODAL COMPONENT ---
-const RefusalModal = ({ course, onConfirm }: { course: CourseForReview, onConfirm: (reason: string) => void }) => {
+const RefusalModal = ({ course, onConfirm, isSubmitting }: { course: Course, onConfirm: (reason: string) => void, isSubmitting: boolean }) => {
     const [reason, setReason] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleConfirm = () => {
-        if (reason.trim().length < 10) {
-            // Basic validation
-            return;
-        }
-        setIsSubmitting(true);
-        // Simulate async action
-        setTimeout(() => {
-            onConfirm(reason);
-            setIsSubmitting(false);
-        }, 1000);
+        if (reason.trim().length < 10) return;
+        onConfirm(reason);
     }
     
     return (
@@ -83,27 +68,90 @@ const RefusalModal = ({ course, onConfirm }: { course: CourseForReview, onConfir
 
 
 export default function AdminModerationPage() {
-  const [courses, setCourses] = useState<CourseForReview[]>(MOCK_COURSES);
+  const [coursesForReview, setCoursesForReview] = useState<Course[]>([]);
+  const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [submittingAction, setSubmittingAction] = useState<{ id: string, action: 'approve' | 'refuse' } | null>(null);
+
   const { toast } = useToast();
   const { t } = useTranslation();
+  const db = getFirestore();
 
-  // Simulate loading
+  const coursesQuery = useMemoFirebase(
+    () => query(collection(db, 'courses'), where('status', '==', 'Pending Review'), orderBy('createdAt', 'desc')),
+    [db]
+  );
+  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+
   useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1500);
-    return () => clearTimeout(timer);
-  }, []);
+    if (coursesLoading) {
+      setIsLoading(true);
+      return;
+    }
+    if (!courses) {
+        setCoursesForReview([]);
+        setIsLoading(false);
+        return;
+    }
 
-  const handleApprove = (courseId: string) => {
-    toast({ title: "Cours approuvé", description: "Le cours est maintenant publié et visible par tous." });
-    setCourses(prev => prev.filter(c => c.id !== courseId));
+    setCoursesForReview(courses);
+
+    const fetchInstructors = async () => {
+        const instructorIds = [...new Set(courses.map(c => c.instructorId).filter(Boolean))];
+        if (instructorIds.length === 0) return;
+
+        const newIdsToFetch = instructorIds.filter(id => !instructors.has(id));
+        if (newIdsToFetch.length === 0) return;
+
+        try {
+            const usersQuery = query(collection(db, 'users'), where('uid', 'in', newIdsToFetch.slice(0, 30)));
+            const usersSnap = await getDocs(usersQuery);
+            
+            const newInstructors = new Map(instructors);
+            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser));
+            setInstructors(newInstructors);
+        } catch (error) {
+            console.error("Error fetching instructors for moderation:", error);
+        }
+    };
+
+    fetchInstructors().finally(() => setIsLoading(false));
+
+  }, [courses, coursesLoading, db, instructors]);
+
+  const handleApprove = async (courseId: string) => {
+    setSubmittingAction({ id: courseId, action: 'approve' });
+    try {
+        const courseRef = doc(db, 'courses', courseId);
+        await updateDoc(courseRef, {
+            status: 'Published',
+            publishedAt: serverTimestamp()
+        });
+        toast({ title: "Cours approuvé", description: "Le cours est maintenant publié et visible par tous." });
+    } catch (error) {
+        console.error("Error approving course:", error);
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'approuver le cours." });
+    } finally {
+        setSubmittingAction(null);
+    }
   };
 
-  const handleRefuse = (courseId: string, reason: string) => {
-     toast({ title: "Cours refusé", description: "L'instructeur a été notifié de la décision.", variant: 'destructive' });
-     setCourses(prev => prev.filter(c => c.id !== courseId));
+  const handleRefuse = async (courseId: string, reason: string) => {
+     setSubmittingAction({ id: courseId, action: 'refuse' });
+     try {
+        const courseRef = doc(db, 'courses', courseId);
+        await updateDoc(courseRef, {
+            status: 'Draft',
+            moderationFeedback: reason,
+        });
+        toast({ title: "Cours refusé", description: "L'instructeur a été notifié de la décision.", variant: 'default' });
+    } catch (error) {
+         console.error("Error refusing course:", error);
+         toast({ variant: 'destructive', title: "Erreur", description: "Impossible de refuser le cours." });
+    } finally {
+        setSubmittingAction(null);
+    }
   };
-
 
   return (
     <div className="space-y-6">
@@ -140,8 +188,8 @@ export default function AdminModerationPage() {
                       <TableCell className="text-right"><div className="flex justify-center gap-2"><Skeleton className="h-8 w-24 dark:bg-slate-700" /><Skeleton className="h-8 w-24 dark:bg-slate-700" /><Skeleton className="h-8 w-24 dark:bg-slate-700" /></div></TableCell>
                     </TableRow>
                   ))
-                ) : courses && courses.length > 0 ? (
-                  courses.map((course) => (
+                ) : coursesForReview && coursesForReview.length > 0 ? (
+                  coursesForReview.map((course) => (
                     <TableRow key={course.id} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                       <TableCell className="font-medium">
                         <div className="flex flex-col">
@@ -153,26 +201,28 @@ export default function AdminModerationPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-muted-foreground hidden md:table-cell dark:text-slate-400">
-                          {course.instructor}
+                          {instructors.get(course.instructorId)?.fullName || 'Chargement...'}
                       </TableCell>
                        <TableCell className="hidden lg:table-cell text-muted-foreground dark:text-slate-400">
-                          {formatDistanceToNow(course.submittedAt, { addSuffix: true, locale: fr })}
+                          {course.createdAt ? formatDistanceToNow(course.createdAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
                       </TableCell>
                       <TableCell className="text-center">
                          <div className="flex justify-center gap-2">
-                             <Button variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600">
-                                <Eye className="mr-2 h-4 w-4"/> Aperçu
+                             <Button variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600" asChild>
+                                <a href={`/course/${course.id}`} target="_blank" rel="noopener noreferrer">
+                                   <Eye className="mr-2 h-4 w-4"/> Aperçu
+                                </a>
                             </Button>
                              <Dialog>
                                 <DialogTrigger asChild>
-                                     <Button variant="destructive" size="sm">
-                                        <XCircle className="mr-2 h-4 w-4"/> Refuser
+                                     <Button variant="destructive" size="sm" disabled={submittingAction?.id === course.id}>
+                                        {submittingAction?.id === course.id && submittingAction.action === 'refuse' ? <Loader2 className="h-4 w-4 animate-spin"/> : <XCircle className="mr-2 h-4 w-4"/>} Refuser
                                     </Button>
                                 </DialogTrigger>
-                                <RefusalModal course={course} onConfirm={(reason) => handleRefuse(course.id, reason)} />
+                                <RefusalModal course={course} onConfirm={(reason) => handleRefuse(course.id, reason)} isSubmitting={submittingAction?.action === 'refuse'} />
                              </Dialog>
-                             <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" className="bg-green-600 hover:bg-green-700">
-                                <CheckCircle className="mr-2 h-4 w-4"/> Approuver
+                             <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" className="bg-green-600 hover:bg-green-700" disabled={submittingAction?.id === course.id}>
+                                {submittingAction?.id === course.id && submittingAction.action === 'approve' ? <Loader2 className="h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>} Approuver
                             </Button>
                          </div>
                       </TableCell>
@@ -197,3 +247,5 @@ export default function AdminModerationPage() {
     </div>
   );
 }
+
+    
