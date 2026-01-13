@@ -119,7 +119,61 @@ Ndara Afrique est une plateforme de mise en relation. Nous ne sommes pas respons
 Nous pouvons modifier ces CGU à tout moment. Vous serez notifié de tout changement important. Votre utilisation continue de la plateforme après une modification vaut acceptation des nouvelles conditions.
 
 Pour toute question, contactez-nous à support@ndara-afrique.com`,
-            privacyPolicy: '',
+            privacyPolicy: `Politique de Confidentialité de Ndara Afrique
+
+Dernière mise à jour : 28 Juillet 2024
+
+Chez Ndara Afrique, la confiance de nos utilisateurs est notre priorité. Cette politique explique en termes simples quelles informations nous collectons et pourquoi.
+
+**1. Les Données que Nous Collectons**
+
+Pour faire fonctionner la plateforme, nous avons besoin de certaines informations :
+
+- **Informations de Compte :** Votre nom, votre adresse e-mail et votre mot de passe (chiffré). Ces informations sont essentielles pour créer votre compte, vous connecter et sécuriser votre accès.
+- **Informations de Profil :** Votre nom d'utilisateur, votre biographie, votre photo de profil et vos objectifs de carrière. Ces données permettent de personnaliser votre expérience et, si vous le souhaitez, d'interagir avec la communauté.
+- **Données de Cours :** Les cours auxquels vous vous inscrivez, votre progression, vos devoirs et les certificats que vous obtenez. C'est le cœur de votre parcours d'apprentissage.
+- **Données de Paiement :** Lorsque vous achetez un cours, nous enregistrons la transaction (montant, date, cours acheté). Nous ne stockons **jamais** vos informations de carte bancaire ou de Mobile Money ; elles sont traitées de manière sécurisée par notre partenaire de paiement.
+- **Communications :** Les messages que vous échangez avec les instructeurs ou d'autres utilisateurs via notre messagerie interne.
+
+**2. Pourquoi Nous Utilisons Vos Données**
+
+Nous utilisons ces informations uniquement pour :
+
+- **Fournir le Service :** Vous donner accès aux cours, suivre votre progression et vous délivrer vos certificats.
+- **Gérer les Paiements :** Traiter vos achats et rémunérer les instructeurs.
+- **Communiquer :** Vous envoyer des notifications importantes sur vos cours, des confirmations d'inscription ou des réponses de notre support.
+- **Améliorer la Plateforme :** Analyser des données anonymisées pour comprendre quels cours sont populaires et comment améliorer l'expérience utilisateur.
+
+**3. Stockage et Sécurité**
+
+- **Où ?** Vos données sont stockées de manière sécurisée sur les serveurs de Google Firebase, un service reconnu mondialement pour sa fiabilité et sa sécurité.
+- **Comment ?** Nous utilisons les meilleures pratiques, comme le chiffrement, pour protéger vos informations. L'accès à la base de données est strictement contrôlé par des règles de sécurité pour empêcher tout accès non autorisé.
+
+**4. Qui a Accès à Vos Données ?**
+
+Votre vie privée est essentielle. Voici qui peut voir quoi :
+
+- **Vous :** Vous avez accès à toutes les données de votre profil et de votre parcours.
+- **Les Instructeurs :** Un instructeur peut voir votre nom et votre progression **uniquement pour les cours que vous suivez avec lui**. Cela lui permet de vous accompagner.
+- **Les Autres Étudiants :** Si vous interagissez dans la communauté, les autres verront votre nom d'utilisateur et les informations que vous choisissez de rendre publiques sur votre profil.
+- **Les Administrateurs de Ndara Afrique :** Un nombre très restreint de personnes a un accès plus large pour assurer la maintenance, la modération et le support de la plateforme. Ils sont soumis à des obligations de confidentialité strictes.
+- **Tiers :** Nous ne vendons, ne louons et ne partagerons **jamais** vos données personnelles à des fins marketing à des entreprises tierces.
+
+**5. Vos Droits**
+
+Vous restez maître de vos données. Vous avez le droit de :
+
+- **Accéder :** Consulter à tout moment les informations de votre compte.
+- **Rectifier :** Mettre à jour votre nom, votre e-mail ou les informations de votre profil.
+- **Effacer :** Supprimer définitivement votre compte et toutes les données associées depuis les paramètres de votre profil.
+
+**6. Cookies**
+
+Nous utilisons des cookies techniques indispensables au bon fonctionnement du site (par exemple, pour vous maintenir connecté). Nous n'utilisons pas de cookies de suivi publicitaire tiers.
+
+**7. Contact**
+
+Pour toute question concernant vos données, contactez-nous à : support@ndara-afrique.com.`,
         },
     });
 
@@ -363,3 +417,5 @@ Pour toute question, contactez-nous à support@ndara-afrique.com`,
         </>
     );
 }
+
+    
