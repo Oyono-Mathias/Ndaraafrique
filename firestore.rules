@@ -38,22 +38,23 @@ service cloud.firestore {
     
     // --- Règles pour 'courses' ---
     match /courses/{courseId} {
-      // Tout le monde peut lire un cours individuel
+      // Tout le monde peut lire les détails d'un cours (titre, description, etc.)
       allow get: if true;
       
-      // N'importe quel utilisateur connecté peut lister les cours (pour le catalogue)
-      allow list: if isSignedIn() || isAdmin();
+      // Tout le monde peut lister les cours (pour le catalogue sur la landing page)
+      allow list: if true;
       
       allow create: if isSignedIn() && isApprovedInstructor();
       allow update: if isAdmin() || (isCourseOwner(courseId) && request.resource.data.status != 'Published');
       
-      // --- Règles pour les sous-collections ---
+      // --- Règles pour les sous-collections (CONTENU PROTÉGÉ) ---
       match /sections/{sectionId} {
-        allow read: if true;
+        // Seuls les inscrits, le propriétaire ou un admin peuvent voir le programme
+        allow read: if isSignedIn() && (isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin());
         allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
 
         match /lectures/{lectureId} {
-          allow read: if true;
+          allow read: if isSignedIn() && (isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin());
           allow create: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
           allow update, delete: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
         }
