@@ -51,6 +51,8 @@ service cloud.firestore {
       match /sections/{sectionId} {
         // N'importe qui peut lire le programme (sections et leçons)
         allow read: if true;
+        // N'importe qui peut lister les sections pour afficher le programme du cours
+        allow list: if true;
         allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
 
         match /lectures/{lectureId} {
