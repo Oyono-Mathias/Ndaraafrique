@@ -5,14 +5,14 @@ import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getFirestore, collection, query, orderBy, onSnapshot, writeBatch, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, GalleryHorizontal } from 'lucide-react';
+import { Loader2, Plus, Trash2, GalleryHorizontal, GripVertical } from 'lucide-react';
 import Image from 'next/image';
 
 interface CarouselSlide {
@@ -112,6 +112,7 @@ export default function AdminCarouselPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               {fields.map((field, index) => (
                 <Card key={field.id} className="p-4 flex flex-col md:flex-row gap-4 items-start dark:bg-slate-900/50 dark:border-slate-700">
+                  <GripVertical className="h-5 w-5 text-slate-400 mt-1 cursor-grab shrink-0"/>
                   <div className="w-full md:w-48 shrink-0">
                     <FormField
                       control={form.control}
@@ -133,7 +134,7 @@ export default function AdminCarouselPage() {
                       name={`slides.${index}.imageUrl`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs">URL de l'image</FormLabel>
+                          <FormLabel className="text-xs dark:text-slate-300">URL de l'image</FormLabel>
                           <FormControl><Input {...field} placeholder="https://..." className="dark:bg-slate-800 dark:border-slate-600" /></FormControl>
                           <FormMessage />
                         </FormItem>
@@ -144,7 +145,7 @@ export default function AdminCarouselPage() {
                       name={`slides.${index}.link`}
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs">Lien (optionnel)</FormLabel>
+                          <FormLabel className="text-xs dark:text-slate-300">Lien (optionnel)</FormLabel>
                           <FormControl><Input {...field} placeholder="/course/..." className="dark:bg-slate-800 dark:border-slate-600" /></FormControl>
                           <FormMessage />
                         </FormItem>
