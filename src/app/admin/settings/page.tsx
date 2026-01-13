@@ -74,7 +74,51 @@ export default function AdminSettingsPage() {
             allowInstructorSignup: true,
             autoApproveCourses: false,
             enableInternalMessaging: true,
-            termsOfService: '',
+            termsOfService: `Bienvenue sur Ndara Afrique !
+
+Dernière mise à jour : 28 Juillet 2024
+
+Ces Conditions Générales d'Utilisation (CGU) régissent votre accès et votre utilisation de la plateforme Ndara Afrique. En vous inscrivant, vous acceptez d'être lié par ces conditions.
+
+**1. Votre Compte**
+
+- **Création :** Vous devez fournir des informations exactes lors de votre inscription. Vous êtes responsable de la sécurité de votre mot de passe et de toute activité sur votre compte.
+- **Unicité :** Chaque utilisateur ne peut détenir qu'un seul compte. La création de comptes multiples est interdite.
+
+**2. Rôles et Responsabilités**
+
+- **Étudiant :** Vous avez accès aux cours auxquels vous êtes inscrit. Vous vous engagez à respecter les droits de propriété intellectuelle des instructeurs et à ne pas distribuer le contenu des cours.
+- **Instructeur :** En publiant un cours, vous garantissez que vous en détenez tous les droits. Vous accordez à Ndara Afrique une licence pour héberger, commercialiser et distribuer votre cours sur la plateforme. Vous êtes responsable du contenu que vous publiez et de l'accompagnement de vos étudiants.
+- **Admin :** L'équipe de Ndara Afrique a le droit de modérer les contenus, de gérer les utilisateurs et d'assurer le bon fonctionnement de la plateforme.
+
+**3. Paiements et Remboursements**
+
+- **Paiements :** Les prix des cours sont fixés par les instructeurs et sont indiqués en Francs CFA (XOF). Les paiements sont traités via des passerelles sécurisées (Mobile Money, etc.).
+- **Revenus de l'Instructeur :** Ndara Afrique prélève une commission sur chaque vente. Le solde est versé à l'instructeur selon les modalités définies dans la section "Mes Revenus".
+- **Remboursements :** Les demandes de remboursement sont traitées au cas par cas. En règle générale, un remboursement peut être accordé si la demande est faite dans les 7 jours suivant l'achat et si moins de 20% du cours a été consulté.
+
+**4. Propriété Intellectuelle**
+
+- **Votre Contenu (Instructeurs) :** Vous conservez tous les droits de propriété sur le contenu que vous publiez.
+- **Contenu de Ndara Afrique :** La marque, le logo et le design de la plateforme sont la propriété exclusive de Ndara Afrique.
+
+**5. Suspension et Résiliation de Compte**
+
+Ndara Afrique se réserve le droit de suspendre ou de résilier votre compte sans préavis si vous ne respectez pas ces conditions, notamment en cas de :
+- Fraude ou tentative de fraude.
+- Violation des droits d'auteur.
+- Harcèlement ou comportement inapproprié envers d'autres utilisateurs.
+- Non-respect de nos standards de qualité pour les cours (instructeurs).
+
+**6. Limitation de Responsabilité**
+
+Ndara Afrique est une plateforme de mise en relation. Nous ne sommes pas responsables de la qualité intrinsèque du contenu fourni par les instructeurs. Cependant, nous nous engageons à mettre en place des processus de validation pour garantir un niveau de qualité élevé.
+
+**7. Modification des Conditions**
+
+Nous pouvons modifier ces CGU à tout moment. Vous serez notifié de tout changement important. Votre utilisation continue de la plateforme après une modification vaut acceptation des nouvelles conditions.
+
+Pour toute question, contactez-nous à support@ndara-afrique.com`,
             privacyPolicy: '',
         },
     });
@@ -319,5 +363,3 @@ export default function AdminSettingsPage() {
         </>
     );
 }
-
-    
