@@ -9,15 +9,9 @@ import { StudentSidebar } from './student-sidebar';
 import { InstructorSidebar } from './instructor-sidebar';
 import { AdminSidebar } from './admin-sidebar';
 import { Button } from '../ui/button';
-import { ShieldAlert, Bell, PanelLeft, Wrench, Loader2, HelpCircle } from 'lucide-react';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Wrench, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
-import { LanguageSelector } from './language-selector';
-import { useTranslation } from 'react-i18next';
-import { UserNav } from './user-nav';
-import { OnboardingGuide } from '../onboarding-guide';
 import { SplashScreen } from '../splash-screen';
 import { Header } from './header';
 import '@/i18n';
@@ -37,7 +31,6 @@ const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/message
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, formaAfriqueUser } = useRole();
   const pathname = usePathname();
-  const { t } = useTranslation();
   const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -107,14 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
            <Header mobileSheet={
               <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="shrink-0 md:hidden"
-                  >
-                    <PanelLeft className="h-5 w-5" />
-                    <span className="sr-only">Ouvrir le menu</span>
-                  </Button>
+                  {renderSidebar()}
                 </SheetTrigger>
                 <SheetContent side="left" className="flex flex-col p-0 bg-background w-full max-w-[280px]">
                   {renderSidebar()}

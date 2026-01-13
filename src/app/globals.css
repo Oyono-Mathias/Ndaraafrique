@@ -81,6 +81,9 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-color: #0f172a;
+    background-image: radial-gradient(circle at 15% 50%, hsl(var(--primary) / 0.1), transparent 30%),
+                      radial-gradient(circle at 85% 30%, hsl(var(--primary) / 0.08), transparent 40%);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   
@@ -90,7 +93,7 @@
     height: 8px;
   }
   ::-webkit-scrollbar-track {
-    background: hsl(var(--background));
+    background: hsl(var(--background) / 0.5);
   }
   ::-webkit-scrollbar-thumb {
     background: hsl(var(--primary) / 0.5);
@@ -118,9 +121,9 @@
   }
   
   .glassmorphism-card {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
+    background: rgba(30, 41, 59, 0.5); /* bg-slate-800/50 */
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .footer {
@@ -155,6 +158,17 @@
       padding-top: 1.5rem;
       border-top: 1px solid rgba(255, 255, 255, 0.05);
       font-size: 0.85rem;
+  }
+  .chat-background {
+    background-image: url('/backgrounds/whatsapp-bg-dark.png');
+    background-blend-mode: overlay;
+    background-color: #0b141a;
+  }
+  .chat-bubble-sent {
+    @apply rounded-br-none;
+  }
+  .chat-bubble-received {
+    @apply rounded-bl-none;
   }
 }
 
