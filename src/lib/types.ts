@@ -20,6 +20,9 @@ export interface Assignment {
   id: string;
   title: string;
   description?: string;
+  courseId: string;
+  correctionGuide?: string;
+  createdAt: Timestamp;
 }
 
 export interface Submission {

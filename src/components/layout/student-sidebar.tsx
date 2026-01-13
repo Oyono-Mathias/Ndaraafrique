@@ -31,6 +31,7 @@ import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Badge } from "../ui/badge";
+import { OnboardingGuide } from "../onboarding-guide";
 
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string }) => {
@@ -46,15 +47,15 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id }: { hr
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
           ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-          : "text-slate-600 hover:bg-slate-100/80"
+          : "text-slate-600 hover:bg-slate-100/80 dark:text-slate-300 dark:hover:bg-slate-800"
       )}
     >
       <div className="flex items-center">
         <Icon className={cn(
-          "w-5 h-5 mr-4 text-slate-500 group-hover:text-primary transition-colors duration-300 tv:w-7 tv:h-7",
+          "w-5 h-5 mr-4 text-slate-500 group-hover:text-primary transition-colors duration-300",
           isActive && "text-primary-foreground"
         )} />
-        <span className="font-medium text-sm tv:text-lg">{label}</span>
+        <span className="font-medium text-sm">{label}</span>
       </div>
       {unreadCount !== undefined && unreadCount > 0 && (
         <Badge className="bg-red-500 text-white h-5 px-1.5 text-xs">{unreadCount}</Badge>
@@ -137,54 +138,57 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   }
 
   return (
-    <div className="w-full h-full bg-white border-r border-slate-200 flex flex-col shadow-sm">
-      <header className="p-4 border-b border-slate-100">
-        <Link href="/dashboard" className="flex items-center gap-2">
-            <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
-            <span className="font-bold text-lg text-primary">{siteName || 'FormaAfrique'}</span>
-        </Link>
-      </header>
+    <>
+      <OnboardingGuide />
+      <div className="w-full h-full bg-white dark:bg-[#111827] border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-sm">
+        <header className="p-4 border-b border-slate-100 dark:border-slate-800">
+          <Link href="/dashboard" className="flex items-center gap-2">
+              <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
+              <span className="font-bold text-lg text-primary">{siteName || 'Ndara Afrique'}</span>
+          </Link>
+        </header>
 
-      <nav className="flex-1 py-2 overflow-y-auto">
-        {studentMenu.map((group) => (
-          <div key={group.label} className="py-2">
-            <p className="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{group.label}</p>
-            {group.items.map((item) => (
-              <SidebarItem
-                key={item.href}
-                href={item.href}
-                icon={item.icon}
-                label={t(item.textKey)}
-                id={item.id}
-                unreadCount={item.href === '/messages' ? unreadMessages : undefined}
-                onClick={onLinkClick}
-              />
-            ))}
-          </div>
-        ))}
-      </nav>
+        <nav className="flex-1 py-2 overflow-y-auto">
+          {studentMenu.map((group) => (
+            <div key={group.label} className="py-2">
+              <p className="px-4 text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">{group.label}</p>
+              {group.items.map((item) => (
+                <SidebarItem
+                  key={item.href}
+                  href={item.href}
+                  icon={item.icon}
+                  label={t(item.textKey)}
+                  id={item.id}
+                  unreadCount={item.href === '/messages' ? unreadMessages : undefined}
+                  onClick={onLinkClick}
+                />
+              ))}
+            </div>
+          ))}
+        </nav>
 
-      <footer className="p-4 mt-auto border-t border-slate-100 space-y-2">
-        {isInstructor ? (
-            <Button variant="outline" className="w-full justify-center" onClick={() => switchRole('instructor')}>
-                <LogIn className="mr-2 h-4 w-4" />
-                Mode Instructeur
-            </Button>
-        ) : showInstructorSignup && (
-             <Button variant="outline" className="w-full justify-center tv:py-6 tv:text-lg" asChild>
-                <Link href="/devenir-instructeur">
-                    <Briefcase className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
-                    {t('be_instructor')}
-                </Link>
-            </Button>
-        )}
-        {isAdmin && (
-             <Button variant="secondary" className="w-full justify-center tv:py-6 tv:text-lg" onClick={handleSwitchToAdmin}>
-                <Shield className="mr-2 h-4 w-4 tv:h-6 tv:w-6" />
-                Mode Admin
-            </Button>
-        )}
-      </footer>
-    </div>
+        <footer className="p-4 mt-auto border-t border-slate-100 dark:border-slate-800 space-y-2">
+          {isInstructor ? (
+              <Button variant="outline" className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700" onClick={() => switchRole('instructor')}>
+                  <LogIn className="mr-2 h-4 w-4" />
+                  Mode Instructeur
+              </Button>
+          ) : showInstructorSignup && (
+              <Button variant="outline" className="w-full justify-center dark:bg-slate-800 dark:border-slate-700 dark:hover:bg-slate-700" asChild>
+                  <Link href="/devenir-instructeur">
+                      <Briefcase className="mr-2 h-4 w-4" />
+                      {t('be_instructor')}
+                  </Link>
+              </Button>
+          )}
+          {isAdmin && (
+              <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
+                  <Shield className="mr-2 h-4 w-4" />
+                  Mode Admin
+              </Button>
+          )}
+        </footer>
+      </div>
+    </>
   );
 }
