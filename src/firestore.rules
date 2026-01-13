@@ -4,7 +4,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Helper Functions ---
+    // --- Fonctions d'aide ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -14,28 +14,28 @@ service cloud.firestore {
     }
 
     function getUserData(userId) {
+      // Allow reading user data only if signed in.
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
     function isAdmin() {
+      // Check if the user is signed in and their role in the DB is 'admin'.
       return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
     }
-
+    
     function isCourseOwner(courseId) {
-      let course = get(/databases/$(database)/documents/courses/$(courseId));
-      return isSignedIn() && course.data.instructorId == request.auth.uid;
+        return isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId);
     }
     
     function isApprovedInstructor() {
       let userData = getUserData(request.auth.uid);
       return userData.role == 'instructor' && userData.isInstructorApproved == true;
     }
-
+    
     function isStudentEnrolled(courseId) {
-      return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
     
-    // Function to check if the user has completed their profile
     function isProfileComplete() {
         let userData = getUserData(request.auth.uid);
         return userData.username != null && userData.careerGoals.interestDomain != null;
@@ -44,26 +44,11 @@ service cloud.firestore {
     // --- User Collection Rules ---
     match /users/{userId} {
       allow list: if isAdmin();
-      
-      // A user can read their own profile completely.
-      // Admins and instructors can read anyone's profile.
       allow get: if isOwner(userId) || isAdmin() || getUserData(request.auth.uid).role == 'instructor';
-
-      // Anyone signed in can read a limited "public" profile.
-      // This is a conceptual rule; Firestore doesn't enforce field-level reads.
-      // The application code must be responsible for fetching only public fields like 'username'.
-      
       allow create: if isOwner(userId);
-      
-      // Users can update their own profile, but cannot change their role, approval status, or private info.
-      allow update: if isOwner(userId) && !(
-        'role' in request.resource.data || 
-        'isInstructorApproved' in request.resource.data
-      );
-      
+      allow update: if isOwner(userId) && !('role' in request.resource.data || 'isInstructorApproved' in request.resource.data);
       allow delete: if isAdmin();
 
-      // Subcollections
       match /chatHistory/{messageId} {
         allow read, write: if isOwner(userId);
       }
@@ -77,25 +62,16 @@ service cloud.firestore {
 
     // --- Chat Collection Rules ---
     match /chats/{chatId} {
-        // Chat document data
         let chatData = resource.data;
-        // Requesting user's data
         let requesterData = getUserData(request.auth.uid);
         
-        // A user can create a chat if:
-        // 1. They are signed in AND have a complete profile.
-        // 2. They are part of the chat they are trying to create.
-        // 3. The categories of both participants are identical.
         allow create: if isSignedIn() && isProfileComplete()
                         && request.auth.uid in request.resource.data.participants
                         && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
 
-        // A user can read or update a chat (e.g., lastMessage) if they are a participant.
         allow read, update: if isSignedIn() && request.auth.uid in chatData.participants;
 
-        // --- Messages Subcollection ---
         match /messages/{messageId} {
-            // Allow reading/writing messages only if the user is a participant in the parent chat.
             allow read, write: if isSignedIn() && request.auth.uid in chatData.participants;
         }
     }
@@ -107,7 +83,6 @@ service cloud.firestore {
       allow create: if isApprovedInstructor();
       allow update: if isAdmin() || isCourseOwner(courseId);
 
-      // Subcollections
       match /sections/{sectionId} {
         allow read: if true;
         allow write: if isCourseOwner(courseId) || isAdmin();
@@ -132,6 +107,12 @@ service cloud.firestore {
             allow create: if isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
         }
       }
+    }
+    
+    // --- Promo Codes ---
+    match /promoCodes/{codeId} {
+        allow read, list: if isAdmin();
+        allow create, update, delete: if isAdmin();
     }
     
     // --- Other Collections ---
@@ -185,6 +166,11 @@ service cloud.firestore {
     match /settings/{docId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+    
+    // --- Admin catch-all ---
+    match /{path=**} {
+      allow read, write: if isAdmin();
     }
   }
 }
