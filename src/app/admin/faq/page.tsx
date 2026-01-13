@@ -42,7 +42,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -112,7 +112,7 @@ export default function AdminFaqPage() {
 
   const onSubmit = async (data: FaqFormValues) => {
     setIsSubmitting(true);
-    const tagsArray = data.tags.split(',').map(tag => tag.trim()).filter(Boolean);
+    const tagsArray = data.tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
     
     try {
         if (editingFaq) {
@@ -172,7 +172,7 @@ export default function AdminFaqPage() {
             <CardHeader><CardTitle className="dark:text-white">Base de Connaissances</CardTitle></CardHeader>
             <CardContent className="space-y-4">
                 {isLoading ? (
-                    [...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full dark:bg-slate-700" />)
+                    [...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full dark:bg-slate-700" />)
                 ) : faqs && faqs.length > 0 ? (
                     faqs.map(faq => (
                         <Card key={faq.id} className="dark:bg-slate-900/50 dark:border-slate-700">
@@ -217,7 +217,12 @@ export default function AdminFaqPage() {
                        <FormItem><FormLabel className="dark:text-slate-300">Réponse</FormLabel><FormControl><Textarea placeholder="Pour ce faire, vous devez..." {...field} rows={6} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl><FormMessage /></FormItem>
                     )} />
                      <FormField control={form.control} name="tags" render={({ field }) => (
-                       <FormItem><FormLabel className="dark:text-slate-300">Tags</FormLabel><FormControl><Input placeholder="paiement, certificat, ..." {...field} className="dark:bg-slate-800 dark:border-slate-700"/></FormControl><FormDescription className="dark:text-slate-500">Séparez les tags par des virgules.</FormDescription><FormMessage /></FormItem>
+                       <FormItem>
+                           <FormLabel className="dark:text-slate-300">Tags (pour l'IA)</FormLabel>
+                           <FormControl><Input placeholder="paiement, certificat, compte..." {...field} className="dark:bg-slate-800 dark:border-slate-700"/></FormControl>
+                           <FormDescription className="dark:text-slate-500">Séparez les mots-clés par des virgules. Cela aide MATHIAS à trouver la bonne réponse.</FormDescription>
+                           <FormMessage />
+                        </FormItem>
                     )} />
                     <DialogFooter>
                         <DialogClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></DialogClose>
@@ -250,5 +255,3 @@ export default function AdminFaqPage() {
     </>
   );
 }
-
-    
