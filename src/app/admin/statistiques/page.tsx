@@ -2,19 +2,20 @@
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { AreaChart, CartesianGrid, XAxis, YAxis, Area, Tooltip } from 'recharts';
+import { AreaChart, CartesianGrid, XAxis, YAxis, Area, Tooltip, ResponsiveContainer } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign, TrendingUp } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { Loader2 } from 'lucide-react';
 
 interface RevenueDataPoint {
     month: string;
@@ -43,6 +44,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 export default function AdminStatisticsPage() {
     const { t } = useTranslation();
+    const { formaAfriqueUser, isUserLoading } = useRole();
     const db = getFirestore();
 
     const [stats, setStats] = useState({
@@ -56,11 +58,16 @@ export default function AdminStatisticsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (isUserLoading || formaAfriqueUser?.role !== 'admin') {
+            if (!isUserLoading) setIsLoading(false);
+            return;
+        };
+
         setIsLoading(true);
         const unsubs: (()=>void)[] = [];
 
         // Listener for total users
-        unsubs.push(onSnapshot(collection(db, 'users'), (snapshot) => {
+        unsubs.push(onSnapshot(query(collection(db, 'users'), where('role', '==', 'student')), (snapshot) => {
             setStats(prev => ({ ...prev, userCount: snapshot.size }));
         }));
 
@@ -114,7 +121,7 @@ export default function AdminStatisticsPage() {
         return () => {
             unsubs.forEach(unsub => unsub());
         };
-    }, [db, isLoading]);
+    }, [db, isUserLoading, formaAfriqueUser, isLoading]);
 
     const topCourses = useMemo(() => {
         const courseEnrollmentCounts = enrollments.reduce((acc, enrollment) => {
@@ -134,6 +141,20 @@ export default function AdminStatisticsPage() {
     const chartConfig = {
         revenue: { label: 'Revenus', color: 'hsl(var(--primary))' },
     };
+    
+    if (isUserLoading) {
+        return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+    
+    if (formaAfriqueUser?.role !== 'admin') {
+        return (
+            <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
+                <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+                <h1 className="text-2xl font-bold">Accès Interdit</h1>
+                <p className="text-muted-foreground">Vous n'avez pas les autorisations nécessaires pour accéder à cette page.</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto">
@@ -153,9 +174,8 @@ export default function AdminStatisticsPage() {
                      <h2 className="text-2xl font-bold text-white mb-4">Évolution des revenus</h2>
                      <div className="h-[450px] bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
                         {isLoading ? <Skeleton className="h-full w-full bg-slate-800" /> : (
-                            <ChartContainer config={chartConfig} className="w-full h-full">
+                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart
-                                    accessibilityLayer
                                     data={revenueTrendData}
                                     margin={{ left: 12, right: 12, top: 10, bottom: 10 }}
                                 >
@@ -196,7 +216,7 @@ export default function AdminStatisticsPage() {
                                         stackId="a"
                                     />
                                 </AreaChart>
-                            </ChartContainer>
+                            </ResponsiveContainer>
                         )}
                     </div>
                 </div>
@@ -233,5 +253,3 @@ export default function AdminStatisticsPage() {
         </div>
     );
 }
-
-    
