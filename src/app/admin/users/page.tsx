@@ -56,21 +56,23 @@ import { useTranslation } from 'react-i18next';
 
 // --- SKELETON LOADER ---
 const UserTableSkeleton = () => (
-  [...Array(5)].map((_, i) => (
-    <TableRow key={i} className="dark:border-slate-700">
-      <TableCell>
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
-          <Skeleton className="h-4 w-32 dark:bg-slate-700" />
-        </div>
-      </TableCell>
-      <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
-      <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
-      <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
-      <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-28 dark:bg-slate-700" /></TableCell>
-      <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
-    </TableRow>
-  ))
+    <>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i} className="dark:border-slate-700">
+          <TableCell>
+            <div className="flex items-center gap-3">
+              <Skeleton className="h-10 w-10 rounded-full dark:bg-slate-700" />
+              <Skeleton className="h-4 w-32 dark:bg-slate-700" />
+            </div>
+          </TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
+          <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+          <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+          <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-28 dark:bg-slate-700" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
+        </TableRow>
+      ))}
+    </>
 );
 
 // --- COMPOSANTS DE L'INTERFACE ---
@@ -387,5 +389,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    
