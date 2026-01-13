@@ -31,6 +31,8 @@ import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useTranslation } from 'react-i18next';
+import { cn } from '@/lib/utils';
+
 
 const getStatusBadgeVariant = (status?: Course['status']) => {
   switch (status) {
@@ -47,15 +49,19 @@ const getStatusBadgeVariant = (status?: Course['status']) => {
 const CourseActions = ({ course }: { course: Course }) => {
     const router = useRouter();
 
+    const handleActionClick = (e: React.MouseEvent) => {
+        e.stopPropagation(); // Prevent card click from firing
+    };
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
+                <Button variant="ghost" className="h-8 w-8 p-0" onClick={handleActionClick}>
                     <span className="sr-only">Ouvrir le menu</span>
                     <MoreHorizontal className="h-4 w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700">
+            <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700" onClick={handleActionClick}>
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                 <DropdownMenuItem onSelect={() => window.open(`/course/${course.id}`, '_blank')}>
                     <Eye className="mr-2 h-4 w-4" />
@@ -75,7 +81,7 @@ const CourseActions = ({ course }: { course: Course }) => {
 };
 
 const CourseCard = ({ course, instructorName, t }: { course: Course, instructorName: string, t: (key: string) => string }) => {
-    
+    const router = useRouter();
     const getStatusText = (status: Course['status'] = 'Draft') => {
         switch(status) {
             case 'Published': return t('published');
@@ -86,7 +92,10 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
     }
 
     return (
-    <Card className="dark:bg-slate-800 dark:border-slate-700 flex flex-col">
+    <Card 
+        className="dark:bg-slate-800 dark:border-slate-700 flex flex-col cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-primary/10 hover:shadow-lg"
+        onClick={() => router.push(`/instructor/courses/edit/${course.id}`)}
+    >
         <div className="relative aspect-video">
             <Image
                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
@@ -117,7 +126,7 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
 )};
 
 const CourseRow = ({ course, instructorName, t }: { course: Course, instructorName: string, t: (key: string) => string }) => {
-    
+    const router = useRouter();
     const getStatusText = (status: Course['status'] = 'Draft') => {
         switch(status) {
             case 'Published': return t('published');
@@ -128,7 +137,10 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
     }
     
     return (
-     <div className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50">
+     <div 
+        className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer"
+        onClick={() => router.push(`/instructor/courses/edit/${course.id}`)}
+     >
         <Image
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/160/90`}
             alt={course.title}
