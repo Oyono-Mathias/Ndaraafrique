@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -101,7 +100,7 @@ const DecisionModal = ({
         setIsProcessing(true);
         await onConfirm(application.uid, decision === 'accepted', message);
         setIsProcessing(false);
-        onClose();
+        onClose(); // Close the modal automatically on success
     };
 
     return (
@@ -176,7 +175,7 @@ const DecisionModal = ({
                 </div>
                 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={onClose}>{t('cancelButton')}</Button>
+                    <Button variant="ghost" onClick={onClose} disabled={isProcessing}>{t('cancelButton')}</Button>
                     <Button onClick={handleConfirm} disabled={!decision || isProcessing}>
                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         <Send className="mr-2 h-4 w-4"/> {t('confirmAndSend')}
