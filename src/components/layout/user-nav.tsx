@@ -28,11 +28,11 @@ import {
   
 export function UserNav() {
     const { t } = useTranslation();
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { formaAfriqueUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 
     const handleLogout = async () => {
-        await signOut(getAuth());
+        await secureSignOut();
         router.push('/');
     }
 

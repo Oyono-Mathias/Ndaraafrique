@@ -4,8 +4,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp } from 'firebase/firestore';
-import { User, onIdTokenChanged } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, clearPersistence } from 'firebase/firestore';
+import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
 
@@ -31,8 +31,10 @@ export interface FormaAfriqueUser {
         mobileMoneyNumber?: string;
     };
     notificationPreferences?: {
-      promotions: boolean;
-      reminders: boolean;
+      newPayouts: boolean;
+      newApplications: boolean;
+      newSupportTickets: boolean;
+      financialAnomalies: boolean;
     };
     videoPlaybackPreferences?: {
         defaultQuality: string;
@@ -76,6 +78,7 @@ interface RoleContextType {
   availableRoles: UserRole[];
   setAvailableRoles: Dispatch<SetStateAction<UserRole[]>>;
   switchRole: (newRole: UserRole) => void;
+  secureSignOut: () => Promise<void>;
   loading: boolean;
   formaAfriqueUser: FormaAfriqueUser | null;
   user: User | null; // From Firebase Auth
@@ -210,6 +213,18 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
   }, [availableRoles]);
+
+  const secureSignOut = async () => {
+    const auth = getAuth();
+    try {
+        // Clear Firestore's local cache first to ensure offline data is wiped
+        await clearPersistence(db);
+    } catch (error) {
+        console.error("Error clearing Firestore persistence:", error);
+    }
+    // Then, sign out the user from Firebase Auth
+    await signOut(auth);
+  };
   
   const value = useMemo(() => ({
     role,
@@ -217,12 +232,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     availableRoles,
     setAvailableRoles,
     switchRole,
+    secureSignOut,
     loading: isUserLoading || loading,
     formaAfriqueUser,
     setFormaAfriqueUser,
     user,
     isUserLoading
-  }), [role, availableRoles, switchRole, loading, formaAfriqueUser, user, isUserLoading]);
+  }), [role, availableRoles, switchRole, secureSignOut, loading, formaAfriqueUser, user, isUserLoading]);
 
   return (
     <RoleContext.Provider value={value}>
@@ -238,5 +254,3 @@ export function useRole() {
   }
   return context;
 }
-
-    
