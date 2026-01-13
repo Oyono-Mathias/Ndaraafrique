@@ -190,33 +190,25 @@ const AdminDashboard = () => {
     },
   };
 
+  const statCards = [
+    { title: "Revenus (Mois en cours)", value: `${stats.monthlyRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`, icon: DollarSign },
+    { title: "Étudiants Actifs (30j)", value: stats.activeStudents?.toLocaleString('fr-FR') ?? '...', icon: Users },
+    { title: "Taux de Complétion Moyen", value: stats.avgCompletionRate !== null ? `${Math.round(stats.avgCompletionRate)}%` : '...', icon: CheckCircle },
+    { title: "Nouveaux Instructeurs (30j)", value: stats.newInstructors?.toLocaleString('fr-FR') ?? '...', icon: UserPlus }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Revenus (Mois en cours)"
-          value={`${stats.monthlyRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`}
-          icon={DollarSign}
-          isLoading={loadingState.stats}
-        />
-        <StatCard
-          title="Étudiants Actifs (30j)"
-          value={stats.activeStudents?.toLocaleString('fr-FR') ?? '...'}
-          icon={Users}
-          isLoading={loadingState.stats}
-        />
-        <StatCard
-          title="Taux de Complétion Moyen"
-          value={stats.avgCompletionRate !== null ? `${Math.round(stats.avgCompletionRate)}%` : '...'}
-          icon={CheckCircle}
-          isLoading={loadingState.stats}
-        />
-         <StatCard
-          title="Nouveaux Instructeurs (30j)"
-          value={stats.newInstructors?.toLocaleString('fr-FR') ?? '...'}
-          icon={UserPlus}
-          isLoading={loadingState.stats}
-        />
+        {statCards.map(card => (
+            <StatCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                isLoading={loadingState.stats}
+            />
+        ))}
       </div>
       
       <div className="grid lg:grid-cols-5 gap-6">
@@ -226,50 +218,48 @@ const AdminDashboard = () => {
                     <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
-                    {loadingState.stats ? <Skeleton className="h-80 w-full" /> : (
-                        <ChartContainer config={chartConfig} className="h-80 w-full">
-                        <ResponsiveContainer>
-                            <AreaChart data={revenueTrendData}>
-                            <defs>
-                                <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
-                                </linearGradient>
-                                </defs>
-                            <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
-                            <XAxis
-                                dataKey="month"
-                                tickLine={false}
-                                axisLine={false}
-                                tickMargin={8}
-                                tickFormatter={(value) => value.slice(0, 3)}
-                                className="fill-muted-foreground text-xs"
-                            />
-                            <YAxis 
-                                    tickLine={false} 
-                                    axisLine={false} 
-                                    tickMargin={8} 
-                                    tickFormatter={(value) => `${Number(value) / 1000}k`}
-                                    className="fill-muted-foreground text-xs"
-                                />
-                            <Tooltip
-                                cursor={false}
-                                content={<ChartTooltipContent
-                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
-                                    className="bg-background/80 backdrop-blur-sm"
-                                />}
-                            />
-                            <Area
-                                dataKey="revenue"
-                                type="natural"
-                                fill="url(#fillRevenue)"
-                                stroke="var(--color-revenue)"
-                                stackId="a"
-                            />
-                            </AreaChart>
-                        </ResponsiveContainer>
-                        </ChartContainer>
-                    )}
+                    <ChartContainer config={chartConfig} className="h-80 w-full">
+                      <ResponsiveContainer>
+                          <AreaChart data={revenueTrendData}>
+                          <defs>
+                              <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
+                                  <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
+                              </linearGradient>
+                              </defs>
+                          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                          <XAxis
+                              dataKey="month"
+                              tickLine={false}
+                              axisLine={false}
+                              tickMargin={8}
+                              tickFormatter={(value) => value.slice(0, 3)}
+                              className="fill-muted-foreground text-xs"
+                          />
+                          <YAxis 
+                                  tickLine={false} 
+                                  axisLine={false} 
+                                  tickMargin={8} 
+                                  tickFormatter={(value) => `${Number(value) / 1000}k`}
+                                  className="fill-muted-foreground text-xs"
+                              />
+                          <Tooltip
+                              cursor={false}
+                              content={<ChartTooltipContent
+                                  formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                  className="bg-background/80 backdrop-blur-sm"
+                              />}
+                          />
+                          <Area
+                              dataKey="revenue"
+                              type="natural"
+                              fill="url(#fillRevenue)"
+                              stroke="var(--color-revenue)"
+                              stackId="a"
+                          />
+                          </AreaChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
                 </CardContent>
             </Card>
 
