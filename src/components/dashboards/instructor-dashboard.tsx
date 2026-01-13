@@ -190,7 +190,7 @@ function InstructorDashboardContent() {
                     accentColor="border-t-blue-500"
                 />
                 <StatCard 
-                    title={t('average_rating')}
+                    title={t('statAverageRating')} 
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 

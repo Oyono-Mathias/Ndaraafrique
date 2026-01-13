@@ -29,7 +29,7 @@ import { UserNav } from "./user-nav";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 
-const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { href: string, icon: React.ElementType, sangoLabel: string, frenchLabel: string, onClick: () => void }) => {
+const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname();
   const { formaAfriqueUser } = useRole();
   const { toast } = useToast();
@@ -59,7 +59,7 @@ const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { h
       href={href}
       onClick={handleClick}
       className={cn(
-        "flex items-center px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
+        "flex items-center px-4 py-3 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
           : 'text-slate-300 hover:bg-slate-800'
@@ -69,10 +69,7 @@ const SidebarItem = ({ href, icon: Icon, sangoLabel, frenchLabel, onClick }: { h
         "w-5 h-5 mr-4",
         isActive ? 'text-primary-foreground' : 'text-slate-400 group-hover:text-primary'
       )} />
-      <div className="flex flex-col">
-        <span className="font-semibold text-sm leading-tight">{sangoLabel}</span>
-        <span className={cn("text-xs leading-tight", isActive ? 'text-primary-foreground/80' : 'text-slate-400/70')}>{frenchLabel}</span>
-      </div>
+      <span className="font-semibold text-sm leading-tight">{label}</span>
       {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
     </Link>
   );
@@ -86,30 +83,30 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
 
   const instructorMenu = [
     {
-      label: t('Kua'),
+      label: t('instructor_sidebar_group_work'),
       items: [
-        { href: '/dashboard', icon: LayoutDashboard, textKey: 'navDashboard', sangoKey: 'sango_dashboard' },
-        { href: '/instructor/courses', icon: BookOpen, textKey: 'navMyCourses', sangoKey: 'sango_my_courses' },
-        { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'navAssignments', sangoKey: 'sango_assignments' },
-        { href: '/instructor/quiz', icon: FileQuestion, textKey: 'navQuiz', sangoKey: 'sango_quiz' },
-        { href: '/instructor/ressources', icon: Folder, textKey: 'navResources', sangoKey: 'sango_resources' },
+        { href: '/dashboard', icon: LayoutDashboard, textKey: 'navDashboard' },
+        { href: '/instructor/courses', icon: BookOpen, textKey: 'navMyCourses' },
+        { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'navAssignments' },
+        { href: '/instructor/quiz', icon: FileQuestion, textKey: 'navQuiz' },
+        { href: '/instructor/ressources', icon: Folder, textKey: 'navResources' },
       ],
     },
     {
-      label: t('Ndâpë'),
+      label: t('instructor_sidebar_group_finances'),
       items: [
-        { href: '/instructor/students', icon: Users, textKey: 'navMyStudents', sangoKey: 'sango_my_students' },
-        { href: '/mes-revenus', icon: DollarSign, textKey: 'navFinance', sangoKey: 'sango_my_revenue' },
-        { href: '/statistiques', icon: BarChart3, textKey: 'navStatistics', sangoKey: 'sango_statistics' },
-        { href: '/certificats-instructor', icon: Award, textKey: 'navCertificates', sangoKey: 'sango_certificates' },
+        { href: '/instructor/students', icon: Users, textKey: 'navMyStudents' },
+        { href: '/mes-revenus', icon: DollarSign, textKey: 'navFinance' },
+        { href: '/statistiques', icon: BarChart3, textKey: 'navStatistics' },
+        { href: '/certificats-instructor', icon: Award, textKey: 'navCertificates' },
       ],
     },
     {
-      label: t('Tene'),
+      label: t('instructor_sidebar_group_communication'),
       items: [
-        { href: '/messages', icon: MessagesSquare, textKey: 'navMessages', sangoKey: 'sango_messages' },
-        { href: '/questions-reponses', icon: MessagesSquare, textKey: 'navQA', sangoKey: 'sango_qa' },
-        { href: '/avis', icon: Star, textKey: 'navReviews', sangoKey: 'sango_reviews' },
+        { href: '/messages', icon: MessagesSquare, textKey: 'navMessages' },
+        { href: '/questions-reponses', icon: MessagesSquare, textKey: 'navQA' },
+        { href: '/avis', icon: Star, textKey: 'navReviews' },
       ],
     },
   ];
@@ -137,8 +134,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
                 key={item.href} 
                 href={item.href} 
                 icon={item.icon} 
-                sangoLabel={t(item.sangoKey)} 
-                frenchLabel={t(item.textKey)}
+                label={t(item.textKey)}
                 onClick={onLinkClick} />
             ))}
           </div>
@@ -165,5 +161,3 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     </div>
   );
 }
-
-    
