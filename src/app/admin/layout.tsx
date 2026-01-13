@@ -84,23 +84,25 @@ export default function AdminLayout({
 
         {/* --- Main Content Area --- */}
         <div className="flex flex-col min-h-screen">
-            <header className="admin-header flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-sm px-4 lg:px-6">
+             <header className="admin-header flex h-16 items-center gap-4 border-b border-slate-700 bg-slate-800/30 backdrop-blur-sm px-4 lg:px-6">
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
                     <Button
                         variant="outline"
                         size="icon"
-                        className="shrink-0 md:hidden bg-transparent"
+                        className="shrink-0 md:hidden bg-transparent border-slate-700"
                     >
                         <PanelLeft className="h-5 w-5" />
                         <span className="sr-only">Ouvrir le menu</span>
                     </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="flex flex-col p-0 bg-card border-r w-full max-w-[280px]">
+                    <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
                         <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
                     </SheetContent>
                 </Sheet>
-                <Header />
+                <div className="ml-auto">
+                    <Header />
+                </div>
             </header>
             <main className="flex-1 p-4 sm:p-6 lg:p-8 xl:p-10 overflow-y-auto">
                 {children}
@@ -110,4 +112,3 @@ export default function AdminLayout({
   )
 }
 
-    
