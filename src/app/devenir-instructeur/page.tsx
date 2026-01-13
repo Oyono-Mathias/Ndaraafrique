@@ -22,6 +22,7 @@ import { africanCountries } from '@/lib/countries';
 import { Checkbox } from '@/components/ui/checkbox';
 import { sendNewInstructorApplicationEmail } from '@/lib/emails';
 import { useTranslation } from 'react-i18next';
+import { sendAdminNotification } from '../actions/notificationActions';
 
 const instructorApplicationSchema = (t: (key: string) => string) => z.object({
   specialty: z.string().min(3, { message: t('specialty_required') }),
@@ -76,11 +77,17 @@ export default function BecomeInstructorPage() {
         instructorApplication: { ...data, submittedAt: serverTimestamp() }
       });
       
-      // Send email notification to admin
+      // Send notifications
       await sendNewInstructorApplicationEmail({
         applicantName: formaAfriqueUser.fullName,
         applicantEmail: formaAfriqueUser.email,
         specialty: data.specialty
+      });
+
+      await sendAdminNotification({
+        title: "🎓 Nouvelle candidature d'instructeur",
+        body: `${formaAfriqueUser.fullName} souhaite devenir instructeur.`,
+        link: '/admin/instructors'
       });
 
       toast({
@@ -206,5 +213,3 @@ export default function BecomeInstructorPage() {
     </div>
   );
 }
-
-    

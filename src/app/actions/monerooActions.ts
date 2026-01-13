@@ -1,6 +1,8 @@
 
 'use server';
 
+import { sendAdminNotification } from './notificationActions';
+
 // This is a placeholder for the real Moneroo SDK.
 // Since we cannot install the package, we'll simulate the verification.
 class Moneroo {
@@ -56,14 +58,23 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
         
         if (response?.status === 'success' && response.data?.status === 'successful') {
             return { success: true, data: response.data };
-        } else if (response?.status === 'success') {
-            return { success: false, error: `Paiement non finalisé. Statut : ${response.data?.status}` };
         } else {
-            return { success: false, error: response?.message || 'Vérification impossible auprès de Moneroo.' };
+             // Anomaly detected, send notification to admins
+            await sendAdminNotification({
+                title: '⚠️ Anomalie de Paiement Détectée',
+                body: `Échec de la vérification Moneroo pour la transaction ID: ${transactionId}. Statut: ${response.data?.status || 'inconnu'}.`,
+                link: '/admin/payments',
+            });
+            return { success: false, error: response?.message || `Paiement non finalisé. Statut : ${response.data?.status}` };
         }
 
     } catch (error: any) {
         console.error("Error verifying Moneroo transaction:", error);
+         await sendAdminNotification({
+            title: '🔥 Erreur Critique de Paiement',
+            body: `Le service de vérification Moneroo a échoué. Cause: ${error.message}`,
+            link: '/admin/settings',
+        });
         return { success: false, error: error.message || 'Erreur de vérification du paiement.' };
     }
 }

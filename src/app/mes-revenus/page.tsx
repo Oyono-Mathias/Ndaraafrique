@@ -46,6 +46,7 @@ import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Toolti
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { sendAdminNotification } from '../actions/notificationActions';
 
 
 interface Transaction {
@@ -252,6 +253,13 @@ export default function MyRevenuePage() {
     try {
         const payoutsCollection = collection(db, 'payouts');
         await addDoc(payoutsCollection, payoutPayload);
+
+        await sendAdminNotification({
+            title: '💰 Nouvelle demande de retrait',
+            body: `${instructor.fullName} a demandé un retrait de ${formatCurrency(data.amount)}.`,
+            link: '/admin/payouts'
+        });
+
         toast({
             title: "Demande de retrait soumise",
             description: "Votre demande est en cours de traitement.",
