@@ -22,6 +22,7 @@ import {
   Settings,
   LogIn,
   Shield,
+  Briefcase,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -162,5 +163,3 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     </div>
   );
 }
-
-    
