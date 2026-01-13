@@ -1,152 +1,150 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { getFirestore, collection, query, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, onSnapshot, limit, getFirestore } from 'firebase/firestore';
 import Link from 'next/link';
 
 export default function LandingPage() {
+  const [activeStep, setActiveStep] = useState(1);
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
 
+  // RÉCUPÉRATION DES COURS EN TEMPS RÉEL (SANS FILTRE BLOQUANT)
   useEffect(() => {
-    const q = query(collection(db, "courses"), limit(4));
+    const q = query(collection(db, "courses"));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCourses(docs);
       setLoading(false);
     }, (error) => {
-      console.error("Error fetching courses: ", error);
+      console.error("Erreur Firebase:", error);
       setLoading(false);
     });
     return () => unsubscribe();
   }, [db]);
 
+  const steps = [
+    { id: 1, title: "Inscription", desc: "Créez votre compte Ndara en quelques secondes pour commencer." },
+    { id: 2, title: "Choix du parcours", desc: "Explorez nos formations en IA, E-commerce ou Design." },
+    { id: 3, title: "Certification", desc: "Apprenez à votre rythme et obtenez un diplôme reconnu." }
+  ];
+
   return (
-    <div className="bg-white text-slate-900 min-h-screen font-sans">
-      
-      {/* 1. NAVBAR FIXE */}
-      <nav className="fixed top-0 w-full bg-white border-b border-slate-100 z-50 h-16 flex items-center px-4 md:px-8 justify-between">
-        <div className="text-xl font-bold text-blue-600">Ndara Afrique</div>
-        <div className="hidden md:flex gap-6 text-sm font-medium">
-          <Link href="/search" className="hover:text-blue-600">Formations</Link>
-          <Link href="/about" className="hover:text-blue-600">À propos</Link>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/login" className="px-4 py-2 text-sm font-semibold border rounded-md hover:bg-slate-50">Se connecter</Link>
-          <Link href="/register" className="px-4 py-2 text-sm font-semibold bg-slate-900 text-white rounded-md hover:bg-slate-800">S'inscrire</Link>
+    <div className="bg-[#020617] text-white min-h-screen font-sans">
+      {/* HEADER NETTOYÉ */}
+      <nav className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#020617]/90 backdrop-blur-md z-50">
+        <div className="text-2xl font-bold tracking-tighter">Ndara Afrique</div>
+        <div className="flex items-center gap-6">
+          <Link href="/login">
+            <button className="px-5 py-2 border border-white/20 rounded-lg hover:bg-white/10 transition font-medium">
+              Se connecter
+            </button>
+          </Link>
         </div>
       </nav>
 
-      {/* 2. HERO SECTION */}
-      <section className="pt-32 pb-16 px-4 md:px-8 bg-slate-50">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
-          <div>
-            <h1 className="text-4xl md:text-6xl font-bold leading-tight mb-6">
-              Propulsez votre carrière avec <span className="text-blue-600">Ndara Afrique</span>
-            </h1>
-            <p className="text-lg text-slate-600 mb-8">
-              Apprenez des meilleurs experts africains et obtenez des certifications reconnues dans tout le continent.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4">
-              <Link href="/search" className="px-8 py-3 bg-blue-600 text-white text-center font-bold rounded-md hover:bg-blue-700 transition">
-                Voir les formations
-              </Link>
-              <Link href="/devenir-instructeur" className="px-8 py-3 bg-white border border-slate-300 text-slate-900 text-center font-bold rounded-md hover:bg-slate-50 transition">
-                Enseigner sur la plateforme
-              </Link>
-            </div>
-          </div>
-          <div className="hidden md:block">
-            <div className="w-full h-[400px] bg-blue-100 rounded-2xl flex items-center justify-center">
-              <span className="text-8xl">🎓</span>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* HERO SECTION */}
+      <header className="text-center py-24 px-6">
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight leading-tight">
+          L'excellence numérique <br/><span className="text-blue-500 font-black">pour l'Afrique</span>
+        </h1>
+        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-light">
+          La première plateforme panafricaine dédiée aux métiers de demain. 
+          Apprenez, pratiquez et certifiez vos compétences.
+        </p>
+        <Link href="/register">
+          <button className="px-10 py-4 bg-blue-600 rounded-full font-bold shadow-lg shadow-blue-500/20 hover:scale-105 transition-all">
+            Commencer l'inscription
+          </button>
+        </Link>
+      </header>
 
-      {/* 3. SECTION FORMATIONS (GRID) */}
-      <section className="py-20 px-4 md:px-8 max-w-7xl mx-auto">
-        <h2 className="text-2xl font-bold mb-8">Les formations les plus populaires</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {loading ? (
-             <div className="col-span-full text-center py-10">Chargement des pépites...</div>
-          ) : courses.map((course) => (
-            <div key={course.id} className="group cursor-pointer border border-transparent hover:border-slate-200 p-2 rounded-lg transition">
-              <div className="relative h-40 bg-slate-200 rounded-md mb-3 overflow-hidden">
-                {course.imageUrl ? <img src={course.imageUrl} alt={course.title} className="object-cover w-full h-full" /> : <div className="flex items-center justify-center h-full text-4xl">💻</div>}
-                {course.isPopular && <span className="absolute top-2 left-2 bg-yellow-400 text-[10px] font-bold px-2 py-1 uppercase italic">Bestseller</span>}
-              </div>
-              <h3 className="font-bold text-sm leading-snug mb-1 group-hover:text-blue-600 line-clamp-2">{course.title}</h3>
-              <p className="text-xs text-slate-500 mb-1">{course.instructorName || 'Expert Ndara'}</p>
-              <div className="flex items-center gap-1 mb-1">
-                <span className="text-sm font-bold text-orange-700">4.8</span>
-                <span className="text-orange-400 text-xs">★★★★★</span>
-                <span className="text-[10px] text-slate-400">(1,250)</span>
-              </div>
-              <div className="font-bold text-lg">{course.price ? `${course.price} FCFA` : 'Gratuit'}</div>
-            </div>
+      {/* SETUP 1, 2, 3 INTERACTIF */}
+      <section className="py-16 max-w-4xl mx-auto px-6">
+        <div className="flex justify-center gap-4 mb-10">
+          {steps.map((s) => (
+            <button 
+              key={s.id}
+              onClick={() => setActiveStep(s.id)}
+              className={`px-8 py-3 rounded-xl border-2 transition-all duration-300 font-bold ${
+                activeStep === s.id 
+                ? "border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.3)] text-white" 
+                : "border-white/5 bg-white/5 hover:border-white/20 text-gray-500"
+              }`}
+            >
+              Setup {s.id}
+            </button>
           ))}
         </div>
-      </section>
-
-      {/* 4. RECRUTEMENT INSTRUCTEURS */}
-      <section className="my-20 mx-4 md:mx-8">
-        <div className="max-w-5xl mx-auto bg-slate-900 rounded-3xl p-8 md:p-16 text-white flex flex-col md:flex-row items-center gap-10">
-          <div className="text-6xl md:text-8xl">🎥</div>
-          <div className="flex-1">
-            <h2 className="text-3xl font-bold mb-4">Devenez Instructeur et partagez votre savoir</h2>
-            <p className="text-slate-400 mb-6 text-lg">
-              Vous avez une expertise reconnue ? Rejoignez l'élite des formateurs africains.
-            </p>
-            <Link href="/devenir-instructeur" className="inline-block px-8 py-3 bg-white text-slate-900 font-bold rounded-md hover:bg-blue-50 transition">
-              Postuler maintenant
-            </Link>
-          </div>
+        <div className="bg-white/5 p-10 rounded-3xl border border-white/10 text-center backdrop-blur-sm animate-in fade-in duration-700">
+          <h3 className="text-3xl font-bold mb-4 text-blue-400">{steps[activeStep-1].title}</h3>
+          <p className="text-gray-300 text-lg leading-relaxed">{steps[activeStep-1].desc}</p>
         </div>
       </section>
 
-      {/* 5. FOOTER PROFESSIONNEL */}
-      <footer className="bg-slate-900 text-white pt-16 pb-8 px-4 md:px-8 border-t border-slate-800">
-        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+      {/* SECTION COURS PUBLICS EN TEMPS RÉEL */}
+      <section className="py-20 max-w-6xl mx-auto px-6">
+        <h2 className="text-3xl font-bold mb-12 text-center text-white">Explorez nos cours publics</h2>
+        {loading ? (
+          <div className="text-center py-10 text-blue-400 animate-pulse">Connexion à Ndara Cloud...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {courses.length > 0 ? courses.map(course => (
+              <div key={course.id} className="group bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500/50 transition-all flex flex-col">
+                <div className="h-44 bg-gradient-to-br from-blue-900/40 to-black p-6 relative">
+                   <span className="absolute top-4 left-4 bg-blue-600/30 text-blue-400 text-xs font-bold px-3 py-1 rounded-full backdrop-blur-md">
+                     {course.category || 'Formation'}
+                   </span>
+                </div>
+                <div className="p-6 flex-grow">
+                  <h4 className="font-bold text-xl mb-3 group-hover:text-blue-400 transition">{course.title || "Formation Ndara"}</h4>
+                  <p className="text-gray-400 text-sm line-clamp-2 mb-6">{course.description}</p>
+                  <button className="w-full py-3 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-blue-600 hover:border-blue-600 transition-all">
+                    Consulter le cours
+                  </button>
+                </div>
+              </div>
+            )) : (
+              <div className="col-span-3 text-center text-gray-500 py-10">Nos formations arrivent bientôt.</div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* FOOTER UNIQUE ET PROFESSIONNEL */}
+      <footer className="mt-20 border-t border-white/10 bg-black/40 pt-20 pb-10">
+        <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-16">
+          <div className="space-y-4">
+            <h3 className="text-2xl font-bold">Ndara Afrique</h3>
+            <p className="text-gray-400 text-sm leading-relaxed">
+              L'excellence par le savoir. La première plateforme d'apprentissage panafricaine pour les métiers de demain.
+            </p>
+          </div>
           <div>
-            <h4 className="font-bold mb-4">Catégories</h4>
-            <ul className="text-sm text-slate-400 space-y-2">
-              <li>Développement Web</li>
-              <li>E-commerce & Business</li>
-              <li>Design Graphique</li>
+            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest text-blue-400">Navigation</h4>
+            <ul className="space-y-3 text-gray-400 text-sm">
+              <li className="hover:text-white cursor-pointer transition">Accueil</li>
+              <li className="hover:text-white cursor-pointer transition">Tous les cours</li>
+              <li className="hover:text-white cursor-pointer transition">À propos</li>
             </ul>
           </div>
           <div>
-            <h4 className="font-bold mb-4">Ndara Afrique</h4>
-            <ul className="text-sm text-slate-400 space-y-2">
-              <li>À propos</li>
-              <li>Contact</li>
-              <li>Recrutement</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-4">Réseaux Sociaux</h4>
-            <ul className="text-sm text-slate-400 space-y-2">
-              <li>YouTube</li>
-              <li>LinkedIn</li>
-              <li>Facebook</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-bold mb-4 text-sm">Paiements acceptés</h4>
-            <div className="flex flex-wrap gap-3 grayscale opacity-70">
-              <span className="bg-white/10 px-2 py-1 rounded text-[10px]">Orange Money</span>
-              <span className="bg-white/10 px-2 py-1 rounded text-[10px]">MTN Mobile</span>
-              <span className="bg-white/10 px-2 py-1 rounded text-[10px]">Moov Money</span>
+            <h4 className="font-bold mb-6 text-sm uppercase tracking-widest text-blue-400">Contact</h4>
+            <p className="text-gray-400 text-sm mb-4 font-mono">support@ndara-afrique.com</p>
+            <div className="flex gap-6 mt-4">
+               <span className="text-xs text-gray-500 hover:text-white cursor-pointer">FACEBOOK</span>
+               <span className="text-xs text-gray-500 hover:text-white cursor-pointer">LINKEDIN</span>
             </div>
           </div>
         </div>
-        <div className="max-w-7xl mx-auto pt-8 border-t border-slate-800 flex justify-between items-center text-xs text-slate-500">
-          <div className="text-xl font-bold text-white mb-2 md:mb-0">Ndara Afrique</div>
-          <p>© 2024 Ndara Afrique - Bangui, RCA</p>
+        <div className="text-center mt-20 pt-8 border-t border-white/5 text-[10px] text-gray-600 uppercase tracking-[0.2em]">
+          © 2026 Ndara Afrique — Tous droits réservés
         </div>
       </footer>
     </div>
   );
-}
+};
+
+    
