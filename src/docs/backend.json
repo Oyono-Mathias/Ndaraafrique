@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -139,11 +140,6 @@
           "type": "array",
           "description": "A list of achievement badges earned by the user.",
           "items": { "type": "string" }
-        },
-        "termsAcceptedAt": {
-          "type": "string",
-          "format": "date-time",
-          "description": "Timestamp indicating when the user accepted the Terms of Service."
         }
       },
       "required": [
@@ -633,28 +629,6 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["type", "message", "isRead", "createdAt"]
-    },
-    "CarouselSlide": {
-      "title": "Carousel Slide",
-      "type": "object",
-      "description": "Represents a single slide in the homepage carousel.",
-      "properties": {
-        "imageUrl": {
-          "type": "string",
-          "format": "uri",
-          "description": "URL of the background image for the slide."
-        },
-        "link": {
-          "type": "string",
-          "format": "uri",
-          "description": "Optional URL to navigate to when the slide is clicked."
-        },
-        "order": {
-          "type": "number",
-          "description": "The display order of the slide."
-        }
-      },
-      "required": ["imageUrl", "order"]
     }
   },
   "auth": {
@@ -788,10 +762,6 @@
         }
       },
       "description": "Stores global configuration for the entire application."
-    },
-    "/carousel_slides/{slideId}": {
-      "schema": { "$ref": "#/entities/CarouselSlide" },
-      "description": "Stores slides for the main promotional carousel."
     }
   }
 }

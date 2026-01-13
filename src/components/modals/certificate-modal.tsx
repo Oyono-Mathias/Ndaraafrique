@@ -55,7 +55,7 @@ export function CertificateModal({ isOpen, onClose, courseName, studentName, com
                 </div>
                 <div className="flex items-center gap-2">
                     <Image src="/icon.svg" alt="FormaAfrique Logo" width={40} height={40} />
-                    <p className="font-bold text-lg">FormaAfrique</p>
+                    <p className="font-bold text-lg">Ndara Afrique</p>
                 </div>
             </div>
           </div>
