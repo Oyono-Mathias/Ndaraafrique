@@ -22,7 +22,6 @@ const LandingPage = () => {
   const db = getFirestore();
 
   useEffect(() => {
-    // Correction: Le statut pour les cours visibles est "Published", et non "public".
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy('createdAt', 'desc'));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -74,7 +73,7 @@ const LandingPage = () => {
           Rejoignez la première plateforme panafricaine dédiée aux métiers de demain. Apprenez, pratiquez et certifiez vos compétences.
         </p>
         <Button asChild size="lg" className="px-8 py-4 h-auto bg-blue-600 hover:bg-blue-700 text-white rounded-full font-bold shadow-lg shadow-blue-500/20 transition-all transform hover:scale-105 hero-text" style={{ animationDelay: '0.4s' }}>
-           <Link href="/login?tab=register">Commencer l'inscription</Link>
+           <Link href="/register">Commencer l'inscription</Link>
         </Button>
       </main>
 
@@ -99,29 +98,56 @@ const LandingPage = () => {
       <section className="py-20 max-w-6xl mx-auto px-6">
         <div className="flex justify-between items-end mb-10">
             <div>
-                <h2 className="text-3xl font-bold mb-2">Nos Cours Publics</h2>
-                <p className="text-gray-400">Découvrez nos formations accessibles à tous.</p>
+                <h2 className="text-3xl font-bold mb-2">Nos Formations Vedettes</h2>
+                <p className="text-gray-400">Découvrez un aperçu de nos formations les plus populaires.</p>
             </div>
             <Link href="/search" className="text-blue-400 hover:text-blue-300 font-medium transition">
                 Voir tout →
             </Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {loading ? (
-            [...Array(3)].map((_, i) => (
-              <div key={i} className="benefit-card"><Skeleton className="h-full w-full bg-slate-800" /></div>
-            ))
-          ) : courses.length > 0 ? (
-            courses.slice(0, 3).map((course) => (
-              <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
-            ))
-          ) : (
-             <div className="md:col-span-3 text-center py-16 benefit-card">
-              <Frown className="mx-auto h-12 w-12 text-slate-500" />
-              <h3 className="mt-4 text-lg font-semibold text-slate-300">De nouveaux cours arrivent bientôt.</h3>
-              <p className="mt-1 text-sm text-slate-400">Revenez plus tard pour découvrir nos formations.</p>
-            </div>
-          )}
+            {loading ? (
+                [...Array(3)].map((_, i) => (
+                    <div key={i} className="benefit-card"><Skeleton className="h-full w-full bg-slate-800" /></div>
+                ))
+            ) : courses.length > 0 ? courses.slice(0, 3).map(course => (
+              <div key={course.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500 transition shadow-xl group">
+                <div className="relative h-48 bg-black">
+                  {course.previewVideoUrl ? (
+                    <video 
+                      src={course.previewVideoUrl} 
+                      className="w-full h-full object-cover"
+                      controls={false}
+                      muted
+                      loop
+                      onMouseOver={e => e.currentTarget.play()}
+                      onMouseOut={e => e.currentTarget.pause()}
+                    />
+                  ) : (
+                    <Image
+                        src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
+                        alt={course.title}
+                        fill
+                        className="object-cover"
+                    />
+                  )}
+                  <div className="absolute top-2 right-2 bg-blue-600 text-xs px-2 py-1 rounded-full font-bold">Vidéo</div>
+                </div>
+
+                <div className="p-6">
+                  <h4 className="font-bold text-lg mb-2 text-white group-hover:text-blue-400 transition-colors">{course.title}</h4>
+                  <p className="text-gray-400 text-sm line-clamp-2 h-10">{course.description}</p>
+                  
+                  <Link href={`/course/${course.id}`}>
+                    <button className="w-full mt-4 py-2 bg-white/10 hover:bg-blue-600 rounded-lg text-sm font-medium transition-colors">
+                      Voir le cours
+                    </button>
+                  </Link>
+                </div>
+              </div>
+            )) : (
+              <p className="col-span-3 text-center text-gray-500 italic">Tes vidéos arrivent...</p>
+            )}
         </div>
       </section>
 
