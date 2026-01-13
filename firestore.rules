@@ -41,10 +41,8 @@ service cloud.firestore {
       // Tout le monde peut lire un cours individuel
       allow get: if true;
       
-      // La liste est autorisée si:
-      // 1. C'est une requête de base (pas de filtre complexe)
-      // 2. OU si l'utilisateur est un admin (pour les requêtes de modération/filtrage)
-      allow list: if request.query.keys().size() == 0 || isAdmin();
+      // N'importe quel utilisateur connecté peut lister les cours (pour le catalogue)
+      allow list: if isSignedIn() || isAdmin();
       
       allow create: if isSignedIn() && isApprovedInstructor();
       allow update: if isAdmin() || (isCourseOwner(courseId) && request.resource.data.status != 'Published');
@@ -206,5 +204,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
