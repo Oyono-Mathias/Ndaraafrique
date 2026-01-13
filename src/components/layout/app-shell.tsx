@@ -36,7 +36,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
-  const isLandingPage = pathname === '/';
+  const isLaunchPage = pathname === '/launch';
+  const isLandingPage = pathname === '/' && !isLaunchPage;
   const isAdminArea = pathname.startsWith('/admin');
 
   useEffect(() => {
@@ -54,7 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
   
-  if (isLandingPage || isAuthPage) {
+  if (isLandingPage || isAuthPage || isLaunchPage) {
     return <>{children}</>;
   }
 
@@ -85,19 +86,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFullScreenPage = pathname.startsWith('/courses/');
 
   const mainContentPadding = cn(
-    "p-4 sm:p-6 lg:p-8 xl:p-10",
+    "p-6",
     isFullScreenPage && "!p-0" // Force no padding for course player
   );
   
   // Admin layout is different
   if (isAdminArea) {
       return (
-         <div className="admin-grid-layout">
+         <div className="admin-grid-layout bg-slate-900 text-white">
             <aside className="admin-sidebar-container hidden md:block">
                  <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
             </aside>
             <div className="flex flex-col min-h-screen">
-                 <header className="admin-header flex h-16 items-center gap-4 border-b border-border/10 bg-card/50 backdrop-blur-sm px-4 lg:px-6">
+                 <header className="admin-header flex h-16 items-center gap-4 border-b border-slate-700 bg-slate-800/30 backdrop-blur-sm px-4 lg:px-6">
                     <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                         <SheetTrigger asChild>
                         <Button
@@ -109,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                             <span className="sr-only">Ouvrir le menu</span>
                         </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px]">
+                        <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
                             <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
                         </SheetContent>
                     </Sheet>
@@ -127,12 +128,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Member (Student/Instructor) Layout
   return (
-      <div className={cn("grid min-h-screen w-full", isFullScreenPage ? "block" : "md:grid-cols-[280px_1fr]")}>
+      <div className={cn("min-h-screen w-full bg-slate-900 text-white", isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]")}>
         <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
           {renderSidebar()}
         </aside>
         <div className="flex flex-col">
-          <header className={cn("flex h-16 items-center gap-4 border-b border-border/10 px-4 lg:px-6 sticky top-0 z-30", isFullScreenPage && "md:hidden")}>
+          <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
              <div className="md:hidden">
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                     <SheetTrigger asChild>
@@ -145,7 +146,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <span className="sr-only">Ouvrir le menu</span>
                     </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px]">
+                    <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
                       {renderSidebar()}
                     </SheetContent>
                 </Sheet>
@@ -162,5 +163,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </div>
   );
 }
-
-    
