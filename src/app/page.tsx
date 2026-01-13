@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, limit } from 'firebase/firestore';
 import Link from 'next/link';
 import { CourseCard } from '@/components/cards/CourseCard';
 import type { Course } from '@/lib/types';
@@ -10,6 +10,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { getDocs } from 'firebase/firestore';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
+import { Frown } from 'lucide-react';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     if (isLoading) {
@@ -48,7 +49,8 @@ export default function LandingPage() {
     const q = query(
       collection(db, "courses"),
       where("status", "==", "Published"),
-      orderBy("createdAt", "desc")
+      orderBy("createdAt", "desc"),
+      limit(3)
     );
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -80,15 +82,16 @@ export default function LandingPage() {
     { id: 2, title: "Choix du parcours", desc: "Explorez nos formations en IA, E-commerce ou Design." },
     { id: 3, title: "Certification", desc: "Apprenez à votre rythme et obtenez un diplôme reconnu." }
   ];
-
+  
   const popularCourses = courses.filter(c => c.isPopular).slice(0, 3);
+  const freeCourses = courses.filter(c => c.price === 0).slice(0,3);
 
   return (
     <div className="bg-[#020617] text-white min-h-screen font-sans">
       <nav className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#020617]/90 backdrop-blur-md z-50">
-        <Link href="/" className="flex items-center gap-3">
-            <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} className="h-8 md:h-10 w-auto" />
-            <span className="text-2xl font-bold tracking-tighter hidden md:block">Ndara Afrique</span>
+        <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
+            <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} className="h-8 md:h-10 w-auto object-contain" />
+            <span className="text-2xl font-bold tracking-tighter hidden md:block group-hover:text-primary">Ndara Afrique</span>
         </Link>
         <div className="flex items-center gap-6">
           <Link href="/login">
@@ -100,20 +103,22 @@ export default function LandingPage() {
       </nav>
 
       <header className="text-center py-24 px-6">
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight leading-tight">
+        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight hero-text leading-tight">
           L'excellence numérique <br/><span className="text-blue-500 font-black">pour l'Afrique</span>
         </h1>
-        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 font-light">
+        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text font-light" style={{ animationDelay: '0.2s' }}>
           La première plateforme d'apprentissage panafricaine pour les métiers de demain.
         </p>
-        <Link href="/register">
-          <button className="px-10 py-4 bg-blue-600 rounded-full font-bold shadow-lg shadow-blue-500/20 hover:scale-105 transition-all">
-            Commencer l'inscription
-          </button>
-        </Link>
+        <div className="hero-text" style={{ animationDelay: '0.4s' }}>
+            <Link href="/login?tab=register">
+                <button className="px-10 py-4 bg-blue-600 rounded-full font-bold shadow-lg shadow-blue-500/20 hover:scale-105 transition-all">
+                    Commencer l'inscription
+                </button>
+            </Link>
+        </div>
       </header>
-
-      <section className="py-16 max-w-4xl mx-auto px-6">
+        
+      <div className="py-16">
         <div className="flex justify-center gap-4 mb-10">
           {steps.map((s) => (
             <button 
@@ -129,15 +134,24 @@ export default function LandingPage() {
             </button>
           ))}
         </div>
-        <div className="bg-white/5 p-10 rounded-3xl border border-white/10 text-center backdrop-blur-sm animate-in fade-in duration-700">
-          <h3 className="text-3xl font-bold mb-4 text-blue-400">{steps[activeStep-1].title}</h3>
-          <p className="text-gray-300 text-lg leading-relaxed">{steps[activeStep-1].desc}</p>
+        <div className="max-w-4xl mx-auto px-6">
+            <div className="benefit-card text-center">
+              <h3 className="text-3xl font-bold mb-4 text-blue-400">{steps[activeStep-1].title}</h3>
+              <p className="text-gray-300 text-lg leading-relaxed">{steps[activeStep-1].desc}</p>
+            </div>
         </div>
-      </section>
+      </div>
 
+       <CourseCarousel
+        title="Formations populaires"
+        courses={popularCourses.length > 0 ? popularCourses : courses}
+        instructorsMap={instructorsMap}
+        isLoading={loading}
+      />
+      
       <CourseCarousel
-        title="Explorez nos cours populaires"
-        courses={popularCourses}
+        title="Commencez gratuitement"
+        courses={freeCourses}
         instructorsMap={instructorsMap}
         isLoading={loading}
       />

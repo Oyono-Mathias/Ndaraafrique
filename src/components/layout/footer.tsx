@@ -16,9 +16,9 @@ export function Footer() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
             
             <div className="space-y-4">
-                <Link href="/" className="flex items-center gap-3 mb-4">
-                    <Image src="/icon.svg" alt="Ndara Afrique Logo" width={40} height={40} />
-                    <h3 className="text-2xl font-bold text-white">Ndara Afrique</h3>
+                <Link href="/" className="flex items-center gap-3 mb-4 group">
+                    <Image src="/icon.svg" alt="Ndara Afrique Logo" width={48} height={48} className="h-14 w-auto" />
+                    <h3 className="text-2xl font-bold text-white group-hover:text-primary transition-colors">Ndara Afrique</h3>
                 </Link>
                 <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
                 L'excellence par le savoir. La plateforme panafricaine pour les leaders de demain.
