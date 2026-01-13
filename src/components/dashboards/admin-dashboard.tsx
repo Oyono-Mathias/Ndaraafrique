@@ -183,8 +183,6 @@ const AdminDashboard = () => {
     )
   }
 
-  const isLoading = isUserLoading || loadingState.stats || loadingState.activity;
-  
   const chartConfig = {
     revenue: {
       label: "Revenus",
@@ -199,25 +197,25 @@ const AdminDashboard = () => {
           title="Revenus (Mois en cours)"
           value={`${stats.monthlyRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`}
           icon={DollarSign}
-          isLoading={isLoading}
+          isLoading={loadingState.stats}
         />
         <StatCard
           title="Étudiants Actifs (30j)"
           value={stats.activeStudents?.toLocaleString('fr-FR') ?? '...'}
           icon={Users}
-          isLoading={isLoading}
+          isLoading={loadingState.stats}
         />
         <StatCard
           title="Taux de Complétion Moyen"
           value={stats.avgCompletionRate !== null ? `${Math.round(stats.avgCompletionRate)}%` : '...'}
           icon={CheckCircle}
-          isLoading={isLoading}
+          isLoading={loadingState.stats}
         />
          <StatCard
           title="Nouveaux Instructeurs (30j)"
           value={stats.newInstructors?.toLocaleString('fr-FR') ?? '...'}
           icon={UserPlus}
-          isLoading={isLoading}
+          isLoading={loadingState.stats}
         />
       </div>
       
@@ -228,7 +226,7 @@ const AdminDashboard = () => {
                     <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
-                    {isLoading ? <Skeleton className="h-80 w-full" /> : (
+                    {loadingState.stats ? <Skeleton className="h-80 w-full" /> : (
                         <ChartContainer config={chartConfig} className="h-80 w-full">
                         <ResponsiveContainer>
                             <AreaChart data={revenueTrendData}>
@@ -289,7 +287,7 @@ const AdminDashboard = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {isLoading ? (
+                        {loadingState.activity ? (
                             [...Array(5)].map((_, i) => (
                                 <TableRow key={i}><TableCell><Skeleton className="h-5 w-full" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell></TableRow>
                             ))
