@@ -110,40 +110,24 @@ const LandingPage = () => {
                 [...Array(3)].map((_, i) => (
                     <div key={i} className="benefit-card"><Skeleton className="h-full w-full bg-slate-800" /></div>
                 ))
-            ) : courses.length > 0 ? courses.slice(0, 3).map(course => (
-              <div key={course.id} className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden hover:border-blue-500 transition shadow-xl group">
-                <div className="relative h-48 bg-black">
-                  {course.previewVideoUrl ? (
-                    <video 
-                      src={course.previewVideoUrl} 
-                      className="w-full h-full object-cover"
-                      controls={false}
-                      muted
-                      loop
-                      onMouseOver={e => e.currentTarget.play()}
-                      onMouseOut={e => e.currentTarget.pause()}
-                    />
-                  ) : (
-                    <Image
-                        src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
-                        alt={course.title}
-                        fill
-                        className="object-cover"
-                    />
-                  )}
-                  <div className="absolute top-2 right-2 bg-blue-600 text-xs px-2 py-1 rounded-full font-bold">Vidéo</div>
-                </div>
-
-                <div className="p-6">
-                  <h4 className="font-bold text-lg mb-2 text-white group-hover:text-blue-400 transition-colors">{course.title}</h4>
-                  <p className="text-gray-400 text-sm line-clamp-2 h-10">{course.description}</p>
-                  
-                  <Link href={`/course/${course.id}`}>
-                    <button className="w-full mt-4 py-2 bg-white/10 hover:bg-blue-600 rounded-lg text-sm font-medium transition-colors">
-                      Voir le cours
-                    </button>
-                  </Link>
-                </div>
+            ) : courses.length > 0 ? courses.map(course => (
+              <div key={course.id} className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                {/* On utilise la catégorie comme badge */}
+                <span className="text-blue-400 text-xs font-bold uppercase">{course.category}</span>
+                
+                {/* On affiche le titre s'il existe, sinon la catégorie */}
+                <h4 className="font-bold text-xl mt-2 mb-3">
+                  {course.title || "Formation Ndara"} 
+                </h4>
+                
+                {/* On affiche ta description Firestore (tronquée pour rester propre) */}
+                <p className="text-gray-400 text-sm line-clamp-3">
+                  {course.description}
+                </p>
+                
+                <button className="w-full mt-6 py-2 bg-blue-600 rounded-lg font-medium hover:bg-blue-700 transition">
+                  Voir le cours
+                </button>
               </div>
             )) : (
               <div className="col-span-3">
