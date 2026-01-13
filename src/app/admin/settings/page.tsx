@@ -4,7 +4,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
+import * * as z from 'zod';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useDoc, useMemoFirebase } from '@/firebase';
@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -29,7 +29,9 @@ const settingsSchema = z.object({
     maintenanceMode: z.boolean().default(false),
     loginBackgroundImage: z.string().url("URL de l'image invalide.").optional().or(z.literal('')),
     supportPhone: z.string().optional(),
-    platformCommission: z.coerce.number().min(0).max(100).optional(),
+    platformCommission: z.coerce.number().min(0).max(100, "La commission ne peut excéder 100%.").optional(),
+    currency: z.string().optional(),
+    minPayoutThreshold: z.coerce.number().min(0, "Le seuil doit être positif.").optional(),
     featuredCourseId: z.string().optional(),
     announcementMessage: z.string().optional(),
     allowInstructorSignup: z.boolean().default(true),
@@ -45,10 +47,9 @@ export default function AdminSettingsPage() {
     const db = getFirestore();
     const storage = getStorage();
     const [isSaving, setIsSaving] = useState(false);
-    const [logoFile, setLogoFile] = useState<File | null>(null);
-    const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [imageToCrop, setImageToCrop] = useState<string | null>(null);
     const [croppedImageFile, setCroppedImageFile] = useState<File | null>(null);
+    const [imagePreview, setLogoPreview] = useState<string | null>(null);
 
     const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
     const { data: currentSettings, isLoading } = useDoc(settingsRef);
@@ -63,6 +64,8 @@ export default function AdminSettingsPage() {
             loginBackgroundImage: '',
             supportPhone: '',
             platformCommission: 30,
+            currency: 'XOF',
+            minPayoutThreshold: 5000,
             featuredCourseId: '',
             announcementMessage: '',
             allowInstructorSignup: true,
@@ -81,6 +84,8 @@ export default function AdminSettingsPage() {
                 loginBackgroundImage: currentSettings.general?.loginBackgroundImage || '',
                 supportPhone: currentSettings.general?.supportPhone || '',
                 platformCommission: currentSettings.commercial?.platformCommission,
+                currency: currentSettings.commercial?.currency || 'XOF',
+                minPayoutThreshold: currentSettings.commercial?.minPayoutThreshold,
                 featuredCourseId: currentSettings.commercial?.featuredCourseId || '',
                 announcementMessage: currentSettings.platform?.announcementMessage || '',
                 allowInstructorSignup: currentSettings.platform?.allowInstructorSignup ?? true,
@@ -133,6 +138,8 @@ export default function AdminSettingsPage() {
                 },
                 commercial: {
                     platformCommission: data.platformCommission,
+                    currency: data.currency,
+                    minPayoutThreshold: data.minPayoutThreshold,
                     featuredCourseId: data.featuredCourseId,
                 },
                 platform: {
@@ -196,8 +203,8 @@ export default function AdminSettingsPage() {
                                         <div className="flex items-start gap-4">
                                             <label htmlFor="logo-upload" className="cursor-pointer shrink-0">
                                                 <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all relative overflow-hidden bg-slate-900">
-                                                    {logoPreview ? (
-                                                        <Image src={logoPreview} alt="Aperçu du logo" fill className="object-contain p-2"/>
+                                                    {imagePreview ? (
+                                                        <Image src={imagePreview} alt="Aperçu du logo" fill className="object-contain p-2"/>
                                                     ) : (
                                                         <ImageIcon className="h-8 w-8"/>
                                                     )}
@@ -221,12 +228,28 @@ export default function AdminSettingsPage() {
                                <CardHeader>
                                    <CardTitle className="dark:text-white tv:text-2xl">{t('commercial_settings')}</CardTitle>
                                </CardHeader>
-                               <CardContent className="space-y-4">
+                               <CardContent className="space-y-6">
                                     <FormField control={form.control} name="platformCommission" render={({ field }) => ( 
                                         <FormItem>
-                                            <FormLabel className="tv:text-lg">{t('commission_rate')}</FormLabel>
+                                            <FormLabel className="tv:text-lg flex items-center gap-2"><Percent className="h-4 w-4"/> {t('commission_rate')}</FormLabel>
                                             <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl>
                                             <FormDescription className="tv:text-base">{t('commission_desc')}</FormDescription>
+                                            <FormMessage />
+                                        </FormItem> 
+                                    )} />
+                                    <FormField control={form.control} name="currency" render={({ field }) => ( 
+                                        <FormItem>
+                                            <FormLabel className="tv:text-lg flex items-center gap-2"><DollarSign className="h-4 w-4"/> {t('currency')}</FormLabel>
+                                            <FormControl><Input readOnly {...field} className="dark:bg-slate-900/50 dark:border-slate-700 tv:h-14 tv:text-lg cursor-not-allowed" /></FormControl>
+                                            <FormDescription className="tv:text-base">{t('currency_desc')}</FormDescription>
+                                            <FormMessage />
+                                        </FormItem> 
+                                    )} />
+                                    <FormField control={form.control} name="minPayoutThreshold" render={({ field }) => ( 
+                                        <FormItem>
+                                            <FormLabel className="tv:text-lg flex items-center gap-2"><Wallet className="h-4 w-4"/> {t('payout_threshold')}</FormLabel>
+                                            <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600 tv:h-14 tv:text-lg focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl>
+                                            <FormDescription className="tv:text-base">{t('payout_threshold_desc')}</FormDescription>
                                             <FormMessage />
                                         </FormItem> 
                                     )} />
@@ -264,4 +287,5 @@ export default function AdminSettingsPage() {
             </Form>
         </>
     );
-}
+    
+    
