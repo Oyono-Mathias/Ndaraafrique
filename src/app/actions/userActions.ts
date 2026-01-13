@@ -70,3 +70,40 @@ export async function sendEncouragementMessage({ studentId }: { studentId: strin
     }
 }
 
+export async function importUsersAction(users: { fullName: string; email: string }[]): Promise<{ success: boolean, results: { email: string, status: 'success' | 'error', error?: string }[] }> {
+    const results: { email: string, status: 'success' | 'error', error?: string }[] = [];
+
+    for (const userData of users) {
+        try {
+            // Generate a secure random password
+            const password = Math.random().toString(36).slice(-8);
+            
+            const userRecord = await adminAuth.createUser({
+                email: userData.email,
+                emailVerified: true,
+                password: password,
+                displayName: userData.fullName,
+            });
+
+            await adminDb.collection('users').doc(userRecord.uid).set({
+                uid: userRecord.uid,
+                email: userData.email,
+                fullName: userData.fullName,
+                role: 'student',
+                createdAt: FieldValue.serverTimestamp(),
+                isInstructorApproved: false,
+                isProfileComplete: false,
+                // TODO: Send welcome email with temporary password
+            });
+
+            results.push({ email: userData.email, status: 'success' });
+
+        } catch (error: any) {
+            console.error(`Failed to import user ${userData.email}:`, error);
+            results.push({ email: userData.email, status: 'error', error: error.message });
+        }
+    }
+    return { success: true, results };
+}
+
+

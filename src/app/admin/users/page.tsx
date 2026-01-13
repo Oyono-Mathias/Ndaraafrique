@@ -2,7 +2,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
@@ -49,14 +49,15 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare, Sparkles } from 'lucide-react';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Eye, MessageSquare, Sparkles, Upload } from 'lucide-react';
 import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
-import { deleteUserAccount, sendEncouragementMessage } from '@/app/actions/userActions';
+import { deleteUserAccount, sendEncouragementMessage, importUsersAction } from '@/app/actions/userActions';
 import { useTranslation } from 'react-i18next';
 import Link from 'next/link';
+import * as XLSX from 'xlsx';
 
 
 const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
@@ -86,7 +87,6 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
     
     const userDocRef = useMemo(() => doc(db, 'users', user.uid), [db, user.uid]);
     
-    // Sync local state when dialog opens
     useEffect(() => {
         if (isRoleDialogOpen) {
             setSelectedRole(user.role);
@@ -231,7 +231,6 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
                 </DropdownMenuContent>
             </DropdownMenu>
             
-            {/* Role Change Dialog */}
             <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
                 <DialogContent className="dark:bg-slate-800 dark:border-slate-700">
                     <DialogHeader>
@@ -262,7 +261,6 @@ const UserActions = ({ user, adminId }: { user: FormaAfriqueUser, adminId: strin
                 </DialogContent>
             </Dialog>
 
-            {/* Delete Confirmation Alert */}
             <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
                 <AlertDialogContent className="dark:bg-slate-800 dark:border-slate-700">
                     <AlertDialogHeader>
@@ -291,6 +289,9 @@ export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const [isImporting, setIsImporting] = useState(false);
 
   const usersQuery = useMemoFirebase(
     () => query(collection(db, 'users'), where('role', 'in', ['student', 'instructor', 'admin'])),
@@ -307,6 +308,49 @@ export default function AdminUsersPage() {
     );
   }, [users, debouncedSearchTerm]);
 
+  const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const data = e.target?.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[sheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet) as { 'Nom complet': string, Email: string }[];
+            
+            const usersToImport = json.map(row => ({
+                fullName: row['Nom complet'],
+                email: row.Email,
+            })).filter(u => u.fullName && u.email);
+
+            if (usersToImport.length === 0) {
+                toast({ variant: 'destructive', title: 'Fichier invalide', description: 'Le fichier Excel doit contenir les colonnes "Nom complet" et "Email".' });
+                return;
+            }
+
+            const result = await importUsersAction(usersToImport);
+            const successCount = result.results.filter(r => r.status === 'success').length;
+            const errorCount = result.results.length - successCount;
+
+            toast({
+                title: 'Importation terminée',
+                description: `${successCount} utilisateurs importés avec succès, ${errorCount} erreurs.`,
+            });
+        } catch (error) {
+            console.error("Import error:", error);
+            toast({ variant: 'destructive', title: 'Erreur d\'importation', description: 'Le fichier est peut-être corrompu ou au mauvais format.' });
+        } finally {
+            setIsImporting(false);
+            if (fileInputRef.current) fileInputRef.current.value = ''; // Reset file input
+        }
+    };
+    reader.readAsBinaryString(file);
+  };
+
   const isLoading = isUserLoading || usersLoading;
 
   if (adminUser?.role !== 'admin') {
@@ -315,9 +359,16 @@ export default function AdminUsersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto px-4">
-      <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('navUsers')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('manageUsersDescription')}</p>
+      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+            <h1 className="text-3xl font-bold dark:text-white">{t('navUsers')}</h1>
+            <p className="text-muted-foreground dark:text-slate-400">{t('manageUsersDescription')}</p>
+        </div>
+        <input type="file" ref={fileInputRef} onChange={handleFileImport} className="hidden" accept=".xlsx, .xls" />
+        <Button onClick={() => fileInputRef.current?.click()} disabled={isImporting}>
+            {isImporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Upload className="mr-2 h-4 w-4"/>}
+            Importer des utilisateurs
+        </Button>
       </header>
 
       <Card className="dark:bg-[#1e293b] dark:border-slate-700">
@@ -413,7 +464,6 @@ export default function AdminUsersPage() {
               </TableBody>
             </Table>
             
-            {/* Mobile Card View */}
             <div className="grid grid-cols-1 gap-4 md:hidden">
                  {isLoading ? (
                   [...Array(5)].map((_, i) => (
@@ -454,5 +504,6 @@ export default function AdminUsersPage() {
 }
 
     
+
 
 
