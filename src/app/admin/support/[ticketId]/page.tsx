@@ -254,9 +254,9 @@ export default function TicketConversationPage() {
                   onChange={(e) => setNewMessage(e.target.value)}
                   placeholder="Répondre en tant que Support FormaAfrique..."
                   className="flex-1 bg-slate-800 border-slate-600 text-white"
-                  disabled={isSending}
+                  disabled={isSending || ticket?.status === 'fermé'}
                 />
-                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending} className="shrink-0">
+                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending || ticket?.status === 'fermé'} className="shrink-0">
                     {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
                 </Button>
             </form>
