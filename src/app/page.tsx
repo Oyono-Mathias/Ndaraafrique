@@ -323,7 +323,7 @@ export default function LandingPage() {
             Apprenez. Construisez. Prospérez.
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mt-6 mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Des formations de pointe conçues par des experts africains, pour les talents africains. Passez au niveau supérieur.
+            Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès.
           </p>
           <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
               <Link href="/login?tab=register">
@@ -337,7 +337,7 @@ export default function LandingPage() {
           
         <main className="space-y-16">
           <CourseCarousel
-            title="Les nouveautés"
+            title="Les nouveautés à ne pas rater"
             courses={recentCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
