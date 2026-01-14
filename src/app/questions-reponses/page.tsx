@@ -2,8 +2,8 @@
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { useCollection, useMemoFirebase, useIsMobile } from '@/firebase';
+import { getFirestore, collection, query, where, orderBy, getDocs, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -19,12 +19,24 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, MessageSquare, CheckCircle, Clock } from 'lucide-react';
+import { AlertCircle, MessageSquare, CheckCircle, Clock, PlusCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
+import { useToast } from '@/hooks/use-toast';
+import type { Course, Enrollment } from '@/lib/types';
+
 
 interface SupportTicket {
     id: string;
@@ -35,6 +47,14 @@ interface SupportTicket {
     courseId: string;
     courseTitle?: string;
 }
+
+const ticketCreationSchema = z.object({
+    courseId: z.string().min(1, { message: "Veuillez sélectionner un cours." }),
+    subject: z.string().min(10, { message: "Le sujet doit contenir au moins 10 caractères." }),
+    message: z.string().min(20, { message: "Votre question doit contenir au moins 20 caractères." }),
+});
+
+type TicketCreationValues = z.infer<typeof ticketCreationSchema>;
 
 const TicketStatusBadge = ({ status, fullText = false }: { status: SupportTicket['status'], fullText?: boolean }) => {
     const { t } = useTranslation();
@@ -71,12 +91,86 @@ const TicketCard = ({ ticket }: { ticket: SupportTicket }) => (
     </Link>
 );
 
+const NewTicketForm = ({ enrolledCourses, onSubmit, isSubmitting }: { enrolledCourses: Course[], onSubmit: (values: TicketCreationValues) => void, isSubmitting: boolean }) => {
+    const { t } = useTranslation();
+    const form = useForm<TicketCreationValues>({
+        resolver: zodResolver(ticketCreationSchema),
+        defaultValues: { subject: '', message: '', courseId: ''},
+    });
+
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                <FormField
+                    control={form.control}
+                    name="courseId"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="dark:text-slate-300">Formation concernée</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger className="dark:bg-slate-800 dark:border-slate-700">
+                                        <SelectValue placeholder="Sélectionnez le cours..." />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
+                                    {enrolledCourses.map(course => (
+                                        <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="subject"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="dark:text-slate-300">Sujet de votre question</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: Problème avec la leçon 5" {...field} className="dark:bg-slate-800 dark:border-slate-700"/>
+                            </FormControl>
+                             <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="message"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="dark:text-slate-300">Votre question en détail</FormLabel>
+                            <FormControl>
+                                <Textarea placeholder="Bonjour, je rencontre un problème avec..." rows={5} {...field} className="dark:bg-slate-800 dark:border-slate-700"/>
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                 <DialogFooter className="pt-4">
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Envoyer la question
+                    </Button>
+                </DialogFooter>
+            </form>
+        </Form>
+    )
+}
 
 export default function QAPage() {
     const { formaAfriqueUser, isUserLoading } = useRole();
     const db = getFirestore();
     const { t } = useTranslation();
+    const router = useRouter();
+    const { toast } = useToast();
+    const isMobile = useIsMobile();
     const [activeTab, setActiveTab] = useState('ouvert');
+    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([]);
 
     const ticketsQuery = useMemoFirebase(
         () => {
@@ -101,6 +195,77 @@ export default function QAPage() {
         return tickets.filter(ticket => ticket.status === activeTab);
     }, [tickets, activeTab]);
 
+    useEffect(() => {
+        if (isFormOpen && formaAfriqueUser?.uid && enrolledCourses.length === 0) {
+            const fetchEnrolledCourses = async () => {
+                const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', formaAfriqueUser.uid));
+                const enrollmentsSnap = await getDocs(enrollmentsQuery);
+                const courseIds = enrollmentsSnap.docs.map(doc => doc.data().courseId);
+
+                if (courseIds.length > 0) {
+                    const coursesQuery = query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 30)));
+                    const coursesSnap = await getDocs(coursesQuery);
+                    setEnrolledCourses(coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course)));
+                }
+            };
+            fetchEnrolledCourses();
+        }
+    }, [isFormOpen, formaAfriqueUser, db, enrolledCourses.length]);
+    
+    const handleCreateTicket = async (values: TicketCreationValues) => {
+        if (!formaAfriqueUser) return;
+        setIsSubmitting(true);
+
+        try {
+            const courseDoc = await getDoc(doc(db, 'courses', values.courseId));
+            if (!courseDoc.exists()) throw new Error("Le cours sélectionné n'existe pas.");
+            const courseData = courseDoc.data();
+
+            const ticketsCollection = collection(db, 'support_tickets');
+            const newTicketRef = doc(ticketsCollection);
+            
+            const batch = writeBatch(db);
+
+            const ticketPayload = {
+                userId: formaAfriqueUser.uid,
+                instructorId: courseData.instructorId,
+                courseId: values.courseId,
+                subject: values.subject,
+                status: 'ouvert',
+                category: 'Pédagogique',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+                lastMessage: values.message,
+            };
+            batch.set(newTicketRef, ticketPayload);
+            
+            const messagePayload = {
+                senderId: formaAfriqueUser.uid,
+                text: values.message,
+                createdAt: serverTimestamp(),
+            };
+            batch.set(doc(collection(newTicketRef, 'messages')), messagePayload);
+
+            await batch.commit();
+            toast({ title: "Question envoyée !", description: "Vous recevrez bientôt une réponse de votre instructeur." });
+            setIsFormOpen(false);
+            router.push(`/questions-reponses/${newTicketRef.id}`);
+
+        } catch (error) {
+            console.error("Error creating ticket:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'envoyer votre question." });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+    
+    const FormWrapper = isMobile ? Sheet : Dialog;
+    const FormContent = isMobile ? SheetContent : DialogContent;
+    const FormHeader = isMobile ? SheetHeader : DialogHeader;
+    const FormTitle = isMobile ? SheetTitle : DialogTitle;
+    const FormDescription = isMobile ? SheetDescription : DialogDescription;
+
+
     return (
         <div className={`space-y-8`}>
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -113,6 +278,29 @@ export default function QAPage() {
                         }
                     </p>
                 </div>
+                 {formaAfriqueUser?.role !== 'instructor' && (
+                    <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <SheetTrigger asChild>
+                            <Button>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                Poser une question
+                            </Button>
+                        </SheetTrigger>
+                        <FormContent side={isMobile ? "bottom" : "right"} className="dark:bg-slate-900 dark:border-slate-800">
+                            <FormHeader>
+                                <FormTitle className="dark:text-white">Nouvelle question</FormTitle>
+                                <FormDescription className="dark:text-slate-400">
+                                    Sélectionnez le cours concerné et décrivez votre problème.
+                                </FormDescription>
+                            </FormHeader>
+                             <NewTicketForm 
+                                enrolledCourses={enrolledCourses}
+                                onSubmit={handleCreateTicket}
+                                isSubmitting={isSubmitting}
+                             />
+                        </FormContent>
+                    </FormWrapper>
+                 )}
             </header>
             
             {error && (
