@@ -33,17 +33,23 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      allow get: if isSignedIn(); // Allow any signed-in user to read profile data (client should only show public fields)
-      allow list: if isAdmin(); // Only admins can list all users.
-      allow create: if isOwner(userId); // A user can create their own document
+      allow get: if isOwner(userId) || isAdmin();
+      // Seuls les admins peuvent lister tous les utilisateurs. L'annuaire fait une requête filtrée, pas un list.
+      allow list: if isAdmin(); 
+      
+      // Un utilisateur peut créer son propre document.
+      allow create: if isOwner(userId); 
+      
+      // Un utilisateur peut mettre à jour son profil, mais ne peut PAS changer son rôle ou son statut.
       allow update: if isAdmin() || (
         isOwner(userId) && 
-        // User cannot change their own role, approval status, or general status.
         !('role' in request.resource.data) && 
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
-      allow delete: if isAdmin() || isOwner(userId); // User can delete their own account
+      
+      // Un utilisateur peut supprimer son propre compte.
+      allow delete: if isAdmin() || isOwner(userId);
 
       // --- Sub-collections of 'users' ---
       match /chatHistory/{messageId} {
@@ -81,6 +87,18 @@ service cloud.firestore {
             allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
             allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
           }
+        }
+        
+        match /assignments/{assignmentId} {
+            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+            allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+
+            match /submissions/{submissionId} {
+                allow read, list: if (isSignedIn() && isOwner(resource.data.userId)) || (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+                allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+                allow update: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+                allow delete: if isAdmin();
+            }
         }
     }
 
