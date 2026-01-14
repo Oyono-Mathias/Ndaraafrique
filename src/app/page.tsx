@@ -5,7 +5,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
 import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, Play } from 'lucide-react';
@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 
 const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -86,7 +87,7 @@ const EnrollmentCounter = () => {
     );
 };
 
-const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
+const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
         return (
             <div className="w-full">
@@ -300,7 +301,7 @@ const MobileCTA = () => (
 export default function LandingPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
-  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
+  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const db = getFirestore();
 
   useEffect(() => {
@@ -319,7 +320,7 @@ export default function LandingPage() {
         if (instructorIds.length > 0) {
             const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
-            const newInstructors = new Map<string, Partial<FormaAfriqueUser>>();
+            const newInstructors = new Map<string, Partial<NdaraUser>>();
             userSnapshots.forEach(doc => {
                 const userData = doc.data();
                 newInstructors.set(userData.uid, { fullName: userData.fullName });
@@ -367,6 +368,8 @@ export default function LandingPage() {
         </header>
           
         <main className="space-y-12 sm:space-y-16 pb-24 sm:pb-0">
+          <DynamicCarousel />
+
           <CourseCarousel
             title="Les nouveautés à ne pas rater"
             courses={recentCourses}

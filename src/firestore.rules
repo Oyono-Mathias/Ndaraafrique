@@ -38,9 +38,7 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      // Annuaire: a user can list other users if their profile is complete and they filter by the same interest domain
-      // Admins can list all users.
+      allow get: if true; // Allow public read for profiles (e.g., instructor info)
       allow list: if isAdmin() || (isProfileComplete() && 'careerGoals.interestDomain' in request.query.where);
       
       allow create: if isOwner(userId);
@@ -76,31 +74,26 @@ service cloud.firestore {
     
     // --- Collection: courses ---
     match /courses/{courseId} {
-        allow get: if resource.data.status == 'Published' 
-                    || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
-                    || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
+        allow get: if resource.data.status == 'Published'
+                    || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin() || isEnrolled(request.auth.uid, courseId)));
         allow list: if true;
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
         
         match /sections/{sectionId} {
           allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published'
-                              || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
-                              || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+                              || (isSignedIn() && (isEnrolled(request.auth.uid, courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
           allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
           
           match /lectures/{lectureId} {
-            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published'
-                                || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
-                                || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+            allow read, list: if (get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' && resource.data.isFreePreview == true)
+                                || (isSignedIn() && (isEnrolled(request.auth.uid, courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
             allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
           }
         }
         
         match /assignments/{assignmentId} {
-            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published'
-                                || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
-                                || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+            allow read, list: if (isSignedIn() && (isEnrolled(request.auth.uid, courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
             allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
 
             match /submissions/{submissionId} {
@@ -116,14 +109,14 @@ service cloud.firestore {
      // --- Collection: reviews ---
     match /reviews/{reviewId} {
       allow read: if true;
-      allow list: if (isSignedIn() && request.query.where.instructorId == request.auth.uid) || isAdmin();
+      allow list: if true;
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isSignedIn() && (isOwner(request.resource.data.userId) || isAdmin());
     }
 
     // --- Collection: resources ---
     match /resources/{resourceId} {
-        allow read, list: if true;
+        allow read, list: if isSignedIn() && (isEnrolled(request.auth.uid, resource.data.courseId) || isAdmin());
         allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.instructorId)) || isAdmin();
     }
     
@@ -161,7 +154,6 @@ service cloud.firestore {
       allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
       allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
       
-      // A user can list tickets where they are a participant. Admins can list all.
       allow list: if (isSignedIn() && (request.query.where.userId == request.auth.uid || request.query.where.instructorId == request.auth.uid)) 
                  || isAdmin();
 
@@ -173,7 +165,8 @@ service cloud.firestore {
     
     // --- Collection: promoCodes ---
     match /promoCodes/{codeId} {
-      allow read, list, create, update, delete: if isAdmin();
+      allow read, list: if isAdmin();
+      allow create, update, delete: if isAdmin();
     }
 
     // --- Collection: carousel_slides ---
