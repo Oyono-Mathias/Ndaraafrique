@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -195,7 +196,7 @@ export default function DirectoryPage() {
     <div className="space-y-8">
       <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
       <header>
-        <h1 className="text-3xl font-bold">Annuaire des membres</h1>
+        <h1 className="text-3xl font-bold text-white">Annuaire des membres</h1>
         <p className="text-muted-foreground">Trouvez et connectez-vous avec d'autres apprenants de votre filière.</p>
       </header>
 
