@@ -4,7 +4,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
+        hostname: 'upload.wikimedia.org',
       },
       {
         protocol: 'https',
@@ -12,16 +12,16 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'i.postimg.cc',
+        hostname: 'picsum.photos',
       },
-      {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-      },
-      {
+       {
         protocol: 'https',
         hostname: 'api.dicebear.com',
-      }
+      },
+       {
+        protocol: 'https',
+        hostname: 'www.gstatic.com',
+      },
     ],
   },
 };
