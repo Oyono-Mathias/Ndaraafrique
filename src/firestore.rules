@@ -113,7 +113,7 @@ service cloud.firestore {
       allow list: if isAdmin();
 
       match /messages/{messageId} {
-        allow create: if isSignedIn() && isTicketParticipant() && isOwner(request.resource.data.senderId);
+        allow create: if isSignedIn() && (isTicketParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);
         allow read: if isSignedIn() && (isTicketParticipant() || isAdmin());
       }
     }
@@ -171,3 +171,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
