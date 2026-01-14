@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
-import { Star, Play } from 'lucide-react';
+import { Star, Play, Award } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 
@@ -42,9 +42,8 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
     return "Commencer";
   };
   
-  // Dynamic progress bar color based on completion percentage
   const progressColorClass = cn({
-    "bg-destructive": progress < 40,
+    "bg-red-500": progress < 40,
     "bg-amber-500": progress >= 40 && progress < 80,
     "bg-green-500": progress >= 80,
   });
@@ -84,10 +83,21 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
         <div className="mt-4">
             {isStudentView ? (
                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
-                        <span className="font-semibold">{progress}%</span>
-                    </div>
+                    {isCompleted ? (
+                        <div className="flex items-center justify-center gap-2 text-green-500 font-semibold p-1.5 bg-green-500/10 rounded-lg text-sm">
+                            <Award className="h-4 w-4" />
+                            <span>Terminé !</span>
+                        </div>
+                    ) : (
+                        <div>
+                            {isStarted && (
+                                <p className="text-xs text-center text-slate-400 mb-1">
+                                    Plus que {100 - progress}% pour obtenir votre certificat !
+                                </p>
+                            )}
+                            <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
+                        </div>
+                    )}
                      <Button size="sm" className="w-full font-bold bg-primary hover:bg-primary/90" asChild>
                         <Link href={`/courses/${course.id}`}>
                             <Play className="h-4 w-4 mr-2"/>
