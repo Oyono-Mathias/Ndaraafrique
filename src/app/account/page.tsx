@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
@@ -56,7 +56,7 @@ type ProfileFormValues = z.infer<ReturnType<typeof profileFormSchema>>;
 const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number | string, isLoading: boolean }) => {
     const Icon = icon;
     return (
-        <Card className="bg-slate-800/50 border-slate-700/80">
+        <Card className="glassmorphism-card">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
                 <Icon className="h-4 w-4 text-slate-400" />
@@ -77,7 +77,7 @@ const NotificationPreferences = () => {
     const [isSupported, setIsSupported] = useState(true);
 
     useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
             setIsEnabled(Notification.permission === 'granted');
         } else {
             setIsSupported(false);
@@ -92,9 +92,13 @@ const NotificationPreferences = () => {
         try {
             const { initializeFirebase } = await import('@/firebase');
             const { firebaseApp } = initializeFirebase();
-            const messaging = (await import('firebase/messaging')).getMessaging(firebaseApp);
-            const { getToken, deleteToken } = await import('firebase/messaging');
+            const { getMessaging, getToken, deleteToken } = await import('firebase/messaging');
+            const messaging = getMessaging(firebaseApp);
+            
             const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
+            if (!vapidKey) {
+                throw new Error("Clé VAPID manquante. Impossible de s'inscrire aux notifications.");
+            }
 
             if (checked) {
                 // Request permission and get token
@@ -103,7 +107,7 @@ const NotificationPreferences = () => {
                     const currentToken = await getToken(messaging, { vapidKey });
                     if (currentToken) {
                         const tokenRef = doc(getFirestore(), `users/${user.uid}/fcmTokens`, currentToken);
-                        await setDoc(tokenRef, { createdAt: serverTimestamp() });
+                        await setDoc(tokenRef, { createdAt: serverTimestamp(), uid: user.uid });
                         setIsEnabled(true);
                         toast({ title: 'Notifications activées', description: 'Vous recevrez désormais nos actualités.' });
                     } else {
@@ -253,7 +257,7 @@ export default function AccountPage() {
   }, [debouncedUsername, db, formaAfriqueUser?.username]);
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
-    if (!formaAfriqueUser || !usernameAvailable) {
+    if (!formaAfriqueUser || usernameAvailable === false) {
         toast({ title: t('invalid_username_title'), description: t('invalid_username_desc'), variant: 'destructive'});
         return;
     }
