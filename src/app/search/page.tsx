@@ -1,8 +1,19 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, orderBy, startAt, endAt, getDocs, limit } from 'firebase/firestore';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { 
+    getFirestore, 
+    collection, 
+    query, 
+    where, 
+    orderBy, 
+    startAfter, 
+    limit, 
+    getDocs, 
+    DocumentData, 
+    QueryDocumentSnapshot 
+} from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
@@ -18,6 +29,7 @@ import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 const FILTERS = ['Tous', 'Gratuit', 'Design', 'Code', 'Marketing', 'Business'];
+const PAGE_SIZE = 10;
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
     <div className="flex items-center gap-1 text-xs text-slate-400">
@@ -64,8 +76,97 @@ export default function SearchPage() {
     const [results, setResults] = useState<Course[]>([]);
     const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
+    const [isFetchingMore, setIsFetchingMore] = useState(false);
+    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+    const [hasMore, setHasMore] = useState(true);
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
+
+    const fetchInstructors = useCallback(async (courses: Course[]) => {
+        if (courses.length === 0) return;
+
+        const instructorIds = [...new Set(courses.map(c => c.instructorId))].filter(Boolean);
+        const newInstructors = new Map(instructors);
+        const idsToFetch = instructorIds.filter(id => !newInstructors.has(id));
+
+        if (idsToFetch.length > 0) {
+            try {
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
+                const usersSnap = await getDocs(usersQuery);
+                usersSnap.forEach(doc => {
+                    newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+                });
+                setInstructors(newInstructors);
+            } catch (error) {
+                console.error("Error fetching instructors:", error);
+            }
+        }
+    }, [db, instructors]);
+
+    const fetchData = useCallback(async (loadMore = false) => {
+        if (isUserLoading || !user) return;
+
+        if (loadMore) {
+            setIsFetchingMore(true);
+        } else {
+            setIsLoading(true);
+            setResults([]);
+            setLastDoc(null);
+        }
+
+        const coursesRef = collection(db, 'courses');
+        let q = query(coursesRef, where('status', '==', 'Published'), limit(PAGE_SIZE));
+
+        // Apply filters
+        if (activeFilter !== 'Tous') {
+            if (activeFilter === 'Gratuit') {
+                q = query(q, where('price', '==', 0));
+            } else {
+                q = query(q, where('category', '==', activeFilter));
+            }
+        }
+
+        // Apply search term
+        if (debouncedSearchTerm) {
+            const lowercasedTerm = debouncedSearchTerm.toLowerCase();
+             q = query(q, 
+                orderBy('title'),
+                startAt(lowercasedTerm),
+                endAt(lowercasedTerm + '\uf8ff')
+            );
+        } else if (activeFilter === 'Tous') {
+            q = query(q, orderBy('createdAt', 'desc'));
+        }
+        
+        // Pagination
+        if (loadMore && lastDoc) {
+            q = query(q, startAfter(lastDoc));
+        }
+
+        try {
+            const querySnapshot = await getDocs(q);
+            const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+            
+            const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
+            setLastDoc(newLastDoc);
+            setHasMore(querySnapshot.docs.length === PAGE_SIZE);
+
+            if (loadMore) {
+                setResults(prev => [...prev, ...coursesData]);
+            } else {
+                setResults(coursesData);
+            }
+
+            await fetchInstructors(coursesData);
+        } catch (error) {
+            console.error("Search query failed:", error);
+            setResults([]);
+            toast({ variant: 'destructive', title: 'Erreur de recherche', description: 'Un index Firestore est peut-être manquant.' });
+        } finally {
+            setIsLoading(false);
+            setIsFetchingMore(false);
+        }
+    }, [db, user, isUserLoading, activeFilter, debouncedSearchTerm, lastDoc, fetchInstructors]);
 
     useEffect(() => {
         if (!isUserLoading && !user) {
@@ -75,70 +176,12 @@ export default function SearchPage() {
                 description: "Veuillez créer un compte pour accéder à ce contenu.",
             });
             router.push('/login?tab=register');
+        } else {
+            fetchData();
         }
-    }, [isUserLoading, user, router, toast]);
-
-    useEffect(() => {
-        if (isUserLoading || !user) return;
-
-        setIsLoading(true);
-
-        const coursesRef = collection(db, 'courses');
-        let q = query(coursesRef, where('status', '==', 'Published'));
-        
-        if (debouncedSearchTerm) {
-            const lowercasedTerm = debouncedSearchTerm.toLowerCase();
-             q = query(q, 
-                orderBy('title'),
-                startAt(lowercasedTerm),
-                endAt(lowercasedTerm + '\uf8ff')
-            );
-        }
-
-        if (activeFilter !== 'Tous') {
-            if (activeFilter === 'Gratuit') {
-                q = query(q, where('price', '==', 0));
-            } else {
-                q = query(q, where('category', '==', activeFilter));
-            }
-        }
-        
-        if (!debouncedSearchTerm && activeFilter === 'Tous') {
-            q = query(q, orderBy('createdAt', 'desc'), limit(20));
-        }
-
-        const unsubscribe = onSnapshot(q, async (querySnapshot) => {
-            const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-            setResults(coursesData);
-            
-            if (coursesData.length > 0) {
-                const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
-                const newInstructors = new Map(instructors);
-                const idsToFetch = instructorIds.filter(id => !newInstructors.has(id));
-
-                if (idsToFetch.length > 0) {
-                    try {
-                        const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
-                        const usersSnap = await getDocs(usersQuery);
-                        usersSnap.forEach(doc => {
-                            newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser);
-                        });
-                        setInstructors(newInstructors);
-                    } catch (error) {
-                        console.error("Error fetching instructors:", error);
-                    }
-                }
-            }
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Search query failed:", error);
-            setResults([]);
-            setIsLoading(false);
-        });
-
-        return () => unsubscribe();
-    }, [debouncedSearchTerm, activeFilter, db, user, isUserLoading]);
-
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [debouncedSearchTerm, activeFilter, user, isUserLoading]);
+    
     if (isUserLoading || !user) {
         return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
     }
@@ -184,9 +227,19 @@ export default function SearchPage() {
                         </div>
                     ))
                 ) : results.length > 0 ? (
-                    results.map(course => (
-                        <SearchResultCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
-                    ))
+                    <>
+                        {results.map(course => (
+                            <SearchResultCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
+                        ))}
+                        {hasMore && (
+                            <div className="flex justify-center py-6">
+                                <Button onClick={() => fetchData(true)} disabled={isFetchingMore}>
+                                    {isFetchingMore && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Charger plus
+                                </Button>
+                            </div>
+                        )}
+                    </>
                 ) : (
                     <div className="text-center py-20 px-4 border-2 border-dashed rounded-xl border-slate-700">
                         <Frown className="mx-auto h-12 w-12 text-slate-400" />
@@ -203,3 +256,5 @@ export default function SearchPage() {
         </div>
     );
 }
+
+    
