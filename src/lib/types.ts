@@ -1,4 +1,3 @@
-
 import type { Timestamp } from "firebase/firestore";
 
 export interface Lecture {
@@ -88,8 +87,8 @@ export interface Message {
   id: string;
   senderId: string;
   text: string;
-  createdAt?: any;
-  status?: 'sent' | 'delivered' | 'read';
+  createdAt: Timestamp;
+  status: 'sent' | 'delivered' | 'read';
 }
 
 export type FormaAfriqueUser = {
