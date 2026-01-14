@@ -95,7 +95,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/mes-certificats", icon: Award, textKey: 'navCertificates', id: 'sidebar-nav-mes-certificats' },
         { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navAssignments', id: 'sidebar-nav-mes-devoirs' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navMyAssignments', id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {

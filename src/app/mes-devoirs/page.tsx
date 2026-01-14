@@ -55,10 +55,10 @@ function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssig
   const isOverdue = assignment.dueDate ? isPast(assignment.dueDate) : false;
 
   return (
-    <Card className="hover:shadow-md transition-shadow duration-300 flex flex-col">
+    <Card className="hover:shadow-md transition-shadow duration-300 flex flex-col dark:bg-slate-800 dark:border-slate-700">
       <CardHeader>
-        <CardTitle className="text-base font-bold text-slate-800 line-clamp-2">{assignment.title}</CardTitle>
-        <p className="text-xs text-slate-500">{assignment.courseTitle}</p>
+        <CardTitle className="text-base font-bold text-slate-800 dark:text-white line-clamp-2">{assignment.title}</CardTitle>
+        <p className="text-xs text-slate-500 dark:text-slate-400">{assignment.courseTitle}</p>
       </CardHeader>
       <CardContent className="space-y-3 flex-grow">
         <div className={cn("flex items-center text-sm font-semibold", statusInfo.color)}>
@@ -66,7 +66,7 @@ function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssig
             <span className="ml-2">{statusInfo.text}</span>
         </div>
         {assignment.dueDate && (
-            <p className={cn("text-xs", isOverdue && assignment.status === 'pending' ? "text-red-600 font-bold" : "text-slate-500")}>
+            <p className={cn("text-xs", isOverdue && assignment.status === 'pending' ? "text-red-600 font-bold" : "text-slate-500 dark:text-slate-400")}>
                 {t('due_date_on', { date: format(assignment.dueDate, 'dd MMMM yyyy', { locale: fr }) })}
             </p>
         )}
@@ -157,21 +157,21 @@ const SubmissionModal = ({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent>
+            <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
                 <DialogHeader>
-                    <DialogTitle>{assignment.title}</DialogTitle>
-                    <DialogDescription>{assignment.courseTitle}</DialogDescription>
+                    <DialogTitle className="dark:text-white">{assignment.title}</DialogTitle>
+                    <DialogDescription className="dark:text-slate-400">{assignment.courseTitle}</DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
-                    <h4 className="font-semibold">{t('instructions')}</h4>
-                    <p className="text-sm text-muted-foreground">{assignment.description || t('no_instructions')}</p>
+                    <h4 className="font-semibold dark:text-slate-200">{t('instructions')}</h4>
+                    <p className="text-sm text-muted-foreground dark:text-slate-300">{assignment.description || t('no_instructions')}</p>
                     
-                    <div className="border-t pt-4">
-                        <h4 className="font-semibold mb-2">{t('yourWork')}</h4>
+                    <div className="border-t pt-4 dark:border-slate-700">
+                        <h4 className="font-semibold mb-2 dark:text-slate-200">{t('yourWork')}</h4>
                         {assignment.status === 'pending' ? (
                              <div>
                                 {!file && (
-                                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted">
+                                     <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted dark:border-slate-700 dark:hover:bg-slate-800/50">
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <UploadCloud className="w-8 h-8 mb-2 text-muted-foreground" />
                                             <p className="text-sm text-muted-foreground">{t('clickToUpload')}</p>
@@ -180,10 +180,10 @@ const SubmissionModal = ({
                                     </label>
                                 )}
                                 {file && (
-                                    <div className="flex items-center justify-between p-2 border rounded-lg">
+                                    <div className="flex items-center justify-between p-2 border rounded-lg dark:border-slate-700">
                                         <div className="flex items-center gap-2">
-                                            <File className="h-5 w-5" />
-                                            <span className="text-sm font-medium">{file.name}</span>
+                                            <File className="h-5 w-5 text-primary" />
+                                            <span className="text-sm font-medium dark:text-slate-200">{file.name}</span>
                                         </div>
                                         <Button variant="ghost" size="icon" onClick={() => setFile(null)}><X className="h-4 w-4"/></Button>
                                     </div>
@@ -192,11 +192,13 @@ const SubmissionModal = ({
                             </div>
                         ) : (
                             <div>
-                                <p className="text-sm">{t('alreadySubmitted')}</p>
+                                <p className="text-sm dark:text-slate-300">{t('alreadySubmitted')}</p>
                                 {assignment.submission?.fileURL && (
-                                    <a href={assignment.submission.fileURL} target="_blank" rel="noopener noreferrer" className="text-sm text-primary hover:underline">
-                                        {t('viewSubmission')}
-                                    </a>
+                                    <Button variant="link" asChild>
+                                        <a href={assignment.submission.fileURL} target="_blank" rel="noopener noreferrer" className="text-sm">
+                                            {t('viewSubmission')}
+                                        </a>
+                                    </Button>
                                 )}
                             </div>
                         )}
@@ -310,12 +312,12 @@ export default function MyAssignmentsPage() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold text-slate-900">{t('navMyAssignments')}</h1>
-                <p className="text-slate-500">{t('assignmentsDescription')}</p>
+                <h1 className="text-3xl font-bold dark:text-white">{t('navMyAssignments')}</h1>
+                <p className="text-slate-500 dark:text-slate-400">{t('assignmentsDescription')}</p>
             </header>
 
             <Tabs defaultValue="todo" className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-3 dark:bg-slate-800 dark:border-slate-700">
                     <TabsTrigger value="todo">{t('todo')} ({todo.length})</TabsTrigger>
                     <TabsTrigger value="in-progress">{t('in_progress')} ({inProgress.length})</TabsTrigger>
                     <TabsTrigger value="graded">{t('graded')} ({graded.length})</TabsTrigger>
@@ -349,15 +351,15 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-lg" />)}
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-lg dark:bg-slate-800" />)}
             </div>
         );
     }
     if (assignments.length === 0) {
         return (
-            <div className="text-center py-16 border-2 border-dashed rounded-lg">
+            <div className="text-center py-16 border-2 border-dashed rounded-lg dark:border-slate-700">
                 <ClipboardList className="mx-auto h-12 w-12 text-slate-400" />
-                <h3 className="mt-4 text-lg font-semibold text-slate-600">{emptyMessage}</h3>
+                <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">{emptyMessage}</h3>
             </div>
         );
     }
@@ -370,4 +372,3 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
     );
 }
 
-    
