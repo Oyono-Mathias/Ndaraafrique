@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -138,6 +137,19 @@
       },
       "required": ["senderId", "text", "createdAt"]
     },
+    "Payout": {
+        "title": "Payout",
+        "type": "object",
+        "description": "Represents an instructor's request to withdraw funds.",
+        "properties": {
+            "instructorId": { "type": "string" },
+            "amount": { "type": "number" },
+            "method": { "type": "string", "enum": ["Mobile Money", "Virement"] },
+            "status": { "type": "string", "enum": ["en_attente", "valide", "rejete"] },
+            "date": { "type": "string", "format": "date-time" }
+        },
+        "required": ["instructorId", "amount", "method", "status", "date"]
+    },
     "PromoCode": {
       "title": "Promo Code",
       "type": "object",
@@ -260,6 +272,10 @@
     "/courses/{courseId}": {
       "schema": { "$ref": "#/entities/Course" },
       "description": "Stores course information."
+    },
+    "/payouts/{payoutId}": {
+        "schema": { "$ref": "#/entities/Payout" },
+        "description": "Stores instructor payout requests."
     },
     "/promoCodes/{codeId}": {
         "schema": { "$ref": "#/entities/PromoCode" },
