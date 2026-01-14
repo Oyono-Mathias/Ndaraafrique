@@ -14,13 +14,8 @@ import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
+import { Message } from "@/lib/types";
 
-type Message = {
-  id: string;
-  sender: "user" | "ai";
-  text: string;
-  timestamp?: any;
-};
 
 export function AiTutorClient() {
   const { user, isUserLoading } = useRole();
