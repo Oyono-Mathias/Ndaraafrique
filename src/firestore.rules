@@ -33,11 +33,11 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      // Un utilisateur ne peut lire en détail (get) que son propre profil.
-      allow get: if isOwner(userId) || isAdmin(); 
+      // Autoriser tout utilisateur connecté à lire les données d'un profil.
+      // Le client est responsable de n'afficher que les champs publics.
+      allow get: if isSignedIn();
       
       // La liste est autorisée pour les utilisateurs connectés afin de permettre les requêtes de l'annuaire.
-      // La sécurité repose sur le code client qui n'affiche que les champs publics.
       allow list: if isSignedIn();
       
       allow create: if isOwner(userId); // Un utilisateur peut créer son propre document.
