@@ -669,7 +669,7 @@ export default function CourseDetailsClient() {
                       <div className="flex items-start gap-4">
                           <Avatar className="h-12 w-12">
                               <AvatarImage src={instructor.profilePictureURL} />
-                              <AvatarFallback className="text-white bg-slate-700">{instructor.fullName.charAt(0)}</AvatarFallback>
+                              <AvatarFallback className="text-white bg-slate-700">{instructor.fullName?.charAt(0) || '?'}</AvatarFallback>
                           </Avatar>
                           <p className="text-sm line-clamp-3 text-slate-300">{instructor.bio || `Découvrez le parcours et l'expertise de ${instructor.fullName}, un professionnel passionné qui vous guidera à travers ce cours.`}</p>
                       </div>
