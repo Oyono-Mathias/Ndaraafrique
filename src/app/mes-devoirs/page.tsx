@@ -39,11 +39,11 @@ interface StudentAssignment {
 const getStatusInfo = (status: StudentAssignment['status'], t: (key: string) => string) => {
     switch (status) {
         case 'pending':
-            return { text: t('assignment_status_pending'), icon: <Edit className="h-4 w-4" />, color: 'text-blue-600' };
+            return { text: t('assignment_status_pending'), icon: <Edit className="h-4 w-4" />, color: 'text-blue-500' };
         case 'submitted':
-            return { text: t('assignment_status_submitted'), icon: <Clock className="h-4 w-4" />, color: 'text-orange-500' };
+            return { text: t('assignment_status_in_review'), icon: <Clock className="h-4 w-4" />, color: 'text-amber-500' };
         case 'graded':
-            return { text: t('assignment_status_graded'), icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-600' };
+            return { text: t('assignment_status_graded'), icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-500' };
         default:
             return { text: t('assignment_status_unknown'), icon: <ClipboardList className="h-4 w-4" />, color: 'text-gray-500' };
     }
@@ -64,6 +64,9 @@ function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssig
         <div className={cn("flex items-center text-sm font-semibold", statusInfo.color)}>
             {statusInfo.icon}
             <span className="ml-2">{statusInfo.text}</span>
+            {assignment.status === 'graded' && assignment.grade !== undefined && (
+                <span className="ml-auto font-bold text-lg">{assignment.grade}/20</span>
+            )}
         </div>
         {assignment.dueDate && (
             <p className={cn("text-xs", isOverdue && assignment.status === 'pending' ? "text-red-600 font-bold" : "text-slate-500 dark:text-slate-400")}>
@@ -378,5 +381,7 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
         </div>
     );
 }
+
+    
 
     
