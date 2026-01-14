@@ -4,45 +4,48 @@
 import Link from 'next/link';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
-import { Button } from '@/components/ui/button';
-import { Star, Frown, BookText, Video } from 'lucide-react';
-import Image from 'next/image';
+import { Frown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
-import { Badge } from '../ui/badge';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { CourseCard } from '../cards/CourseCard';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
+    if (isLoading) {
+        return (
+            <section>
+                <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
+                <div className="flex space-x-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="w-[280px] shrink-0">
+                           <Skeleton className="h-80 rounded-2xl bg-slate-800" />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+    if (!courses || courses.length === 0) {
+        return null;
+    }
     return (
         <section>
             <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
-            {isLoading ? (
-                <div className="flex space-x-6">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 w-64 rounded-2xl bg-slate-800" />)}
-                </div>
-            ) : courses && courses.length > 0 ? (
-                 <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                    <CarouselContent className="-ml-6">
-                        {courses.map(course => (
-                            <CarouselItem key={course.id} className="pl-6 basis-[70%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                                <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
-                            </CarouselItem>
-                        ))}
-                    </CarouselContent>
-                </Carousel>
-            ) : (
-                 <div className="text-center py-10 px-4 border-2 border-dashed border-slate-700 rounded-xl">
-                    <Frown className="mx-auto h-10 w-10 text-slate-500" />
-                    <h3 className="mt-2 text-md font-semibold text-slate-300">Aucun cours dans cette section pour le moment.</h3>
-                </div>
-            )}
+             <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-6">
+                    {courses.map(course => (
+                        <CarouselItem key={course.id} className="pl-6 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
         </section>
     );
-}
+};
 
 export function StudentDashboard() {
   const db = getFirestore();
