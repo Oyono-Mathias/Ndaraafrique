@@ -182,12 +182,13 @@ export default function MyRevenuePage() {
   const { totalRevenue, monthlyRevenue, availableBalance, revenueTrendData } = useMemo(() => {
     const now = new Date();
     const startOfCurrentMonth = startOfMonth(now);
+    const platformCommissionRate = settings.platformCommission / 100;
 
     const completedTransactions = transactions.filter(t => t.status === 'Completed');
     
-    const total = completedTransactions.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+    const totalGrossRevenue = completedTransactions.reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
     
-    const monthly = completedTransactions
+    const monthlyGrossRevenue = completedTransactions
       .filter(t => t.date?.toDate() >= startOfCurrentMonth)
       .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
 
@@ -195,8 +196,7 @@ export default function MyRevenuePage() {
         .filter(p => p.status === 'valide' || p.status === 'en_attente')
         .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
     
-    const platformCommissionRate = settings.platformCommission / 100;
-    const instructorShare = total * (1 - platformCommissionRate);
+    const instructorShare = totalGrossRevenue * (1 - platformCommissionRate);
 
     const balance = instructorShare - totalPayouts;
 
@@ -205,7 +205,8 @@ export default function MyRevenuePage() {
         if (t.date instanceof Timestamp) {
             const date = t.date.toDate();
             const monthKey = format(date, 'MMM yy', { locale: fr });
-            monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (t.amount * (1 - platformCommissionRate) || 0);
+            const netRevenue = t.amount * (1 - platformCommissionRate);
+            monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + netRevenue;
         }
     });
 
@@ -214,8 +215,8 @@ export default function MyRevenuePage() {
         .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
     return {
-      totalRevenue: total,
-      monthlyRevenue: monthly,
+      totalRevenue: totalGrossRevenue,
+      monthlyRevenue: monthlyGrossRevenue,
       availableBalance: balance,
       revenueTrendData: trendData
     };
@@ -354,7 +355,7 @@ export default function MyRevenuePage() {
       )}
       
        <section>
-          <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_chart_title')}</h2>
+          <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_chart_title_net')}</h2>
            <Card className="dark:bg-slate-800 dark:border-slate-700">
                 <CardContent className="pt-6">
                     {isLoading ? <Skeleton className="h-80 w-full dark:bg-slate-700" /> : (
