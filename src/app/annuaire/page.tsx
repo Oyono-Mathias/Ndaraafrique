@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -16,6 +15,7 @@ import {
   doc,
   setDoc,
   onSnapshot,
+  writeBatch,
 } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -88,7 +88,6 @@ export default function DirectoryPage() {
         return;
     }
     
-    // Do not fetch if profile is incomplete
     if (!isProfileComplete) {
         setIsLoading(false);
         setMembers([]);
@@ -105,7 +104,7 @@ export default function DirectoryPage() {
     setIsLoading(true);
     const usersQuery = query(
         collection(db, 'users'),
-        where('role', '==', 'student'),
+        where('isProfileComplete', '==', true),
         where('careerGoals.interestDomain', '==', userInterestDomain),
         limit(50)
     );
@@ -113,20 +112,21 @@ export default function DirectoryPage() {
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
         const memberList = snapshot.docs
             .map(doc => doc.data() as FormaAfriqueUser)
-            .filter(member => member.uid !== user?.uid); // Exclude self
+            .filter(member => member.uid !== user?.uid); 
         setMembers(memberList);
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching directory members:", error);
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de charger l'annuaire."});
         setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [formaAfriqueUser, db, isProfileComplete, user?.uid]);
+  }, [formaAfriqueUser, db, isProfileComplete, user?.uid, toast]);
 
 
   const handleContact = async (contactId: string) => {
-    if (!user || user.uid === contactId) return;
+    if (!user || user.uid === contactId || !formaAfriqueUser?.careerGoals?.interestDomain) return;
 
     if (!isProfileComplete) {
         toast({ variant: 'destructive', title: t('profile_incomplete_title'), description: t('profile_incomplete_desc_directory')});
@@ -141,16 +141,26 @@ export default function DirectoryPage() {
     try {
         const querySnapshot = await getDocs(q);
         let chatId: string | null = null;
+
         if (!querySnapshot.empty) {
             chatId = querySnapshot.docs[0].id;
         } else {
+            const contactUserDoc = await getDoc(doc(db, 'users', contactId));
+            if (!contactUserDoc.exists()) throw new Error("L'utilisateur contacté n'existe pas.");
+
+            const contactUserData = contactUserDoc.data() as FormaAfriqueUser;
+
             const newChatRef = doc(collection(db, 'chats'));
-            await setDoc(newChatRef, {
+            const batch = writeBatch(db);
+
+            batch.set(newChatRef, {
                 participants: sortedParticipants,
+                participantCategories: [formaAfriqueUser.careerGoals.interestDomain, contactUserData.careerGoals?.interestDomain],
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 lastMessage: '',
             });
+            await batch.commit();
             chatId = newChatRef.id;
         }
         router.push(`/messages/${chatId}`);
