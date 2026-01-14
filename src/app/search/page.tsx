@@ -69,7 +69,6 @@ const SearchResultCard = ({ course, instructor }: { course: Course, instructor: 
 export default function SearchPage() {
     const db = getFirestore();
     const router = useRouter();
-    const { toast } = useToast();
     const { user, isUserLoading } = useRole();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Tous');
@@ -131,7 +130,7 @@ export default function SearchPage() {
             const lowercasedTerm = debouncedSearchTerm.toLowerCase();
              q = query(q, 
                 orderBy('title'),
-                startAt(lowercasedTerm),
+                startAfter(lowercasedTerm),
                 endAt(lowercasedTerm + '\uf8ff')
             );
         } else if (activeFilter === 'Tous') {
@@ -256,5 +255,3 @@ export default function SearchPage() {
         </div>
     );
 }
-
-    
