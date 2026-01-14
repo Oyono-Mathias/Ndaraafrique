@@ -2,20 +2,19 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, limit } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
 import Link from 'next/link';
-import { CourseCard } from '@/components/cards/CourseCard';
 import type { Course } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
-import { getDocs } from 'firebase/firestore';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CourseCard } from '@/components/cards/CourseCard';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
@@ -90,6 +89,35 @@ const LandingNav = () => {
         </nav>
     );
 };
+
+const EnrollmentCounter = () => {
+    const [count, setCount] = useState<number | null>(null);
+    const db = getFirestore();
+
+    useEffect(() => {
+        const fetchCount = async () => {
+            try {
+                const coll = collection(db, 'enrollments');
+                const snapshot = await getCountFromServer(coll);
+                setCount(snapshot.data().count);
+            } catch (error) {
+                console.error("Error fetching enrollment count:", error);
+                // In case of error, we can just hide the counter
+                setCount(0);
+            }
+        };
+        fetchCount();
+    }, [db]);
+
+    if (count === null || count < 10) return null; // Don't show if loading or count is low
+
+    return (
+        <p className="text-sm text-slate-400 mt-4">
+            Rejoignez nos <span className="font-bold text-primary">{count.toLocaleString('fr-FR')}</span> participants et commencez votre parcours.
+        </p>
+    );
+};
+
 
 const InteractiveSteps = () => {
     const [activeStep, setActiveStep] = useState(0);
@@ -226,7 +254,7 @@ const TrustSection = () => {
         <section className="py-20">
              <h2 className="text-3xl font-bold text-center mb-4 text-foreground">Votre sérénité, notre priorité</h2>
              <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-12">
-                Nous intégrons les meilleures technologies de sécurité pour garantir la protection et la traçabilité de chaque transaction sur la plateforme.
+                Nous intégrons les meilleures technologies pour garantir la sécurité et la traçabilité de chaque transaction sur la plateforme.
              </p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {trustFeatures.map((feature, index) => (
@@ -255,7 +283,7 @@ export default function LandingPage() {
       collection(db, "courses"),
       where("status", "==", "Published"),
       orderBy("createdAt", "desc"),
-      limit(12) // Fetch a bit more to have enough for both sections
+      limit(12)
     );
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -309,6 +337,7 @@ export default function LandingPage() {
                       Démarrer mon parcours
                   </button>
               </Link>
+              <EnrollmentCounter />
           </div>
         </header>
           
@@ -337,6 +366,17 @@ export default function LandingPage() {
             isLoading={loading}
           />
           <TrustSection />
+
+            <section className="text-center py-20">
+                 <h2 className="text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
+                 <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
+                 <Button size="lg" asChild className="mt-8 h-14 text-lg nd-cta-primary animate-pulse">
+                     <Link href="/login?tab=register">
+                        Devenir Membre
+                        <ChevronsRight className="ml-2 h-5 w-5" />
+                     </Link>
+                 </Button>
+            </section>
         </main>
       </div>
       <Footer />
