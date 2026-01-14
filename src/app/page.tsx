@@ -16,38 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 
-const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
-    if (isLoading && courses.length === 0) {
-        return (
-            <div className="w-full">
-                <Skeleton className="h-8 w-1/3 mb-8 bg-slate-800" />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
-                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
-                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
-                </div>
-            </div>
-        );
-    }
-    if (!courses || courses.length === 0) {
-        return null;
-    }
-    return (
-        <section className="py-12">
-            <h2 className="text-3xl font-bold mb-8 text-foreground">{title}</h2>
-             <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-6">
-                    {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
-        </section>
-    );
-};
-
 const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);
 
@@ -102,14 +70,13 @@ const EnrollmentCounter = () => {
                 setCount(snapshot.data().count);
             } catch (error) {
                 console.error("Error fetching enrollment count:", error);
-                // In case of error, we can just hide the counter
                 setCount(0);
             }
         };
         fetchCount();
     }, [db]);
 
-    if (count === null || count < 10) return null; // Don't show if loading or count is low
+    if (count === null || count < 10) return null;
 
     return (
         <p className="text-sm text-slate-400 mt-4">
@@ -118,10 +85,40 @@ const EnrollmentCounter = () => {
     );
 };
 
+const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
+    if (isLoading && courses.length === 0) {
+        return (
+            <div className="w-full">
+                <Skeleton className="h-8 w-1/3 mb-8 bg-slate-800" />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
+                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
+                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
+                </div>
+            </div>
+        );
+    }
+    if (!courses || courses.length === 0) {
+        return null;
+    }
+    return (
+        <section className="py-12">
+            <h2 className="text-3xl font-bold mb-8 text-foreground">{title}</h2>
+             <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-6">
+                    {courses.map(course => (
+                        <CarouselItem key={course.id} className="pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
+        </section>
+    );
+};
 
 const InteractiveSteps = () => {
     const [activeStep, setActiveStep] = useState(0);
-
     const steps = [
         {
             icon: UserPlus,
@@ -147,7 +144,6 @@ const InteractiveSteps = () => {
         <section className="py-20">
              <h2 className="text-3xl font-bold text-center mb-4 text-foreground">Comment ça marche ?</h2>
              <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-12">Un parcours simple en 3 étapes pour transformer votre carrière.</p>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                  <div className="space-y-4">
                     {steps.map((step, index) => {
@@ -172,7 +168,6 @@ const InteractiveSteps = () => {
                         );
                     })}
                 </div>
-
                 <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/50">
                     {steps.map((step, index) => (
                         <Image
@@ -269,13 +264,12 @@ const TrustSection = () => {
              </div>
         </section>
     );
-}
+};
 
 export default function LandingPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
-
   const db = getFirestore();
 
   useEffect(() => {
@@ -342,23 +336,20 @@ export default function LandingPage() {
         </header>
           
         <main className="space-y-16">
-          <InteractiveSteps />
-
-          <PaymentMethodsSection />
-          
           <CourseCarousel
             title="Les nouveautés"
             courses={recentCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
           />
-           <CourseCarousel
+          <InteractiveSteps />
+          <PaymentMethodsSection />
+          <CourseCarousel
             title="Populaires ce mois-ci"
             courses={popularCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
           />
-          
           <CourseCarousel
             title="Découvrir gratuitement"
             courses={freeCourses}
@@ -367,7 +358,7 @@ export default function LandingPage() {
           />
           <TrustSection />
 
-            <section className="text-center py-20">
+          <section className="text-center py-20">
                  <h2 className="text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
                  <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
                  <Button size="lg" asChild className="mt-8 h-14 text-lg nd-cta-primary animate-pulse">
