@@ -32,27 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { startChat } from '@/lib/chat';
-
-const MemberCard = ({ member, onContact, isProcessing }: { member: FormaAfriqueUser; onContact: (memberId: string) => void; isProcessing: boolean; }) => {
-  return (
-    <div className="text-center p-4 glassmorphism-card rounded-2xl transition-all duration-300 hover:shadow-primary/10 hover:scale-[1.03] flex flex-col justify-between">
-        <div>
-            <Avatar className="mx-auto h-20 w-20 mb-3 border-2 border-primary/20">
-                <AvatarImage src={member.profilePictureURL} />
-                <AvatarFallback className="text-2xl bg-slate-700 text-primary font-semibold">
-                {member.username?.charAt(0).toUpperCase() || '?'}
-                </AvatarFallback>
-            </Avatar>
-            <h3 className="font-bold text-sm text-slate-100 truncate group-hover:text-primary">@{member.username}</h3>
-            <p className="text-xs text-slate-400 mb-3 truncate">{member.careerGoals?.interestDomain || 'Apprenant'}</p>
-        </div>
-        <Button size="sm" onClick={() => onContact(member.uid)} disabled={isProcessing} className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 w-full mt-2">
-            {isProcessing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="mr-1.5 h-3.5 w-3.5" />}
-            Contacter
-        </Button>
-    </div>
-  );
-};
+import { MemberCard } from '@/components/cards/MemberCard';
 
 const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, onGoToProfile: () => void }) => {
     const { t } = useTranslation();
