@@ -14,6 +14,7 @@ import { Frown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { cn } from '@/lib/utils';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
@@ -40,6 +41,49 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
                 ))}
             </div>
         </section>
+    );
+};
+
+
+const LandingNav = () => {
+    const [scrolled, setScrolled] = useState(false);
+
+    useEffect(() => {
+        const handleScroll = () => {
+            const isScrolled = window.scrollY > 10;
+            if (isScrolled !== scrolled) {
+                setScrolled(isScrolled);
+            }
+        };
+
+        document.addEventListener('scroll', handleScroll);
+        return () => {
+            document.removeEventListener('scroll', handleScroll);
+        };
+    }, [scrolled]);
+
+    return (
+        <nav className={cn(
+            "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
+            scrolled ? "py-3 bg-slate-900/80 backdrop-blur-sm border-b border-white/10" : "py-6"
+        )}>
+            <div className="container mx-auto px-6 flex justify-between items-center">
+                <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
+                    <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
+                    <span className="text-2xl font-bold tracking-tighter text-white">Ndara Afrique</span>
+                </Link>
+                <div className="flex items-center gap-4">
+                    <Link href="/search" className="text-sm font-medium text-slate-300 hover:text-white transition-colors hidden sm:block">
+                        Explorer les cours
+                    </Link>
+                    <Link href="/login">
+                        <Button variant="outline" className="nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white">
+                            Se connecter
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        </nav>
     );
 };
 
@@ -88,23 +132,10 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
+      <LandingNav />
       <div className="container mx-auto px-6">
-        <nav className="flex justify-between items-center py-6 border-b">
-          <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
-              <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
-              <span className="text-2xl font-bold tracking-tighter">Ndara Afrique</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
-              Explorer les cours
-            </Link>
-            <Link href="/login" className="nd-cta-secondary">
-              Se connecter
-            </Link>
-          </div>
-        </nav>
-
-        <header className="text-center py-24 md:py-32">
+        
+        <header className="text-center pt-40 pb-24 md:pt-48 md:pb-32">
           <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up">
             <Sparkles className="w-3 h-3 mr-2" />
             La plateforme N°1 pour les compétences du futur en Afrique
