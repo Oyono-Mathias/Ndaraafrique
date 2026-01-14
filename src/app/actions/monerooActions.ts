@@ -21,23 +21,36 @@ class Moneroo {
     async verify(transactionId: string): Promise<{ status: string; data?: any; message?: string }> {
         if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
              console.warn("Moneroo secret key is not configured. Simulating successful payment.");
+             // This is a mock success response for development purposes.
+             // In production, the Moneroo API would be called.
              return {
                 status: 'success',
                 data: {
                     status: 'successful',
                     id: transactionId,
-                    amount: 15000,
+                    amount: 15000, // Example amount
                     currency: 'XOF',
                     customer: { email: 'test.user@example.com', name: 'Test User' },
-                    metadata: { userId: 'test-user-id', courseId: 'test-course-id' }
+                    metadata: { userId: 'test-user-id', courseId: 'test-course-id' } // Mock metadata
                 },
             };
         }
-        // Real API call would go here
-        return {
-            status: 'success',
-            data: { status: 'successful', id: transactionId, customer: { email: 'test@example.com' } },
-        };
+        
+        // --- REAL API CALL (when keys are configured) ---
+        const url = `https://api.moneroo.io/v1/payments/${transactionId}`;
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${this.secretKey}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorBody = await response.json();
+            throw new Error(errorBody.message || `Moneroo API error: ${response.statusText}`);
+        }
+        
+        return response.json();
     }
 
     get payments() { return { verify: this.verify.bind(this) }; }
@@ -49,7 +62,7 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
     const secretKey = process.env.MONEROO_SECRET_KEY;
 
     if (!secretKey || secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-        console.warn("Moneroo secret key is not configured. Simulating transaction verification.");
+        console.warn("Moneroo secret key is not configured. Simulating transaction verification for development.");
     }
 
     try {

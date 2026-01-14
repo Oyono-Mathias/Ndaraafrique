@@ -125,7 +125,7 @@ const CourseCurriculum = ({ courseId, isEnrolled, onPreviewClick }: { courseId: 
     
     return (
         <div className="w-full space-y-2">
-           <h2 className="text-2xl font-bold text-white mb-4">Programme d'études</h2>
+           <h2 className="text-2xl font-bold text-white mb-4">Programme du cours</h2>
            <Accordion type="multiple" defaultValue={sections.map(s => s.id)} className="w-full space-y-2">
             {sections.map((section) => (
               <AccordionItem key={section.id} value={section.id} className="bg-slate-800/50 border border-slate-700/80 rounded-lg overflow-hidden">
@@ -319,14 +319,6 @@ export default function CourseDetailsClient() {
   }, [isUserLoading, user, router, toast]);
 
   const handlePreviewClick = (lesson: Lecture) => {
-    if (!isEnrolled) {
-        toast({
-            title: "Contenu protégé",
-            description: "Ce contenu est réservé aux membres inscrits au cours.",
-            variant: "default",
-        });
-        return;
-    }
     setPreviewLesson(lesson);
     setIsPreviewModalOpen(true);
   }
@@ -345,7 +337,8 @@ export default function CourseDetailsClient() {
                 courseId: course.id,
                 subject: data.subject,
                 lastMessage: data.message,
-                status: 'open',
+                status: 'ouvert',
+                category: 'Pédagogique',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -626,7 +619,7 @@ export default function CourseDetailsClient() {
     provider: {
       '@type': 'Organization',
       name: 'Ndara Afrique',
-      url: 'https://ndara-afrique.app',
+      url: 'https://ndara-afrique.web.app',
     },
     offers: {
       '@type': 'Offer',
@@ -671,7 +664,6 @@ export default function CourseDetailsClient() {
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
                 <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
-                    {!isEnrolled && <Lock className="h-4 w-4 mr-2" />}
                     <PlayCircle className="h-5 w-5 mr-2"/>
                     Afficher un aperçu
                 </Button>
@@ -786,7 +778,6 @@ export default function CourseDetailsClient() {
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
-                                  {!isEnrolled && <Lock className="h-4 w-4 mr-2" />}
                                   <PlayCircle className="h-5 w-5 mr-2"/>
                                   Afficher un aperçu
                                </Button>
