@@ -197,7 +197,9 @@ export default function DirectoryPage() {
       <ProfileCompletionModal isOpen={!isProfileComplete} onGoToProfile={() => router.push('/account')} />
       <header>
         <h1 className="text-3xl font-bold text-white">Annuaire des membres</h1>
-        <p className="text-muted-foreground">Trouvez et connectez-vous avec d'autres apprenants de votre filière.</p>
+        <p className="text-muted-foreground">
+          {isProfileComplete ? `Trouvez et connectez-vous avec d'autres apprenants de votre filière : ${formaAfriqueUser?.careerGoals?.interestDomain}` : 'Complétez votre profil pour accéder à l\'annuaire.'}
+        </p>
       </header>
 
       <div className="relative">
@@ -214,12 +216,12 @@ export default function DirectoryPage() {
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
         {isLoading ? (
           [...Array(10)].map((_, i) => (
-            <Card key={i} className="p-4 bg-slate-800/50 border-slate-700">
-              <Skeleton className="h-20 w-20 rounded-full mx-auto mb-3" />
-              <Skeleton className="h-5 w-3/4 mx-auto mb-2" />
-              <Skeleton className="h-3 w-1/2 mx-auto mb-3" />
-              <Skeleton className="h-9 w-full" />
-            </Card>
+            <div key={i} className="text-center p-4 glassmorphism-card rounded-2xl flex flex-col justify-between">
+                <Skeleton className="h-20 w-20 rounded-full mx-auto mb-3" />
+                <Skeleton className="h-5 w-3/4 mx-auto mb-2" />
+                <Skeleton className="h-3 w-1/2 mx-auto mb-3" />
+                <Skeleton className="h-9 w-full mt-2" />
+            </div>
           ))
         ) : filteredMembers.length > 0 ? (
           filteredMembers.map(member => (
