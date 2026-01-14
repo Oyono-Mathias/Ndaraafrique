@@ -7,7 +7,7 @@ import { getFirestore, collection, query, where, orderBy } from 'firebase/firest
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -19,9 +19,12 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, MessageSquare } from 'lucide-react';
+import { AlertCircle, MessageSquare, CheckCircle, Clock } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useMemo, useState } from 'react';
+import { cn } from '@/lib/utils';
 
 interface SupportTicket {
     id: string;
@@ -33,19 +36,47 @@ interface SupportTicket {
     courseTitle?: string;
 }
 
-const TicketStatusBadge = ({ status }: { status: SupportTicket['status'] }) => {
+const TicketStatusBadge = ({ status, fullText = false }: { status: SupportTicket['status'], fullText?: boolean }) => {
     const { t } = useTranslation();
     if (status === 'ouvert') {
-        return <Badge className="bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-700">{t('pending')}</Badge>;
+        return (
+            <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-200 dark:bg-amber-900/50 dark:text-amber-300 dark:border-amber-700">
+                <Clock className="h-3 w-3 mr-1.5"/>
+                {fullText ? t('ticket_status_open') : t('open')}
+            </Badge>
+        );
     }
-    return <Badge className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">{t('answered')}</Badge>;
+    return (
+        <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200 dark:bg-green-900/50 dark:text-green-300 dark:border-green-700">
+             <CheckCircle className="h-3 w-3 mr-1.5"/>
+             {fullText ? t('ticket_status_closed') : t('closed')}
+        </Badge>
+    );
 };
+
+const TicketCard = ({ ticket }: { ticket: SupportTicket }) => (
+    <Link href={`/questions-reponses/${ticket.id}`} className="block">
+        <Card className="hover:bg-slate-800/50 transition-colors">
+            <CardContent className="p-4 space-y-2">
+                <div className="flex justify-between items-start">
+                    <p className="font-bold text-sm text-white line-clamp-2 pr-4">{ticket.subject}</p>
+                    <TicketStatusBadge status={ticket.status} />
+                </div>
+                <p className="text-xs text-slate-400 line-clamp-1 italic">"{ticket.lastMessage}"</p>
+                <p className="text-xs text-slate-500 pt-2 border-t border-slate-800">
+                   Dernière activité: {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
+                </p>
+            </CardContent>
+        </Card>
+    </Link>
+);
 
 
 export default function QAPage() {
     const { formaAfriqueUser, isUserLoading } = useRole();
     const db = getFirestore();
     const { t } = useTranslation();
+    const [activeTab, setActiveTab] = useState('ouvert');
 
     const ticketsQuery = useMemoFirebase(
         () => {
@@ -65,11 +96,13 @@ export default function QAPage() {
     const { data: tickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
     const isLoading = isUserLoading || ticketsLoading;
 
-    const pageThemeClass = formaAfriqueUser?.role === 'instructor' ? 'dark' : '';
-
+    const filteredTickets = useMemo(() => {
+        if (!tickets) return [];
+        return tickets.filter(ticket => ticket.status === activeTab);
+    }, [tickets, activeTab]);
 
     return (
-        <div className={`space-y-8 ${pageThemeClass}`}>
+        <div className={`space-y-8`}>
             <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navQA')}</h1>
@@ -94,58 +127,79 @@ export default function QAPage() {
 
             <Card className="bg-card shadow-sm dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
-                    <CardTitle className="dark:text-white">{t('inbox')}</CardTitle>
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        <TabsList className="grid w-full grid-cols-2 max-w-sm">
+                            <TabsTrigger value="ouvert">{t('openTickets')}</TabsTrigger>
+                            <TabsTrigger value="fermé">{t('closedTickets')}</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="dark:border-slate-700">
-                                <TableHead className="dark:text-slate-400">{t('status')}</TableHead>
-                                <TableHead className="dark:text-slate-400">{t('subject')}</TableHead>
-                                <TableHead className="dark:text-slate-400">{t('last_activity')}</TableHead>
-                                <TableHead className="text-right dark:text-slate-400">{t('action')}</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {isLoading ? (
-                                [...Array(3)].map((_, i) => (
-                                     <TableRow key={i} className="dark:border-slate-700">
-                                        <TableCell><Skeleton className="h-6 w-20 rounded-full bg-slate-200 dark:bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-48 bg-slate-200 dark:bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24 bg-slate-200 dark:bg-slate-700" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-20 bg-slate-200 dark:bg-slate-700" /></TableCell>
-                                    </TableRow>
-                                ))
-                            ) : tickets && tickets.length > 0 ? (
-                                tickets.map((ticket) => (
-                                    <TableRow key={ticket.id} className="hover:bg-muted/50 dark:hover:bg-slate-700/50 dark:border-slate-700">
-                                        <TableCell>
-                                            <TicketStatusBadge status={ticket.status} />
-                                        </TableCell>
-                                        <TableCell className="font-medium dark:text-slate-200">{ticket.subject}</TableCell>
-                                        <TableCell className="text-muted-foreground text-sm dark:text-slate-400">
-                                            {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" asChild className="dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600">
-                                                <Link href={`/questions-reponses/${ticket.id}`}>{t('view')}</Link>
-                                            </Button>
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
+                    {/* --- Mobile Card View --- */}
+                    <div className="md:hidden space-y-4">
+                        {isLoading ? (
+                            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 w-full bg-slate-700" />)
+                        ) : filteredTickets.length > 0 ? (
+                            filteredTickets.map(ticket => <TicketCard key={ticket.id} ticket={ticket} />)
+                        ) : (
+                            <div className="h-48 text-center flex items-center justify-center">
+                                <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                                    <MessageSquare className="h-10 w-10" />
+                                    <span className="font-medium">{t('no_tickets_in_category')}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* --- Desktop Table View --- */}
+                    <div className="hidden md:block">
+                        <Table>
+                            <TableHeader>
                                 <TableRow className="dark:border-slate-700">
-                                    <TableCell colSpan={5} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                                            <MessageSquare className="h-10 w-10" />
-                                            <span className="font-medium">{t('no_questions_yet')}</span>
-                                            <span className="text-sm">{t('new_questions_here')}</span>
-                                        </div>
-                                    </TableCell>
+                                    <TableHead className="dark:text-slate-400">{t('subject')}</TableHead>
+                                    <TableHead className="dark:text-slate-400">{t('status')}</TableHead>
+                                    <TableHead className="dark:text-slate-400">{t('last_activity')}</TableHead>
+                                    <TableHead className="text-right dark:text-slate-400">{t('action')}</TableHead>
                                 </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <TableRow key={i} className="dark:border-slate-700">
+                                            <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
+                                            <TableCell><Skeleton className="h-6 w-20 rounded-full bg-slate-700" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-8 w-20 bg-slate-700" /></TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : filteredTickets.length > 0 ? (
+                                    filteredTickets.map((ticket) => (
+                                        <TableRow key={ticket.id} className="hover:bg-muted/50 dark:hover:bg-slate-700/50 dark:border-slate-700">
+                                            <TableCell className="font-medium dark:text-slate-200">{ticket.subject}</TableCell>
+                                            <TableCell><TicketStatusBadge status={ticket.status} fullText={true} /></TableCell>
+                                            <TableCell className="text-muted-foreground text-sm dark:text-slate-400">
+                                                {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <Button variant="outline" size="sm" asChild className="dark:bg-slate-700 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-600">
+                                                    <Link href={`/questions-reponses/${ticket.id}`}>{t('view')}</Link>
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow className="dark:border-slate-700">
+                                        <TableCell colSpan={4} className="h-32 text-center">
+                                            <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
+                                                <MessageSquare className="h-10 w-10" />
+                                                <span className="font-medium">{t('no_tickets_in_category')}</span>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </CardContent>
             </Card>
         </div>
