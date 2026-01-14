@@ -50,7 +50,7 @@ export function AiTutorClient() {
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [displayedMessages]); // Scroll when displayedMessages change
+  }, [displayedMessages, isAiResponding]); // Scroll when messages or typing indicator appear
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -160,7 +160,7 @@ export function AiTutorClient() {
             className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base"
             />
             <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
-                <Send className="h-5 w-5" />
+                {isAiResponding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                 <span className="sr-only">Envoyer</span>
             </Button>
         </form>
