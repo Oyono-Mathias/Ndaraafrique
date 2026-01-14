@@ -371,4 +371,3 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
         </div>
     );
 }
-
