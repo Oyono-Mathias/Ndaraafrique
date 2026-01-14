@@ -62,7 +62,7 @@ const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: Reac
                 <Icon className="h-4 w-4 text-slate-400" />
             </CardHeader>
             <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold text-white">{value}</div>}
+                {isLoading ? <Skeleton className="h-8 w-1/2 bg-slate-700" /> : <div className="text-2xl font-bold text-white">{value}</div>}
             </CardContent>
         </Card>
     );
@@ -218,12 +218,12 @@ export default function AccountPage() {
 
             try {
                 const [totalSnapshot, completedSnapshot] = await Promise.all([
-                    getDocs(q).then(snap => snap.size),
-                    getDocs(completedQuery).then(snap => snap.size)
+                    getCountFromServer(q),
+                    getCountFromServer(completedQuery)
                 ]);
                 setStats({
-                    enrolled: totalSnapshot,
-                    completed: completedSnapshot
+                    enrolled: totalSnapshot.data().count,
+                    completed: completedSnapshot.data().count
                 });
             } catch (e) {
                 console.error("Could not fetch user stats", e);
