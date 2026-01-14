@@ -34,7 +34,9 @@ service cloud.firestore {
     // --- Collection: users ---
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      // Annuaire: a user can list other users if their profile is complete and they filter by the same interest domain
+      // Admins can list all users.
+      allow list: if isAdmin() || (isProfileComplete() && 'careerGoals.interestDomain' in request.query.where);
       
       allow create: if isOwner(userId);
       
@@ -145,7 +147,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
       allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
-      allow list: if isAdmin();
+      allow list: if isSignedIn() && (isTicketParticipant() || isAdmin());
 
       match /messages/{messageId} {
         allow create: if isSignedIn() && (isTicketParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);
