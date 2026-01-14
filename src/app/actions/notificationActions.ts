@@ -3,7 +3,7 @@
 
 import { adminDb } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
-import { FieldValue, query, where, getDocs, DocumentData } from 'firebase-admin/firestore';
+import { FieldValue, DocumentData } from 'firebase-admin/firestore';
 
 interface NotificationPayload {
   title: string;
@@ -12,20 +12,26 @@ interface NotificationPayload {
   type?: 'newPayouts' | 'newApplications' | 'newSupportTickets' | 'financialAnomalies' | 'general';
 }
 
-const findUserByFCMToken = async (token: string): Promise<string | null> => {
-    const q = query(collection(adminDb, 'users'), where('fcmTokens', 'array-contains', token));
-    const snapshot = await getDocs(q);
+const findUserByFCMToken = async (token: string): Promise<{userId: string; token: string} | null> => {
+    const usersCollection = adminDb.collectionGroup('fcmTokens');
+    const snapshot = await usersCollection.where('tokens', 'array-contains', token).limit(1).get();
+    
     if (!snapshot.empty) {
-        return snapshot.docs[0].id;
+        const userDoc = snapshot.docs[0];
+        // The parent of a subcollection document is the user document.
+        const userId = userDoc.ref.parent.parent?.id;
+        if(userId) {
+          return { userId, token };
+        }
     }
     return null;
 }
 
 const cleanupInvalidTokens = async (tokensToRemove: string[], userId: string) => {
-    if (tokensToRemove.length > 0) {
-        const userRef = doc(adminDb, 'users', userId);
-        await userRef.update({
-            fcmTokens: FieldValue.arrayRemove(...tokensToRemove)
+    if (tokensToRemove.length > 0 && userId) {
+        const userFcmTokensRef = adminDb.collection('fcmTokens').doc(userId);
+        await userFcmTokensRef.update({
+            tokens: FieldValue.arrayRemove(...tokensToRemove)
         });
     }
 }
@@ -54,20 +60,25 @@ const sendNotifications = async (tokens: string[], payload: NotificationPayload)
 
     try {
         const response = await getMessaging().sendEachForMulticast(message);
-        const tokensToRemove: string[] = [];
-        response.responses.forEach((resp, idx) => {
-            if (!resp.success) {
-                console.warn(`Failed to send notification to token: ${tokens[idx]}`, resp.error);
-                // Cleanup logic for invalid tokens
-                 if (resp.error?.code === 'messaging/registration-token-not-registered') {
-                    tokensToRemove.push(tokens[idx]);
+        const tokensToRemove: { [userId: string]: string[] } = {};
+        
+        const cleanupPromises = response.responses.map(async (resp, idx) => {
+            if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+                const invalidToken = tokens[idx];
+                const result = await findUserByFCMToken(invalidToken);
+                if (result) {
+                    if (!tokensToRemove[result.userId]) {
+                        tokensToRemove[result.userId] = [];
+                    }
+                    tokensToRemove[result.userId].push(result.token);
                 }
             }
         });
 
-        if (tokensToRemove.length > 0) {
-            // Find user and clean up tokens (implementation needed)
-            console.log("Need to remove invalid tokens:", tokensToRemove);
+        await Promise.all(cleanupPromises);
+        
+        for (const userId in tokensToRemove) {
+            await cleanupInvalidTokens(tokensToRemove[userId], userId);
         }
 
         return { success: true, message: `Notifications envoyées à ${response.successCount} appareils.` };
@@ -80,38 +91,47 @@ const sendNotifications = async (tokens: string[], payload: NotificationPayload)
 
 // --- Global Notification to ALL users with a token ---
 export async function sendGlobalNotification(payload: NotificationPayload): Promise<{ success: boolean; message: string; }> {
-    const usersSnapshot = await adminDb.collection('fcmTokens').get();
+    const usersSnapshot = await adminDb.collectionGroup('fcmTokens').get();
     if(usersSnapshot.empty) return { success: true, message: "Aucun utilisateur avec un jeton de notification." };
     
-    const allTokens = usersSnapshot.docs.flatMap(doc => doc.data().tokens || []);
+    const allTokens: string[] = [];
+    usersSnapshot.forEach(doc => {
+        const tokens = doc.data().tokens;
+        if(Array.isArray(tokens)) {
+            allTokens.push(...tokens);
+        }
+    });
     
     return sendNotifications(allTokens, payload);
 }
 
 // --- Admin-only Notification ---
 export async function sendAdminNotification(payload: NotificationPayload): Promise<{ success: boolean; message: string }> {
-  const adminsQuery = query(collection(adminDb, 'users'), where('role', '==', 'admin'));
-  const adminsSnapshot = await getDocs(adminsQuery);
+  const adminsQuery = adminDb.collection('users').where('role', '==', 'admin');
+  const adminsSnapshot = await adminsQuery.get();
   
   if (adminsSnapshot.empty) return { success: true, message: "Aucun administrateur trouvé." };
 
-  const adminTokens: string[] = [];
-  adminsSnapshot.forEach(doc => {
-      const user = doc.data() as DocumentData;
-      // Admins might have notification preferences
-      const prefs = user.notificationPreferences;
-      if (prefs && payload.type && prefs[payload.type] === false) {
-          return; // Skip if this notification type is disabled
-      }
+  const adminIds = adminsSnapshot.docs.map(doc => doc.id);
+  const adminUsersData = adminsSnapshot.docs.map(doc => doc.data() as DocumentData);
 
-      if (user.fcmTokens && Array.isArray(user.fcmTokens)) {
-          adminTokens.push(...user.fcmTokens);
-      }
-  });
+  const fcmTokensQuery = adminDb.collection('fcmTokens').where(admin.firestore.FieldPath.documentId(), 'in', adminIds);
+  const fcmTokensSnapshot = await fcmTokensQuery.get();
+
+  const adminTokens: string[] = [];
   
-  const fcmTokensDocs = await getDocs(query(collection(adminDb, 'fcmTokens'), where('__name__', 'in', adminsSnapshot.docs.map(d => d.id))));
-  fcmTokensDocs.forEach(doc => {
-      adminTokens.push(...(doc.data().tokens || []));
+  fcmTokensSnapshot.forEach(doc => {
+      const user = adminUsersData.find(u => u.uid === doc.id);
+      if(user) {
+          const prefs = user.notificationPreferences;
+          if (prefs && payload.type && prefs[payload.type] === false) {
+              return; 
+          }
+          const tokens = doc.data().tokens;
+          if (tokens && Array.isArray(tokens)) {
+              adminTokens.push(...tokens);
+          }
+      }
   });
 
   return sendNotifications(Array.from(new Set(adminTokens)), payload);
