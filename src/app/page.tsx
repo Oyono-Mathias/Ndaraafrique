@@ -10,11 +10,12 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { getDocs } from 'firebase/firestore';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
@@ -43,7 +44,6 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
         </section>
     );
 };
-
 
 const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -84,6 +84,80 @@ const LandingNav = () => {
                 </div>
             </div>
         </nav>
+    );
+};
+
+const InteractiveSteps = () => {
+    const [activeStep, setActiveStep] = useState(0);
+
+    const steps = [
+        {
+            icon: UserPlus,
+            title: "Inscription Facile",
+            description: "Créez votre compte en quelques secondes et choisissez votre domaine d'intérêt pour une expérience personnalisée.",
+            image: "https://images.unsplash.com/photo-1579208570338-4a4a1b183944?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw3fHxzaWduJTIwdXB8ZW58MHx8fHwxNzA4MDIzODg4fDA&ixlib=rb-4.0.3&q=80&w=1080"
+        },
+        {
+            icon: BookCopy,
+            title: "Choix du Parcours",
+            description: "Explorez un catalogue riche de formations conçues par des experts africains et commencez à apprendre à votre rythme.",
+            image: "https://images.unsplash.com/photo-1521714161819-15534968fc5f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxsaWJyYXJ5fGVufDB8fHx8MTcwODAyMzkzN3ww&ixlib=rb-4.0.3&q=80&w=1080"
+        },
+        {
+            icon: Award,
+            title: "Certification & Carrière",
+            description: "Obtenez des certificats reconnus pour valider vos compétences et accédez à de nouvelles opportunités professionnelles.",
+            image: "https://images.unsplash.com/photo-1571260899-6d6f5a3a4a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdWNjZXNzfGVufDB8fHx8MTcwODAyMzk4NHww&ixlib=rb-4.0.3&q=80&w=1080"
+        }
+    ];
+
+    return (
+        <section className="py-20">
+             <h2 className="text-3xl font-bold text-center mb-4 text-foreground">Comment ça marche ?</h2>
+             <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-12">Un parcours simple en 3 étapes pour transformer votre carrière.</p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                 <div className="space-y-4">
+                    {steps.map((step, index) => {
+                        const isActive = activeStep === index;
+                        return (
+                            <button key={index} onClick={() => setActiveStep(index)} className={cn(
+                                "w-full text-left p-6 rounded-2xl border-2 transition-all duration-300",
+                                isActive 
+                                    ? "bg-primary/10 border-primary shadow-2xl shadow-primary/10" 
+                                    : "bg-slate-800/40 border-slate-700/80 hover:bg-slate-700/50"
+                            )}>
+                                <div className="flex items-center gap-4">
+                                    <div className={cn("p-3 rounded-full", isActive ? "bg-primary" : "bg-slate-700")}>
+                                        <step.icon className={cn("w-6 h-6", isActive ? "text-primary-foreground" : "text-primary")} />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-lg text-white">{step.title}</h3>
+                                        {isActive && <p className="text-sm text-slate-300 mt-1 animate-fade-in-up">{step.description}</p>}
+                                    </div>
+                                </div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                <div className="relative aspect-square rounded-3xl overflow-hidden shadow-2xl shadow-slate-900/50">
+                    {steps.map((step, index) => (
+                        <Image
+                            key={index}
+                            src={step.image}
+                            alt={step.title}
+                            fill
+                            className={cn(
+                                "object-cover transition-opacity duration-500",
+                                activeStep === index ? 'opacity-100' : 'opacity-0'
+                            )}
+                        />
+                    ))}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent"></div>
+                </div>
+            </div>
+        </section>
     );
 };
 
@@ -156,6 +230,8 @@ export default function LandingPage() {
         </header>
           
         <main className="space-y-16">
+          <InteractiveSteps />
+
            <CourseCarousel
             title="Populaires ce mois-ci"
             courses={popularCourses.length > 0 ? popularCourses : courses}
