@@ -100,9 +100,13 @@ service cloud.firestore {
     
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
-      allow create: if isOwner(request.resource.data.studentId);
-      allow read, list: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
-      allow update: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
+      // ANYONE can read a SINGLE enrollment if it's a completed course (for certificate verification)
+      allow get: if resource.data.progress == 100;
+      // Users can list and update THEIR OWN enrollments. Instructors can list enrollments for THEIR courses. Admins can do anything.
+      allow list, update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
+      // Only students can create their own enrollment records.
+      allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
+      // Only admins can delete enrollments.
       allow delete: if isAdmin();
     }
     
@@ -203,5 +207,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
