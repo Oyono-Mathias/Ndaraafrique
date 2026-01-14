@@ -57,11 +57,14 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
     return (
         <Dialog open={isOpen}>
             <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><UserX className="text-destructive"/> {t('profile_incomplete_title')}</DialogTitle>
+                <DialogHeader className="items-center text-center">
+                    <div className="p-3 rounded-full bg-destructive/10 w-fit mb-2">
+                        <UserX className="text-destructive h-6 w-6"/> 
+                    </div>
+                    <DialogTitle>{t('profile_incomplete_title')}</DialogTitle>
                     <DialogDescription className="pt-2">{t('profile_incomplete_desc_chat')}</DialogDescription>
                 </DialogHeader>
-                <Button onClick={onGoToProfile}>{t('complete_profile_btn')}</Button>
+                <Button onClick={onGoToProfile} className="w-full">{t('complete_profile_btn')}</Button>
             </DialogContent>
         </Dialog>
     );
