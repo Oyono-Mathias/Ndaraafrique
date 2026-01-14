@@ -49,9 +49,9 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
             loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-          {course.category && (
-            <Badge className="absolute top-3 right-3 bg-black/50 text-white border-white/20 backdrop-blur-sm">
-                {course.category}
+          {course.isPopular && (
+            <Badge className="absolute top-3 left-3 bg-amber-400/20 text-amber-300 border-amber-400/30">
+                Populaire
             </Badge>
           )}
         </div>

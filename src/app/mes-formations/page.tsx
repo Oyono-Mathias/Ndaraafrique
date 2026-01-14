@@ -100,11 +100,11 @@ export default function MyLearningPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navMyLearning')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">{t('navMyLearning')}</h1>
       </header>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-3 dark:bg-slate-800 dark:text-slate-300 dark:data-[state=active]:bg-background">
           <TabsTrigger value="all">{t('all')}</TabsTrigger>
           <TabsTrigger value="in-progress">{t('in_progress')}</TabsTrigger>
           <TabsTrigger value="completed">{t('completed')}</TabsTrigger>
@@ -132,7 +132,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[...Array(3)].map((_, i) => (
-                    <Skeleton key={i} className="h-[280px] w-full rounded-xl bg-slate-200" />
+                    <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />
                 ))}
             </div>
         );
