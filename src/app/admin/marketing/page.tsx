@@ -6,7 +6,7 @@ import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, orderBy, doc, updateDoc, query } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
