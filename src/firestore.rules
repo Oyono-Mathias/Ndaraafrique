@@ -103,7 +103,7 @@ service cloud.firestore {
      // --- Collection: reviews ---
     match /reviews/{reviewId} {
       allow read: if true;
-      allow list: if true;
+      allow list: if (isSignedIn() && request.query.where.instructorId == request.auth.uid) || isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isSignedIn() && (isOwner(request.resource.data.userId) || isAdmin());
     }

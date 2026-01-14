@@ -88,28 +88,16 @@ export default function ReviewsPage() {
     setIsLoading(true);
 
     try {
-      // 1. Get all courses for the instructor
+      // 1. Get all courses for the instructor to create a map for titles
       const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', instructorId));
       const coursesSnapshot = await getDocs(coursesQuery);
-      if (coursesSnapshot.empty) {
-        setReviews([]);
-        setIsLoading(false);
-        return;
-      }
-      const courseIds = coursesSnapshot.docs.map(doc => doc.id);
       const coursesMap = new Map<string, Course>(coursesSnapshot.docs.map(doc => [doc.id, doc.data() as Course]));
-
-      // 2. Batch fetch reviews for all courses
-      const reviewPromises = [];
-      // Firestore 'in' query has a limit of 30 items, so we chunk the courseIds
-      for (let i = 0; i < courseIds.length; i += 30) {
-          const chunk = courseIds.slice(i, i + 30);
-          const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk));
-          reviewPromises.push(getDocs(reviewsQuery));
-      }
       
-      const reviewSnapshots = await Promise.all(reviewPromises);
-      const allReviews = reviewSnapshots.flatMap(snapshot => snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review)));
+      // 2. Fetch all reviews for this instructor directly
+      const reviewsQuery = query(collection(db, 'reviews'), where('instructorId', '==', instructorId), orderBy('createdAt', 'desc'));
+      const reviewsSnapshot = await getDocs(reviewsQuery);
+      
+      const allReviews = reviewsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Review));
 
       if (allReviews.length === 0) {
         setReviews([]);
@@ -121,6 +109,7 @@ export default function ReviewsPage() {
       const userIds = [...new Set(allReviews.map(r => r.userId))];
       const userPromises = [];
       const usersMap = new Map<string, FormaAfriqueUser>();
+      // Batch user fetching
       for (let i = 0; i < userIds.length; i += 30) {
           const chunk = userIds.slice(i, i + 30);
           const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
@@ -139,9 +128,6 @@ export default function ReviewsPage() {
         studentName: usersMap.get(review.userId)?.fullName || 'Anonyme',
         studentImage: usersMap.get(review.userId)?.profilePictureURL,
       }));
-
-      // 5. Sort client-side
-      populatedReviews.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
       
       setReviews(populatedReviews);
 
