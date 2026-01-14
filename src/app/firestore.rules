@@ -68,7 +68,7 @@ service cloud.firestore {
     
     // --- Collection: courses ---
     match /courses/{courseId} {
-        allow get: if resource.data.status == 'Published' || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
+        allow get: if resource.data.status == "Published" || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
         allow list: if true; // Allow listing, client will filter by status
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
@@ -203,5 +203,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
