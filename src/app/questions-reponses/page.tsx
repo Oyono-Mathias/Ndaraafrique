@@ -56,7 +56,7 @@ const TicketStatusBadge = ({ status, fullText = false }: { status: SupportTicket
 
 const TicketCard = ({ ticket }: { ticket: SupportTicket }) => (
     <Link href={`/questions-reponses/${ticket.id}`} className="block">
-        <Card className="hover:bg-slate-800/50 transition-colors">
+        <Card className="hover:bg-slate-800/50 transition-colors dark:bg-slate-800 dark:border-slate-700">
             <CardContent className="p-4 space-y-2">
                 <div className="flex justify-between items-start">
                     <p className="font-bold text-sm text-white line-clamp-2 pr-4">{ticket.subject}</p>
@@ -128,7 +128,7 @@ export default function QAPage() {
             <Card className="bg-card shadow-sm dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
-                        <TabsList className="grid w-full grid-cols-2 max-w-sm">
+                        <TabsList className="grid w-full grid-cols-2 max-w-sm dark:bg-slate-700/50 dark:border-slate-600">
                             <TabsTrigger value="ouvert">{t('openTickets')}</TabsTrigger>
                             <TabsTrigger value="fermé">{t('closedTickets')}</TabsTrigger>
                         </TabsList>
