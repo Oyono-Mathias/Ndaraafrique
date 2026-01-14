@@ -1,12 +1,11 @@
 
 'use server';
 
-// This functionality is temporarily disabled as it requires the Admin SDK.
-// We are commenting out the imports and logic that depend on it.
-// import { adminDb } from '@/firebase/admin';
+import { adminDb } from '@/firebase/admin';
 import { sendAdminNotification } from './notificationActions';
 import { detectFraud } from '@/ai/flows/detect-fraud-flow';
-// import { Timestamp } from 'firebase-admin/firestore';
+import { Timestamp } from 'firebase-admin/firestore';
+import type { DetectFraudInput } from '@/ai/flows/detect-fraud-flow';
 
 // This is a placeholder for the real Moneroo SDK.
 class Moneroo {
@@ -21,15 +20,12 @@ class Moneroo {
     async verify(transactionId: string): Promise<{ status: string; data?: any; message?: string }> {
         if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
              console.warn("Moneroo secret key is not configured. Simulating successful payment verification is DEACTIVATED. A real key is required.");
-             // In a real scenario, this would throw an error or return a failure.
-             // We return a failure to enforce secure-by-default behavior.
              return {
                 status: 'error',
                 message: 'Moneroo secret key not configured on the server.',
              };
         }
         
-        // --- REAL API CALL (when keys are configured) ---
         const url = `https://api.moneroo.io/v1/payments/${transactionId}`;
         const response = await fetch(url, {
             headers: {
@@ -66,8 +62,6 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
         if (response?.status === 'success' && response.data?.status === 'successful') {
             
             // --- AI FRAUD DETECTION (ASYNC) ---
-            // This part is temporarily disabled because it relies on the Admin SDK
-            /*
             const userId = response.data.metadata?.userId;
             const courseId = response.data.metadata?.courseId;
 
@@ -82,10 +76,10 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
                     const userData = userDoc.data()!;
                     const accountAgeInSeconds = Math.floor((Timestamp.now().seconds - (userData.createdAt as Timestamp).seconds));
                     
-                    const fraudCheckPayload = {
+                    const fraudCheckPayload: DetectFraudInput = {
                         transactionId: response.data.id,
                         amount: response.data.amount,
-                        courseTitle: courseDoc.data()?.title || 'Unknown Course',
+                        courseTitle: courseDoc.data()?.title || 'Cours inconnu',
                         user: {
                             id: userId,
                             accountAgeInSeconds: accountAgeInSeconds,
@@ -116,32 +110,31 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
                     }).catch(e => console.error("AI Fraud Detection Flow failed:", e));
                 }
             }
-            */
             // --- END AI FRAUD DETECTION ---
 
             return { success: true, data: response.data };
         } else {
-            /*
+            
             await sendAdminNotification({
                 title: '⚠️ Anomalie de Paiement Détectée',
                 body: `Échec de la vérification Moneroo pour la transaction ID: ${transactionId}. Statut: ${response.data?.status || 'inconnu'}.`,
                 link: '/admin/payments',
                 type: 'financialAnomalies'
             });
-            */
+            
             return { success: false, error: response?.message || `Paiement non finalisé. Statut : ${response.data?.status}` };
         }
 
     } catch (error: any) {
         console.error("Error verifying Moneroo transaction:", error);
-         /*
+         
          await sendAdminNotification({
             title: '🔥 Erreur Critique de Paiement',
             body: `Le service de vérification Moneroo a échoué. Cause: ${error.message}`,
             link: '/admin/settings',
             type: 'financialAnomalies'
         });
-        */
+        
         return { success: false, error: error.message || 'Erreur de vérification du paiement.' };
     }
 }
