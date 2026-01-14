@@ -64,5 +64,3 @@ export function CertificateModal({ isOpen, onClose, courseName, studentName, com
     </Dialog>
   );
 }
-
-    
