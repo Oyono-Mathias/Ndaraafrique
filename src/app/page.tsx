@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -10,7 +9,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { getDocs } from 'firebase/firestore';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles, UserPlus, BookCopy, Award } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -165,6 +164,45 @@ const InteractiveSteps = () => {
     );
 };
 
+const TrustSection = () => {
+    const trustFeatures = [
+        {
+            icon: ShieldCheck,
+            title: "Paiements Sécurisés",
+            description: "Nous utilisons des partenaires de paiement conformes aux normes PCI-DSS pour garantir que vos informations sont toujours en sécurité."
+        },
+        {
+            icon: Lock,
+            title: "Données Protégées",
+            description: "Toutes les communications sur notre plateforme sont chiffrées de bout en bout. Votre vie privée est notre priorité."
+        },
+        {
+            icon: HelpingHand,
+            title: "Support Réactif",
+            description: "Besoin d'aide ? Notre équipe est disponible pour répondre à toutes vos questions concernant les paiements et votre compte."
+        }
+    ];
+
+    return (
+        <section className="py-20">
+             <h2 className="text-3xl font-bold text-center mb-4 text-foreground">Votre sérénité, notre priorité</h2>
+             <p className="text-muted-foreground text-center max-w-3xl mx-auto mb-12">
+                Nous intégrons les meilleures technologies de sécurité pour garantir la protection et la traçabilité de chaque transaction sur la plateforme.
+             </p>
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {trustFeatures.map((feature, index) => (
+                    <div key={index} className="p-8 rounded-2xl bg-slate-900/50 border border-slate-800/80 text-center transition-all duration-300 hover:-translate-y-2 hover:border-primary/50">
+                        <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
+                            <feature.icon className="w-8 h-8 text-primary" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
+                        <p className="text-sm text-slate-400">{feature.description}</p>
+                    </div>
+                ))}
+             </div>
+        </section>
+    );
+}
 
 export default function LandingPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -257,6 +295,7 @@ export default function LandingPage() {
             instructorsMap={instructorsMap}
             isLoading={loading}
           />
+          <TrustSection />
         </main>
       </div>
       <Footer />
