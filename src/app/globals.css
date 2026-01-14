@@ -109,6 +109,11 @@
     @apply text-muted-foreground hover:text-foreground transition-colors;
   }
 
+  /* Glassmorphism Card Style */
+  .glassmorphism-card {
+    @apply bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl;
+  }
+
   /* Accessibility & Mobile */
   :focus-visible {
     @apply ring-2 ring-ring ring-offset-2 ring-offset-background;

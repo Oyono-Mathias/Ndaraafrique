@@ -7,14 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, getDocs, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { getMessaging, getToken, deleteToken } from 'firebase/messaging';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
 import { useToast } from '@/hooks/use-toast';
-import { deleteUserAccount } from '@/app/actions/userActions';
+import { deleteUserAccount } from '@/actions/userActions';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,7 +92,8 @@ const NotificationPreferences = () => {
         try {
             const { initializeFirebase } = await import('@/firebase');
             const { firebaseApp } = initializeFirebase();
-            const messaging = getMessaging(firebaseApp);
+            const messaging = (await import('firebase/messaging')).getMessaging(firebaseApp);
+            const { getToken, deleteToken } = await import('firebase/messaging');
             const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 
             if (checked) {
@@ -355,7 +355,19 @@ export default function AccountPage() {
   };
 
   if (isUserLoading || !formaAfriqueUser) {
-    return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return (
+      <div className="space-y-8 max-w-4xl mx-auto">
+        <header className="text-center"><Skeleton className="h-10 w-64 mx-auto" /><Skeleton className="h-5 w-80 mx-auto mt-2" /></header>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Skeleton className="h-96 w-full" />
+            <div className="space-y-8">
+                <Skeleton className="h-32 w-full" />
+                <Skeleton className="h-48 w-full" />
+                <Skeleton className="h-40 w-full" />
+            </div>
+        </div>
+      </div>
+    );
   }
 
   return (
