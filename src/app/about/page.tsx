@@ -20,13 +20,15 @@ const SangoQuote = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
-const Section = ({ title, frenchText, sangoText, children }: { title: string, frenchText: string, sangoText: string, children?: React.ReactNode }) => (
+const Section = ({ title, frenchText, sangoText, children }: { title: string, frenchText?: string, sangoText?: string, children?: React.ReactNode }) => (
     <section className="mb-12 md:mb-16">
         <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 border-l-4 border-primary pl-4">{title}</h2>
-        <div className="prose prose-lg prose-invert max-w-none text-slate-300">
-            <p>{frenchText}</p>
-            <p className="text-slate-400 italic text-base">{sangoText}</p>
-        </div>
+        {frenchText && sangoText && (
+            <div className="prose prose-lg prose-invert max-w-none text-slate-300">
+                <p>{frenchText}</p>
+                <p className="text-slate-400 italic text-base">{sangoText}</p>
+            </div>
+        )}
         {children}
     </section>
 );
@@ -120,6 +122,3 @@ export default function AboutPage() {
     </div>
   );
 }
-
-
-    
