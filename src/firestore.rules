@@ -10,7 +10,7 @@ service cloud.firestore {
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return request.auth.uid == uid;
     }
 
     function getUserData(userId) {
@@ -33,19 +33,25 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      allow get: if isSignedIn(); // Allow any signed-in user to read profile data (client should only show public fields)
-      allow list: if isAdmin(); // Only admins can list all users.
-      allow create: if isOwner(userId); // A user can create their own document
+      // Un utilisateur ne peut lire en détail (get) que son propre profil.
+      allow get: if isOwner(userId) || isAdmin(); 
+      
+      // La liste est autorisée pour les utilisateurs connectés afin de permettre les requêtes de l'annuaire.
+      // La sécurité repose sur le code client qui n'affiche que les champs publics.
+      allow list: if isSignedIn();
+      
+      allow create: if isOwner(userId); // Un utilisateur peut créer son propre document.
+      
       allow update: if isAdmin() || (
         isOwner(userId) && 
-        // User cannot change their own role, approval status, or general status.
+        // L'utilisateur ne peut pas changer son propre rôle ou son statut d'approbation.
         !('role' in request.resource.data) && 
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
-      allow delete: if isAdmin() || isOwner(userId); // User can delete their own account
+      allow delete: if isAdmin() || isOwner(userId); // Un utilisateur peut supprimer son propre compte.
 
-      // --- Sub-collections of 'users' ---
+      // --- Sous-collections de 'users' ---
       match /chatHistory/{messageId} {
         allow read, write, list: if isOwner(userId);
       }
@@ -57,8 +63,8 @@ service cloud.firestore {
       }
       match /subscriptions/{subscriptionId} {
         allow read, list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId); // Users can create subscriptions for themselves
-        allow update: if isAdmin(); // Only admins can update status
+        allow create: if isOwner(userId);
+        allow update: if isAdmin();
       }
        match /fcmTokens/{tokenId} {
         allow read, delete: if isOwner(userId);
@@ -69,7 +75,7 @@ service cloud.firestore {
     // --- Collection: courses ---
     match /courses/{courseId} {
         allow get: if resource.data.status == 'Published' || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
-        allow list: if true; // Allow listing, client will filter by status
+        allow list: if true;
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
         
@@ -106,19 +112,15 @@ service cloud.firestore {
 
     // --- Collection: resources ---
     match /resources/{resourceId} {
-        allow read, list: if true; // Anyone can see there are resources
+        allow read, list: if true;
         allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.instructorId)) || isAdmin();
     }
     
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
-      // ANYONE can read a SINGLE enrollment if it's a completed course (for certificate verification)
       allow get: if resource.data.progress == 100;
-      // Users can list and update THEIR OWN enrollments. Instructors can list enrollments for THEIR courses. Admins can do anything.
       allow list, update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
-      // Only students can create their own enrollment records.
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
-      // Only admins can delete enrollments.
       allow delete: if isAdmin();
     }
     
@@ -169,8 +171,8 @@ service cloud.firestore {
 
     // --- Collection: subscription_plans ---
     match /subscription_plans/{planId} {
-        allow get, list: if true; // Everyone can see available plans
-        allow create, update, delete: if isAdmin(); // Only admins can manage plans
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin();
     }
     
     // --- Collection: chats ---
@@ -185,7 +187,7 @@ service cloud.firestore {
                       && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
                       
       allow read, update: if isSignedIn() && isChatParticipant();
-      allow list: if isSignedIn() && request.auth.uid in request.resource.data.participants;
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
       
       match /messages/{messageId} {
         allow read, list: if isSignedIn() && isChatParticipant();
@@ -208,8 +210,8 @@ service cloud.firestore {
     
      // --- Collection: waitlist ---
     match /waitlist/{email} {
-        allow create: if true; // Anyone can add their email to the waitlist
-        allow read, update, delete: if false; // No one can read the list
+        allow create: if true;
+        allow read, update, delete: if false;
     }
 
 
