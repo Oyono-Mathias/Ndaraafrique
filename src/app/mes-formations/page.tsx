@@ -85,7 +85,7 @@ export default function MyLearningPage() {
   }, [enrollments, enrollmentsLoading, db]);
 
   const { inProgressCourses, completedCourses } = useMemo(() => {
-    const inProgress = courses.filter(c => c.progress > 0 && c.progress < 100);
+    const inProgress = courses.filter(c => c.progress >= 0 && c.progress < 100);
     const completed = courses.filter(c => c.progress === 100);
     return { inProgressCourses: inProgress, completedCourses: completed };
   }, [courses]);
