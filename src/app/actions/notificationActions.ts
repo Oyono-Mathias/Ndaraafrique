@@ -4,6 +4,7 @@
 import { adminDb } from '@/firebase/admin';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue, DocumentData } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin';
 
 interface NotificationPayload {
   title: string;
@@ -18,7 +19,6 @@ const findUserByFCMToken = async (token: string): Promise<{userId: string; token
     
     if (!snapshot.empty) {
         const userDoc = snapshot.docs[0];
-        // The parent of a subcollection document is the user document.
         const userId = userDoc.ref.parent.parent?.id;
         if(userId) {
           return { userId, token };
@@ -52,7 +52,7 @@ const sendNotifications = async (tokens: string[], payload: NotificationPayload)
                 icon: '/icon.svg',
             },
             fcm_options: {
-                link: payload.link || 'https://ndara-afrique.web.app',
+                link: payload.link || 'https://formaafrique.web.app',
             },
         },
         tokens: tokens,
