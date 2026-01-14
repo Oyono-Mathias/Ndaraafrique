@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getDocs, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, getDocs, setDoc, deleteDoc, serverTimestamp, getCountFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
@@ -218,12 +218,12 @@ export default function AccountPage() {
 
             try {
                 const [totalSnapshot, completedSnapshot] = await Promise.all([
-                    getCountFromServer(q),
-                    getCountFromServer(completedQuery)
+                    getDocs(q).then(snap => snap.size),
+                    getDocs(completedQuery).then(snap => snap.size)
                 ]);
                 setStats({
-                    enrolled: totalSnapshot.data().count,
-                    completed: completedSnapshot.data().count
+                    enrolled: totalSnapshot,
+                    completed: completedSnapshot
                 });
             } catch (e) {
                 console.error("Could not fetch user stats", e);

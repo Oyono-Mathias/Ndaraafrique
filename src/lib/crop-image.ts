@@ -1,3 +1,4 @@
+
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image();
@@ -19,11 +20,11 @@ export default async function getCroppedImg(
     throw new Error('Could not get canvas context');
   }
 
-  const outputWidth = 1280;
-  const outputHeight = 720;
-
-  canvas.width = outputWidth;
-  canvas.height = outputHeight;
+  // Set the output size for the avatar. 256x256 is a good balance.
+  const outputSize = 256;
+  
+  canvas.width = outputSize;
+  canvas.height = outputSize;
 
   ctx.drawImage(
     image,
@@ -33,8 +34,8 @@ export default async function getCroppedImg(
     pixelCrop.height,
     0,
     0,
-    outputWidth,
-    outputHeight
+    outputSize,
+    outputSize
   );
 
   return new Promise((resolve, reject) => {
@@ -43,8 +44,9 @@ export default async function getCroppedImg(
         reject(new Error('Canvas is empty'));
         return;
       }
-      const file = new File([blob], 'cropped_image.webp', { type: 'image/webp' });
+      // Name the file consistently for storage.
+      const file = new File([blob], 'profile.webp', { type: 'image/webp' });
       resolve(file);
-    }, 'image/webp', 0.9); // 90% quality
+    }, 'image/webp', 0.9); // Use WebP format with 90% quality for good compression
   });
 }
