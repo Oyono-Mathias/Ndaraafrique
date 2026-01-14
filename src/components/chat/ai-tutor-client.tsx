@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { mathiasTutor, type MathiasTutorInput } from "@/ai/flows/mathias-tutor-flow";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { Bot, Send, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useCollection, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore, limit, startAfter, QueryDocumentSnapshot, DocumentData, getDocs } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 import { Message } from "@/lib/types";
@@ -23,34 +23,76 @@ export function AiTutorClient() {
   const [input, setInput] = useState("");
   const [isAiResponding, setIsAiResponding] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  const chatHistoryQuery = useMemoFirebase(() => {
-    if (!user) return null;
-    return query(collection(db, `users/${user.uid}/chatHistory`), orderBy("timestamp", "asc"));
-  }, [db, user]);
-
-  // Firestore is the single source of truth for messages.
-  const { data: messages, isLoading: isHistoryLoading } = useCollection<Message>(chatHistoryQuery);
+  
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
 
   const initialGreeting = { id: 'initial-greeting', sender: "ai" as const, text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", timestamp: new Date() };
 
-  // Use a memoized value to decide which messages to display.
-  // This prevents re-renders from creating duplicate greetings.
+  const fetchMessages = useCallback(async (loadMore = false) => {
+    if (!user) {
+        setIsHistoryLoading(false);
+        return;
+    }
+
+    if (loadMore) {
+        setIsFetchingMore(true);
+    } else {
+        setIsHistoryLoading(true);
+    }
+    
+    const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
+    let q = query(chatCollectionRef, orderBy("timestamp", "desc"), limit(25));
+    
+    if (loadMore && lastVisible) {
+        q = query(chatCollectionRef, orderBy("timestamp", "desc"), startAfter(lastVisible), limit(25));
+    }
+
+    try {
+        const querySnapshot = await getDocs(q);
+        const newMessages = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+        
+        setHasMore(newMessages.length === 25);
+        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+
+        if(loadMore) {
+            setMessages(prev => [...prev, ...newMessages]);
+        } else {
+            setMessages(newMessages);
+        }
+    } catch (error) {
+        console.error("Failed to fetch messages:", error);
+    } finally {
+        setIsHistoryLoading(false);
+        setIsFetchingMore(false);
+    }
+  }, [user, db, lastVisible]);
+  
+  useEffect(() => {
+    fetchMessages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const displayedMessages = useMemo(() => {
-    const history = messages || [];
-    // Only show the initial greeting if there's no actual history from Firestore.
-    return history.length > 0 ? history : [initialGreeting];
-  }, [messages]);
+    if (messages.length > 0) {
+        return [...messages].reverse(); // Reverse for chronological order display
+    }
+    return [initialGreeting];
+  }, [messages, initialGreeting]);
 
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
+    // Only auto-scroll for new messages, not when loading more
+    if (!isFetchingMore && scrollAreaRef.current) {
       const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (viewport) {
         viewport.scrollTop = viewport.scrollHeight;
       }
     }
-  }, [displayedMessages, isAiResponding]); // Scroll when messages or typing indicator appear
+  }, [displayedMessages, isAiResponding, isFetchingMore]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,36 +101,38 @@ export function AiTutorClient() {
     const userMessageText = input;
     setInput("");
 
-    // 1. Save user message to Firestore. UI will update via useCollection listener.
     const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
     const userMessagePayload = { sender: "user" as const, text: userMessageText, timestamp: serverTimestamp() };
     
     try {
-      await addDoc(chatCollectionRef, userMessagePayload);
+      const docRef = await addDoc(chatCollectionRef, userMessagePayload);
+      // Optimistically update UI
+      setMessages(prev => [{id: docRef.id, ...userMessagePayload, timestamp: new Date() }, ...prev]);
     } catch(err) {
        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: chatCollectionRef.path,
             operation: 'create',
             requestResourceData: userMessagePayload,
         }));
-        return; // Stop if user can't even send a message
+        return; 
     }
 
     setIsAiResponding(true);
 
     try {
-      // 2. Call the AI flow
       const chatInput: MathiasTutorInput = { query: userMessageText };
       const result = await mathiasTutor(chatInput);
       
-      // 3. Save AI message to Firestore. UI will update via useCollection listener.
       const aiMessagePayload = { sender: "ai" as const, text: result.response, timestamp: serverTimestamp() };
-      await addDoc(chatCollectionRef, aiMessagePayload);
+      const docRef = await addDoc(chatCollectionRef, aiMessagePayload);
+      // Optimistically update UI
+       setMessages(prev => [{id: docRef.id, ...aiMessagePayload, timestamp: new Date() }, ...prev]);
 
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessagePayload = { sender: "ai" as const, text: "Désolé, une erreur est survenue. Veuillez réessayer.", timestamp: serverTimestamp() };
-      await addDoc(chatCollectionRef, errorMessagePayload);
+      const docRef = await addDoc(chatCollectionRef, errorMessagePayload);
+       setMessages(prev => [{id: docRef.id, ...errorMessagePayload, timestamp: new Date() }, ...prev]);
     } finally {
       setIsAiResponding(false);
     }
@@ -113,10 +157,17 @@ export function AiTutorClient() {
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-1 p-4 sm:p-6">
           {isLoading && (
-            <div className="flex justify-center items-center h-full">
+            <div className="flex justify-center items-center h-full pt-10">
               <Loader2 className="h-8 w-8 animate-spin" />
             </div>
           )}
+           {!isLoading && hasMore && (
+              <div className="text-center mb-4">
+                  <Button variant="outline" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore}>
+                      {isFetchingMore ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Charger les messages précédents'}
+                  </Button>
+              </div>
+            )}
           {!isLoading && displayedMessages.map((message, index) => (
             <div
               key={message.id || `msg-${index}`}
