@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/componen
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, CheckCircle, Clock, Edit, UploadCloud, File, X } from 'lucide-react';
+import { ClipboardList, CheckCircle, Clock, Edit, UploadCloud, File, X, Download } from 'lucide-react';
 import { format, isPast } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
@@ -191,15 +191,22 @@ const SubmissionModal = ({
                                 {uploadProgress !== null && <Progress value={uploadProgress} className="w-full mt-2" />}
                             </div>
                         ) : (
-                            <div>
+                             <div>
                                 <p className="text-sm dark:text-slate-300">{t('alreadySubmitted')}</p>
                                 {assignment.submission?.fileURL && (
-                                    <Button variant="link" asChild>
-                                        <a href={assignment.submission.fileURL} target="_blank" rel="noopener noreferrer" className="text-sm">
+                                    <Button variant="outline" asChild className="mt-2">
+                                        <a href={assignment.submission.fileURL} target="_blank" rel="noopener noreferrer">
+                                            <Download className="mr-2 h-4 w-4" />
                                             {t('viewSubmission')}
                                         </a>
                                     </Button>
                                 )}
+                            </div>
+                        )}
+                        {assignment.status === 'graded' && assignment.submission?.feedback && (
+                            <div className="mt-4 p-4 border rounded-lg bg-slate-100 dark:bg-slate-800/50 dark:border-slate-700">
+                                <h5 className="font-bold text-lg dark:text-white">Note : {assignment.grade}/20</h5>
+                                <p className="mt-2 text-sm text-muted-foreground dark:text-slate-300">{JSON.parse(assignment.submission.feedback).commentaire_fr}</p>
                             </div>
                         )}
                     </div>
@@ -371,3 +378,5 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
         </div>
     );
 }
+
+    
