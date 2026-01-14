@@ -8,8 +8,7 @@ import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 
 import { Frown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
-import type { Course } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { Course, NdaraUser } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { CourseCard } from '../cards/CourseCard';

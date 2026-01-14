@@ -87,7 +87,7 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
 
 
 export default function AdminPaymentsPage() {
-  const { ndaraUser: adminUser } = useRole();
+  const { formaAfriqueUser: adminUser } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');

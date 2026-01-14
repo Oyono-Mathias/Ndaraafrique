@@ -30,8 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Course, Review } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { Course, Review, NdaraUser } from '@/lib/types';
 
 
 interface ReviewWithDetails extends Review {

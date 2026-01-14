@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -188,7 +189,7 @@ const DecisionModal = ({
 };
 
 export default function InstructorApplicationsPage() {
-  const { ndaraUser: adminUser, isUserLoading } = useRole();
+  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const { t } = useTranslation();

@@ -8,69 +8,9 @@ import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp } fro
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
+import type { NdaraUser } from '@/lib/types';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
-
-export interface NdaraUser {
-    uid: string;
-    email: string;
-    username: string;
-    fullName: string;
-    role: UserRole;
-    isInstructorApproved: boolean;
-    availableRoles: UserRole[];
-    status?: 'active' | 'suspended';
-    bio?: string;
-    socialLinks?: {
-        website?: string;
-        twitter?: string;
-        linkedin?: string;
-        youtube?: string;
-    };
-    payoutInfo?: {
-        mobileMoneyNumber?: string;
-    };
-    notificationPreferences?: {
-      newPayouts: boolean;
-      newApplications: boolean;
-      newSupportTickets: boolean;
-      financialAnomalies: boolean;
-    };
-    videoPlaybackPreferences?: {
-        defaultQuality: string;
-        defaultSpeed: string;
-    };
-    careerGoals?: {
-        currentRole?: string;
-        interestDomain?: string; // This is the category for matchmaking
-        mainGoal?: string;
-    };
-    profilePictureURL?: string;
-    instructorApplication?: {
-        specialty?: string;
-        whatsappNumber?: string;
-        youtubeUrl?: string;
-        facebookUrl?: string;
-        presentationVideoUrl?: string;
-        professionalExperience?: string;
-        linkedinUrl?: string;
-        portfolioUrl?: string;
-        firstCourseTitle?: string;
-        firstCourseDescription?: string;
-        hasEquipment?: boolean;
-        submittedAt: Date;
-    };
-    createdAt?: Timestamp;
-    lastLogin?: Timestamp;
-    isOnline?: boolean;
-    lastSeen?: Timestamp;
-    termsAcceptedAt?: Timestamp;
-    country?: string;
-    countryCode?: string;
-    isProfileComplete?: boolean;
-    preferredLanguage?: 'fr' | 'en' | 'sg';
-    badges?: string[];
-}
 
 interface RoleContextType {
   role: UserRole;
@@ -80,17 +20,17 @@ interface RoleContextType {
   switchRole: (newRole: UserRole) => void;
   secureSignOut: () => Promise<void>;
   loading: boolean;
-  ndaraUser: NdaraUser | null;
+  formaAfriqueUser: NdaraUser | null;
   user: User | null; // From Firebase Auth
   isUserLoading: boolean; // From Firebase Auth
-  setNdaraUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
+  setFormaAfriqueUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const [ndaraUser, setNdaraUser] = useState<NdaraUser | null>(null);
+  const [formaAfriqueUser, setFormaAfriqueUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
@@ -125,7 +65,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     
     if (!user) {
-      setNdaraUser(null);
+      setFormaAfriqueUser(null);
       setLoading(false);
       return;
     }
@@ -164,7 +104,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
 
-          setNdaraUser(resolvedUser);
+          setFormaAfriqueUser(resolvedUser);
           setAvailableRoles(roles);
 
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
@@ -195,7 +135,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 profilePictureURL: user.photoURL || '',
                 isProfileComplete: false,
             };
-            setNdaraUser(defaultUser);
+            setFormaAfriqueUser(defaultUser);
             setAvailableRoles(['student']);
             setRole('student');
         }
@@ -232,11 +172,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     switchRole,
     secureSignOut,
     loading: isUserLoading || loading,
-    ndaraUser,
-    setNdaraUser,
+    formaAfriqueUser,
+    setFormaAfriqueUser,
     user,
     isUserLoading
-  }), [role, availableRoles, switchRole, secureSignOut, loading, ndaraUser, user, isUserLoading]);
+  }), [role, availableRoles, switchRole, secureSignOut, loading, formaAfriqueUser, user, isUserLoading]);
 
   return (
     <RoleContext.Provider value={value}>

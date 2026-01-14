@@ -20,8 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Star, Search, Frown, Loader2 } from 'lucide-react';
-import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { Course, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useRole } from '@/context/RoleContext';
 import { toast } from '@/hooks/use-toast';
@@ -39,7 +38,7 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
     </div>
 );
 
-const SearchResultCard = ({ course, instructor }: { course: Course, instructor: FormaAfriqueUser | null }) => (
+const SearchResultCard = ({ course, instructor }: { course: Course, instructor: NdaraUser | null }) => (
     <Link href={`/course/${course.id}`} className="block group" aria-label={`Voir les détails du cours ${course.title}`}>
         <div className="flex gap-4 p-3 rounded-2xl hover:bg-slate-800/50 transition-colors duration-200">
             <div className="relative w-32 md:w-40 h-[72px] md:h-[90px] shrink-0">
@@ -73,7 +72,7 @@ export default function SearchPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeFilter, setActiveFilter] = useState('Tous');
     const [results, setResults] = useState<Course[]>([]);
-    const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
+    const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
     const [isFetchingMore, setIsFetchingMore] = useState(false);
     const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
@@ -93,7 +92,7 @@ export default function SearchPage() {
                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
                 const usersSnap = await getDocs(usersQuery);
                 usersSnap.forEach(doc => {
-                    newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+                    newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
                 });
                 setInstructors(newInstructors);
             } catch (error) {
@@ -131,7 +130,8 @@ export default function SearchPage() {
              q = query(q, 
                 orderBy('title'),
                 startAfter(lowercasedTerm),
-                endAt(lowercasedTerm + '\uf8ff')
+                where('title', '>=', lowercasedTerm),
+                where('title', '<=', lowercasedTerm + '\uf8ff')
             );
         } else if (activeFilter === 'Tous') {
             q = query(q, orderBy('createdAt', 'desc'));

@@ -25,7 +25,7 @@ import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from '../ui/badge';
-import type { FormaAfriqueUser, UserRole } from '@/context/RoleContext';
+import type { NdaraUser, UserRole } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';

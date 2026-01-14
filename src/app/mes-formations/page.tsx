@@ -11,8 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen } from 'lucide-react';
-import type { Course, Enrollment } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useTranslation } from 'react-i18next';
 

@@ -20,8 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Award, User, Book } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { Course, Enrollment } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 
 interface CertificateInfo {
     id: string;
