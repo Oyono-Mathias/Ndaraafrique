@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,7 +18,7 @@ import {
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, Trash2, Play } from 'lucide-react';
+import { Heart, Trash2, Play, ChevronsRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Enrollment } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
@@ -41,36 +42,47 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
     onRemove(course.wishlistItemId);
   }
 
+  const getButtonText = () => {
+    return course.isEnrolled ? "Accéder au cours" : "S'inscrire maintenant";
+  }
+
   return (
-    <div className="relative group bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary/50">
-      <Link href={course.isEnrolled ? `/courses/${course.id}` : `/course/${course.id}`} className="flex gap-4">
-        <Image
-          src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
-          alt={course.title}
-          width={120}
-          height={80}
-          className="aspect-video object-cover shrink-0"
-        />
-        <div className="py-3 pr-4 flex flex-col justify-center flex-1 overflow-hidden">
+    <div className="relative group bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:shadow-primary/10">
+      <div className="flex flex-col sm:flex-row gap-4">
+        <Link href={course.isEnrolled ? `/courses/${course.id}` : `/course/${course.id}`} className="block shrink-0">
+            <Image
+              src={course.imageUrl || `https://picsum.photos/seed/${course.id}/240/135`}
+              alt={course.title}
+              width={240}
+              height={135}
+              className="aspect-video object-cover w-full sm:w-48 h-full"
+            />
+        </Link>
+        <div className="py-3 px-4 sm:p-4 flex flex-col justify-between flex-1 overflow-hidden">
           <div>
-            <h3 className="font-bold text-sm text-white line-clamp-2">{course.title}</h3>
-            <p className="text-xs text-slate-400 truncate">Par {course.instructorName || 'un instructeur'}</p>
+            <h3 className="font-bold text-sm md:text-base text-white line-clamp-2">{course.title}</h3>
+            <p className="text-xs text-slate-400 truncate mt-1">Par {course.instructorName || 'un instructeur'}</p>
           </div>
-          <div className="flex items-center justify-between mt-2">
-            <p className="font-bold text-base text-primary">
-              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
-            </p>
+          <div className="flex items-center justify-between mt-3">
+             <p className="font-extrabold text-lg text-white">
+                {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
+             </p>
+             <Button asChild size="sm">
+                <Link href={course.isEnrolled ? `/courses/${course.id}` : `/course/${course.id}`}>
+                    {getButtonText()} <ChevronsRight className="h-4 w-4 ml-1" />
+                </Link>
+             </Button>
           </div>
         </div>
-      </Link>
+      </div>
       <Button 
         variant="ghost" 
         size="icon" 
-        className="absolute top-2 right-2 h-8 w-8 text-slate-400 opacity-50 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+        className="absolute top-2 right-2 h-8 w-8 text-red-500 bg-black/20 hover:bg-black/40 backdrop-blur-sm"
         onClick={handleRemoveClick}
         aria-label="Retirer de la liste de souhaits"
       >
-        <Trash2 className="h-4 w-4" />
+        <Heart className="h-4 w-4 fill-current" />
       </Button>
     </div>
   );
@@ -163,7 +175,7 @@ export default function WishlistPage() {
       </header>
       {isLoading ? (
         <div className="space-y-4">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-[100px] w-full bg-slate-800" />)}
+          {[1,2,3].map(i => <Skeleton key={i} className="h-28 w-full bg-slate-800" />)}
         </div>
       ) : wishlistCourses.length === 0 ? (
         <div className="text-center py-20 border-2 border-dashed rounded-xl border-slate-700">
