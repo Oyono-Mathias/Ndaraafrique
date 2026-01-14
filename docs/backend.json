@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "User": {
@@ -250,6 +251,15 @@
         "queryScope": "COLLECTION",
         "fields": [
           {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "courses",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "status", "order": "ASCENDING"},
+          {"fieldPath": "category", "order": "ASCENDING"},
+          {"fieldPath": "createdAt", "order": "DESCENDING"}
         ]
       }
     ],

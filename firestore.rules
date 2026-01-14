@@ -33,37 +33,34 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      allow get: if isAdmin() || isOwner(userId);
-      allow list: if isAdmin(); // Seuls les admins peuvent lister tous les utilisateurs.
-      allow create: if isOwner(userId);
+      allow get: if isSignedIn(); // Allow any signed-in user to read profile data (client should only show public fields)
+      allow list: if isAdmin(); // Only admins can list all users.
+      allow create: if isOwner(userId); // A user can create their own document
       allow update: if isAdmin() || (
         isOwner(userId) && 
-        // User cannot change their own role or approval status.
+        // User cannot change their own role, approval status, or general status.
         !('role' in request.resource.data) && 
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
-      allow delete: if isAdmin() || isOwner(userId);
+      allow delete: if isAdmin() || isOwner(userId); // User can delete their own account
 
-      // --- Sous-collections de 'users' ---
+      // --- Sub-collections of 'users' ---
       match /chatHistory/{messageId} {
-        allow read, write: if isOwner(userId);
+        allow read, write, list: if isOwner(userId);
       }
       match /wishlist/{courseId} {
-        allow read, write, delete: if isOwner(userId);
+        allow read, write, delete, list: if isOwner(userId);
       }
       match /notifications/{notificationId} {
         allow read, write, list: if isOwner(userId);
       }
       match /subscriptions/{subscriptionId} {
-        allow read: if isOwner(userId) || isAdmin();
-        allow list: if isOwner(userId) || isAdmin();
+        allow read, list: if isOwner(userId) || isAdmin();
         allow create: if isOwner(userId); // Users can create subscriptions for themselves
-        allow update: if isAdmin(); // Only admins can update status (e.g., from a backend process)
+        allow update: if isAdmin(); // Only admins can update status
       }
        match /fcmTokens/{tokenId} {
-        // Users can create/delete their own device tokens.
-        // No one can list them for privacy.
         allow read, delete: if isOwner(userId);
         allow create: if isOwner(userId) && tokenId == request.resource.id;
       }
@@ -71,10 +68,34 @@ service cloud.firestore {
     
     // --- Collection: courses ---
     match /courses/{courseId} {
-        allow get: if true;
-        allow list: if true;
+        allow get: if resource.data.status == 'Published' || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
+        allow list: if true; // Allow listing, client will filter by status
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+        
+        match /sections/{sectionId} {
+          allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+          allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+          
+          match /lectures/{lectureId} {
+            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+            allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+          }
+        }
+    }
+
+     // --- Collection: reviews ---
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow list: if true;
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update, delete: if isSignedIn() && (isOwner(request.resource.data.userId) || isAdmin());
+    }
+
+    // --- Collection: resources ---
+    match /resources/{resourceId} {
+        allow read, list: if true; // Anyone can see there are resources
+        allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.instructorId)) || isAdmin();
     }
     
     // --- Collection: enrollments ---
@@ -113,8 +134,9 @@ service cloud.firestore {
       allow list: if isAdmin();
 
       match /messages/{messageId} {
-        allow create: if isSignedIn() && isTicketParticipant() && isOwner(request.resource.data.senderId);
+        allow create: if isSignedIn() && (isTicketParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);
         allow read: if isSignedIn() && (isTicketParticipant() || isAdmin());
+        allow list: if isSignedIn() && (isTicketParticipant() || isAdmin());
       }
     }
     
@@ -147,16 +169,19 @@ service cloud.firestore {
                       && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
                       
       allow read, update: if isSignedIn() && isChatParticipant();
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participants;
       
       match /messages/{messageId} {
-        allow read: if isSignedIn() && isChatParticipant();
+        allow read, list: if isSignedIn() && isChatParticipant();
         allow create: if isSignedIn() && isChatParticipant() && isOwner(request.resource.data.senderId);
       }
     }
 
     // --- Collection: faqs ---
     match /faqs/{faqId} {
-      allow read, write: if isAdmin();
+      allow read: if true;
+      allow write: if isAdmin();
+      allow list: if true;
     }
     
     // --- Collection: settings ---
@@ -164,6 +189,13 @@ service cloud.firestore {
       allow read: if true;
       allow write: if isAdmin();
     }
+    
+     // --- Collection: waitlist ---
+    match /waitlist/{email} {
+        allow create: if true; // Anyone can add their email to the waitlist
+        allow read, update, delete: if false; // No one can read the list
+    }
+
 
     // --- Règle par défaut ---
     match /{path=**} {
