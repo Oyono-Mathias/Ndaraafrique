@@ -31,7 +31,7 @@ import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
-import { useToast } from '@/hooks/use-toast';
+import { toast } from '@/hooks/use-toast';
 import type { Message } from '@/lib/types';
 
 
@@ -145,6 +145,14 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         if (chatSnap.exists() && chatSnap.data().unreadBy?.includes(user?.uid || '')) {
             const batch = writeBatch(db);
             batch.update(chatRef, { unreadBy: [] });
+            
+            // Also update the status of the last message if it's not from the current user
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage && lastMessage.senderId !== user?.uid) {
+                const messageRef = doc(db, 'chats', chatId, 'messages', lastMessage.id);
+                batch.update(messageRef, { status: 'read' });
+            }
+
             await batch.commit();
         }
     };
