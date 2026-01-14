@@ -31,6 +31,11 @@ service cloud.firestore {
         return userData.isProfileComplete == true;
     }
 
+    function isEnrolled(userId, courseId) {
+      return exists(/databases/$(database)/documents/enrollments/$(userId + '_' + courseId));
+    }
+
+
     // --- Collection: users ---
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
@@ -71,23 +76,31 @@ service cloud.firestore {
     
     // --- Collection: courses ---
     match /courses/{courseId} {
-        allow get: if resource.data.status == 'Published' || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
+        allow get: if resource.data.status == 'Published' 
+                    || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
+                    || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
         allow list: if true;
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
         
         match /sections/{sectionId} {
-          allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+          allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published'
+                              || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
+                              || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
           allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
           
           match /lectures/{lectureId} {
-            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published'
+                                || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
+                                || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
             allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
           }
         }
         
         match /assignments/{assignmentId} {
-            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
+            allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published'
+                                || (isSignedIn() && isEnrolled(request.auth.uid, courseId))
+                                || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
             allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
 
             match /submissions/{submissionId} {
