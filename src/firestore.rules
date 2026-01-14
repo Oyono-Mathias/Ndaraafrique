@@ -147,9 +147,9 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
       allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
-      // A user can list tickets where they are either the student or the instructor.
-      allow list: if (isSignedIn() && request.query.where.userId == request.auth.uid) 
-                 || (isSignedIn() && request.query.where.instructorId == request.auth.uid) 
+      
+      // A user can list tickets where they are a participant. Admins can list all.
+      allow list: if (isSignedIn() && (request.query.where.userId == request.auth.uid || request.query.where.instructorId == request.auth.uid)) 
                  || isAdmin();
 
       match /messages/{messageId} {

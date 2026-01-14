@@ -177,7 +177,6 @@ export default function QAPage() {
         () => {
             if (!formaAfriqueUser?.uid) return null;
             
-            // This is the key change: Querying for tickets where the user is a participant.
             const fieldToFilter = formaAfriqueUser.role === 'instructor' ? 'instructorId' : 'userId';
 
             return query(
