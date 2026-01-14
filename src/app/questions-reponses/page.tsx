@@ -36,6 +36,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Enrollment } from '@/lib/types';
+import { useRouter } from 'next/navigation';
 
 
 interface SupportTicket {
