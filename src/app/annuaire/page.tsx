@@ -10,13 +10,7 @@ import {
   query,
   where,
   limit,
-  addDoc,
-  serverTimestamp,
-  getDocs,
-  doc,
-  setDoc,
   onSnapshot,
-  writeBatch,
 } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -37,6 +31,7 @@ import {
     DialogFooter
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { startChat } from '@/lib/chat';
 
 const MemberCard = ({ member, onContact, isProcessing }: { member: FormaAfriqueUser; onContact: (memberId: string) => void; isProcessing: boolean; }) => {
   return (
@@ -128,7 +123,7 @@ export default function DirectoryPage() {
         setIsLoading(false);
     }, (error) => {
         console.error("Error fetching directory members:", error);
-        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de charger l'annuaire."});
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de charger l'annuaire. Un index Firestore est peut-être manquant."});
         setIsLoading(false);
     });
 
@@ -137,49 +132,15 @@ export default function DirectoryPage() {
 
 
   const handleContact = async (contactId: string) => {
-    if (!user || user.uid === contactId || !formaAfriqueUser?.careerGoals?.interestDomain) return;
-
-    if (!isProfileComplete) {
-        toast({ variant: 'destructive', title: t('profile_incomplete_title'), description: t('profile_incomplete_desc_directory')});
-        return;
-    }
-
+    if (!user || !formaAfriqueUser) return;
     setIsCreatingChat(true);
-    const chatsRef = collection(db, 'chats');
-    const sortedParticipants = [user.uid, contactId].sort();
-    
-    const q = query(chatsRef, where('participants', '==', sortedParticipants));
-    
     try {
-        const querySnapshot = await getDocs(q);
-        let chatId: string | null = null;
-
-        if (!querySnapshot.empty) {
-            chatId = querySnapshot.docs[0].id;
-        } else {
-            const contactUserDoc = await getDoc(doc(db, 'users', contactId));
-            if (!contactUserDoc.exists()) throw new Error("L'utilisateur contacté n'existe pas.");
-
-            const contactUserData = contactUserDoc.data() as FormaAfriqueUser;
-
-            const newChatRef = doc(collection(db, 'chats'));
-            const batch = writeBatch(db);
-
-            batch.set(newChatRef, {
-                participants: sortedParticipants,
-                participantCategories: [formaAfriqueUser.careerGoals.interestDomain, contactUserData.careerGoals?.interestDomain],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                lastMessage: '',
-            });
-            await batch.commit();
-            chatId = newChatRef.id;
-        }
-        router.push(`/messages/${chatId}`);
-    } catch(error: any) {
-        toast({ variant: 'destructive', title: "Erreur", description: error.message.includes('permission-denied') ? t('chat_permission_denied') : "Impossible de démarrer la conversation." });
+      const chatId = await startChat(user.uid, contactId, db);
+      router.push(`/messages/${chatId}`);
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Erreur de Chat', description: error.message });
     } finally {
-        setIsCreatingChat(false);
+      setIsCreatingChat(false);
     }
   };
 

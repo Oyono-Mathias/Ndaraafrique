@@ -1,0 +1,91 @@
+
+'use server';
+
+import {
+  getFirestore,
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  setDoc,
+  serverTimestamp,
+  writeBatch,
+  getDoc,
+  DocumentData,
+  Firestore,
+} from 'firebase/firestore';
+import type { FormaAfriqueUser } from '@/context/RoleContext';
+
+/**
+ * Starts a new chat between two users or returns the existing one.
+ * @param currentUserId - The UID of the user initiating the chat.
+ * @param contactId - The UID of the user to chat with.
+ * @param db - The Firestore instance.
+ * @returns The ID of the chat room.
+ */
+export async function startChat(
+  currentUserId: string,
+  contactId: string,
+  db: Firestore
+): Promise<string> {
+  if (currentUserId === contactId) {
+    throw new Error("Impossible de démarrer une conversation avec soi-même.");
+  }
+
+  const chatsRef = collection(db, 'chats');
+  const sortedParticipants = [currentUserId, contactId].sort();
+
+  // Query to find if a chat already exists between these two users
+  const q = query(chatsRef, where('participants', '==', sortedParticipants));
+
+  try {
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      // Chat already exists, return its ID
+      return querySnapshot.docs[0].id;
+    } else {
+      // Chat doesn't exist, create a new one
+      const [currentUserDoc, contactUserDoc] = await Promise.all([
+        getDoc(doc(db, 'users', currentUserId)),
+        getDoc(doc(db, 'users', contactId)),
+      ]);
+
+      if (!currentUserDoc.exists() || !contactUserDoc.exists()) {
+        throw new Error("Un des utilisateurs n'existe pas.");
+      }
+
+      const currentUserData = currentUserDoc.data() as FormaAfriqueUser;
+      const contactUserData = contactUserDoc.data() as FormaAfriqueUser;
+
+      if (currentUserData.careerGoals?.interestDomain !== contactUserData.careerGoals?.interestDomain) {
+         throw new Error("Vous ne pouvez discuter qu'avec les membres de votre filière.");
+      }
+
+      const newChatRef = doc(collection(db, 'chats'));
+      const batch = writeBatch(db);
+
+      batch.set(newChatRef, {
+        participants: sortedParticipants,
+        participantCategories: [
+          currentUserData.careerGoals.interestDomain,
+          contactUserData.careerGoals.interestDomain,
+        ],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        lastMessage: 'Conversation démarrée.',
+      });
+
+      await batch.commit();
+      return newChatRef.id;
+    }
+  } catch (error: any) {
+    console.error("Error in startChat function: ", error);
+    // Re-throw a more user-friendly error
+    if (error.message.includes('permission-denied')) {
+        throw new Error("Permission refusée. Vérifiez vos règles de sécurité Firestore.");
+    }
+    throw error;
+  }
+}
