@@ -12,12 +12,9 @@ import {
   limit,
   onSnapshot,
 } from 'firebase/firestore';
-import { Card, CardContent } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MessageSquare, Users, UserX, Loader2 } from 'lucide-react';
+import { Search, Users, UserX, Loader2 } from 'lucide-react';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
@@ -30,7 +27,7 @@ import {
     DialogDescription,
     DialogFooter
 } from '@/components/ui/dialog';
-import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { startChat } from '@/lib/chat';
 import { MemberCard } from '@/components/cards/MemberCard';
 
