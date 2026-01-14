@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,7 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MessageSquare, Users, UserX } from 'lucide-react';
+import { Search, MessageSquare, Users, UserX, Loader2 } from 'lucide-react';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
@@ -33,24 +34,28 @@ import {
     DialogHeader,
     DialogTitle,
     DialogDescription,
+    DialogFooter
 } from '@/components/ui/dialog';
+import { cn } from '@/lib/utils';
 
-const MemberCard = ({ member, onContact }: { member: FormaAfriqueUser; onContact: (memberId: string) => void; }) => {
+const MemberCard = ({ member, onContact, isProcessing }: { member: FormaAfriqueUser; onContact: (memberId: string) => void; isProcessing: boolean; }) => {
   return (
-    <Card className="text-center p-4 glassmorphism-card">
-      <Avatar className="mx-auto h-16 w-16 mb-3 border-2 border-primary/20">
-        <AvatarImage src={member.profilePictureURL} />
-        <AvatarFallback className="text-xl bg-slate-700 text-primary font-semibold">
-          {member.username?.charAt(0).toUpperCase() || '?'}
-        </AvatarFallback>
-      </Avatar>
-      <h3 className="font-bold text-sm text-slate-100 truncate">@{member.username}</h3>
-      <p className="text-xs text-slate-400 mb-3 truncate">{member.careerGoals?.interestDomain || 'Apprenant'}</p>
-      <Button size="sm" onClick={() => onContact(member.uid)} className="bg-primary hover:bg-primary/90 text-xs h-8">
-        <MessageSquare className="mr-1.5 h-3.5 w-3.5" />
-        Contacter
-      </Button>
-    </Card>
+    <div className="text-center p-4 glassmorphism-card rounded-2xl transition-all duration-300 hover:shadow-primary/10 hover:scale-[1.03] flex flex-col justify-between">
+        <div>
+            <Avatar className="mx-auto h-20 w-20 mb-3 border-2 border-primary/20">
+                <AvatarImage src={member.profilePictureURL} />
+                <AvatarFallback className="text-2xl bg-slate-700 text-primary font-semibold">
+                {member.username?.charAt(0).toUpperCase() || '?'}
+                </AvatarFallback>
+            </Avatar>
+            <h3 className="font-bold text-sm text-slate-100 truncate group-hover:text-primary">@{member.username}</h3>
+            <p className="text-xs text-slate-400 mb-3 truncate">{member.careerGoals?.interestDomain || 'Apprenant'}</p>
+        </div>
+        <Button size="sm" onClick={() => onContact(member.uid)} disabled={isProcessing} className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 w-full mt-2">
+            {isProcessing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="mr-1.5 h-3.5 w-3.5" />}
+            Contacter
+        </Button>
+    </div>
   );
 };
 
@@ -59,11 +64,16 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
     return (
         <Dialog open={isOpen}>
             <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2"><UserX className="text-destructive"/> {t('profile_incomplete_title')}</DialogTitle>
+                <DialogHeader className="items-center text-center">
+                    <div className="p-3 rounded-full bg-destructive/10 w-fit mb-2">
+                        <UserX className="text-destructive h-6 w-6"/> 
+                    </div>
+                    <DialogTitle>{t('profile_incomplete_title')}</DialogTitle>
                     <DialogDescription className="pt-2">{t('profile_incomplete_desc_directory')}</DialogDescription>
                 </DialogHeader>
-                <Button onClick={onGoToProfile}>{t('complete_profile_btn')}</Button>
+                 <DialogFooter>
+                    <Button onClick={onGoToProfile} className="w-full">{t('complete_profile_btn')}</Button>
+                </DialogFooter>
             </DialogContent>
         </Dialog>
     );
@@ -78,6 +88,7 @@ export default function DirectoryPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [members, setMembers] = useState<FormaAfriqueUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
   const isProfileComplete = useMemo(() => !!(formaAfriqueUser?.username && formaAfriqueUser?.careerGoals?.interestDomain), [formaAfriqueUser]);
@@ -133,6 +144,7 @@ export default function DirectoryPage() {
         return;
     }
 
+    setIsCreatingChat(true);
     const chatsRef = collection(db, 'chats');
     const sortedParticipants = [user.uid, contactId].sort();
     
@@ -166,6 +178,8 @@ export default function DirectoryPage() {
         router.push(`/messages/${chatId}`);
     } catch(error: any) {
         toast({ variant: 'destructive', title: "Erreur", description: error.message.includes('permission-denied') ? t('chat_permission_denied') : "Impossible de démarrer la conversation." });
+    } finally {
+        setIsCreatingChat(false);
     }
   };
 
@@ -201,15 +215,15 @@ export default function DirectoryPage() {
         {isLoading ? (
           [...Array(10)].map((_, i) => (
             <Card key={i} className="p-4 bg-slate-800/50 border-slate-700">
-              <Skeleton className="h-16 w-16 rounded-full mx-auto mb-3" />
+              <Skeleton className="h-20 w-20 rounded-full mx-auto mb-3" />
               <Skeleton className="h-5 w-3/4 mx-auto mb-2" />
               <Skeleton className="h-3 w-1/2 mx-auto mb-3" />
-              <Skeleton className="h-8 w-full" />
+              <Skeleton className="h-9 w-full" />
             </Card>
           ))
         ) : filteredMembers.length > 0 ? (
           filteredMembers.map(member => (
-            <MemberCard key={member.uid} member={member} onContact={handleContact} />
+            <MemberCard key={member.uid} member={member} onContact={handleContact} isProcessing={isCreatingChat} />
           ))
         ) : (
           <div className="col-span-full text-center py-20 border-2 border-dashed rounded-lg border-slate-700">
