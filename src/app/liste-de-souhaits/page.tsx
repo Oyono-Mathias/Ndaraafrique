@@ -41,36 +41,33 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
   }
 
   return (
-    <div className="relative group bg-white border border-slate-200 rounded-lg overflow-hidden transition-shadow hover:shadow-md">
+    <div className="relative group bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden transition-shadow hover:shadow-md hover:border-primary/50">
       <Link href={course.isEnrolled ? `/courses/${course.id}` : `/course/${course.id}`} className="flex gap-4">
         <Image
           src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
           alt={course.title}
-          width={150}
-          height={100}
-          className="aspect-[3/2] object-cover shrink-0"
+          width={120}
+          height={80}
+          className="aspect-video object-cover shrink-0"
         />
-        <div className="py-3 pr-4 flex flex-col justify-between flex-1">
+        <div className="py-3 pr-4 flex flex-col justify-between flex-1 overflow-hidden">
           <div>
-            <h3 className="font-bold text-sm text-slate-800 line-clamp-2">{course.title}</h3>
-            <p className="text-xs text-slate-500 truncate">Par {course.instructorName || 'un instructeur'}</p>
+            <h3 className="font-bold text-sm text-white line-clamp-2">{course.title}</h3>
+            <p className="text-xs text-slate-400 truncate">Par {course.instructorName || 'un instructeur'}</p>
           </div>
           <div className="flex items-center justify-between mt-2">
-            <p className="font-bold text-base text-slate-900">
-              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'Gratuit'}
+            <p className="font-bold text-base text-primary">
+              {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
             </p>
-            <Button size="sm" className="h-8">
-              {course.isEnrolled ? <Play className="h-4 w-4 mr-2" /> : null}
-              {course.isEnrolled ? 'Aller au cours' : "S'inscrire"}
-            </Button>
           </div>
         </div>
       </Link>
       <Button 
         variant="ghost" 
         size="icon" 
-        className="absolute top-2 right-2 h-7 w-7 text-slate-400 hover:bg-red-100 hover:text-red-600"
+        className="absolute top-1 right-1 h-8 w-8 text-slate-400 hover:bg-destructive/10 hover:text-destructive"
         onClick={handleRemoveClick}
+        aria-label="Retirer de la liste de souhaits"
       >
         <Trash2 className="h-4 w-4" />
       </Button>
@@ -88,7 +85,7 @@ export default function WishlistPage() {
 
   useEffect(() => {
     if (isUserLoading || !user?.uid) {
-      setIsLoading(isUserLoading);
+      if (!isUserLoading) setIsLoading(false);
       return;
     }
 
@@ -135,7 +132,7 @@ export default function WishlistPage() {
             wishlistItemId: item.id,
             instructorName: instructor?.fullName,
             id: course.id,
-            isEnrolled: enrolledCourseIds.has(course.id), // Check if enrolled
+            isEnrolled: enrolledCourseIds.has(course.id),
           });
         }
       });
@@ -159,16 +156,19 @@ export default function WishlistPage() {
   
   return (
     <div className="space-y-6">
-      <header><h1 className="text-3xl font-bold text-slate-900">Ma liste de souhaits</h1></header>
+      <header className="flex items-center gap-2">
+        <Heart className="h-7 w-7 text-primary"/>
+        <h1 className="text-3xl font-bold text-white">Ma liste de souhaits</h1>
+      </header>
       {isLoading ? (
         <div className="space-y-4">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-[100px] w-full bg-slate-200" />)}
+          {[1,2,3].map(i => <Skeleton key={i} className="h-[100px] w-full bg-slate-800" />)}
         </div>
       ) : wishlistCourses.length === 0 ? (
-        <div className="text-center py-20 border-2 border-dashed rounded-xl">
-          <Heart className="mx-auto h-12 w-12 text-red-300" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-600">Rien ici ❤️</h3>
-          <p className="text-sm text-slate-500">Ajoutez des cours qui vous intéressent pour les retrouver plus tard.</p>
+        <div className="text-center py-20 border-2 border-dashed rounded-xl border-slate-700">
+          <Heart className="mx-auto h-12 w-12 text-red-400/50" />
+          <h3 className="mt-4 text-lg font-semibold text-slate-300">Votre liste est vide</h3>
+          <p className="text-sm text-slate-400">Ajoutez des cours qui vous intéressent pour les retrouver plus tard.</p>
           <Button asChild variant="link"><Link href="/dashboard">Parcourir les cours</Link></Button>
         </div>
       ) : (
