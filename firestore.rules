@@ -28,31 +28,25 @@ service cloud.firestore {
     
     function isProfileComplete() {
         let userData = getUserData(request.auth.uid);
-        return userData.username != null && 'careerGoals' in userData && 'interestDomain' in userData.careerGoals;
+        return userData.isProfileComplete == true;
     }
 
     // --- Collection: users ---
     match /users/{userId} {
-      // Un utilisateur ne peut lire en entier que son propre profil. Les admins aussi.
       allow get: if isOwner(userId) || isAdmin();
-      // Seuls les admins peuvent lister tous les utilisateurs. L'annuaire fait une requête filtrée, pas un list.
-      allow list: if isAdmin(); 
+      allow list: if isAdmin();
       
-      // Un utilisateur peut créer son propre document.
-      allow create: if isOwner(userId); 
+      allow create: if isOwner(userId);
       
-      // Un utilisateur peut mettre à jour son profil, mais ne peut PAS changer son rôle ou son statut.
       allow update: if isAdmin() || (
         isOwner(userId) && 
         !('role' in request.resource.data) && 
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
-      
-      // Un utilisateur peut supprimer son propre compte.
       allow delete: if isAdmin() || isOwner(userId);
 
-      // --- Sub-collections of 'users' ---
+      // --- Sous-collections de 'users' ---
       match /chatHistory/{messageId} {
         allow read, write, list: if isOwner(userId);
       }
@@ -64,8 +58,8 @@ service cloud.firestore {
       }
       match /subscriptions/{subscriptionId} {
         allow read, list: if isOwner(userId) || isAdmin();
-        allow create: if isOwner(userId); // Users can create subscriptions for themselves
-        allow update: if isAdmin(); // Only admins can update status
+        allow create: if isOwner(userId);
+        allow update: if isAdmin();
       }
        match /fcmTokens/{tokenId} {
         allow read, delete: if isOwner(userId);
@@ -76,7 +70,7 @@ service cloud.firestore {
     // --- Collection: courses ---
     match /courses/{courseId} {
         allow get: if resource.data.status == 'Published' || (isSignedIn() && (isOwner(resource.data.instructorId) || isAdmin()));
-        allow list: if true; // Allow listing, client will filter by status
+        allow list: if true;
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
         
@@ -95,9 +89,10 @@ service cloud.firestore {
             allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
 
             match /submissions/{submissionId} {
-                allow read, list: if (isSignedIn() && isOwner(resource.data.userId)) || (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+                allow read: if isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+                allow list: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
                 allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-                allow update: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
+                allow update: if (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
                 allow delete: if isAdmin();
             }
         }
@@ -113,19 +108,15 @@ service cloud.firestore {
 
     // --- Collection: resources ---
     match /resources/{resourceId} {
-        allow read, list: if true; // Anyone can see there are resources
+        allow read, list: if true;
         allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(request.resource.data.courseId)).data.instructorId)) || isAdmin();
     }
     
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
-      // ANYONE can read a SINGLE enrollment if it's a completed course (for certificate verification)
       allow get: if resource.data.progress == 100;
-      // Users can list and update THEIR OWN enrollments. Instructors can list enrollments for THEIR courses. Admins can do anything.
       allow list, update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
-      // Only students can create their own enrollment records.
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
-      // Only admins can delete enrollments.
       allow delete: if isAdmin();
     }
     
@@ -158,8 +149,7 @@ service cloud.firestore {
 
       match /messages/{messageId} {
         allow create: if isSignedIn() && (isTicketParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);
-        allow read: if isSignedIn() && (isTicketParticipant() || isAdmin());
-        allow list: if isSignedIn() && (isTicketParticipant() || isAdmin());
+        allow read, list: if isSignedIn() && (isTicketParticipant() || isAdmin());
       }
     }
     
@@ -176,8 +166,8 @@ service cloud.firestore {
 
     // --- Collection: subscription_plans ---
     match /subscription_plans/{planId} {
-        allow get, list: if true; // Everyone can see available plans
-        allow create, update, delete: if isAdmin(); // Only admins can manage plans
+        allow get, list: if true;
+        allow create, update, delete: if isAdmin();
     }
     
     // --- Collection: chats ---
@@ -215,8 +205,8 @@ service cloud.firestore {
     
      // --- Collection: waitlist ---
     match /waitlist/{email} {
-        allow create: if true; // Anyone can add their email to the waitlist
-        allow read, update, delete: if false; // No one can read the list
+        allow create: if true;
+        allow read, update, delete: if false;
     }
 
 
