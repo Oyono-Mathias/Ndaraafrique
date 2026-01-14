@@ -156,51 +156,13 @@ const HeaderNotificationButton = () => {
   );
 };
 
-const PWAInstallButton = () => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-
-  useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('User accepted the A2HS prompt');
-      } else {
-        console.log('User dismissed the A2HS prompt');
-      }
-      setDeferredPrompt(null);
-    }
-  };
-
-  if (!deferredPrompt) {
-    return null;
-  }
-
-  return (
-    <Button variant="ghost" size="icon" onClick={handleInstallClick} className="text-foreground" aria-label="Installer l'application">
-      <Download className="h-5 w-5" />
-    </Button>
-  );
-};
-
-
 export function Header() {
+    const router = useRouter();
     return (
         <div className="flex items-center gap-2">
-            <PWAInstallButton />
+            <Button variant="ghost" size="icon" onClick={() => router.push('/search')} className="text-foreground">
+                <Search className="h-5 w-5" />
+            </Button>
             <LanguageSelector />
             <HeaderNotificationButton />
             <UserNav />

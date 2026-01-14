@@ -76,6 +76,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [unreadNotifs, setUnreadNotifs] = useState(0);
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
   const isProfileComplete = formaAfriqueUser?.isProfileComplete || false;
@@ -102,14 +103,14 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       label: t('navCommunity'),
       items: [
         { href: "/annuaire", icon: Users, textKey: 'navDirectory', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
-        { href: "/messages", icon: MessageSquare, textKey: 'navMessages', id: 'sidebar-nav-messages', disabled: !isProfileComplete },
+        { href: "/messages", icon: MessageSquare, textKey: 'navMessages', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
       ]
     },
     {
       label: t('navAccount'),
       items: [
         { href: "/account", icon: User, textKey: 'navAccount', id: 'sidebar-nav-account' },
-        { href: "/notifications", icon: Bell, textKey: 'navNotifications', id: 'sidebar-nav-notifications' },
+        { href: "/notifications", icon: Bell, textKey: 'navNotifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
       ],
     },
   ];
@@ -129,11 +130,19 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     if (!user?.uid) return;
 
     const chatsQuery = query(collection(db, 'chats'), where('unreadBy', 'array-contains', user.uid));
-    const unsubscribe = onSnapshot(chatsQuery, (snapshot) => {
+    const unsubChats = onSnapshot(chatsQuery, (snapshot) => {
         setUnreadMessages(snapshot.size);
     });
 
-    return () => unsubscribe();
+    const notifsQuery = query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false));
+    const unsubNotifs = onSnapshot(notifsQuery, (snapshot) => {
+        setUnreadNotifs(snapshot.size);
+    });
+
+    return () => {
+      unsubChats();
+      unsubNotifs();
+    };
   }, [user, db]);
   
   const handleSwitchToAdmin = () => {
@@ -180,7 +189,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
                   icon={item.icon}
                   label={t(item.textKey)}
                   id={item.id}
-                  unreadCount={item.href === '/messages' ? unreadMessages : undefined}
+                  unreadCount={item.count}
                   disabled={item.disabled}
                   onClick={onLinkClick}
                 />
