@@ -356,6 +356,8 @@ export default function AccountPage() {
         });
         setIsDeleting(false);
     }
+    // On success, the user will be signed out and the app will re-render,
+    // usually redirecting to the login page.
   };
 
   if (isUserLoading || !formaAfriqueUser) {
