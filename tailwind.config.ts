@@ -16,18 +16,14 @@ export default {
       },
     },
     extend: {
-      backgroundImage: {
-        'whatsapp-light': "url('/backgrounds/whatsapp-bg.png')",
-        'whatsapp-dark': "url('/backgrounds/whatsapp-bg-dark.png')",
-      },
       screens: {
-        'xs': '480px',      // Extra small devices (phones)
-        'sm': '640px',      // Small devices (phones, landscape)
-        'md': '768px',      // Medium devices (tablets)
-        'lg': '1024px',     // Large devices (laptops/desktops)
-        'xl': '1280px',     // Extra large devices (large laptops, desktops)
-        '2xl': '1536px',    // 2x extra large (large monitors)
-        'tv': '1920px',     // TV screens
+        'xs': '480px',
+        'sm': '640px',
+        'md': '768px',
+        'lg': '1024px',
+        'xl': '1280px',
+        '2xl': '1536px',
+        'tv': '1920px',
       },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
@@ -66,62 +62,36 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        chart: {
-          '1': 'hsl(var(--chart-1))',
-          '2': 'hsl(var(--chart-2))',
-          '3': 'hsl(var(--chart-3))',
-          '4': 'hsl(var(--chart-4))',
-          '5': 'hsl(var(--chart-5))',
-        },
-        sidebar: {
-          DEFAULT: 'hsl(var(--sidebar-background))',
-          foreground: 'hsl(var(--sidebar-foreground))',
-          primary: 'hsl(var(--sidebar-primary))',
-          'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-          accent: 'hsl(var(--sidebar-accent))',
-          'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-          border: 'hsl(var(--sidebar-border))',
-          ring: 'hsl(var(--sidebar-ring))',
-        },
       },
       borderRadius: {
-        xl: "calc(var(--radius) + 4px)",
+        xl: "calc(var(--radius) + 8px)",
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "calc(var(--radius) - 4px)",
+        sm: "calc(var(--radius) - 8px)",
+      },
+      boxShadow: {
+        'card': '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
+        'card-hover': '0 6px 20px 0 rgba(0, 0, 0, 0.07)',
+        'cta': '0 4px 20px 0 hsla(var(--primary) / 0.25)',
       },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
-        'marquee-fast': {
-          '0%': { transform: 'translateX(0%)' },
-          '100%': { transform: 'translateX(-100%)' },
-        },
-        'ai-pulse': {
-          '0%': { transform: 'scale(1)', opacity: '0.6' },
-          '70%': { transform: 'scale(1.6)', opacity: '0' },
-          '100%': { transform: 'scale(1)', opacity: '0' },
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'marquee-fast': 'marquee-fast 20s linear infinite',
-        'ai-pulse': 'ai-pulse 2s infinite ease-in-out',
+        'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
       },
     },
   },

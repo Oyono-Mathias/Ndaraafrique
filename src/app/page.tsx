@@ -10,24 +10,29 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { getDocs } from 'firebase/firestore';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown } from 'lucide-react';
+import { Frown, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
-    if (isLoading) {
+    if (isLoading && courses.length === 0) {
         return (
-            <div>
-                <h2 className="text-3xl font-bold mb-12 text-center text-white">{title}</h2>
-                <div className="text-center py-10 text-blue-400 animate-pulse">Chargement des cours...</div>
+            <div className="w-full">
+                <div className="nd-skeleton h-8 w-1/3 mb-8"></div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div className="nd-skeleton h-80 rounded-xl"></div>
+                    <div className="nd-skeleton h-80 rounded-xl"></div>
+                    <div className="nd-skeleton h-80 rounded-xl"></div>
+                </div>
             </div>
         );
     }
     if (!courses || courses.length === 0) {
-        return null; // Don't render the section if there are no courses
+        return null;
     }
     return (
-        <section className="py-16 max-w-6xl mx-auto px-6">
-            <h2 className="text-3xl font-bold mb-12 text-center text-white">{title}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <section className="py-12">
+            <h2 className="text-3xl font-bold mb-8 text-foreground">{title}</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {courses.map(course => (
                     <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
                 ))}
@@ -38,7 +43,6 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
 
 
 export default function LandingPage() {
-  const [activeStep, setActiveStep] = useState(1);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
@@ -50,7 +54,7 @@ export default function LandingPage() {
       collection(db, "courses"),
       where("status", "==", "Published"),
       orderBy("createdAt", "desc"),
-      limit(3)
+      limit(6)
     );
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -76,86 +80,64 @@ export default function LandingPage() {
     });
     return () => unsubscribe();
   }, [db]);
-
-  const steps = [
-    { id: 1, title: "Inscription", desc: "Créez votre compte Ndara en quelques secondes pour commencer." },
-    { id: 2, title: "Choix du parcours", desc: "Explorez nos formations en IA, E-commerce ou Design." },
-    { id: 3, title: "Certification", desc: "Apprenez à votre rythme et obtenez un diplôme reconnu." }
-  ];
   
   const popularCourses = courses.filter(c => c.isPopular).slice(0, 3);
   const freeCourses = courses.filter(c => c.price === 0).slice(0,3);
 
   return (
-    <div className="bg-[#020617] text-white min-h-screen font-sans">
-      <nav className="flex justify-between items-center p-6 border-b border-white/10 sticky top-0 bg-[#020617]/90 backdrop-blur-md z-50">
-        <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
-            <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} className="h-8 md:h-10 w-auto object-contain" />
-            <span className="text-2xl font-bold tracking-tighter hidden md:block group-hover:text-primary">Ndara Afrique</span>
-        </Link>
-        <div className="flex items-center gap-6">
-          <Link href="/login">
-            <button className="px-5 py-2 border border-white/20 rounded-lg hover:bg-white/10 transition font-medium text-sm">
-              Se connecter
-            </button>
+    <div className="bg-background text-foreground min-h-screen font-sans">
+      <div className="container mx-auto px-6">
+        <nav className="flex justify-between items-center py-6 border-b">
+          <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
+              <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
+              <span className="text-2xl font-bold tracking-tighter">Ndara Afrique</span>
           </Link>
-        </div>
-      </nav>
-
-      <header className="text-center py-24 px-6">
-        <h1 className="text-5xl md:text-7xl font-extrabold mb-6 tracking-tight hero-text leading-tight">
-          L'excellence numérique <br/><span className="text-blue-500 font-black">pour l'Afrique</span>
-        </h1>
-        <p className="text-gray-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 hero-text font-light" style={{ animationDelay: '0.2s' }}>
-          La première plateforme d'apprentissage panafricaine pour les métiers de demain.
-        </p>
-        <div className="hero-text" style={{ animationDelay: '0.4s' }}>
-            <Link href="/login?tab=register">
-                <button className="px-10 py-4 bg-blue-600 rounded-full font-bold shadow-lg shadow-blue-500/20 hover:scale-105 transition-all">
-                    Commencer l'inscription
-                </button>
+          <div className="flex items-center gap-4">
+            <Link href="/search" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
+              Explorer les cours
             </Link>
-        </div>
-      </header>
-        
-      <div className="py-16">
-        <div className="flex justify-center gap-4 mb-10">
-          {steps.map((s) => (
-            <button 
-              key={s.id}
-              onClick={() => setActiveStep(s.id)}
-              className={`px-8 py-3 rounded-xl border-2 transition-all duration-300 font-bold ${
-                activeStep === s.id 
-                ? "border-blue-500 bg-blue-500/10 shadow-[0_0_20px_rgba(59,130,246,0.3)] text-white" 
-                : "border-white/5 bg-white/5 hover:border-white/20 text-gray-500"
-              }`}
-            >
-              Setup {s.id}
-            </button>
-          ))}
-        </div>
-        <div className="max-w-4xl mx-auto px-6">
-            <div className="benefit-card text-center">
-              <h3 className="text-3xl font-bold mb-4 text-blue-400">{steps[activeStep-1].title}</h3>
-              <p className="text-gray-300 text-lg leading-relaxed">{steps[activeStep-1].desc}</p>
-            </div>
-        </div>
-      </div>
+            <Link href="/login" className="nd-cta-secondary">
+              Se connecter
+            </Link>
+          </div>
+        </nav>
 
-       <CourseCarousel
-        title="Formations populaires"
-        courses={popularCourses.length > 0 ? popularCourses : courses}
-        instructorsMap={instructorsMap}
-        isLoading={loading}
-      />
-      
-      <CourseCarousel
-        title="Commencez gratuitement"
-        courses={freeCourses}
-        instructorsMap={instructorsMap}
-        isLoading={loading}
-      />
-      
+        <header className="text-center py-24 md:py-32">
+          <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up">
+            <Sparkles className="w-3 h-3 mr-2" />
+            La plateforme N°1 pour les compétences du futur en Afrique
+          </Badge>
+          <h1 className="nd-hero animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            Apprenez. Construisez. Prospérez.
+          </h1>
+          <p className="text-muted-foreground text-lg md:text-xl max-w-2xl mx-auto mt-6 mb-10 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            Des formations de pointe conçues par des experts africains, pour les talents africains. Passez au niveau supérieur.
+          </p>
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+              <Link href="/login?tab=register">
+                  <button className="nd-cta-primary">
+                      Démarrer mon parcours
+                  </button>
+              </Link>
+          </div>
+        </header>
+          
+        <main className="space-y-16">
+           <CourseCarousel
+            title="Populaires ce mois-ci"
+            courses={popularCourses.length > 0 ? popularCourses : courses}
+            instructorsMap={instructorsMap}
+            isLoading={loading}
+          />
+          
+          <CourseCarousel
+            title="Découvrir gratuitement"
+            courses={freeCourses}
+            instructorsMap={instructorsMap}
+            isLoading={loading}
+          />
+        </main>
+      </div>
       <Footer />
     </div>
   );
