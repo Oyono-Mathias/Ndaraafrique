@@ -15,7 +15,7 @@ import {
   DocumentData,
   Firestore,
 } from 'firebase/firestore';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 
 /**
  * Starts a new chat between two users or returns the existing one.
@@ -56,8 +56,8 @@ export async function startChat(
         throw new Error("Un des utilisateurs n'existe pas.");
       }
 
-      const currentUserData = currentUserDoc.data() as FormaAfriqueUser;
-      const contactUserData = contactUserDoc.data() as FormaAfriqueUser;
+      const currentUserData = currentUserDoc.data() as NdaraUser;
+      const contactUserData = contactUserDoc.data() as NdaraUser;
 
       if (currentUserData.careerGoals?.interestDomain !== contactUserData.careerGoals?.interestDomain) {
          throw new Error("Vous ne pouvez discuter qu'avec les membres de votre filière.");

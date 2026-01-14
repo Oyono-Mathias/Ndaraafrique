@@ -20,7 +20,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Loader2, Bot, CheckCircle, FileText, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { Course, Assignment, Submission } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { gradeAssignment } from '@/ai/flows/grade-assignment-flow';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,7 +36,7 @@ type GradedResult = {
 }
 
 interface EnrichedSubmission extends Submission {
-    student?: FormaAfriqueUser;
+    student?: NdaraUser;
 }
 
 const SubmissionCard = ({ submission, assignment }: { submission: EnrichedSubmission, assignment: Assignment | null }) => {
@@ -163,11 +163,11 @@ export default function SubmissionsPage() {
                 return;
             }
 
-            const usersMap = new Map<string, FormaAfriqueUser>();
+            const usersMap = new Map<string, NdaraUser>();
             const usersRef = collection(db, 'users');
             const q = query(usersRef, where('uid', 'in', studentIds.slice(0, 30)));
             const usersSnap = await getDocs(q);
-            usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as FormaAfriqueUser));
+            usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
             
             const enriched = submissions.map(sub => ({
                 ...sub,

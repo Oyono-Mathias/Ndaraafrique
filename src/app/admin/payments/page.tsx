@@ -19,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, ShoppingCart, AlertCircle, CheckCircle, Shield } from 'lucide-react';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -87,7 +87,7 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
 
 
 export default function AdminPaymentsPage() {
-  const { formaAfriqueUser: adminUser } = useRole();
+  const { ndaraUser: adminUser } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');

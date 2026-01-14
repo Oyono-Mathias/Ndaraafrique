@@ -74,7 +74,7 @@ interface StudentData {
 export default function MyStudentsPage() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const { formaAfriqueUser: instructor, isUserLoading: isInstructorLoading, user } = useRole();
+  const { ndaraUser: instructor, isUserLoading: isInstructorLoading, user } = useRole();
   const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

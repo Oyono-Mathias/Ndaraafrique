@@ -116,7 +116,7 @@ export default function TicketConversationPage() {
 
     const messagePayload = {
       senderId: adminUser.uid,
-      text: `[Support FormaAfrique] : ${textToSend}`,
+      text: `[Support Ndara Afrique] : ${textToSend}`,
       createdAt: serverTimestamp()
     };
     
@@ -231,7 +231,7 @@ export default function TicketConversationPage() {
                           "rounded-lg border mt-1 px-4 py-2 text-white text-sm shadow-sm",
                           isAdminMsg ? "bg-primary border-primary/50" : "bg-slate-700 border-slate-600"
                       )}>
-                        {msg.text.replace('[Support FormaAfrique] :', '')}
+                        {msg.text.replace('[Support Ndara Afrique] :', '')}
                       </div>
                        <p className="text-xs text-slate-500 mt-1">{msg.createdAt ? format(msg.createdAt.toDate(), 'HH:mm') : ''}</p>
                     </div>
@@ -252,7 +252,7 @@ export default function TicketConversationPage() {
                 <Input
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  placeholder="Répondre en tant que Support FormaAfrique..."
+                  placeholder="Répondre en tant que Support Ndara Afrique..."
                   className="flex-1 bg-slate-800 border-slate-600 text-white"
                   disabled={isSending || ticket?.status === 'fermé'}
                 />

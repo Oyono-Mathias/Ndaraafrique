@@ -11,7 +11,7 @@ import { getAuth } from 'firebase/auth';
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
-export interface FormaAfriqueUser {
+export interface NdaraUser {
     uid: string;
     email: string;
     username: string;
@@ -80,17 +80,17 @@ interface RoleContextType {
   switchRole: (newRole: UserRole) => void;
   secureSignOut: () => Promise<void>;
   loading: boolean;
-  formaAfriqueUser: FormaAfriqueUser | null;
+  ndaraUser: NdaraUser | null;
   user: User | null; // From Firebase Auth
   isUserLoading: boolean; // From Firebase Auth
-  setFormaAfriqueUser: React.Dispatch<React.SetStateAction<FormaAfriqueUser | null>>;
+  setNdaraUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const [formaAfriqueUser, setFormaAfriqueUser] = useState<FormaAfriqueUser | null>(null);
+  const [ndaraUser, setNdaraUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
@@ -125,7 +125,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     
     if (!user) {
-      setFormaAfriqueUser(null);
+      setNdaraUser(null);
       setLoading(false);
       return;
     }
@@ -135,7 +135,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = onSnapshot(userDocRef, (userDoc) => {
         if (userDoc.exists()) {
-          const userData = userDoc.data() as Omit<FormaAfriqueUser, 'uid' | 'email' | 'availableRoles'>;
+          const userData = userDoc.data() as Omit<NdaraUser, 'uid' | 'email' | 'availableRoles'>;
           
           const roles: UserRole[] = ['student'];
           if (userData.role === 'instructor' || userData.role === 'admin') {
@@ -145,7 +145,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('admin');
           }
 
-          const resolvedUser: FormaAfriqueUser = {
+          const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
               email: user.email || '',
@@ -164,7 +164,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
 
-          setFormaAfriqueUser(resolvedUser);
+          setNdaraUser(resolvedUser);
           setAvailableRoles(roles);
 
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
@@ -183,7 +183,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         } else {
             console.warn("User document not found in Firestore for UID:", user.uid);
             const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
-            const defaultUser: FormaAfriqueUser = {
+            const defaultUser: NdaraUser = {
                 uid: user.uid,
                 email: user.email || '',
                 username: defaultUsername,
@@ -195,7 +195,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 profilePictureURL: user.photoURL || '',
                 isProfileComplete: false,
             };
-            setFormaAfriqueUser(defaultUser);
+            setNdaraUser(defaultUser);
             setAvailableRoles(['student']);
             setRole('student');
         }
@@ -232,11 +232,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     switchRole,
     secureSignOut,
     loading: isUserLoading || loading,
-    formaAfriqueUser,
-    setFormaAfriqueUser,
+    ndaraUser,
+    setNdaraUser,
     user,
     isUserLoading
-  }), [role, availableRoles, switchRole, secureSignOut, loading, formaAfriqueUser, user, isUserLoading]);
+  }), [role, availableRoles, switchRole, secureSignOut, loading, ndaraUser, user, isUserLoading]);
 
   return (
     <RoleContext.Provider value={value}>

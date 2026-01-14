@@ -30,7 +30,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -168,7 +168,7 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
 
 
 export default function AdminCoursesPage() {
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { ndaraUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');

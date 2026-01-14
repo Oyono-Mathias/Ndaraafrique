@@ -104,17 +104,17 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
 }
 
 export default function InstructorCoursesPage() {
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
 
   const coursesQuery = useMemoFirebase(
-    () => formaAfriqueUser?.uid
-      ? query(collection(db, 'courses'), where('instructorId', '==', formaAfriqueUser.uid))
+    () => ndaraUser?.uid
+      ? query(collection(db, 'courses'), where('instructorId', '==', ndaraUser.uid))
       : null,
-    [db, formaAfriqueUser?.uid]
+    [db, ndaraUser?.uid]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 

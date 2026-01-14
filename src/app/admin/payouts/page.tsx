@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Check, X, Landmark, AlertTriangle, Wallet, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -82,7 +82,7 @@ const formatCurrency = (amount: number) => {
 
 export default function PayoutsPage() {
   const { t } = useTranslation();
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { ndaraUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);

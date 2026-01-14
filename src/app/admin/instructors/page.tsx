@@ -28,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Check, X, UserCheck, UserX, Bot, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -188,7 +188,7 @@ const DecisionModal = ({
 };
 
 export default function InstructorApplicationsPage() {
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { ndaraUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const { t } = useTranslation();
