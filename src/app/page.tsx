@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { Frown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
