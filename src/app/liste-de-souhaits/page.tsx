@@ -21,6 +21,7 @@ import { Heart, Trash2, Play } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Enrollment } from '@/lib/types';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
+import { cn } from '@/lib/utils';
 
 interface WishlistItem {
   id: string;
@@ -41,7 +42,7 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
   }
 
   return (
-    <div className="relative group bg-slate-800/50 border border-slate-700 rounded-lg overflow-hidden transition-shadow hover:shadow-md hover:border-primary/50">
+    <div className="relative group bg-slate-800/50 border border-slate-700 rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg hover:border-primary/50">
       <Link href={course.isEnrolled ? `/courses/${course.id}` : `/course/${course.id}`} className="flex gap-4">
         <Image
           src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
@@ -50,7 +51,7 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
           height={80}
           className="aspect-video object-cover shrink-0"
         />
-        <div className="py-3 pr-4 flex flex-col justify-between flex-1 overflow-hidden">
+        <div className="py-3 pr-4 flex flex-col justify-center flex-1 overflow-hidden">
           <div>
             <h3 className="font-bold text-sm text-white line-clamp-2">{course.title}</h3>
             <p className="text-xs text-slate-400 truncate">Par {course.instructorName || 'un instructeur'}</p>
@@ -65,7 +66,7 @@ const WishlistCard = ({ course, onRemove }: { course: WishlistCourse, onRemove: 
       <Button 
         variant="ghost" 
         size="icon" 
-        className="absolute top-1 right-1 h-8 w-8 text-slate-400 hover:bg-destructive/10 hover:text-destructive"
+        className="absolute top-2 right-2 h-8 w-8 text-slate-400 opacity-50 group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
         onClick={handleRemoveClick}
         aria-label="Retirer de la liste de souhaits"
       >
@@ -148,9 +149,9 @@ export default function WishlistPage() {
     if (!user?.uid) return;
     try {
       await deleteDoc(doc(db, `users/${user.uid}/wishlist`, id));
-      toast({ title: 'Retiré', description: 'Cours retiré de la liste.' });
+      toast({ title: 'Retiré', description: 'Le cours a été retiré de votre liste de souhaits.' });
     } catch (e) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Action impossible.' });
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de retirer le cours de la liste.' });
     }
   };
   
