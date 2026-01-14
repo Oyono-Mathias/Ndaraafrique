@@ -13,6 +13,7 @@ import {
   doc,
   limit,
   Timestamp,
+  updateDoc,
 } from 'firebase/firestore';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,6 +23,7 @@ import { BellRing, Bell, CheckCircle, Gift, ShieldAlert } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
 
 interface Notification {
   id: string;
@@ -44,6 +46,7 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
 export default function NotificationsPage() {
   const { user, isUserLoading } = useRole();
   const db = getFirestore();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -98,6 +101,25 @@ export default function NotificationsPage() {
     }
   };
 
+  const markAsRead = async (notificationId: string) => {
+    if (!user) return;
+    const notifRef = doc(db, `users/${user.uid}/notifications`, notificationId);
+    try {
+        await updateDoc(notifRef, { read: true });
+    } catch (error) {
+        console.error("Error marking notification as read:", error);
+    }
+  };
+
+  const handleNotificationClick = (notif: Notification) => {
+    if (!notif.read) {
+        markAsRead(notif.id);
+    }
+    if (notif.link) {
+        router.push(notif.link);
+    }
+  };
+
   const renderContent = () => {
     if (isLoading) {
       return (
@@ -128,11 +150,14 @@ export default function NotificationsPage() {
     return (
       <div className="space-y-1">
         {notifications.map((notif) => {
-          const content = (
-            <div
+          const WrapperComponent = notif.link ? 'button' : 'div';
+          return (
+            <WrapperComponent
+              key={notif.id}
+              onClick={() => handleNotificationClick(notif)}
               className={cn(
-                "flex items-start gap-4 p-4 rounded-lg transition-colors",
-                notif.link ? 'hover:bg-slate-800/50' : 'cursor-default',
+                "w-full text-left flex items-start gap-4 p-4 rounded-lg transition-colors",
+                notif.link && 'hover:bg-slate-800/50 cursor-pointer',
                 !notif.read && "bg-primary/10"
               )}
             >
@@ -155,15 +180,7 @@ export default function NotificationsPage() {
               {!notif.read && (
                 <div className="h-2.5 w-2.5 rounded-full bg-primary self-center shrink-0"></div>
               )}
-            </div>
-          );
-
-          return notif.link ? (
-            <Link href={notif.link} key={notif.id} onClick={() => !notif.read && markAllAsRead()}>
-              {content}
-            </Link>
-          ) : (
-            <div key={notif.id}>{content}</div>
+            </WrapperComponent>
           );
         })}
       </div>
