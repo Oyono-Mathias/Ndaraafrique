@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, onSnapshot, getFirestore, Timestamp, orderBy, limit, getDocs, doc } from 'firebase/firestore';
-import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
+import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 import { format, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -58,7 +59,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading
 
 // --- COMPOSANT DU TABLEAU DE BORD PRINCIPAL ---
 const AdminDashboard = () => {
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [stats, setStats] = useState<Stats>({
@@ -76,7 +77,7 @@ const AdminDashboard = () => {
 
   // --- FETCHING LOGIC ---
   useEffect(() => {
-    if (!formaAfriqueUser || formaAfriqueUser.role !== 'admin') return;
+    if (!ndaraUser || ndaraUser.role !== 'admin') return;
 
     const thirtyDaysAgo = Timestamp.fromDate(subDays(new Date(), 30));
     const startOfCurrentMonth = Timestamp.fromDate(startOfMonth(new Date()));
@@ -169,11 +170,11 @@ const AdminDashboard = () => {
 
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [formaAfriqueUser, db]);
+  }, [ndaraUser, db]);
 
 
   // --- Authorization Check ---
-  if (!isUserLoading && formaAfriqueUser?.role !== 'admin') {
+  if (!isUserLoading && ndaraUser?.role !== 'admin') {
     return (
         <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
              <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
@@ -302,5 +303,3 @@ const AdminDashboard = () => {
 };
 
 export default AdminDashboard;
-
-    

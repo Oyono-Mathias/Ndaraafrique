@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,7 +22,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, Trash2, Play, ChevronsRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Enrollment } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 
 interface WishlistItem {
@@ -128,11 +129,11 @@ export default function WishlistPage() {
       const coursesMap = new Map(coursesSnap.docs.map(d => [d.id, { id: d.id, ...d.data() } as Course]));
       
       const instructorIds = [...new Set(coursesSnap.docs.map(d => d.data().instructorId).filter(Boolean))];
-      const instMap = new Map<string, FormaAfriqueUser>();
+      const instMap = new Map<string, NdaraUser>();
       
       if (instructorIds.length > 0) {
         const instSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
-        instSnap.forEach(d => instMap.set(d.data().uid, d.data() as FormaAfriqueUser));
+        instSnap.forEach(d => instMap.set(d.data().uid, d.data() as NdaraUser));
       }
 
       const result: WishlistCourse[] = [];

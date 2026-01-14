@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -27,7 +28,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Check, X, UserCheck, UserX, Bot, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -38,7 +39,7 @@ import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label';
 
 
-interface Application extends FormaAfriqueUser {
+interface Application extends NdaraUser {
     instructorApplication?: {
         motivation?: string;
         verificationDocUrl?: string;

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -20,7 +21,7 @@ import { Award, User, Book } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Course, Enrollment } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 
 interface CertificateInfo {
     id: string;
@@ -73,7 +74,7 @@ export default function InstructorCertificatesPage() {
         const studentIds = [...new Set(completedEnrollments.map(e => e.studentId))];
         const studentsQuery = query(collection(db, 'users'), where('uid', 'in', studentIds));
         const studentsSnap = await getDocs(studentsQuery);
-        const studentsMap = new Map(studentsSnap.docs.map(doc => [doc.id, doc.data() as FormaAfriqueUser]));
+        const studentsMap = new Map(studentsSnap.docs.map(doc => [doc.id, doc.data() as NdaraUser]));
         
         // 4. Combine data
         const certificateList = completedEnrollments.map(enrollment => {

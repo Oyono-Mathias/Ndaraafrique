@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -18,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, ShoppingCart, AlertCircle, CheckCircle, Shield } from 'lucide-react';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -45,7 +46,7 @@ interface Payment {
 }
 
 interface EnrichedPayment extends Payment {
-    user?: Pick<FormaAfriqueUser, 'fullName' | 'email' | 'profilePictureURL'>;
+    user?: Pick<NdaraUser, 'fullName' | 'email' | 'profilePictureURL'>;
     courseTitle?: string;
 }
 
@@ -125,10 +126,10 @@ export default function AdminPaymentsPage() {
         const userIds = [...new Set(payments.map(p => p.userId))];
         const courseIds = [...new Set(payments.map(p => p.courseId))];
 
-        const usersMap = new Map<string, FormaAfriqueUser>();
+        const usersMap = new Map<string, NdaraUser>();
         if(userIds.length > 0) {
             const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0,30))));
-            usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as FormaAfriqueUser));
+            usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
         }
 
         const coursesMap = new Map<string, {title: string}>();

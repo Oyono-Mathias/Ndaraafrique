@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -28,7 +29,7 @@ export default function CreateCoursePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({
@@ -39,7 +40,7 @@ export default function CreateCoursePage() {
   });
 
   const onSubmit = async (data: CourseCreateFormValues) => {
-    if (!formaAfriqueUser || !formaAfriqueUser.isInstructorApproved) {
+    if (!ndaraUser || !ndaraUser.isInstructorApproved) {
       toast({
         variant: 'destructive',
         title: t('access_denied_title'),
@@ -58,7 +59,7 @@ export default function CreateCoursePage() {
       price: 0,
       category: '',
       status: 'Draft',
-      instructorId: formaAfriqueUser.uid,
+      instructorId: ndaraUser.uid,
       createdAt: serverTimestamp(),
       publishedAt: null,
       imageUrl: `https://picsum.photos/seed/${new Date().getTime()}/600/400`,

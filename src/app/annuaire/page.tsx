@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -15,7 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Users, UserX, Loader2 } from 'lucide-react';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
@@ -52,21 +53,21 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
 };
 
 export default function DirectoryPage() {
-  const { user, formaAfriqueUser } = useRole();
+  const { user, formaAfriqueUser: ndaraUser } = useRole();
   const db = getFirestore();
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
-  const [members, setMembers] = useState<FormaAfriqueUser[]>([]);
+  const [members, setMembers] = useState<NdaraUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const isProfileComplete = useMemo(() => !!(formaAfriqueUser?.username && formaAfriqueUser?.careerGoals?.interestDomain), [formaAfriqueUser]);
+  const isProfileComplete = useMemo(() => !!(ndaraUser?.username && ndaraUser?.careerGoals?.interestDomain), [ndaraUser]);
 
   useEffect(() => {
-    if (!formaAfriqueUser) {
+    if (!ndaraUser) {
         setIsLoading(false);
         return;
     }
@@ -77,7 +78,7 @@ export default function DirectoryPage() {
         return;
     }
 
-    const userInterestDomain = formaAfriqueUser.careerGoals?.interestDomain;
+    const userInterestDomain = ndaraUser.careerGoals?.interestDomain;
     if (!userInterestDomain) {
         setIsLoading(false);
         setMembers([]);
@@ -94,7 +95,7 @@ export default function DirectoryPage() {
 
     const unsubscribe = onSnapshot(usersQuery, (snapshot) => {
         const memberList = snapshot.docs
-            .map(doc => doc.data() as FormaAfriqueUser)
+            .map(doc => doc.data() as NdaraUser)
             .filter(member => member.uid !== user?.uid); 
         setMembers(memberList);
         setIsLoading(false);
@@ -105,11 +106,11 @@ export default function DirectoryPage() {
     });
 
     return () => unsubscribe();
-  }, [formaAfriqueUser, db, isProfileComplete, user?.uid, toast]);
+  }, [ndaraUser, db, isProfileComplete, user?.uid, toast]);
 
 
   const handleContact = async (contactId: string) => {
-    if (!user || !formaAfriqueUser) return;
+    if (!user || !ndaraUser) return;
     setIsCreatingChat(true);
     try {
       const chatId = await startChat(user.uid, contactId, db);
@@ -136,7 +137,7 @@ export default function DirectoryPage() {
       <header>
         <h1 className="text-3xl font-bold text-white">Annuaire des membres</h1>
         <p className="text-muted-foreground">
-          {isProfileComplete ? `Trouvez et connectez-vous avec d'autres apprenants de votre filière : ${formaAfriqueUser?.careerGoals?.interestDomain}` : 'Complétez votre profil pour accéder à l\'annuaire.'}
+          {isProfileComplete ? `Trouvez et connectez-vous avec d'autres apprenants de votre filière : ${ndaraUser?.careerGoals?.interestDomain}` : 'Complétez votre profil pour accéder à l\'annuaire.'}
         </p>
       </header>
 

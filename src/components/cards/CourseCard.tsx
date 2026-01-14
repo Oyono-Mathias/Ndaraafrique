@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { Star, Play, Award } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -15,7 +16,7 @@ import { useState } from 'react';
 
 interface CourseCardProps {
   course: Course & { progress?: number };
-  instructor: Partial<FormaAfriqueUser> | null;
+  instructor: Partial<NdaraUser> | null;
   variant?: 'catalogue' | 'student';
 }
 

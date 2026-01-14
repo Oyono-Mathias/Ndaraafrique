@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -19,7 +20,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 
@@ -109,7 +110,7 @@ export default function LoginPage() {
     let targetRoute = '/dashboard';
 
     if (!userDocSnap.exists()) {
-        const finalUserData: Partial<FormaAfriqueUser> = {
+        const finalUserData: Partial<NdaraUser> = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             fullName: firebaseUser.displayName || 'Utilisateur Ndara',
@@ -128,7 +129,7 @@ export default function LoginPage() {
         }
         await setDoc(userDocRef, finalUserData, { merge: true });
     } else {
-        const existingData = userDocSnap.data() as FormaAfriqueUser;
+        const existingData = userDocSnap.data() as NdaraUser;
         if (existingData.role === 'admin') {
             targetRoute = '/admin';
         }

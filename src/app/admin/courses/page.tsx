@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,7 +30,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -172,7 +173,7 @@ export default function AdminCoursesPage() {
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
+  const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
   const [dataLoading, setDataLoading] = useState(true);
 
   const coursesQuery = useMemoFirebase(
@@ -203,7 +204,7 @@ export default function AdminCoursesPage() {
             const usersSnap = await getDocs(usersQuery);
             
             const newInstructors = new Map(instructors);
-            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser));
+            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
             setInstructors(newInstructors);
         }
         setDataLoading(false);

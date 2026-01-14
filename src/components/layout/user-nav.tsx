@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -27,7 +28,7 @@ import {
   
 export function UserNav() {
     const { t } = useTranslation();
-    const { formaAfriqueUser, isUserLoading, secureSignOut } = useRole();
+    const { formaAfriqueUser: ndaraUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 
     const handleLogout = async () => {
@@ -35,7 +36,7 @@ export function UserNav() {
         router.push('/');
     }
 
-    if (isUserLoading || !formaAfriqueUser) {
+    if (isUserLoading || !ndaraUser) {
         return null;
     }
     
@@ -44,10 +45,10 @@ export function UserNav() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
             <Avatar className="h-10 w-10 border-2 border-slate-700">
-              <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.fullName} />
-              <AvatarFallback className="bg-slate-700 text-slate-300">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
+              <AvatarImage src={ndaraUser.profilePictureURL} alt={ndaraUser.fullName} />
+              <AvatarFallback className="bg-slate-700 text-slate-300">{ndaraUser.fullName?.charAt(0)}</AvatarFallback>
             </Avatar>
-             {!formaAfriqueUser.isProfileComplete && (
+             {!ndaraUser.isProfileComplete && (
                 <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-amber-400 ring-2 ring-background" />
             )}
           </Button>
@@ -56,15 +57,15 @@ export function UserNav() {
           <DropdownMenuLabel className="font-normal">
             <div className="flex items-center gap-3">
                <Avatar className="h-9 w-9">
-                  <AvatarImage src={formaAfriqueUser.profilePictureURL} alt={formaAfriqueUser.fullName} />
-                  <AvatarFallback className="bg-slate-600">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
+                  <AvatarImage src={ndaraUser.profilePictureURL} alt={ndaraUser.fullName} />
+                  <AvatarFallback className="bg-slate-600">{ndaraUser.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col space-y-1">
                   <div className="flex items-center gap-2">
-                     <p className="text-sm font-semibold leading-none text-white">@{formaAfriqueUser.username}</p>
+                     <p className="text-sm font-semibold leading-none text-white">@{ndaraUser.username}</p>
                      <OnlineStatusIndicator />
                   </div>
-                   {!formaAfriqueUser.isProfileComplete && (
+                   {!ndaraUser.isProfileComplete && (
                         <span className="text-xs text-amber-400 font-semibold flex items-center gap-1">
                            <BadgeAlert className="h-3 w-3"/> {t('profile_incomplete')}
                         </span>

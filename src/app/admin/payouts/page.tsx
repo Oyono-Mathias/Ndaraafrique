@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -39,7 +40,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Check, X, Landmark, AlertTriangle, Wallet, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -58,7 +59,7 @@ interface Payout {
 }
 
 interface EnrichedPayout extends Payout {
-    instructor?: Pick<FormaAfriqueUser, 'fullName' | 'email' | 'profilePictureURL'>;
+    instructor?: Pick<NdaraUser, 'fullName' | 'email' | 'profilePictureURL'>;
     instructorBalance?: number;
 }
 
@@ -133,11 +134,11 @@ export default function PayoutsPage() {
             return;
         }
 
-        const usersMap = new Map<string, FormaAfriqueUser>();
+        const usersMap = new Map<string, NdaraUser>();
         const usersRef = collection(db, 'users');
         const q = query(usersRef, where('uid', 'in', instructorIds.slice(0,30)));
         const usersSnap = await getDocs(q);
-        usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as FormaAfriqueUser));
+        usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
         
         const instructorBalances = new Map<string, number>();
 

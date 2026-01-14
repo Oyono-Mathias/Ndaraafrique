@@ -45,7 +45,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle } from 'lucide-react';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -101,7 +101,7 @@ const UserCardSkeleton = () => (
 
 
 // --- COMPOSANTS DE L'INTERFACE ---
-const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
+const getRoleBadgeVariant = (role: NdaraUser['role']) => {
   switch (role) {
     case 'admin': return 'destructive';
     case 'instructor': return 'default';
@@ -109,11 +109,11 @@ const getRoleBadgeVariant = (role: FormaAfriqueUser['role']) => {
   }
 };
 
-const getStatusBadgeVariant = (status: FormaAfriqueUser['status'] = 'active') => {
+const getStatusBadgeVariant = (status: NdaraUser['status'] = 'active') => {
   return status === 'suspended' ? 'destructive' : 'default';
 };
 
-const UserActions = ({ user, onActionStart, onActionEnd }: { user: FormaAfriqueUser, onActionStart: () => void, onActionEnd: () => void }) => {
+const UserActions = ({ user, onActionStart, onActionEnd }: { user: NdaraUser, onActionStart: () => void, onActionEnd: () => void }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
   const db = getFirestore();
@@ -320,7 +320,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
   const db = getFirestore();
-  const [users, setUsers] = useState<FormaAfriqueUser[]>([]);
+  const [users, setUsers] = useState<NdaraUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -332,7 +332,7 @@ export default function AdminUsersPage() {
         const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
         try {
             const snapshot = await getDocs(usersQuery);
-            const userList = snapshot.docs.map(doc => doc.data() as FormaAfriqueUser);
+            const userList = snapshot.docs.map(doc => doc.data() as NdaraUser);
             setUsers(userList);
         } catch (error) {
             console.error("Error fetching users:", error);

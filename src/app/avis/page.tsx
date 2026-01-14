@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -30,7 +31,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Star, MessageCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Course, Review } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 
 
 interface ReviewWithDetails extends Review {
@@ -78,7 +79,7 @@ const ReviewRowMobile = ({ review }: { review: ReviewWithDetails }) => (
 );
 
 export default function ReviewsPage() {
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [reviews, setReviews] = useState<ReviewWithDetails[]>([]);
@@ -108,7 +109,7 @@ export default function ReviewsPage() {
       // 3. Get all unique student details
       const userIds = [...new Set(allReviews.map(r => r.userId))];
       const userPromises = [];
-      const usersMap = new Map<string, FormaAfriqueUser>();
+      const usersMap = new Map<string, NdaraUser>();
       // Batch user fetching
       for (let i = 0; i < userIds.length; i += 30) {
           const chunk = userIds.slice(i, i + 30);
@@ -118,7 +119,7 @@ export default function ReviewsPage() {
 
       const userSnapshots = await Promise.all(userPromises);
       userSnapshots.flatMap(snapshot => snapshot.docs).forEach(doc => {
-          usersMap.set(doc.data().uid, doc.data() as FormaAfriqueUser);
+          usersMap.set(doc.data().uid, doc.data() as NdaraUser);
       });
 
       // 4. Populate and set reviews
@@ -139,12 +140,12 @@ export default function ReviewsPage() {
   }, [db]);
   
   useEffect(() => {
-    if (!isUserLoading && formaAfriqueUser?.uid) {
-        fetchAllReviews(formaAfriqueUser.uid);
+    if (!isUserLoading && ndaraUser?.uid) {
+        fetchAllReviews(ndaraUser.uid);
     } else if (!isUserLoading) {
         setIsLoading(false);
     }
-  }, [formaAfriqueUser, isUserLoading, fetchAllReviews]);
+  }, [ndaraUser, isUserLoading, fetchAllReviews]);
 
 
   return (

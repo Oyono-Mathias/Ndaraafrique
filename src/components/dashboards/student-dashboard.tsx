@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from 'next/link';
@@ -8,12 +9,12 @@ import { Frown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import type { Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { CourseCard } from '../cards/CourseCard';
 
-const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
+const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
         return (
             <section>
@@ -49,7 +50,7 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
 
 export function StudentDashboard() {
   const db = getFirestore();
-  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<FormaAfriqueUser>>>(new Map());
+  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
   // Fetch all published courses
   const allCoursesQuery = useMemoFirebase(() => {

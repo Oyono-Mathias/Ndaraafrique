@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -11,7 +12,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/context/RoleContext';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useTranslation } from 'react-i18next';
 
@@ -21,7 +22,7 @@ interface EnrolledCourse extends Course {
 }
 
 export default function MyLearningPage() {
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
@@ -29,10 +30,10 @@ export default function MyLearningPage() {
 
   // 1. Get student's enrollments
   const enrollmentsQuery = useMemoFirebase(
-    () => formaAfriqueUser?.uid
-      ? query(collection(db, 'enrollments'), where('studentId', '==', formaAfriqueUser.uid))
+    () => ndaraUser?.uid
+      ? query(collection(db, 'enrollments'), where('studentId', '==', ndaraUser.uid))
       : null,
-    [db, formaAfriqueUser?.uid]
+    [db, ndaraUser?.uid]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
@@ -58,12 +59,12 @@ export default function MyLearningPage() {
           courseSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
       }
       
-      const instructorsMap = new Map<string, FormaAfriqueUser>();
+      const instructorsMap = new Map<string, NdaraUser>();
       if (instructorIds.length > 0) {
           const instructorsRef = collection(db, 'users');
           const q = query(instructorsRef, where('uid', 'in', instructorIds.slice(0, 30)));
           const instructorSnap = await getDocs(q);
-          instructorSnap.forEach(doc => instructorsMap.set(doc.data().uid, doc.data() as FormaAfriqueUser));
+          instructorSnap.forEach(doc => instructorsMap.set(doc.data().uid, doc.data() as NdaraUser));
       }
 
       const populatedCourses: EnrolledCourse[] = enrollments.map(enrollment => {
