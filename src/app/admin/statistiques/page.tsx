@@ -74,7 +74,7 @@ export default function AdminStatisticsPage() {
                 const [studentsSnap, coursesSnap, paymentsSnap] = await Promise.all([
                     getDocs(studentsQuery),
                     getDocs(coursesQuery),
-                    getDocs(paymentsSnap)
+                    getDocs(paymentsQuery)
                 ]);
 
                 // User Count
