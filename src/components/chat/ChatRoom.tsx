@@ -146,7 +146,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             const batch = writeBatch(db);
             batch.update(chatRef, { unreadBy: [] });
             
-            // Also update the status of the last message if it's not from the current user
             const lastMessage = messages[messages.length - 1];
             if (lastMessage && lastMessage.senderId !== user?.uid) {
                 const messageRef = doc(db, 'chats', chatId, 'messages', lastMessage.id);
