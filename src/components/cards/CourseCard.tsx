@@ -30,8 +30,24 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 export function CourseCard({ course, instructor, variant = 'catalogue' }: CourseCardProps) {
   const { t } = useTranslation();
   const [imageLoading, setImageLoading] = useState(true);
-  const isStarted = course.progress !== undefined && course.progress > 0;
+  
+  const progress = course.progress ?? 0;
+  const isStarted = progress > 0;
+  const isCompleted = progress === 100;
   const isStudentView = variant === 'student';
+
+  const getButtonText = () => {
+    if (isCompleted) return "Revoir le cours";
+    if (isStarted) return "Continuer";
+    return "Commencer";
+  };
+  
+  // Dynamic progress bar color based on completion percentage
+  const progressColorClass = cn({
+    "bg-destructive": progress < 40,
+    "bg-amber-500": progress >= 40 && progress < 80,
+    "bg-green-500": progress >= 80,
+  });
 
   return (
     <div className="w-full h-full glassmorphism-card rounded-2xl overflow-hidden group flex flex-col">
@@ -69,13 +85,13 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
             {isStudentView ? (
                  <div className="space-y-2">
                     <div className="flex items-center gap-2 text-xs text-slate-400">
-                        <Progress value={course.progress || 0} className="h-1.5" />
-                        <span className="font-semibold">{course.progress || 0}%</span>
+                        <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
+                        <span className="font-semibold">{progress}%</span>
                     </div>
                      <Button size="sm" className="w-full font-bold bg-primary hover:bg-primary/90" asChild>
                         <Link href={`/courses/${course.id}`}>
                             <Play className="h-4 w-4 mr-2"/>
-                            {isStarted ? t('continue') : t('start')}
+                            {getButtonText()}
                         </Link>
                     </Button>
                 </div>
