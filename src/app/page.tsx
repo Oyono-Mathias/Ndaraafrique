@@ -21,11 +21,11 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     if (isLoading && courses.length === 0) {
         return (
             <div className="w-full">
-                <div className="nd-skeleton h-8 w-1/3 mb-8"></div>
+                <Skeleton className="h-8 w-1/3 mb-8 bg-slate-800" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="nd-skeleton h-80 rounded-xl"></div>
-                    <div className="nd-skeleton h-80 rounded-xl"></div>
-                    <div className="nd-skeleton h-80 rounded-xl"></div>
+                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
+                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
+                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
                 </div>
             </div>
         );
@@ -36,11 +36,15 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     return (
         <section className="py-12">
             <h2 className="text-3xl font-bold mb-8 text-foreground">{title}</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {courses.map(course => (
-                    <CourseCard key={course.id} course={course} instructor={instructorsMap.get(course.instructorId) || null} />
-                ))}
-            </div>
+             <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-6">
+                    {courses.map(course => (
+                        <CarouselItem key={course.id} className="pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
         </section>
     );
 };
@@ -174,7 +178,7 @@ export default function LandingPage() {
       collection(db, "courses"),
       where("status", "==", "Published"),
       orderBy("createdAt", "desc"),
-      limit(6)
+      limit(12) // Fetch a bit more to have enough for both sections
     );
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -201,8 +205,10 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
   
-  const popularCourses = courses.filter(c => c.isPopular).slice(0, 3);
-  const freeCourses = courses.filter(c => c.price === 0).slice(0,3);
+  const popularCourses = courses.filter(c => c.isPopular).slice(0, 4);
+  const freeCourses = courses.filter(c => c.price === 0).slice(0, 4);
+  const recentCourses = courses.slice(0,4);
+
 
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
@@ -231,10 +237,16 @@ export default function LandingPage() {
           
         <main className="space-y-16">
           <InteractiveSteps />
-
+          
+          <CourseCarousel
+            title="Les nouveautés"
+            courses={recentCourses}
+            instructorsMap={instructorsMap}
+            isLoading={loading}
+          />
            <CourseCarousel
             title="Populaires ce mois-ci"
-            courses={popularCourses.length > 0 ? popularCourses : courses}
+            courses={popularCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
           />
