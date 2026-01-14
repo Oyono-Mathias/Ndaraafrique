@@ -53,6 +53,7 @@ import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 
 // --- SKELETON LOADER ---
@@ -281,12 +282,23 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
                    ) : (
                      <div className="max-h-64 overflow-y-auto space-y-2 p-2 rounded-lg bg-slate-800/50">
                         <h4 className="font-semibold text-white">Résultats de l'importation :</h4>
-                         {importResults.map(res => (
-                            <div key={res.email} className="flex justify-between items-center text-sm">
-                                <span className="text-slate-300">{res.email}</span>
-                                {res.status === 'success' ? <CheckCircle className="h-4 w-4 text-green-500" /> : <AlertTriangle className="h-4 w-4 text-red-500" title={res.error} />}
-                            </div>
-                         ))}
+                         <TooltipProvider>
+                            {importResults.map(res => (
+                                <div key={res.email} className="flex justify-between items-center text-sm">
+                                    <span className="text-slate-300">{res.email}</span>
+                                    {res.status === 'success' ? <CheckCircle className="h-4 w-4 text-green-500" /> : (
+                                        <Tooltip>
+                                            <TooltipTrigger>
+                                                <AlertTriangle className="h-4 w-4 text-red-500" />
+                                            </TooltipTrigger>
+                                            <TooltipContent>
+                                                <p>{res.error}</p>
+                                            </TooltipContent>
+                                        </Tooltip>
+                                    )}
+                                </div>
+                            ))}
+                         </TooltipProvider>
                      </div>
                    )}
                 </div>
