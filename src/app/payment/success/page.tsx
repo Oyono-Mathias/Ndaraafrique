@@ -42,24 +42,24 @@ function SuccessPageContent() {
     }, [courseId, db]);
 
     return (
-        <div className="flex flex-col justify-center items-center min-h-screen gap-6 text-center p-4 bg-slate-50">
-            <Card className="w-full max-w-lg shadow-2xl rounded-3xl animate-in fade-in-50 zoom-in-95">
+        <div className="flex flex-col justify-center items-center min-h-screen gap-6 text-center p-4 bg-slate-50 dark:bg-slate-900">
+            <Card className="w-full max-w-lg shadow-2xl rounded-3xl animate-in fade-in-50 zoom-in-95 dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader className="items-center pt-8">
                      <CheckCircle2 className="h-20 w-20 text-green-500 mb-4 animate-pulse" />
-                    <CardTitle className="text-3xl font-extrabold text-slate-800">Félicitations !</CardTitle>
-                    <p className="text-slate-600 pt-2">Vous venez d'investir en vous-même. Le paiement a été validé avec succès.</p>
+                    <CardTitle className="text-3xl font-extrabold text-slate-800 dark:text-white">Félicitations !</CardTitle>
+                    <p className="text-slate-600 dark:text-slate-400 pt-2">Vous venez d'investir en vous-même. Le paiement a été validé avec succès.</p>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {isLoading ? (
-                         <div className="p-4 border rounded-xl bg-slate-100 flex items-center gap-4">
-                            <Skeleton className="h-16 w-24 rounded-lg" />
+                         <div className="p-4 border rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center gap-4">
+                            <Skeleton className="h-16 w-24 rounded-lg dark:bg-slate-700" />
                             <div className="space-y-2 flex-1">
-                                <Skeleton className="h-4 w-full" />
-                                <Skeleton className="h-4 w-1/3" />
+                                <Skeleton className="h-4 w-full dark:bg-slate-700" />
+                                <Skeleton className="h-4 w-1/3 dark:bg-slate-700" />
                             </div>
                         </div>
                     ) : course ? (
-                         <div className="p-4 border rounded-xl bg-slate-100/70 flex items-center gap-4 text-left">
+                         <div className="p-4 border rounded-xl bg-slate-100/70 dark:bg-slate-900/50 dark:border-slate-700 flex items-center gap-4 text-left">
                             <Image 
                                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/150/100`}
                                 alt={course.title}
@@ -68,7 +68,7 @@ function SuccessPageContent() {
                                 className="rounded-lg aspect-video object-cover"
                             />
                             <div className="flex-1">
-                                <h3 className="font-bold text-slate-900">{course.title}</h3>
+                                <h3 className="font-bold text-slate-900 dark:text-white">{course.title}</h3>
                                 <p className="text-xs font-semibold text-green-600 bg-green-100/80 px-2 py-0.5 rounded-full inline-block mt-1">Accès activé</p>
                             </div>
                         </div>
@@ -82,7 +82,7 @@ function SuccessPageContent() {
                         )}
                     </Button>
                 </CardContent>
-                <CardFooter className="flex-col gap-3 text-xs text-slate-500 pb-8">
+                <CardFooter className="flex-col gap-3 text-xs text-slate-500 dark:text-slate-400 pb-8">
                      <p>N° de transaction : {transactionId}</p>
                      <Button variant="link" className="p-0 h-auto">
                         <Download className="mr-2 h-3 w-3" />

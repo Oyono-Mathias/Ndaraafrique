@@ -33,7 +33,6 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from '@/components/ui/badge';
 import { sendEnrollmentEmails } from '@/lib/emails';
-import { verifyMonerooTransaction } from '@/app/actions/monerooActions';
 import Script from 'next/script';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -378,96 +377,13 @@ export default function CourseDetailsClient() {
         }
     }
 
-
-  const handlePaymentSuccess = async (data: any) => {
-    if (!course || !instructor || !user || !formaAfriqueUser) return;
-    setIsPaying(true);
-
-    try {
-        const result = await verifyMonerooTransaction(data.transaction_id);
-
-        if (result.success) {
-            const enrollmentId = `${user.uid}_${courseId}`;
-            const enrollmentRef = doc(db, 'enrollments', enrollmentId);
-
-            const enrollmentPayload = {
-                enrollmentId,
-                studentId: user.uid,
-                courseId: courseId,
-                instructorId: course.instructorId,
-                enrollmentDate: serverTimestamp(),
-                progress: 0,
-                priceAtEnrollment: course.price,
-            };
-            
-            await setDoc(enrollmentRef, enrollmentPayload);
-
-            const paymentPayload = {
-              paymentId: data.transaction_id,
-              userId: user.uid,
-              instructorId: course.instructorId,
-              courseId: courseId,
-              amount: course.price,
-              currency: 'XOF',
-              date: serverTimestamp(),
-              status: 'Completed',
-              monerooData: data,
-            };
-            await setDoc(doc(db, 'payments', data.transaction_id), paymentPayload);
-
-            if(formaAfriqueUser){
-              await sendEnrollmentEmails(formaAfriqueUser, course, instructor);
-            }
-
-            router.push(`/payment/success?courseId=${courseId}&transactionId=${data.transaction_id}`);
-        } else {
-            throw new Error(result.error || 'La vérification du paiement a échoué.');
-        }
-    } catch (error: any) {
-        console.error("Payment processing error:", error);
-        toast({
-            variant: "destructive",
-            title: "Erreur de post-paiement",
-            description: error.message || "Une erreur est survenue lors de la finalisation de votre inscription.",
-        });
-        router.push(`/payment/error?courseId=${courseId}`);
-    } finally {
-        setIsPaying(false);
-    }
-  };
-  
   const handleCheckout = () => {
-    if (!user) {
+    if (!course || !user) {
         toast({ variant: 'destructive', title: 'Non connecté', description: 'Veuillez vous connecter pour acheter ce cours.' });
         router.push(`/login?redirect=/course/${courseId}`);
         return;
     }
-    setIsPaying(true);
-    try {
-        if (typeof window !== 'undefined' && (window as any).Moneroo) {
-            (window as any).Moneroo.setup({
-                publicKey: process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY || '',
-                onClose: () => setIsPaying(false),
-                onSuccess: handlePaymentSuccess,
-            }).open({
-                amount: course!.price,
-                currency: "XOF",
-                description: course!.title,
-                customer: {
-                    email: formaAfriqueUser!.email,
-                    name: formaAfriqueUser!.fullName,
-                },
-                metadata: {
-                    courseId: course!.id,
-                    userId: user!.uid,
-                }
-            });
-        }
-    } catch (error) {
-        console.error("Moneroo checkout error:", error);
-        toast({ variant: 'destructive', title: "Erreur de paiement", description: "Impossible d'initier le paiement."});
-        setIsPaying(false);
-    }
+    router.push(`/paiements?courseId=${course.id}`);
   };
   
     const handleToggleWishlist = async () => {

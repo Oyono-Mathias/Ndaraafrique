@@ -12,10 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, CreditCard, ArrowLeft } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import { verifyMonerooTransaction } from '../actions/monerooActions';
 import { toast } from '@/hooks/use-toast';
-import { sendEnrollmentEmails } from '@/lib/emails';
-import { setDoc, serverTimestamp } from 'firebase/firestore';
 import Script from 'next/script';
 
 
@@ -34,56 +31,11 @@ function PaymentPageContent() {
     const instructorRef = useMemoFirebase(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [db, course]);
     const { data: instructor } = useDoc(instructorRef);
 
-    const handlePaymentSuccess = async (data: any) => {
-        if (!course || !instructor || !user || !formaAfriqueUser) return;
-        setIsLoading(true);
-
-        try {
-            const result = await verifyMonerooTransaction(data.transaction_id);
-
-            if (result.success) {
-                const enrollmentId = `${user.uid}_${courseId}`;
-                const enrollmentRef = doc(db, 'enrollments', enrollmentId);
-
-                await setDoc(enrollmentRef, {
-                    enrollmentId,
-                    studentId: user.uid,
-                    courseId: courseId,
-                    instructorId: course.instructorId,
-                    enrollmentDate: serverTimestamp(),
-                    progress: 0,
-                    priceAtEnrollment: course.price,
-                });
-
-                await setDoc(doc(db, 'payments', data.transaction_id), {
-                  paymentId: data.transaction_id,
-                  userId: user.uid,
-                  instructorId: course.instructorId,
-                  courseId: courseId,
-                  amount: course.price,
-                  currency: 'XOF',
-                  date: serverTimestamp(),
-                  status: 'Completed',
-                  monerooData: data,
-                });
-                
-                await sendEnrollmentEmails(formaAfriqueUser, course, instructor);
-
-                router.push(`/payment/success?courseId=${courseId}&transactionId=${data.transaction_id}`);
-            } else {
-                throw new Error(result.error || 'La vérification du paiement a échoué.');
-            }
-        } catch (error: any) {
-            console.error("Payment processing error:", error);
-            toast({
-                variant: "destructive",
-                title: "Erreur de post-paiement",
-                description: error.message || "Une erreur est survenue lors de la finalisation de votre inscription.",
-            });
-            router.push(`/payment/error?courseId=${courseId}`);
-        } finally {
-            setIsLoading(false);
-        }
+    const handlePaymentSuccess = (data: any) => {
+        // The server-side verification and enrollment logic is now handled by the Moneroo webhook and Cloud Function.
+        // The client's only job is to redirect to a success page.
+        setIsLoading(false);
+        router.push(`/payment/success?courseId=${courseId}&transactionId=${data.transaction_id}`);
     };
 
     const handleCheckout = () => {

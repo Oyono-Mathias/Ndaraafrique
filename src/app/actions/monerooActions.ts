@@ -20,20 +20,13 @@ class Moneroo {
 
     async verify(transactionId: string): Promise<{ status: string; data?: any; message?: string }> {
         if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-             console.warn("Moneroo secret key is not configured. Simulating successful payment.");
-             // This is a mock success response for development purposes.
-             // In production, the Moneroo API would be called.
+             console.warn("Moneroo secret key is not configured. Simulating successful payment verification is DEACTIVATED. A real key is required.");
+             // In a real scenario, this would throw an error or return a failure.
+             // We return a failure to enforce secure-by-default behavior.
              return {
-                status: 'success',
-                data: {
-                    status: 'successful',
-                    id: transactionId,
-                    amount: 15000, // Example amount
-                    currency: 'XOF',
-                    customer: { email: 'test.user@example.com', name: 'Test User' },
-                    metadata: { userId: 'test-user-id', courseId: 'test-course-id' } // Mock metadata
-                },
-            };
+                status: 'error',
+                message: 'Moneroo secret key not configured on the server.',
+             };
         }
         
         // --- REAL API CALL (when keys are configured) ---
@@ -62,7 +55,8 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
     const secretKey = process.env.MONEROO_SECRET_KEY;
 
     if (!secretKey || secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-        console.warn("Moneroo secret key is not configured. Simulating transaction verification for development.");
+        console.error("CRITICAL: Moneroo secret key is not configured. Payment verification cannot proceed.");
+        return { success: false, error: 'Payment gateway not configured. Contact support.' };
     }
 
     try {
