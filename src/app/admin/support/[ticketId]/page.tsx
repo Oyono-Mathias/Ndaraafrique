@@ -229,15 +229,15 @@ export default function TicketConversationPage() {
                       <p className={cn("font-semibold text-sm text-slate-300", isAdminMsg && "text-right")}>{senderDetails?.fullName || 'Support'}</p>
                       <div className={cn(
                           "rounded-lg border mt-1 px-4 py-2 text-white text-sm shadow-sm",
-                          isAdminMsg ? "bg-blue-600 border-blue-500" : "bg-slate-700 border-slate-600"
+                          isAdminMsg ? "bg-primary border-primary/50" : "bg-slate-700 border-slate-600"
                       )}>
                         {msg.text.replace('[Support FormaAfrique] :', '')}
                       </div>
                        <p className="text-xs text-slate-500 mt-1">{msg.createdAt ? format(msg.createdAt.toDate(), 'HH:mm') : ''}</p>
                     </div>
                     {isAdminMsg && (
-                      <Avatar className="h-8 w-8 border-2 border-blue-500">
-                        <AvatarFallback className="bg-blue-600 text-white"><Shield className="h-4 w-4"/></AvatarFallback>
+                      <Avatar className="h-8 w-8 border-2 border-primary">
+                        <AvatarFallback className="bg-primary text-white"><Shield className="h-4 w-4"/></AvatarFallback>
                       </Avatar>
                     )}
                   </div>

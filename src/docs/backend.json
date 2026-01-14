@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "User": {
@@ -131,6 +130,33 @@
       "title": "Message",
       "type": "object",
       "description": "Represents a single message within a chat.",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "createdAt"]
+    },
+     "SupportTicket": {
+      "title": "Support Ticket",
+      "type": "object",
+      "description": "Represents a support request from a user.",
+      "properties": {
+        "userId": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "subject": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "status": { "type": "string", "enum": ["ouvert", "fermé"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "subject", "status", "createdAt", "updatedAt"]
+    },
+    "SupportMessage": {
+      "title": "Support Message",
+      "type": "object",
+      "description": "A message within a support ticket conversation.",
       "properties": {
         "senderId": { "type": "string" },
         "text": { "type": "string" },
@@ -272,6 +298,14 @@
     "/subscription_plans/{planId}": {
       "schema": { "$ref": "#/entities/SubscriptionPlan" },
       "description": "Stores available subscription plans."
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Stores support tickets from users."
+    },
+    "/support_tickets/{ticketId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/SupportMessage" },
+      "description": "Stores messages within a support ticket."
     }
   }
 }

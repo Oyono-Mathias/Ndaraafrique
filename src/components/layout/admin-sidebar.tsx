@@ -76,9 +76,9 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/courses", icon: BookOpen, textKey: "navCourses" },
     { href: "/admin/payments", icon: CreditCard, textKey: "navTransactions" },
     { href: "/admin/payouts", icon: Landmark, textKey: "navPayouts", countId: 'pendingPayouts' },
+    { href: "/admin/support", icon: HelpCircle, textKey: "navSupport", countId: 'openTickets' },
     { href: "/admin/marketing", icon: Sparkles, textKey: "navMarketing" },
     { href: "/admin/carousel", icon: GalleryHorizontal, textKey: "navCarousel" },
-    { href: "/admin/support", icon: HelpCircle, textKey: "navSupport" },
     { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
     { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "FAQ" },
     { href: "/admin/settings", icon: Settings, textKey: "navSettings" },
@@ -101,11 +101,18 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     [db]
   );
   const { data: pendingPayouts } = useCollection(pendingPayoutsQuery);
+  
+  const openTicketsQuery = useMemoFirebase(() =>
+    query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')),
+    [db]
+  );
+  const { data: openTickets } = useCollection(openTicketsQuery);
 
   const counts = {
       pendingInstructors: pendingInstructors?.length || 0,
       pendingCourses: pendingCourses?.length || 0,
       pendingPayouts: pendingPayouts?.length || 0,
+      openTickets: openTickets?.length || 0,
   };
 
   return (

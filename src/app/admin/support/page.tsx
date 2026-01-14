@@ -65,7 +65,7 @@ export default function AdminSupportPage() {
     () => query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc')),
     [db]
   );
-  const { data: tickets, isLoading: ticketsLoading } = useCollection<SupportTicket>(ticketsQuery);
+  const { data: tickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
 
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
@@ -73,6 +73,19 @@ export default function AdminSupportPage() {
   }, [tickets, activeTab]);
 
   const isLoading = isUserLoading || ticketsLoading;
+
+  if (error) {
+    return (
+        <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
+            <AlertTriangle className="h-5 w-5" />
+            <p>
+                Une erreur est survenue lors du chargement des tickets.
+                Un index Firestore (`support_tickets` trié par `updatedAt`) est peut-être manquant.
+                Veuillez consulter la documentation de votre projet ou les logs de la console pour créer l'index manquant.
+            </p>
+        </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -196,5 +209,3 @@ export default function AdminSupportPage() {
     </div>
   );
 }
-
-    
