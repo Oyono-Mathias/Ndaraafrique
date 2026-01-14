@@ -16,8 +16,7 @@ import { CreditCard, Info, BookOpen, Gift, Loader2, Check, Star, AlertTriangle, 
 import { useToast } from '@/hooks/use-toast';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import type { Review, Section, Lecture, Course } from '@/lib/types';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { Review, Section, Lecture, Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -275,7 +274,7 @@ export default function CourseDetailsClient() {
   const db = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const { user, formaAfriqueUser, isUserLoading } = useRole();
+  const { user, ndaraUser, isUserLoading } = useRole();
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [courseStats, setCourseStats] = useState({ totalDuration: 0, lessonCount: 0 });
@@ -292,7 +291,7 @@ export default function CourseDetailsClient() {
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
   const instructorRef = useMemoFirebase(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [db, course]);
-  const { data: instructor, isLoading: instructorLoading } = useDoc<FormaAfriqueUser>(instructorRef);
+  const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
 
   const enrollmentQuery = useMemoFirebase(() => {
     if (!user || !courseId) return null;
@@ -300,7 +299,7 @@ export default function CourseDetailsClient() {
   }, [db, user, courseId]);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
-  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0 || formaAfriqueUser?.role === 'admin', [enrollments, formaAfriqueUser]);
+  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0 || ndaraUser?.role === 'admin', [enrollments, ndaraUser]);
   
   const wishlistRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'users', user.uid, 'wishlist', courseId) : null, [user, courseId, db]);
   const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
@@ -436,7 +435,7 @@ export default function CourseDetailsClient() {
 
 
   const handleFreeEnrollment = async () => {
-    if (!user || !course || !course.instructorId || !instructor || !formaAfriqueUser) {
+    if (!user || !course || !course.instructorId || !instructor || !ndaraUser) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté et les détails du cours doivent être complets.' });
         if(!user) router.push('/login');
         return;
@@ -468,7 +467,7 @@ export default function CourseDetailsClient() {
 
         toast({ title: 'Inscription réussie!', description: `Vous avez maintenant accès à "${course.title}".` });
         
-        await sendEnrollmentEmails(formaAfriqueUser, course, instructor);
+        await sendEnrollmentEmails(ndaraUser, course, instructor);
 
         router.push(`/courses/${courseId}?newEnrollment=true`);
 
@@ -491,7 +490,7 @@ export default function CourseDetailsClient() {
         router.push(`/courses/${courseId}`);
     } else if (course?.price === 0) {
         handleFreeEnrollment();
-    } else if(course && user && formaAfriqueUser) {
+    } else if(course && user && ndaraUser) {
         handleCheckout();
     }
   };

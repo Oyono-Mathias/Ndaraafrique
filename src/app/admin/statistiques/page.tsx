@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -44,7 +45,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 export default function AdminStatisticsPage() {
     const { t } = useTranslation();
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { ndaraUser, isUserLoading } = useRole();
     const db = getFirestore();
 
     const [stats, setStats] = useState({
@@ -58,7 +59,7 @@ export default function AdminStatisticsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (isUserLoading || formaAfriqueUser?.role !== 'admin') {
+        if (isUserLoading || ndaraUser?.role !== 'admin') {
             if (!isUserLoading) setIsLoading(false);
             return;
         };
@@ -68,7 +69,6 @@ export default function AdminStatisticsPage() {
             try {
                 const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
                 const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
-                const startOfMonthTimestamp = Timestamp.fromDate(startOfMonth(new Date()));
                 const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'));
                 
                 const [studentsSnap, coursesSnap, paymentsSnap] = await Promise.all([
@@ -101,7 +101,8 @@ export default function AdminStatisticsPage() {
                     const payment = doc.data();
                     if (payment.date instanceof Timestamp) {
                         const paymentDate = payment.date.toDate();
-                        if (paymentDate >= startOfMonthTimestamp.toDate()) {
+                        const startOfCurrentMonth = startOfMonth(new Date());
+                        if (paymentDate >= startOfCurrentMonth) {
                             monthlyTotal += (payment.amount || 0);
                         }
                         const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
@@ -123,7 +124,7 @@ export default function AdminStatisticsPage() {
             }
         };
         fetchData();
-    }, [db, isUserLoading, formaAfriqueUser]);
+    }, [db, isUserLoading, ndaraUser]);
 
     const topCourses = useMemo(() => {
         const courseEnrollmentCounts = enrollments.reduce((acc, enrollment) => {
@@ -148,7 +149,7 @@ export default function AdminStatisticsPage() {
         return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
     
-    if (formaAfriqueUser?.role !== 'admin') {
+    if (ndaraUser?.role !== 'admin') {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
                 <ShieldAlert className="w-16 h-16 text-destructive mb-4" />

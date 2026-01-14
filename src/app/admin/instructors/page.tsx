@@ -38,6 +38,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label';
+import { sendAdminNotification } from '@/app/actions/notificationActions';
 
 
 interface Application extends NdaraUser {
@@ -189,7 +190,7 @@ const DecisionModal = ({
 };
 
 export default function InstructorApplicationsPage() {
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { ndaraUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const { t } = useTranslation();

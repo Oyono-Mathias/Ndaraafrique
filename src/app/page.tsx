@@ -4,8 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
 import Link from 'next/link';
-import type { Course } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { Course, NdaraUser } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
 import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, Play } from 'lucide-react';

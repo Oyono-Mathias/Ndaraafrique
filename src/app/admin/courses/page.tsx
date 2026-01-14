@@ -167,7 +167,7 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
 
 
 export default function AdminCoursesPage() {
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { ndaraUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');

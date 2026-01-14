@@ -8,9 +8,7 @@ import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp } fro
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
-import type { NdaraUser } from '@/lib/types';
-
-export type UserRole = 'student' | 'instructor' | 'admin';
+import type { NdaraUser, UserRole } from '@/lib/types';
 
 interface RoleContextType {
   role: UserRole;
@@ -20,17 +18,17 @@ interface RoleContextType {
   switchRole: (newRole: UserRole) => void;
   secureSignOut: () => Promise<void>;
   loading: boolean;
-  formaAfriqueUser: NdaraUser | null;
+  ndaraUser: NdaraUser | null;
   user: User | null; // From Firebase Auth
   isUserLoading: boolean; // From Firebase Auth
-  setFormaAfriqueUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
+  setNdaraUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const [formaAfriqueUser, setFormaAfriqueUser] = useState<NdaraUser | null>(null);
+  const [ndaraUser, setNdaraUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
@@ -65,7 +63,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     
     if (!user) {
-      setFormaAfriqueUser(null);
+      setNdaraUser(null);
       setLoading(false);
       return;
     }
@@ -104,7 +102,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
 
-          setFormaAfriqueUser(resolvedUser);
+          setNdaraUser(resolvedUser);
           setAvailableRoles(roles);
 
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
@@ -135,7 +133,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 profilePictureURL: user.photoURL || '',
                 isProfileComplete: false,
             };
-            setFormaAfriqueUser(defaultUser);
+            setNdaraUser(defaultUser);
             setAvailableRoles(['student']);
             setRole('student');
         }
@@ -172,11 +170,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     switchRole,
     secureSignOut,
     loading: isUserLoading || loading,
-    formaAfriqueUser,
-    setFormaAfriqueUser,
+    ndaraUser,
+    setNdaraUser,
     user,
     isUserLoading
-  }), [role, availableRoles, switchRole, secureSignOut, loading, formaAfriqueUser, user, isUserLoading]);
+  }), [role, availableRoles, switchRole, secureSignOut, loading, ndaraUser, user, isUserLoading]);
 
   return (
     <RoleContext.Provider value={value}>

@@ -1,4 +1,68 @@
+
 import type { Timestamp } from "firebase/firestore";
+
+export type UserRole = 'student' | 'instructor' | 'admin';
+
+export interface NdaraUser {
+  uid: string;
+  email: string;
+  username: string;
+  fullName: string;
+  role: UserRole;
+  isInstructorApproved: boolean;
+  availableRoles: UserRole[];
+  status?: 'active' | 'suspended';
+  bio?: string;
+  socialLinks?: {
+      website?: string;
+      twitter?: string;
+      linkedin?: string;
+      youtube?: string;
+  };
+  payoutInfo?: {
+      mobileMoneyNumber?: string;
+  };
+  notificationPreferences?: {
+    newPayouts: boolean;
+    newApplications: boolean;
+    newSupportTickets: boolean;
+    financialAnomalies: boolean;
+  };
+  videoPlaybackPreferences?: {
+      defaultQuality: string;
+      defaultSpeed: string;
+  };
+  careerGoals?: {
+      currentRole?: string;
+      interestDomain?: string; 
+      mainGoal?: string;
+  };
+  profilePictureURL?: string;
+  instructorApplication?: {
+      specialty?: string;
+      whatsappNumber?: string;
+      youtubeUrl?: string;
+      facebookUrl?: string;
+      presentationVideoUrl?: string;
+      professionalExperience?: string;
+      linkedinUrl?: string;
+      portfolioUrl?: string;
+      firstCourseTitle?: string;
+      firstCourseDescription?: string;
+      hasEquipment?: boolean;
+      submittedAt: Date;
+  };
+  createdAt?: Timestamp;
+  lastLogin?: Timestamp;
+  isOnline?: boolean;
+  lastSeen?: Timestamp;
+  termsAcceptedAt?: Timestamp;
+  country?: string;
+  countryCode?: string;
+  isProfileComplete?: boolean;
+  preferredLanguage?: 'fr' | 'en' | 'sg';
+  badges?: string[];
+};
 
 export interface Lecture {
   id: string;
@@ -90,64 +154,3 @@ export interface Message {
   createdAt: Timestamp;
   status: 'sent' | 'delivered' | 'read';
 }
-
-export type NdaraUser = {
-  uid: string;
-  email: string;
-  username: string;
-  fullName: string;
-  role: 'student' | 'instructor' | 'admin';
-  isInstructorApproved: boolean;
-  availableRoles: ('student' | 'instructor' | 'admin')[];
-  status?: 'active' | 'suspended';
-  bio?: string;
-  socialLinks?: {
-      website?: string;
-      twitter?: string;
-      linkedin?: string;
-      youtube?: string;
-  };
-  payoutInfo?: {
-      mobileMoneyNumber?: string;
-  };
-  notificationPreferences?: {
-    newPayouts: boolean;
-    newApplications: boolean;
-    newSupportTickets: boolean;
-    financialAnomalies: boolean;
-  };
-  videoPlaybackPreferences?: {
-      defaultQuality: string;
-      defaultSpeed: string;
-  };
-  careerGoals?: {
-      currentRole?: string;
-      interestDomain?: string; 
-      mainGoal?: string;
-  };
-  profilePictureURL?: string;
-  instructorApplication?: {
-      specialty?: string;
-      whatsappNumber?: string;
-      youtubeUrl?: string;
-      facebookUrl?: string;
-      presentationVideoUrl?: string;
-      professionalExperience?: string;
-      linkedinUrl?: string;
-      portfolioUrl?: string;
-      firstCourseTitle?: string;
-      firstCourseDescription?: string;
-      hasEquipment?: boolean;
-      submittedAt: Date;
-  };
-  createdAt?: Timestamp;
-  lastLogin?: Timestamp;
-  isOnline?: boolean;
-  lastSeen?: Timestamp;
-  termsAcceptedAt?: Timestamp;
-  country?: string;
-  countryCode?: string;
-  isProfileComplete?: boolean;
-  preferredLanguage?: 'fr' | 'en' | 'sg';
-  badges?: string[];
-};
