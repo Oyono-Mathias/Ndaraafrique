@@ -91,19 +91,23 @@ export default function NotificationsPage() {
       batch.update(notifRef, { read: true });
     });
 
-    await batch.commit();
+    try {
+        await batch.commit();
+    } catch (error) {
+        console.error("Error marking notifications as read:", error);
+    }
   };
 
   const renderContent = () => {
     if (isLoading) {
       return (
-        <div className="space-y-3">
+        <div className="space-y-3 p-2">
           {[...Array(5)].map((_, i) => (
-            <div key={i} className="flex items-center gap-3 p-3">
-              <Skeleton className="h-8 w-8 rounded-full" />
-              <div className="flex-1 space-y-1">
-                <Skeleton className="h-4 w-4/5" />
-                <Skeleton className="h-3 w-1/4" />
+            <div key={i} className="flex items-center gap-4 p-3">
+              <Skeleton className="h-10 w-10 rounded-full bg-slate-700" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-4 w-4/5 bg-slate-700" />
+                <Skeleton className="h-3 w-1/4 bg-slate-700" />
               </div>
             </div>
           ))}
@@ -113,10 +117,10 @@ export default function NotificationsPage() {
 
     if (notifications.length === 0) {
       return (
-        <div className="text-center py-16 text-muted-foreground">
+        <div className="text-center py-20 text-muted-foreground dark:text-slate-500">
           <BellRing className="mx-auto h-12 w-12 mb-4" />
-          <h3 className="font-semibold text-lg">Aucune notification</h3>
-          <p>Les nouvelles notifications apparaîtront ici.</p>
+          <h3 className="font-semibold text-lg text-slate-300">Aucune notification pour le moment</h3>
+          <p className="text-sm">Les nouvelles alertes et informations apparaîtront ici.</p>
         </div>
       );
     }
@@ -127,19 +131,19 @@ export default function NotificationsPage() {
           const content = (
             <div
               className={cn(
-                "flex items-start gap-4 p-3 rounded-lg transition-colors",
-                notif.link ? 'hover:bg-muted/50' : 'cursor-default',
-                !notif.read && "bg-primary/5 dark:bg-primary/10"
+                "flex items-start gap-4 p-4 rounded-lg transition-colors",
+                notif.link ? 'hover:bg-slate-800/50' : 'cursor-default',
+                !notif.read && "bg-primary/10"
               )}
             >
-              <div className="p-2 mt-1 bg-muted rounded-full">
+              <div className="p-1 mt-1">
                 <NotificationIcon type={notif.type} />
               </div>
               <div className="flex-1">
-                <p className={cn("text-sm line-clamp-3", !notif.read && "font-semibold text-foreground dark:text-white")}>
+                <p className={cn("text-sm line-clamp-3", !notif.read && "font-semibold text-white")}>
                   {notif.text}
                 </p>
-                <p className="text-xs text-muted-foreground dark:text-slate-400">
+                <p className="text-xs text-slate-400 mt-1">
                   {notif.createdAt
                     ? formatDistanceToNow(notif.createdAt.toDate(), {
                         locale: fr,
@@ -149,13 +153,13 @@ export default function NotificationsPage() {
                 </p>
               </div>
               {!notif.read && (
-                <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>
+                <div className="h-2.5 w-2.5 rounded-full bg-primary self-center shrink-0"></div>
               )}
             </div>
           );
 
           return notif.link ? (
-            <Link href={notif.link} key={notif.id}>
+            <Link href={notif.link} key={notif.id} onClick={() => !notif.read && markAllAsRead()}>
               {content}
             </Link>
           ) : (
@@ -176,19 +180,19 @@ export default function NotificationsPage() {
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between border-b dark:border-slate-700/80">
           <CardTitle className="dark:text-white">Boîte de réception</CardTitle>
           <Button
             variant="ghost"
             size="sm"
             onClick={markAllAsRead}
-            disabled={notifications.every((n) => n.read)}
+            disabled={notifications.every((n) => n.read) || isLoading}
             className="dark:text-slate-300 dark:hover:bg-slate-700"
           >
             Tout marquer comme lu
           </Button>
         </CardHeader>
-        <CardContent>{renderContent()}</CardContent>
+        <CardContent className="p-2">{renderContent()}</CardContent>
       </Card>
     </div>
   );
