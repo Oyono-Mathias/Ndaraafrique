@@ -52,7 +52,7 @@ const sendNotifications = async (tokens: string[], payload: NotificationPayload)
                 icon: '/icon.svg',
             },
             fcm_options: {
-                link: payload.link || 'https://formaafrique.web.app',
+                link: payload.link || 'https://ndara-afrique.web.app',
             },
         },
         tokens: tokens,

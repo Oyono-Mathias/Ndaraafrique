@@ -16,13 +16,12 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
 
     try {
         // 1. Mark the payment as refunded
-        const paymentQuery = query(
-            collection(adminDb, 'payments'), 
-            where('userId', '==', userId), 
-            where('courseId', '==', courseId),
-            limit(1)
-        );
-        const paymentSnapshot = await getDocs(paymentQuery);
+        const paymentQuery = adminDb.collection('payments')
+            .where('userId', '==', userId)
+            .where('courseId', '==', courseId)
+            .limit(1);
+            
+        const paymentSnapshot = await paymentQuery.get();
         if (!paymentSnapshot.empty) {
             const paymentRef = paymentSnapshot.docs[0].ref;
             batch.update(paymentRef, { 
@@ -34,11 +33,11 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
 
         // 2. Delete the enrollment record
         const enrollmentId = `${userId}_${courseId}`;
-        const enrollmentRef = doc(adminDb, 'enrollments', enrollmentId);
+        const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
         batch.delete(enrollmentRef);
         
         // 3. Close the support ticket
-        const ticketRef = doc(adminDb, 'support_tickets', ticketId);
+        const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
         batch.update(ticketRef, { 
             status: 'fermé', 
             updatedAt: Timestamp.now(),
@@ -46,7 +45,7 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
         });
 
         // 4. Add a final message to the ticket
-        const messageRef = doc(collection(ticketRef, 'messages'));
+        const messageRef = ticketRef.collection('messages').doc();
         batch.set(messageRef, {
             senderId: 'SYSTEM',
             text: `Action système : Le remboursement a été traité et l'accès de l'étudiant au cours a été révoqué. Ce ticket est maintenant fermé.`,
@@ -62,4 +61,3 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
         return { success: false, error: "Une erreur est survenue lors du processus de remboursement." };
     }
 }
-
