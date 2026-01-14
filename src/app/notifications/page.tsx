@@ -15,7 +15,6 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -112,9 +111,11 @@ export default function NotificationsPage() {
   };
 
   const handleNotificationClick = (notif: Notification) => {
+    // Mark as read in the background without waiting
     if (!notif.read) {
         markAsRead(notif.id);
     }
+    // Immediately redirect if there's a link
     if (notif.link) {
         router.push(notif.link);
     }
