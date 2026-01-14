@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, clearPersistence } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp } from 'firebase/firestore';
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
@@ -219,13 +219,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   const secureSignOut = async () => {
     const auth = getAuth();
-    try {
-        // Clear Firestore's local cache first to ensure offline data is wiped
-        await clearPersistence(db);
-    } catch (error) {
-        console.error("Error clearing Firestore persistence:", error);
-    }
-    // Then, sign out the user from Firebase Auth
+    // The clearPersistence function is not available in all SDK versions and can cause issues.
+    // A simple signOut is sufficient and more stable for this use case.
     await signOut(auth);
   };
   
