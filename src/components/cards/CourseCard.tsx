@@ -11,6 +11,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { Star, Play } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useState } from 'react';
 
 interface CourseCardProps {
   course: Course & { progress?: number };
@@ -28,18 +29,24 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 
 export function CourseCard({ course, instructor, variant = 'catalogue' }: CourseCardProps) {
   const { t } = useTranslation();
+  const [imageLoading, setImageLoading] = useState(true);
   const isStarted = course.progress !== undefined && course.progress > 0;
   const isStudentView = variant === 'student';
 
   return (
     <div className="w-full h-full glassmorphism-card rounded-2xl overflow-hidden group flex flex-col">
        <Link href={isStudentView ? `/courses/${course.id}` : `/course/${course.id}`} className="block">
-        <div className="relative aspect-video overflow-hidden">
+        <div className="relative aspect-video overflow-hidden bg-slate-800">
           <Image
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
             alt={course.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className={cn(
+              "object-cover transition-all duration-300 group-hover:scale-105",
+              imageLoading ? 'opacity-0' : 'opacity-100'
+            )}
+            onLoad={() => setImageLoading(false)}
+            loading="lazy"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
           {course.category && (
