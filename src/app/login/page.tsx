@@ -57,6 +57,8 @@ export default function LoginPage() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
+  const [siteName, setSiteName] = useState('Ndara Afrique');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   
   const [detectedCountry, setDetectedCountry] = useState<{name: string; code: string; flag: string} | null>(null);
 
@@ -87,6 +89,12 @@ export default function LoginPage() {
             const settingsData = settingsSnap.data()?.general;
             if (settingsData?.loginBackgroundImage) {
                 setLoginBackground(settingsData.loginBackgroundImage);
+            }
+             if (settingsData?.logoUrl) {
+                setLogoUrl(settingsData.logoUrl);
+            }
+            if (settingsData?.siteName) {
+                setSiteName(settingsData.siteName);
             }
         }
     };
@@ -178,7 +186,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-6">
                 <Link href="/" className="mb-4">
-                  <Image src="/icon.svg" alt="Ndara Afrique Logo" width={60} height={60} />
+                  {logoUrl ? <Image src={logoUrl} alt={siteName} width={60} height={60} className="rounded-full" /> : <Image src="/icon.svg" alt="Ndara Afrique Logo" width={60} height={60}/>}
                 </Link>
             </div>
             
@@ -237,5 +245,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    

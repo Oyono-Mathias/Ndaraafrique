@@ -17,7 +17,6 @@ import {
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
   import { useRole } from "@/context/RoleContext"
-  import { getAuth, signOut } from "firebase/auth";
   import { useRouter } from "next/navigation";
   import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
   import { useTranslation } from "react-i18next";

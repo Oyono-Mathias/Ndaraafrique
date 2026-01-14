@@ -157,9 +157,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
           };
           
-          if (resolvedUser.preferredLanguage && i18n.language !== resolvedUser.preferredLanguage) {
-              i18n.changeLanguage(resolvedUser.preferredLanguage);
+          const currentLang = i18n.language;
+          const preferredLang = resolvedUser.preferredLanguage;
+          if (preferredLang && currentLang !== preferredLang && !currentLang.startsWith(preferredLang)) {
+              i18n.changeLanguage(preferredLang);
           }
+
 
           setFormaAfriqueUser(resolvedUser);
           setAvailableRoles(roles);

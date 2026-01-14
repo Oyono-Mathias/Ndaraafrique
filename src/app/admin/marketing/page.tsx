@@ -48,7 +48,7 @@ export default function AdminMarketingPage() {
   const [aiResponse, setAiResponse] = useState('');
 
   const codesQuery = useMemoFirebase(() => query(collection(db, 'promoCodes'), orderBy('createdAt', 'desc')), [db]);
-  const { data: promoCodes, isLoading: codesLoading, error } = useCollection<PromoCode>(promoCodes);
+  const { data: promoCodes, isLoading: codesLoading, error } = useCollection<PromoCode>(codesQuery);
 
   const form = useForm<MarketingFormValues>({
     resolver: zodResolver(marketingFormSchema),
@@ -177,50 +177,52 @@ export default function AdminMarketingPage() {
                     <p>{t('promoLoadError')}</p>
                 </div>
             )}
-            <Table>
-                <TableHeader>
-                    <TableRow className="dark:border-slate-700">
-                        <TableHead className="dark:text-slate-400">{t('code')}</TableHead>
-                        <TableHead className="dark:text-slate-400">{t('discount')}</TableHead>
-                        <TableHead className="dark:text-slate-400">{t('expiration')}</TableHead>
-                        <TableHead className="text-right dark:text-slate-400">{t('active')}</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {codesLoading ? (
-                        [...Array(3)].map((_, i) => (
-                           <TableRow key={i} className="dark:border-slate-700">
-                                <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-16 dark:bg-slate-700" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
-                                <TableCell className="text-right"><Skeleton className="h-6 w-11 ml-auto dark:bg-slate-700" /></TableCell>
-                           </TableRow>
-                        ))
-                    ) : promoCodes && promoCodes.length > 0 ? (
-                        promoCodes.map((code) => (
-                            <TableRow key={code.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                                <TableCell className="font-mono font-semibold dark:text-slate-100">{code.code}</TableCell>
-                                <TableCell className="font-medium dark:text-slate-300">{code.discountPercentage}%</TableCell>
-                                <TableCell className="text-muted-foreground dark:text-slate-400">
-                                    {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : t('never')}
-                                </TableCell>
-                                <TableCell className="text-right">
-                                    <Switch
-                                        checked={code.isActive}
-                                        onCheckedChange={() => handleToggleActive(code)}
-                                    />
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader>
+                        <TableRow className="dark:border-slate-700">
+                            <TableHead className="dark:text-slate-400">{t('code')}</TableHead>
+                            <TableHead className="dark:text-slate-400">{t('discount')}</TableHead>
+                            <TableHead className="dark:text-slate-400">{t('expiration')}</TableHead>
+                            <TableHead className="text-right dark:text-slate-400">{t('active')}</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {codesLoading ? (
+                            [...Array(3)].map((_, i) => (
+                               <TableRow key={i} className="dark:border-slate-700">
+                                    <TableCell><Skeleton className="h-5 w-24 dark:bg-slate-700" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-16 dark:bg-slate-700" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-6 w-11 ml-auto dark:bg-slate-700" /></TableCell>
+                               </TableRow>
+                            ))
+                        ) : promoCodes && promoCodes.length > 0 ? (
+                            promoCodes.map((code) => (
+                                <TableRow key={code.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
+                                    <TableCell className="font-mono font-semibold dark:text-slate-100">{code.code}</TableCell>
+                                    <TableCell className="font-medium dark:text-slate-300">{code.discountPercentage}%</TableCell>
+                                    <TableCell className="text-muted-foreground dark:text-slate-400">
+                                        {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : t('never')}
+                                    </TableCell>
+                                    <TableCell className="text-right">
+                                        <Switch
+                                            checked={code.isActive}
+                                            onCheckedChange={() => handleToggleActive(code)}
+                                        />
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                             <TableRow className="dark:border-slate-700">
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-500">
+                                    {t('noPromoCodes')}
                                 </TableCell>
                             </TableRow>
-                        ))
-                    ) : (
-                         <TableRow className="dark:border-slate-700">
-                            <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-500">
-                                {t('noPromoCodes')}
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
-            </Table>
+                        )}
+                    </TableBody>
+                </Table>
+            </div>
         </CardContent>
       </Card>
     </div>

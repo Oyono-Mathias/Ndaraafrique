@@ -8,7 +8,7 @@ import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { getDoc, doc, getFirestore, onSnapshot } from "firebase/firestore";
+import { doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { Header } from "@/components/layout/header";
 
 function AdminAccessRequiredScreen() {
@@ -59,7 +59,6 @@ export default function AdminLayout({
       switchRole('admin');
     }
   }, [isUserLoading, formaAfriqueUser, role, switchRole, router]);
-
 
   if (isUserLoading || role !== 'admin' || formaAfriqueUser?.role !== 'admin') {
     return (

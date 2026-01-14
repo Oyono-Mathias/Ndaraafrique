@@ -70,6 +70,16 @@
         "isProfileComplete": {
             "type": "boolean",
             "description": "Flag indicating if the user has completed the essential parts of their profile (e.g., username, career goals)."
+        },
+        "notificationPreferences": {
+          "type": "object",
+          "description": "Admin preferences for receiving push notifications.",
+          "properties": {
+            "newPayouts": { "type": "boolean", "default": true },
+            "newApplications": { "type": "boolean", "default": true },
+            "newSupportTickets": { "type": "boolean", "default": true },
+            "financialAnomalies": { "type": "boolean", "default": true }
+          }
         }
       },
       "required": [
@@ -163,15 +173,81 @@
         "order": { "type": "number", "description": "The display order of the slide." }
       },
       "required": ["imageUrl", "order"]
+    },
+    "SubscriptionPlan": {
+        "title": "Subscription Plan",
+        "type": "object",
+        "description": "Represents a subscription plan offered on the platform.",
+        "properties": {
+            "planId": { "type": "string", "description": "Unique identifier for the plan." },
+            "name": { "type": "string", "description": "Public name of the plan (e.g., 'Ndara Pro')." },
+            "description": { "type": "string" },
+            "price": { "type": "number" },
+            "billingCycle": { "type": "string", "enum": ["monthly", "yearly"] },
+            "targetRole": { "type": "string", "enum": ["student", "instructor"] },
+            "features": { "type": "array", "items": { "type": "string" } },
+            "isActive": { "type": "boolean" }
+        },
+        "required": ["planId", "name", "price", "billingCycle", "targetRole", "isActive"]
+    },
+    "UserSubscription": {
+        "title": "User Subscription",
+        "type": "object",
+        "description": "Represents a user's subscription to a plan.",
+        "properties": {
+            "subscriptionId": { "type": "string" },
+            "userId": { "type": "string" },
+            "planId": { "type": "string" },
+            "status": { "type": "string", "enum": ["active", "canceled", "past_due", "expired"] },
+            "startDate": { "type": "string", "format": "date-time" },
+            "endDate": { "type": "string", "format": "date-time", "description": "The date when the current paid period ends." },
+            "canceledAt": { "type": "string", "format": "date-time", "description": "The date when the user canceled the subscription." }
+        },
+        "required": ["subscriptionId", "userId", "planId", "status", "startDate", "endDate"]
     }
   },
   "auth": {
     "providers": ["password", "google.com"]
   },
   "firestore": {
+    "indexes": [
+      {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "role", "order": "ASCENDING"},
+          {"fieldPath": "createdAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "date", "order": "DESCENDING"}
+        ]
+      },
+       {
+        "collectionGroup": "payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "date", "order": "DESCENDING"}
+        ]
+      },
+       {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      }
+    ],
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."
+    },
+    "/users/{userId}/subscriptions/{subscriptionId}": {
+      "schema": { "$ref": "#/entities/UserSubscription" },
+      "description": "Stores a user's subscription history."
     },
     "/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
@@ -192,40 +268,10 @@
     "/carousel_slides/{slideId}": {
       "schema": { "$ref": "#/entities/CarouselSlide" },
       "description": "Stores the slides for the homepage carousel."
+    },
+    "/subscription_plans/{planId}": {
+      "schema": { "$ref": "#/entities/SubscriptionPlan" },
+      "description": "Stores available subscription plans."
     }
-  },
-  "indexes": [
-    {
-      "collectionGroup": "payments",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "instructorId", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "payouts",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "instructorId", "order": "ASCENDING" },
-        { "fieldPath": "date", "order": "DESCENDING" }
-      ]
-    },
-    {
-      "collectionGroup": "users",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "role", "order": "ASCENDING" },
-        { "fieldPath": "createdAt", "order": "DESCENDING" }
-      ]
-    },
-     {
-      "collectionGroup": "support_tickets",
-      "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "updatedAt", "order": "DESCENDING" }
-      ]
-    }
-  ]
+  }
 }

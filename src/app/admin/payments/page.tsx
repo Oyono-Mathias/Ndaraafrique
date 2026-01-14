@@ -17,13 +17,14 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, ShoppingCart, AlertCircle } from 'lucide-react';
+import { Search, ShoppingCart, AlertCircle, CheckCircle, Shield } from 'lucide-react';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 
 
 interface Payment {
@@ -35,6 +36,12 @@ interface Payment {
   currency: string;
   date: any; // Firestore Timestamp
   status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
+  fraudReview?: {
+    isSuspicious: boolean;
+    riskScore: number;
+    reason: string;
+    checkedAt: any;
+  }
 }
 
 interface EnrichedPayment extends Payment {
@@ -45,6 +52,24 @@ interface EnrichedPayment extends Payment {
 const formatCurrency = (amount: number, currency: string) => {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(amount);
 };
+
+const FraudBadge = ({ fraudReview }: { fraudReview?: Payment['fraudReview'] }) => {
+    if (!fraudReview) return null;
+    if (fraudReview.isSuspicious) {
+        return (
+            <Badge className='bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'>
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Risque: {fraudReview.riskScore}
+            </Badge>
+        )
+    }
+    return (
+        <Badge className='bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'>
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Vérifié
+        </Badge>
+    )
+}
 
 const StatusBadge = ({ status }: { status: Payment['status'] }) => {
     const { t } = useTranslation();
@@ -131,6 +156,10 @@ export default function AdminPaymentsPage() {
       payment.id.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
   }, [enrichedPayments, debouncedSearchTerm]);
+  
+  const suspiciousTransactions = useMemo(() => {
+    return filteredPayments.filter(p => p.fraudReview?.isSuspicious);
+  }, [filteredPayments]);
 
 
   return (
@@ -146,6 +175,32 @@ export default function AdminPaymentsPage() {
             <p>{error}</p>
         </div>
       )}
+      
+       {suspiciousTransactions.length > 0 && (
+          <Card className="dark:bg-amber-900/50 dark:border-amber-700">
+             <CardHeader>
+                <CardTitle className="flex items-center gap-2 dark:text-amber-300"><AlertCircle/>Transactions à Examiner</CardTitle>
+                <CardDescription className="dark:text-amber-400/80">L'IA a signalé ces transactions comme potentiellement frauduleuses. Veuillez les vérifier.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-3">
+                    {suspiciousTransactions.map(payment => (
+                        <div key={payment.id} className="flex justify-between items-center p-3 rounded-lg bg-slate-900/50">
+                            <div>
+                                <p className="font-semibold text-sm text-white">{payment.user?.fullName}</p>
+                                <p className="text-xs text-amber-400">{payment.fraudReview?.reason}</p>
+                            </div>
+                            <div className="text-right">
+                                <p className="font-mono text-base font-semibold text-white">{formatCurrency(payment.amount, payment.currency)}</p>
+                                <Button size="sm" variant="outline" className="mt-1">Examiner</Button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </CardContent>
+          </Card>
+      )}
+
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
@@ -208,7 +263,7 @@ export default function AdminPaymentsPage() {
                        <TableCell className="text-xs text-muted-foreground dark:text-slate-400">
                            {payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}
                        </TableCell>
-                       <TableCell><StatusBadge status={payment.status} /></TableCell>
+                       <TableCell><div className="flex items-center gap-2"><StatusBadge status={payment.status} /> <FraudBadge fraudReview={payment.fraudReview} /></div></TableCell>
                        <TableCell className="font-mono text-sm text-right font-semibold dark:text-slate-200">
                         {formatCurrency(payment.amount, payment.currency)}
                       </TableCell>
@@ -253,6 +308,11 @@ export default function AdminPaymentsPage() {
                                 <StatusBadge status={payment.status} />
                             </div>
                         </div>
+                         {payment.fraudReview?.isSuspicious && (
+                            <div className="mt-2 p-2 bg-amber-900/50 rounded-md text-xs text-amber-300 border border-amber-700/50">
+                                <p><b>Risque:</b> {payment.fraudReview.reason}</p>
+                            </div>
+                        )}
                     </Card>
                  ))
              ) : (

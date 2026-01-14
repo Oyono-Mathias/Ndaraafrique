@@ -215,5 +215,3 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     </>
   );
 }
-
-    

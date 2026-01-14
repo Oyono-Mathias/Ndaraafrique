@@ -7,7 +7,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -131,72 +131,72 @@ export default function BecomeInstructorPage() {
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
-      <Card>
+      <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center">{t('become_instructor_title')}</CardTitle>
-          <CardDescription className="text-center">{t('become_instructor_desc')}</CardDescription>
+          <CardTitle className="text-3xl font-bold text-center dark:text-white">{t('become_instructor_title')}</CardTitle>
+          <CardDescription className="text-center dark:text-slate-400">{t('become_instructor_desc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               
-              <div className="space-y-4 p-6 border rounded-lg">
-                <h3 className="font-semibold text-lg flex items-center gap-2"><BookUser className="h-5 w-5 text-primary"/>{t('identity_contact_title')}</h3>
+              <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><BookUser className="h-5 w-5 text-primary"/>{t('identity_contact_title')}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="specialty" render={({ field }) => (
-                      <FormItem><FormLabel>{t('specialty_label')}</FormLabel><FormControl><Input placeholder={t('specialty_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel className="dark:text-slate-300">{t('specialty_label')}</FormLabel><FormControl><Input placeholder={t('specialty_placeholder')} {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem>
                     )} />
                     <Controller control={form.control} name="whatsappNumber" render={({ field }) => (
-                        <FormItem><FormLabel>{t('whatsapp_label')}</FormLabel>
-                          <FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm" countries={africanCountryCodes} countryOptionsOrder={prioritizedCountries} /></FormControl>
+                        <FormItem><FormLabel className="dark:text-slate-300">{t('whatsapp_label')}</FormLabel>
+                          <FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-10 w-full rounded-md border border-input dark:bg-slate-700 dark:border-slate-600 px-3 py-2 text-sm shadow-sm" countries={africanCountryCodes} countryOptionsOrder={prioritizedCountries} /></FormControl>
                         <FormMessage /></FormItem>
                      )}/>
                 </div>
               </div>
               
-              <div className="space-y-4 p-6 border rounded-lg">
-                <h3 className="font-semibold text-lg flex items-center gap-2"><Youtube className="h-5 w-5 text-destructive"/>{t('social_presence_title')}</h3>
+              <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Youtube className="h-5 w-5 text-destructive"/>{t('social_presence_title')}</h3>
                  <FormField control={form.control} name="youtubeUrl" render={({ field }) => (
-                    <FormItem><FormLabel>{t('youtube_label')}</FormLabel><FormControl><Input placeholder="https://youtube.com/channel/..." {...field} /></FormControl><FormDescription>{t('youtube_desc')}</FormDescription><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('youtube_label')}</FormLabel><FormControl><Input placeholder="https://youtube.com/channel/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">{t('youtube_desc')}</FormDescription><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="facebookUrl" render={({ field }) => (
-                    <FormItem><FormLabel>{t('facebook_label')}</FormLabel><FormControl><Input placeholder="https://facebook.com/..." {...field} /></FormControl><FormDescription>{t('facebook_desc')}</FormDescription><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('facebook_label')}</FormLabel><FormControl><Input placeholder="https://facebook.com/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">{t('facebook_desc')}</FormDescription><FormMessage /></FormItem>
                  )} />
               </div>
 
-               <div className="space-y-4 p-6 border rounded-lg">
-                <h3 className="font-semibold text-lg flex items-center gap-2"><Linkedin className="h-5 w-5 text-blue-500"/>{t('expertise_title')}</h3>
+               <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Linkedin className="h-5 w-5 text-blue-500"/>{t('expertise_title')}</h3>
                  <FormField control={form.control} name="professionalExperience" render={({ field }) => (
-                    <FormItem><FormLabel>{t('experience_label')}</FormLabel><FormControl><Textarea placeholder={t('experience_placeholder')} {...field} rows={4} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('experience_label')}</FormLabel><FormControl><Textarea placeholder={t('experience_placeholder')} {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
-                    <FormItem><FormLabel>{t('linkedin_label')}</FormLabel><FormControl><Input placeholder="https://linkedin.com/in/..." {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('linkedin_label')}</FormLabel><FormControl><Input placeholder="https://linkedin.com/in/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
                   <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
-                    <FormItem><FormLabel>{t('portfolio_label')}</FormLabel><FormControl><Input placeholder="https://mon-portfolio.com" {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('portfolio_label')}</FormLabel><FormControl><Input placeholder="https://mon-portfolio.com" {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
               </div>
 
-              <div className="space-y-4 p-6 border rounded-lg">
-                <h3 className="font-semibold text-lg flex items-center gap-2"><Presentation className="h-5 w-5 text-green-500"/>{t('course_project_title')}</h3>
+              <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Presentation className="h-5 w-5 text-green-500"/>{t('course_project_title')}</h3>
                  <FormField control={form.control} name="presentationVideoUrl" render={({ field }) => (
-                    <FormItem><FormLabel>{t('video_label')}</FormLabel><FormControl><Input placeholder={t('video_placeholder')} {...field} /></FormControl><FormDescription>{t('video_desc')}</FormDescription><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('video_label')}</FormLabel><FormControl><Input placeholder={t('video_placeholder')} {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">{t('video_desc')}</FormDescription><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="firstCourseTitle" render={({ field }) => (
-                    <FormItem><FormLabel>{t('first_course_title_label')}</FormLabel><FormControl><Input placeholder={t('first_course_title_placeholder')} {...field} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('first_course_title_label')}</FormLabel><FormControl><Input placeholder={t('first_course_title_placeholder')} {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="firstCourseDescription" render={({ field }) => (
-                    <FormItem><FormLabel>{t('first_course_desc_label')}</FormLabel><FormControl><Textarea placeholder={t('first_course_desc_placeholder')} {...field} rows={3} /></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">{t('first_course_desc_label')}</FormLabel><FormControl><Textarea placeholder={t('first_course_desc_placeholder')} {...field} rows={3} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
               </div>
 
-              <div className="space-y-4 p-6 border rounded-lg">
+              <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
                  <FormField control={form.control} name="hasEquipment" render={({ field }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow">
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow dark:border-slate-600">
                         <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         <div className="space-y-1 leading-none">
-                            <FormLabel>{t('tech_validation_label')}</FormLabel>
-                            <FormDescription>{t('tech_validation_desc')}</FormDescription>
+                            <FormLabel className="dark:text-slate-200">{t('tech_validation_label')}</FormLabel>
+                            <FormDescription className="dark:text-slate-400">{t('tech_validation_desc')}</FormDescription>
                             <FormMessage />
                         </div>
                     </FormItem>

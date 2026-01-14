@@ -152,7 +152,3 @@ export type FormaAfriqueUser = {
   preferredLanguage?: 'fr' | 'en' | 'sg';
   badges?: string[];
 };
-
-
-
-    

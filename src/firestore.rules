@@ -62,13 +62,10 @@ service cloud.firestore {
         allow update: if isAdmin(); // Only admins can update status (e.g., from a backend process)
       }
        match /fcmTokens/{tokenId} {
-        // Personne ne peut lire les tokens.
-        allow read: if false;
-        allow list: if false;
-
-        // L'utilisateur peut créer et supprimer ses propres tokens.
-        allow create: if isOwner(userId);
-        allow delete: if isOwner(userId);
+        // Users can create/delete their own device tokens.
+        // No one can list them for privacy.
+        allow read, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && tokenId == request.resource.id;
       }
     }
     

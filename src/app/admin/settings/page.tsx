@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign, MessageCircle, Bell } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,97 +44,6 @@ const settingsSchema = z.object({
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
-
-const notificationPreferencesSchema = z.object({
-  newPayouts: z.boolean().default(true),
-  newApplications: z.boolean().default(true),
-  newSupportTickets: z.boolean().default(true),
-  financialAnomalies: z.boolean().default(true),
-});
-
-type NotificationPreferencesValues = z.infer<typeof notificationPreferencesSchema>;
-
-
-const NotificationPreferences = () => {
-    const { formaAfriqueUser } = useRole();
-    const { toast } = useToast();
-    const db = getFirestore();
-
-    const form = useForm<NotificationPreferencesValues>({
-        resolver: zodResolver(notificationPreferencesSchema),
-        defaultValues: {
-            newPayouts: true,
-            newApplications: true,
-            newSupportTickets: true,
-            financialAnomalies: true,
-        },
-    });
-
-    useEffect(() => {
-        if (formaAfriqueUser?.notificationPreferences) {
-            form.reset(formaAfriqueUser.notificationPreferences);
-        }
-    }, [formaAfriqueUser, form]);
-
-    const handlePreferenceChange = async (field: keyof NotificationPreferencesValues, value: boolean) => {
-        if (!formaAfriqueUser) return;
-        
-        form.setValue(field, value); // Update form state
-        
-        try {
-            const userRef = doc(db, 'users', formaAfriqueUser.uid);
-            await updateDoc(userRef, {
-                [`notificationPreferences.${field}`]: value
-            });
-            toast({ title: "Préférence mise à jour", description: "Vos choix ont été sauvegardés." });
-        } catch (error) {
-            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de sauvegarder la préférence." });
-        }
-    };
-    
-    const preferences: { key: keyof NotificationPreferencesValues; label: string; description: string }[] = [
-        { key: 'newPayouts', label: 'Nouvelles demandes de retrait', description: 'Recevoir une alerte pour chaque demande de paiement d\'un instructeur.' },
-        { key: 'newApplications', label: 'Nouvelles candidatures d\'instructeur', description: 'Être notifié lorsqu\'un utilisateur postule pour devenir instructeur.' },
-        { key: 'newSupportTickets', label: 'Nouveaux tickets de support', description: 'Recevoir une alerte pour chaque nouveau ticket de support ouvert.' },
-        { key: 'financialAnomalies', label: 'Anomalies financières', description: 'Alertes de sécurité pour les transactions de paiement suspectes ou échouées.' },
-    ];
-
-    return (
-        <Card className="dark:bg-slate-800 dark:border-slate-700">
-            <CardHeader>
-                <CardTitle className="dark:text-white flex items-center gap-2"><Bell /> Préférences de Notifications Push</CardTitle>
-                <CardDescription>Choisissez les notifications que vous souhaitez recevoir sur vos appareils.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                 <Form {...form}>
-                    <form className="space-y-4">
-                        {preferences.map((pref) => (
-                             <FormField
-                                key={pref.key}
-                                control={form.control}
-                                name={pref.key}
-                                render={({ field }) => (
-                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
-                                    <div className="space-y-0.5">
-                                        <FormLabel className="dark:text-slate-200">{pref.label}</FormLabel>
-                                        <FormDescription className="dark:text-slate-400">{pref.description}</FormDescription>
-                                    </div>
-                                    <FormControl>
-                                        <Switch
-                                            checked={field.value}
-                                            onCheckedChange={(checked) => handlePreferenceChange(pref.key, checked)}
-                                        />
-                                    </FormControl>
-                                </FormItem>
-                                )}
-                            />
-                        ))}
-                    </form>
-                 </Form>
-            </CardContent>
-        </Card>
-    );
-}
 
 export default function AdminSettingsPage() {
     const { t } = useTranslation();
@@ -397,9 +306,8 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                 </header>
                 
                 <Tabs defaultValue="general" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
+                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 dark:bg-slate-800 dark:border-slate-700">
                         <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>{t('tab_general')}</TabsTrigger>
-                        <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2"/>Notifications</TabsTrigger>
                         <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>{t('tab_commercial')}</TabsTrigger>
                         <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>{t('tab_platform')}</TabsTrigger>
                         <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>{t('tab_legal')}</TabsTrigger>
@@ -438,10 +346,6 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                                         <FormField control={form.control} name="contactEmail" render={({ field }) => ( <FormItem><FormLabel>{t('contact_email')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
                                 </CardContent>
                             </Card>
-                            </TabsContent>
-                            
-                            <TabsContent value="notifications" className="mt-6">
-                                <NotificationPreferences />
                             </TabsContent>
 
                             <TabsContent value="commercial" className="mt-6">
@@ -516,4 +420,3 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
         </>
     );
 }
-

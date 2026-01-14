@@ -25,7 +25,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Check, X, UserCheck, UserX, FileText, Bot, Send } from 'lucide-react';
+import { Loader2, Check, X, UserCheck, UserX, Bot, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { formatDistanceToNow } from 'date-fns';
@@ -262,13 +262,6 @@ export default function InstructorApplicationsPage() {
                             {app.instructorApplication?.motivation || t('noMotivationProvided')}
                         </p>
                          <div className="flex gap-2 mt-4">
-                          {app.instructorApplication?.verificationDocUrl && (
-                            <Button asChild variant="outline" size="sm">
-                                <a href={app.instructorApplication.verificationDocUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                                    <FileText className="mr-2 h-4 w-4"/> {t('cv_file')}
-                                </a>
-                            </Button>
-                          )}
                            {app.instructorApplication?.presentationVideoUrl && (
                             <Button asChild variant="outline" size="sm">
                                 <a href={app.instructorApplication.presentationVideoUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
