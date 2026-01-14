@@ -12,6 +12,7 @@ import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
 import { Frown, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
