@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -9,7 +10,7 @@ import type { FormaAfriqueUser } from '@/context/RoleContext';
 import { getDocs } from 'firebase/firestore';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -164,6 +165,44 @@ const InteractiveSteps = () => {
     );
 };
 
+const PaymentMethodsSection = () => {
+    const paymentMethods = [
+        { name: 'MTN Mobile Money', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/93/MTN_Mobile_Money_logo.svg' },
+        { name: 'Orange Money', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/Orange_Money_logo.svg/2560px-Orange_Money_logo.svg.png' },
+        { name: 'Wave', logoUrl: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/Wave_logo.svg/2560px-Wave_logo.svg.png' },
+    ];
+
+    return (
+        <section className="py-20">
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="text-center lg:text-left">
+                    <div className="inline-block p-4 bg-primary/10 rounded-full mb-4">
+                        <Wallet className="w-8 h-8 text-primary" />
+                    </div>
+                    <h2 className="text-3xl font-bold text-white">Payez simplement, comme vous en avez l'habitude.</h2>
+                    <p className="text-xl text-primary font-semibold mt-2">Aucune carte bancaire requise.</p>
+                    <p className="text-slate-400 mt-4 max-w-md mx-auto lg:mx-0">
+                        Nous intégrons les solutions de paiement que vous utilisez tous les jours. L'inscription à un cours est rapide, facile et 100% sécurisée.
+                    </p>
+                </div>
+                <div className="flex justify-center items-center gap-6 flex-wrap">
+                    {paymentMethods.map(method => (
+                        <div key={method.name} className="p-4 bg-slate-800/50 border border-slate-700/80 rounded-2xl grayscale hover:grayscale-0 transition-all duration-300 hover:scale-105 hover:shadow-lg">
+                             <Image 
+                                src={method.logoUrl}
+                                alt={method.name}
+                                width={120}
+                                height={60}
+                                className="object-contain h-12 w-auto"
+                            />
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
 const TrustSection = () => {
     const trustFeatures = [
         {
@@ -275,6 +314,8 @@ export default function LandingPage() {
           
         <main className="space-y-16">
           <InteractiveSteps />
+
+          <PaymentMethodsSection />
           
           <CourseCarousel
             title="Les nouveautés"
