@@ -3,7 +3,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -20,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Award, Download, Share2, BookOpen, Linkedin } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
-import type { Course, Enrollment } from '@/lib/types';
+import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -34,6 +33,7 @@ import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 interface CompletedCourse extends Course {
   completionDate: Date;
   certificateId: string;
+  instructorName: string;
 }
 
 export default function MyCertificatesPage() {
@@ -44,7 +44,7 @@ export default function MyCertificatesPage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [selectedCertificate, setSelectedCertificate] = useState<CompletedCourse | null>(null);
 
-  const enrollmentsQuery = useMemoFirebase(
+  const enrollmentsQuery = useMemo(
     () => formaAfriqueUser?.uid
       ? query(
           collection(db, 'enrollments'), 
@@ -55,29 +55,31 @@ export default function MyCertificatesPage() {
     [db, formaAfriqueUser?.uid]
   );
   
-  const { data: completedEnrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
-
   useEffect(() => {
-    if (enrollmentsLoading) return;
-    if (!completedEnrollments || completedEnrollments.length === 0) {
-      setDataLoading(false);
-      setCompletedCourses([]);
-      return;
+    if (!enrollmentsQuery) {
+        if (!isUserLoading) setDataLoading(false);
+        return;
     }
-
-    const fetchCourseDetails = async () => {
+    
+    const unsubscribe = onSnapshot(enrollmentsQuery, async (snapshot) => {
       setDataLoading(true);
-      const courseIds = completedEnrollments.map(e => e.courseId).filter(Boolean);
-      
-      if (courseIds.length === 0) {
-          setDataLoading(false);
-          setCompletedCourses([]);
-          return;
+      if (snapshot.empty) {
+        setCompletedCourses([]);
+        setDataLoading(false);
+        return;
       }
       
+      const enrollments = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Enrollment));
+      const courseIds = enrollments.map(e => e.courseId).filter(Boolean);
+      
+      if (courseIds.length === 0) {
+        setCompletedCourses([]);
+        setDataLoading(false);
+        return;
+      }
+
       const coursesMap = new Map<string, Course>();
       const coursesRef = collection(db, 'courses');
-      // Firestore 'in' query is limited to 30 items per query
       const courseIdChunks = [];
       for (let i = 0; i < courseIds.length; i += 30) {
           courseIdChunks.push(courseIds.slice(i, i + 30));
@@ -88,17 +90,27 @@ export default function MyCertificatesPage() {
           const courseSnap = await getDocs(q);
           courseSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
       }
+
+      const instructorIds = [...new Set(Array.from(coursesMap.values()).map(c => c.instructorId).filter(Boolean))];
+      const instMap = new Map<string, FormaAfriqueUser>();
       
-      const populatedCourses: CompletedCourse[] = completedEnrollments.map(enrollment => {
+      if (instructorIds.length > 0) {
+        const instSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
+        instSnap.forEach(d => instMap.set(d.data().uid, d.data() as FormaAfriqueUser));
+      }
+      
+      const populatedCourses: CompletedCourse[] = enrollments.map(enrollment => {
           const course = coursesMap.get(enrollment.courseId);
           if (!course) return null;
           
+          const instructor = instMap.get(course.instructorId);
           const completionDate = enrollment.enrollmentDate?.toDate() || new Date(); 
 
           return {
             ...course,
             completionDate: completionDate,
-            certificateId: enrollment.id
+            certificateId: enrollment.id,
+            instructorName: instructor?.fullName || 'L\'équipe Ndara',
           };
         })
         .filter((c): c is CompletedCourse => c !== null)
@@ -106,10 +118,10 @@ export default function MyCertificatesPage() {
 
       setCompletedCourses(populatedCourses);
       setDataLoading(false);
-    };
+    });
 
-    fetchCourseDetails();
-  }, [completedEnrollments, enrollmentsLoading, db]);
+    return () => unsubscribe();
+  }, [enrollmentsQuery, isUserLoading, db]);
   
   const isLoading = isUserLoading || dataLoading;
 
@@ -117,7 +129,7 @@ export default function MyCertificatesPage() {
     const certificateUrl = `${window.location.origin}/verify/${course.certificateId}`;
     const encodedUrl = encodeURIComponent(certificateUrl);
     
-    const whatsAppText = encodeURIComponent(`Je suis fier de vous annoncer que j'ai obtenu mon certificat en ${course.title} sur FormaAfrique ! ${certificateUrl}`);
+    const whatsAppText = encodeURIComponent(`Je suis fier de vous annoncer que j'ai obtenu mon certificat en ${course.title} sur Ndara Afrique ! ${certificateUrl}`);
     const whatsAppLink = `https://wa.me/?text=${whatsAppText}`;
 
     const linkedInLink = `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`;
@@ -213,7 +225,9 @@ export default function MyCertificatesPage() {
           onClose={() => setSelectedCertificate(null)}
           courseName={selectedCertificate.title}
           studentName={formaAfriqueUser.fullName}
+          instructorName={selectedCertificate.instructorName}
           completionDate={selectedCertificate.completionDate}
+          certificateId={selectedCertificate.certificateId}
         />
       )}
     </div>
