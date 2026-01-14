@@ -1,8 +1,9 @@
 
 'use server';
 
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
 import { DecodedIdToken } from 'firebase-admin/auth';
 
 // Helper function to verify the ID token and check if the caller is an admin
@@ -13,7 +14,7 @@ async function verifyAdmin(idToken: string): Promise<DecodedIdToken | null> {
         if (userRecord.customClaims?.['role'] === 'admin') {
             return decodedToken;
         }
-        return null;
+        return decodedToken; // Return decoded token even if not admin for self-deletion check
     } catch (error) {
         console.error("Error verifying admin token:", error);
         return null;
@@ -22,11 +23,11 @@ async function verifyAdmin(idToken: string): Promise<DecodedIdToken | null> {
 
 
 export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
-    const admin = await verifyAdmin(idToken);
+    const decodedToken = await verifyAdmin(idToken);
     
-    // Only allow deletion if the request comes from an admin, or if the user is deleting their own account.
-    if (!admin && getAuth().currentUser?.uid !== userId) {
-        return { success: false, error: "Permission refusée." };
+    // Check for permission: either the user is deleting their own account OR an admin is deleting it.
+    if (!decodedToken || (decodedToken.uid !== userId && decodedToken.firebase.sign_in_provider !== 'admin')) {
+       return { success: false, error: "Permission refusée. Vous ne pouvez supprimer que votre propre compte ou être un administrateur." };
     }
     
     try {
@@ -36,10 +37,13 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
         // Delete from Firestore
         await adminDb.collection('users').doc(userId).delete();
         
+        // Note: For full GDPR compliance, a Cloud Function triggered by user deletion
+        // should be used to clean up all user-related data across subcollections and other collections.
+        
         return { success: true };
     } catch (error: any) {
         console.error("Error deleting user account:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || 'Une erreur est survenue lors de la suppression du compte.' };
     }
 }
 
