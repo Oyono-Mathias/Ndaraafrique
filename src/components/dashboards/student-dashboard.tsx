@@ -14,7 +14,7 @@ import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { CourseCard } from '../cards/CourseCard';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<FormaAfriqueUser>>, isLoading: boolean }) => {
-    if (isLoading) {
+    if (isLoading && courses.length === 0) {
         return (
             <section>
                 <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
@@ -88,19 +88,31 @@ export function StudentDashboard() {
   }, [allCourses]);
 
   useEffect(() => {
-    if (coursesLoading || !allCourses) return;
+    if (!allCourses || coursesLoading) return;
 
-    const processData = async () => {
+    const fetchInstructors = async () => {
         const neededInstructorIds = [...new Set(allCourses.map(c => c.instructorId).filter(id => id && !instructorsMap.has(id)))];
+        
         if (neededInstructorIds.length > 0) {
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', neededInstructorIds.slice(0, 30)));
-            const userSnapshots = await getDocs(usersQuery);
+            // Firestore 'in' query limit is 30. We chunk it for safety.
+            const chunks: string[][] = [];
+            for (let i = 0; i < neededInstructorIds.length; i += 30) {
+                chunks.push(neededInstructorIds.slice(i, i + 30));
+            }
+
             const newInstructors = new Map(instructorsMap);
-            userSnapshots.forEach(doc => newInstructors.set(doc.data().uid, doc.data()));
+            for (const chunk of chunks) {
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
+                const userSnapshots = await getDocs(usersQuery);
+                userSnapshots.forEach(doc => {
+                    newInstructors.set(doc.data().uid, doc.data());
+                });
+            }
             setInstructorsMap(newInstructors);
         }
     };
-    processData();
+    
+    fetchInstructors();
   }, [allCourses, coursesLoading, db, instructorsMap]);
 
   return (
