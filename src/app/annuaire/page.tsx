@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -73,7 +72,7 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
                 </DialogHeader>
                  <DialogFooter>
                     <Button onClick={onGoToProfile} className="w-full">{t('complete_profile_btn')}</Button>
-                </DialogFooter>
+                 </DialogFooter>
             </DialogContent>
         </Dialog>
     );
