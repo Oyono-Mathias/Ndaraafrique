@@ -84,16 +84,15 @@ export default function MyLearningPage() {
 
   }, [enrollments, enrollmentsLoading, db]);
 
-  const { inProgressCourses, completedCourses, notStartedCourses } = useMemo(() => {
+  const { inProgressCourses, completedCourses } = useMemo(() => {
     const inProgress = courses.filter(c => c.progress > 0 && c.progress < 100);
     const completed = courses.filter(c => c.progress === 100);
-    const notStarted = courses.filter(c => c.progress === 0);
-    return { inProgressCourses: inProgress, completedCourses: completed, notStartedCourses: notStarted };
+    return { inProgressCourses: inProgress, completedCourses: completed };
   }, [courses]);
 
   const coursesToDisplay = useMemo(() => {
-    return [...inProgressCourses, ...notStartedCourses, ...completedCourses];
-  }, [inProgressCourses, notStartedCourses, completedCourses]);
+    return [...inProgressCourses, ...courses.filter(c => c.progress === 0), ...completedCourses];
+  }, [inProgressCourses, courses, completedCourses]);
 
   const isLoading = isUserLoading || dataLoading;
 
@@ -101,6 +100,7 @@ export default function MyLearningPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">{t('navMyLearning')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Reprenez là où vous vous êtes arrêté.</p>
       </header>
 
       <Tabs defaultValue="all" className="w-full">
