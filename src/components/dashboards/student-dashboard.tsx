@@ -74,12 +74,21 @@ export function StudentDashboard() {
     return allCourses.slice(0, 12);
   }, [allCourses]);
 
+  const popularCourses = useMemo(() => {
+    if (!allCourses) return [];
+    return allCourses.filter(c => c.isPopular).slice(0, 12);
+  }, [allCourses]);
+
+  const freeCourses = useMemo(() => {
+    if (!allCourses) return [];
+    return allCourses.filter(c => c.price === 0).slice(0, 12);
+  }, [allCourses]);
 
   useEffect(() => {
     if (coursesLoading || !allCourses) return;
 
     const processData = async () => {
-        const neededInstructorIds = [...new Set(allCourses.map(c => c.instructorId).filter(id => !instructorsMap.has(id)))];
+        const neededInstructorIds = [...new Set(allCourses.map(c => c.instructorId).filter(id => id && !instructorsMap.has(id)))];
         if (neededInstructorIds.length > 0) {
             const usersQuery = query(collection(db, 'users'), where('uid', 'in', neededInstructorIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
@@ -98,6 +107,18 @@ export function StudentDashboard() {
         <CourseCarousel 
             title="Les nouveautés à ne pas rater"
             courses={newCourses}
+            instructorsMap={instructorsMap}
+            isLoading={coursesLoading}
+        />
+        <CourseCarousel 
+            title="Populaires ce mois-ci"
+            courses={popularCourses}
+            instructorsMap={instructorsMap}
+            isLoading={coursesLoading}
+        />
+        <CourseCarousel 
+            title="Découvrir gratuitement"
+            courses={freeCourses}
             instructorsMap={instructorsMap}
             isLoading={coursesLoading}
         />
