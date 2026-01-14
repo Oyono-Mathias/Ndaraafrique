@@ -15,6 +15,7 @@ import { useDebounce } from '@/hooks/use-debounce';
 import { useRole } from '@/context/RoleContext';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { cn } from '@/lib/utils';
 
 const FILTERS = ['Tous', 'Gratuit', 'Design', 'Code', 'Marketing', 'Business'];
 
@@ -26,16 +27,18 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
     </div>
 );
 
-const ResultRow = ({ course, instructor }: { course: Course, instructor: FormaAfriqueUser | null }) => (
-    <Link href={`/course/${course.id}`} className="block group">
+const SearchResultCard = ({ course, instructor }: { course: Course, instructor: FormaAfriqueUser | null }) => (
+    <Link href={`/course/${course.id}`} className="block group" aria-label={`Voir les détails du cours ${course.title}`}>
         <div className="flex gap-4 p-3 rounded-2xl hover:bg-slate-800/50 transition-colors duration-200">
-            <Image
-                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/240/135`}
-                alt={course.title}
-                width={160}
-                height={90}
-                className="aspect-video object-cover w-32 md:w-40 rounded-lg shrink-0 bg-slate-800"
-            />
+            <div className="relative w-32 md:w-40 h-[72px] md:h-[90px] shrink-0">
+                <Image
+                    src={course.imageUrl || `https://picsum.photos/seed/${course.id}/240/135`}
+                    alt={course.title}
+                    fill
+                    loading="lazy"
+                    className="aspect-video object-cover rounded-lg bg-slate-800"
+                />
+            </div>
             <div className="flex-1 overflow-hidden">
                 <h3 className="font-bold text-sm md:text-base text-slate-100 line-clamp-2 group-hover:text-primary transition-colors">{course.title}</h3>
                 <p className="text-xs text-slate-400 truncate mt-1">Par {instructor?.fullName || 'un instructeur'}</p>
@@ -182,7 +185,7 @@ export default function SearchPage() {
                     ))
                 ) : results.length > 0 ? (
                     results.map(course => (
-                        <ResultRow key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
+                        <SearchResultCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
                     ))
                 ) : (
                     <div className="text-center py-20 px-4 border-2 border-dashed rounded-xl border-slate-700">
