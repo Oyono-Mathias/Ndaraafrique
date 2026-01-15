@@ -75,7 +75,7 @@ export default function InstructorProfilePage() {
     const { instructorId } = useParams();
     const router = useRouter();
     const db = getFirestore();
-    const { formaAfriqueUser: currentUser } = useRole();
+    const { currentUser } = useRole();
     const { toast } = useToast();
 
     const [stats, setStats] = useState({ studentCount: 0, reviewCount: 0 });
