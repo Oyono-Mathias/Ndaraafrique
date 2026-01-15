@@ -1,7 +1,7 @@
 
 'use server';
 
-import type { NdaraUser } from "@/context/RoleContext";
+import type { NdaraUser } from "@/lib/types";
 import type { Course } from "./types";
 
 // NOTE: This is a placeholder for a real email sending service (e.g., SendGrid, Mailgun, etc.)
