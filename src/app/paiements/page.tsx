@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -19,7 +20,7 @@ import Script from 'next/script';
 function PaymentPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { user, formaAfriqueUser, isUserLoading } = useRole();
+    const { user, ndaraUser, isUserLoading } = useRole();
     const db = getFirestore();
     
     const courseId = searchParams.get('courseId');
@@ -49,19 +50,19 @@ function PaymentPageContent() {
                 currency: "XOF",
                 description: `Achat du cours: ${course!.title}`,
                 customer: {
-                    email: formaAfriqueUser!.email,
-                    name: formaAfriqueUser!.fullName,
+                    email: ndaraUser!.email,
+                    name: ndaraUser!.fullName,
                 },
                 metadata: {
                     courseId: course!.id,
-                    userId: formaAfriqueUser!.uid,
+                    userId: ndaraUser!.uid,
                 }
             });
         }
     };
     
     const handlePayment = () => {
-        if (!course || !formaAfriqueUser) return;
+        if (!course || !ndaraUser) return;
         setIsLoading(true);
         handleCheckout();
     };

@@ -12,7 +12,7 @@ interface CourseCompletionModalProps {
   isOpen: boolean;
   onClose: () => void;
   courseName: string;
-  studentName: string;
+  studentName?: string;
   onDownload: () => void;
   onShare: () => void;
 }

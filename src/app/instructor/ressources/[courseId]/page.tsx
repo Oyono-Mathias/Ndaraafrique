@@ -2,10 +2,10 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection, useMemoFirebase, useIsMobile } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -27,9 +27,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Folder, PlusCircle, ArrowLeft, Loader2, AlertCircle, Link2, FileText, Trash2, BookText } from 'lucide-react';
+import { Folder, PlusCircle, Loader2, AlertCircle, Link2, FileText, Trash2, BookText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -37,7 +38,6 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Course } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
@@ -65,18 +65,81 @@ const ResourceIcon = ({ type }: { type: 'link' | 'file' }) => {
     }
 };
 
-export default function CourseResourcesPage() {
+const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: any, isSubmitting: boolean }) => {
+    const formType = form.watch('type');
+    return (
+        <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-4">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Titre de la ressource</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Ex: Slides du chapitre 1" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="type"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Type</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600">
+                                        <SelectValue placeholder="Sélectionnez un type" />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
+                                    <SelectItem value="link">Lien externe</SelectItem>
+                                    <SelectItem value="file" disabled>Fichier (bientôt disponible)</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+                {formType === 'link' &&
+                    <FormField
+                        control={form.control}
+                        name="url"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>URL</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="https://example.com/ressource" {...field} className="dark:bg-slate-700 dark:border-slate-600"/>
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                }
+                <div className="flex justify-end pt-6 gap-2">
+                    <Button type="button" variant="ghost" className="dark:hover:bg-slate-700 dark:text-slate-300">Annuler</Button>
+                    <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Enregistrer
+                    </Button>
+                </div>
+            </form>
+        </Form>
+    );
+}
+
+export default function ResourcesPage() {
     const { courseId } = useParams();
-    const router = useRouter();
     const { toast } = useToast();
     const db = getFirestore();
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { ndaraUser, isUserLoading } = useRole();
+    const isMobile = useIsMobile();
 
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isFormOpen, setIsFormOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const courseRef = useMemoFirebase(() => doc(db, 'courses', courseId as string), [db, courseId]);
-    const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
     
     const resourcesQuery = useMemoFirebase(
         () => query(collection(db, 'resources'), where('courseId', '==', courseId), orderBy('createdAt', 'desc')),
@@ -88,17 +151,15 @@ export default function CourseResourcesPage() {
         resolver: zodResolver(resourceSchema),
         defaultValues: { title: '', type: 'link', url: '' },
     });
-    
-    const formType = form.watch('type');
 
     const handleCreateResource = async (values: z.infer<typeof resourceSchema>) => {
-        if (!formaAfriqueUser) return;
+        if (!ndaraUser) return;
         setIsSubmitting(true);
         
         const resourcePayload = {
             ...values,
             courseId: courseId,
-            instructorId: formaAfriqueUser.uid,
+            instructorId: ndaraUser.uid,
             createdAt: serverTimestamp(),
         };
 
@@ -106,7 +167,7 @@ export default function CourseResourcesPage() {
             const resourcesCollection = collection(db, 'resources');
             await addDoc(resourcesCollection, resourcePayload);
             toast({ title: "Ressource ajoutée !", description: "La nouvelle ressource est disponible pour les étudiants." });
-            setIsDialogOpen(false);
+            setIsFormOpen(false);
             form.reset();
         } catch (error) {
             console.error("Error creating resource:", error);
@@ -131,166 +192,90 @@ export default function CourseResourcesPage() {
         }
     };
 
-    const isLoading = courseLoading || resourcesLoading || isUserLoading;
+    const isLoading = resourcesLoading || isUserLoading;
+
+    const FormWrapper = isMobile ? Sheet : Dialog;
+    const FormContent = isMobile ? SheetContent : DialogContent;
+    const FormHeader = isMobile ? SheetHeader : DialogHeader;
+    const FormTitle = isMobile ? SheetTitle : DialogTitle;
+    const FormDescription = isMobile ? SheetDescription : DialogDescription;
+
 
     return (
-        <div className="space-y-8">
-            <header>
-                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/ressources')} className="mb-2">
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Retour à la liste des cours
-                </Button>
-                {courseLoading ? (
-                    <>
-                        <Skeleton className="h-8 w-1/2" />
-                        <Skeleton className="h-4 w-1/3 mt-2" />
-                    </>
-                ) : (
-                    <>
-                        <h1 className="text-3xl font-bold text-white">Ressources pour "{course?.title}"</h1>
-                        <p className="text-slate-400">Ajoutez et gérez les supports de ce cours.</p>
-                    </>
-                )}
-            </header>
-
-            {resourcesError && (
-                <div className="p-4 bg-red-900/50 text-red-300 border border-red-700 rounded-lg flex items-center gap-3">
-                    <AlertCircle className="h-5 w-5" />
-                    <p>Une erreur est survenue lors du chargement des ressources. Un index Firestore est peut-être manquant.</p>
-                </div>
-            )}
-
-            <Card className="bg-slate-800 border-slate-700">
-                <CardHeader className="flex flex-row items-center justify-between">
-                    <div>
-                        <CardTitle className="text-xl flex items-center gap-2 text-white">
+        <div className="space-y-6">
+            <Card className="dark:bg-[#1e293b] dark:border-slate-700">
+                <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                     <div>
+                        <CardTitle className="text-xl flex items-center gap-2 dark:text-white">
                             <BookText className="h-5 w-5" />
                             Ressources du cours
                         </CardTitle>
-                        <CardDescription className="text-slate-400">
+                        <CardDescription className="dark:text-slate-400">
                             Ajoutez et gérez les documents et liens pour ce cours.
                         </CardDescription>
                     </div>
-                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                        <DialogTrigger asChild>
-                            <Button>
+                     <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
+                        <SheetTrigger asChild>
+                             <Button className="w-full sm:w-auto">
                                 <PlusCircle className="mr-2 h-4 w-4" />
                                 Ajouter
                             </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-slate-800 border-slate-700 text-white">
-                            <DialogHeader>
-                                <DialogTitle>Nouvelle ressource</DialogTitle>
-                                <DialogDescription className="text-slate-400">Renseignez les informations de la ressource.</DialogDescription>
-                            </DialogHeader>
-                            <Form {...form}>
-                                <form onSubmit={form.handleSubmit(handleCreateResource)} className="space-y-4">
-                                    <FormField
-                                        control={form.control}
-                                        name="title"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Titre de la ressource</FormLabel>
-                                                <FormControl>
-                                                    <Input placeholder="Ex: Slides du chapitre 1" {...field} className="bg-slate-700 border-slate-600" />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                     <FormField
-                                        control={form.control}
-                                        name="type"
-                                        render={({ field }) => (
-                                            <FormItem>
-                                                <FormLabel>Type</FormLabel>
-                                                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                    <FormControl>
-                                                        <SelectTrigger className="bg-slate-700 border-slate-600">
-                                                            <SelectValue placeholder="Sélectionnez un type" />
-                                                        </SelectTrigger>
-                                                    </FormControl>
-                                                    <SelectContent className="bg-slate-800 border-slate-700 text-white">
-                                                        <SelectItem value="link">Lien externe</SelectItem>
-                                                        <SelectItem value="file" disabled>Fichier (bientôt disponible)</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-                                    {formType === 'link' &&
-                                        <FormField
-                                            control={form.control}
-                                            name="url"
-                                            render={({ field }) => (
-                                                <FormItem>
-                                                    <FormLabel>URL</FormLabel>
-                                                    <FormControl>
-                                                        <Input placeholder="https://example.com/ressource" {...field} className="bg-slate-700 border-slate-600"/>
-                                                    </FormControl>
-                                                    <FormMessage />
-                                                </FormItem>
-                                            )}
-                                        />
-                                    }
-                                    <DialogFooter>
-                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="hover:bg-slate-700">Annuler</Button>
-                                        <Button type="submit" disabled={isSubmitting}>
-                                            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                            Enregistrer
-                                        </Button>
-                                    </DialogFooter>
-                                </form>
-                            </Form>
-                        </DialogContent>
-                    </Dialog>
+                        </SheetTrigger>
+                        <FormContent side={isMobile ? 'bottom' : 'right'} className="dark:bg-slate-900 dark:border-slate-800 dark:text-white">
+                            <FormHeader>
+                                <FormTitle>Nouvelle ressource</FormTitle>
+                                <FormDescription className="dark:text-slate-400">Renseignez les informations de la ressource.</FormDescription>
+                            </FormHeader>
+                            <ResourceForm form={form} onSubmit={handleCreateResource} isSubmitting={isSubmitting} />
+                        </FormContent>
+                    </FormWrapper>
                 </CardHeader>
                 <CardContent>
+                    {resourcesError && (
+                        <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
+                            <AlertCircle className="h-5 w-5" />
+                            <p>Une erreur est survenue lors du chargement des ressources. Un index Firestore est peut-être manquant.</p>
+                        </div>
+                    )}
                     <Table>
                         <TableHeader>
-                            <TableRow className="border-slate-700 hover:bg-slate-700/50">
-                                <TableHead className="text-slate-300">Titre</TableHead>
-                                <TableHead className="text-slate-300">Type</TableHead>
-                                <TableHead className="text-slate-300">Date d'ajout</TableHead>
-                                <TableHead className="text-right text-slate-300">Action</TableHead>
+                            <TableRow className="dark:border-slate-700 hover:bg-slate-800/50">
+                                <TableHead className="dark:text-slate-300">Titre</TableHead>
+                                <TableHead className="hidden sm:table-cell dark:text-slate-300">Type</TableHead>
+                                <TableHead className="hidden sm:table-cell dark:text-slate-300">Date d'ajout</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                    <TableRow key={i} className="border-slate-700">
+                                    <TableRow key={i} className="dark:border-slate-700">
                                         <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
+                                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
+                                        <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
                                         <TableCell className="text-right"><Skeleton className="h-8 w-8 bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : resources && resources.length > 0 ? (
                                 resources.map((resource) => (
-                                    <TableRow key={resource.id} className="border-slate-700 hover:bg-slate-700/50 text-slate-300">
-                                        <TableCell className="font-medium flex items-center gap-3 text-slate-100">
+                                    <TableRow key={resource.id} className="dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800/50">
+                                        <TableCell className="font-medium flex items-center gap-3 dark:text-slate-100">
                                             <ResourceIcon type={resource.type} />
                                             {resource.title}
                                         </TableCell>
-                                        <TableCell>{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
-                                        <TableCell>{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
+                                        <TableCell className="hidden sm:table-cell">{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right">
-                                             <Button variant="ghost" asChild className="text-blue-400 hover:text-blue-300 text-sm p-2 h-auto">
-                                                <a href={resource.url} target="_blank" rel="noopener noreferrer">
-                                                    Ouvrir
-                                                </a>
-                                            </Button>
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-red-400 hover:text-red-300 ml-2">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-red-500 hover:text-red-400">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow className="border-slate-700">
+                                <TableRow className="dark:border-slate-700">
                                     <TableCell colSpan={4} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-slate-400">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <Folder className="h-10 w-10" />
                                             <span className="font-medium">Aucune ressource pour ce cours</span>
                                             <span className="text-sm">Cliquez sur "Ajouter" pour commencer.</span>
@@ -303,5 +288,5 @@ export default function CourseResourcesPage() {
                 </CardContent>
             </Card>
         </div>
-    );
+    )
 }

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -28,7 +29,7 @@ function MaintenancePage() {
 const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/messages', '/account'];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isUserLoading, user, formaAfriqueUser } = useRole();
+  const { role, isUserLoading, user, ndaraUser } = useRole();
   const pathname = usePathname();
   const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg', maintenanceMode: false });
   const db = getFirestore();
@@ -62,7 +63,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <SplashScreen />;
   }
 
-  if (siteSettings.maintenanceMode && formaAfriqueUser?.role !== 'admin') {
+  if (siteSettings.maintenanceMode && ndaraUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
   

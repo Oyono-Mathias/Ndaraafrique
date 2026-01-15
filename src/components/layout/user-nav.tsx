@@ -28,7 +28,7 @@ import {
   
 export function UserNav() {
     const { t } = useTranslation();
-    const { formaAfriqueUser: ndaraUser, isUserLoading, secureSignOut } = useRole();
+    const { ndaraUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 
     const handleLogout = async () => {

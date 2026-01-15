@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -32,7 +33,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname();
-  const { formaAfriqueUser: ndaraUser } = useRole();
+  const { ndaraUser } = useRole();
   const { toast } = useToast();
   const { t } = useTranslation();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
@@ -79,7 +80,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
 
 export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
-  const { switchRole, formaAfriqueUser: ndaraUser, availableRoles } = useRole();
+  const { switchRole, ndaraUser, availableRoles } = useRole();
   const { t } = useTranslation();
   const isAdmin = availableRoles.includes('admin');
 

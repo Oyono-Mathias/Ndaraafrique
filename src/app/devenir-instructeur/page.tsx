@@ -46,7 +46,7 @@ const prioritizedCountries = ['CM', 'CI', 'SN', 'CD', 'GA', 'BJ', 'TG', 'GN', 'M
 
 export default function BecomeInstructorPage() {
   const router = useRouter();
-  const { user, formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
+  const { user, ndaraUser, isUserLoading } = useRole();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
@@ -21,17 +22,17 @@ import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
 
 export default function ResourcesDashboardPage() {
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { ndaraUser, isUserLoading } = useRole();
     const db = getFirestore();
 
     const coursesQuery = useMemoFirebase(
-        () => formaAfriqueUser?.uid
+        () => ndaraUser?.uid
             ? query(
                 collection(db, 'courses'),
-                where('instructorId', '==', formaAfriqueUser.uid),
+                where('instructorId', '==', ndaraUser.uid),
               )
             : null,
-        [db, formaAfriqueUser?.uid]
+        [db, ndaraUser?.uid]
     );
 
     const { data: courses, isLoading: coursesLoading, error } = useCollection<Course>(coursesQuery);

@@ -49,6 +49,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
 import { useTranslation } from 'react-i18next';
+import { NdaraUser } from '@/lib/types';
 
 interface Enrollment {
   id: string;

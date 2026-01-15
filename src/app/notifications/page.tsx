@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,15 +24,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
-
-interface Notification {
-  id: string;
-  text: string;
-  createdAt: Timestamp;
-  read: boolean;
-  link?: string;
-  type?: 'success' | 'info' | 'reminder' | 'alert';
-}
+import type { Notification } from '@/lib/types';
 
 const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     switch (type) {

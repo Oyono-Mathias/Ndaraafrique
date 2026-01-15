@@ -11,7 +11,7 @@ interface CertificateModalProps {
   isOpen: boolean;
   onClose: () => void;
   courseName: string;
-  studentName: string;
+  studentName?: string;
   instructorName: string;
   completionDate: Date;
   certificateId: string;

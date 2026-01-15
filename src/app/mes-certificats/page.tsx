@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -19,7 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Award, Download, Share2, BookOpen, Linkedin } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
-import type { Course, Enrollment, FormaAfriqueUser } from '@/lib/types';
+import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import {
   DropdownMenu,
@@ -37,7 +38,7 @@ interface CompletedCourse extends Course {
 }
 
 export default function MyCertificatesPage() {
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [completedCourses, setCompletedCourses] = useState<CompletedCourse[]>([]);
@@ -45,14 +46,14 @@ export default function MyCertificatesPage() {
   const [selectedCertificate, setSelectedCertificate] = useState<CompletedCourse | null>(null);
 
   const enrollmentsQuery = useMemo(
-    () => formaAfriqueUser?.uid
+    () => ndaraUser?.uid
       ? query(
           collection(db, 'enrollments'), 
-          where('studentId', '==', formaAfriqueUser.uid), 
+          where('studentId', '==', ndaraUser.uid), 
           where('progress', '==', 100)
         )
       : null,
-    [db, formaAfriqueUser?.uid]
+    [db, ndaraUser?.uid]
   );
   
   useEffect(() => {
@@ -92,11 +93,11 @@ export default function MyCertificatesPage() {
       }
 
       const instructorIds = [...new Set(Array.from(coursesMap.values()).map(c => c.instructorId).filter(Boolean))];
-      const instMap = new Map<string, FormaAfriqueUser>();
+      const instMap = new Map<string, NdaraUser>();
       
       if (instructorIds.length > 0) {
         const instSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
-        instSnap.forEach(d => instMap.set(d.data().uid, d.data() as FormaAfriqueUser));
+        instSnap.forEach(d => instMap.set(d.data().uid, d.data() as NdaraUser));
       }
       
       const populatedCourses: CompletedCourse[] = enrollments.map(enrollment => {
@@ -219,12 +220,12 @@ export default function MyCertificatesPage() {
         </CardContent>
       </Card>
 
-      {selectedCertificate && formaAfriqueUser && (
+      {selectedCertificate && ndaraUser && (
         <CertificateModal
           isOpen={!!selectedCertificate}
           onClose={() => setSelectedCertificate(null)}
           courseName={selectedCertificate.title}
-          studentName={formaAfriqueUser.fullName}
+          studentName={ndaraUser.fullName}
           instructorName={selectedCertificate.instructorName}
           completionDate={selectedCertificate.completionDate}
           certificateId={selectedCertificate.certificateId}

@@ -165,7 +165,7 @@ const NotificationPreferences = () => {
 const domains = ["Développement Web", "Marketing Digital", "Data Science", "Design UI/UX", "Entrepreneuriat", "Agriculture"];
 
 export default function AccountPage() {
-  const { user, formaAfriqueUser, isUserLoading, setFormaAfriqueUser } = useRole();
+  const { user, ndaraUser, isUserLoading, setNdaraUser } = useRole();
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
@@ -197,16 +197,16 @@ export default function AccountPage() {
   }, [form.watch('username'), form.watch('fullName'), form.watch('interestDomain')]);
 
   useEffect(() => {
-    if (formaAfriqueUser) {
+    if (ndaraUser) {
       form.reset({
-        username: formaAfriqueUser.username || '',
-        fullName: formaAfriqueUser.fullName || '',
-        bio: formaAfriqueUser.bio || '',
-        interestDomain: formaAfriqueUser.careerGoals?.interestDomain || '',
+        username: ndaraUser.username || '',
+        fullName: ndaraUser.fullName || '',
+        bio: ndaraUser.bio || '',
+        interestDomain: ndaraUser.careerGoals?.interestDomain || '',
       });
-      setImagePreview(formaAfriqueUser.profilePictureURL || null);
+      setImagePreview(ndaraUser.profilePictureURL || null);
     }
-  }, [formaAfriqueUser, form]);
+  }, [ndaraUser, form]);
 
   useEffect(() => {
     if(user && !isUserLoading){
@@ -241,7 +241,7 @@ export default function AccountPage() {
               setUsernameAvailable(null);
               return;
           }
-          if (debouncedUsername === formaAfriqueUser?.username) {
+          if (debouncedUsername === ndaraUser?.username) {
               setUsernameAvailable(true);
               return;
           }
@@ -254,19 +254,19 @@ export default function AccountPage() {
           setIsCheckingUsername(false);
       }
       checkUsername();
-  }, [debouncedUsername, db, formaAfriqueUser?.username]);
+  }, [debouncedUsername, db, ndaraUser?.username]);
 
   const onProfileSubmit = async (data: ProfileFormValues) => {
-    if (!formaAfriqueUser || usernameAvailable === false) {
+    if (!ndaraUser || usernameAvailable === false) {
         toast({ title: t('invalid_username_title'), description: t('invalid_username_desc'), variant: 'destructive'});
         return;
     }
     setIsSaving(true);
     const auth = getAuth();
-    const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
+    const userDocRef = doc(db, 'users', ndaraUser.uid);
 
     try {
-        const wasIncomplete = !formaAfriqueUser.isProfileComplete;
+        const wasIncomplete = !ndaraUser.isProfileComplete;
         const isNowComplete = !!(data.username && data.interestDomain);
 
         await updateDoc(userDocRef, {
@@ -274,7 +274,7 @@ export default function AccountPage() {
             fullName: data.fullName,
             bio: data.bio,
             careerGoals: {
-                ...formaAfriqueUser.careerGoals,
+                ...ndaraUser.careerGoals,
                 interestDomain: data.interestDomain,
             },
             isProfileComplete: isNowComplete
@@ -293,7 +293,7 @@ export default function AccountPage() {
                 description: t('congrats_profile_complete_desc', { category: data.interestDomain }),
                 className: "bg-green-600 text-white"
             });
-             setFormaAfriqueUser(prev => prev ? ({...prev, isProfileComplete: true, careerGoals: { ...prev.careerGoals, interestDomain: data.interestDomain }}) : null);
+             setNdaraUser(prev => prev ? ({...prev, isProfileComplete: true, careerGoals: { ...prev.careerGoals, interestDomain: data.interestDomain }}) : null);
         }
 
     } catch (error) {
@@ -313,13 +313,13 @@ export default function AccountPage() {
   };
 
   const handleAvatarUpload = async (croppedImage: File) => {
-    if (!formaAfriqueUser) return;
+    if (!ndaraUser) return;
     setImageToCrop(null);
     setIsUploading(true);
 
     const storage = getStorage();
     const auth = getAuth();
-    const filePath = `avatars/${formaAfriqueUser.uid}/profile.webp`;
+    const filePath = `avatars/${ndaraUser.uid}/profile.webp`;
     const storageRef = ref(storage, filePath);
 
     try {
@@ -329,7 +329,7 @@ export default function AccountPage() {
       if (auth.currentUser) {
         await updateProfile(auth.currentUser, { photoURL: downloadURL });
       }
-      const userDocRef = doc(db, 'users', formaAfriqueUser.uid);
+      const userDocRef = doc(db, 'users', ndaraUser.uid);
       await updateDoc(userDocRef, { profilePictureURL: downloadURL });
 
       toast({ title: t('avatar_updated_title') });
@@ -360,7 +360,7 @@ export default function AccountPage() {
     // usually redirecting to the login page.
   };
 
-  if (isUserLoading || !formaAfriqueUser) {
+  if (isUserLoading || !ndaraUser) {
     return (
       <div className="space-y-8 max-w-4xl mx-auto">
         <header className="text-center"><Skeleton className="h-10 w-64 mx-auto" /><Skeleton className="h-5 w-80 mx-auto mt-2" /></header>
@@ -400,8 +400,8 @@ export default function AccountPage() {
               <CardContent className="space-y-6">
                 <div className="relative w-28 h-28 mx-auto group">
                     <Avatar className="h-full w-full border-4 border-slate-700 shadow-lg">
-                        <AvatarImage src={imagePreview || formaAfriqueUser.profilePictureURL} />
-                        <AvatarFallback className="text-3xl bg-slate-800 text-white">{formaAfriqueUser.fullName?.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={imagePreview || ndaraUser.profilePictureURL} />
+                        <AvatarFallback className="text-3xl bg-slate-800 text-white">{ndaraUser.fullName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                      <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                         <Edit3 className="h-6 w-6" />

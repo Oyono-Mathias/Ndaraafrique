@@ -21,7 +21,7 @@ interface EnrolledCourse extends Course {
 }
 
 export default function MyLearningPage() {
-  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);

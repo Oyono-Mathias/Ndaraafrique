@@ -21,8 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Heart, Trash2, Play, ChevronsRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { Course, Enrollment } from '@/lib/types';
-import type { NdaraUser } from '@/context/RoleContext';
+import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 interface WishlistItem {
