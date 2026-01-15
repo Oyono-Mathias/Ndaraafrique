@@ -4,7 +4,7 @@
 
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs, doc, orderBy } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
