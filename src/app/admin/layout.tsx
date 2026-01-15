@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -31,7 +29,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { ndaraUser, isUserLoading, role, switchRole } = useRole();
+  const { currentUser, isUserLoading, role, switchRole } = useRole();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg' });
@@ -52,17 +50,17 @@ export default function AdminLayout({
   }, [db]);
 
   useEffect(() => {
-    if (!isUserLoading && ndaraUser?.role !== 'admin') {
+    if (!isUserLoading && currentUser?.role !== 'admin') {
       router.push('/dashboard');
     }
      // Automatically switch to admin role if the user is an admin but is in another role context
-    if (!isUserLoading && ndaraUser?.role === 'admin' && role !== 'admin') {
+    if (!isUserLoading && currentUser?.role === 'admin' && role !== 'admin') {
       switchRole('admin');
     }
-  }, [isUserLoading, ndaraUser, role, switchRole, router]);
+  }, [isUserLoading, currentUser, role, switchRole, router]);
 
 
-  if (isUserLoading || role !== 'admin' || ndaraUser?.role !== 'admin') {
+  if (isUserLoading || role !== 'admin' || currentUser?.role !== 'admin') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />

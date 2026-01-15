@@ -1,6 +1,4 @@
-
-
-"use client";
+'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
@@ -19,17 +17,17 @@ interface RoleContextType {
   switchRole: (newRole: UserRole) => void;
   secureSignOut: () => Promise<void>;
   loading: boolean;
-  ndaraUser: NdaraUser | null;
+  currentUser: NdaraUser | null;
   user: User | null; // From Firebase Auth
   isUserLoading: boolean; // From Firebase Auth
-  setNdaraUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
+  setCurrentUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
 }
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
-  const [ndaraUser, setNdaraUser] = useState<NdaraUser | null>(null);
+  const [currentUser, setCurrentUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
@@ -64,7 +62,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     
     if (!user) {
-      setNdaraUser(null);
+      setCurrentUser(null);
       setLoading(false);
       return;
     }
@@ -103,7 +101,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
 
-          setNdaraUser(resolvedUser);
+          setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
 
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
@@ -134,7 +132,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 profilePictureURL: user.photoURL || '',
                 isProfileComplete: false,
             };
-            setNdaraUser(defaultUser);
+            setCurrentUser(defaultUser);
             setAvailableRoles(['student']);
             setRole('student');
         }
@@ -171,11 +169,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     switchRole,
     secureSignOut,
     loading: isUserLoading || loading,
-    ndaraUser,
-    setNdaraUser,
+    currentUser,
+    setCurrentUser,
     user,
     isUserLoading
-  }), [role, availableRoles, switchRole, secureSignOut, loading, ndaraUser, user, isUserLoading]);
+  }), [role, availableRoles, switchRole, secureSignOut, loading, currentUser, user, isUserLoading]);
 
   return (
     <RoleContext.Provider value={value}>

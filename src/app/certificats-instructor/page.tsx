@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -30,7 +28,7 @@ interface CertificateInfo {
 }
 
 export default function InstructorCertificatesPage() {
-  const { ndaraUser: instructor, isUserLoading } = useRole();
+  const { currentUser: instructor, isUserLoading } = useRole();
   const db = getFirestore();
   const [certificates, setCertificates] = useState<CertificateInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);

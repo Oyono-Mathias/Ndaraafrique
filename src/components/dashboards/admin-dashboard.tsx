@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -58,7 +57,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading
 
 // --- COMPOSANT DU TABLEAU DE BORD PRINCIPAL ---
 const AdminDashboard = () => {
-  const { ndaraUser, isUserLoading } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [stats, setStats] = useState<Stats>({
@@ -76,7 +75,7 @@ const AdminDashboard = () => {
 
   // --- FETCHING LOGIC ---
   useEffect(() => {
-    if (!ndaraUser || ndaraUser.role !== 'admin') return;
+    if (!currentUser || currentUser.role !== 'admin') return;
 
     const thirtyDaysAgo = Timestamp.fromDate(subDays(new Date(), 30));
     const startOfCurrentMonth = Timestamp.fromDate(startOfMonth(new Date()));
@@ -169,11 +168,11 @@ const AdminDashboard = () => {
 
 
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [ndaraUser, db]);
+  }, [currentUser, db]);
 
 
   // --- Authorization Check ---
-  if (!isUserLoading && ndaraUser?.role !== 'admin') {
+  if (!isUserLoading && currentUser?.role !== 'admin') {
     return (
         <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
              <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
