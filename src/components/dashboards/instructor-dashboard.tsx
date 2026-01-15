@@ -43,7 +43,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 
 function InstructorDashboardContent() {
-    const { ndaraUser: instructor, loading: roleLoading } = useRole();
+    const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
     const { t } = useTranslation();
     const db = getFirestore();
 
@@ -217,7 +217,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-semibold mb-4 text-white">{t('titleRevenue')}</h2>
+                    <h2 className="text-2xl font-semibold mb-4 text-white">{t('revenue_evolution')}</h2>
                     <Card>
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : (

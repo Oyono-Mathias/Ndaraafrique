@@ -20,7 +20,7 @@ import Script from 'next/script';
 function PaymentPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-    const { user, ndaraUser, isUserLoading } = useRole();
+    const { user, currentUser, isUserLoading } = useRole();
     const db = getFirestore();
     
     const courseId = searchParams.get('courseId');
@@ -50,19 +50,19 @@ function PaymentPageContent() {
                 currency: "XOF",
                 description: `Achat du cours: ${course!.title}`,
                 customer: {
-                    email: ndaraUser!.email,
-                    name: ndaraUser!.fullName,
+                    email: currentUser!.email,
+                    name: currentUser!.fullName,
                 },
                 metadata: {
                     courseId: course!.id,
-                    userId: ndaraUser!.uid,
+                    userId: currentUser!.uid,
                 }
             });
         }
     };
     
     const handlePayment = () => {
-        if (!course || !ndaraUser) return;
+        if (!course || !currentUser) return;
         setIsLoading(true);
         handleCheckout();
     };

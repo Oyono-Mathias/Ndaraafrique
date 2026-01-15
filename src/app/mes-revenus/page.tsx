@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -106,7 +107,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, valu
 );
 
 export default function MyRevenuePage() {
-  const { formaAfriqueUser: instructor, isUserLoading: isInstructorLoading } = useRole();
+  const { currentUser: instructor, isUserLoading: isInstructorLoading } = useRole();
   const { t } = useTranslation();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);

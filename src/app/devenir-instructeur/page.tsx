@@ -46,7 +46,7 @@ const prioritizedCountries = ['CM', 'CI', 'SN', 'CD', 'GA', 'BJ', 'TG', 'GN', 'M
 
 export default function BecomeInstructorPage() {
   const router = useRouter();
-  const { user, ndaraUser, isUserLoading } = useRole();
+  const { user, currentUser, isUserLoading } = useRole();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,10 +67,10 @@ export default function BecomeInstructorPage() {
   }, [user, isUserLoading, router, toast, t]);
 
   const onSubmit = async (data: ApplicationFormValues) => {
-    if (!ndaraUser) return;
+    if (!currentUser) return;
     setIsSubmitting(true);
     const db = getFirestore();
-    const userDocRef = doc(db, 'users', ndaraUser.uid);
+    const userDocRef = doc(db, 'users', currentUser.uid);
     try {
       await updateDoc(userDocRef, {
         role: 'instructor',
@@ -80,14 +80,14 @@ export default function BecomeInstructorPage() {
       
       // Send notifications
       await sendNewInstructorApplicationEmail({
-        applicantName: ndaraUser.fullName,
-        applicantEmail: ndaraUser.email,
+        applicantName: currentUser.fullName,
+        applicantEmail: currentUser.email,
         specialty: data.specialty
       });
 
       await sendAdminNotification({
         title: "🎓 Nouvelle candidature d'instructeur",
-        body: `${ndaraUser.fullName} souhaite devenir instructeur.`,
+        body: `${currentUser.fullName} souhaite devenir instructeur.`,
         link: '/admin/instructors',
         type: 'newApplications'
       });
@@ -110,7 +110,7 @@ export default function BecomeInstructorPage() {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
-  if (ndaraUser?.role === 'instructor' && ndaraUser?.isInstructorApproved) {
+  if (currentUser?.role === 'instructor' && currentUser?.isInstructorApproved) {
     return (
         <div className="text-center p-8">
             <h1 className="text-2xl font-bold">{t('already_instructor_title')}</h1>
@@ -120,7 +120,7 @@ export default function BecomeInstructorPage() {
     );
   }
   
-   if (ndaraUser?.role === 'instructor' && !ndaraUser?.isInstructorApproved) {
+   if (currentUser?.role === 'instructor' && !currentUser?.isInstructorApproved) {
     return (
         <div className="text-center p-8">
             <h1 className="text-2xl font-bold">{t('application_in_review_title')}</h1>

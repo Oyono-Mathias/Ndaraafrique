@@ -274,7 +274,7 @@ export default function CourseDetailsClient() {
   const db = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
-  const { user, ndaraUser, isUserLoading } = useRole();
+  const { user, currentUser, isUserLoading } = useRole();
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isPaying, setIsPaying] = useState(false);
   const [courseStats, setCourseStats] = useState({ totalDuration: 0, lessonCount: 0 });
@@ -299,7 +299,7 @@ export default function CourseDetailsClient() {
   }, [db, user, courseId]);
 
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
-  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0 || ndaraUser?.role === 'admin', [enrollments, ndaraUser]);
+  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0 || currentUser?.role === 'admin', [enrollments, currentUser]);
   
   const wishlistRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'users', user.uid, 'wishlist', courseId) : null, [user, courseId, db]);
   const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
@@ -435,7 +435,7 @@ export default function CourseDetailsClient() {
 
 
   const handleFreeEnrollment = async () => {
-    if (!user || !course || !course.instructorId || !instructor || !ndaraUser) {
+    if (!user || !course || !course.instructorId || !instructor || !currentUser) {
         toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté et les détails du cours doivent être complets.' });
         if(!user) router.push('/login');
         return;
@@ -467,7 +467,7 @@ export default function CourseDetailsClient() {
 
         toast({ title: 'Inscription réussie!', description: `Vous avez maintenant accès à "${course.title}".` });
         
-        await sendEnrollmentEmails(ndaraUser, course, instructor);
+        await sendEnrollmentEmails(currentUser, course, instructor);
 
         router.push(`/courses/${courseId}?newEnrollment=true`);
 
@@ -490,7 +490,7 @@ export default function CourseDetailsClient() {
         router.push(`/courses/${courseId}`);
     } else if (course?.price === 0) {
         handleFreeEnrollment();
-    } else if(course && user && ndaraUser) {
+    } else if(course && user && currentUser) {
         handleCheckout();
     }
   };

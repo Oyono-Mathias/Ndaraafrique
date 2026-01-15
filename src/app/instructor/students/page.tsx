@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -74,7 +75,7 @@ interface StudentData {
 export default function MyStudentsPage() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const { ndaraUser: instructor, isUserLoading, user } = useRole();
+  const { currentUser: instructor, isUserLoading, user } = useRole();
   const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

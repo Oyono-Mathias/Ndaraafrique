@@ -172,7 +172,7 @@ export default function StatisticsPage() {
     }, [courses, enrollments]);
 
     const chartConfig = {
-        revenue: { label: t('navMyRevenue'), color: 'hsl(var(--primary))' },
+        revenue: { label: t('navFinance'), color: 'hsl(var(--primary))' },
     };
 
 
@@ -200,7 +200,7 @@ export default function StatisticsPage() {
                     accentColor="border-t-amber-500"
                 />
                 <StatCard 
-                    title={t('publishedCourses')}
+                    title={t('statCourses')}
                     value={stats.publishedCourses.toString()} 
                     icon={BookOpen} 
                     isLoading={isLoading}
