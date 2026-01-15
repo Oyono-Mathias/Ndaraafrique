@@ -3,13 +3,13 @@
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs, doc } from 'firebase/firestore';
+import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs, doc, orderBy } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert, CheckCircle, UserPlus } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth, subDays } from 'date-fns';
