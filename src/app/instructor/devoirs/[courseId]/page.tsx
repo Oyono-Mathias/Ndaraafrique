@@ -90,7 +90,7 @@ export default function CourseAssignmentsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const db = getFirestore();
-    const { ndaraUser, isUserLoading } = useRole();
+    const { user: ndaraUser, isUserLoading } = useRole() as any;
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);

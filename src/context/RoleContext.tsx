@@ -19,6 +19,8 @@ interface RoleContextType {
   secureSignOut: () => Promise<void>;
   loading: boolean;
   currentUser: NdaraUser | null;
+  ndaraUser: any; // Correction Maître pour la stabilité
+  formaAfriqueUser: any; // Correction Maître pour la stabilité
   user: User | null; // From Firebase Auth
   isUserLoading: boolean; // From Firebase Auth
   setCurrentUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
@@ -171,9 +173,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     secureSignOut,
     loading: isUserLoading || loading,
     currentUser,
-    setCurrentUser,
     user,
-    isUserLoading
+    isUserLoading,
+    setCurrentUser,
+    ndaraUser: currentUser, // Backwards compatibility
+    formaAfriqueUser: currentUser, // Backwards compatibility
   }), [role, availableRoles, switchRole, secureSignOut, isUserLoading, loading, currentUser, user]);
 
   return (
