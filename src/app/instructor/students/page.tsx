@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -75,7 +74,7 @@ interface StudentData {
 export default function MyStudentsPage() {
   const [open, setOpen] = useState(false);
   const { toast } = useToast();
-  const { ndaraUser: instructor, isUserLoading: isInstructorLoading, user } = useRole();
+  const { ndaraUser: instructor, isUserLoading, user } = useRole();
   const [students, setStudents] = useState<StudentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,7 +97,7 @@ export default function MyStudentsPage() {
 
   useEffect(() => {
     if (!instructor?.uid) {
-      if (!isInstructorLoading) setIsLoading(false);
+      if (!isUserLoading) setIsLoading(false);
       return;
     }
 
@@ -154,7 +153,7 @@ export default function MyStudentsPage() {
     });
 
     return () => unsubscribe();
-  }, [instructor, db, isInstructorLoading, toast]);
+  }, [instructor, db, isUserLoading, toast]);
 
   const handleStartChat = async (studentId: string) => {
     if (!user) {
@@ -351,5 +350,3 @@ export default function MyStudentsPage() {
     </div>
   );
 }
-
-    

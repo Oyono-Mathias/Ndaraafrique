@@ -31,7 +31,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareDashed, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { useTranslation } from 'react-i18next';
 
 
@@ -56,7 +56,7 @@ const getCategoryBadge = (category: SupportTicket['category'], t: (key: string) 
 }
 
 export default function AdminSupportPage() {
-  const { formaAfriqueUser: adminUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('ouvert');

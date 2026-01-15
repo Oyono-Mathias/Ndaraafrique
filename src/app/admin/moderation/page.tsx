@@ -24,7 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, doc, getDocs, getFirestore, query, serverTimestamp, updateDoc, where, orderBy } from 'firebase/firestore';
-import type { Course, FormaAfriqueUser, Section, Lecture } from '@/lib/types';
+import type { Course, NdaraUser, Section, Lecture } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
@@ -160,7 +160,7 @@ const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClos
 
 export default function AdminModerationPage() {
   const [coursesForReview, setCoursesForReview] = useState<Course[]>([]);
-  const [instructors, setInstructors] = useState<Map<string, FormaAfriqueUser>>(new Map());
+  const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [submittingAction, setSubmittingAction] = useState<{ id: string, action: 'approve' | 'refuse' } | null>(null);
   const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
@@ -203,7 +203,7 @@ export default function AdminModerationPage() {
             const usersSnap = await getDocs(usersQuery);
             
             const newInstructors = new Map(instructors);
-            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as FormaAfriqueUser));
+            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
             setInstructors(newInstructors);
         } catch (error) {
             console.error("Error fetching instructors for moderation:", error);

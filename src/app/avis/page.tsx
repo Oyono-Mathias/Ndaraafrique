@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -78,7 +77,7 @@ const ReviewRowMobile = ({ review }: { review: ReviewWithDetails }) => (
 );
 
 export default function ReviewsPage() {
-  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [reviews, setReviews] = useState<ReviewWithDetails[]>([]);

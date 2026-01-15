@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -59,7 +58,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading
 
 // --- COMPOSANT DU TABLEAU DE BORD PRINCIPAL ---
 const AdminDashboard = () => {
-  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [stats, setStats] = useState<Stats>({
