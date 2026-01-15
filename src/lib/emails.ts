@@ -1,5 +1,5 @@
 
-import type { FormaAfriqueUser } from "@/context/RoleContext";
+import type { Ndara AfriqueUser } from "@/context/RoleContext";
 import type { Course } from "./types";
 
 // NOTE: This is a placeholder for a real email sending service (e.g., SendGrid, Mailgun, etc.)
@@ -65,7 +65,7 @@ const getInstructorEmailTemplate = (instructorName: string, studentName: string,
     `;
 };
 
-export const sendEnrollmentEmails = async (student: FormaAfriqueUser, course: Course, instructor: FormaAfriqueUser) => {
+export const sendEnrollmentEmails = async (student: Ndara AfriqueUser, course: Course, instructor: Ndara AfriqueUser) => {
     if (!student.email || !instructor.email) {
         console.error("Missing email for student or instructor.");
         return;

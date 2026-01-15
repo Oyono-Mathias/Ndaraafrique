@@ -174,10 +174,10 @@ export default function TicketConversationPage() {
                       {senderDetails?.fullName || 'Chargement...'}
                     </p>
                   <div className={cn("rounded-lg px-4 py-2 text-card-foreground text-sm shadow-sm", isUserMessage ? "bg-primary text-primary-foreground" : "bg-background border")}>
-                     {msg.text.startsWith('[Support FormaAfrique] :') ? (
+                     {msg.text.startsWith('[Support Ndara Afrique] :') ? (
                        <span className="flex items-start gap-2">
                          <Shield className="h-4 w-4 text-blue-300 mt-0.5 shrink-0" />
-                         <span>{msg.text.replace('[Support FormaAfrique] :', '').trim()}</span>
+                         <span>{msg.text.replace('[Support Ndara Afrique] :', '').trim()}</span>
                        </span>
                      ) : (
                        msg.text

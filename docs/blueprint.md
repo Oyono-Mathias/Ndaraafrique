@@ -1,4 +1,4 @@
-# **App Name**: FormaAfrique Navigation
+# **App Name**: Ndara Afrique Navigation
 
 ## Core Features:
 

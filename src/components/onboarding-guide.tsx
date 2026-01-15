@@ -52,7 +52,7 @@ export function OnboardingGuide() {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined' && user) {
-      const hasOnboarded = localStorage.getItem('formaafrique-onboarded');
+      const hasOnboarded = localStorage.getItem('Ndara Afrique-onboarded');
       if (!hasOnboarded) {
         setShowWelcome(true);
       }
@@ -76,7 +76,7 @@ export function OnboardingGuide() {
   const finishTour = () => {
     setTourStep(null);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('formaafrique-onboarded', 'true');
+      localStorage.setItem('Ndara Afrique-onboarded', 'true');
     }
   };
 

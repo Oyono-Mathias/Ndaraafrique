@@ -131,8 +131,8 @@ export default function InstructorProfilePage() {
     
     const handleShare = async () => {
         const shareData = {
-            title: `Profil de ${instructor?.fullName} sur FormaAfrique`,
-            text: `Découvrez les cours de ${instructor?.fullName}, expert en ${instructor?.careerGoals?.currentRole || 'formation'}, sur FormaAfrique !`,
+            title: `Profil de ${instructor?.fullName} sur Ndara Afrique`,
+            text: `Découvrez les cours de ${instructor?.fullName}, expert en ${instructor?.careerGoals?.currentRole || 'formation'}, sur Ndara Afrique !`,
             url: window.location.href,
         };
         try {
@@ -186,7 +186,7 @@ export default function InstructorProfilePage() {
                     </Avatar>
                     <div className="text-center sm:text-left flex-grow">
                         <div className="flex items-center justify-center sm:justify-start gap-2">
-                            <h1 className="text-4xl font-bold">{instructor.fullName || 'Formateur FormaAfrique'}</h1>
+                            <h1 className="text-4xl font-bold">{instructor.fullName || 'Formateur Ndara Afrique'}</h1>
                             {instructor.isInstructorApproved && (
                                 <TooltipProvider>
                                     <Tooltip>
@@ -196,7 +196,7 @@ export default function InstructorProfilePage() {
                                             </svg>
                                         </TooltipTrigger>
                                         <TooltipContent>
-                                            <p>Profil vérifié par l'équipe FormaAfrique</p>
+                                            <p>Profil vérifié par l'équipe Ndara Afrique</p>
                                         </TooltipContent>
                                     </Tooltip>
                                 </TooltipProvider>

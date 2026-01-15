@@ -134,7 +134,7 @@ export default function ResourcesPage() {
     const { courseId } = useParams();
     const { toast } = useToast();
     const db = getFirestore();
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { Ndara AfriqueUser, isUserLoading } = useRole();
     const isMobile = useIsMobile();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -152,13 +152,13 @@ export default function ResourcesPage() {
     });
 
     const handleCreateResource = async (values: z.infer<typeof resourceSchema>) => {
-        if (!formaAfriqueUser) return;
+        if (!Ndara AfriqueUser) return;
         setIsSubmitting(true);
         
         const resourcePayload = {
             ...values,
             courseId: courseId,
-            instructorId: formaAfriqueUser.uid,
+            instructorId: Ndara AfriqueUser.uid,
             createdAt: serverTimestamp(),
         };
 
