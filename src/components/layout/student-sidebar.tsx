@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -86,10 +85,10 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: t('navPersonal'),
       items: [
-        { href: "/dashboard", icon: Star, textKey: 'navSelection', id: 'sidebar-nav-dashboard' },
-        { href: "/search", icon: Search, textKey: 'navSearch', id: 'sidebar-nav-search' },
+        { href: "/dashboard", icon: Star, label: "Pour vous", id: 'sidebar-nav-dashboard' },
+        { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
         { href: "/mes-formations", icon: Play, textKey: 'navMyCourses', id: 'sidebar-nav-mes-formations' },
-        { href: "/tutor", icon: Bot, textKey: 'navTutor', id: 'sidebar-nav-tutor' },
+        { href: "/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
     {
@@ -97,7 +96,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/mes-certificats", icon: Award, textKey: 'navCertificates', id: 'sidebar-nav-mes-certificats' },
         { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'navMyAssignments', id: 'sidebar-nav-mes-devoirs' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, label: "Mes Devoirs", id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {
@@ -164,8 +163,8 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
         <header className="p-4 border-b border-white/10">
           <Link href="/dashboard" className="flex items-center gap-2">
-              <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt={`${siteName} Logo`} className="rounded-full" />
-              <span className="font-bold text-lg text-white">{siteName || 'Ndara Afrique'}</span>
+              <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
+              <span className="font-bold text-lg text-white">Ndara Afrique</span>
           </Link>
         </header>
         
@@ -183,12 +182,12 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           {studentMenu.map((group) => (
             <div key={group.label} className="py-2">
               <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">{group.label}</p>
-              {group.items.map((item) => (
+              {group.items.map((item: any) => (
                 <SidebarItem
                   key={item.href}
                   href={item.href}
                   icon={item.icon}
-                  label={t(item.textKey)}
+                  label={item.label || t(item.textKey)}
                   id={item.id}
                   unreadCount={item.count}
                   disabled={item.disabled}
