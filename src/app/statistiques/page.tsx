@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '../ui/skeleton';
 import { Users, Star, BookOpen, DollarSign } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -34,7 +34,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
             ) : (
                 <>
                     <div className="text-2xl font-bold text-white">{value}</div>
-                    {change && <p className="text-xs text-muted-foreground dark:text-slate-500">{change}</p>}
+                    {change && <p className="text-xs text-muted-foreground">{change}</p>}
                 </>
             )}
         </CardContent>
@@ -43,7 +43,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 
 export default function StatisticsPage() {
-    const { ndaraUser: instructor, loading: roleLoading } = useRole();
+    const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
     const { t } = useTranslation();
     const db = getFirestore();
 
@@ -184,29 +184,47 @@ export default function StatisticsPage() {
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard title={t('total_students')} value={stats.totalStudents.toLocaleString()} icon={Users} isLoading={isLoading} accentColor="border-t-blue-500" />
                 <StatCard 
-                    title={t('average_rating')} 
+                    title={t('statStudents')}
+                    value={stats.totalStudents.toLocaleString()} 
+                    icon={Users} 
+                    isLoading={isLoading} 
+                    accentColor="border-t-blue-500"
+                />
+                <StatCard 
+                    title={t('statAverageRating')} 
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
                     change={stats.totalReviews > 0 ? `${t('based_on_reviews', { count: stats.totalReviews })}` : t('waiting_for_reviews')}
                     accentColor="border-t-amber-500"
                 />
-                <StatCard title={t('publishedCourses')} value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} accentColor="border-t-purple-500" />
-                <StatCard title={t('monthlyRevenue')} value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} accentColor="border-t-green-500" />
+                <StatCard 
+                    title={t('publishedCourses')}
+                    value={stats.publishedCourses.toString()} 
+                    icon={BookOpen} 
+                    isLoading={isLoading}
+                    accentColor="border-t-purple-500"
+                />
+                <StatCard 
+                    title={t('statRevenue')}
+                    value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
+                    icon={DollarSign} 
+                    isLoading={isLoading}
+                    accentColor="border-t-green-500"
+                />
             </section>
 
             <section className="grid lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2">
                     <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_evolution')}</h2>
-                    <Card className="dark:bg-[#1e293b] dark:border-slate-700">
+                    <Card>
                         <CardContent className="pt-6">
-                            {isLoading ? <Skeleton className="h-72 w-full dark:bg-slate-700" /> : (
+                            {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : (
                                 <ChartContainer config={chartConfig} className="h-72 w-full">
                                     <ResponsiveContainer>
                                         <BarChart data={revenueTrendData}>
-                                            <CartesianGrid vertical={false} className="dark:stroke-slate-700" />
+                                            <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
                                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
                                             <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400"/>
                                             <Tooltip

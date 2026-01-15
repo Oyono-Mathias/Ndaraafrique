@@ -167,7 +167,7 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
 
 
 export default function AdminCoursesPage() {
-  const { ndaraUser: adminUser, isUserLoading } = useRole();
+  const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [searchTerm, setSearchTerm] = useState('');
@@ -209,7 +209,7 @@ export default function AdminCoursesPage() {
         setDataLoading(false);
     };
     fetchInstructors();
-  }, [courses, coursesLoading, db]);
+  }, [courses, coursesLoading, db, instructors]);
 
 
   const filteredCourses = useMemo(() => {
@@ -287,5 +287,3 @@ export default function AdminCoursesPage() {
     </div>
   );
 }
-
-    

@@ -190,7 +190,7 @@ const DecisionModal = ({
 };
 
 export default function InstructorApplicationsPage() {
-  const { ndaraUser: adminUser, isUserLoading } = useRole();
+  const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -269,7 +269,7 @@ export default function InstructorApplicationsPage() {
                             <Button asChild variant="outline" size="sm">
                                 <a href={app.instructorApplication.presentationVideoUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
                                     <Bot className="mr-2 h-4 w-4"/> Vidéo
-                                </a>
+                                a>
                             </Button>
                           )}
                         </div>

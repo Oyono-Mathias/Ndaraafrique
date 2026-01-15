@@ -82,7 +82,7 @@ const formatCurrency = (amount: number) => {
 
 export default function PayoutsPage() {
   const { t } = useTranslation();
-  const { ndaraUser: adminUser, isUserLoading } = useRole();
+  const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);

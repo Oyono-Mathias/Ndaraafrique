@@ -45,7 +45,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 export default function AdminStatisticsPage() {
     const { t } = useTranslation();
-    const { ndaraUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
 
     const [stats, setStats] = useState({
@@ -59,7 +59,7 @@ export default function AdminStatisticsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (isUserLoading || ndaraUser?.role !== 'admin') {
+        if (isUserLoading || currentUser?.role !== 'admin') {
             if (!isUserLoading) setIsLoading(false);
             return;
         };
@@ -124,7 +124,7 @@ export default function AdminStatisticsPage() {
             }
         };
         fetchData();
-    }, [db, isUserLoading, ndaraUser]);
+    }, [db, isUserLoading, currentUser]);
 
     const topCourses = useMemo(() => {
         const courseEnrollmentCounts = enrollments.reduce((acc, enrollment) => {
@@ -149,7 +149,7 @@ export default function AdminStatisticsPage() {
         return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
     
-    if (ndaraUser?.role !== 'admin') {
+    if (currentUser?.role !== 'admin') {
         return (
             <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
                 <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
