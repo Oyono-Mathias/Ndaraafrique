@@ -3,6 +3,13 @@ import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
+export interface NotificationPreferences {
+  newPayouts?: boolean;
+  newApplications?: boolean;
+  newSupportTickets?: boolean;
+  financialAnomalies?: boolean;
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
@@ -22,12 +29,7 @@ export interface NdaraUser {
   payoutInfo?: {
       mobileMoneyNumber?: string;
   };
-  notificationPreferences?: {
-    newPayouts: boolean;
-    newApplications: boolean;
-    newSupportTickets: boolean;
-    financialAnomalies: boolean;
-  };
+  notificationPreferences?: NotificationPreferences;
   videoPlaybackPreferences?: {
       defaultQuality: string;
       defaultSpeed: string;
@@ -153,4 +155,13 @@ export interface Message {
   text: string;
   createdAt: Timestamp;
   status: 'sent' | 'delivered' | 'read';
+}
+
+export interface Notification {
+  id: string;
+  text: string;
+  createdAt: Timestamp;
+  read: boolean;
+  link?: string;
+  type?: 'success' | 'info' | 'reminder' | 'alert';
 }
