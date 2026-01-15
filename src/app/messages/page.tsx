@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -34,7 +35,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { useTranslation } from 'react-i18next';
@@ -71,7 +72,7 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
 
 // --- MAIN PAGE COMPONENT ---
 export default function MessagesPage() {
-  const { user, formaAfriqueUser, isUserLoading } = useRole();
+  const { user, currentUser, isUserLoading } = useRole();
   const pathname = usePathname();
   const db = getFirestore();
   const router = useRouter();
@@ -82,11 +83,11 @@ export default function MessagesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isNewChatModalOpen, setIsNewChatModalOpen] = useState(false);
-  const [allStudents, setAllStudents] = useState<FormaAfriqueUser[]>([]);
+  const [allStudents, setAllStudents] = useState<NdaraUser[]>([]);
   const [modalSearchTerm, setModalSearchTerm] = useState('');
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   
-  const isProfileComplete = useMemo(() => !!(formaAfriqueUser?.username && formaAfriqueUser?.careerGoals?.interestDomain), [formaAfriqueUser]);
+  const isProfileComplete = useMemo(() => !!(currentUser?.username && currentUser?.careerGoals?.interestDomain), [currentUser]);
 
   const activeChatIdFromUrl = pathname.split('/messages/')[1];
   const [activeChatId, setActiveChatId] = useState<string | null>(activeChatIdFromUrl);
@@ -148,7 +149,7 @@ export default function MessagesPage() {
         const fetchStudents = async () => {
             const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
             const snapshot = await getDocs(studentsQuery);
-            const studentList = snapshot.docs.map(doc => doc.data() as FormaAfriqueUser);
+            const studentList = snapshot.docs.map(doc => doc.data() as NdaraUser);
             setAllStudents(studentList);
         };
         fetchStudents();
@@ -156,7 +157,7 @@ export default function MessagesPage() {
   }, [isNewChatModalOpen, allStudents.length, db]);
   
   const handleStartChat = async (studentId: string) => {
-    if (!user || user.uid === studentId || !formaAfriqueUser || !formaAfriqueUser.careerGoals?.interestDomain) {
+    if (!user || user.uid === studentId || !currentUser || !currentUser.careerGoals?.interestDomain) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de démarrer la conversation.' });
       return;
     }
@@ -168,7 +169,7 @@ export default function MessagesPage() {
         setIsCreatingChat(false);
         return;
     }
-    const targetUserData = targetUserDoc.data() as FormaAfriqueUser;
+    const targetUserData = targetUserDoc.data() as NdaraUser;
 
     const chatsRef = collection(db, 'chats');
     const sortedParticipants = [user.uid, studentId].sort();
@@ -187,7 +188,7 @@ export default function MessagesPage() {
 
             batch.set(newChatRef, {
                 participants: sortedParticipants,
-                participantCategories: [formaAfriqueUser.careerGoals.interestDomain, targetUserData.careerGoals?.interestDomain],
+                participantCategories: [currentUser.careerGoals.interestDomain, targetUserData.careerGoals?.interestDomain],
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
                 lastMessage: `Conversation initiée.`,
@@ -220,17 +221,17 @@ export default function MessagesPage() {
 
   
   const filteredStudents = useMemo(() => {
-      if (!formaAfriqueUser) return [];
-      const userInterestDomain = formaAfriqueUser.careerGoals?.interestDomain;
+      if (!currentUser) return [];
+      const userInterestDomain = currentUser.careerGoals?.interestDomain;
 
       return allStudents.filter(student => {
           if (!student.username) return false;
           const nameMatch = student.username.toLowerCase().includes(modalSearchTerm.toLowerCase());
           const categoryMatch = student.careerGoals?.interestDomain === userInterestDomain;
-          const isNotSelf = student.uid !== formaAfriqueUser.uid;
+          const isNotSelf = student.uid !== currentUser.uid;
           return nameMatch && categoryMatch && isNotSelf;
       });
-  }, [allStudents, modalSearchTerm, formaAfriqueUser]);
+  }, [allStudents, modalSearchTerm, currentUser]);
 
   if (isLoading) {
     return (

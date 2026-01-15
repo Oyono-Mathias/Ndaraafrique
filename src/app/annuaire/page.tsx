@@ -52,7 +52,7 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
 };
 
 export default function DirectoryPage() {
-  const { user, ndaraUser } = useRole();
+  const { user, currentUser } = useRole();
   const db = getFirestore();
   const router = useRouter();
   const { toast } = useToast();
@@ -63,10 +63,10 @@ export default function DirectoryPage() {
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-  const isProfileComplete = useMemo(() => !!(ndaraUser?.username && ndaraUser?.careerGoals?.interestDomain), [ndaraUser]);
+  const isProfileComplete = useMemo(() => !!(currentUser?.username && currentUser?.careerGoals?.interestDomain), [currentUser]);
 
   useEffect(() => {
-    if (!ndaraUser) {
+    if (!currentUser) {
         setIsLoading(false);
         return;
     }
@@ -77,7 +77,7 @@ export default function DirectoryPage() {
         return;
     }
 
-    const userInterestDomain = ndaraUser.careerGoals?.interestDomain;
+    const userInterestDomain = currentUser.careerGoals?.interestDomain;
     if (!userInterestDomain) {
         setIsLoading(false);
         setMembers([]);
@@ -105,11 +105,11 @@ export default function DirectoryPage() {
     });
 
     return () => unsubscribe();
-  }, [ndaraUser, db, isProfileComplete, user?.uid, toast]);
+  }, [currentUser, db, isProfileComplete, user?.uid, toast]);
 
 
   const handleContact = async (contactId: string) => {
-    if (!user || !ndaraUser) return;
+    if (!user || !currentUser) return;
     setIsCreatingChat(true);
     try {
       const chatId = await startChat(user.uid, contactId, db);
@@ -136,7 +136,7 @@ export default function DirectoryPage() {
       <header>
         <h1 className="text-3xl font-bold text-white">Annuaire des membres</h1>
         <p className="text-muted-foreground">
-          {isProfileComplete ? `Trouvez et connectez-vous avec d'autres apprenants de votre filière : ${ndaraUser?.careerGoals?.interestDomain}` : 'Complétez votre profil pour accéder à l\'annuaire.'}
+          {isProfileComplete ? `Trouvez et connectez-vous avec d'autres apprenants de votre filière : ${currentUser?.careerGoals?.interestDomain}` : 'Complétez votre profil pour accéder à l\'annuaire.'}
         </p>
       </header>
 

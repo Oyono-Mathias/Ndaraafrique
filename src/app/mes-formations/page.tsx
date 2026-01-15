@@ -21,7 +21,7 @@ interface EnrolledCourse extends Course {
 }
 
 export default function MyLearningPage() {
-  const { ndaraUser, isUserLoading } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
@@ -29,10 +29,10 @@ export default function MyLearningPage() {
 
   // 1. Get student's enrollments
   const enrollmentsQuery = useMemoFirebase(
-    () => ndaraUser?.uid
-      ? query(collection(db, 'enrollments'), where('studentId', '==', ndaraUser.uid))
+    () => currentUser?.uid
+      ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid))
       : null,
-    [db, ndaraUser?.uid]
+    [db, currentUser?.uid]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
