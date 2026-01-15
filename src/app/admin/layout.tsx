@@ -31,7 +31,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { formaAfriqueUser: ndaraUser, isUserLoading, role, switchRole } = useRole();
+  const { ndaraUser, isUserLoading, role, switchRole } = useRole();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg' });
