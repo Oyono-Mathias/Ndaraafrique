@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -162,7 +163,7 @@ const NewTicketForm = ({ enrolledCourses, onSubmit, isSubmitting }: { enrolledCo
 }
 
 export default function QAPage() {
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
     const { t } = useTranslation();
     const router = useRouter();
@@ -175,17 +176,17 @@ export default function QAPage() {
 
     const ticketsQuery = useMemoFirebase(
         () => {
-            if (!formaAfriqueUser?.uid) return null;
+            if (!currentUser?.uid) return null;
             
-            const fieldToFilter = formaAfriqueUser.role === 'instructor' ? 'instructorId' : 'userId';
+            const fieldToFilter = currentUser.role === 'instructor' ? 'instructorId' : 'userId';
 
             return query(
                 collection(db, 'support_tickets'),
-                where(fieldToFilter, '==', formaAfriqueUser.uid),
+                where(fieldToFilter, '==', currentUser.uid),
                 orderBy('updatedAt', 'desc')
             )
         },
-        [db, formaAfriqueUser]
+        [db, currentUser]
     );
 
     const { data: tickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
@@ -197,9 +198,9 @@ export default function QAPage() {
     }, [tickets, activeTab]);
 
     useEffect(() => {
-        if (isFormOpen && formaAfriqueUser?.uid && enrolledCourses.length === 0) {
+        if (isFormOpen && currentUser?.uid && enrolledCourses.length === 0) {
             const fetchEnrolledCourses = async () => {
-                const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', formaAfriqueUser.uid));
+                const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
                 const enrollmentsSnap = await getDocs(enrollmentsQuery);
                 const courseIds = enrollmentsSnap.docs.map(doc => doc.data().courseId);
 
@@ -211,10 +212,10 @@ export default function QAPage() {
             };
             fetchEnrolledCourses();
         }
-    }, [isFormOpen, formaAfriqueUser, db, enrolledCourses.length]);
+    }, [isFormOpen, currentUser, db, enrolledCourses.length]);
     
     const handleCreateTicket = async (values: TicketCreationValues) => {
-        if (!formaAfriqueUser) return;
+        if (!currentUser) return;
         setIsSubmitting(true);
 
         try {
@@ -228,7 +229,7 @@ export default function QAPage() {
             const batch = writeBatch(db);
 
             const ticketPayload = {
-                userId: formaAfriqueUser.uid,
+                userId: currentUser.uid,
                 instructorId: courseData.instructorId,
                 courseId: values.courseId,
                 subject: values.subject,
@@ -241,7 +242,7 @@ export default function QAPage() {
             batch.set(newTicketRef, ticketPayload);
             
             const messagePayload = {
-                senderId: formaAfriqueUser.uid,
+                senderId: currentUser.uid,
                 text: values.message,
                 createdAt: serverTimestamp(),
             };
@@ -273,13 +274,13 @@ export default function QAPage() {
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navQA')}</h1>
                     <p className="text-muted-foreground dark:text-slate-400">
-                        {formaAfriqueUser?.role === 'instructor' 
+                        {currentUser?.role === 'instructor' 
                             ? t('qa_desc_instructor')
                             : t('qa_desc_student')
                         }
                     </p>
                 </div>
-                 {formaAfriqueUser?.role !== 'instructor' && (
+                 {currentUser?.role !== 'instructor' && (
                     <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
                         <SheetTrigger asChild>
                             <Button>

@@ -93,7 +93,7 @@ export default function CourseQuizzesPage() {
     const router = useRouter();
     const { toast } = useToast();
     const db = getFirestore();
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -113,7 +113,7 @@ export default function CourseQuizzesPage() {
     });
 
     const handleCreateQuiz = async (values: z.infer<typeof quizSchema>) => {
-        if (!formaAfriqueUser) return;
+        if (!currentUser) return;
         setIsSubmitting(true);
         
         const quizPayload = {

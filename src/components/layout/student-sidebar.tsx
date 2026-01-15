@@ -72,7 +72,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 
 export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
-  const { switchRole, availableRoles, user, ndaraUser } = useRole();
+  const { switchRole, availableRoles, user, currentUser } = useRole();
   const { t } = useTranslation();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
@@ -80,7 +80,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
-  const isProfileComplete = ndaraUser?.isProfileComplete || false;
+  const isProfileComplete = currentUser?.isProfileComplete || false;
 
   const studentMenu = [
     {
@@ -153,10 +153,10 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   
   const profileProgress = useMemo(() => {
       let progress = 0;
-      if (ndaraUser?.username) progress += 50;
-      if (ndaraUser?.careerGoals?.interestDomain) progress += 50;
+      if (currentUser?.username) progress += 50;
+      if (currentUser?.careerGoals?.interestDomain) progress += 50;
       return progress;
-  }, [ndaraUser]);
+  }, [currentUser]);
 
   return (
     <>

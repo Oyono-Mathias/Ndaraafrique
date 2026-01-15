@@ -22,17 +22,17 @@ import type { Course } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 export default function QuizzesDashboardPage() {
-    const { ndaraUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
 
     const coursesQuery = useMemoFirebase(
-        () => ndaraUser?.uid
+        () => currentUser?.uid
             ? query(
                 collection(db, 'courses'),
-                where('instructorId', '==', ndaraUser.uid),
+                where('instructorId', '==', currentUser.uid),
               )
             : null,
-        [db, ndaraUser?.uid]
+        [db, currentUser?.uid]
     );
 
     const { data: courses, isLoading: coursesLoading, error } = useCollection<Course>(coursesQuery);

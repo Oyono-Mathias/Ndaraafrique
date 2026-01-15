@@ -166,3 +166,30 @@ export interface Notification {
   link?: string;
   type?: 'success' | 'info' | 'reminder' | 'alert';
 }
+
+export interface Settings {
+  general: {
+    siteName: string;
+    logoUrl?: string;
+    loginBackgroundImage?: string;
+    contactEmail: string;
+    supportPhone?: string;
+  };
+  commercial: {
+    platformCommission: number;
+    currency: string;
+    minPayoutThreshold: number;
+    featuredCourseId?: string;
+  };
+  platform: {
+    announcementMessage?: string;
+    maintenanceMode: boolean;
+    allowInstructorSignup: boolean;
+    autoApproveCourses: boolean;
+    enableInternalMessaging: boolean;
+  };
+  legal: {
+    termsOfService: string;
+    privacyPolicy: string;
+  };
+}

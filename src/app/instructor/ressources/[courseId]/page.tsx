@@ -135,7 +135,7 @@ export default function ResourcesPage() {
     const { courseId } = useParams();
     const { toast } = useToast();
     const db = getFirestore();
-    const { ndaraUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
     const isMobile = useIsMobile();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -153,13 +153,13 @@ export default function ResourcesPage() {
     });
 
     const handleCreateResource = async (values: z.infer<typeof resourceSchema>) => {
-        if (!ndaraUser) return;
+        if (!currentUser) return;
         setIsSubmitting(true);
         
         const resourcePayload = {
             ...values,
             courseId: courseId,
-            instructorId: ndaraUser.uid,
+            instructorId: currentUser.uid,
             createdAt: serverTimestamp(),
         };
 

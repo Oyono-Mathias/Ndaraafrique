@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
@@ -23,18 +24,18 @@ import { useTranslation } from 'react-i18next';
 
 
 export default function AssignmentsDashboardPage() {
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
     const { t } = useTranslation();
 
     const coursesQuery = useMemoFirebase(
-        () => formaAfriqueUser?.uid
+        () => currentUser?.uid
             ? query(
                 collection(db, 'courses'),
-                where('instructorId', '==', formaAfriqueUser.uid),
+                where('instructorId', '==', currentUser.uid),
               )
             : null,
-        [db, formaAfriqueUser?.uid]
+        [db, currentUser?.uid]
     );
 
     const { data: courses, isLoading: coursesLoading, error } = useCollection<Course>(coursesQuery);
@@ -112,5 +113,3 @@ export default function AssignmentsDashboardPage() {
         </div>
     );
 }
-
-    

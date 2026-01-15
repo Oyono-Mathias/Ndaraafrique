@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -173,7 +174,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setCurrentUser,
     user,
     isUserLoading
-  }), [role, availableRoles, switchRole, secureSignOut, loading, currentUser, user, isUserLoading]);
+  }), [role, availableRoles, switchRole, secureSignOut, isUserLoading, loading, currentUser, user]);
 
   return (
     <RoleContext.Provider value={value}>

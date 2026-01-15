@@ -56,7 +56,7 @@ const getCategoryBadge = (category: SupportTicket['category'], t: (key: string) 
 }
 
 export default function AdminSupportPage() {
-  const { ndaraUser, isUserLoading } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('ouvert');
