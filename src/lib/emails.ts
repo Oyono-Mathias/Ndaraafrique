@@ -1,5 +1,7 @@
 
-import type { Ndara AfriqueUser } from "@/context/RoleContext";
+'use server';
+
+import type { NdaraUser } from "@/context/RoleContext";
 import type { Course } from "./types";
 
 // NOTE: This is a placeholder for a real email sending service (e.g., SendGrid, Mailgun, etc.)
@@ -65,7 +67,7 @@ const getInstructorEmailTemplate = (instructorName: string, studentName: string,
     `;
 };
 
-export const sendEnrollmentEmails = async (student: Ndara AfriqueUser, course: Course, instructor: Ndara AfriqueUser) => {
+export const sendEnrollmentEmails = async (student: NdaraUser, course: Course, instructor: NdaraUser) => {
     if (!student.email || !instructor.email) {
         console.error("Missing email for student or instructor.");
         return;
@@ -117,5 +119,3 @@ export const sendNewInstructorApplicationEmail = async ({ applicantName, applica
         html,
     });
 };
-
-    

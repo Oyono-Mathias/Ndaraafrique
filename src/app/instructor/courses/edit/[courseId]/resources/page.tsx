@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState } from 'react';
@@ -134,7 +135,7 @@ export default function ResourcesPage() {
     const { courseId } = useParams();
     const { toast } = useToast();
     const db = getFirestore();
-    const { Ndara AfriqueUser, isUserLoading } = useRole();
+    const { currentUser, isUserLoading } = useRole();
     const isMobile = useIsMobile();
 
     const [isFormOpen, setIsFormOpen] = useState(false);
@@ -152,13 +153,13 @@ export default function ResourcesPage() {
     });
 
     const handleCreateResource = async (values: z.infer<typeof resourceSchema>) => {
-        if (!Ndara AfriqueUser) return;
+        if (!currentUser) return;
         setIsSubmitting(true);
         
         const resourcePayload = {
             ...values,
             courseId: courseId,
-            instructorId: Ndara AfriqueUser.uid,
+            instructorId: currentUser.uid,
             createdAt: serverTimestamp(),
         };
 
