@@ -174,7 +174,7 @@ Nous utilisons des cookies techniques indispensables au bon fonctionnement du si
 
 **7. Contact**
 
-Pour toute question concernant vos données, contactez-nous à : support@ndara-afrique.com.`,
+Pour toute question concernant vos données, contactez-nous à : support@ndara-afrique.com`,
         },
     });
 

@@ -68,7 +68,6 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   const db = getFirestore();
 
   const adminMenu = [
-    { href: "/admin", icon: LayoutDashboard, textKey: "navDashboard" },
     { href: "/admin/statistiques", icon: BarChart3, textKey: "navStatistics" },
     { href: "/admin/users", icon: Users, textKey: "navUsers" },
     { href: "/admin/instructors", icon: UserCheck, textKey: "navApplications", countId: 'pendingInstructors' },

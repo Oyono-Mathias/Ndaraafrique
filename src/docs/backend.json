@@ -217,6 +217,52 @@
             "canceledAt": { "type": "string", "format": "date-time", "description": "The date when the user canceled the subscription." }
         },
         "required": ["subscriptionId", "userId", "planId", "status", "startDate", "endDate"]
+    },
+     "Settings": {
+      "title": "Settings",
+      "type": "object",
+      "description": "Global settings for the Ndara Afrique application, managed by admins.",
+      "properties": {
+        "general": {
+          "type": "object",
+          "properties": {
+            "siteName": { "type": "string" },
+            "logoUrl": { "type": "string", "format": "uri" },
+            "contactEmail": { "type": "string", "format": "email" }
+          }
+        },
+        "landingPage": {
+          "type": "object",
+          "description": "Content for the public landing page.",
+          "properties": {
+            "heroTitle": { "type": "string" },
+            "heroSubtitle": { "type": "string" },
+            "heroCtaText": { "type": "string" }
+          }
+        },
+        "commercial": {
+          "type": "object",
+          "properties": {
+            "platformCommission": { "type": "number", "description": "Percentage taken by the platform on each sale." },
+            "currency": { "type": "string", "default": "XOF" },
+            "minPayoutThreshold": { "type": "number", "description": "Minimum amount an instructor must have to request a payout." }
+          }
+        },
+        "platform": {
+            "type": "object",
+            "properties": {
+                "maintenanceMode": { "type": "boolean", "default": false },
+                "allowInstructorSignup": { "type": "boolean", "default": true }
+            }
+        },
+        "legal": {
+            "type": "object",
+            "properties": {
+                "termsOfService": { "type": "string" },
+                "privacyPolicy": { "type": "string" }
+            }
+        }
+      }
     }
   },
   "auth": {
@@ -298,6 +344,10 @@
     "/subscription_plans/{planId}": {
       "schema": { "$ref": "#/entities/SubscriptionPlan" },
       "description": "Stores available subscription plans."
+    },
+    "/settings/global": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Stores global site-wide settings."
     }
   }
 }

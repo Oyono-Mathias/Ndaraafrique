@@ -9,7 +9,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function AdminRootPage() {
-  const { formaAfriqueUser: ndaraUser, isUserLoading, role } = useRole();
+  const { ndaraUser, isUserLoading, role } = useRole();
   const router = useRouter();
 
   useEffect(() => {
