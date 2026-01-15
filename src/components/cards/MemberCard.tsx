@@ -1,13 +1,13 @@
 
 'use client';
 
-import type { FormaAfriqueUser } from '@/context/RoleContext';
+import type { NdaraUser } from '@/lib/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Loader2, MessageSquare } from 'lucide-react';
 
 interface MemberCardProps {
-  member: FormaAfriqueUser;
+  member: NdaraUser;
   onContact: (memberId: string) => void;
   isProcessing: boolean;
 }

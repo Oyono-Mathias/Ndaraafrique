@@ -38,7 +38,10 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      allow get: if true; // Allow public read for profiles (e.g., instructor info)
+      allow get: if true; // Allow public read for profiles (e.g., instructor info on landing pages)
+      
+      // Annuaire: a user can list other users if their profile is complete and they filter by the same interest domain
+      // Admins can list all users.
       allow list: if isAdmin() || (isProfileComplete() && 'careerGoals.interestDomain' in request.query.where);
       
       allow create: if isOwner(userId);

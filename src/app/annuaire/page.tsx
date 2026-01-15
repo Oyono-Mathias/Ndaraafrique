@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -15,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Users, UserX, Loader2 } from 'lucide-react';
+import { Search, Users, UserX } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
@@ -53,7 +52,7 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
 };
 
 export default function DirectoryPage() {
-  const { user, formaAfriqueUser: ndaraUser } = useRole();
+  const { user, ndaraUser } = useRole();
   const db = getFirestore();
   const router = useRouter();
   const { toast } = useToast();

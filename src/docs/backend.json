@@ -233,15 +233,6 @@
         ]
       },
       {
-        "collectionGroup": "users",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {"fieldPath": "isProfileComplete", "order": "ASCENDING"},
-          {"fieldPath": "careerGoals.interestDomain", "order": "ASCENDING"},
-          {"fieldPath": "uid", "order": "ASCENDING"}
-        ]
-      },
-      {
         "collectionGroup": "payments",
         "queryScope": "COLLECTION",
         "fields": [
