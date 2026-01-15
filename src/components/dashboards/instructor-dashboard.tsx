@@ -224,9 +224,9 @@ function InstructorDashboardContent() {
                                 <ChartContainer config={chartConfig} className="h-72 w-full">
                                     <ResponsiveContainer>
                                         <BarChart data={revenueTrendData}>
-                                            <CartesianGrid vertical={false} className="stroke-slate-700"/>
-                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="fill-slate-400" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="fill-slate-400"/>
+                                            <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
+                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
+                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400"/>
                                             <Tooltip
                                                 cursor={false}
                                                 content={<ChartTooltipContent
@@ -249,20 +249,20 @@ function InstructorDashboardContent() {
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
-                                    <TableRow className="border-slate-700">
-                                        <TableHead className="text-slate-400">{t('course')}</TableHead>
-                                        <TableHead className="text-right text-slate-400">{t('enrollments')}</TableHead>
+                                    <TableRow className="dark:border-slate-700">
+                                        <TableHead className="dark:text-slate-400">{t('course')}</TableHead>
+                                        <TableHead className="text-right dark:text-slate-400">{t('enrollments')}</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
                                     {isLoading ? [...Array(5)].map((_, i) => (
-                                        <TableRow key={i} className="border-slate-700">
-                                            <TableCell><Skeleton className="h-5 w-32 bg-slate-700" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-10 bg-slate-700" /></TableCell>
+                                        <TableRow key={i} className="dark:border-slate-700">
+                                            <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
+                                            <TableCell className="text-right"><Skeleton className="h-5 w-10 dark:bg-slate-700" /></TableCell>
                                         </TableRow>
                                     )) : topCourses.map(course => (
-                                        <TableRow key={course.id} className="border-slate-700 hover:bg-slate-700/50">
-                                            <TableCell className="font-medium truncate max-w-xs text-slate-200">{course.title}</TableCell>
+                                        <TableRow key={course.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
+                                            <TableCell className="font-medium truncate max-w-xs dark:text-slate-200">{course.title}</TableCell>
                                             <TableCell className="text-right font-bold text-white">{course.enrollmentCount}</TableCell>
                                         </TableRow>
                                     ))}

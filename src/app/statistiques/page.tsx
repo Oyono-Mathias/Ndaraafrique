@@ -9,7 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, ShieldAlert } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
@@ -42,16 +42,14 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 );
 
 
-export default function StatisticsPage() {
-    const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
+export default function AdminStatisticsPage() {
     const { t } = useTranslation();
+    const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
 
     const [stats, setStats] = useState({
-        totalStudents: 0,
-        averageRating: 0,
-        totalReviews: 0,
-        publishedCourses: 0,
+        userCount: 0,
+        courseCount: 0,
         monthlyRevenue: 0,
     });
     const [courses, setCourses] = useState<Course[]>([]);
@@ -60,101 +58,72 @@ export default function StatisticsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (!instructor?.uid || roleLoading) {
-            if (!roleLoading) setIsLoading(false);
-            return () => {};
-        }
+        if (isUserLoading || currentUser?.role !== 'admin') {
+            if (!isUserLoading) setIsLoading(false);
+            return;
+        };
 
-        setIsLoading(true);
-        const instructorId = instructor.uid;
-        const unsubs: (()=>void)[] = [];
-
-        const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', instructorId));
-        const unsubCourses = onSnapshot(coursesQuery, (coursesSnapshot) => {
-            const courseList = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-            setCourses(courseList);
-            setStats(prev => ({ ...prev, publishedCourses: courseList.filter(c => c.status === 'Published').length }));
-
-            const courseIds = courseList.map(c => c.id);
-            if (courseIds.length === 0) {
-                 setIsLoading(false);
-                 setEnrollments([]);
-                 setStats(prev => ({ ...prev, totalStudents: 0, totalReviews: 0, averageRating: 0, monthlyRevenue: 0 }));
-                 setRevenueTrendData([]);
-                 return;
-            }
-
-            // Firestore 'in' query is limited to 30 items. Batching is needed for larger scale.
-            const courseIdChunks: string[][] = [];
-            for (let i = 0; i < courseIds.length; i += 30) {
-                courseIdChunks.push(courseIds.slice(i, i + 30));
-            }
-
-            courseIdChunks.forEach(chunk => {
-                const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk));
-                const unsubReviews = onSnapshot(reviewsQuery, (reviewSnapshot) => {
-                    const reviewList = reviewSnapshot.docs.map(doc => doc.data() as Review);
-                    const totalRating = reviewList.reduce((acc, r) => acc + r.rating, 0);
-                    setStats(prev => ({
-                        ...prev,
-                        totalReviews: reviewList.length,
-                        averageRating: reviewList.length > 0 ? totalRating / reviewList.length : 0,
-                    }));
-                });
-                unsubs.push(unsubReviews);
-
-                const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', chunk));
-                const unsubEnrollments = onSnapshot(enrollmentsQuery, (enrollmentSnapshot) => {
-                    const enrollmentList = enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment);
-                    setEnrollments(enrollmentList);
-                    const uniqueStudents = new Set(enrollmentList.map(e => e.studentId));
-                    setStats(prev => ({ ...prev, totalStudents: uniqueStudents.size }));
-                });
-                unsubs.push(unsubEnrollments);
-            });
-
-
-            const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
-            const unsubPayments = onSnapshot(paymentsQuery, (paymentSnapshot) => {
-                const now = new Date();
-                const startOfCurrentMonth = startOfMonth(now);
+        const fetchData = async () => {
+            setIsLoading(true);
+            try {
+                const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+                const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
+                const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'));
                 
-                const monthlyRev = paymentSnapshot.docs
-                    .map(d => d.data())
-                    .filter(p => p.date && p.date.toDate() >= startOfCurrentMonth)
-                    .reduce((sum, p) => sum + (p.amount || 0), 0);
+                const [studentsSnap, coursesSnap, paymentsSnap] = await Promise.all([
+                    getDocs(studentsQuery),
+                    getDocs(coursesQuery),
+                    getDocs(paymentsSnap)
+                ]);
 
+                // User Count
+                setStats(prev => ({ ...prev, userCount: studentsSnap.size }));
+
+                // Course Data
+                const courseList = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+                setCourses(courseList);
+                setStats(prev => ({ ...prev, courseCount: courseList.length }));
+
+                // Enrollments for top courses
+                const courseIds = courseList.map(c => c.id);
+                if (courseIds.length > 0) {
+                     const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', courseIds.slice(0,30)));
+                     const enrollmentSnapshot = await getDocs(enrollmentsQuery);
+                     setEnrollments(enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment));
+                }
+
+                // Revenue Data
+                let monthlyTotal = 0;
                 const monthlyAggregates: Record<string, number> = {};
-                paymentSnapshot.docs.forEach(doc => {
+
+                paymentsSnap.docs.forEach(doc => {
                     const payment = doc.data();
                     if (payment.date instanceof Timestamp) {
-                        const date = payment.date.toDate();
-                        const monthKey = format(date, 'MMM yy', { locale: fr });
+                        const paymentDate = payment.date.toDate();
+                        const startOfCurrentMonth = startOfMonth(new Date());
+                        if (paymentDate >= startOfCurrentMonth) {
+                            monthlyTotal += (payment.amount || 0);
+                        }
+                        const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
                         monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
                     }
                 });
-
+                
                 const trendData = Object.entries(monthlyAggregates)
                     .map(([month, revenue]) => ({ month, revenue }))
                     .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
                 setRevenueTrendData(trendData);
-                setStats(prev => ({ ...prev, monthlyRevenue: monthlyRev }));
+                setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
+
+            } catch (e) {
+                console.error("Error fetching admin stats", e);
+            } finally {
                 setIsLoading(false);
-            });
-            unsubs.push(unsubPayments);
-
-        }, (error) => {
-            console.error("Error fetching courses:", error);
-            setIsLoading(false);
-        });
-        
-        unsubs.push(unsubCourses);
-
-        return () => {
-            unsubs.forEach(unsub => unsub());
+            }
         };
-    }, [instructor?.uid, db, roleLoading]);
+        fetchData();
+    }, [db, isUserLoading, currentUser]);
 
     const topCourses = useMemo(() => {
         const courseEnrollmentCounts = enrollments.reduce((acc, enrollment) => {
@@ -172,104 +141,115 @@ export default function StatisticsPage() {
     }, [courses, enrollments]);
 
     const chartConfig = {
-        revenue: { label: t('navFinance'), color: 'hsl(var(--primary))' },
+        revenue: { label: 'Revenus', color: 'hsl(var(--primary))' },
     };
-
+    
+    if (isUserLoading) {
+        return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    }
+    
+    if (currentUser?.role !== 'admin') {
+        return (
+            <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
+                <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+                <h1 className="text-2xl font-bold">Accès Interdit</h1>
+                <p className="text-muted-foreground">Vous n'avez pas les autorisations nécessaires pour accéder à cette page.</p>
+            </div>
+        );
+    }
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto px-4">
+        <div className="space-y-8 max-w-7xl mx-auto">
             <header>
                 <h1 className="text-3xl font-bold dark:text-white">{t('navStatistics')}</h1>
-                <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance de vos cours.</p>
+                <p className="text-muted-foreground dark:text-slate-400">{t('stats_description')}</p>
             </header>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard 
-                    title={t('statStudents')}
-                    value={stats.totalStudents.toLocaleString()} 
-                    icon={Users} 
-                    isLoading={isLoading} 
-                    accentColor="border-t-blue-500"
-                />
-                <StatCard 
-                    title={t('statAverageRating')} 
-                    value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
-                    icon={Star} 
-                    isLoading={isLoading} 
-                    change={stats.totalReviews > 0 ? `${t('based_on_reviews', { count: stats.totalReviews })}` : t('waiting_for_reviews')}
-                    accentColor="border-t-amber-500"
-                />
-                <StatCard 
-                    title={t('statCourses')}
-                    value={stats.publishedCourses.toString()} 
-                    icon={BookOpen} 
-                    isLoading={isLoading}
-                    accentColor="border-t-purple-500"
-                />
-                <StatCard 
-                    title={t('statRevenue')}
-                    value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
-                    icon={DollarSign} 
-                    isLoading={isLoading}
-                    accentColor="border-t-green-500"
-                />
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <StatCard title={t('total_students')} value={stats.userCount.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} />
+                <StatCard title={t('monthly_revenue')} value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+                <StatCard title={t('active_courses')} value={stats.courseCount.toLocaleString('fr-FR')} icon={BookOpen} isLoading={isLoading} />
             </section>
 
-            <section className="grid lg:grid-cols-3 gap-6">
+            <section className="grid lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_evolution')}</h2>
-                    <Card>
-                        <CardContent className="pt-6">
-                            {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : (
-                                <ChartContainer config={chartConfig} className="h-72 w-full">
-                                    <ResponsiveContainer>
-                                        <BarChart data={revenueTrendData}>
-                                            <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
-                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400"/>
-                                            <Tooltip
-                                                cursor={false}
-                                                content={<ChartTooltipContent
-                                                    indicator="dot"
-                                                    className="bg-slate-900 border-slate-700"
-                                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
-                                                />}
-                                            />
-                                            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            )}
-                        </CardContent>
-                    </Card>
+                     <h2 className="text-2xl font-bold text-white mb-4">Évolution des revenus</h2>
+                     <div className="h-[450px] bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
+                        {isLoading ? <Skeleton className="h-full w-full bg-slate-800" /> : (
+                             <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart
+                                    data={revenueTrendData}
+                                    margin={{ left: 12, right: 12, top: 10, bottom: 10 }}
+                                >
+                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-700/60" />
+                                    <XAxis
+                                        dataKey="month"
+                                        tickLine={false}
+                                        axisLine={false}
+                                        tickMargin={8}
+                                        tickFormatter={(value) => value.slice(0, 3)}
+                                        className="fill-slate-500 text-xs"
+                                    />
+                                    <YAxis 
+                                        tickLine={false} 
+                                        axisLine={false} 
+                                        tickMargin={8} 
+                                        tickFormatter={(value) => `${Number(value) / 1000}k`}
+                                        className="fill-slate-500 text-xs"
+                                    />
+                                    <Tooltip
+                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
+                                        content={<ChartTooltipContent 
+                                            formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                            className="bg-slate-900/80 backdrop-blur-sm border-slate-700 text-white" 
+                                        />}
+                                    />
+                                    <defs>
+                                        <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
+                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                                        </linearGradient>
+                                    </defs>
+                                    <Area
+                                        dataKey="revenue"
+                                        type="natural"
+                                        fill="url(#fillRevenue)"
+                                        stroke="hsl(var(--primary))"
+                                        stackId="a"
+                                    />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        )}
+                    </div>
                 </div>
-                <div>
-                     <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('top_courses')}</h2>
-                      <Card>
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="dark:border-slate-700">
-                                        <TableHead className="dark:text-slate-400">{t('course')}</TableHead>
-                                        <TableHead className="text-right dark:text-slate-400">{t('enrollments')}</TableHead>
+                <div className="space-y-6">
+                     <h2 className="text-2xl font-bold text-white mb-4">Top des cours</h2>
+                      <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-b-slate-800">
+                                    <TableHead className="w-12 text-slate-400">Rang</TableHead>
+                                    <TableHead className="text-slate-400">Titre du cours</TableHead>
+                                    <TableHead className="text-right text-slate-400">Ventes</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? [...Array(5)].map((_, i) => (
+                                    <TableRow key={i} className="border-0">
+                                        <TableCell><Skeleton className="h-5 w-5 rounded-full bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-full bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-10 bg-slate-700" /></TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? [...Array(5)].map((_, i) => (
-                                        <TableRow key={i} className="dark:border-slate-700">
-                                            <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-10 dark:bg-slate-700" /></TableCell>
-                                        </TableRow>
-                                    )) : topCourses.map(course => (
-                                        <TableRow key={course.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                                            <TableCell className="font-medium truncate max-w-xs dark:text-slate-200">{course.title}</TableCell>
-                                            <TableCell className="text-right font-bold text-white">{course.enrollmentCount}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                      </Card>
+                                )) : topCourses.map((course, index) => (
+                                    <TableRow key={course.id} className="border-b-slate-800/50 font-medium hover:bg-slate-800/40">
+                                        <TableCell className="font-bold text-slate-500">{index + 1}</TableCell>
+                                        <TableCell className="text-slate-200">{course.title}</TableCell>
+                                        <TableCell className="text-right font-mono text-white">{course.enrollmentCount}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                      </div>
                 </div>
             </section>
         </div>
