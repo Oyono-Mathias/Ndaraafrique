@@ -77,7 +77,7 @@ const ReviewRowMobile = ({ review }: { review: ReviewWithDetails }) => (
 );
 
 export default function ReviewsPage() {
-  const { ndaraUser, isUserLoading } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [reviews, setReviews] = useState<ReviewWithDetails[]>([]);
@@ -138,12 +138,12 @@ export default function ReviewsPage() {
   }, [db]);
   
   useEffect(() => {
-    if (!isUserLoading && ndaraUser?.uid) {
-        fetchAllReviews(ndaraUser.uid);
+    if (!isUserLoading && currentUser?.uid) {
+        fetchAllReviews(currentUser.uid);
     } else if (!isUserLoading) {
         setIsLoading(false);
     }
-  }, [ndaraUser, isUserLoading, fetchAllReviews]);
+  }, [currentUser, isUserLoading, fetchAllReviews]);
 
 
   return (

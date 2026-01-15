@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -45,7 +46,7 @@ export default function EditCoursePage() {
   const db = getFirestore();
   const storage = getStorage();
   const { t } = useTranslation();
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { currentUser, isUserLoading } = useRole();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -215,7 +216,7 @@ export default function EditCoursePage() {
     return <div className="text-center p-12 text-foreground dark:text-white">Cours non trouvé.</div>;
   }
   
-  const canEdit = formaAfriqueUser && (course.instructorId === formaAfriqueUser.uid || formaAfriqueUser.role === 'admin');
+  const canEdit = currentUser && (course.instructorId === currentUser.uid || currentUser.role === 'admin');
 
   if (!canEdit) {
     return <div className="text-center p-12 text-destructive">Accès non autorisé.</div>
