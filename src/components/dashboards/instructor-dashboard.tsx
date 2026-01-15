@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -42,7 +43,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 
 function InstructorDashboardContent() {
-    const { formaAfriqueUser: instructor, loading: roleLoading } = useRole();
+    const { ndaraUser: instructor, loading: roleLoading } = useRole();
     const { t } = useTranslation();
     const db = getFirestore();
 

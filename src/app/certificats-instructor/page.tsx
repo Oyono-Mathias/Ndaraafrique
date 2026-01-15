@@ -30,7 +30,7 @@ interface CertificateInfo {
 }
 
 export default function InstructorCertificatesPage() {
-  const { formaAfriqueUser: instructor, isUserLoading } = useRole();
+  const { ndaraUser: instructor, isUserLoading } = useRole();
   const db = getFirestore();
   const [certificates, setCertificates] = useState<CertificateInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);

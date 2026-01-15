@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer } from 'recharts';
+import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Star, BookOpen, DollarSign } from 'lucide-react';
@@ -22,7 +23,7 @@ interface RevenueDataPoint {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("border-t-4 bg-slate-800/50 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10", accentColor)}>
+    <Card className={cn("border-t-4", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
             <Icon className="h-4 w-4 text-muted-foreground" />
@@ -42,7 +43,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: 
 
 
 export default function StatisticsPage() {
-    const { formaAfriqueUser: instructor, loading: roleLoading } = useRole();
+    const { ndaraUser: instructor, loading: roleLoading } = useRole();
     const { t } = useTranslation();
     const db = getFirestore();
 
@@ -189,7 +190,7 @@ export default function StatisticsPage() {
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
-                    change={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"}
+                    change={stats.totalReviews > 0 ? `${t('based_on_reviews', { count: stats.totalReviews })}` : t('waiting_for_reviews')}
                     accentColor="border-t-amber-500"
                 />
                 <StatCard title={t('publishedCourses')} value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} accentColor="border-t-purple-500" />
@@ -207,9 +208,16 @@ export default function StatisticsPage() {
                                         <BarChart data={revenueTrendData}>
                                             <CartesianGrid vertical={false} className="dark:stroke-slate-700" />
                                             <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400" />
-                                            <ChartTooltip content={<ChartTooltipContent formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`} className="dark:bg-slate-900 dark:border-slate-700" />} />
-                                            <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} />
+                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400"/>
+                                            <Tooltip
+                                                cursor={false}
+                                                content={<ChartTooltipContent
+                                                    indicator="dot"
+                                                    className="bg-slate-900 border-slate-700"
+                                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                                />}
+                                            />
+                                            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </ChartContainer>
@@ -219,7 +227,7 @@ export default function StatisticsPage() {
                 </div>
                 <div>
                      <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('top_courses')}</h2>
-                      <Card className="dark:bg-[#1e293b] dark:border-slate-700">
+                      <Card>
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
@@ -237,7 +245,7 @@ export default function StatisticsPage() {
                                     )) : topCourses.map(course => (
                                         <TableRow key={course.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
                                             <TableCell className="font-medium truncate max-w-xs dark:text-slate-200">{course.title}</TableCell>
-                                            <TableCell className="text-right font-bold dark:text-white">{course.enrollmentCount}</TableCell>
+                                            <TableCell className="text-right font-bold text-white">{course.enrollmentCount}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>

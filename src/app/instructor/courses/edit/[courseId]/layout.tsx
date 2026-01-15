@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -60,7 +61,7 @@ export default function CourseEditLayout({
     const { courseId } = useParams();
     const db = getFirestore();
     const { toast } = useToast();
-    const { formaAfriqueUser, role } = useRole();
+    const { ndaraUser, role } = useRole();
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const courseRef = useMemoFirebase(() => doc(db, 'courses', courseId as string), [db, courseId]);
@@ -85,7 +86,7 @@ export default function CourseEditLayout({
     }
     
     const handleAction = async () => {
-        if (!course || !formaAfriqueUser) return;
+        if (!course || !ndaraUser) return;
         
         setIsSubmitting(true);
         let newStatus: Course['status'];
@@ -119,7 +120,7 @@ export default function CourseEditLayout({
     }
     
     const renderActionButton = () => {
-        if (!course || !formaAfriqueUser) return null;
+        if (!course || !ndaraUser) return null;
 
         if (role === 'admin') {
             if (course.status === 'Published') return null;

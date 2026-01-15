@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -46,7 +47,7 @@ export default function EditCoursePage() {
   const db = getFirestore();
   const storage = getStorage();
   const { t } = useTranslation();
-  const { formaAfriqueUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -216,7 +217,7 @@ export default function EditCoursePage() {
     return <div className="text-center p-12 text-foreground dark:text-white">Cours non trouvé.</div>;
   }
   
-  const canEdit = formaAfriqueUser && (course.instructorId === formaAfriqueUser.uid || formaAfriqueUser.role === 'admin');
+  const canEdit = ndaraUser && (course.instructorId === ndaraUser.uid || ndaraUser.role === 'admin');
 
   if (!canEdit) {
     return <div className="text-center p-12 text-destructive">Accès non autorisé.</div>
@@ -234,7 +235,7 @@ export default function EditCoursePage() {
             
             <Card className="bg-white/50 dark:bg-slate-800/30 backdrop-blur-sm dark:border-slate-700">
               <CardHeader>
-                  <FormLabel className="text-base text-gray-700 dark:text-slate-300 font-medium">Mû foto ti lê ti fango ye ni</FormLabel>
+                  <FormLabel className="text-base text-gray-700 dark:text-slate-300 font-medium">Image de couverture</FormLabel>
               </CardHeader>
               <CardContent>
                   <label htmlFor="cover-image-upload" className="cursor-pointer group">

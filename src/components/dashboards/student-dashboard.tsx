@@ -12,6 +12,8 @@ import type { Course, NdaraUser } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { CourseCard } from '../cards/CourseCard';
+import { Sparkles } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {

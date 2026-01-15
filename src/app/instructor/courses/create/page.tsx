@@ -29,7 +29,7 @@ export default function CreateCoursePage() {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
-  const { formaAfriqueUser: ndaraUser, isUserLoading } = useRole();
+  const { ndaraUser, isUserLoading } = useRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({

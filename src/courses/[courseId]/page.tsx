@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -56,7 +57,7 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
             config={{
                 youtube: {
                     playerVars: { 
-                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://formaafrique-app.web.app',
+                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://ndara-afrique.web.app',
                         autoplay: 1,
                     }
                 }
@@ -192,7 +193,7 @@ export default function CoursePlayerPage() {
     const { courseId } = useParams();
     const router = useRouter();
     const db = getFirestore();
-    const { user, formaAfriqueUser, isUserLoading } = useRole();
+    const { user, ndaraUser, isUserLoading } = useRole();
     const { toast } = useToast();
 
     const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
@@ -214,7 +215,7 @@ export default function CoursePlayerPage() {
     const { data: enrollments, isLoading: enrollmentLoading } = useCollection<Enrollment>(enrollmentQuery);
     const enrollment = useMemo(() => enrollments?.[0], [enrollments]);
     
-    const isEnrolled = useMemo(() => !!enrollment || formaAfriqueUser?.role === 'admin', [enrollment, formaAfriqueUser]);
+    const isEnrolled = useMemo(() => !!enrollment || ndaraUser?.role === 'admin', [enrollment, ndaraUser]);
     
     const completedLessons = useMemo(() => enrollment?.completedLessons || [], [enrollment]);
 
@@ -258,8 +259,7 @@ export default function CoursePlayerPage() {
                 return;
             }
 
-            // CRITICAL BUSINESS LOGIC: If course is now paid, but was free on enrollment, block access (admins are exempt).
-            if (enrollment && course.price > 0 && enrollment.priceAtEnrollment === 0 && formaAfriqueUser?.role !== 'admin') {
+            if (enrollment && course.price > 0 && enrollment.priceAtEnrollment === 0 && ndaraUser?.role !== 'admin') {
                 toast({
                     title: "Accès mis à jour",
                     description: "Désolé, la période de gratuité de ce cours est terminée. Le cours est devenu payant, veuillez l'acheter pour continuer votre progression.",
@@ -270,7 +270,7 @@ export default function CoursePlayerPage() {
                 return;
             }
         }
-    }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast, formaAfriqueUser]);
+    }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast, ndaraUser]);
 
     const handleLessonCompletion = async () => {
         if (!enrollment || !activeLesson || !user) return;
@@ -296,10 +296,9 @@ export default function CoursePlayerPage() {
         }
     
         if (updatedCompletedLessons.length === totalLessons && totalLessons > 0) {
-            // Check for pioneer badge
             const q = query(collection(db, 'enrollments'), where('studentId', '==', user.uid), where('progress', '==', 100));
             const completedCoursesSnap = await getDocs(q);
-            if (completedCoursesSnap.size === 1 && !formaAfriqueUser?.badges?.includes('pioneer')) {
+            if (completedCoursesSnap.size === 1 && !ndaraUser?.badges?.includes('pioneer')) {
                 const userRef = doc(db, 'users', user.uid);
                 await updateDoc(userRef, { badges: arrayUnion('pioneer') });
                 toast({
@@ -331,7 +330,6 @@ export default function CoursePlayerPage() {
                 }
             }
         }
-        // If loop finishes, it was the last lesson
         toast({ title: "Félicitations!", description: "Vous avez terminé la dernière leçon de ce cours." });
     };
 
@@ -349,7 +347,6 @@ export default function CoursePlayerPage() {
     }
 
     if (!isEnrolled) {
-        // This is a fallback while redirecting
         return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
     }
 
@@ -358,7 +355,7 @@ export default function CoursePlayerPage() {
     return (
         <>
             <div className="flex flex-col lg:flex-row h-screen bg-slate-100 dark:bg-slate-900 -m-6">
-                {formaAfriqueUser?.role === 'admin' && (
+                {ndaraUser?.role === 'admin' && (
                     <Button asChild className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg" variant="destructive">
                         <Link href={`/instructor/courses/edit/${courseId}`} title="Accès Modérateur">
                             <Shield className="h-6 w-6" />
@@ -412,11 +409,11 @@ export default function CoursePlayerPage() {
                     </aside>
                 )}
             </div>
-            {formaAfriqueUser && course && (
+            {ndaraUser && course && (
                  <CourseCompletionModal
                     isOpen={isCompletionModalOpen}
                     onClose={() => setIsCompletionModalOpen(false)}
-                    studentName={formaAfriqueUser.fullName}
+                    studentName={ndaraUser.fullName}
                     courseName={course.title}
                     onDownload={() => router.push('/mes-certificats')}
                     onShare={() => { /* Implement sharing logic */ toast({ title: "Partage bientôt disponible!" })}}

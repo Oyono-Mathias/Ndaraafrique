@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -89,7 +90,7 @@ export default function CourseAssignmentsPage() {
     const router = useRouter();
     const { toast } = useToast();
     const db = getFirestore();
-    const { formaAfriqueUser, isUserLoading } = useRole();
+    const { ndaraUser, isUserLoading } = useRole();
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -110,7 +111,7 @@ export default function CourseAssignmentsPage() {
     });
 
     const handleCreateAssignment = async (values: z.infer<typeof assignmentSchema>) => {
-        if (!formaAfriqueUser) return;
+        if (!ndaraUser) return;
         setIsSubmitting(true);
         
         const assignmentPayload = {
