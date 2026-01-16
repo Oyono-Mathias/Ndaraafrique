@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -17,6 +16,7 @@ import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContai
 import { Progress } from '@/components/ui/progress';
 import { AdminActionQueue } from './AdminActionQueue';
 import { AdminSecurityAlerts } from './AdminSecurityAlerts';
+import { AdminQuickActions } from './AdminQuickActions';
 
 // --- TYPES ---
 interface Stats {
@@ -204,6 +204,11 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
+        <section>
+            <h2 className="text-xl font-semibold mb-4 text-white">Actions Rapides</h2>
+            <AdminQuickActions />
+        </section>
+
        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
             <section>
