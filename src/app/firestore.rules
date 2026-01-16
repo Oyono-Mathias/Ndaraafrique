@@ -148,6 +148,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
     
+    // --- Collection: course_progress ---
+    match /course_progress/{progressId} {
+      // Un utilisateur peut lire ses documents de progression, et un admin peut tout lire.
+      // La règle `read` s'applique aux requêtes `get` et `list`. Pour les requêtes `list`,
+      // Firestore s'assure que la requête du client contient une clause `where` qui correspond à la condition.
+      allow read: if (isActive() && isOwner(resource.data.userId)) || isAdmin();
+
+      // Un utilisateur ne peut créer/mettre à jour que sa propre progression.
+      allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
+
+      // Un utilisateur peut supprimer sa propre progression, et un admin peut tout supprimer.
+      allow delete: if (isActive() && isOwner(resource.data.userId)) || isAdmin();
+    }
+    
     // --- Collection: payments ---
     match /payments/{paymentId} {
       allow get: if isAdmin() || isOwner(resource.data.userId);
@@ -245,5 +259,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
