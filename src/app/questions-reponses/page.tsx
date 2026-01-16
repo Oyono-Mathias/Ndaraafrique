@@ -1,10 +1,9 @@
 
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase, useIsMobile } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy, getDocs, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, getDocs, doc, writeBatch, serverTimestamp, getDoc } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
