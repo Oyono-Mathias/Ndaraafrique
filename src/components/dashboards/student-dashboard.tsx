@@ -15,6 +15,7 @@ import { CourseCard } from '../cards/CourseCard';
 import { Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ContinueLearning } from './ContinueLearning';
+import { RecommendedCourses } from './RecommendedCourses';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
@@ -121,6 +122,7 @@ export function StudentDashboard() {
   return (
     <div className="bg-slate-900 -m-6 p-6 min-h-screen space-y-12">
         <ContinueLearning />
+        <RecommendedCourses />
         <DynamicCarousel />
 
         <CourseCarousel 
