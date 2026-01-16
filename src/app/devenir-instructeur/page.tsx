@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Youtube, BookUser, Linkedin, Presentation, CheckSquare, FileText, Bot } from 'lucide-react';
+import { Loader2, Youtube, BookUser, Linkedin, Presentation, CheckSquare, FileText, Bot, ShieldX } from 'lucide-react';
 import Link from 'next/link';
 import PhoneInput from 'react-phone-number-input/react-hook-form-input';
 import 'react-phone-number-input/style.css';
@@ -24,6 +24,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { sendNewInstructorApplicationEmail } from '@/lib/emails';
 import { useTranslation } from 'react-i18next';
 import { sendAdminNotification } from '@/actions/notificationActions';
+import { useDoc, useMemoFirebase } from '@/firebase';
+import type { Settings } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const instructorApplicationSchema = (t: (key: string) => string) => z.object({
   specialty: z.string().min(3, { message: t('specialty_required') }),
@@ -50,6 +53,11 @@ export default function BecomeInstructorPage() {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const db = getFirestore();
+
+  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings, isLoading: settingsLoading } = useDoc<Settings>(settingsRef);
+  const allowSignup = settings?.platform?.allowInstructorSignup ?? false;
 
   const form = useForm<ApplicationFormValues>({
     resolver: zodResolver(instructorApplicationSchema(t)),
@@ -69,7 +77,6 @@ export default function BecomeInstructorPage() {
   const onSubmit = async (data: ApplicationFormValues) => {
     if (!currentUser) return;
     setIsSubmitting(true);
-    const db = getFirestore();
     const userDocRef = doc(db, 'users', currentUser.uid);
     try {
       await updateDoc(userDocRef, {
@@ -99,7 +106,9 @@ export default function BecomeInstructorPage() {
     }
   };
   
-   if (isUserLoading || (!isUserLoading && !user)) {
+   const isLoading = isUserLoading || settingsLoading;
+
+   if (isLoading || (!isUserLoading && !user)) {
     return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
   
@@ -122,6 +131,20 @@ export default function BecomeInstructorPage() {
         </div>
     );
   }
+
+  if (!allowSignup) {
+    return (
+        <div className="text-center p-8 flex flex-col items-center">
+            <div className="p-4 bg-slate-800 rounded-full mb-4">
+                <ShieldX className="h-12 w-12 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-white">Candidatures fermées</h1>
+            <p className="text-slate-400 mt-2 max-w-md">Nous n'acceptons pas de nouvelles candidatures pour le moment. Merci de votre intérêt pour Ndara Afrique. Revenez plus tard !</p>
+             <Button asChild className="mt-6" variant="outline"><Link href="/dashboard">Retour au tableau de bord</Link></Button>
+        </div>
+    );
+  }
+
 
   return (
     <div className="max-w-3xl mx-auto py-12 px-4">
