@@ -168,6 +168,15 @@ export interface Notification {
   type?: 'success' | 'info' | 'reminder' | 'alert';
 }
 
+export interface UserActivity {
+  id: string;
+  userId: string;
+  type: 'enrollment' | 'certificate' | 'review' | 'assignment';
+  title: string;
+  link: string;
+  createdAt: Timestamp;
+}
+
 export interface Settings {
   general: {
     siteName: string;

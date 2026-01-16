@@ -1,4 +1,5 @@
 
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -38,12 +39,8 @@ service cloud.firestore {
 
     // --- Collection: users ---
     match /users/{userId} {
-      allow get: if true; // Allow public read for profiles (e.g., instructor info on landing pages)
-      
-      // Annuaire: a user can list other users if their profile is complete.
-      // The client query is responsible for filtering by interestDomain.
-      allow list: if isAdmin() || isProfileComplete();
-      
+      allow get: if true; 
+      allow list: if isSignedIn();
       allow create: if isOwner(userId);
       
       allow update: if isAdmin() || (
@@ -126,14 +123,9 @@ service cloud.firestore {
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
       allow get: if resource.data.progress == 100 || (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin()));
-      
-      // The client query is responsible for filtering by studentId or instructorId.
-      allow list: if isSignedIn(); 
-
+      allow list: if isSignedIn();
       allow update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
-      
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
-      
       allow delete: if isAdmin();
     }
     
@@ -162,7 +154,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
       allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
-      // The client query is responsible for filtering by userId or instructorId.
       allow list: if isSignedIn();
 
       match /messages/{messageId} {
@@ -173,8 +164,7 @@ service cloud.firestore {
     
     // --- Collection: promoCodes ---
     match /promoCodes/{codeId} {
-      allow read, list: if isAdmin();
-      allow create, update, delete: if isAdmin();
+      allow read, list, create, update, delete: if isAdmin();
     }
 
     // --- Collection: carousel_slides ---
@@ -228,6 +218,11 @@ service cloud.firestore {
         allow read, update, delete: if false;
     }
 
+    // --- Collection: user_activity ---
+    match /user_activity/{activityId} {
+      allow read, list: if isSignedIn() && request.query.where.userId == request.auth.uid;
+      allow write: if false; // Only backend can write activities
+    }
 
     // --- Règle par défaut ---
     match /{path=**} {
@@ -235,5 +230,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
