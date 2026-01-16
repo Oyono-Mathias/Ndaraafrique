@@ -125,28 +125,40 @@ service cloud.firestore {
     ====================== */
 
     match /course_progress/{progressId} {
-      // Students can read their own progress docs. For a `list` query, the query
-      // MUST include a `where('userId', '==', request.auth.uid)` clause.
-      allow read: if (isActive() && resource.data.userId == request.auth.uid) || isAdmin();
+      // Students can only read their own progress documents. Admins can read all.
+      // For LIST operations, this rule requires a `where('userId', '==', request.auth.uid)` clause
+      // in the query for non-admin users. This is the correct and secure way to handle this.
+      allow read: if isActive() && (isOwner(resource.data.userId) || isAdmin());
       
       // A student can only create or update their own progress.
       allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
       
       // A student can delete their own progress, or an admin can.
-      allow delete: if isActive() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow delete: if isActive() && (isOwner(resource.data.userId) || isAdmin());
     }
+
 
     /* ======================
        ENROLLMENTS
     ====================== */
 
     match /enrollments/{id} {
-      // Students can list/read their own enrollments. Admins can read all.
-      // For `list` operations, queries from non-admins MUST be constrained with `where('studentId', '==', request.auth.uid)`.
-      allow read: if (isActive() && isOwner(resource.data.studentId)) || isAdmin();
+      // A user can list/get their own enrollments. An admin can read all.
+      // List queries must be constrained by studentId for non-admins.
+      allow read: if isActive() && (isOwner(resource.data.studentId) || isAdmin());
       allow create: if isActive() && request.resource.data.studentId == request.auth.uid;
       allow update: if isAdmin()
         || (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId)));
+    }
+    
+    /* ======================
+       PAYMENTS
+    ====================== */
+    
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId);
+      allow update, delete: if isAdmin();
     }
 
 
@@ -164,7 +176,6 @@ service cloud.firestore {
       // Participants and admins can read/update tickets.
       // List queries must be constrained by userId or instructorId for non-admins.
       allow read, update: if isActive() && (isParticipant() || isAdmin());
-      allow list: if isActive(); // Kept for simplicity, but queries must be constrained
       allow create: if isActive() && request.resource.data.userId == request.auth.uid;
 
       match /messages/{messageId} {
