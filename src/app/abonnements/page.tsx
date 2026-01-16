@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -72,6 +71,9 @@ export default function SubscriptionsPage() {
             const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SubscriptionPlan));
             setStudentPlans(plans);
             setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching subscription plans: ", error);
+            setIsLoading(false);
         });
 
         return () => unsubscribe();
@@ -82,10 +84,7 @@ export default function SubscriptionsPage() {
             router.push('/login');
             return;
         }
-        // Redirect to a future payment page for subscriptions
-        // For now, let's just log it.
-        console.log(`User ${user.uid} chose plan ${planId}`);
-        // router.push(`/paiements/abonnement?planId=${planId}`);
+        router.push(`/paiements/abonnement?planId=${planId}`);
     };
 
     return (
