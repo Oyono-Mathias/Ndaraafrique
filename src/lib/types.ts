@@ -11,6 +11,12 @@ export interface NotificationPreferences {
   financialAnomalies?: boolean;
 }
 
+export interface Role {
+  id: string;
+  name: string;
+  permissions: { [key: string]: boolean };
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
@@ -65,6 +71,7 @@ export interface NdaraUser {
   isProfileComplete?: boolean;
   preferredLanguage?: 'fr' | 'en' | 'sg';
   badges?: string[];
+  permissions?: { [key: string]: boolean };
 };
 
 export interface Lecture {

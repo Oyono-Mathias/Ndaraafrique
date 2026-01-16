@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
-import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
@@ -80,7 +80,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
-    const unsubscribe = onSnapshot(userDocRef, (userDoc) => {
+    const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as Omit<NdaraUser, 'uid' | 'email' | 'availableRoles'>;
 
@@ -104,6 +104,26 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('admin');
           }
 
+           // Fetch role permissions
+          let finalPermissions: { [key: string]: boolean } = {};
+          if (userData.role) {
+            try {
+              const roleDocRef = doc(db, 'roles', userData.role);
+              const roleDocSnap = await getDoc(roleDocRef);
+              if (roleDocSnap.exists()) {
+                  finalPermissions = roleDocSnap.data().permissions || {};
+              }
+            } catch (e) {
+              console.error("Could not fetch role document:", e);
+            }
+          }
+
+          // Apply user-specific overrides
+          if (userData.permissions) {
+              finalPermissions = { ...finalPermissions, ...userData.permissions };
+          }
+
+
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
@@ -114,6 +134,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
+              permissions: finalPermissions,
           };
           
           const currentLang = i18n.language;

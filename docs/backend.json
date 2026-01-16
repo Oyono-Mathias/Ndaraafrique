@@ -1,6 +1,20 @@
 
 {
   "entities": {
+    "Role": {
+      "title": "Role",
+      "type": "object",
+      "description": "Defines a set of permissions for a user role.",
+      "properties": {
+        "name": { "type": "string" },
+        "permissions": {
+          "type": "object",
+          "description": "A map of permission keys to boolean values.",
+          "additionalProperties": { "type": "boolean" }
+        }
+      },
+      "required": ["name", "permissions"]
+    },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "User",
@@ -51,8 +65,8 @@
         },
         "role": {
           "type": "string",
-          "description": "Role of the user (student, instructor, or admin).",
-          "enum": ["student", "instructor", "admin"]
+          "description": "The name of the role assigned to the user (e.g., 'student', 'instructor', 'admin'). This corresponds to a document ID in the 'roles' collection.",
+          "default": "student"
         },
         "status": {
             "type": "string",
@@ -85,6 +99,11 @@
             "newSupportTickets": { "type": "boolean", "default": true },
             "financialAnomalies": { "type": "boolean", "default": true }
           }
+        },
+        "permissions": {
+            "type": "object",
+            "description": "User-specific permission overrides. These take precedence over role-based permissions.",
+            "additionalProperties": { "type": "boolean" }
         }
       },
       "required": [
@@ -380,21 +399,8 @@
         "queryScope": "COLLECTION",
         "fields": [
           {"fieldPath": "role", "order": "ASCENDING"},
+          {"fieldPath": "isInstructorApproved", "order": "ASCENDING"},
           {"fieldPath": "createdAt", "order": "DESCENDING"}
-        ]
-      },
-      {
-        "collectionGroup": "payouts",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {"fieldPath": "date", "order": "DESCENDING"}
-        ]
-      },
-       {
-        "collectionGroup": "support_tickets",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {"fieldPath": "updatedAt", "order": "DESCENDING"}
         ]
       },
       {
@@ -402,8 +408,95 @@
         "queryScope": "COLLECTION",
         "fields": [
           {"fieldPath": "status", "order": "ASCENDING"},
-          {"fieldPath": "category", "order": "ASCENDING"},
           {"fieldPath": "createdAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "status", "order": "ASCENDING"},
+          {"fieldPath": "date", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "isProfileComplete", "order": "ASCENDING"},
+          {"fieldPath": "careerGoals.interestDomain", "order": "ASCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "reviews",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "courseId", "order": "ASCENDING"},
+          {"fieldPath": "createdAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "courses",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "instructorId", "order": "ASCENDING"},
+          {"fieldPath": "createdAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "enrollments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "studentId", "order": "ASCENDING"},
+          {"fieldPath": "progress", "order": "ASCENDING"},
+          {"fieldPath": "lastAccessedAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "courses",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "status", "order": "ASCENDING"},
+          {"fieldPath": "category", "order": "ASCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "course_progress",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "userId", "order": "ASCENDING"},
+          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "status", "order": "ASCENDING"},
+          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "userId", "order": "ASCENDING"},
+          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "instructorId", "order": "ASCENDING"},
+          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {"fieldPath": "status", "order": "ASCENDING"}
         ]
       },
       {
@@ -431,6 +524,10 @@
         ]
       }
     ],
+    "/roles/{roleId}": {
+      "schema": { "$ref": "#/entities/Role" },
+      "description": "Stores role definitions and their associated permissions."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/User" },
       "description": "Stores user profiles."
