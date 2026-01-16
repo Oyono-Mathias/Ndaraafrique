@@ -12,7 +12,6 @@ import {
   BookOpen,
   Users,
   DollarSign,
-  BarChart3,
   MessagesSquare,
   Star,
   ClipboardCheck,
@@ -99,7 +98,6 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
       items: [
         { href: '/instructor/students', icon: Users, textKey: 'navMyStudents' },
         { href: '/mes-revenus', icon: DollarSign, textKey: 'navFinance' },
-        { href: '/statistiques', icon: BarChart3, textKey: 'navStatistics' },
         { href: '/certificats-instructor', icon: Award, textKey: 'navCertificates' },
       ],
     },
