@@ -74,6 +74,21 @@
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "support_tickets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
