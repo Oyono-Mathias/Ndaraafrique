@@ -69,8 +69,8 @@ export async function startChat(
       batch.set(newChatRef, {
         participants: sortedParticipants,
         participantCategories: [
-          currentUserData.careerGoals.interestDomain,
-          contactUserData.careerGoals.interestDomain,
+          currentUserData.careerGoals?.interestDomain || '',
+          contactUserData.careerGoals?.interestDomain || '',
         ],
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
