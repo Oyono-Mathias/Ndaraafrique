@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState } from 'react';
@@ -75,7 +73,7 @@ const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: a
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Titre de la ressource</FormLabel>
+                            <FormLabel className="dark:text-slate-300">Titre de la ressource</FormLabel>
                             <FormControl>
                                 <Input placeholder="Ex: Slides du chapitre 1" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
                             </FormControl>
@@ -88,7 +86,7 @@ const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: a
                     name="type"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Type</FormLabel>
+                            <FormLabel className="dark:text-slate-300">Type</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600">
@@ -110,7 +108,7 @@ const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: a
                         name="url"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>URL</FormLabel>
+                                <FormLabel className="dark:text-slate-300">URL</FormLabel>
                                 <FormControl>
                                     <Input placeholder="https://example.com/ressource" {...field} className="dark:bg-slate-700 dark:border-slate-600"/>
                                 </FormControl>
