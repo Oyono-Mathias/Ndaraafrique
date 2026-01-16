@@ -22,6 +22,7 @@ export interface NdaraUser {
   email: string;
   username: string;
   fullName: string;
+  phoneNumber?: string;
   role: UserRole;
   isInstructorApproved: boolean;
   availableRoles: UserRole[];
@@ -35,6 +36,18 @@ export interface NdaraUser {
   };
   payoutInfo?: {
       mobileMoneyNumber?: string;
+      bankInfo?: string;
+  };
+  instructorNotificationPreferences?: {
+    newEnrollment?: boolean;
+    newMessage?: boolean;
+    newAssignmentSubmission?: boolean;
+    courseStatusUpdate?: boolean;
+    payoutUpdate?: boolean;
+  };
+  pedagogicalPreferences?: {
+    aiAssistanceEnabled?: boolean;
+    aiInterventionLevel?: 'low' | 'medium' | 'high';
   };
   notificationPreferences?: NotificationPreferences;
   videoPlaybackPreferences?: {

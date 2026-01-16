@@ -2,31 +2,33 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
-import { getAuth, updateProfile } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getDocs, setDoc, deleteDoc, serverTimestamp, getCountFromServer } from 'firebase/firestore';
+import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { useTranslation } from 'react-i18next';
-import confetti from 'canvas-confetti';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUserAccount } from '@/actions/userActions';
+
+import 'react-phone-number-input/style.css'
+import PhoneInput from 'react-phone-number-input/react-hook-form-input'
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2, Bell } from 'lucide-react';
+import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2, Bell, KeyRound, MonitorPlay, Users, Linkedin, Twitter, Globe, Settings, UserCog, Bot } from 'lucide-react';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useDebounce } from '@/hooks/use-debounce';
-import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,17 +43,24 @@ import {
 
 
 // --- Validation Schema ---
-const profileFormSchema = (t: (key: string) => string) => z.object({
-  username: z.string()
-    .min(3, { message: t('username_min_char') })
-    .max(20, { message: t('username_max_char') })
-    .regex(/^[a-zA-Z0-9_]+$/, { message: t('username_regex') }),
+const accountFormSchema = (t: (key: string) => string) => z.object({
+  username: z.string().min(3, { message: t('username_min_char') }).max(20, { message: t('username_max_char') }).regex(/^[a-zA-Z0-9_]+$/, { message: t('username_regex') }),
   fullName: z.string().min(3, { message: t('fullname_min_char') }),
-  bio: z.string().max(300, t('bio_max_char')).optional(),
-  interestDomain: z.string().min(3, { message: t('interest_domain_required') })
+  bio: z.string().max(500, t('bio_max_char')).optional(),
+  phoneNumber: z.string().optional(),
+  // Social Links
+  'socialLinks.linkedin': z.string().url().or(z.literal('')).optional(),
+  'socialLinks.twitter': z.string().url().or(z.literal('')).optional(),
+  'socialLinks.website': z.string().url().or(z.literal('')).optional(),
+  // Instructor Notifications
+  'instructorNotificationPreferences.newEnrollment': z.boolean().default(true),
+  'instructorNotificationPreferences.newMessage': z.boolean().default(true),
+  'instructorNotificationPreferences.newAssignmentSubmission': z.boolean().default(true),
+  // Pedagogical Preferences
+  'pedagogicalPreferences.aiAssistanceEnabled': z.boolean().default(true),
 });
 
-type ProfileFormValues = z.infer<ReturnType<typeof profileFormSchema>>;
+type AccountFormValues = z.infer<ReturnType<typeof accountFormSchema>>;
 
 const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number | string, isLoading: boolean }) => {
     const Icon = icon;
@@ -68,133 +77,23 @@ const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: Reac
     );
 };
 
-// --- NOTIFICATION PREFERENCES COMPONENT ---
-const NotificationPreferences = () => {
-    const { user } = useRole();
-    const { toast } = useToast();
-    const [isEnabled, setIsEnabled] = useState(false);
-    const [isSubscribing, setIsSubscribing] = useState(false);
-    const [isSupported, setIsSupported] = useState(true);
-
-    useEffect(() => {
-        if (typeof window !== 'undefined' && 'Notification' in window && 'serviceWorker' in navigator && 'PushManager' in window) {
-            setIsEnabled(Notification.permission === 'granted');
-        } else {
-            setIsSupported(false);
-        }
-    }, []);
-
-    const handleToggleNotifications = async (checked: boolean) => {
-        if (!user || !isSupported) return;
-
-        setIsSubscribing(true);
-
-        try {
-            const { initializeFirebase } = await import('@/firebase');
-            const { firebaseApp } = initializeFirebase();
-            const { getMessaging, getToken, deleteToken } = await import('firebase/messaging');
-            const messaging = getMessaging(firebaseApp);
-            
-            const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-            if (!vapidKey) {
-                throw new Error("Clé VAPID manquante. Impossible de s'inscrire aux notifications.");
-            }
-
-            if (checked) {
-                // Request permission and get token
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    const currentToken = await getToken(messaging, { vapidKey });
-                    if (currentToken) {
-                        const tokensRef = doc(getFirestore(), `fcmTokens`, user.uid);
-                        await setDoc(tokensRef, { tokens: [currentToken] }, { merge: true });
-                        setIsEnabled(true);
-                        toast({ title: 'Notifications activées', description: 'Vous recevrez désormais nos actualités.' });
-                    } else {
-                       throw new Error('Impossible de récupérer le jeton de notification.');
-                    }
-                } else {
-                    throw new Error('La permission de notification a été refusée.');
-                }
-            } else {
-                // Get current token and delete it
-                const currentToken = await getToken(messaging, { vapidKey });
-                if (currentToken) {
-                    await deleteToken(messaging);
-                    const tokensRef = doc(getFirestore(), `fcmTokens`, user.uid);
-                    await updateDoc(tokensRef, { tokens: [] });
-                }
-                setIsEnabled(false);
-                toast({ title: 'Notifications désactivées' });
-            }
-        } catch (error: any) {
-            console.error("Error managing notifications:", error);
-            toast({ variant: 'destructive', title: 'Erreur de notification', description: error.message });
-            setIsEnabled(false); // Revert UI state on error
-        } finally {
-            setIsSubscribing(false);
-        }
-    };
-
-    if (!isSupported) return null;
-
-    return (
-         <Card className="glassmorphism-card">
-            <CardHeader>
-                <CardTitle className="text-xl text-white">Notifications</CardTitle>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center space-x-4 rounded-md border p-4 dark:border-slate-700">
-                    <Bell />
-                    <div className="flex-1 space-y-1">
-                        <p className="text-sm font-medium leading-none text-slate-200">Notifications Push</p>
-                        <p className="text-sm text-slate-400">Recevez les annonces importantes directement sur votre appareil.</p>
-                    </div>
-                    <Switch
-                        checked={isEnabled}
-                        onCheckedChange={handleToggleNotifications}
-                        disabled={isSubscribing}
-                    />
-                </div>
-            </CardContent>
-        </Card>
-    );
-};
-
-
-const domains = ["Développement Web", "Marketing Digital", "Data Science", "Design UI/UX", "Entrepreneuriat", "Agriculture"];
-
 export default function AccountPage() {
-  const { user, currentUser, isUserLoading, setCurrentUser } = useRole();
+  const { user, currentUser, role, isUserLoading } = useRole();
   const { t } = useTranslation();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [stats, setStats] = useState({ enrolled: 0, completed: 0 });
+  const [stats, setStats] = useState({ courses: 0, students: 0, certificates: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
   const db = getFirestore();
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
-  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
-  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
-
-  const form = useForm<ProfileFormValues>({
-    resolver: zodResolver(profileFormSchema(t)),
-    defaultValues: { username: '', fullName: '', bio: '', interestDomain: '' },
+  const form = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema(t)),
     mode: 'onChange'
   });
-
-  const debouncedUsername = useDebounce(form.watch('username'), 500);
-
-  const profileProgress = useMemo(() => {
-    let progress = 0;
-    if (form.getValues('username')) progress += 33;
-    if (form.getValues('fullName')) progress += 33;
-    if (form.getValues('interestDomain')) progress += 34;
-    return progress;
-  }, [form.watch('username'), form.watch('fullName'), form.watch('interestDomain')]);
 
   useEffect(() => {
     if (currentUser) {
@@ -202,82 +101,70 @@ export default function AccountPage() {
         username: currentUser.username || '',
         fullName: currentUser.fullName || '',
         bio: currentUser.bio || '',
-        interestDomain: currentUser.careerGoals?.interestDomain || '',
+        phoneNumber: currentUser.phoneNumber || '',
+        'socialLinks.linkedin': currentUser.socialLinks?.linkedin || '',
+        'socialLinks.twitter': currentUser.socialLinks?.twitter || '',
+        'socialLinks.website': currentUser.socialLinks?.website || '',
+        'instructorNotificationPreferences.newEnrollment': currentUser.instructorNotificationPreferences?.newEnrollment ?? true,
+        'instructorNotificationPreferences.newMessage': currentUser.instructorNotificationPreferences?.newMessage ?? true,
+        'instructorNotificationPreferences.newAssignmentSubmission': currentUser.instructorNotificationPreferences?.newAssignmentSubmission ?? true,
+        'pedagogicalPreferences.aiAssistanceEnabled': currentUser.pedagogicalPreferences?.aiAssistanceEnabled ?? true,
       });
       setImagePreview(currentUser.profilePictureURL || null);
     }
   }, [currentUser, form]);
 
   useEffect(() => {
-    if(user && !isUserLoading){
-        const fetchStats = async () => {
-            setStatsLoading(true);
-            const enrollmentsRef = collection(db, 'enrollments');
-            const q = query(enrollmentsRef, where('studentId', '==', user.uid));
-            const completedQuery = query(q, where('progress', '==', 100));
+    if (!user || isUserLoading || role !== 'instructor') {
+      if(!isUserLoading) setStatsLoading(false);
+      return;
+    };
+    
+    const fetchInstructorStats = async () => {
+        setStatsLoading(true);
+        const coursesRef = collection(db, 'courses');
+        const enrollmentsRef = collection(db, 'enrollments');
 
-            try {
-                const [totalSnapshot, completedSnapshot] = await Promise.all([
-                    getCountFromServer(q),
-                    getCountFromServer(completedQuery)
-                ]);
-                setStats({
-                    enrolled: totalSnapshot.data().count,
-                    completed: completedSnapshot.data().count
-                });
-            } catch (e) {
-                console.error("Could not fetch user stats", e);
-            } finally {
-                setStatsLoading(false);
-            }
-        };
-        fetchStats();
-    }
-  }, [user, isUserLoading, db]);
+        try {
+            const qCourses = query(coursesRef, where('instructorId', '==', user.uid));
+            const coursesSnap = await getCountFromServer(qCourses);
+            
+            const qEnrollments = query(enrollmentsRef, where('instructorId', '==', user.uid));
+            // Note: Counting unique students would require more complex logic (e.g. cloud function)
+            // For now, we count total enrollments as a proxy for student reach.
+            const enrollmentsSnap = await getCountFromServer(qEnrollments);
 
-  useEffect(() => {
-      const checkUsername = async () => {
-          if (debouncedUsername.length < 3) {
-              setUsernameAvailable(null);
-              return;
-          }
-          if (debouncedUsername === currentUser?.username) {
-              setUsernameAvailable(true);
-              return;
-          }
+            setStats(prev => ({ ...prev, courses: coursesSnap.data().count, students: enrollmentsSnap.data().count }));
+        } catch (e) {
+            console.error("Could not fetch instructor stats", e);
+        } finally {
+            setStatsLoading(false);
+        }
+    };
+    fetchInstructorStats();
+  }, [user, isUserLoading, db, role]);
 
-          setIsCheckingUsername(true);
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('username', '==', debouncedUsername));
-          const querySnapshot = await getDocs(q);
-          setUsernameAvailable(querySnapshot.empty);
-          setIsCheckingUsername(false);
-      }
-      checkUsername();
-  }, [debouncedUsername, db, currentUser?.username]);
-
-  const onProfileSubmit = async (data: ProfileFormValues) => {
-    if (!currentUser || usernameAvailable === false) {
-        toast({ title: t('invalid_username_title'), description: t('invalid_username_desc'), variant: 'destructive'});
-        return;
-    }
+  const onProfileSubmit = async (data: AccountFormValues) => {
+    if (!currentUser) return;
     setIsSaving(true);
+    
+    let finalImageURL = currentUser.profilePictureURL || '';
+    if (imageToCrop) {
+        // Upload logic...
+    }
+
     const auth = getAuth();
     const userDocRef = doc(db, 'users', currentUser.uid);
 
     try {
-        const wasIncomplete = !currentUser.isProfileComplete;
-        const isNowComplete = !!(data.username && data.interestDomain);
-
         await updateDoc(userDocRef, {
             username: data.username,
             fullName: data.fullName,
             bio: data.bio,
-            careerGoals: {
-                ...currentUser.careerGoals,
-                interestDomain: data.interestDomain,
-            },
-            isProfileComplete: isNowComplete
+            phoneNumber: data.phoneNumber,
+            'socialLinks.linkedin': data['socialLinks.linkedin'],
+            'socialLinks.twitter': data['socialLinks.twitter'],
+            'socialLinks.website': data['socialLinks.website'],
         });
         
         if (auth.currentUser && auth.currentUser.displayName !== data.fullName) {
@@ -285,32 +172,26 @@ export default function AccountPage() {
         }
 
         toast({ title: t('profile_updated_title') });
-
-        if (wasIncomplete && isNowComplete) {
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            toast({
-                title: t('congrats_title'),
-                description: t('congrats_profile_complete_desc', { category: data.interestDomain }),
-                className: "bg-green-600 text-white"
-            });
-             setCurrentUser(prev => prev ? ({...prev, isProfileComplete: true, careerGoals: { ...prev.careerGoals, interestDomain: data.interestDomain }}) : null);
-        }
-
     } catch (error) {
       toast({ variant: 'destructive', title: t('error_title'), description: t('profile_update_error') });
-      console.error(error);
     } finally {
       setIsSaving(false);
     }
   };
-
-  const handleAvatarFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    if (event.target.files && event.target.files.length > 0) {
-      const reader = new FileReader();
-      reader.onload = () => setImageToCrop(reader.result as string);
-      reader.readAsDataURL(event.target.files[0]);
-    }
-  };
+  
+  const handleSettingsUpdate = async (data: any) => {
+      if (!currentUser) return;
+      setIsSaving(true);
+      const userDocRef = doc(db, 'users', currentUser.uid);
+      try {
+        await updateDoc(userDocRef, data);
+        toast({ title: "Préférences sauvegardées" });
+      } catch(e) {
+         toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les préférences.' });
+      } finally {
+         setIsSaving(false);
+      }
+  }
 
   const handleAvatarUpload = async (croppedImage: File) => {
     if (!currentUser) return;
@@ -318,28 +199,29 @@ export default function AccountPage() {
     setIsUploading(true);
 
     const storage = getStorage();
-    const auth = getAuth();
     const filePath = `avatars/${currentUser.uid}/profile.webp`;
     const storageRef = ref(storage, filePath);
 
     try {
       const snapshot = await uploadBytes(storageRef, croppedImage);
       const downloadURL = await getDownloadURL(snapshot.ref);
-
-      if (auth.currentUser) {
-        await updateProfile(auth.currentUser, { photoURL: downloadURL });
-      }
-      const userDocRef = doc(db, 'users', currentUser.uid);
-      await updateDoc(userDocRef, { profilePictureURL: downloadURL });
-
+      await updateDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL });
       toast({ title: t('avatar_updated_title') });
-      setImagePreview(downloadURL); // Update preview immediately
-
+      setImagePreview(downloadURL);
     } catch (error) {
       toast({ variant: 'destructive', title: t('error_upload_title'), description: t('avatar_update_error') });
-      console.error(error);
     } finally {
       setIsUploading(false);
+    }
+  };
+  
+  const handlePasswordReset = async () => {
+    if (!currentUser?.email) return;
+    try {
+      await sendPasswordResetEmail(getAuth(), currentUser.email);
+      toast({ title: "E-mail envoyé", description: "Vérifiez votre boîte de réception pour réinitialiser votre mot de passe." });
+    } catch (error) {
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible d'envoyer l'e-mail de réinitialisation." });
     }
   };
 
@@ -347,33 +229,13 @@ export default function AccountPage() {
     if (!user) return;
     setIsDeleting(true);
     const idToken = await user.getIdToken(true);
-    const result = await deleteUserAccount({ userId: user.uid, idToken });
-    if (!result.success) {
-        toast({
-            variant: 'destructive',
-            title: 'Erreur de suppression',
-            description: result.error || 'Une erreur est survenue.',
-        });
-        setIsDeleting(false);
-    }
-    // On success, the user will be signed out and the app will re-render,
-    // usually redirecting to the login page.
+    await deleteUserAccount({ userId: user.uid, idToken });
+    // On success, user is signed out and redirected by auth listener.
+    setIsDeleting(false);
   };
-
+  
   if (isUserLoading || !currentUser) {
-    return (
-      <div className="space-y-8 max-w-4xl mx-auto">
-        <header className="text-center"><Skeleton className="h-10 w-64 mx-auto" /><Skeleton className="h-5 w-80 mx-auto mt-2" /></header>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Skeleton className="h-96 w-full" />
-            <div className="space-y-8">
-                <Skeleton className="h-32 w-full" />
-                <Skeleton className="h-48 w-full" />
-                <Skeleton className="h-40 w-full" />
-            </div>
-        </div>
-      </div>
-    );
+    return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   }
 
   return (
@@ -383,165 +245,154 @@ export default function AccountPage() {
         onCropComplete={handleAvatarUpload}
         onClose={() => setImageToCrop(null)}
       />
-      <div className="space-y-8 max-w-4xl mx-auto">
+      <div className="space-y-8 max-w-5xl mx-auto">
         
         <header className="text-center">
             <h1 className="text-4xl font-bold text-white mb-2">{t('navAccount')}</h1>
             <p className="text-lg text-slate-400">{t('account_description')}</p>
         </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-             {/* Left Column - Profile Form */}
-            <Card className="glassmorphism-card">
-              <CardHeader>
-                <CardTitle className="text-xl text-white">{t('public_profile_title')}</CardTitle>
-                <CardDescription className="text-slate-400">{t('public_profile_desc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="relative w-28 h-28 mx-auto group">
-                    <Avatar className="h-full w-full border-4 border-slate-700 shadow-lg">
-                        <AvatarImage src={imagePreview || currentUser.profilePictureURL} />
-                        <AvatarFallback className="text-3xl bg-slate-800 text-white">{currentUser.fullName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                     <label htmlFor="avatar-upload" className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <Edit3 className="h-6 w-6" />
-                    </label>
-                    <Input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleAvatarFileSelect} disabled={isUploading}/>
-                     {isUploading && <div className="absolute inset-0 bg-black/70 rounded-full flex items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-white"/></div>}
-                </div>
+        {role === 'instructor' && (
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                 <StatCard title="Cours Publiés" icon={MonitorPlay} value={stats.courses} isLoading={statsLoading} />
+                 <StatCard title="Total d'étudiants" icon={Users} value={stats.students.toLocaleString('fr-FR')} isLoading={statsLoading} />
+                 <StatCard title="Certificats délivrés" icon={Sparkles} value={stats.certificates} isLoading={statsLoading} />
+            </div>
+        )}
 
-                <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onProfileSubmit)} className="space-y-6">
-                     <FormField control={form.control} name="username" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-300">{t('username_label')}</FormLabel>
-                        <FormControl>
-                            <div className="relative">
-                                <Input placeholder="mathias_oyono" {...field} className="pl-8 dark:bg-slate-800 dark:border-slate-700" />
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">@</span>
-                            </div>
-                        </FormControl>
-                        <FormDescription className="text-slate-500 text-xs">{t('username_desc')}</FormDescription>
-                        {isCheckingUsername ? (
-                            <p className="text-xs text-slate-400 flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin"/> {t('checking_availability')}</p>
-                        ) : usernameAvailable === true ? (
-                             <p className="text-xs text-green-400 flex items-center gap-1.5"><CheckCircle className="h-3 w-3"/> {t('username_available')}</p>
-                        ) : usernameAvailable === false ? (
-                            <p className="text-xs text-red-400 flex items-center gap-1.5"><AlertTriangle className="h-3 w-3"/> {t('username_taken')}</p>
-                        ) : null}
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                    
-                     <FormField control={form.control} name="interestDomain" render={({ field }) => (
-                         <FormItem>
-                            <FormLabel className="text-slate-300">{t('interest_domain_label')}</FormLabel>
-                            <select {...field} className="w-full h-10 px-3 rounded-md border border-slate-700 bg-slate-800 text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
-                                <option value="" disabled>{t('interest_domain_placeholder')}</option>
-                                {domains.map(d => <option key={d} value={d}>{d}</option>)}
-                            </select>
-                            <FormMessage />
-                         </FormItem>
-                     )} />
-                    
-                    <FormField control={form.control} name="bio" render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-slate-300">{t('bio_label')}</FormLabel>
-                        <FormControl><Textarea placeholder={t('bio_placeholder')} {...field} rows={3} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-
-                    <div className="border-t border-slate-700 pt-6">
-                        <h4 className="font-semibold mb-4 text-slate-200">{t('private_info_title')}</h4>
-                        <FormField control={form.control} name="fullName" render={({ field }) => (
+        <Tabs defaultValue="profile" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 dark:bg-slate-800">
+                <TabsTrigger value="profile"><UserCog className="w-4 h-4 mr-2"/>Profil</TabsTrigger>
+                <TabsTrigger value="security"><KeyRound className="w-4 h-4 mr-2"/>Sécurité</TabsTrigger>
+                <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2"/>Notifications</TabsTrigger>
+                <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-2"/>Préférences</TabsTrigger>
+            </TabsList>
+            
+            <Form {...form}>
+            <TabsContent value="profile" className="mt-6">
+                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+                <form onSubmit={form.handleSubmit(onProfileSubmit)}>
+                    <CardHeader><CardTitle>Informations Personnelles</CardTitle></CardHeader>
+                    <CardContent className="space-y-6">
+                         <FormField control={form.control} name="username" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel>
-                            <FormControl><Input {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
-                            <FormMessage />
+                            <FormLabel className="text-slate-300">Photo de profil</FormLabel>
+                            <div className="flex items-center gap-4">
+                                <label htmlFor="avatar-upload" className="cursor-pointer">
+                                <Avatar className="h-20 w-20 border-4 border-slate-700 shadow-lg group relative">
+                                    <AvatarImage src={imagePreview || ''} />
+                                    <AvatarFallback className="text-3xl bg-slate-800 text-white">{currentUser.fullName?.charAt(0)}</AvatarFallback>
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Edit3 className="h-6 w-6 text-white"/></div>
+                                </Avatar>
+                                </label>
+                                <Input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setImageToCrop(URL.createObjectURL(e.target.files[0]))} disabled={isUploading}/>
+                                {isUploading && <Loader2 className="h-6 w-6 animate-spin text-white"/>}
+                            </div>
                           </FormItem>
                         )} />
-                    </div>
+                        
+                        <div className="grid md:grid-cols-2 gap-6">
+                            <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nom Complet</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
+                            <FormItem><FormLabel>Adresse E-mail</FormLabel><Input value={currentUser.email} readOnly disabled className="text-slate-400 cursor-not-allowed" /></FormItem>
+                            <FormField control={form.control} name="username" render={({ field }) => (<FormItem><FormLabel>Nom d'utilisateur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <Controller control={form.control} name="phoneNumber" render={({ field }) => (
+                                <FormItem><FormLabel>N° de téléphone</FormLabel><FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-10 w-full rounded-md border border-input dark:bg-background px-3 py-2 text-sm shadow-sm" /></FormControl><FormMessage/></FormItem>
+                            )}/>
+                        </div>
+                        <FormField control={form.control} name="bio" render={({ field }) => (<FormItem><FormLabel>Biographie</FormLabel><FormControl><Textarea {...field} rows={4} /></FormControl><FormMessage /></FormItem>)} />
+                        
+                        <div>
+                            <h4 className="font-semibold mb-4">Réseaux sociaux</h4>
+                            <div className="space-y-4">
+                                <FormField control={form.control} name="socialLinks.linkedin" render={({ field }) => (<FormItem><div className="flex items-center gap-2"><Linkedin className="h-5 w-5 text-slate-400"/><Input placeholder="URL de votre profil LinkedIn" {...field}/></div><FormMessage /></FormItem>)}/>
+                                <FormField control={form.control} name="socialLinks.twitter" render={({ field }) => (<FormItem><div className="flex items-center gap-2"><Twitter className="h-5 w-5 text-slate-400"/><Input placeholder="URL de votre profil Twitter/X" {...field}/></div><FormMessage /></FormItem>)}/>
+                                <FormField control={form.control} name="socialLinks.website" render={({ field }) => (<FormItem><div className="flex items-center gap-2"><Globe className="h-5 w-5 text-slate-400"/><Input placeholder="URL de votre site web" {...field}/></div><FormMessage /></FormItem>)}/>
+                            </div>
+                        </div>
 
-                    <Button type="submit" className="w-full h-11" disabled={isSaving || isUploading || usernameAvailable === false}>
-                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                      {t('save_button_alt')}
-                    </Button>
-                  </form>
-                </Form>
-              </CardContent>
-            </Card>
+                    </CardContent>
+                    <CardFooter className="justify-end"><Button type="submit" disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button></CardFooter>
+                 </form>
+                </Card>
+            </TabsContent>
 
-            {/* Right Column - Stats and Progress */}
-            <div className="space-y-8">
-                <Card className="glassmorphism-card">
-                    <CardHeader>
-                        <CardTitle className="text-xl text-white">{t('profile_progress_title')}</CardTitle>
-                    </CardHeader>
+            <TabsContent value="security" className="mt-6">
+                 <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+                    <CardHeader><CardTitle>Sécurité du Compte</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <Progress value={profileProgress} />
-                        <div className="text-center">
-                            {profileProgress < 100 ? (
-                                 <div className="flex items-center justify-center gap-2 text-orange-400 font-semibold">
-                                    <Lock className="h-4 w-4"/>
-                                    <span>{t('messaging_locked')}</span>
-                                </div>
-                            ) : (
-                                <div className="flex items-center justify-center gap-2 text-green-400 font-semibold">
-                                    <CheckCircle className="h-4 w-4"/>
-                                    <span>{t('profile_complete_access_unlocked')}</span>
-                                </div>
-                            )}
+                        <div className="flex items-center justify-between p-3 border rounded-lg">
+                           <p>Mot de passe</p>
+                           <Button variant="secondary" onClick={handlePasswordReset}>Modifier</Button>
                         </div>
                     </CardContent>
                 </Card>
-
-                <Card className="glassmorphism-card">
-                    <CardHeader>
-                        <CardTitle className="text-xl text-white">{t('your_stats_title')}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-2 gap-4">
-                         <StatCard title={t('enrolled_courses')} icon={BookOpen} value={stats.enrolled} isLoading={statsLoading} />
-                         <StatCard title={t('certificates_earned')} icon={Sparkles} value={stats.completed} isLoading={statsLoading} />
+            </TabsContent>
+            
+            <TabsContent value="notifications" className="mt-6">
+                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+                    <CardHeader><CardTitle>Notifications Formateur</CardTitle></CardHeader>
+                    <CardContent className="space-y-2">
+                        <FormField control={form.control} name="instructorNotificationPreferences.newEnrollment" render={({ field }) => (
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <FormLabel>Nouvelle inscription à un cours</FormLabel>
+                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newEnrollment': val})}}/>
+                            </div>
+                        )}/>
+                        <FormField control={form.control} name="instructorNotificationPreferences.newMessage" render={({ field }) => (
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <FormLabel>Nouveau message d'un étudiant</FormLabel>
+                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newMessage': val})}}/>
+                            </div>
+                        )}/>
+                         <FormField control={form.control} name="instructorNotificationPreferences.newAssignmentSubmission" render={({ field }) => (
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <FormLabel>Nouveau devoir soumis</FormLabel>
+                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newAssignmentSubmission': val})}}/>
+                            </div>
+                        )}/>
                     </CardContent>
                 </Card>
-
-                <NotificationPreferences />
-
-                 <Card className="border-destructive/50 glassmorphism-card">
-                    <CardHeader>
-                        <CardTitle className="text-xl text-destructive/90">Zone de Danger</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-slate-400 mb-4">La suppression de votre compte est une action définitive et irréversible.</p>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="destructive" className="w-full">
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Supprimer mon compte
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        Cette action est irréversible. Toutes vos données, y compris votre progression, vos cours et vos certificats seront définitivement supprimés.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                         {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                                        Oui, supprimer mon compte
-                                    </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+            </TabsContent>
+            
+             <TabsContent value="settings" className="mt-6">
+                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+                    <CardHeader><CardTitle>Préférences Pédagogiques</CardTitle></CardHeader>
+                    <CardContent className="space-y-2">
+                        <FormField control={form.control} name="pedagogicalPreferences.aiAssistanceEnabled" render={({ field }) => (
+                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                <div>
+                                    <FormLabel className="flex items-center gap-2"><Bot className="h-4 w-4"/>Activer l'assistance IA (MATHIAS)</FormLabel>
+                                    <p className="text-xs text-slate-400">Pour la correction des devoirs, la génération de contenu, etc.</p>
+                                </div>
+                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'pedagogicalPreferences.aiAssistanceEnabled': val})}}/>
+                            </div>
+                        )}/>
                     </CardContent>
-                 </Card>
-            </div>
-
+                </Card>
+            </TabsContent>
+            </Form>
+        </Tabs>
+        
+        <div className="mt-12">
+             <Card className="border-destructive/50">
+                <CardHeader>
+                    <CardTitle className="text-xl text-destructive/90">Zone de Danger</CardTitle>
+                </CardHeader>
+                <CardContent className="flex justify-between items-center">
+                    <p className="text-sm text-slate-400">La suppression de votre compte est une action définitive et irréversible.</p>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer mon compte</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle><AlertDialogDescription>Cette action est irréversible. Toutes vos données seront définitivement supprimées.</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Oui, supprimer</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </CardContent>
+             </Card>
         </div>
+
       </div>
     </>
   );

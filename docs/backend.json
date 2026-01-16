@@ -97,6 +97,10 @@
           "description": "Email address of the user (private).",
           "format": "email"
         },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's phone number, for contact or payout purposes."
+        },
         "fullName": {
           "type": "string",
           "description": "Full name of the user (private)."
@@ -193,6 +197,63 @@
             "financialAnomalies": {
               "type": "boolean",
               "default": true
+            }
+          }
+        },
+        "instructorNotificationPreferences": {
+          "type": "object",
+          "description": "Instructor preferences for receiving notifications.",
+          "properties": {
+            "newEnrollment": {
+              "type": "boolean",
+              "default": true
+            },
+            "newMessage": {
+              "type": "boolean",
+              "default": true
+            },
+            "newAssignmentSubmission": {
+              "type": "boolean",
+              "default": true
+            },
+            "courseStatusUpdate": {
+              "type": "boolean",
+              "default": true
+            },
+            "payoutUpdate": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "pedagogicalPreferences": {
+          "type": "object",
+          "description": "Instructor preferences for teaching tools.",
+          "properties": {
+            "aiAssistanceEnabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "aiInterventionLevel": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          }
+        },
+        "payoutInfo": {
+          "type": "object",
+          "properties": {
+            "mobileMoneyNumber": {
+              "type": "string"
+            },
+            "bankInfo": {
+              "type": "string",
+              "description": "Placeholder for structured bank info"
             }
           }
         },
