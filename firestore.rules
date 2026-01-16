@@ -65,6 +65,10 @@ service cloud.firestore {
         allow read, delete: if isOwner(userId);
         allow create: if isOwner(userId) && tokenId == request.resource.id;
       }
+      match /activity/{activityId} {
+        allow read, list: if isOwner(userId);
+        allow write: if false;
+      }
     }
     
     // --- Collection: courses ---

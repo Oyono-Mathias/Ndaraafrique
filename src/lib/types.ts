@@ -187,7 +187,10 @@ export interface UserActivity {
   userId: string;
   type: 'enrollment' | 'certificate' | 'review' | 'assignment';
   title: string;
+  description?: string;
+  relatedId?: string;
   link: string;
+  read: boolean;
   createdAt: Timestamp;
 }
 

@@ -240,11 +240,14 @@
       "type": "object",
       "description": "Represents a single event in a user's activity feed.",
       "properties": {
-        "userId": { "type": "string" },
-        "type": { "type": "string", "enum": ["enrollment", "certificate", "review", "assignment"] },
-        "title": { "type": "string" },
-        "link": { "type": "string", "format": "uri" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "userId": { "type": "string", "description": "The ID of the user this activity belongs to." },
+        "type": { "type": "string", "enum": ["enrollment", "certificate", "review", "assignment"], "description": "The type of activity event." },
+        "title": { "type": "string", "description": "A short, displayable title for the activity." },
+        "description": { "type": "string", "description": "A short description of the activity, if any." },
+        "relatedId": { "type": "string", "description": "ID of the related entity (e.g., courseId, certificateId)." },
+        "link": { "type": "string", "format": "uri", "description": "A direct link to the relevant page for this activity." },
+        "read": { "type": "boolean", "default": false, "description": "Whether the user has seen this activity." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the activity occurred." }
       },
       "required": ["userId", "type", "title", "createdAt"]
     },
@@ -331,6 +334,10 @@
       "schema": { "$ref": "#/entities/UserSubscription" },
       "description": "Stores a user's subscription history."
     },
+     "/users/{userId}/activity/{activityId}": {
+      "schema": { "$ref": "#/entities/UserActivity" },
+      "description": "Stores a user's specific activity events as a subcollection."
+    },
     "/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
       "description": "Stores metadata for each conversation."
@@ -362,10 +369,6 @@
     "/subscription_plans/{planId}": {
       "schema": { "$ref": "#/entities/SubscriptionPlan" },
       "description": "Stores available subscription plans."
-    },
-    "/user_activity/{activityId}": {
-      "schema": { "$ref": "#/entities/UserActivity" },
-      "description": "Stores user activity events for the 'Recent Activity' feed."
     },
     "/recommended_courses/{userId}": {
       "schema": { "$ref": "#/entities/UserRecommendations" },

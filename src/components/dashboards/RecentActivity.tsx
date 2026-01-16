@@ -37,8 +37,7 @@ export function RecentActivity() {
     const activityQuery = useMemoFirebase(
         () => currentUser?.uid
             ? query(
-                collection(db, 'user_activity'),
-                where('userId', '==', currentUser.uid),
+                collection(db, 'users', currentUser.uid, 'activity'),
                 orderBy('createdAt', 'desc'),
                 limit(5)
             )
@@ -79,8 +78,9 @@ export function RecentActivity() {
                                        <ActivityIcon type={activity.type} />
                                     </div>
                                     <div>
-                                        <p className="text-sm text-slate-200">{activity.title}</p>
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-sm font-semibold text-slate-200">{activity.title}</p>
+                                        {activity.description && <p className="text-xs text-slate-400">{activity.description}</p>}
+                                        <p className="text-xs text-slate-500 mt-1">
                                             {activity.createdAt ? formatDistanceToNow(activity.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
                                         </p>
                                     </div>
