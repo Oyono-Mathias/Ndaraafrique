@@ -23,7 +23,7 @@ import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Quiz, Question, QuizAttempt } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import Confetti from 'react-dom-confetti';
+import confetti from 'canvas-confetti';
 
 export default function TakeQuizPage() {
   const { courseId, quizId } = useParams();
@@ -82,7 +82,11 @@ export default function TakeQuizPage() {
     setFinalScore(percentageScore);
     
     if (percentageScore >= 50) {
-        setShowConfetti(true);
+        confetti({
+            particleCount: 150,
+            spread: 70,
+            origin: { y: 0.6 },
+        });
     }
 
     try {
@@ -113,7 +117,6 @@ export default function TakeQuizPage() {
   if (finalScore !== null) {
       return (
           <div className="flex flex-col items-center justify-center h-full p-4">
-              <Confetti active={showConfetti} config={{ spread: 90, startVelocity: 30, elementCount: 150, duration: 3000 }} />
               <Card className="w-full max-w-lg text-center dark:bg-slate-800 dark:border-slate-700">
                   <CardHeader>
                       <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
