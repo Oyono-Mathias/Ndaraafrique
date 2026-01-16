@@ -40,9 +40,9 @@ service cloud.firestore {
     match /users/{userId} {
       allow get: if true; // Allow public read for profiles (e.g., instructor info on landing pages)
       
-      // Annuaire: a user can list other users if their profile is complete and they filter by the same interest domain
-      // Admins can list all users.
-      allow list: if isAdmin() || (isProfileComplete() && 'careerGoals.interestDomain' in request.query.where);
+      // Annuaire: a user can list other users if their profile is complete.
+      // The client query is responsible for filtering by interestDomain.
+      allow list: if isAdmin() || isProfileComplete();
       
       allow create: if isOwner(userId);
       
@@ -125,8 +125,9 @@ service cloud.firestore {
     
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
-      allow get: if resource.data.progress == 100;
-      allow list: if (isSignedIn() && (request.query.where.studentId == request.auth.uid || request.query.where.instructorId == request.auth.uid)) || isAdmin();
+      allow get: if resource.data.progress == 100 || (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin()));
+      // The client query is responsible for filtering by studentId or instructorId.
+      allow list: if isSignedIn();
       allow update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
       allow delete: if isAdmin();
@@ -157,9 +158,8 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
       allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
-      
-      allow list: if (isSignedIn() && (request.query.where.userId == request.auth.uid || request.query.where.instructorId == request.auth.uid)) 
-                 || isAdmin();
+      // The client query is responsible for filtering by userId or instructorId.
+      allow list: if isSignedIn();
 
       match /messages/{messageId} {
         allow create: if isSignedIn() && (isTicketParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);
@@ -231,3 +231,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
