@@ -1,257 +1,323 @@
 
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs, doc, orderBy } from 'firebase/firestore';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
+import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign, ShieldAlert } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert, CheckCircle, UserPlus } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, startOfMonth } from 'date-fns';
+import { format, startOfMonth, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
+import { Loader2 } from 'lucide-react';
 
 interface RevenueDataPoint {
     month: string;
     revenue: number;
 }
 
-const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("border-t-4", accentColor)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-            {isLoading ? (
-                <Skeleton className="h-8 w-3/4 bg-slate-700" />
-            ) : (
-                <>
-                    <div className="text-2xl font-bold text-white">{value}</div>
-                    {change && <p className="text-xs text-muted-foreground">{change}</p>}
-                </>
-            )}
-        </CardContent>
-    </Card>
+const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading, description }) => (
+  <Card className="bg-white dark:bg-card shadow-sm transition-transform hover:-translate-y-1">
+    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+      <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
+      <Icon className="h-4 w-4 text-muted-foreground" />
+    </CardHeader>
+    <CardContent>
+      {isLoading ? (
+        <Skeleton className="h-8 w-3/5" />
+      ) : (
+        <div className="text-2xl font-bold">{value}</div>
+      )}
+      {description && !isLoading && <p className="text-xs text-muted-foreground">{description}</p>}
+    </CardContent>
+  </Card>
 );
 
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  isLoading: boolean;
+  description?: string;
+}
 
-export default function AdminStatisticsPage() {
-    const { t } = useTranslation();
-    const { currentUser, isUserLoading } = useRole();
-    const db = getFirestore();
+// --- COMPOSANT DU TABLEAU DE BORD PRINCIPAL ---
+const AdminDashboard = () => {
+  const { currentUser, isUserLoading } = useRole();
+  const db = getFirestore();
 
-    const [stats, setStats] = useState({
-        userCount: 0,
-        courseCount: 0,
-        monthlyRevenue: 0,
-    });
-    const [courses, setCourses] = useState<Course[]>([]);
-    const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-    const [revenueTrendData, setRevenueTrendData] = useState<RevenueDataPoint[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+  const [stats, setStats] = useState<Stats>({
+    activeStudents: null,
+    monthlyRevenue: null,
+    avgCompletionRate: null,
+    newInstructors: null,
+  });
+  const [topCourses, setTopCourses] = useState<TopCourse[]>([]);
+  const [loadingState, setLoadingState] = useState({
+    stats: true,
+    activity: true,
+  });
+   const [revenueTrendData, setRevenueTrendData] = useState<any[]>([]);
 
-    useEffect(() => {
-        if (isUserLoading || currentUser?.role !== 'admin') {
-            if (!isUserLoading) setIsLoading(false);
-            return;
-        };
+  // --- TYPES ---
+  interface Stats {
+    activeStudents: number | null;
+    monthlyRevenue: number | null;
+    avgCompletionRate: number | null;
+    newInstructors: number | null;
+  }
 
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
-                const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
-                const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'));
-                
-                const [studentsSnap, coursesSnap, paymentsSnap] = await Promise.all([
-                    getDocs(studentsQuery),
-                    getDocs(coursesQuery),
-                    getDocs(paymentsSnap)
-                ]);
+  interface TopCourse {
+    id: string;
+    title: string;
+    enrollmentCount: number;
+  }
 
-                // User Count
-                setStats(prev => ({ ...prev, userCount: studentsSnap.size }));
+  // --- FETCHING LOGIC ---
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'admin') return;
 
-                // Course Data
-                const courseList = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-                setCourses(courseList);
-                setStats(prev => ({ ...prev, courseCount: courseList.length }));
+    const fetchData = async () => {
+        setLoadingState({ stats: true, activity: true });
+        try {
+            const thirtyDaysAgo = Timestamp.fromDate(subDays(new Date(), 30));
+            const startOfCurrentMonth = Timestamp.fromDate(startOfMonth(new Date()));
+            
+            // Define all queries
+            const activeStudentsQuery = query(collection(db, 'users'), where('lastLogin', '>=', thirtyDaysAgo));
+            const newInstructorsQuery = query(collection(db, 'users'), where('role', '==', 'instructor'), where('createdAt', '>=', thirtyDaysAgo));
+            const enrollmentsQuery = query(collection(db, 'enrollments'));
+            const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'));
+            const topCoursesEnrollmentsQuery = query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startOfCurrentMonth));
 
-                // Enrollments for top courses
-                const courseIds = courseList.map(c => c.id);
-                if (courseIds.length > 0) {
-                     const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', courseIds.slice(0,30)));
-                     const enrollmentSnapshot = await getDocs(enrollmentsQuery);
-                     setEnrollments(enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment));
-                }
+            // Fetch all data in parallel
+            const [
+                activeStudentsSnap,
+                newInstructorsSnap,
+                enrollmentsSnap,
+                paymentsSnap,
+                topCoursesEnrollmentsSnap,
+            ] = await Promise.all([
+                getDocs(activeStudentsQuery),
+                getDocs(newInstructorsQuery),
+                getDocs(enrollmentsQuery),
+                getDocs(paymentsQuery),
+                getDocs(topCoursesEnrollmentsQuery),
+            ]);
 
-                // Revenue Data
-                let monthlyTotal = 0;
-                const monthlyAggregates: Record<string, number> = {};
+            // --- Process stats ---
+            const totalProgress = enrollmentsSnap.docs.reduce((acc, doc) => acc + (doc.data().progress || 0), 0);
+            const avgCompletionRate = enrollmentsSnap.empty ? 0 : totalProgress / enrollmentsSnap.size;
+            
+            let monthlyTotal = 0;
+            const monthlyAggregates: Record<string, number> = {};
 
-                paymentsSnap.docs.forEach(doc => {
-                    const payment = doc.data();
-                    if (payment.date instanceof Timestamp) {
-                        const paymentDate = payment.date.toDate();
-                        const startOfCurrentMonth = startOfMonth(new Date());
-                        if (paymentDate >= startOfCurrentMonth) {
-                            monthlyTotal += (payment.amount || 0);
-                        }
-                        const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
-                        monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
+            paymentsSnap.docs.forEach(doc => {
+                const payment = doc.data();
+                if (payment.date instanceof Timestamp) {
+                    const paymentDate = payment.date.toDate();
+                    if (paymentDate >= startOfCurrentMonth.toDate()) {
+                        monthlyTotal += (payment.amount || 0);
                     }
+                    const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
+                    monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
+                }
+            });
+            
+            const trendData = Object.entries(monthlyAggregates)
+                .map(([month, revenue]) => ({ month, revenue }))
+                .sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+
+            setRevenueTrendData(trendData);
+            setStats({
+                activeStudents: activeStudentsSnap.size,
+                newInstructors: newInstructorsSnap.size,
+                avgCompletionRate: avgCompletionRate,
+                monthlyRevenue: monthlyTotal
+            });
+
+            // --- Process Top Courses ---
+            if (topCoursesEnrollmentsSnap.empty) {
+                setTopCourses([]);
+            } else {
+                const enrollmentCounts: Record<string, number> = {};
+                topCoursesEnrollmentsSnap.docs.forEach(doc => {
+                    const courseId = doc.data().courseId;
+                    enrollmentCounts[courseId] = (enrollmentCounts[courseId] || 0) + 1;
                 });
                 
-                const trendData = Object.entries(monthlyAggregates)
-                    .map(([month, revenue]) => ({ month, revenue }))
-                    .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+                const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b] - enrollmentCounts[a]).slice(0, 5);
 
-                setRevenueTrendData(trendData);
-                setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
+                if (sortedCourseIds.length > 0) {
+                     const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', sortedCourseIds)));
+                     const coursesData: Record<string, string> = {};
+                     coursesSnap.forEach(d => coursesData[d.id] = d.data().title);
 
-            } catch (e) {
-                console.error("Error fetching admin stats", e);
-            } finally {
-                setIsLoading(false);
+                     const activities = sortedCourseIds.map(courseId => ({
+                         id: courseId,
+                         title: coursesData[courseId] || 'Cours inconnu',
+                         enrollmentCount: enrollmentCounts[courseId],
+                     }));
+                     setTopCourses(activities);
+                } else {
+                    setTopCourses([]);
+                }
             }
-        };
-        fetchData();
-    }, [db, isUserLoading, currentUser]);
-
-    const topCourses = useMemo(() => {
-        const courseEnrollmentCounts = enrollments.reduce((acc, enrollment) => {
-            acc[enrollment.courseId] = (acc[enrollment.courseId] || 0) + 1;
-            return acc;
-        }, {} as Record<string, number>);
-
-        return courses
-            .map(course => ({
-                ...course,
-                enrollmentCount: courseEnrollmentCounts[course.id] || 0,
-            }))
-            .sort((a, b) => b.enrollmentCount - a.enrollmentCount)
-            .slice(0, 5);
-    }, [courses, enrollments]);
-
-    const chartConfig = {
-        revenue: { label: 'Revenus', color: 'hsl(var(--primary))' },
+        } catch (e) {
+            console.error("Error fetching admin stats", e);
+        } finally {
+            setLoadingState({ stats: false, activity: false });
+        }
     };
-    
-    if (isUserLoading) {
-        return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-    }
-    
-    if (currentUser?.role !== 'admin') {
-        return (
-            <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
-                <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
-                <h1 className="text-2xl font-bold">Accès Interdit</h1>
-                <p className="text-muted-foreground">Vous n'avez pas les autorisations nécessaires pour accéder à cette page.</p>
-            </div>
-        );
-    }
+    fetchData();
+  }, [currentUser, db]);
 
+  const isLoading = isUserLoading || loadingState.stats || loadingState.activity;
+
+  // --- Authorization Check ---
+  if (!isUserLoading && currentUser?.role !== 'admin') {
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
-            <header>
-                <h1 className="text-3xl font-bold dark:text-white">{t('navStatistics')}</h1>
-                <p className="text-muted-foreground dark:text-slate-400">{t('stats_description')}</p>
-            </header>
-
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                <StatCard title={t('total_students')} value={stats.userCount.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} />
-                <StatCard title={t('monthly_revenue')} value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
-                <StatCard title={t('active_courses')} value={stats.courseCount.toLocaleString('fr-FR')} icon={BookOpen} isLoading={isLoading} />
-            </section>
-
-            <section className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
-                     <h2 className="text-2xl font-bold text-white mb-4">Évolution des revenus</h2>
-                     <div className="h-[450px] bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
-                        {isLoading ? <Skeleton className="h-full w-full bg-slate-800" /> : (
-                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart
-                                    data={revenueTrendData}
-                                    margin={{ left: 12, right: 12, top: 10, bottom: 10 }}
-                                >
-                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-slate-700/60" />
-                                    <XAxis
-                                        dataKey="month"
-                                        tickLine={false}
-                                        axisLine={false}
-                                        tickMargin={8}
-                                        tickFormatter={(value) => value.slice(0, 3)}
-                                        className="fill-slate-500 text-xs"
-                                    />
-                                    <YAxis 
-                                        tickLine={false} 
-                                        axisLine={false} 
-                                        tickMargin={8} 
-                                        tickFormatter={(value) => `${Number(value) / 1000}k`}
-                                        className="fill-slate-500 text-xs"
-                                    />
-                                    <Tooltip
-                                        cursor={{ stroke: 'hsl(var(--primary))', strokeWidth: 1, strokeDasharray: '4 4' }}
-                                        content={<ChartTooltipContent 
-                                            formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
-                                            className="bg-slate-900/80 backdrop-blur-sm border-slate-700 text-white" 
-                                        />}
-                                    />
-                                    <defs>
-                                        <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
-                                            <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
-                                        </linearGradient>
-                                    </defs>
-                                    <Area
-                                        dataKey="revenue"
-                                        type="natural"
-                                        fill="url(#fillRevenue)"
-                                        stroke="hsl(var(--primary))"
-                                        stackId="a"
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        )}
-                    </div>
-                </div>
-                <div className="space-y-6">
-                     <h2 className="text-2xl font-bold text-white mb-4">Top des cours</h2>
-                      <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="border-b-slate-800">
-                                    <TableHead className="w-12 text-slate-400">Rang</TableHead>
-                                    <TableHead className="text-slate-400">Titre du cours</TableHead>
-                                    <TableHead className="text-right text-slate-400">Ventes</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {isLoading ? [...Array(5)].map((_, i) => (
-                                    <TableRow key={i} className="border-0">
-                                        <TableCell><Skeleton className="h-5 w-5 rounded-full bg-slate-700" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-full bg-slate-700" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-5 w-10 bg-slate-700" /></TableCell>
-                                    </TableRow>
-                                )) : topCourses.map((course, index) => (
-                                    <TableRow key={course.id} className="border-b-slate-800/50 font-medium hover:bg-slate-800/40">
-                                        <TableCell className="font-bold text-slate-500">{index + 1}</TableCell>
-                                        <TableCell className="text-slate-200">{course.title}</TableCell>
-                                        <TableCell className="text-right font-mono text-white">{course.enrollmentCount}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                      </div>
-                </div>
-            </section>
+        <div className="flex flex-col items-center justify-center h-[50vh] text-center p-4">
+             <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+            <h1 className="text-2xl font-bold">Accès Interdit</h1>
+            <p className="text-muted-foreground">Vous n'avez pas les autorisations nécessaires pour accéder à cette page.</p>
         </div>
-    );
+    )
+  }
+
+  const chartConfig = {
+    revenue: {
+      label: "Revenus",
+      color: "hsl(var(--primary))",
+    },
+  };
+
+  const statCards = [
+    { title: "Revenus (Mois en cours)", value: `${stats.monthlyRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`, icon: DollarSign },
+    { title: "Étudiants Actifs (30j)", value: stats.activeStudents?.toLocaleString('fr-FR') ?? '...', icon: Users },
+    { title: "Taux de Complétion Moyen", value: stats.avgCompletionRate !== null ? `${Math.round(stats.avgCompletionRate)}%` : '...', icon: CheckCircle },
+    { title: "Nouveaux Instructeurs (30j)", value: stats.newInstructors?.toLocaleString('fr-FR') ?? '...', icon: UserPlus }
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        {statCards.map(card => (
+            <StatCard
+                key={card.title}
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                isLoading={isLoading}
+            />
+        ))}
+      </div>
+      
+      <div className="grid lg:grid-cols-5 gap-6">
+            <Card className="lg:col-span-3 bg-white dark:bg-card shadow-sm">
+                <CardHeader>
+                    <CardTitle>Évolution des revenus</CardTitle>
+                    <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <ChartContainer config={chartConfig} className="h-80 w-full">
+                      <ResponsiveContainer>
+                          <AreaChart data={revenueTrendData}>
+                          <defs>
+                              <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
+                                  <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
+                              </linearGradient>
+                              </defs>
+                          <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
+                          <XAxis
+                              dataKey="month"
+                              tickLine={false}
+                              axisLine={false}
+                              tickMargin={8}
+                              tickFormatter={(value) => value.slice(0, 3)}
+                              className="fill-muted-foreground text-xs"
+                          />
+                          <YAxis 
+                                  tickLine={false} 
+                                  axisLine={false} 
+                                  tickMargin={8} 
+                                  tickFormatter={(value) => `${Number(value) / 1000}k`}
+                                  className="fill-muted-foreground text-xs"
+                              />
+                          <Tooltip
+                              cursor={false}
+                              content={<ChartTooltipContent
+                                  formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
+                                  className="bg-background/80 backdrop-blur-sm"
+                              />}
+                          />
+                          <Area
+                              dataKey="revenue"
+                              type="natural"
+                              fill="url(#fillRevenue)"
+                              stroke="var(--color-revenue)"
+                              stackId="a"
+                          />
+                          </AreaChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2 bg-white dark:bg-card shadow-sm">
+                <CardHeader>
+                    <CardTitle>Top des cours ce mois-ci</CardTitle>
+                    <CardDescription>Les cours avec le plus de nouvelles inscriptions.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Cours</TableHead>
+                                <TableHead className="text-right">Inscriptions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                        {loadingState.activity ? (
+                            [...Array(5)].map((_, i) => (
+                                <TableRow key={i}><TableCell><Skeleton className="h-5 w-full" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell></TableRow>
+                            ))
+                        ) : topCourses.length > 0 ? (
+                            topCourses.map((course) => (
+                                <TableRow key={course.id}>
+                                <TableCell className="font-medium truncate max-w-xs">{course.title}</TableCell>
+                                <TableCell className="text-right font-bold">{course.enrollmentCount}</TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Aucune inscription ce mois-ci.</TableCell></TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+      </div>
+
+    </div>
+  );
+};
+
+export default function StatisticsPage() {
+    const { t } = useTranslation();
+    return (
+         <div className="space-y-8 max-w-7xl mx-auto px-4">
+              <header>
+                <h1 className="text-3xl font-bold dark:text-white">{t('navStatistics')}</h1>
+                <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance de vos cours.</p>
+            </header>
+            <AdminDashboard />
+        </div>
+    )
 }
