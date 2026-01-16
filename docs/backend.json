@@ -247,6 +247,36 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "type", "title", "createdAt"]
+    },
+    "RecommendedCourseItem": {
+      "title": "Recommended Course Item",
+      "type": "object",
+      "description": "Represents a single recommended course within a user's recommendation list.",
+      "properties": {
+        "courseId": { "type": "string" },
+        "title": { "type": "string" },
+        "coverImage": { "type": "string", "format": "uri" },
+        "instructorId": { "type": "string" },
+        "price": { "type": "number" },
+        "score": { "type": "number", "description": "The recommendation score." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "title", "coverImage", "instructorId", "price"]
+    },
+    "UserRecommendations": {
+      "title": "User Recommendations",
+      "type": "object",
+      "description": "A document containing a list of recommended courses for a specific user.",
+      "properties": {
+        "courses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/entities/RecommendedCourseItem"
+          }
+        },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courses", "updatedAt"]
     }
   },
   "auth": {
@@ -336,6 +366,10 @@
     "/user_activity/{activityId}": {
       "schema": { "$ref": "#/entities/UserActivity" },
       "description": "Stores user activity events for the 'Recent Activity' feed."
+    },
+    "/recommended_courses/{userId}": {
+      "schema": { "$ref": "#/entities/UserRecommendations" },
+      "description": "Stores personalized course recommendations for each user."
     }
   }
 }

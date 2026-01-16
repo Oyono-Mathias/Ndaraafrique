@@ -1,108 +1,110 @@
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, getFirestore, getDocs, doc } from 'firebase/firestore';
+import { useDoc, useMemoFirebase } from '@/firebase';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
-import { Sparkles, Edit } from 'lucide-react';
+import { Sparkles, Edit, Search } from 'lucide-react';
 import { Button } from '../ui/button';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+
+interface RecommendedCourseItem {
+  courseId: string;
+  title: string;
+  coverImage: string;
+  instructorId: string;
+  price: number;
+}
+
+interface UserRecommendations {
+  courses: RecommendedCourseItem[];
+}
 
 export function RecommendedCourses() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
-    const [recommendedCourses, setRecommendedCourses] = useState<Course[]>([]);
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingInstructors, setIsLoadingInstructors] = useState(false);
+
+    const recommendationRef = useMemoFirebase(
+        () => currentUser?.uid ? doc(db, 'recommended_courses', currentUser.uid) : null,
+        [currentUser?.uid, db]
+    );
+
+    const { data: recommendationDoc, isLoading: isRecsLoading } = useDoc<UserRecommendations>(recommendationRef);
+
+    const recommendedCourses = recommendationDoc?.courses || [];
 
     useEffect(() => {
-        if (isUserLoading || !currentUser) {
-            if (!isUserLoading) setIsLoading(false);
-            return;
-        }
+        if (recommendedCourses.length === 0) return;
 
-        if (!currentUser.careerGoals?.interestDomain) {
-            setIsLoading(false);
-            return;
-        }
-
-        const fetchRecommendations = async () => {
-            setIsLoading(true);
-
-            try {
-                // 1. Get user's enrolled courses
-                const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
-                const enrollmentsSnap = await getDocs(enrollmentsQuery);
-                const enrolledCourseIds = new Set(enrollmentsSnap.docs.map(doc => doc.data().courseId));
-
-                // 2. Query for courses matching user's interest
-                const recommendationsQuery = query(
-                    collection(db, 'courses'),
-                    where('status', '==', 'Published'),
-                    where('category', '==', currentUser.careerGoals.interestDomain),
-                    limit(10) // Fetch a bit more to have a buffer after filtering
-                );
-                
-                const coursesSnap = await getDocs(recommendationsQuery);
-                
-                const potentialCourses = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-
-                // 3. Filter out already enrolled courses client-side
-                const finalRecommendations = potentialCourses.filter(course => !enrolledCourseIds.has(course.id)).slice(0, 4);
-
-                setRecommendedCourses(finalRecommendations);
-
-                // 4. Fetch instructor details for the recommended courses
-                if (finalRecommendations.length > 0) {
-                    const instructorIds = [...new Set(finalRecommendations.map(c => c.instructorId).filter(Boolean))];
-                    if (instructorIds.length > 0) {
-                        const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
-                        const userSnapshots = await getDocs(usersQuery);
-                        const newInstructors = new Map<string, Partial<NdaraUser>>();
-                        userSnapshots.forEach(doc => {
-                            const userData = doc.data();
-                            newInstructors.set(userData.uid, { fullName: userData.fullName });
-                        });
-                        setInstructorsMap(newInstructors);
-                    }
-                }
-
-            } catch (error) {
-                console.error("Error fetching recommended courses:", error);
-            } finally {
-                setIsLoading(false);
+        const fetchInstructors = async () => {
+            setIsLoadingInstructors(true);
+            const instructorIds = [...new Set(recommendedCourses.map(c => c.instructorId).filter(Boolean))];
+            if (instructorIds.length === 0) {
+                setIsLoadingInstructors(false);
+                return;
             }
+            
+            const newInstructors = new Map<string, Partial<NdaraUser>>();
+            const idsToFetch = instructorIds.filter(id => !instructorsMap.has(id));
+
+            if (idsToFetch.length > 0) {
+                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
+                 const userSnapshots = await getDocs(usersQuery);
+                 userSnapshots.forEach(doc => {
+                    const userData = doc.data();
+                    newInstructors.set(userData.uid, { fullName: userData.fullName });
+                });
+            }
+            setInstructorsMap(prev => new Map([...prev, ...newInstructors]));
+            setIsLoadingInstructors(false);
         };
+        
+        fetchInstructors();
+    }, [recommendedCourses, db, instructorsMap]);
 
-        fetchRecommendations();
-
-    }, [currentUser, isUserLoading, db]);
+    const isLoading = isUserLoading || isRecsLoading || isLoadingInstructors;
 
     if (isUserLoading) {
-        return (
+        return null;
+    }
+    
+    // Prompt to complete profile if interestDomain is missing - This logic is now handled by the backend generating recommendations.
+    // If no recommendations, we show a generic exploration message.
+    
+    if (isLoading) {
+         return (
              <section>
                 <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
+                <div className="flex space-x-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="w-[280px] shrink-0">
+                           <Skeleton className="h-80 rounded-2xl bg-slate-800" />
+                        </div>
+                    ))}
                 </div>
             </section>
-        )
+        );
     }
-
-    // Prompt to complete profile if interestDomain is missing
-    if (!currentUser?.careerGoals?.interestDomain) {
+    
+    if (recommendedCourses.length === 0) {
         return (
             <section>
+                <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
                 <div className="text-center p-8 bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl">
                     <Sparkles className="mx-auto h-12 w-12 text-primary/80 mb-4" />
-                    <h3 className="font-bold text-lg text-white">Débloquez vos recommandations personnelles !</h3>
-                    <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">Complétez votre profil en ajoutant votre domaine d'intérêt pour recevoir des suggestions de cours sur mesure.</p>
+                    <h3 className="font-bold text-lg text-white">Affinez vos recommandations</h3>
+                    <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">Plus vous suivez de cours, meilleures seront vos recommandations ! En attendant, pourquoi ne pas explorer notre catalogue ?</p>
                     <Button asChild className="mt-6">
-                        <Link href="/account">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Compléter mon profil
+                        <Link href="/search">
+                            <Search className="h-4 w-4 mr-2" />
+                            Explorer les cours
                         </Link>
                     </Button>
                 </div>
@@ -110,34 +112,34 @@ export function RecommendedCourses() {
         );
     }
     
-    if (isLoading) {
-         return (
-             <section>
-                <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
-                </div>
-            </section>
-        )
-    }
-
-    if (recommendedCourses.length === 0) {
-        return null; // Don't show the section if there are no recommendations
-    }
+    // Convert RecommendedCourseItem to a shape CourseCard can use
+    const coursesForCard: Course[] = recommendedCourses.map(rec => ({
+        id: rec.courseId,
+        title: rec.title,
+        imageUrl: rec.coverImage,
+        price: rec.price,
+        instructorId: rec.instructorId,
+        description: '',
+        category: '',
+        status: 'Published'
+    }));
 
     return (
         <section>
             <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {recommendedCourses.map(course => (
-                     <CourseCard 
-                        key={course.id}
-                        course={course} 
-                        instructor={instructorsMap.get(course.instructorId) || null}
-                        variant="catalogue" 
-                    />
-                ))}
-            </div>
+            <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-6">
+                    {coursesForCard.map(course => (
+                        <CarouselItem key={course.id} className="pl-6 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CourseCard 
+                                course={course} 
+                                instructor={instructorsMap.get(course.instructorId) || null}
+                                variant="catalogue" 
+                            />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
         </section>
     );
 }
