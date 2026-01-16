@@ -15,8 +15,8 @@ import type { Payment, SecurityLog } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserStatus } from '@/app/actions/userActions';
-import { resolveSecurityItem } from '@/app/actions/securityActions';
+import { updateUserStatus } from '@/actions/userActions';
+import { resolveSecurityItem } from '@/actions/securityActions';
 
 type AlertType = 'suspicious_payment' | 'failed_payment' | 'suspicious_login';
 

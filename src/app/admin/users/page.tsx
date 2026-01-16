@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
-import { deleteUserAccount, importUsersAction, updateUserStatus } from '@/app/actions/userActions';
+import { deleteUserAccount, importUsersAction, updateUserStatus } from '@/actions/userActions';
 import {
   Table,
   TableBody,

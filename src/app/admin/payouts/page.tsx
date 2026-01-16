@@ -46,7 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
-import { processPayout } from '@/app/actions/supportActions';
+import { processPayout } from '@/actions/supportActions';
 
 
 interface Payout {

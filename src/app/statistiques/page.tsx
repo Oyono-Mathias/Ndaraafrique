@@ -1,11 +1,12 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs, doc, orderBy } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer } from 'recharts';
+import { AreaChart, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer, Bar } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert, CheckCircle, UserPlus } from 'lucide-react';
@@ -17,10 +18,6 @@ import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 
-interface RevenueDataPoint {
-    month: string;
-    revenue: number;
-}
 
 const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading, description }) => (
   <Card className="bg-white dark:bg-card shadow-sm transition-transform hover:-translate-y-1">
@@ -52,133 +49,148 @@ const AdminDashboard = () => {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
-  const [stats, setStats] = useState<Stats>({
-    activeStudents: null,
-    monthlyRevenue: null,
-    avgCompletionRate: null,
-    newInstructors: null,
-  });
-  const [topCourses, setTopCourses] = useState<TopCourse[]>([]);
-  const [loadingState, setLoadingState] = useState({
-    stats: true,
-    activity: true,
-  });
-   const [revenueTrendData, setRevenueTrendData] = useState<any[]>([]);
-
-  // --- TYPES ---
   interface Stats {
     activeStudents: number | null;
     monthlyRevenue: number | null;
     avgCompletionRate: number | null;
     newInstructors: number | null;
+    newStudents: number | null;
+    publishedCourses: number | null;
   }
-
+  
   interface TopCourse {
     id: string;
     title: string;
     enrollmentCount: number;
   }
 
+  const [stats, setStats] = useState<Stats>({
+    activeStudents: null,
+    monthlyRevenue: null,
+    avgCompletionRate: null,
+    newInstructors: null,
+    newStudents: null,
+    publishedCourses: null,
+  });
+  const [topCourses, setTopCourses] = useState<TopCourse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [revenueTrendData, setRevenueTrendData] = useState<any[]>([]);
+  const [userGrowthData, setUserGrowthData] = useState<any[]>([]);
+
+
   // --- FETCHING LOGIC ---
   useEffect(() => {
-    if (!currentUser || currentUser.role !== 'admin') return;
+    if (!currentUser || currentUser.role !== 'admin') {
+        setIsLoading(false);
+        return;
+    }
 
-    const fetchData = async () => {
-        setLoadingState({ stats: true, activity: true });
-        try {
-            const thirtyDaysAgo = Timestamp.fromDate(subDays(new Date(), 30));
-            const startOfCurrentMonth = Timestamp.fromDate(startOfMonth(new Date()));
-            
-            // Define all queries
-            const activeStudentsQuery = query(collection(db, 'users'), where('lastLogin', '>=', thirtyDaysAgo));
-            const newInstructorsQuery = query(collection(db, 'users'), where('role', '==', 'instructor'), where('createdAt', '>=', thirtyDaysAgo));
-            const enrollmentsQuery = query(collection(db, 'enrollments'));
-            const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'));
-            const topCoursesEnrollmentsQuery = query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startOfCurrentMonth));
+    setIsLoading(true);
 
-            // Fetch all data in parallel
-            const [
-                activeStudentsSnap,
-                newInstructorsSnap,
-                enrollmentsSnap,
-                paymentsSnap,
-                topCoursesEnrollmentsSnap,
-            ] = await Promise.all([
-                getDocs(activeStudentsQuery),
-                getDocs(newInstructorsQuery),
-                getDocs(enrollmentsQuery),
-                getDocs(paymentsQuery),
-                getDocs(topCoursesEnrollmentsQuery),
-            ]);
+    const unsubscribes: (() => void)[] = [];
+    const thirtyDaysAgo = Timestamp.fromDate(subDays(new Date(), 30));
+    const startOfCurrentMonth = Timestamp.fromDate(startOfMonth(new Date()));
 
-            // --- Process stats ---
-            const totalProgress = enrollmentsSnap.docs.reduce((acc, doc) => acc + (doc.data().progress || 0), 0);
-            const avgCompletionRate = enrollmentsSnap.empty ? 0 : totalProgress / enrollmentsSnap.size;
-            
-            let monthlyTotal = 0;
-            const monthlyAggregates: Record<string, number> = {};
+    // Active Students
+    const activeStudentsQuery = query(collection(db, 'users'), where('lastLogin', '>=', thirtyDaysAgo));
+    unsubscribes.push(onSnapshot(activeStudentsQuery, s => setStats(p => ({ ...p, activeStudents: s.size }))));
 
-            paymentsSnap.docs.forEach(doc => {
-                const payment = doc.data();
-                if (payment.date instanceof Timestamp) {
-                    const paymentDate = payment.date.toDate();
-                    if (paymentDate >= startOfCurrentMonth.toDate()) {
-                        monthlyTotal += (payment.amount || 0);
+    // New Instructors
+    const newInstructorsQuery = query(collection(db, 'users'), where('role', '==', 'instructor'), where('createdAt', '>=', thirtyDaysAgo));
+    unsubscribes.push(onSnapshot(newInstructorsQuery, s => setStats(p => ({ ...p, newInstructors: s.size }))));
+    
+    // New Students
+    const newStudentsQuery = query(collection(db, 'users'), where('role', '==', 'student'), where('createdAt', '>=', thirtyDaysAgo));
+    unsubscribes.push(onSnapshot(newStudentsQuery, s => setStats(p => ({ ...p, newStudents: s.size }))));
+
+    // Published Courses
+    const publishedCoursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
+    unsubscribes.push(onSnapshot(publishedCoursesQuery, s => setStats(p => ({ ...p, publishedCourses: s.size }))));
+
+    // Enrollments for completion rate
+    const enrollmentsQuery = query(collection(db, 'enrollments'));
+    unsubscribes.push(onSnapshot(enrollmentsQuery, s => {
+        if(s.empty) {
+            setStats(prev => ({ ...prev, avgCompletionRate: 0 }));
+            return;
+        }
+        const totalProgress = s.docs.reduce((acc, doc) => acc + (doc.data().progress || 0), 0);
+        setStats(prev => ({ ...prev, avgCompletionRate: totalProgress / s.size }));
+    }));
+
+    // Payments for revenue
+    const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'));
+    unsubscribes.push(onSnapshot(paymentsQuery, s => {
+        let monthlyTotal = 0;
+        const monthlyAggregates: Record<string, number> = {};
+        s.docs.forEach(doc => {
+            const p = doc.data();
+            if (p.date instanceof Timestamp) {
+                const d = p.date.toDate();
+                if (d >= startOfCurrentMonth.toDate()) monthlyTotal += (p.amount || 0);
+                const mKey = format(d, 'MMM yy', { locale: fr });
+                monthlyAggregates[mKey] = (monthlyAggregates[mKey] || 0) + (p.amount || 0);
+            }
+        });
+        const trendData = Object.entries(monthlyAggregates).map(([month, revenue]) => ({ month, revenue })).sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+        setRevenueTrendData(trendData);
+        setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
+    }));
+
+    // Enrollments for top courses
+    const topCoursesEnrollmentsQuery = query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startOfCurrentMonth));
+    unsubscribes.push(onSnapshot(topCoursesEnrollmentsQuery, async (snapshot) => {
+        if (snapshot.empty) {
+            setTopCourses([]); return;
+        }
+        const enrollmentCounts: Record<string, number> = {};
+        snapshot.docs.forEach(doc => {
+            const courseId = doc.data().courseId;
+            enrollmentCounts[courseId] = (enrollmentCounts[courseId] || 0) + 1;
+        });
+        const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b] - enrollmentCounts[a]).slice(0, 5);
+        if (sortedCourseIds.length > 0) {
+             const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', sortedCourseIds)));
+             const coursesData: Record<string, string> = {};
+             coursesSnap.forEach(d => coursesData[d.id] = d.data().title);
+             const activities = sortedCourseIds.map(courseId => ({
+                 id: courseId, title: coursesData[courseId] || 'Cours inconnu', enrollmentCount: enrollmentCounts[courseId],
+             }));
+             setTopCourses(activities);
+        } else {
+            setTopCourses([]);
+        }
+    }));
+    
+    // User growth chart data
+    const allNewUsersQuery = query(collection(db, 'users'), where('createdAt', '>=', thirtyDaysAgo));
+    unsubscribes.push(onSnapshot(allNewUsersQuery, snapshot => {
+        const dailyCounts: Record<string, { etudiants: number, formateurs: number }> = {};
+        const dateArray = Array.from({ length: 30 }, (_, i) => format(subDays(new Date(), i), 'dd MMM', { locale: fr })).reverse();
+        
+        dateArray.forEach(d => { dailyCounts[d] = { etudiants: 0, formateurs: 0 }});
+
+        snapshot.docs.forEach(doc => {
+            const user = doc.data();
+            if (user.createdAt instanceof Timestamp) {
+                const dateKey = format(user.createdAt.toDate(), 'dd MMM', { locale: fr });
+                if (dailyCounts[dateKey]) {
+                    if (user.role === 'instructor') {
+                        dailyCounts[dateKey].formateurs++;
+                    } else {
+                        dailyCounts[dateKey].etudiants++;
                     }
-                    const monthKey = format(paymentDate, 'MMM yy', { locale: fr });
-                    monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
-                }
-            });
-            
-            const trendData = Object.entries(monthlyAggregates)
-                .map(([month, revenue]) => ({ month, revenue }))
-                .sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-
-            setRevenueTrendData(trendData);
-            setStats({
-                activeStudents: activeStudentsSnap.size,
-                newInstructors: newInstructorsSnap.size,
-                avgCompletionRate: avgCompletionRate,
-                monthlyRevenue: monthlyTotal
-            });
-
-            // --- Process Top Courses ---
-            if (topCoursesEnrollmentsSnap.empty) {
-                setTopCourses([]);
-            } else {
-                const enrollmentCounts: Record<string, number> = {};
-                topCoursesEnrollmentsSnap.docs.forEach(doc => {
-                    const courseId = doc.data().courseId;
-                    enrollmentCounts[courseId] = (enrollmentCounts[courseId] || 0) + 1;
-                });
-                
-                const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b] - enrollmentCounts[a]).slice(0, 5);
-
-                if (sortedCourseIds.length > 0) {
-                     const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', sortedCourseIds)));
-                     const coursesData: Record<string, string> = {};
-                     coursesSnap.forEach(d => coursesData[d.id] = d.data().title);
-
-                     const activities = sortedCourseIds.map(courseId => ({
-                         id: courseId,
-                         title: coursesData[courseId] || 'Cours inconnu',
-                         enrollmentCount: enrollmentCounts[courseId],
-                     }));
-                     setTopCourses(activities);
-                } else {
-                    setTopCourses([]);
                 }
             }
-        } catch (e) {
-            console.error("Error fetching admin stats", e);
-        } finally {
-            setLoadingState({ stats: false, activity: false });
-        }
-    };
-    fetchData();
+        });
+        const growthData = Object.entries(dailyCounts).map(([date, counts]) => ({ date, ...counts }));
+        setUserGrowthData(growthData);
+        setIsLoading(false);
+    }));
+
+    return () => unsubscribes.forEach(unsub => unsub());
   }, [currentUser, db]);
 
-  const isLoading = isUserLoading || loadingState.stats || loadingState.activity;
 
   // --- Authorization Check ---
   if (!isUserLoading && currentUser?.role !== 'admin') {
@@ -192,22 +204,26 @@ const AdminDashboard = () => {
   }
 
   const chartConfig = {
-    revenue: {
-      label: "Revenus",
-      color: "hsl(var(--primary))",
-    },
+    revenue: { label: "Revenus", color: "hsl(var(--primary))" },
   };
+  
+  const userChartConfig = {
+    etudiants: { label: "Étudiants", color: "hsl(var(--primary))" },
+    formateurs: { label: "Formateurs", color: "hsl(var(--muted-foreground))" },
+  }
 
   const statCards = [
-    { title: "Revenus (Mois en cours)", value: `${stats.monthlyRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`, icon: DollarSign },
+    { title: "Revenus (Mois)", value: `${stats.monthlyRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`, icon: DollarSign },
     { title: "Étudiants Actifs (30j)", value: stats.activeStudents?.toLocaleString('fr-FR') ?? '...', icon: Users },
+    { title: "Nouveaux Étudiants (30j)", value: stats.newStudents?.toLocaleString('fr-FR') ?? '...', icon: UserPlus },
+    { title: "Nouveaux Formateurs (30j)", value: stats.newInstructors?.toLocaleString('fr-FR') ?? '...', icon: UserPlus },
+    { title: "Cours Publiés", value: stats.publishedCourses?.toLocaleString('fr-FR') ?? '...', icon: BookOpen },
     { title: "Taux de Complétion Moyen", value: stats.avgCompletionRate !== null ? `${Math.round(stats.avgCompletionRate)}%` : '...', icon: CheckCircle },
-    { title: "Nouveaux Instructeurs (30j)", value: stats.newInstructors?.toLocaleString('fr-FR') ?? '...', icon: UserPlus }
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="space-y-8">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
         {statCards.map(card => (
             <StatCard
                 key={card.title}
@@ -222,8 +238,8 @@ const AdminDashboard = () => {
       <div className="grid lg:grid-cols-5 gap-6">
             <Card className="lg:col-span-3 bg-white dark:bg-card shadow-sm">
                 <CardHeader>
-                    <CardTitle>Évolution des revenus</CardTitle>
-                    <CardDescription>Revenus bruts générés sur les derniers mois.</CardDescription>
+                    <CardTitle>Évolution des revenus (nets)</CardTitle>
+                    <CardDescription>Revenus nets (après commission) générés sur les derniers mois.</CardDescription>
                 </CardHeader>
                 <CardContent className="pl-2">
                     <ChartContainer config={chartConfig} className="h-80 w-full">
@@ -285,7 +301,7 @@ const AdminDashboard = () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                        {loadingState.activity ? (
+                        {isLoading ? (
                             [...Array(5)].map((_, i) => (
                                 <TableRow key={i}><TableCell><Skeleton className="h-5 w-full" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell></TableRow>
                             ))
@@ -304,6 +320,45 @@ const AdminDashboard = () => {
                 </CardContent>
             </Card>
       </div>
+
+       <Card className="lg:col-span-3 bg-white dark:bg-card shadow-sm">
+            <CardHeader>
+                <CardTitle>Nouveaux utilisateurs (30 derniers jours)</CardTitle>
+                <CardDescription>Évolution journalière des inscriptions.</CardDescription>
+            </CardHeader>
+            <CardContent className="pl-2">
+                <ChartContainer config={userChartConfig} className="h-80 w-full">
+                    <ResponsiveContainer>
+                        <BarChart data={userGrowthData}>
+                            <CartesianGrid vertical={false} className="stroke-border/50" />
+                            <XAxis
+                                dataKey="date"
+                                tickLine={false}
+                                tickMargin={10}
+                                axisLine={false}
+                                className="fill-muted-foreground text-xs"
+                                interval={6}
+                            />
+                            <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                tickMargin={8}
+                                allowDecimals={false}
+                                className="fill-muted-foreground text-xs"
+                            />
+                            <Tooltip
+                                cursor={false}
+                                content={<ChartTooltipContent
+                                    className="bg-background/80 backdrop-blur-sm"
+                                />}
+                            />
+                            <Bar dataKey="etudiants" stackId="a" fill="var(--color-etudiants)" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="formateurs" stackId="a" fill="var(--color-formateurs)" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                    </ResponsiveContainer>
+                </ChartContainer>
+            </CardContent>
+        </Card>
 
     </div>
   );

@@ -30,7 +30,7 @@ import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { refundAndRevokeAccess } from '@/app/actions/supportActions';
+import { refundAndRevokeAccess } from '@/actions/supportActions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 

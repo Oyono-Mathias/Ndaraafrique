@@ -22,7 +22,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
 import { generatePromoCode } from '@/ai/flows/generate-promo-code-flow';
-import { sendGlobalNotification } from '@/app/actions/notificationActions';
+import { sendGlobalNotification } from '@/actions/notificationActions';
 
 const marketingFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Veuillez entrer une instruction d\'au moins 10 caractères.' }),

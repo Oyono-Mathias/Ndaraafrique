@@ -27,7 +27,7 @@ import { collection, doc, getDocs, getFirestore, query, serverTimestamp, updateD
 import type { Course, NdaraUser, Section, Lecture } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { moderateCourse } from '@/app/actions/supportActions';
+import { moderateCourse } from '@/actions/supportActions';
 import { useRole } from '@/context/RoleContext';
 
 

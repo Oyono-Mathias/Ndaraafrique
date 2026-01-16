@@ -23,7 +23,7 @@ import { africanCountries } from '@/lib/countries';
 import { Checkbox } from '@/components/ui/checkbox';
 import { sendNewInstructorApplicationEmail } from '@/lib/emails';
 import { useTranslation } from 'react-i18next';
-import { sendAdminNotification } from '../actions/notificationActions';
+import { sendAdminNotification } from '@/actions/notificationActions';
 
 const instructorApplicationSchema = (t: (key: string) => string) => z.object({
   specialty: z.string().min(3, { message: t('specialty_required') }),
