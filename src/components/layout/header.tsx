@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import type { Notification } from '@/lib/types';
 
 

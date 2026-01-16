@@ -70,7 +70,7 @@ service cloud.firestore {
         allow read, write, delete, list: if isActive() && isOwner(userId);
       }
       match /notifications/{notificationId} {
-        allow read, write, list: if isActive() && isOwner(userId);
+        allow read, write: if isActive() && isOwner(userId);
       }
       match /subscriptions/{subscriptionId} {
         allow read, list: if (isActive() && isOwner(userId)) || isAdmin();

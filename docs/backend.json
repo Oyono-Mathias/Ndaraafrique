@@ -275,6 +275,32 @@
       },
       "required": ["userId", "type", "title", "createdAt"]
     },
+     "Notification": {
+      "title": "Notification",
+      "type": "object",
+      "description": "Represents a single notification for a user.",
+      "properties": {
+        "text": { "type": "string", "description": "The content of the notification." },
+        "link": { "type": "string", "format": "uri", "description": "A URL to navigate to when clicked." },
+        "read": { "type": "boolean", "default": false, "description": "Whether the user has read the notification." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["success", "info", "reminder", "alert"], "default": "info" }
+      },
+      "required": ["text", "createdAt"]
+    },
+     "FCMToken": {
+        "title": "FCM Token",
+        "type": "object",
+        "description": "A Firebase Cloud Messaging token for a user's device.",
+        "properties": {
+            "tokens": { 
+                "type": "array", 
+                "items": { "type": "string" }
+            },
+            "createdAt": { "type": "string", "format": "date-time" }
+        },
+        "required": ["tokens", "createdAt"]
+    },
     "RecommendedCourseItem": {
       "title": "Recommended Course Item",
       "type": "object",
@@ -415,6 +441,14 @@
      "/users/{userId}/activity/{activityId}": {
       "schema": { "$ref": "#/entities/UserActivity" },
       "description": "Stores a user's specific activity events as a subcollection."
+    },
+     "/users/{userId}/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Stores notifications for a specific user."
+    },
+    "/users/{userId}/fcmTokens/{tokenId}": {
+      "schema": { "$ref": "#/entities/FCMToken" },
+      "description": "Stores FCM tokens for a user's devices."
     },
     "/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },

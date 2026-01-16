@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -105,8 +106,8 @@ const NotificationPreferences = () => {
                 if (permission === 'granted') {
                     const currentToken = await getToken(messaging, { vapidKey });
                     if (currentToken) {
-                        const tokenRef = doc(getFirestore(), `users/${user.uid}/fcmTokens`, currentToken);
-                        await setDoc(tokenRef, { createdAt: serverTimestamp(), uid: user.uid });
+                        const tokensRef = doc(getFirestore(), `fcmTokens`, user.uid);
+                        await setDoc(tokensRef, { tokens: [currentToken] }, { merge: true });
                         setIsEnabled(true);
                         toast({ title: 'Notifications activées', description: 'Vous recevrez désormais nos actualités.' });
                     } else {
@@ -120,8 +121,8 @@ const NotificationPreferences = () => {
                 const currentToken = await getToken(messaging, { vapidKey });
                 if (currentToken) {
                     await deleteToken(messaging);
-                    const tokenRef = doc(getFirestore(), `users/${user.uid}/fcmTokens`, currentToken);
-                    await deleteDoc(tokenRef);
+                    const tokensRef = doc(getFirestore(), `fcmTokens`, user.uid);
+                    await updateDoc(tokensRef, { tokens: [] });
                 }
                 setIsEnabled(false);
                 toast({ title: 'Notifications désactivées' });
