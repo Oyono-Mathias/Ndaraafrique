@@ -90,12 +90,12 @@ const AdminDashboard = () => {
     unsubscribes.push(onSnapshot(activeStudentsQuery, snapshot => {
         setStats(prev => ({ ...prev, activeStudents: snapshot.size }));
         setLoadingState(prev => ({...prev, stats: false}));
-    }));
+    }, (error) => console.error("Error fetching active students:", error)));
 
     const newInstructorsQuery = query(collection(db, 'users'), where('role', '==', 'instructor'), where('createdAt', '>=', thirtyDaysAgo));
      unsubscribes.push(onSnapshot(newInstructorsQuery, snapshot => {
         setStats(prev => ({ ...prev, newInstructors: snapshot.size }));
-    }));
+    }, (error) => console.error("Error fetching new instructors:", error)));
 
     const enrollmentsQuery = query(collection(db, 'enrollments'));
     unsubscribes.push(onSnapshot(enrollmentsQuery, snapshot => {
@@ -105,7 +105,7 @@ const AdminDashboard = () => {
         }
         const totalProgress = snapshot.docs.reduce((acc, doc) => acc + (doc.data().progress || 0), 0);
         setStats(prev => ({ ...prev, avgCompletionRate: totalProgress / snapshot.size }));
-    }));
+    }, (error) => console.error("Error fetching enrollments:", error)));
 
     const paymentsQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'));
     unsubscribes.push(onSnapshot(paymentsQuery, snapshot => {
@@ -130,7 +130,7 @@ const AdminDashboard = () => {
 
         setRevenueTrendData(trendData);
         setStats(prev => ({ ...prev, monthlyRevenue: monthlyTotal }));
-    }));
+    }, (error) => console.error("Error fetching payments:", error)));
     
     // --- Top Courses Activity ---
     const topCoursesQuery = query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startOfCurrentMonth));
@@ -166,6 +166,9 @@ const AdminDashboard = () => {
         }));
         
         setTopCourses(activities);
+        setLoadingState(prev => ({...prev, activity: false}));
+    }, (error) => {
+        console.error("Error fetching top courses:", error);
         setLoadingState(prev => ({...prev, activity: false}));
     }));
 
