@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -201,12 +200,12 @@ export default function EditCoursePage() {
       <div className="space-y-6">
         <Card className="bg-white dark:bg-[#1e293b] dark:border-slate-700 rounded-2xl shadow-sm">
           <CardHeader>
-            <Skeleton className="h-8 w-1/2" />
+            <Skeleton className="h-8 w-1/2 dark:bg-slate-700" />
           </CardHeader>
           <CardContent className="space-y-4 p-6">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-24 w-full" />
-            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full dark:bg-slate-700" />
+            <Skeleton className="h-24 w-full dark:bg-slate-700" />
+            <Skeleton className="h-10 w-full dark:bg-slate-700" />
           </CardContent>
         </Card>
       </div>
