@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button';
 import { ShieldAlert, UserCheck, Landmark, HelpCircle, UserX, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import { useTranslation } from 'react-i18next';
+import { Badge } from '../ui/badge';
+import { cn } from '@/lib/utils';
 
 interface ActionCardProps {
     title: string;
@@ -18,6 +20,7 @@ interface ActionCardProps {
     isLoading: boolean;
 }
 
+// NOTE: This component is deprecated and will be removed. Use AdminQuickActions instead.
 const ActionCard = ({ title, count, link, icon: Icon, isLoading }: ActionCardProps) => {
     return (
         <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
