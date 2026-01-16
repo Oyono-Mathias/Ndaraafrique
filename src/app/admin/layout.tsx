@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from "@/context/RoleContext";
@@ -41,7 +42,7 @@ export default function AdminLayout({
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
-                siteName: settingsData.general?.siteName || 'Ndara Afrique',
+                siteName: 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
             });
         }

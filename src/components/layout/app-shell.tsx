@@ -45,7 +45,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
-                siteName: settingsData.general?.siteName || 'Ndara Afrique',
+                siteName: 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
             });
