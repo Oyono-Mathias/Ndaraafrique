@@ -18,6 +18,9 @@ service cloud.firestore {
     }
     
     function hasPermission(permission) {
+      if (!isSignedIn()) {
+        return false;
+      }
       let user = getUserData(request.auth.uid);
       
       // User-specific overrides take precedence
@@ -33,6 +36,10 @@ service cloud.firestore {
     function isActive() {
       let userData = getUserData(request.auth.uid);
       return isSignedIn() && userData.status == 'active';
+    }
+
+    function isEnrolled(courseId) {
+      return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
 
     // --- Collection: roles ---
@@ -90,6 +97,22 @@ service cloud.firestore {
         allow create: if hasPermission('instructor.course.create');
         allow update, delete: if hasPermission('admin.courses.manage') || (isActive() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId));
         
+        match /quizzes/{quizId} {
+            allow get, list: if isEnrolled(courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
+            allow create, update, delete: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
+            
+            match /questions/{questionId} {
+                allow get, list: if isEnrolled(courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
+                allow create, update, delete: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
+            }
+
+            match /attempts/{attemptId} {
+                allow read: if isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
+                allow list: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
+                allow create: if isActive() && isOwner(request.resource.data.userId);
+            }
+        }
+
         match /{path=**} {
             allow read: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isActive() && (hasPermission('admin.courses.manage') || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)));
             allow write: if hasPermission('admin.courses.manage') || (isActive() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId));
@@ -123,7 +146,7 @@ service cloud.firestore {
     
     match /payments/{paymentId} {
       allow get: if isOwner(resource.data.userId) || hasPermission('admin.payments.read');
-      allow list: if isActive() || hasPermission('admin.payments.list');
+      allow list: if isApprovedInstructor() || hasPermission('admin.payments.list');
       allow create: if false; // Server-side only
       allow update, delete: if hasPermission('admin.payments.manage');
     }
@@ -210,3 +233,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

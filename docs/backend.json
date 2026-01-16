@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "AdminAuditLog": {
@@ -903,6 +904,92 @@
         "timestamp",
         "details"
       ]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "type": "object",
+      "description": "Represents a quiz for a specific course.",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "courseId": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "title",
+        "courseId",
+        "createdAt"
+      ]
+    },
+    "Question": {
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a single question within a quiz.",
+      "properties": {
+        "text": {
+          "type": "string"
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correctOptionIndex": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "text",
+        "options",
+        "correctOptionIndex"
+      ]
+    },
+    "QuizAttempt": {
+      "title": "Quiz Attempt",
+      "type": "object",
+      "description": "Represents a student's attempt at a quiz.",
+      "properties": {
+        "userId": {
+          "type": "string"
+        },
+        "quizId": {
+          "type": "string"
+        },
+        "courseId": {
+          "type": "string"
+        },
+        "answers": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number"
+          }
+        },
+        "score": {
+          "type": "number"
+        },
+        "submittedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "userId",
+        "quizId",
+        "courseId",
+        "answers",
+        "score",
+        "submittedAt"
+      ]
     }
   },
   "auth": {
@@ -1256,6 +1343,24 @@
       },
       "description": "Stores course information."
     },
+    "/courses/{courseId}/quizzes/{quizId}": {
+      "schema": {
+        "$ref": "#/entities/Quiz"
+      },
+      "description": "Stores quizzes for a course."
+    },
+    "/courses/{courseId}/quizzes/{quizId}/questions/{questionId}": {
+      "schema": {
+        "$ref": "#/entities/Question"
+      },
+      "description": "Stores questions for a quiz."
+    },
+    "/courses/{courseId}/quizzes/{quizId}/attempts/{attemptId}": {
+      "schema": {
+        "$ref": "#/entities/QuizAttempt"
+      },
+      "description": "Stores user attempts for a quiz."
+    },
     "/course_progress/{progressId}": {
       "schema": {
         "$ref": "#/entities/CourseProgress"
@@ -1324,3 +1429,5 @@
     }
   }
 }
+
+    

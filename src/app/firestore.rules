@@ -31,6 +31,10 @@ service cloud.firestore {
         return userData.username != null && 'careerGoals' in userData && 'interestDomain' in userData.careerGoals;
     }
 
+    function isEnrolled(courseId) {
+      return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+    }
+
     // --- Collection: users ---
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
@@ -79,6 +83,22 @@ service cloud.firestore {
         allow create: if isApprovedInstructor() || isAdmin();
         allow update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
         
+        match /quizzes/{quizId} {
+            allow get, list: if isEnrolled(courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+            allow create, update, delete: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+            
+            match /questions/{questionId} {
+                allow get, list: if isEnrolled(courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+                allow create, update, delete: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+            }
+
+            match /attempts/{attemptId} {
+                allow read: if isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+                allow list: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+                allow create: if isOwner(request.resource.data.userId);
+            }
+        }
+
         match /sections/{sectionId} {
           allow read, list: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin()));
           allow create, update, delete: if (isSignedIn() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)) || isAdmin();
@@ -225,3 +245,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

@@ -1,475 +1,1158 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp, arrayUnion, setDoc } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Lock, PlayCircle, BookOpen, ArrowLeft, Loader2, FileText, Shield } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import type { Course, Section, Lecture, Enrollment, CourseProgress } from '@/lib/types';
-import { Badge } from '@/components/ui/badge';
-import 'plyr/dist/plyr.css';
-import { useToast } from '@/hooks/use-toast';
-import dynamic from 'next/dynamic';
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/default-layout/lib/styles/index.css';
-import { PdfViewerSkeleton } from '@/components/ui/PdfViewerClient';
+import {
+  doc,
+  getFirestore,
+  collection,
+  serverTimestamp,
+  query,
+  where,
+  getDocs,
+  setDoc,
+  updateDoc,
+  addDoc,
+  orderBy,
+  DocumentData,
+  QuerySnapshot,
+  getDoc,
+  deleteDoc,
+  writeBatch,
+} from 'firebase/firestore';
+import Image from 'next/image';
 import Link from 'next/link';
-import { CourseCompletionModal } from '@/components/modals/course-completion-modal';
-
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  CreditCard,
+  Info,
+  BookOpen,
+  Gift,
+  Loader2,
+  Check,
+  Star,
+  AlertTriangle,
+  MessageSquarePlus,
+  MessageSquare,
+  Video,
+  PlayCircle,
+  Lock,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Book,
+  Globe,
+  Clock,
+  Users,
+  Tv,
+  FileText,
+  ShoppingCart,
+  Heart,
+  Award,
+  FileQuestion,
+} from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import type { Review, Section, Lecture, Course, NdaraUser, Quiz } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import { format, formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { ReviewForm } from '@/components/reviews/review-form';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import dynamic from 'next/dynamic';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Badge } from '@/components/ui/badge';
+import { sendEnrollmentEmails } from '@/lib/emails';
+import Script from 'next/script';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
-const PdfViewerClient = dynamic(() => import('@/components/ui/PdfViewerClient').then(mod => mod.PdfViewerClient), { 
-    ssr: false,
-    loading: () => <PdfViewerSkeleton />
+
+const questionFormSchema = z.object({
+  subject: z.string().min(10, { message: 'Le sujet doit contenir au moins 10 caractères.' }),
+  message: z.string().min(20, { message: 'Votre question doit contenir au moins 20 caractères.' }),
 });
+type QuestionFormValues = z.infer<typeof questionFormSchema>;
 
+interface ReviewWithUser extends Review {
+  reviewerName?: string;
+  reviewerImage?: string;
+}
 
-const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () => void }) => {
-    
-    if (!videoUrl) {
-        return (
-            <div className="aspect-video w-full bg-slate-900 flex items-center justify-center rounded-lg">
-                <p className="text-white">Sélectionnez une leçon pour commencer.</p>
-            </div>
-        );
-    }
-
-    return (
-       <div className="aspect-video w-full bg-black rounded-lg overflow-hidden video-wrapper shadow-2xl min-h-[200px] relative z-10">
-         <ReactPlayer 
-            key={videoUrl}
-            url={videoUrl} 
-            onEnded={onEnded} 
-            width="100%" 
-            height="100%" 
-            controls 
-            playing={true}
-            playsinline={true}
-            config={{
-                youtube: {
-                    playerVars: { 
-                        origin: typeof window !== 'undefined' ? window.location.origin : 'https://ndara-afrique.app',
-                        autoplay: 1,
-                    }
-                }
-            }}
+const StarRating = ({
+  rating,
+  reviewCount,
+  size = 'md',
+}: {
+  rating: number;
+  reviewCount?: number;
+  size?: 'sm' | 'md' | 'lg';
+}) => {
+  const starSizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn('font-bold text-amber-400', size === 'sm' ? 'text-sm' : 'text-base')}>
+        {rating.toFixed(1)}
+      </span>
+      <div className="flex items-center">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={cn(
+              starSizeClasses[size],
+              i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-500'
+            )}
           />
-       </div>
-    );
+        ))}
+      </div>
+      {reviewCount && (
+        <span className="text-sm text-slate-400">({reviewCount.toLocaleString('fr-FR')} avis)</span>
+      )}
+    </div>
+  );
 };
 
+const CourseQuizzesList = ({ courseId }: { courseId: string }) => {
+  const db = getFirestore();
+  const quizzesQuery = useMemoFirebase(
+    () => query(collection(db, `courses/${courseId}/quizzes`), orderBy('createdAt', 'desc')),
+    [db, courseId]
+  );
+  const { data: quizzes, isLoading } = useCollection<Quiz>(quizzesQuery);
 
-const CourseSidebar = ({ courseId, activeLesson, onLessonClick, isEnrolled, completedLessons, allLectures, enrollment }: { courseId: string, activeLesson: Lecture | null, onLessonClick: (lesson: Lecture) => void, isEnrolled: boolean, completedLessons: string[], allLectures: Map<string, Lecture[]>, enrollment: Enrollment | null | undefined }) => {
-    const db = getFirestore();
-    const sectionsQuery = useMemoFirebase(() => query(collection(db, 'courses', courseId, 'sections'), orderBy('order')), [db, courseId]);
-    const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
-    
-    // Effect to set the initial lesson
-    useEffect(() => {
-        if (sections && sections.length > 0 && allLectures.size > 0 && !activeLesson) {
-            let lessonToSet: Lecture | null = null;
-    
-            // 1. Try to set the last watched lesson
-            if (enrollment?.lastWatchedLesson) {
-                for (const lectures of allLectures.values()) {
-                    const found = lectures.find(l => l.id === enrollment.lastWatchedLesson);
-                    if (found) {
-                        lessonToSet = found;
-                        break;
-                    }
-                }
-            }
-    
-            // 2. If no last watched lesson, default to the first available lesson
-            if (!lessonToSet) {
-                for (const section of sections) {
-                    const lectures = allLectures.get(section.id);
-                    if (lectures && lectures.length > 0) {
-                        lessonToSet = lectures[0];
-                        break;
-                    }
-                }
-            }
-            
-            // 3. Set the lesson if it's accessible
-            if (lessonToSet && (isEnrolled || lessonToSet.isFreePreview)) {
-                onLessonClick(lessonToSet);
-            }
-        }
-    }, [sections, allLectures, activeLesson, onLessonClick, isEnrolled, enrollment]);
+  if (isLoading) {
+    return <Skeleton className="h-20 w-full" />;
+  }
 
-    if (sectionsLoading) {
-        return <Skeleton className="h-full w-full dark:bg-slate-800" />;
-    }
-    
-    if (!sections || sections.length === 0) {
-        return (
-            <Card className="glassmorphism-card">
-                <CardContent className="p-4 text-center text-muted-foreground text-sm dark:text-slate-400">
-                    Le programme du cours n'est pas encore disponible.
-                </CardContent>
+  if (!quizzes || quizzes.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="w-full space-y-4">
+      <h2 className="text-2xl font-bold text-white">Quiz à compléter</h2>
+      <div className="space-y-2">
+        {quizzes.map(quiz => (
+          <Link key={quiz.id} href={`/courses/${courseId}/quiz/${quiz.id}`} className="block">
+            <Card className="bg-slate-800/50 border border-slate-700/80 hover:bg-slate-700/50 transition-colors">
+              <CardContent className="p-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <FileQuestion className="h-5 w-5 text-primary" />
+                  <div>
+                    <p className="font-semibold text-white">{quiz.title}</p>
+                    <p className="text-xs text-slate-400">{quiz.description || 'Testez vos connaissances'}</p>
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 text-slate-400" />
+              </CardContent>
             </Card>
-        );
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const CourseCurriculum = ({
+  courseId,
+  isEnrolled,
+  onPreviewClick,
+}: {
+  courseId: string;
+  isEnrolled: boolean;
+  onPreviewClick: (lesson: Lecture) => void;
+}) => {
+  const db = getFirestore();
+  const sectionsQuery = useMemoFirebase(
+    () => query(collection(db, 'courses', courseId, 'sections'), orderBy('order')),
+    [db, courseId]
+  );
+  const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
+
+  const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
+  const [lecturesLoading, setLecturesLoading] = useState(true);
+
+  useEffect(() => {
+    if (!sections || sectionsLoading) {
+      if (!sectionsLoading) setLecturesLoading(false);
+      return;
     }
-    
-    let totalLessons = 0;
-    allLectures.forEach(sectionLectures => {
-        totalLessons += sectionLectures.length;
+
+    setLecturesLoading(true);
+    const allLecturesPromises: Promise<QuerySnapshot<DocumentData>>[] = [];
+    sections.forEach(section => {
+      const lecturesQuery = query(
+        collection(db, 'courses', courseId, 'sections', section.id, 'lectures'),
+        orderBy('title')
+      );
+      allLecturesPromises.push(getDocs(lecturesQuery));
     });
 
-    return (
-        <Card className="h-full shadow-lg glassmorphism-card">
-            <CardContent className="p-2 h-full">
-                <div className="p-2 mb-2">
-                    <h2 className="font-bold text-white">Programme du cours</h2>
-                    <p className="text-xs text-slate-400">{completedLessons.length} / {totalLessons} leçons terminées</p>
-                </div>
-                 <Accordion type="multiple" defaultValue={sections?.map(s => s.id)} className="w-full">
-                    {sections?.map(section => (
-                        <AccordionItem value={section.id} key={section.id} className="border-b-0">
-                            <AccordionTrigger className="px-3 py-3 text-sm font-semibold hover:no-underline hover:bg-slate-800/60 rounded-lg text-slate-200">{section.title}</AccordionTrigger>
-                            <AccordionContent className="p-1 space-y-1">
-                                {(allLectures.get(section.id) || []).map(lesson => {
-                                    const isLocked = !isEnrolled && !lesson.isFreePreview;
-                                    const isActive = activeLesson?.id === lesson.id;
-                                    const isCompleted = completedLessons.includes(lesson.id);
+    Promise.all(allLecturesPromises)
+      .then(lectureSnapshots => {
+        const newLecturesMap = new Map<string, Lecture[]>();
+        lectureSnapshots.forEach((snapshot, index) => {
+          const sectionId = sections[index].id;
+          const lectures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture));
+          newLecturesMap.set(sectionId, lectures);
+        });
+        setLecturesMap(newLecturesMap);
+        setLecturesLoading(false);
+      })
+      .catch(err => {
+        console.error('Error fetching lectures:', err);
+        setLecturesLoading(false);
+      });
+  }, [sections, sectionsLoading, db, courseId]);
 
-                                    return (
-                                        <button
-                                            key={lesson.id}
-                                            disabled={isLocked}
-                                            onClick={() => onLessonClick(lesson)}
-                                            className={cn(
-                                                "w-full text-left flex items-center gap-2 p-2 rounded-md text-xs transition-colors",
-                                                isActive ? "bg-primary/10 text-primary font-semibold" : "hover:bg-slate-800",
-                                                isLocked && "text-slate-400 cursor-not-allowed",
-                                                isCompleted && !isActive && "text-slate-500"
-                                            )}
-                                        >
-                                            {isCompleted ? <CheckCircle className="h-4 w-4 text-green-500 shrink-0" /> : (isLocked ? <Lock className="h-3 w-3 shrink-0" /> : <PlayCircle className="h-3 w-3 shrink-0" />)}
-                                            <span className="flex-1 line-clamp-1 text-slate-300">{lesson.title}</span>
-                                            {lesson.isFreePreview && <Badge variant="secondary" className="text-xs">Aperçu</Badge>}
-                                        </button>
-                                    );
-                                })}
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                 </Accordion>
-            </CardContent>
-        </Card>
-    );
+  if (sectionsLoading) {
+    return <Skeleton className="h-48 w-full" />;
+  }
+
+  if (!sections || sections.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="w-full space-y-2">
+      <h2 className="text-2xl font-bold text-white mb-4">Programme du cours</h2>
+      <Accordion type="multiple" defaultValue={sections.map(s => s.id)} className="w-full space-y-2">
+        {sections.map(section => (
+          <AccordionItem
+            key={section.id}
+            value={section.id}
+            className="bg-slate-800/50 border border-slate-700/80 rounded-lg overflow-hidden"
+          >
+            <AccordionTrigger className="w-full flex justify-between items-center px-4 py-3 text-left font-semibold text-white hover:no-underline">
+              <span>{section.title}</span>
+            </AccordionTrigger>
+            <AccordionContent className="bg-slate-800/20">
+              {lecturesLoading ? (
+                <Skeleton className="h-10 w-full m-2" />
+              ) : (
+                <ul className="divide-y divide-slate-700/50">
+                  {(lecturesMap.get(section.id) || []).map(lecture => {
+                    const canAccess = isEnrolled || lecture.isFreePreview;
+                    return (
+                      <li key={lecture.id}>
+                        <button
+                          onClick={() => canAccess && onPreviewClick(lecture)}
+                          disabled={!canAccess}
+                          className="w-full text-left flex items-center text-sm p-3 transition-colors hover:bg-slate-700/50 disabled:opacity-60 disabled:cursor-not-allowed"
+                        >
+                          <div className="flex-1 flex items-start gap-3">
+                            {canAccess ? (
+                              <PlayCircle className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" />
+                            ) : (
+                              <Lock className="h-4 w-4 mr-2 text-slate-500 shrink-0 mt-0.5" />
+                            )}
+                            <span className="text-slate-300">{lecture.title}</span>
+                          </div>
+                          <div className="flex items-center gap-4 text-xs text-slate-400">
+                            {lecture.isFreePreview && !isEnrolled && (
+                              <Badge variant="outline" className="text-xs border-primary text-primary">
+                                Aperçu
+                              </Badge>
+                            )}
+                            <span>{lecture.duration ? `${lecture.duration} min` : ''}</span>
+                          </div>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </AccordionContent>
+          </AccordionItem>
+        ))}
+      </Accordion>
+    </div>
+  );
 };
 
-const CourseContentTabs = ({ courseId }: { courseId: string }) => {
-    const db = getFirestore();
-    const resourcesQuery = useMemoFirebase(() => query(collection(db, 'resources'), where('courseId', '==', courseId)), [courseId, db]);
-    const {data: resources, isLoading} = useCollection(resourcesQuery);
+const ReviewsSection = ({ courseId, isEnrolled }: { courseId: string; isEnrolled: boolean }) => {
+  const db = getFirestore();
+  const { user, isUserLoading } = useRole();
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewsWithUsers, setReviewsWithUsers] = useState<ReviewWithUser[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
 
-    return (
-        <Tabs defaultValue="overview">
-            <TabsList>
-                <TabsTrigger value="overview">Aperçu</TabsTrigger>
-                <TabsTrigger value="resources">Ambeti na akungba</TabsTrigger>
-            </TabsList>
-            <TabsContent value="overview" className="mt-4 prose prose-sm max-w-none dark:prose-invert">
-                <p>Bienvenue dans cette leçon. Suivez attentivement la vidéo pour comprendre les concepts clés abordés par l'instructeur.</p>
-                <p>N'oubliez pas de consulter l'onglet "Ressources" pour tout matériel supplémentaire et de poser vos questions si vous êtes bloqué.</p>
-            </TabsContent>
-            <TabsContent value="resources" className="mt-4">
-                 {isLoading ? <Skeleton className="h-20 w-full dark:bg-slate-800"/> : (
-                    resources && resources.length > 0 ? (
-                        <ul className="space-y-2">
-                            {resources.map((res: any) => (
-                                <li key={res.id}>
-                                    <a href={res.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 p-3 rounded-lg hover:bg-slate-800 border dark:border-slate-700">
-                                        <FileText className="h-4 w-4 text-primary" />
-                                        <span className="text-sm font-medium text-slate-200">{res.title}</span>
-                                    </a>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : <p className="text-sm text-muted-foreground p-4 border-dashed border rounded-lg text-center dark:border-slate-700">Aucune ressource pour ce cours.</p>
-                 )}
-            </TabsContent>
-        </Tabs>
-    )
-}
+  const reviewsQuery = useMemoFirebase(
+    () => query(collection(db, 'reviews'), where('courseId', '==', courseId)),
+    [db, courseId]
+  );
+  const { data: reviews, isLoading: rawReviewsLoading } = useCollection<Review>(reviewsQuery);
 
-export default function CoursePlayerPage() {
-    const { courseId } = useParams();
-    const router = useRouter();
-    const db = getFirestore();
-    const { user, currentUser, isUserLoading } = useRole();
-    const { toast } = useToast();
+  useEffect(() => {
+    if (user && reviews) {
+      const userReview = reviews.find(r => r.userId === user.uid);
+      setHasReviewed(!!userReview);
+    }
+  }, [user, reviews]);
 
-    const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
-    const [allLectures, setAllLectures] = useState<Map<string, Lecture[]>>(new Map());
-    const [lecturesLoading, setLecturesLoading] = useState(true);
-    const [isCompletionModalOpen, setIsCompletionModalOpen] = useState(false);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!reviews || reviews.length === 0) {
+        setReviewsWithUsers([]);
+        setReviewsLoading(false);
+        return;
+      }
 
-    const courseRef = useMemoFirebase(() => doc(db, 'courses', courseId as string), [db, courseId]);
-    const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+      setReviewsLoading(true);
+      const userIds = [...new Set(reviews.map(r => r.userId))];
+      if (userIds.length === 0) {
+        setReviewsWithUsers([]);
+        setReviewsLoading(false);
+        return;
+      }
+      const usersRef = collection(db, 'users');
+      // Firestore 'in' query has a limit of 30 items
+      const usersQuery = query(usersRef, where('uid', 'in', userIds.slice(0, 30)));
+      const userSnapshots = await getDocs(usersQuery);
 
-    const sectionsQuery = useMemoFirebase(() => query(collection(db, 'courses', courseId as string, 'sections'), orderBy('order')), [db, courseId]);
-    const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
-    
-    const enrollmentQuery = useMemoFirebase(() => {
-        if (!user || !courseId) return null;
-        return query(collection(db, 'enrollments'), where('studentId', '==', user.uid), where('courseId', '==', courseId as string));
-    }, [db, user, courseId]);
-    
-    const { data: enrollments, isLoading: enrollmentLoading } = useCollection<Enrollment>(enrollmentQuery);
-    const enrollment = useMemo(() => enrollments?.[0], [enrollments]);
-    
-    const isEnrolled = useMemo(() => !!enrollment || currentUser?.role === 'admin', [enrollment, currentUser]);
-    
-    const completedLessons = useMemo(() => enrollment?.completedLessons || [], [enrollment]);
+      const usersById = new Map();
+      userSnapshots.forEach(doc => usersById.set(doc.data().uid, doc.data()));
 
-    useEffect(() => {
-        if (!sections || sections.length === 0) {
-             if(!sectionsLoading) setLecturesLoading(false);
-             return;
-        }
+      const populatedReviews = reviews.map(review => {
+        const user = usersById.get(review.userId);
+        return {
+          ...review,
+          reviewerName: user?.fullName || 'Anonyme',
+          reviewerImage: user?.profilePictureURL,
+        };
+      });
 
-        setLecturesLoading(true);
-        const promises = sections.map(section => {
-            const lecturesQuery = query(collection(db, `courses/${courseId}/sections/${section.id}/lectures`), orderBy('title'));
-            return getDocs(lecturesQuery);
-        });
-
-        Promise.all(promises).then(snapshots => {
-            const lecturesMap = new Map<string, Lecture[]>();
-            snapshots.forEach((snapshot, index) => {
-                const sectionId = sections[index].id;
-                const sectionLectures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture));
-                lecturesMap.set(sectionId, sectionLectures);
-            });
-            setAllLectures(lecturesMap);
-            setLecturesLoading(false);
-        });
-
-    }, [sections, sectionsLoading, courseId, db]);
-    
-    const handleLessonClick = (lesson: Lecture) => {
-        setActiveLesson(lesson);
-        if (enrollment) {
-            const enrollmentRef = doc(db, 'enrollments', enrollment.id);
-            updateDoc(enrollmentRef, {
-                lastWatchedLesson: lesson.id,
-                lastAccessedAt: serverTimestamp()
-            }).catch(err => console.error("Failed to update last accessed info", err));
-        }
+      setReviewsWithUsers(populatedReviews);
+      setReviewsLoading(false);
     };
 
-    const isLoading = courseLoading || isUserLoading || enrollmentLoading || lecturesLoading;
+    if (!rawReviewsLoading) {
+      fetchUsers();
+    }
+  }, [reviews, db, rawReviewsLoading]);
 
-    // Redirect if not enrolled (and not admin)
-    useEffect(() => {
-        if (!isLoading && course) {
-            if (!isEnrolled) {
-                toast({
-                    title: "Accès refusé",
-                    description: "Vous devez être inscrit à ce cours pour y accéder.",
-                    variant: "destructive"
-                });
-                router.push(`/course/${courseId}`);
-                return;
-            }
+  const averageRating = useMemo(() => {
+    if (!reviews || reviews.length === 0) return 0;
+    const total = reviews.reduce((acc, review) => acc + review.rating, 0);
+    return total / reviews.length;
+  }, [reviews]);
 
-            if (enrollment && course.price > 0 && enrollment.priceAtEnrollment === 0 && currentUser?.role !== 'admin') {
-                toast({
-                    title: "Accès mis à jour",
-                    description: "Désolé, la période de gratuité de ce cours est terminée. Le cours est devenu payant, veuillez l'acheter pour continuer votre progression.",
-                    variant: "destructive",
-                    duration: 10000,
-                });
-                router.push(`/course/${courseId}`);
-                return;
-            }
-        }
-    }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast, currentUser]);
+  const isLoading = rawReviewsLoading || reviewsLoading || isUserLoading;
 
-    const handleLessonCompletion = async () => {
-        if (!enrollment || !activeLesson || !user || !course) return;
-    
-        const totalLessons = Array.from(allLectures.values()).reduce((acc, val) => acc + val.length, 0);
-        let updatedCompletedLessons = [...completedLessons];
-    
-        if (!completedLessons.includes(activeLesson.id)) {
-            updatedCompletedLessons.push(activeLesson.id);
-            const newProgress = totalLessons > 0 ? Math.round((updatedCompletedLessons.length / totalLessons) * 100) : 0;
-            
-            // Update both enrollments and course_progress
-            const batch = writeBatch(db);
-
-            // 1. Update enrollment document
-            const enrollmentRef = doc(db, 'enrollments', enrollment.id);
-            batch.update(enrollmentRef, {
-                completedLessons: updatedCompletedLessons,
-                progress: newProgress,
-                lastWatchedLesson: activeLesson.id,
-                lastAccessedAt: serverTimestamp(),
-            });
-
-            // 2. Update course_progress document
-            const progressId = `${user.uid}_${courseId}`;
-            const progressRef = doc(db, 'course_progress', progressId);
-            const progressPayload: Omit<CourseProgress, 'id'> = {
-                userId: user.uid,
-                courseId: courseId as string,
-                courseTitle: course.title,
-                courseCover: course.imageUrl || '',
-                lastLessonId: activeLesson.id,
-                lastLessonTitle: activeLesson.title,
-                progressPercent: newProgress,
-                updatedAt: serverTimestamp(),
-            };
-            batch.set(progressRef, progressPayload, { merge: true });
-
-            await batch.commit();
-
-            toast({
-                title: "Leçon terminée !",
-                description: `Votre progression est maintenant de ${newProgress}%.`,
-            });
-        }
-    
-        const finalProgress = totalLessons > 0 ? Math.round((updatedCompletedLessons.length / totalLessons) * 100) : 0;
-        if (finalProgress === 100 && totalLessons > 0) {
-            const q = query(collection(db, 'enrollments'), where('studentId', '==', user.uid), where('progress', '==', 100));
-            const completedCoursesSnap = await getDocs(q);
-            if (completedCoursesSnap.size === 1 && !currentUser?.badges?.includes('pioneer')) {
-                const userRef = doc(db, 'users', user.uid);
-                await updateDoc(userRef, { badges: arrayUnion('pioneer') });
-                toast({
-                    title: "Badge débloqué : Pionnier !",
-                    description: "Félicitations pour avoir terminé votre premier cours !",
-                });
-            }
-
-            setIsCompletionModalOpen(true);
-        } else {
-            handleNextLesson();
-        }
-    };
-    
-
-    const handleNextLesson = () => {
-        if (!activeLesson || !sections) return;
-
-        let foundCurrent = false;
-        for (const section of sections) {
-            const lectures = allLectures.get(section.id) || [];
-            for (const lesson of lectures) {
-                if (foundCurrent) {
-                    handleLessonClick(lesson);
-                    return; // Next lesson found and set
-                }
-                if (lesson.id === activeLesson.id) {
-                    foundCurrent = true;
-                }
-            }
-        }
-        toast({ title: "Félicitations!", description: "Vous avez terminé la dernière leçon de ce cours." });
-    };
-
-    if (isLoading) {
-        return (
-             <div className="flex flex-col lg:flex-row h-screen bg-slate-900">
-                <main className="flex-1 p-4 lg:p-6"><Skeleton className="aspect-video w-full rounded-lg dark:bg-slate-800" /></main>
-                <aside className="hidden lg:block w-96 border-l p-4 dark:border-slate-800"><Skeleton className="h-full w-full dark:bg-slate-800" /></aside>
+  return (
+    <div className="space-y-8">
+      <h2 className="text-2xl font-bold text-white">Avis des étudiants</h2>
+      {isLoading ? (
+        <Skeleton className="h-48 w-full bg-slate-800" />
+      ) : reviewsWithUsers.length > 0 ? (
+        <div className="space-y-6">
+          <StarRating rating={averageRating} reviewCount={reviews?.length} size="lg" />
+          {reviewsWithUsers?.slice(0, 5).map(review => (
+            <div key={review.id} className="flex gap-4 border-t border-slate-700 pt-6">
+              <Avatar>
+                <AvatarImage src={review.reviewerImage} />
+                <AvatarFallback className="bg-slate-700 text-white">
+                  {review.reviewerName?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-semibold text-white">{review.reviewerName}</p>
+                <div className="flex items-center gap-2 text-sm text-slate-400 mb-1">
+                  <StarRating rating={review.rating} size="sm" />
+                  <span>
+                    {review.createdAt
+                      ? formatDistanceToNow(review.createdAt.toDate(), { locale: fr, addSuffix: true })
+                      : ''}
+                  </span>
+                </div>
+                <p className="text-sm text-slate-300">{review.comment}</p>
+              </div>
             </div>
-        );
-    }
-    
-    if (!course) {
-        return <div className="p-8 text-center">Cours non trouvé.</div>
-    }
+          ))}
+        </div>
+      ) : (
+        <div className="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center text-slate-400">
+          <p>Aucun avis pour ce cours pour le moment.</p>
+        </div>
+      )}
 
-    if (!isEnrolled) {
-        return <div className="flex justify-center items-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
-    }
+      {user && !hasReviewed && isEnrolled && (
+        <div className="pt-8">
+          <h3 className="text-xl font-bold mb-4 text-white">Laissez votre avis</h3>
+          <ReviewForm courseId={courseId} userId={user.uid} onReviewSubmit={() => setHasReviewed(true)} />
+        </div>
+      )}
+    </div>
+  );
+};
 
-    const isEbook = course.contentType === 'ebook';
+export default function CourseDetailsPage() {
+  const { courseId: courseIdParam } = useParams();
+  const courseId = courseIdParam as string;
+  const db = getFirestore();
+  const { toast } = useToast();
+  const router = useRouter();
+  const { user, currentUser, isUserLoading } = useRole();
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [courseStats, setCourseStats] = useState({ totalDuration: 0, lessonCount: 0 });
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
-    return (
-        <>
-            <div className="flex flex-col lg:flex-row h-screen bg-slate-900 -m-6">
-                {currentUser?.role === 'admin' && (
-                    <Button asChild className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg" variant="destructive">
-                        <Link href={`/instructor/courses/edit/${courseId}`} title="Accès Modérateur">
-                            <Shield className="h-6 w-6" />
-                        </Link>
-                    </Button>
-                )}
-                <main className="flex-1 flex flex-col p-4 lg:p-6 space-y-6">
-                    <div className="flex items-center justify-between">
-                        <Button variant="ghost" onClick={() => router.push(`/course/${courseId}`)} className="text-slate-300 hover:bg-slate-800 hover:text-white">
-                            <ArrowLeft className="h-4 w-4 mr-2" />
-                            Retour aux détails du cours
-                        </Button>
-                    </div>
-                    {isEbook ? (
-                        <div className="flex-1 w-full bg-slate-900 rounded-lg overflow-hidden">
-                            <PdfViewerClient fileUrl={course.ebookUrl || ''} />
-                        </div>
-                    ) : (
-                        <VideoPlayer videoUrl={activeLesson?.videoUrl} onEnded={handleLessonCompletion} />
-                    )}
-                    <div className="mt-4">
-                        <h1 className="text-xl lg:text-2xl font-bold text-white">{isEbook ? course.title : activeLesson?.title || course.title}</h1>
-                        {activeLesson && !isEbook ? (
-                            <div className="flex justify-between items-center mt-2">
-                                <p className="text-slate-400 text-sm">Leçon actuelle</p>
-                                <Button onClick={handleLessonCompletion} size="sm" disabled={completedLessons.includes(activeLesson.id)}>
-                                    <CheckCircle className="h-4 w-4 mr-2" />
-                                    {completedLessons.includes(activeLesson.id) ? 'Ye ti peko' : 'Marquer comme terminée'}
-                                </Button>
-                            </div>
-                        ) : <p className="text-slate-400 text-sm">{isEbook ? 'Livre Électronique' : 'Bienvenue dans votre cours'}</p>}
-                    </div>
-                    {!isEbook && (
-                        <div className="mt-6 flex-grow bg-slate-900/50 p-6 rounded-2xl shadow-inner border border-slate-800">
-                        <CourseContentTabs courseId={courseId as string}/>
-                        </div>
-                    )}
-                </main>
-                {!isEbook && (
-                    <aside className="w-full lg:w-96 lg:h-screen border-t lg:border-t-0 lg:border-l shrink-0 bg-slate-900/50 backdrop-blur-sm border-slate-800">
-                        <div className="p-4 h-full overflow-y-auto">
-                        <CourseSidebar 
-                                courseId={courseId as string} 
-                                activeLesson={activeLesson} 
-                                onLessonClick={handleLessonClick} 
-                                isEnrolled={isEnrolled}
-                                completedLessons={completedLessons}
-                                allLectures={allLectures}
-                                enrollment={enrollment}
-                            />
-                        </div>
-                    </aside>
-                )}
-            </div>
-            {currentUser && course && (
-                 <CourseCompletionModal
-                    isOpen={isCompletionModalOpen}
-                    onClose={() => setIsCompletionModalOpen(false)}
-                    studentName={currentUser.fullName}
-                    courseName={course.title}
-                    onDownload={() => router.push('/mes-certificats')}
-                    onShare={() => { /* Implement sharing logic */ toast({ title: "Partage bientôt disponible!" })}}
-                />
-            )}
-        </>
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewLesson, setPreviewLesson] = useState<Lecture | null>(null);
+
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+  const questionForm = useForm<QuestionFormValues>({ resolver: zodResolver(questionFormSchema) });
+
+  const courseRef = useMemoFirebase(() => (courseId ? doc(db, 'courses', courseId) : null), [db, courseId]);
+  const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+
+  const instructorRef = useMemoFirebase(
+    () => (course?.instructorId ? doc(db, 'users', course.instructorId) : null),
+    [db, course]
+  );
+  const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
+
+  const enrollmentQuery = useMemoFirebase(() => {
+    if (!user || !courseId) return null;
+    return query(
+      collection(db, 'enrollments'),
+      where('studentId', '==', user.uid),
+      where('courseId', '==', courseId)
     );
+  }, [db, user, courseId]);
+
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
+  const isEnrolled = useMemo(
+    () => (enrollments?.length ?? 0) > 0 || currentUser?.role === 'admin',
+    [enrollments, currentUser]
+  );
+
+  const wishlistRef = useMemoFirebase(
+    () => (user && courseId ? doc(db, 'users', user.uid, 'wishlist', courseId) : null),
+    [user, courseId, db]
+  );
+  const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
+  const isInWishlist = !!wishlistItem;
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      toast({
+        variant: 'destructive',
+        title: 'Accès non autorisé',
+        description: 'Veuillez créer un compte pour accéder à ce contenu.',
+      });
+      router.push('/login?tab=register');
+    }
+  }, [isUserLoading, user, router, toast]);
+
+  const handlePreviewClick = (lesson: Lecture) => {
+    setPreviewLesson(lesson);
+    setIsPreviewModalOpen(true);
+  };
+
+  const handleAskQuestion = async (data: QuestionFormValues) => {
+    if (!user || !course || !instructor) return;
+    setIsSubmittingQuestion(true);
+    try {
+      const ticketsCollection = collection(db, 'support_tickets');
+      const newTicketRef = doc(ticketsCollection);
+
+      const ticketPayload = {
+        ticketId: newTicketRef.id,
+        userId: user.uid,
+        instructorId: instructor.uid,
+        courseId: course.id,
+        subject: data.subject,
+        lastMessage: data.message,
+        status: 'ouvert',
+        category: 'Pédagogique',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+
+      const userMessagePayload = {
+        senderId: user.uid,
+        text: data.message,
+        createdAt: serverTimestamp(),
+      };
+
+      const welcomeMessagePayload = {
+        senderId: 'SYSTEM',
+        text: "Bienvenue au support de Ndara Afrique ! Votre question a été envoyée au formateur. Il vous répondra dans les plus brefs délais.",
+        createdAt: serverTimestamp(),
+      };
+
+      const batch = writeBatch(db);
+      batch.set(newTicketRef, ticketPayload);
+      batch.set(doc(collection(newTicketRef, 'messages')), userMessagePayload);
+      batch.set(doc(collection(newTicketRef, 'messages')), welcomeMessagePayload);
+
+      await batch.commit();
+
+      toast({ title: 'Question envoyée !', description: "L'instructeur a été notifié." });
+      setIsQuestionModalOpen(false);
+      questionForm.reset();
+      router.push(`/questions-reponses/${newTicketRef.id}`);
+    } catch (error) {
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: 'support_tickets',
+          operation: 'create',
+        })
+      );
+      console.error('Error creating support ticket:', error);
+    } finally {
+      setIsSubmittingQuestion(false);
+    }
+  };
+
+  const handleCheckout = () => {
+    if (!course || !user) {
+      toast({ variant: 'destructive', title: 'Non connecté', description: 'Veuillez vous connecter pour acheter ce cours.' });
+      router.push(`/login?redirect=/course/${courseId}`);
+      return;
+    }
+    router.push(`/paiements?courseId=${course.id}`);
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!user || !courseId) {
+      router.push(`/login?redirect=/course/${courseId}`);
+      return;
+    }
+
+    const wishlistDocRef = doc(db, 'users', user.uid, 'wishlist', courseId);
+
+    try {
+      if (isInWishlist) {
+        await deleteDoc(wishlistDocRef);
+        toast({ title: 'Cours retiré de votre liste de souhaits.' });
+      } else {
+        await setDoc(wishlistDocRef, { courseId: courseId, addedAt: serverTimestamp() });
+        toast({ title: 'Cours ajouté à votre liste de souhaits !' });
+      }
+    } catch (error) {
+      console.error('Wishlist toggle error:', error);
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de modifier la liste de souhaits.' });
+    }
+  };
+
+  useEffect(() => {
+    if (!courseId || course?.contentType === 'ebook') return;
+
+    const fetchStats = async () => {
+      const sectionsQuery = query(collection(db, 'courses', courseId, 'sections'));
+      const sectionsSnap = await getDocs(sectionsQuery);
+
+      let totalDuration = 0;
+      let lessonCount = 0;
+
+      for (const sectionDoc of sectionsSnap.docs) {
+        const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', sectionDoc.id, 'lectures'));
+        const lecturesSnap = await getDocs(lecturesQuery);
+        lecturesSnap.forEach(lectureDoc => {
+          const lectureData = lectureDoc.data();
+          lessonCount++;
+          totalDuration += Number(lectureData.duration) || 0;
+        });
+      }
+
+      setCourseStats({ totalDuration, lessonCount });
+    };
+
+    fetchStats();
+  }, [courseId, db, course?.contentType]);
+
+  const handleFreeEnrollment = async () => {
+    if (!user || !course || !course.instructorId || !instructor || !currentUser) {
+      toast({
+        variant: 'destructive',
+        title: 'Erreur',
+        description: 'Vous devez être connecté et les détails du cours doivent être complets.',
+      });
+      if (!user) router.push('/login');
+      return;
+    }
+
+    setIsEnrolling(true);
+
+    try {
+      if (isEnrolled) {
+        toast({ title: 'Déjà inscrit', description: 'Vous êtes déjà inscrit à ce cours.' });
+        router.push(`/courses/${course.id}`);
+        return;
+      }
+
+      const enrollmentId = `${user.uid}_${courseId}`;
+      const enrollmentRef = doc(db, 'enrollments', enrollmentId);
+
+      const enrollmentPayload = {
+        enrollmentId: enrollmentId,
+        studentId: user.uid,
+        courseId: courseId,
+        instructorId: course.instructorId,
+        enrollmentDate: serverTimestamp(),
+        progress: 0,
+        priceAtEnrollment: 0,
+      };
+
+      await setDoc(enrollmentRef, enrollmentPayload);
+
+      toast({ title: 'Inscription réussie!', description: `Vous avez maintenant accès à "${course.title}".` });
+
+      await sendEnrollmentEmails(currentUser, course, instructor);
+
+      router.push(`/courses/${courseId}?newEnrollment=true`);
+    } catch (error) {
+      errorEmitter.emit(
+        'permission-error',
+        new FirestorePermissionError({
+          path: `enrollments/${user.uid}_${courseId}`,
+          operation: 'create',
+          requestResourceData: {
+            studentId: user.uid,
+            courseId: courseId,
+            progress: 0,
+            instructorId: course.instructorId,
+          },
+        })
+      );
+      setIsEnrolling(false);
+    }
+  };
+
+  const handleMainAction = () => {
+    if (!user) {
+      router.push(`/login?redirect=/course/${courseId}`);
+      return;
+    }
+    if (isEnrolled) {
+      router.push(`/courses/${courseId}`);
+    } else if (course?.price === 0) {
+      handleFreeEnrollment();
+    } else if (course && user && currentUser) {
+      handleCheckout();
+    }
+  };
+
+  const isLoading = courseLoading || instructorLoading || enrollmentsLoading || isUserLoading || isWishlistLoading;
+
+  if (isLoading || (!isUserLoading && !user)) {
+    return (
+      <div className="container mx-auto max-w-5xl py-8 px-4">
+        <div className="grid md:grid-cols-3 gap-8">
+          <div className="md:col-span-2 space-y-6">
+            <Skeleton className="h-10 w-3/4" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-5/6" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-96 w-full rounded-3xl" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="container mx-auto max-w-7xl py-12 text-center">
+        <Info className="mx-auto h-12 w-12 text-destructive" />
+        <h1 className="mt-4 text-2xl font-bold">Cours non trouvé</h1>
+        <p className="text-muted-foreground">Le cours que vous cherchez n'existe pas ou a été retiré.</p>
+        <Button onClick={() => router.push('/dashboard')} className="mt-6">
+          Retour au tableau de bord
+        </Button>
+      </div>
+    );
+  }
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.title,
+    description: course.description,
+    provider: {
+      '@type': 'Organization',
+      name: 'Ndara Afrique',
+      url: 'https://ndara-afrique.web.app',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: course.price,
+      priceCurrency: 'XOF',
+      category: 'Paid',
+    },
+  };
+
+  const isFree = course.price === 0;
+  const isEbook = course.contentType === 'ebook';
+
+  const getButtonText = () => {
+    if (isEnrolled) return isEbook ? "Lire l'E-book" : 'Aller au cours';
+    if (isFree) return isEbook ? "Obtenir l'E-book Gratuitement" : "S'inscrire Gratuitement";
+    return isEbook ? "Acheter l'E-book" : 'Acheter maintenant';
+  };
+
+  const hasValidLearningObjectives =
+    course.learningObjectives && course.learningObjectives.length > 0 && course.learningObjectives[0].length > 2;
+  const defaultLearningObjectives = [
+    'Maîtriser les fondamentaux du sujet.',
+    'Acquérir des compétences pratiques et applicables.',
+    'Apprendre à utiliser les outils et technologies clés.',
+    'Développer une compréhension approfondie des concepts avancés.',
+  ];
+
+  return (
+    <>
+      <Script src="https://cdn.moneroo.io/checkout/v1/moneroo.js" strategy="afterInteractive" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+
+      <div className="bg-[#020817] text-white">
+        {/* --- Header Section (Mobile) --- */}
+        <div className="lg:hidden">
+          <div className="relative aspect-video w-full bg-black">
+            <Image
+              src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
+              alt={course.title}
+              fill
+              objectFit="cover"
+              className="opacity-80"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
+              <Button
+                variant="ghost"
+                className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                onClick={() =>
+                  handlePreviewClick({
+                    id: 'preview',
+                    title: 'Aperçu',
+                    videoUrl: course.previewVideoUrl || '',
+                    isFreePreview: true,
+                  })
+                }
+              >
+                <PlayCircle className="h-5 w-5 mr-2" />
+                Afficher un aperçu
+              </Button>
+            </div>
+          </div>
+          <div className="p-4 space-y-3">
+            <h1 className="text-2xl font-bold">{course.title}</h1>
+            <p className={cn('text-slate-300', !isDescriptionExpanded && 'line-clamp-3')}>{course.description}</p>
+            {course.description.length > 150 && (
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="text-primary font-semibold text-sm"
+              >
+                {isDescriptionExpanded ? 'Afficher moins' : 'Lire la suite'}
+              </button>
+            )}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+              {course.isPopular && (
+                <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>
+              )}
+              <StarRating rating={4.7} reviewCount={187212} size="sm" />
+              <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
+            </div>
+            <p className="text-sm">
+              Créé par{' '}
+              <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">
+                {instructor?.fullName || "L'équipe Ndara Afrique"}
+              </Link>
+            </p>
+            <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
+              {(course.updatedAt || course.createdAt) && (
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}
+                </span>
+              )}
+              {course.language && (
+                <span className="flex items-center gap-1.5">
+                  <Globe className="h-4 w-4" />
+                  {course.language}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="container mx-auto max-w-7xl py-8 px-4 lg:px-8">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+            <main className="lg:col-span-8 space-y-12">
+              {/* --- Header Section (Desktop) --- */}
+              <div className="hidden lg:block space-y-3">
+                <h1 className="text-4xl font-extrabold tracking-tight">{course.title}</h1>
+                <div className={cn('text-xl text-slate-300', !isDescriptionExpanded && 'line-clamp-3')}>
+                  {course.description}
+                </div>
+                {course.description.length > 200 && (
+                  <button
+                    onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                    className="text-primary font-semibold"
+                  >
+                    {isDescriptionExpanded ? 'Afficher moins' : 'Lire la suite'}
+                  </button>
+                )}
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                  {course.isPopular && (
+                    <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>
+                  )}
+                  <StarRating rating={4.7} reviewCount={187212} size="sm" />
+                  <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
+                </div>
+                <p className="text-sm">
+                  Créé par{' '}
+                  <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">
+                    {instructor?.fullName || "L'équipe Ndara Afrique"}
+                  </Link>
+                </p>
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
+                  {(course.updatedAt || course.createdAt) && (
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-4 w-4" />
+                      Dernière M.À.J{' '}
+                      {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}
+                    </span>
+                  )}
+                  {course.language && (
+                    <span className="flex items-center gap-1.5">
+                      <Globe className="h-4 w-4" />
+                      {course.language}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* --- What you'll learn --- */}
+              {!isEbook && (
+                <div className="border border-slate-700/80 rounded-lg p-6">
+                  <h2 className="text-2xl font-bold text-white mb-4">Ce que vous apprendrez</h2>
+                  <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-slate-300">
+                    {(hasValidLearningObjectives ? course.learningObjectives : defaultLearningObjectives)?.map(
+                      (obj: string, i: number) => (
+                        <li key={i} className="flex items-start">
+                          <Check className="w-5 h-5 mr-3 mt-1 text-primary shrink-0" />
+                          <span>{obj}</span>
+                        </li>
+                      )
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {/* --- Curriculum --- */}
+              <CourseCurriculum courseId={courseId} isEnrolled={isEnrolled} onPreviewClick={handlePreviewClick} />
+
+              {/* --- Quizzes --- */}
+              {isEnrolled && <CourseQuizzesList courseId={courseId} />}
+
+              {/* --- Q&A Button --- */}
+              {isEnrolled && (
+                <div className="border-t border-slate-800 pt-8">
+                  <Button onClick={() => setIsQuestionModalOpen(true)} className="w-full md:w-auto" variant="secondary">
+                    <MessageSquarePlus className="mr-2 h-4 w-4" />
+                    Poser une question à l'instructeur
+                  </Button>
+                </div>
+              )}
+
+              {/* --- Instructor --- */}
+              {instructor && (
+                <div>
+                  <h2 className="text-2xl font-bold mb-4 text-white">À propos de l'instructeur</h2>
+                  <Link href={`/instructor/${instructor.id}`} className="block">
+                    <h3 className="font-bold text-lg hover:text-primary text-white">{instructor.fullName}</h3>
+                    <p className="text-sm text-slate-400 mb-2">
+                      {instructor.careerGoals?.currentRole || `Expert en ${course.category}`}
+                    </p>
+                    <div className="flex items-start gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={instructor.profilePictureURL} />
+                        <AvatarFallback className="text-white bg-slate-700">
+                          {instructor.fullName?.charAt(0) || '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm line-clamp-3 text-slate-300">
+                        {instructor.bio ||
+                          `Découvrez le parcours et l'expertise de ${instructor.fullName}, un professionnel passionné qui vous guidera à travers ce cours.`}
+                      </p>
+                    </div>
+                  </Link>
+                </div>
+              )}
+
+              {/* --- Reviews --- */}
+              <ReviewsSection courseId={courseId} isEnrolled={isEnrolled} />
+            </main>
+
+            <aside className="hidden lg:block lg:col-span-4">
+              <div className="sticky top-24 space-y-4">
+                <Card className="shadow-xl rounded-2xl bg-slate-800/50 border border-slate-700/80">
+                  <div className="relative group aspect-video w-full bg-black rounded-t-2xl overflow-hidden">
+                    <Image
+                      src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
+                      alt={course.title}
+                      fill
+                      objectFit="cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                        onClick={() =>
+                          handlePreviewClick({
+                            id: 'preview',
+                            title: 'Aperçu',
+                            videoUrl: course.previewVideoUrl || '',
+                            isFreePreview: true,
+                          })
+                        }
+                      >
+                        <PlayCircle className="h-5 w-5 mr-2" />
+                        Afficher un aperçu
+                      </Button>
+                    </div>
+                  </div>
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-baseline gap-2">
+                      <h2 className="text-3xl font-bold text-white">
+                        {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
+                      </h2>
+                      {course.originalPrice && (
+                        <span className="text-base line-through text-slate-400">
+                          {course.originalPrice.toLocaleString('fr-FR')} XOF
+                        </span>
+                      )}
+                    </div>
+
+                    <Button
+                      className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
+                      size="lg"
+                      onClick={handleMainAction}
+                      disabled={isEnrolling || isPaying}
+                    >
+                      {isEnrolling || isPaying ? (
+                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      ) : isEnrolled ? (
+                        <BookOpen className="mr-2 h-5 w-5" />
+                      ) : (
+                        <CreditCard className="mr-2 h-5 w-5" />
+                      )}
+                      {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
+                    </Button>
+
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white"
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-2" /> Ajouter au panier
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white"
+                        onClick={handleToggleWishlist}
+                      >
+                        <Heart className={cn('h-4 w-4 mr-2', isInWishlist && 'fill-red-500 text-red-500')} />{' '}
+                        {isInWishlist ? 'Dans la liste' : 'Liste de souhaits'}
+                      </Button>
+                    </div>
+
+                    <div className="space-y-2 pt-3">
+                      <h3 className="font-semibold text-white">Ce cours inclut :</h3>
+                      <ul className="space-y-1.5 text-sm text-slate-300">
+                        {isEbook ? (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <Book className="h-4 w-4 text-primary" /> Format PDF
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-primary" /> Accès immédiat après achat
+                            </li>
+                          </>
+                        ) : (
+                          <>
+                            <li className="flex items-center gap-2">
+                              <Video className="h-4 w-4 text-primary" /> {(courseStats.totalDuration / 60).toFixed(1)}h
+                              de vidéo
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <FileText className="h-4 w-4 text-primary" /> {courseStats.lessonCount} leçons
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <Tv className="h-4 w-4 text-primary" /> Accès sur mobile et TV
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <Gift className="h-4 w-4 text-primary" /> Accès complet à vie
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <Award className="h-4 w-4 text-primary" /> Certificat de réussite
+                            </li>
+                          </>
+                        )}
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+
+      {/* --- Mobile Sticky Footer --- */}
+      <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-50 space-y-2">
+        <div className="flex items-baseline gap-2 justify-center">
+          <h3 className="text-2xl font-bold text-white">
+            {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
+          </h3>
+          {course.originalPrice && (
+            <span className="text-base line-through text-slate-400">
+              {course.originalPrice.toLocaleString('fr-FR')} XOF
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            className="flex-1 h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground"
+            size="lg"
+            onClick={handleMainAction}
+            disabled={isEnrolling || isPaying}
+          >
+            {isEnrolling || isPaying ? (
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            ) : isEnrolled ? (
+              <BookOpen className="mr-2 h-5 w-5" />
+            ) : (
+              <CreditCard className="mr-2 h-5 w-5" />
+            )}
+            {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-12 w-12 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white"
+            onClick={handleToggleWishlist}
+          >
+            <Heart className={cn('h-5 w-5', isInWishlist && 'fill-red-500 text-red-500')} />
+          </Button>
+        </div>
+      </div>
+
+      {/* --- Video Preview Modal --- */}
+      <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
+        <DialogContent className="max-w-3xl lg:max-w-4xl xl:max-w-5xl p-0 border-0 bg-black">
+          <DialogHeader className="p-4 sr-only">
+            <DialogTitle>{previewLesson?.title}</DialogTitle>
+          </DialogHeader>
+          <ReactPlayer
+            url={previewLesson?.videoUrl || ''}
+            width="100%"
+            height="100%"
+            controls
+            playing={false}
+            config={{
+              youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } },
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* --- Ask Question Modal --- */}
+      <Dialog open={isQuestionModalOpen} onOpenChange={setIsQuestionModalOpen}>
+        <DialogContent className="dark:bg-slate-800 dark:border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="dark:text-white">Poser une question à {instructor?.fullName}</DialogTitle>
+            <DialogDescription className="dark:text-slate-400">
+              Votre question sera envoyée directement à l'instructeur.
+            </DialogDescription>
+          </DialogHeader>
+          <Form {...questionForm}>
+            <form onSubmit={questionForm.handleSubmit(handleAskQuestion)} className="space-y-4">
+              <FormField
+                control={questionForm.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-slate-300">Sujet</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Ex: Problème avec la leçon 5"
+                        {...field}
+                        className="dark:bg-slate-700 dark:border-slate-600"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={questionForm.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="dark:text-slate-300">Votre question</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Bonjour, je n'ai pas bien compris..."
+                        {...field}
+                        rows={5}
+                        className="dark:bg-slate-700 dark:border-slate-600"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <DialogFooter>
+                <Button type="button" variant="ghost" onClick={() => setIsQuestionModalOpen(false)}>
+                  Annuler
+                </Button>
+                <Button type="submit" disabled={isSubmittingQuestion}>
+                  {isSubmittingQuestion ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                  Envoyer la question
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
 }
+
+    
