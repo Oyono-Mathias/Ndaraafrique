@@ -204,10 +204,20 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-8">
-      <section>
-        <h2 className="text-xl font-semibold mb-4 text-white">Actions Urgentes</h2>
-        <AdminActionQueue />
-      </section>
+       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="xl:col-span-2 space-y-6">
+            <section>
+                <h2 className="text-xl font-semibold mb-4 text-white">Actions Urgentes</h2>
+                <AdminActionQueue />
+            </section>
+        </div>
+        <div className="xl:col-span-1 space-y-6">
+             <section>
+                <h2 className="text-xl font-semibold mb-4 text-white">Sécurité</h2>
+                <AdminSecurityAlerts />
+            </section>
+        </div>
+      </div>
       
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map(card => (

@@ -257,6 +257,7 @@ export interface Payment {
     riskScore: number;
     reason: string;
     checkedAt: any;
+    reviewed?: boolean;
   }
 }
 
@@ -264,8 +265,9 @@ export interface SecurityLog {
   id: string;
   userId: string; // The user PERFORMING the action (e.g., admin UID)
   targetId: string; // The user or entity being affected
-  eventType: 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'suspicious_login' | 'failed_payment' | 'profile_change';
+  eventType: 'suspicious_login' | 'failed_payment' | 'profile_change' | 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'alert_resolved';
   details: string; // Human-readable description
   ipAddress?: string;
   timestamp: Timestamp;
+  status?: 'open' | 'resolved';
 }

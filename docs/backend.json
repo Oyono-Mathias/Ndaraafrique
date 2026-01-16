@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "Role": {
@@ -368,7 +367,8 @@
             "isSuspicious": { "type": "boolean" },
             "riskScore": { "type": "number" },
             "reason": { "type": "string" },
-            "checkedAt": { "type": "string", "format": "date-time" }
+            "checkedAt": { "type": "string", "format": "date-time" },
+            "reviewed": { "type": "boolean", "default": false, "description": "True if an admin has reviewed this transaction." }
           }
         }
       },
@@ -379,12 +379,13 @@
       "type": "object",
       "description": "Represents a security-related event.",
       "properties": {
-        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change", "user_suspended", "user_reinstated", "course_approved", "course_rejected"] },
+        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change", "user_suspended", "user_reinstated", "course_approved", "course_rejected", "alert_resolved"] },
         "userId": { "type": "string", "description": "The user initiating the action (e.g., the admin)." },
         "targetId": { "type": "string", "description": "The ID of the entity being acted upon (e.g., user ID, course ID)." },
         "timestamp": { "type": "string", "format": "date-time" },
         "ipAddress": { "type": "string", "format": "ipv4" },
-        "details": { "type": "string", "description": "A human-readable description of the event." }
+        "details": { "type": "string", "description": "A human-readable description of the event." },
+        "status": { "type": "string", "enum": ["open", "resolved"], "default": "open" }
       },
       "required": ["eventType", "userId", "timestamp", "details"]
     }
@@ -520,6 +521,23 @@
         "queryScope": "COLLECTION",
         "fields": [
           { "fieldPath": "eventType", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
+          { "fieldPath": "fraudReview.reviewed", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+       {
+        "collectionGroup": "security_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "status", "order": "ASCENDING" },
           { "fieldPath": "timestamp", "order": "DESCENDING" }
         ]
       }
