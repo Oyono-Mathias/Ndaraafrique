@@ -139,3 +139,44 @@ export async function processPayout(
         return { success: false, error: error.message };
     }
 }
+
+
+export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticketId: string, adminId: string, text: string }) {
+    try {
+        const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
+        const ticketDoc = await ticketRef.get();
+        if (!ticketDoc.exists) throw new Error("Ticket introuvable.");
+
+        const batch = adminDb.batch();
+
+        const messagePayload = {
+            senderId: adminId,
+            text: `[Support Ndara Afrique] : ${text}`,
+            createdAt: FieldValue.serverTimestamp()
+        };
+        const messageRef = doc(ticketRef.collection('messages'));
+        batch.set(messageRef, messagePayload);
+
+        batch.update(ticketRef, {
+            lastMessage: text,
+            updatedAt: FieldValue.serverTimestamp(),
+            status: 'ouvert'
+        });
+
+        await batch.commit();
+
+        const studentId = ticketDoc.data()?.userId;
+        if (studentId) {
+            await sendUserNotification(studentId, {
+                title: 'Nouvelle réponse du support',
+                body: `Vous avez reçu une nouvelle réponse pour votre ticket: "${ticketDoc.data()?.subject}"`,
+                link: `/questions-reponses/${ticketId}`
+            });
+        }
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error adding admin reply:", error);
+        return { success: false, error: error.message };
+    }
+}

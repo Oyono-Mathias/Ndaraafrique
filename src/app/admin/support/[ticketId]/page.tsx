@@ -30,7 +30,7 @@ import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
-import { refundAndRevokeAccess } from '@/actions/supportActions';
+import { refundAndRevokeAccess, addAdminReplyToTicket } from '@/actions/supportActions';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Progress } from '@/components/ui/progress';
 
@@ -115,24 +115,20 @@ export default function TicketConversationPage() {
     setIsSending(true);
     const textToSend = newMessage.trim();
     setNewMessage("");
-
-    const messagePayload = {
-      senderId: adminUser.uid,
-      text: `[Support Ndara Afrique] : ${textToSend}`,
-      createdAt: serverTimestamp()
-    };
     
-    const batch = writeBatch(db);
-    
-    const messageRef = doc(collection(db, `support_tickets/${ticketId}/messages`));
-    batch.set(messageRef, messagePayload);
-
-    batch.update(ticketRef, {
-      lastMessage: textToSend,
-      updatedAt: serverTimestamp(),
+    const result = await addAdminReplyToTicket({
+        ticketId: ticketId as string,
+        adminId: adminUser.uid,
+        text: textToSend,
     });
 
-    await batch.commit();
+    if (!result.success) {
+        toast({
+            variant: 'destructive',
+            title: 'Erreur',
+            description: result.error || "Impossible d'envoyer le message.",
+        });
+    }
 
     setIsSending(false);
   };

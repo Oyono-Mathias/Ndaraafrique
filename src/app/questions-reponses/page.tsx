@@ -37,6 +37,7 @@ import * as z from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Enrollment } from '@/lib/types';
 import { useRouter } from 'next/navigation';
+import { sendAdminNotification } from '@/actions/notificationActions';
 
 
 interface SupportTicket {
@@ -248,6 +249,14 @@ export default function QAPage() {
             batch.set(doc(collection(newTicketRef, 'messages')), messagePayload);
 
             await batch.commit();
+            
+            await sendAdminNotification({
+                title: 'Nouveau Ticket Support',
+                body: `Un nouveau ticket a été ouvert par ${currentUser.fullName} concernant le cours "${courseData.title}".`,
+                link: `/admin/support/${newTicketRef.id}`,
+                type: 'newSupportTickets',
+            });
+
             toast({ title: "Question envoyée !", description: "Vous recevrez bientôt une réponse de votre instructeur." });
             setIsFormOpen(false);
             router.push(`/questions-reponses/${newTicketRef.id}`);

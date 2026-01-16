@@ -78,16 +78,9 @@ export default function BecomeInstructorPage() {
         instructorApplication: { ...data, submittedAt: serverTimestamp() }
       });
       
-      // Send notifications
-      await sendNewInstructorApplicationEmail({
-        applicantName: currentUser.fullName,
-        applicantEmail: currentUser.email,
-        specialty: data.specialty
-      });
-
       await sendAdminNotification({
         title: "🎓 Nouvelle candidature d'instructeur",
-        body: `${currentUser.fullName} souhaite devenir instructeur.`,
+        body: `${currentUser.fullName} souhaite devenir instructeur dans le domaine : ${data.specialty}.`,
         link: '/admin/instructors',
         type: 'newApplications'
       });

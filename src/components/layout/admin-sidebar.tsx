@@ -77,7 +77,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/payments", icon: CreditCard, textKey: "navTransactions" },
     { href: "/admin/payouts", icon: Landmark, textKey: "navPayouts", countId: 'pendingPayouts' },
     { href: "/admin/support", icon: HelpCircle, textKey: "navSupport", countId: 'openTickets' },
-    { href: "/admin/logs", icon: History, textKey: "navLogs" },
+    { href: "/admin/logs", icon: History, textKey: "navAudit" },
     { href: "/admin/marketing", icon: Sparkles, textKey: "navMarketing" },
     { href: "/admin/carousel", icon: GalleryHorizontal, textKey: "navCarousel" },
     { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
