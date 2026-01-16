@@ -283,3 +283,28 @@ export interface AdminAuditLog {
   timestamp: Timestamp;
   details: string;
 }
+
+export interface Question {
+  id: string;
+  text: string;
+  options: string[];
+  correctOptionIndex: number;
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  description?: string;
+  courseId: string;
+  createdAt: Timestamp;
+}
+
+export interface QuizAttempt {
+    id: string;
+    userId: string;
+    quizId: string;
+    courseId: string;
+    answers: Record<string, number>; // questionId: selectedOptionIndex
+    score: number;
+    submittedAt: Timestamp;
+}
