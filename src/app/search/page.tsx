@@ -8,27 +8,20 @@ import {
     query, 
     where, 
     orderBy, 
-    startAfter, 
-    limit, 
-    getDocs, 
-    DocumentData, 
-    QueryDocumentSnapshot 
+    getDocs,
 } from 'firebase/firestore';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, Search, Frown, Loader2 } from 'lucide-react';
+import { Star, Search, Frown } from 'lucide-react';
 import type { Course, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useRole } from '@/context/RoleContext';
 import { toast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
-import { cn } from '@/lib/utils';
-
-const FILTERS = ['Tous', 'Gratuit', 'Design', 'Code', 'Marketing', 'Business'];
-const PAGE_SIZE = 10;
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
     <div className="flex items-center gap-1 text-xs text-slate-400">
@@ -64,108 +57,54 @@ const SearchResultCard = ({ course, instructor }: { course: Course, instructor: 
     </Link>
 );
 
-
 export default function SearchPage() {
     const db = getFirestore();
     const router = useRouter();
     const { user, isUserLoading } = useRole();
     const [searchTerm, setSearchTerm] = useState('');
-    const [activeFilter, setActiveFilter] = useState('Tous');
-    const [results, setResults] = useState<Course[]>([]);
+    const [courses, setCourses] = useState<Course[]>([]);
     const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
     const [isLoading, setIsLoading] = useState(true);
-    const [isFetchingMore, setIsFetchingMore] = useState(false);
-    const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
-    const [hasMore, setHasMore] = useState(true);
+    const [categories, setCategories] = useState<string[]>([]);
+    const [filters, setFilters] = useState({
+        category: 'Tous',
+        price: 'Tous'
+    });
     
     const debouncedSearchTerm = useDebounce(searchTerm, 300);
 
-    const fetchInstructors = useCallback(async (courses: Course[]) => {
-        if (courses.length === 0) return;
-
-        const instructorIds = [...new Set(courses.map(c => c.instructorId))].filter(Boolean);
-        const newInstructors = new Map(instructors);
-        const idsToFetch = instructorIds.filter(id => !newInstructors.has(id));
-
-        if (idsToFetch.length > 0) {
-            try {
-                const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
-                const usersSnap = await getDocs(usersQuery);
-                usersSnap.forEach(doc => {
-                    newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
-                });
-                setInstructors(newInstructors);
-            } catch (error) {
-                console.error("Error fetching instructors:", error);
-            }
-        }
-    }, [db, instructors]);
-
-    const fetchData = useCallback(async (loadMore = false) => {
+    const fetchAllData = useCallback(async () => {
         if (isUserLoading || !user) return;
-
-        if (loadMore) {
-            setIsFetchingMore(true);
-        } else {
-            setIsLoading(true);
-            setResults([]);
-            setLastDoc(null);
-        }
-
-        const coursesRef = collection(db, 'courses');
-        let q = query(coursesRef, where('status', '==', 'Published'), limit(PAGE_SIZE));
-
-        // Apply filters
-        if (activeFilter !== 'Tous') {
-            if (activeFilter === 'Gratuit') {
-                q = query(q, where('price', '==', 0));
-            } else {
-                q = query(q, where('category', '==', activeFilter));
-            }
-        }
-
-        // Apply search term
-        if (debouncedSearchTerm) {
-            const lowercasedTerm = debouncedSearchTerm.toLowerCase();
-             q = query(q, 
-                orderBy('title'),
-                startAfter(lowercasedTerm),
-                where('title', '>=', lowercasedTerm),
-                where('title', '<=', lowercasedTerm + '\uf8ff')
-            );
-        } else if (activeFilter === 'Tous') {
-            q = query(q, orderBy('createdAt', 'desc'));
-        }
         
-        // Pagination
-        if (loadMore && lastDoc) {
-            q = query(q, startAfter(lastDoc));
-        }
-
+        setIsLoading(true);
         try {
-            const querySnapshot = await getDocs(q);
+            const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(coursesQuery);
             const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
             
-            const newLastDoc = querySnapshot.docs[querySnapshot.docs.length - 1];
-            setLastDoc(newLastDoc);
-            setHasMore(querySnapshot.docs.length === PAGE_SIZE);
+            setCourses(coursesData);
+            
+            const uniqueCategories = [...new Set(coursesData.map(c => c.category).filter(Boolean))];
+            setCategories(uniqueCategories.sort());
 
-            if (loadMore) {
-                setResults(prev => [...prev, ...coursesData]);
-            } else {
-                setResults(coursesData);
+            const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
+            if (instructorIds.length > 0) {
+                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
+                 const usersSnap = await getDocs(usersQuery);
+                 const newInstructors = new Map<string, NdaraUser>();
+                 usersSnap.forEach(doc => {
+                     newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
+                 });
+                 setInstructors(newInstructors);
             }
 
-            await fetchInstructors(coursesData);
         } catch (error) {
             console.error("Search query failed:", error);
-            setResults([]);
             toast({ variant: 'destructive', title: 'Erreur de recherche', description: 'Un index Firestore est peut-être manquant.' });
         } finally {
             setIsLoading(false);
-            setIsFetchingMore(false);
         }
-    }, [db, user, isUserLoading, activeFilter, debouncedSearchTerm, lastDoc, fetchInstructors]);
+    }, [db, user, isUserLoading]);
 
     useEffect(() => {
         if (!isUserLoading && !user) {
@@ -176,18 +115,30 @@ export default function SearchPage() {
             });
             router.push('/login?tab=register');
         } else {
-            fetchData();
+            fetchAllData();
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [debouncedSearchTerm, activeFilter, user, isUserLoading]);
+    }, [user, isUserLoading, fetchAllData, router]);
+
+    const filteredResults = useMemo(() => {
+        return courses.filter(course => {
+            const lowercasedTerm = debouncedSearchTerm.toLowerCase();
+            
+            if (filters.category !== 'Tous' && course.category !== filters.category) return false;
+            if (filters.price === 'Gratuit' && course.price !== 0) return false;
+            if (filters.price === 'Payant' && course.price === 0) return false;
+            if (debouncedSearchTerm && !course.title.toLowerCase().includes(lowercasedTerm)) return false;
+
+            return true;
+        });
+    }, [courses, filters, debouncedSearchTerm]);
     
     if (isUserLoading || !user) {
-        return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+        return <div className="flex h-full w-full items-center justify-center"><Skeleton className="h-full w-full" /></div>;
     }
 
     return (
         <div className="container mx-auto py-6 px-4 space-y-6">
-             <header className="sticky top-[70px] bg-background/80 backdrop-blur-sm py-4 z-20">
+             <header className="sticky top-[70px] bg-background/80 backdrop-blur-sm py-4 z-20 -mx-4 px-4 border-b border-slate-800">
                 <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                     <Input
@@ -198,18 +149,26 @@ export default function SearchPage() {
                     />
                 </div>
             
-                <div className="flex space-x-2 mt-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
-                    {FILTERS.map(filter => (
-                        <Button
-                            key={filter}
-                            variant={activeFilter === filter ? 'default' : 'secondary'}
-                            size="sm"
-                            className="rounded-full flex-shrink-0 h-9 px-4 text-sm"
-                            onClick={() => setActiveFilter(filter)}
-                        >
-                            {filter}
-                        </Button>
-                    ))}
+                <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                    <Select value={filters.category} onValueChange={(value) => setFilters(prev => ({...prev, category: value}))}>
+                        <SelectTrigger className="w-full sm:w-[180px] dark:bg-slate-800 dark:border-slate-700">
+                            <SelectValue placeholder="Catégorie" />
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                            <SelectItem value="Tous">Toutes les catégories</SelectItem>
+                            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                     <Select value={filters.price} onValueChange={(value) => setFilters(prev => ({...prev, price: value}))}>
+                        <SelectTrigger className="w-full sm:w-[180px] dark:bg-slate-800 dark:border-slate-700">
+                            <SelectValue placeholder="Prix" />
+                        </SelectTrigger>
+                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                            <SelectItem value="Tous">Tous les prix</SelectItem>
+                            <SelectItem value="Gratuit">Gratuit</SelectItem>
+                            <SelectItem value="Payant">Payant</SelectItem>
+                        </SelectContent>
+                    </Select>
                 </div>
             </header>
 
@@ -225,19 +184,12 @@ export default function SearchPage() {
                             </div>
                         </div>
                     ))
-                ) : results.length > 0 ? (
+                ) : filteredResults.length > 0 ? (
                     <>
-                        {results.map(course => (
+                        <p className="text-sm text-slate-400">{filteredResults.length} résultat(s) trouvé(s).</p>
+                        {filteredResults.map(course => (
                             <SearchResultCard key={course.id} course={course} instructor={instructors.get(course.instructorId) || null} />
                         ))}
-                        {hasMore && (
-                            <div className="flex justify-center py-6">
-                                <Button onClick={() => fetchData(true)} disabled={isFetchingMore}>
-                                    {isFetchingMore && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                    Charger plus
-                                </Button>
-                            </div>
-                        )}
                     </>
                 ) : (
                     <div className="text-center py-20 px-4 border-2 border-dashed rounded-xl border-slate-700">
@@ -245,7 +197,7 @@ export default function SearchPage() {
                         <h3 className="mt-4 text-lg font-semibold text-slate-200">
                             Oups ! Aucun cours trouvé.
                         </h3>
-                        <p className="mt-1 text-sm text-slate-400">Essayez un autre mot-clé ou filtre.</p>
+                        <p className="mt-1 text-sm text-slate-400">Essayez d'autres mots-clés ou filtres.</p>
                          <Button variant="link" asChild>
                             <a href="mailto:support@ndara-afrique.com?subject=Suggestion de cours">Suggérez-nous un sujet !</a>
                         </Button>
