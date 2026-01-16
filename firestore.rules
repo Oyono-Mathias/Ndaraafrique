@@ -150,8 +150,10 @@ service cloud.firestore {
     
     // --- Collection: payments ---
     match /payments/{paymentId} {
-      allow get: if isOwner(resource.data.userId) || isAdmin();
-      allow list, create, update, delete: if isAdmin();
+      allow get: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin();
+      allow list: if isApprovedInstructor() || isAdmin();
+      allow create: if isAdmin(); // Payments should be created server-side
+      allow update, delete: if isAdmin();
     }
     
     // --- Collection: payouts ---
