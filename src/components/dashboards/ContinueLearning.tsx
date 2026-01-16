@@ -72,15 +72,19 @@ export function ContinueLearning() {
             ? query(
                 collection(db, 'course_progress'),
                 where('userId', '==', currentUser.uid),
-                where('progressPercent', '<', 100),
                 orderBy('updatedAt', 'desc'),
-                limit(3)
+                limit(10) // Fetch more items to filter on the client
             )
             : null,
         [db, currentUser?.uid]
     );
 
-    const { data: coursesInProgress, isLoading: isProgressLoading } = useCollection<CourseProgress>(progressQuery);
+    const { data: coursesInProgressRaw, isLoading: isProgressLoading } = useCollection<CourseProgress>(progressQuery);
+
+    const coursesInProgress = useMemo(() => {
+        if (!coursesInProgressRaw) return [];
+        return coursesInProgressRaw.filter(course => course.progressPercent < 100).slice(0, 3);
+    }, [coursesInProgressRaw]);
 
     const isLoading = isUserLoading || isProgressLoading;
 
