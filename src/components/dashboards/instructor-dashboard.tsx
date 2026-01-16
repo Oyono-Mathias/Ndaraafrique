@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -8,7 +9,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
-import { Users, Star, BookOpen, DollarSign, TrendingUp, Book } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp, Book, AlertCircle } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
@@ -38,6 +39,7 @@ function InstructorDashboardContent() {
     const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
     const [revenueTrendData, setRevenueTrendData] = useState<RevenueDataPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!instructor?.uid || roleLoading) {
@@ -79,16 +81,16 @@ function InstructorDashboardContent() {
                         totalReviews: reviewList.length,
                         averageRating: reviewList.length > 0 ? totalRating / reviewList.length : 0,
                     }));
-                });
+                }, (e) => { setError("Impossible de charger les avis."); console.error(e); });
                 unsubs.push(unsubReviews);
 
                 const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', chunk));
                 const unsubEnrollments = onSnapshot(enrollmentsQuery, (enrollmentSnapshot) => {
                     const enrollmentList = enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment);
-                    setEnrollments(enrollmentList);
+                    setEnrollments(prev => [...prev.filter(e => !chunk.includes(e.courseId)), ...enrollmentList]);
                     const uniqueStudents = new Set(enrollmentList.map(e => e.studentId));
                     setStats(prev => ({ ...prev, totalStudents: uniqueStudents.size }));
-                });
+                }, (e) => { setError("Impossible de charger les inscriptions."); console.error(e); });
                 unsubs.push(unsubEnrollments);
             });
 
@@ -120,11 +122,12 @@ function InstructorDashboardContent() {
                 setRevenueTrendData(trendData);
                 setStats(prev => ({ ...prev, monthlyRevenue: monthlyRev }));
                 setIsLoading(false);
-            });
+            }, (e) => { setError("Impossible de charger les données financières."); console.error(e); });
             unsubs.push(unsubPayments);
 
         }, (error) => {
             console.error("Error fetching courses:", error);
+            setError("Impossible de charger les cours.");
             setIsLoading(false);
         });
         
@@ -154,6 +157,16 @@ function InstructorDashboardContent() {
         revenue: { label: t('navFinance'), color: 'hsl(var(--primary))' },
     };
 
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center p-4 bg-red-900/10 border border-red-700/50 rounded-lg">
+                <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
+                <h1 className="text-2xl font-bold text-white">Erreur de chargement</h1>
+                <p className="text-red-300 mt-2">{error}</p>
+                <p className="text-slate-400 mt-1 text-sm">Vérifiez les index Firestore ou contactez le support.</p>
+            </div>
+        )
+    }
 
     return (
         <div className="space-y-8 md:space-y-12">
@@ -168,7 +181,6 @@ function InstructorDashboardContent() {
                     value={stats.totalStudents.toLocaleString('fr-FR')} 
                     icon={Users} 
                     isLoading={isLoading} 
-                    accentColor="border-t-blue-500"
                 />
                 <StatCard 
                     title={t('statAverageRating')} 
@@ -176,21 +188,18 @@ function InstructorDashboardContent() {
                     icon={Star} 
                     isLoading={isLoading} 
                     description={stats.totalReviews > 0 ? t('based_on_reviews', { count: stats.totalReviews }) : t('waiting_for_reviews')}
-                    accentColor="border-t-amber-500"
                 />
                 <StatCard 
                     title={t('statCourses')}
                     value={stats.publishedCourses.toString()} 
                     icon={BookOpen} 
                     isLoading={isLoading}
-                    accentColor="border-t-purple-500"
                 />
                 <StatCard 
                     title={t('statRevenue')}
                     value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={DollarSign} 
                     isLoading={isLoading}
-                    accentColor="border-t-green-500"
                 />
             </section>
 
