@@ -154,7 +154,7 @@ export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticke
             text: `[Support Ndara Afrique] : ${text}`,
             createdAt: FieldValue.serverTimestamp()
         };
-        const messageRef = doc(ticketRef.collection('messages'));
+        const messageRef = ticketRef.collection('messages').doc();
         batch.set(messageRef, messagePayload);
 
         batch.update(ticketRef, {

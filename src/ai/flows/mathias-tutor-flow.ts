@@ -11,7 +11,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-// import { adminDb } from '@/firebase/admin';
+import { adminDb } from '@/firebase/admin';
 
 const MathiasTutorInputSchema = z.object({
   query: z.string().describe('The student’s question or request for the AI tutor.'),
@@ -35,9 +35,21 @@ const getCourseCatalog = ai.defineTool(
         })),
     },
     async () => {
-        // This functionality is temporarily disabled as it requires the Admin SDK.
-        console.warn("[getCourseCatalog Tool] Admin SDK not initialized. Returning empty array.");
-        return [];
+        try {
+            const coursesRef = adminDb.collection('courses');
+            const snapshot = await coursesRef.where('status', '==', 'Published').get();
+            if (snapshot.empty) return [];
+            return snapshot.docs.map(doc => {
+                const data = doc.data();
+                return {
+                    title: data.title,
+                    price: data.price
+                }
+            });
+        } catch (e) {
+            console.error("Error fetching course catalog:", e);
+            return []; // Return empty on error to not break the flow
+        }
     }
 );
 
@@ -53,9 +65,25 @@ const searchFaq = ai.defineTool(
         }),
     },
     async ({ query }) => {
-       // This functionality is temporarily disabled as it requires the Admin SDK.
-       console.warn("[searchFaq Tool] Admin SDK not initialized. Returning undefined.");
-       return { answer: undefined };
+       try {
+            const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 2);
+            if (keywords.length === 0) return { answer: undefined };
+            
+            const faqsRef = adminDb.collection('faqs');
+            // Firestore 'array-contains-any' is limited to 10 values in the array.
+            const q = faqsRef.where('tags', 'array-contains-any', keywords.slice(0, 10));
+            const snapshot = await q.get();
+
+            if (!snapshot.empty) {
+                // Simple strategy: return the first match.
+                const bestMatch = snapshot.docs[0].data();
+                return { answer: bestMatch.answer_fr };
+            }
+            return { answer: undefined };
+        } catch(e) {
+            console.error("Error searching FAQ:", e);
+            return { answer: undefined };
+        }
     }
 );
 

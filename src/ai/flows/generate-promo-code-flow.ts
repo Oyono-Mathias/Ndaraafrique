@@ -6,8 +6,8 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-// import { adminDb } from '@/firebase/admin';
-// import * as admin from 'firebase-admin';
+import { adminDb } from '@/firebase/admin';
+import { FieldValue } from 'firebase-admin/firestore';
 import { generateAnnouncement, GenerateAnnouncementInputSchema, GenerateAnnouncementOutputSchema } from './generate-announcement-flow';
 import type { GenerateAnnouncementInput, GenerateAnnouncementOutput } from './generate-announcement-flow';
 
@@ -32,9 +32,20 @@ const createPromoCode = ai.defineTool(
     }),
   },
   async (input) => {
-    // This functionality is temporarily disabled as it requires the Admin SDK.
-    console.warn("[createPromoCode Tool] Admin SDK not initialized. Simulating success.");
-    return { success: true, code: input.code };
+    try {
+      const promoRef = adminDb.collection('promoCodes').doc(input.code);
+      const dataToSet: any = { ...input, createdAt: FieldValue.serverTimestamp() };
+      
+      if (input.expiresAt) {
+        dataToSet.expiresAt = new Date(input.expiresAt); // Firestore admin SDK handles Date objects
+      }
+
+      await promoRef.set(dataToSet);
+      return { success: true, code: input.code };
+    } catch (e: any) {
+        console.error("Error creating promo code:", e);
+        return { success: false, code: input.code };
+    }
   }
 );
 

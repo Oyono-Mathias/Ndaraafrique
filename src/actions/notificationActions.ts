@@ -14,7 +14,16 @@ interface NotificationPayload {
 }
 
 const findUserByFCMToken = async (token: string): Promise<{userId: string; token: string} | null> => {
-    // This functionality is temporarily disabled as it requires the Admin SDK.
+    const usersCollection = adminDb.collectionGroup('fcmTokens');
+    const snapshot = await usersCollection.where('tokens', 'array-contains', token).limit(1).get();
+    
+    if (!snapshot.empty) {
+        const userDoc = snapshot.docs[0];
+        const userId = userDoc.ref.parent.parent?.id;
+        if(userId) {
+          return { userId, token };
+        }
+    }
     return null;
 }
 
@@ -29,17 +38,71 @@ const cleanupInvalidTokens = async (tokensToRemove: string[], userId: string) =>
 
 
 const sendNotifications = async (tokens: string[], payload: NotificationPayload): Promise<{ success: boolean; message: string; }> => {
-    // This functionality is temporarily disabled as it requires the Admin SDK.
-    console.warn("[FCM] Admin SDK not initialized. Mocking successful notification send.");
-    return { success: true, message: "Simulation d'envoi de notification (SDK Admin désactivé)." };
+    if (tokens.length === 0) {
+        return { success: true, message: "Aucun jeton pour envoyer des notifications." };
+    }
+    
+    const message = {
+        notification: {
+            title: payload.title,
+            body: payload.body,
+        },
+        webpush: {
+            notification: {
+                icon: '/icon.svg',
+            },
+            fcm_options: {
+                link: payload.link || 'https://ndara-afrique.web.app',
+            },
+        },
+        tokens: tokens,
+    };
+
+    try {
+        const response = await getMessaging().sendEachForMulticast(message);
+        const tokensToRemove: { [userId: string]: string[] } = {};
+        
+        const cleanupPromises = response.responses.map(async (resp, idx) => {
+            if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
+                const invalidToken = tokens[idx];
+                const result = await findUserByFCMToken(invalidToken);
+                if (result) {
+                    if (!tokensToRemove[result.userId]) {
+                        tokensToRemove[result.userId] = [];
+                    }
+                    tokensToRemove[result.userId].push(result.token);
+                }
+            }
+        });
+
+        await Promise.all(cleanupPromises);
+        
+        for (const userId in tokensToRemove) {
+            await cleanupInvalidTokens(tokensToRemove[userId], userId);
+        }
+
+        return { success: true, message: `Notifications envoyées à ${response.successCount} appareils.` };
+    } catch (error) {
+        console.error("Error sending notifications:", error);
+        return { success: false, message: "Erreur lors de l'envoi des notifications." };
+    }
 }
 
 
 // --- Global Notification to ALL users with a token ---
 export async function sendGlobalNotification(payload: NotificationPayload): Promise<{ success: boolean; message: string; }> {
-  // This functionality is temporarily disabled as it requires the Admin SDK.
-  console.warn("[FCM] Admin SDK not initialized. Mocking successful global notification send.");
-  return { success: true, message: "Simulation d'envoi de notification globale." };
+    const usersSnapshot = await adminDb.collectionGroup('fcmTokens').get();
+    if(usersSnapshot.empty) return { success: true, message: "Aucun utilisateur avec un jeton de notification." };
+    
+    const allTokens: string[] = [];
+    usersSnapshot.forEach(doc => {
+        const tokens = doc.data().tokens;
+        if(Array.isArray(tokens)) {
+            allTokens.push(...tokens);
+        }
+    });
+    
+    return sendNotifications(allTokens, payload);
 }
 
 // --- Admin-only Notification ---
@@ -76,7 +139,10 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
 
 // --- Single User Notification ---
 export async function sendUserNotification(userId: string, payload: NotificationPayload): Promise<{ success: boolean; message: string }> {
-  // This functionality is temporarily disabled as it requires the Admin SDK.
-   console.warn("[FCM] Admin SDK not initialized. Mocking successful user notification send.");
-  return { success: true, message: "Simulation d'envoi de notification utilisateur." };
+  const userTokensDoc = await adminDb.collection('fcmTokens').doc(userId).get();
+  if (!userTokensDoc.exists) {
+      return { success: true, message: "L'utilisateur n'a pas de jeton de notification." };
+  }
+  const tokens = userTokensDoc.data()?.tokens || [];
+  return sendNotifications(tokens, payload);
 }
