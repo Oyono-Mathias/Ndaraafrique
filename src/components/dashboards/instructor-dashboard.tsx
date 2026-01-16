@@ -1,10 +1,9 @@
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
 import { useTranslation } from 'react-i18next';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
@@ -14,42 +13,14 @@ import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { Button } from '../ui/button';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { SectionHeader } from '@/components/dashboard/SectionHeader';
+import { EmptyState } from '@/components/dashboard/EmptyState';
 
 interface RevenueDataPoint {
     month: string;
     revenue: number;
 }
-
-const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("dark:bg-slate-800/50 dark:border-slate-700/80 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/10", accentColor)}>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-slate-400" />
-        </CardHeader>
-        <CardContent>
-            {isLoading ? (
-                <Skeleton className="h-8 w-3/4 bg-slate-700" />
-            ) : (
-                <>
-                    <div className="text-3xl font-bold text-white">{value}</div>
-                    {change && <p className="text-xs text-muted-foreground">{change}</p>}
-                </>
-            )}
-        </CardContent>
-    </Card>
-);
-
-const EmptyState = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
-    <div className="flex flex-col items-center justify-center text-center p-8 h-full text-slate-500">
-        <Icon className="w-12 h-12 mb-4" />
-        <h3 className="font-semibold text-lg text-slate-300">{title}</h3>
-        <p className="text-sm">{description}</p>
-    </div>
-);
-
 
 function InstructorDashboardContent() {
     const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
@@ -204,7 +175,7 @@ function InstructorDashboardContent() {
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
-                    change={stats.totalReviews > 0 ? t('based_on_reviews', { count: stats.totalReviews }) : t('waiting_for_reviews')}
+                    description={stats.totalReviews > 0 ? t('based_on_reviews', { count: stats.totalReviews }) : t('waiting_for_reviews')}
                     accentColor="border-t-amber-500"
                 />
                 <StatCard 
@@ -225,7 +196,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-3">
-                    <h2 className="text-xl font-semibold mb-4 text-white">{t('revenue_evolution')}</h2>
+                    <SectionHeader title={t('revenue_evolution')} className="mb-4" />
                     <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : revenueTrendData.length > 0 ? (
@@ -258,7 +229,7 @@ function InstructorDashboardContent() {
                     </Card>
                 </div>
                 <div className="lg:col-span-2">
-                     <h2 className="text-xl font-semibold mb-4 text-white">{t('top_courses')}</h2>
+                     <SectionHeader title={t('top_courses')} className="mb-4" />
                       <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="p-0">
                             <Table>
@@ -305,5 +276,3 @@ function InstructorDashboardContent() {
 export function InstructorDashboard() {
     return <InstructorDashboardContent />;
 }
-
-    
