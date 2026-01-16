@@ -14,7 +14,13 @@ import { useCollection, useMemoFirebase } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore, limit, startAfter, QueryDocumentSnapshot, DocumentData, getDocs } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
-import { Message } from "@/lib/types";
+
+interface AiTutorMessage {
+  id: string;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: any;
+}
 
 
 export function AiTutorClient() {
@@ -24,7 +30,7 @@ export function AiTutorClient() {
   const [isAiResponding, setIsAiResponding] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<AiTutorMessage[]>([]);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
@@ -53,7 +59,7 @@ export function AiTutorClient() {
 
     try {
         const querySnapshot = await getDocs(q);
-        const newMessages = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+        const newMessages = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AiTutorMessage));
         
         setHasMore(newMessages.length === 25);
         setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
@@ -107,7 +113,7 @@ export function AiTutorClient() {
     try {
       const docRef = await addDoc(chatCollectionRef, userMessagePayload);
       // Optimistically update UI
-      setMessages(prev => [{id: docRef.id, ...userMessagePayload, timestamp: new Date() }, ...prev]);
+      setMessages(prev => [{id: docRef.id, ...userMessagePayload, timestamp: new Date() } as AiTutorMessage, ...prev]);
     } catch(err) {
        errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: chatCollectionRef.path,
@@ -126,13 +132,13 @@ export function AiTutorClient() {
       const aiMessagePayload = { sender: "ai" as const, text: result.response, timestamp: serverTimestamp() };
       const docRef = await addDoc(chatCollectionRef, aiMessagePayload);
       // Optimistically update UI
-       setMessages(prev => [{id: docRef.id, ...aiMessagePayload, timestamp: new Date() }, ...prev]);
+       setMessages(prev => [{id: docRef.id, ...aiMessagePayload, timestamp: new Date() } as AiTutorMessage, ...prev]);
 
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessagePayload = { sender: "ai" as const, text: "Désolé, une erreur est survenue. Veuillez réessayer.", timestamp: serverTimestamp() };
       const docRef = await addDoc(chatCollectionRef, errorMessagePayload);
-       setMessages(prev => [{id: docRef.id, ...errorMessagePayload, timestamp: new Date() }, ...prev]);
+       setMessages(prev => [{id: docRef.id, ...errorMessagePayload, timestamp: new Date() } as AiTutorMessage, ...prev]);
     } finally {
       setIsAiResponding(false);
     }
