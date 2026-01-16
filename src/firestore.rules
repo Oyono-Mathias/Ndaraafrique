@@ -56,7 +56,7 @@ service cloud.firestore {
     ====================== */
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
+      allow get: if true; // Publicly readable for names/profiles (e.g. for certificates)
       allow list: if isAdmin();
       allow create: if isOwner(userId);
 
@@ -170,9 +170,13 @@ service cloud.firestore {
     ====================== */
 
     match /enrollments/{id} {
-      // A user can list/get their own enrollments. An admin can read all.
-      // List queries must be constrained by studentId for non-admins.
-      allow read: if isActive() && (isOwner(resource.data.studentId) || isAdmin());
+      // Public can GET a specific enrollment for certificate verification.
+      allow get: if true;
+      
+      // Students can LIST their own enrollments. Admins can list all.
+      // This relies on client-side queries to be secure for non-admins.
+      allow list: if isActive() && (isOwner(resource.data.studentId) || isAdmin());
+
       allow create: if isActive() && request.resource.data.studentId == request.auth.uid;
       allow update: if isAdmin()
         || (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId)));
