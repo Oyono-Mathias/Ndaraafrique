@@ -163,7 +163,7 @@ service cloud.firestore {
     }
     
     match /enrollments/{enrollmentId} {
-      allow get: if resource.data.progress == 100; // For public certificate verification
+      allow get: if (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || hasPermission('admin.enrollments.manage') || resource.data.progress == 100;
       allow list: if isActive();
       allow update: if (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || hasPermission('admin.enrollments.manage');
       allow create: if isActive() && isOwner(request.resource.data.studentId);
@@ -171,7 +171,8 @@ service cloud.firestore {
     }
 
     match /course_progress/{progressId} {
-      allow get, list: if isActive() && isOwner(resource.data.userId);
+      allow get: if isActive() && isOwner(resource.data.userId);
+      allow list: if isActive();
       allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
       allow delete: if (isActive() && isOwner(resource.data.userId)) || hasPermission('admin.progress.manage');
     }
@@ -220,12 +221,13 @@ service cloud.firestore {
       function isChatParticipant() { return request.auth.uid in resource.data.participants; }
       
       allow create: if isActive() && getUserData(request.auth.uid).isProfileComplete == true && request.auth.uid in request.resource.data.participants && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
-      allow read, update: if isActive() && isChatParticipant();
-      allow list: if isActive() && request.auth.uid in resource.data.participants;
+      allow get, update: if isActive() && isChatParticipant();
+      allow list: if isActive();
       
       match /messages/{messageId} {
-        allow read, list: if isActive() && isChatParticipant();
-        allow create: if isActive() && isChatParticipant() && isOwner(request.resource.data.senderId);
+        function isParentChatParticipant() { return request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants; }
+        allow read, list: if isActive() && isParentChatParticipant();
+        allow create: if isActive() && isParentChatParticipant() && isOwner(request.resource.data.senderId);
       }
     }
     
