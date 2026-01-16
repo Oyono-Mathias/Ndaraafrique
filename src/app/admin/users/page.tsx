@@ -113,7 +113,7 @@ const getStatusBadgeVariant = (status: NdaraUser['status'] = 'active') => {
   return status === 'suspended' ? 'destructive' : 'default';
 };
 
-const UserActions = ({ user, onActionStart, onActionEnd }: { user: NdaraUser, onActionStart: () => void, onActionEnd: () => void }) => {
+const UserActions = ({ user, onActionStart, onActionEnd, onUserUpdate }: { user: NdaraUser, onActionStart: () => void, onActionEnd: () => void, onUserUpdate: (userId: string, update: Partial<NdaraUser>) => void }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
   const db = getFirestore();
@@ -131,6 +131,7 @@ const UserActions = ({ user, onActionStart, onActionEnd }: { user: NdaraUser, on
     const result = await deleteUserAccount({ userId: user.uid, idToken });
     if (result.success) {
         toast({ title: "Utilisateur supprimé", description: `${user.fullName} a été supprimé.` });
+        onUserUpdate(user.uid, { status: 'deleted' } as any); // Optimistic update
     } else {
         toast({ variant: 'destructive', title: "Erreur de suppression", description: result.error });
     }
@@ -143,6 +144,7 @@ const UserActions = ({ user, onActionStart, onActionEnd }: { user: NdaraUser, on
     try {
         await updateDoc(userDocRef, { [field]: value });
         toast({ title: "Mise à jour réussie", description: `Le ${field} de ${user.fullName} a été mis à jour.`});
+        onUserUpdate(user.uid, { [field]: value }); // Optimistic update
     } catch (error) {
         console.error(`Error updating ${field}:`, error);
         toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour l'utilisateur."});
@@ -205,7 +207,7 @@ const UserActions = ({ user, onActionStart, onActionEnd }: { user: NdaraUser, on
   );
 };
 
-const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onImportComplete: () => void }) => {
     const { t } = useTranslation();
     const [file, setFile] = useState<File | null>(null);
     const [usersToImport, setUsersToImport] = useState<{ fullName: string; email: string }[]>([]);
@@ -248,6 +250,9 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
         const result = await importUsersAction(usersToImport);
         setImportResults(result.results);
         setIsLoading(false);
+        if (result.success) {
+            onImportComplete();
+        }
     }
     
     const reset = () => {
@@ -326,23 +331,32 @@ export default function AdminUsersPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-        setIsLoading(true);
-        const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(50));
-        try {
-            const snapshot = await getDocs(usersQuery);
-            const userList = snapshot.docs.map(doc => doc.data() as NdaraUser);
-            setUsers(userList);
-        } catch (error) {
-            console.error("Error fetching users:", error);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    fetchUsers();
+  const fetchUsers = React.useCallback(async () => {
+    setIsLoading(true);
+    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(100));
+    try {
+        const snapshot = await getDocs(usersQuery);
+        const userList = snapshot.docs.map(doc => doc.data() as NdaraUser);
+        setUsers(userList);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+    } finally {
+        setIsLoading(false);
+    }
   }, [db]);
 
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+  
+  const handleUserUpdate = (userId: string, update: Partial<NdaraUser>) => {
+      setUsers(prevUsers => {
+          if (update.status === 'deleted') {
+              return prevUsers.filter(u => u.uid !== userId);
+          }
+          return prevUsers.map(u => u.uid === userId ? { ...u, ...update } : u);
+      });
+  };
 
   const filteredUsers = useMemo(() => {
     if (!users) return [];
@@ -425,7 +439,7 @@ export default function AdminUsersPage() {
                            {user.createdAt ? format((user.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} />
+                          <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} />
                         </TableCell>
                       </TableRow>
                     ))
@@ -465,7 +479,7 @@ export default function AdminUsersPage() {
                                       <p className="font-bold dark:text-white">{user.fullName}</p>
                                       <p className="text-sm text-muted-foreground dark:text-slate-400">{user.email}</p>
                                   </div>
-                                  <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} />
+                                  <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate}/>
                               </div>
                               <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
                                    <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
@@ -488,7 +502,7 @@ export default function AdminUsersPage() {
 
         </CardContent>
       </Card>
-      <ImportUsersDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} />
+      <ImportUsersDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} onImportComplete={fetchUsers}/>
     </div>
   );
 }

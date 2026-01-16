@@ -9,6 +9,7 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
+import { useToast } from '@/hooks/use-toast';
 
 interface RoleContextType {
   role: UserRole;
@@ -30,11 +31,17 @@ const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
   const [currentUser, setCurrentUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
+
+  const secureSignOut = useCallback(async () => {
+    const auth = getAuth();
+    await signOut(auth);
+  }, []);
 
    useEffect(() => {
     const auth = getAuth();
@@ -76,6 +83,18 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onSnapshot(userDocRef, (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as Omit<NdaraUser, 'uid' | 'email' | 'availableRoles'>;
+
+          if (userData.status === 'suspended') {
+            secureSignOut();
+            toast({
+                variant: 'destructive',
+                title: 'Compte suspendu',
+                description: 'Votre compte a été suspendu. Veuillez contacter le support.',
+                duration: Infinity,
+            });
+            setLoading(false);
+            return;
+          }
           
           const roles: UserRole[] = ['student'];
           if (userData.role === 'instructor' || userData.role === 'admin') {
@@ -146,7 +165,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user, isUserLoading, db]);
+  }, [user, isUserLoading, db, secureSignOut, toast]);
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
@@ -156,13 +175,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
   }, [availableRoles]);
-
-  const secureSignOut = async () => {
-    const auth = getAuth();
-    // The clearPersistence function is not available in all SDK versions and can cause issues.
-    // A simple signOut is sufficient and more stable for this use case.
-    await signOut(auth);
-  };
   
   const value = useMemo(() => ({
     role,

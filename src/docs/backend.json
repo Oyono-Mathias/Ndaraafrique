@@ -54,6 +54,11 @@
           "description": "Role of the user (student, instructor, or admin).",
           "enum": ["student", "instructor", "admin"]
         },
+        "status": {
+            "type": "string",
+            "description": "The current status of the user account.",
+            "enum": ["active", "suspended"]
+        },
         "isInstructorApproved": {
           "type": "boolean",
           "description": "Indicates whether the instructor's account has been approved by an admin."
@@ -88,6 +93,7 @@
         "username",
         "createdAt",
         "role",
+        "status",
         "isInstructorApproved"
       ]
     },
@@ -106,6 +112,23 @@
         "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] }
       },
       "required": ["courseId", "title", "description", "instructorId", "category", "price", "status"]
+    },
+    "CourseProgress": {
+      "title": "Course Progress",
+      "type": "object",
+      "description": "Tracks a student's progress in a specific course for the 'Continue Learning' section.",
+      "properties": {
+        "userId": { "type": "string", "description": "The student's UID." },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "courseCover": { "type": "string", "format": "uri" },
+        "lastLessonId": { "type": "string" },
+        "lastLessonTitle": { "type": "string" },
+        "progressPercent": { "type": "number", "description": "The completion percentage (0-100)." },
+        "lastVideoTime": { "type": "number", "description": "The timestamp in seconds of the last video watched." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of the last interaction." }
+      },
+      "required": ["userId", "courseId", "updatedAt", "progressPercent"]
     },
     "Chat": {
       "title": "Chat",
@@ -218,51 +241,88 @@
         },
         "required": ["subscriptionId", "userId", "planId", "status", "startDate", "endDate"]
     },
-     "Settings": {
-      "title": "Settings",
+    "UserActivity": {
+      "title": "User Activity",
       "type": "object",
-      "description": "Global settings for the Ndara Afrique application, managed by admins.",
+      "description": "Represents a single event in a user's activity feed.",
       "properties": {
-        "general": {
-          "type": "object",
-          "properties": {
-            "siteName": { "type": "string" },
-            "logoUrl": { "type": "string", "format": "uri" },
-            "contactEmail": { "type": "string", "format": "email" }
+        "userId": { "type": "string", "description": "The ID of the user this activity belongs to." },
+        "type": { "type": "string", "enum": ["enrollment", "certificate", "review", "assignment"], "description": "The type of activity event." },
+        "title": { "type": "string", "description": "A short, displayable title for the activity." },
+        "description": { "type": "string", "description": "A short description of the activity, if any." },
+        "relatedId": { "type": "string", "description": "ID of the related entity (e.g., courseId, certificateId)." },
+        "link": { "type": "string", "format": "uri", "description": "A direct link to the relevant page for this activity." },
+        "read": { "type": "boolean", "default": false, "description": "Whether the user has seen this activity." },
+        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the activity occurred." }
+      },
+      "required": ["userId", "type", "title", "createdAt"]
+    },
+    "RecommendedCourseItem": {
+      "title": "Recommended Course Item",
+      "type": "object",
+      "description": "Represents a single recommended course within a user's recommendation list.",
+      "properties": {
+        "courseId": { "type": "string" },
+        "title": { "type": "string" },
+        "coverImage": { "type": "string", "format": "uri" },
+        "instructorId": { "type": "string" },
+        "price": { "type": "number" },
+        "score": { "type": "number", "description": "The recommendation score." },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "title", "coverImage", "instructorId", "price"]
+    },
+    "UserRecommendations": {
+      "title": "User Recommendations",
+      "type": "object",
+      "description": "A document containing a list of recommended courses for a specific user.",
+      "properties": {
+        "courses": {
+          "type": "array",
+          "items": {
+            "$ref": "#/entities/RecommendedCourseItem"
           }
         },
-        "landingPage": {
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courses", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "type": "object",
+      "description": "Represents a payment transaction for a course enrollment.",
+      "properties": {
+        "userId": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Completed", "Pending", "Failed", "Refunded"] },
+        "fraudReview": {
           "type": "object",
-          "description": "Content for the public landing page.",
           "properties": {
-            "heroTitle": { "type": "string" },
-            "heroSubtitle": { "type": "string" },
-            "heroCtaText": { "type": "string" }
+            "isSuspicious": { "type": "boolean" },
+            "riskScore": { "type": "number" },
+            "reason": { "type": "string" },
+            "checkedAt": { "type": "string", "format": "date-time" }
           }
-        },
-        "commercial": {
-          "type": "object",
-          "properties": {
-            "platformCommission": { "type": "number", "description": "Percentage taken by the platform on each sale." },
-            "currency": { "type": "string", "default": "XOF" },
-            "minPayoutThreshold": { "type": "number", "description": "Minimum amount an instructor must have to request a payout." }
-          }
-        },
-        "platform": {
-            "type": "object",
-            "properties": {
-                "maintenanceMode": { "type": "boolean", "default": false },
-                "allowInstructorSignup": { "type": "boolean", "default": true }
-            }
-        },
-        "legal": {
-            "type": "object",
-            "properties": {
-                "termsOfService": { "type": "string" },
-                "privacyPolicy": { "type": "string" }
-            }
         }
-      }
+      },
+      "required": ["userId", "instructorId", "courseId", "amount", "currency", "date", "status"]
+    },
+    "SecurityLog": {
+      "title": "Security Log",
+      "type": "object",
+      "description": "Represents a security-related event.",
+      "properties": {
+        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change"] },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "ipAddress": { "type": "string", "format": "ipv4" },
+        "details": { "type": "string" }
+      },
+      "required": ["eventType", "userId", "timestamp"]
     }
   },
   "auth": {
@@ -279,13 +339,6 @@
         ]
       },
       {
-        "collectionGroup": "payments",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {"fieldPath": "date", "order": "DESCENDING"}
-        ]
-      },
-       {
         "collectionGroup": "payouts",
         "queryScope": "COLLECTION",
         "fields": [
@@ -307,6 +360,30 @@
           {"fieldPath": "category", "order": "ASCENDING"},
           {"fieldPath": "createdAt", "order": "DESCENDING"}
         ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "security_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "eventType", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
+        ]
       }
     ],
     "/users/{userId}": {
@@ -316,6 +393,10 @@
     "/users/{userId}/subscriptions/{subscriptionId}": {
       "schema": { "$ref": "#/entities/UserSubscription" },
       "description": "Stores a user's subscription history."
+    },
+     "/users/{userId}/activity/{activityId}": {
+      "schema": { "$ref": "#/entities/UserActivity" },
+      "description": "Stores a user's specific activity events as a subcollection."
     },
     "/chats/{chatId}": {
       "schema": { "$ref": "#/entities/Chat" },
@@ -328,6 +409,14 @@
     "/courses/{courseId}": {
       "schema": { "$ref": "#/entities/Course" },
       "description": "Stores course information."
+    },
+    "/course_progress/{progressId}": {
+      "schema": { "$ref": "#/entities/CourseProgress" },
+      "description": "Stores detailed student progress for quick resume."
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Stores payment transaction records."
     },
     "/payouts/{payoutId}": {
         "schema": { "$ref": "#/entities/Payout" },
@@ -345,9 +434,13 @@
       "schema": { "$ref": "#/entities/SubscriptionPlan" },
       "description": "Stores available subscription plans."
     },
-    "/settings/global": {
-      "schema": { "$ref": "#/entities/Settings" },
-      "description": "Stores global site-wide settings."
+    "/recommended_courses/{userId}": {
+      "schema": { "$ref": "#/entities/UserRecommendations" },
+      "description": "Stores personalized course recommendations for each user."
+    },
+    "/security_logs/{logId}": {
+      "schema": { "$ref": "#/entities/SecurityLog" },
+      "description": "Stores security-related events for admin review."
     }
   }
 }
