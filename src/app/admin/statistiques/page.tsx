@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -101,7 +100,7 @@ const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading
 
 
 // --- COMPOSANT DU TABLEAU DE BORD PRINCIPAL ---
-const AdminDashboard = () => {
+const StatsDashboard = () => {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
@@ -351,12 +350,12 @@ const AdminDashboard = () => {
 export default function StatisticsPage() {
     const { t } = useTranslation();
     return (
-         <div className="space-y-8 max-w-7xl mx-auto px-4">
+         <div className="space-y-8 max-w-7xl mx-auto">
               <header>
                 <h1 className="text-3xl font-bold dark:text-white">{t('navStatistics')}</h1>
                 <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance de la plateforme.</p>
             </header>
-            <AdminDashboard />
+            <StatsDashboard />
         </div>
     )
 }
