@@ -16,32 +16,49 @@ service cloud.firestore {
     function getUserData(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
+
+    function isAdmin() {
+      if (!isSignedIn()) {
+        return false;
+      }
+      let userData = getUserData(request.auth.uid);
+      return userData != null && userData.role == 'admin';
+    }
     
     function hasPermission(permission) {
       if (!isSignedIn()) {
         return false;
       }
       let user = getUserData(request.auth.uid);
+      if (user == null) {
+        return false;
+      }
       
       // User-specific overrides take precedence
-      if (permission in user.permissions) {
+      if (user.permissions != null && permission in user.permissions) {
         return user.permissions[permission] == true;
       }
       
       // Fallback to role-based permissions
+      if (user.role == null) {
+        return false;
+      }
       let roleData = get(/databases/$(database)/documents/roles/$(user.role)).data;
-      return permission in roleData.permissions && roleData.permissions[permission] == true;
+      return roleData != null && roleData.permissions != null && permission in roleData.permissions && roleData.permissions[permission] == true;
     }
 
     function isActive() {
       let userData = getUserData(request.auth.uid);
-      return isSignedIn() && userData.status == 'active';
+      return isSignedIn() && userData != null && userData.status == 'active';
+    }
+
+    function isEnrolled(courseId) {
+      return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
 
     // --- Collection: roles ---
     match /roles/{roleId} {
-      allow read: if isSignedIn(); 
-      allow write: if false; 
+      allow read, write: if isAdmin();
     }
 
     // --- Collection: users ---
@@ -93,25 +110,46 @@ service cloud.firestore {
         allow create: if hasPermission('instructor.course.create');
         allow update, delete: if hasPermission('admin.courses.manage') || (isActive() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId));
         
-        match /quizzes/{quizId} {
-            allow read, list, create, update, delete: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
-            
-            match /questions/{questionId} {
-                allow read, list, create, update, delete: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
-            }
-
-            match /attempts/{attemptId} {
-                allow read: if isOwner(resource.data.userId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
-                allow list: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || hasPermission('admin.quiz.manage');
-                allow create: if isActive() && isOwner(request.resource.data.userId);
-            }
-        }
-
         match /{path=**} {
             allow read: if get(/databases/$(database)/documents/courses/$(courseId)).data.status == 'Published' || (isActive() && (hasPermission('admin.courses.manage') || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId)));
             allow write: if hasPermission('admin.courses.manage') || (isActive() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId));
         }
     }
+    
+    // --- Collection: quizzes ---
+    match /quizzes/{quizId} {
+      function getCourse() {
+          let courseId = resource.data.courseId;
+          return get(/databases/$(database)/documents/courses/$(courseId)).data;
+      }
+      function isCourseOwner() {
+          return isOwner(getCourse().instructorId);
+      }
+
+      allow read: if isEnrolled(resource.data.courseId) || isCourseOwner() || hasPermission('admin.quiz.manage');
+      allow list: if hasPermission('admin.quiz.manage'); // Only admins can list all quizzes.
+      
+      allow create, update, delete: if hasPermission('instructor.quiz.manage') || hasPermission('admin.quiz.manage');
+      
+      match /questions/{questionId} {
+        // Inherit parent quiz's course context
+        let parentQuiz = get(/databases/$(database)/documents/quizzes/$(quizId)).data;
+        let parentCourse = get(/databases/$(database)/documents/courses/$(parentQuiz.courseId)).data;
+
+        allow get, list: if isEnrolled(parentQuiz.courseId) || isOwner(parentCourse.instructorId) || hasPermission('admin.quiz.manage');
+        allow create, update, delete: if isOwner(parentCourse.instructorId) || hasPermission('admin.quiz.manage');
+      }
+
+      match /attempts/{attemptId} {
+        let parentQuiz = get(/databases/$(database)/documents/quizzes/$(quizId)).data;
+        let parentCourse = get(/databases/$(database)/documents/courses/$(parentQuiz.courseId)).data;
+
+        allow read: if isOwner(resource.data.userId) || isOwner(parentCourse.instructorId) || hasPermission('admin.quiz.manage');
+        allow list: if isOwner(parentCourse.instructorId) || hasPermission('admin.quiz.manage');
+        allow create: if isActive() && isOwner(request.resource.data.userId);
+      }
+    }
+
 
     match /reviews/{reviewId} {
       allow read, list: if true;
@@ -125,7 +163,7 @@ service cloud.firestore {
     }
     
     match /enrollments/{enrollmentId} {
-      allow get: if resource.data.progress == 100; // For public certificate verification
+      allow get: if (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || hasPermission('admin.enrollments.manage') || resource.data.progress == 100;
       allow list: if isActive();
       allow update: if (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || hasPermission('admin.enrollments.manage');
       allow create: if isActive() && isOwner(request.resource.data.studentId);
@@ -133,17 +171,18 @@ service cloud.firestore {
     }
 
     match /course_progress/{progressId} {
-      allow get, list: if isActive() && isOwner(resource.data.userId);
+      // Students can only read their own progress documents. Admins can read all.
+      // This rule forces client queries to include `where('userId', '==', request.auth.uid)` for non-admins.
+      allow read: if (isActive() && isOwner(resource.data.userId)) || isAdmin();
       allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
-      allow delete: if (isActive() && isOwner(resource.data.userId)) || hasPermission('admin.progress.manage');
+      allow delete: if (isActive() && isOwner(resource.data.userId)) || isAdmin();
     }
     
     match /payments/{paymentId} {
       allow get: if isOwner(resource.data.userId) || hasPermission('admin.payments.read');
-      allow list: if hasPermission('admin.payments.list');
+      allow list: if isApprovedInstructor() || hasPermission('admin.payments.list');
       allow create: if false; // Server-side only
-      allow update: if hasPermission('admin.payments.manage');
-      allow delete: if hasPermission('admin.payments.manage');
+      allow update, delete: if hasPermission('admin.payments.manage');
     }
     
     match /payouts/{payoutId} {
@@ -183,12 +222,13 @@ service cloud.firestore {
       function isChatParticipant() { return request.auth.uid in resource.data.participants; }
       
       allow create: if isActive() && getUserData(request.auth.uid).isProfileComplete == true && request.auth.uid in request.resource.data.participants && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
-      allow read, update: if isActive() && isChatParticipant();
-      allow list: if isActive() && request.auth.uid in resource.data.participants;
+      allow get, update: if isActive() && isChatParticipant();
+      allow list: if isActive();
       
       match /messages/{messageId} {
-        allow read, list: if isActive() && isChatParticipant();
-        allow create: if isActive() && isChatParticipant() && isOwner(request.resource.data.senderId);
+        function isParentChatParticipant() { return request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants; }
+        allow read, list: if isActive() && isParentChatParticipant();
+        allow create: if isActive() && isParentChatParticipant() && isOwner(request.resource.data.senderId);
       }
     }
     
