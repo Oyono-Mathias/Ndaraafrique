@@ -7,7 +7,6 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
-import { PwaInstaller } from "@/components/PwaInstaller";
 
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
@@ -41,7 +40,6 @@ export default function RootLayout({
           <RoleProvider>
             <AppShell>{children}</AppShell>
             <Toaster />
-            <PwaInstaller />
           </RoleProvider>
         </FirebaseClientProvider>
       </body>
