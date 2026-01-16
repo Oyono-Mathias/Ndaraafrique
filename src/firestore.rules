@@ -42,6 +42,15 @@ service cloud.firestore {
       return userData.isProfileComplete == true;
     }
 
+    function isEnrolled(courseId) {
+        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+    }
+    
+    function isCourseOwner(courseId) {
+        let courseData = get(/databases/$(database)/documents/courses/$(courseId)).data;
+        return isOwner(courseData.instructorId);
+    }
+
     /* ======================
        USERS
     ====================== */
@@ -90,7 +99,7 @@ service cloud.firestore {
     }
 
     /* ======================
-       COURSES
+       COURSES & Q&A
     ====================== */
 
     match /courses/{courseId} {
@@ -118,84 +127,20 @@ service cloud.firestore {
             || (isActive() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId));
         }
       }
-    }
-
-    /* ======================
-       COURSE PROGRESS
-    ====================== */
-
-    match /course_progress/{progressId} {
-      // Students can only read their own progress documents. Admins can read all.
-      // For LIST operations, this rule requires a `where('userId', '==', request.auth.uid)` clause
-      // in the query for non-admin users. This is the correct and secure way to handle this.
-      allow read: if isActive() && (isOwner(resource.data.userId) || isAdmin());
-
-      // A student can only create or update their own progress.
-      allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
-
-      // A student can delete their own progress, or an admin can.
-      allow delete: if isActive() && (isOwner(resource.data.userId) || isAdmin());
-    }
-
-
-    /* ======================
-       ENROLLMENTS
-    ====================== */
-
-    match /enrollments/{id} {
-      // A user can list/get their own enrollments. An admin can read all.
-      // List queries must be constrained by studentId for non-admins.
-      allow read: if isActive() && (isOwner(resource.data.studentId) || isAdmin());
-      allow create: if isActive() && request.resource.data.studentId == request.auth.uid;
-      allow update: if isAdmin()
-        || (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId)));
-    }
-
-
-    /* ======================
-       SUPPORT
-    ====================== */
-
-    match /support_tickets/{ticketId} {
-
-      function isParticipant() {
-        return request.auth.uid == resource.data.userId
-          || request.auth.uid == resource.data.instructorId;
+      
+       // --- Public Q&A ---
+      match /questions/{questionId} {
+        allow create: if isEnrolled(courseId) && isOwner(request.resource.data.studentId);
+        allow read, list: if isEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+        allow update: if isCourseOwner(courseId) || isAdmin();
+        allow delete: if isCourseOwner(courseId) || isAdmin() || isOwner(resource.data.studentId);
+        
+        match /answers/{answerId} {
+          allow create: if isEnrolled(courseId) && isOwner(request.resource.data.userId);
+          allow read, list: if isEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+          allow update, delete: if isCourseOwner(courseId) || isAdmin() || isOwner(resource.data.userId);
+        }
       }
-
-      // Participants and admins can read/update tickets.
-      // List queries must be constrained by userId or instructorId for non-admins.
-      allow read, update: if isActive() && (isParticipant() || isAdmin());
-      allow create: if isActive() && request.resource.data.userId == request.auth.uid;
-
-      match /messages/{messageId} {
-        allow read, list: if isActive() && (isParticipant() || isAdmin());
-        allow create: if isActive() && isOwner(request.resource.data.senderId)
-          && (isParticipant() || isAdmin());
-      }
-    }
-
-    /* ======================
-       PUBLIC
-    ====================== */
-
-    match /carousel_slides/{id} {
-      allow read, list: if true;
-      allow write: if isAdmin();
-    }
-
-    match /faqs/{id} {
-      allow read, list: if true;
-      allow write: if isAdmin();
-    }
-
-    match /settings/global {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /waitlist/{email} {
-      allow create: if true;
     }
 
     /* ======================
