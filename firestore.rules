@@ -34,9 +34,7 @@ service cloud.firestore {
     // --- Collection: users ---
     match /users/{userId} {
       allow get: if isOwner(userId) || isAdmin();
-      // Annuaire: a user can list other users if their profile is complete and they filter by the same interest domain
-      // Admins can list all users.
-      allow list: if isAdmin() || (isProfileComplete() && 'careerGoals.interestDomain' in request.query.where);
+      allow list: if isSignedIn();
       
       allow create: if isOwner(userId);
       
@@ -117,9 +115,19 @@ service cloud.firestore {
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
       allow get: if resource.data.progress == 100;
-      allow list, update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
+      allow list: if isSignedIn();
+      allow update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
       allow delete: if isAdmin();
+    }
+
+    // --- Collection: course_progress ---
+    match /course_progress/{progressId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      // Client query MUST filter by userId for list operations
+      allow list: if isSignedIn();
+      allow create, update: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow delete: if (isSignedIn() && resource.data.userId == request.auth.uid) || isAdmin();
     }
     
     // --- Collection: payments ---
@@ -147,7 +155,7 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow get: if isSignedIn() && (isTicketParticipant() || isAdmin());
       allow update: if isSignedIn() && (isTicketParticipant() || isAdmin());
-      allow list: if isSignedIn() && (isTicketParticipant() || isAdmin());
+      allow list: if isSignedIn();
 
       match /messages/{messageId} {
         allow create: if isSignedIn() && (isTicketParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);

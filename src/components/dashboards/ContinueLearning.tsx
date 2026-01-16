@@ -1,90 +1,101 @@
 
 'use client';
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { collection, query, where, getFirestore, orderBy, limit, getDocs } from 'firebase/firestore';
-import type { Course, Enrollment, NdaraUser } from '@/lib/types';
+import { collection, query, where, getFirestore, orderBy, limit } from 'firebase/firestore';
+import type { CourseProgress } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CourseCard } from '@/components/cards/CourseCard';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Play } from 'lucide-react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Progress } from '@/components/ui/progress';
+import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 
-interface EnrolledCourse extends Course {
-    progress: number;
-    instructorName: string;
-}
+const ContinueLearningCard = ({ item }: { item: CourseProgress }) => {
+    const progress = item.progressPercent || 0;
+    const progressColorClass = cn({
+        "bg-red-500": progress < 40,
+        "bg-amber-500": progress >= 40 && progress < 80,
+        "bg-green-500": progress >= 80,
+    });
+
+    return (
+        <div className="w-full h-full glassmorphism-card rounded-2xl overflow-hidden group flex flex-col">
+            <Link href={`/courses/${item.courseId}`} className="block">
+                <div className="relative aspect-video overflow-hidden bg-slate-800">
+                    <Image
+                        src={item.courseCover || `https://picsum.photos/seed/${item.courseId}/400/225`}
+                        alt={item.courseTitle}
+                        fill
+                        className="object-cover transition-all duration-300 group-hover:scale-105"
+                        loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                </div>
+            </Link>
+            <div className="p-4 flex flex-col flex-grow">
+                <Link href={`/courses/${item.courseId}`} className="block">
+                    <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{item.courseTitle}</h3>
+                </Link>
+                <div className="flex-grow" />
+                <div className="mt-4 space-y-2">
+                     <div>
+                        {progress > 0 && (
+                            <p className="text-xs text-center text-slate-400 mb-1">
+                                Plus que {100 - progress}% pour obtenir votre certificat !
+                            </p>
+                        )}
+                        <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
+                    </div>
+                    <Button size="sm" className="w-full font-bold bg-primary hover:bg-primary/90" asChild>
+                        <Link href={`/courses/${item.courseId}`}>
+                            <Play className="h-4 w-4 mr-2"/>
+                            Continuer
+                        </Link>
+                    </Button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 
 export function ContinueLearning() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
-    const [enrolledCourses, setEnrolledCourses] = useState<EnrolledCourse[]>([]);
-    const [dataLoading, setDataLoading] = useState(true);
 
-    const enrollmentsQuery = useMemoFirebase(
+    const progressQuery = useMemoFirebase(
         () => currentUser?.uid
             ? query(
-                collection(db, 'enrollments'),
-                where('studentId', '==', currentUser.uid),
-                where('progress', '<', 100),
-                orderBy('lastAccessedAt', 'desc'),
+                collection(db, 'course_progress'),
+                where('userId', '==', currentUser.uid),
+                where('progressPercent', '<', 100),
+                orderBy('updatedAt', 'desc'),
                 limit(3)
             )
             : null,
         [db, currentUser?.uid]
     );
-    const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-    useEffect(() => {
-        if (enrollmentsLoading) return;
-        if (!enrollments || enrollments.length === 0) {
-            setDataLoading(false);
-            setEnrolledCourses([]);
-            return;
-        }
+    const { data: coursesInProgress, isLoading: isProgressLoading } = useCollection<CourseProgress>(progressQuery);
 
-        const fetchDetails = async () => {
-            setDataLoading(true);
-            const courseIds = enrollments.map(e => e.courseId);
-            const instructorIds = enrollments.map(e => e.instructorId).filter(Boolean);
+    const isLoading = isUserLoading || isProgressLoading;
 
-            const coursesMap = new Map<string, Course>();
-            if (courseIds.length > 0) {
-                const coursesRef = collection(db, 'courses');
-                const q = query(coursesRef, where('__name__', 'in', courseIds));
-                const courseSnap = await getDocs(q);
-                courseSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
-            }
-
-            const instructorsMap = new Map<string, NdaraUser>();
-            if (instructorIds.length > 0) {
-                const instructorsRef = collection(db, 'users');
-                const q = query(instructorsRef, where('uid', 'in', instructorIds));
-                const instructorSnap = await getDocs(q);
-                instructorSnap.forEach(doc => instructorsMap.set(doc.data().uid, doc.data() as NdaraUser));
-            }
-
-            const populatedCourses: EnrolledCourse[] = enrollments.map(enrollment => {
-                const course = coursesMap.get(enrollment.courseId);
-                const instructor = instructorsMap.get(enrollment.instructorId);
-                return {
-                    ...(course as Course),
-                    id: enrollment.courseId,
-                    progress: enrollment.progress,
-                    instructorName: instructor?.fullName || 'Instructeur Inconnu',
-                };
-            }).filter(c => c.id);
-
-            setEnrolledCourses(populatedCourses);
-            setDataLoading(false);
-        };
-
-        fetchDetails();
-    }, [enrollments, enrollmentsLoading, db]);
-
-    const isLoading = isUserLoading || dataLoading;
-
-    if (!isLoading && enrolledCourses.length === 0) {
+    if (isLoading) {
+        return (
+             <section>
+                <h2 className="text-2xl font-bold mb-4 text-white">Reprendre l'apprentissage</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
+                </div>
+            </section>
+        );
+    }
+    
+    if (!coursesInProgress || coursesInProgress.length === 0) {
         return null; // Don't show the section if there's nothing to continue
     }
 
@@ -92,20 +103,7 @@ export function ContinueLearning() {
         <section>
             <h2 className="text-2xl font-bold mb-4 text-white">Reprendre l'apprentissage</h2>
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {isLoading ? (
-                    [...Array(3)].map((_, i) => (
-                        <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />
-                    ))
-                ) : (
-                    enrolledCourses.map(course => (
-                        <CourseCard 
-                            key={course.id}
-                            course={course} 
-                            instructor={{ fullName: course.instructorName }}
-                            variant="student" 
-                        />
-                    ))
-                )}
+                {coursesInProgress.map(item => <ContinueLearningCard key={item.id} item={item} />)}
             </div>
         </section>
     );

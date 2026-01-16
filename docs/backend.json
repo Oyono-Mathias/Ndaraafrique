@@ -1,5 +1,4 @@
 
-
 {
   "entities": {
     "User": {
@@ -107,6 +106,23 @@
         "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] }
       },
       "required": ["courseId", "title", "description", "instructorId", "category", "price", "status"]
+    },
+    "CourseProgress": {
+      "title": "Course Progress",
+      "type": "object",
+      "description": "Tracks a student's progress in a specific course for the 'Continue Learning' section.",
+      "properties": {
+        "userId": { "type": "string", "description": "The student's UID." },
+        "courseId": { "type": "string" },
+        "courseTitle": { "type": "string" },
+        "courseCover": { "type": "string", "format": "uri" },
+        "lastLessonId": { "type": "string" },
+        "lastLessonTitle": { "type": "string" },
+        "progressPercent": { "type": "number", "description": "The completion percentage (0-100)." },
+        "lastVideoTime": { "type": "number", "description": "The timestamp in seconds of the last video watched." },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of the last interaction." }
+      },
+      "required": ["userId", "courseId", "updatedAt", "progressPercent"]
     },
     "Chat": {
       "title": "Chat",
@@ -297,6 +313,10 @@
       "schema": { "$ref": "#/entities/Course" },
       "description": "Stores course information."
     },
+    "/course_progress/{progressId}": {
+      "schema": { "$ref": "#/entities/CourseProgress" },
+      "description": "Stores detailed student progress for quick resume."
+    },
     "/payouts/{payoutId}": {
         "schema": { "$ref": "#/entities/Payout" },
         "description": "Stores instructor payout requests."
@@ -319,4 +339,3 @@
     }
   }
 }
-

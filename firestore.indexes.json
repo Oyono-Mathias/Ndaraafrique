@@ -1,5 +1,4 @@
 
-
 {
   "indexes": [
     {
@@ -75,8 +74,15 @@
             { "fieldPath": "userId", "order": "ASCENDING" },
             { "fieldPath": "createdAt", "order": "DESCENDING" }
         ]
+    },
+    {
+      "collectionGroup": "course_progress",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
 }
-

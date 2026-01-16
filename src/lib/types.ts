@@ -128,6 +128,20 @@ export interface Course {
     previewVideoUrl?: string;
 }
 
+export interface CourseProgress {
+  id: string; // Composite ID like userId_courseId
+  userId: string;
+  courseId: string;
+  courseTitle: string;
+  courseCover?: string;
+  lastLessonId: string;
+  lastLessonTitle: string;
+  progressPercent: number;
+  lastVideoTime?: number;
+  updatedAt: Timestamp;
+}
+
+
 export interface Enrollment {
     id: string;
     studentId: string;

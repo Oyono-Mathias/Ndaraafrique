@@ -6,7 +6,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
+import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp, arrayUnion, setDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Lock, PlayCircle, BookOpen, ArrowLeft, Loader2, FileText, Shield } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Course, Section, Lecture, Enrollment } from '@/lib/types';
+import type { Course, Section, Lecture, Enrollment, CourseProgress } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import 'plyr/dist/plyr.css';
 import { useToast } from '@/hooks/use-toast';
@@ -300,7 +300,7 @@ export default function CoursePlayerPage() {
     }, [isLoading, isEnrolled, enrollment, course, courseId, router, toast, currentUser]);
 
     const handleLessonCompletion = async () => {
-        if (!enrollment || !activeLesson || !user) return;
+        if (!enrollment || !activeLesson || !user || !course) return;
     
         const totalLessons = Array.from(allLectures.values()).reduce((acc, val) => acc + val.length, 0);
         let updatedCompletedLessons = [...completedLessons];
@@ -308,14 +308,35 @@ export default function CoursePlayerPage() {
         if (!completedLessons.includes(activeLesson.id)) {
             updatedCompletedLessons.push(activeLesson.id);
             const newProgress = totalLessons > 0 ? Math.round((updatedCompletedLessons.length / totalLessons) * 100) : 0;
-            const enrollmentRef = doc(db, 'enrollments', enrollment.id);
             
-            await updateDoc(enrollmentRef, {
+            // Update both enrollments and course_progress
+            const batch = writeBatch(db);
+
+            // 1. Update enrollment document
+            const enrollmentRef = doc(db, 'enrollments', enrollment.id);
+            batch.update(enrollmentRef, {
                 completedLessons: updatedCompletedLessons,
                 progress: newProgress,
                 lastWatchedLesson: activeLesson.id,
                 lastAccessedAt: serverTimestamp(),
             });
+
+            // 2. Update course_progress document
+            const progressId = `${user.uid}_${courseId}`;
+            const progressRef = doc(db, 'course_progress', progressId);
+            const progressPayload: Omit<CourseProgress, 'id'> = {
+                userId: user.uid,
+                courseId: courseId as string,
+                courseTitle: course.title,
+                courseCover: course.imageUrl || '',
+                lastLessonId: activeLesson.id,
+                lastLessonTitle: activeLesson.title,
+                progressPercent: newProgress,
+                updatedAt: serverTimestamp(),
+            };
+            batch.set(progressRef, progressPayload, { merge: true });
+
+            await batch.commit();
 
             toast({
                 title: "Leçon terminée !",
@@ -323,7 +344,8 @@ export default function CoursePlayerPage() {
             });
         }
     
-        if (updatedCompletedLessons.length === totalLessons && totalLessons > 0) {
+        const finalProgress = totalLessons > 0 ? Math.round((updatedCompletedLessons.length / totalLessons) * 100) : 0;
+        if (finalProgress === 100 && totalLessons > 0) {
             const q = query(collection(db, 'enrollments'), where('studentId', '==', user.uid), where('progress', '==', 100));
             const completedCoursesSnap = await getDocs(q);
             if (completedCoursesSnap.size === 1 && !currentUser?.badges?.includes('pioneer')) {
