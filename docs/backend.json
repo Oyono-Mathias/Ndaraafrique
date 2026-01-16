@@ -18,7 +18,8 @@
             "course.moderation",
             "payout.process",
             "security.resolve",
-            "role.permissions.update"
+            "role.permissions.update",
+            "settings.update"
           ]
         },
         "target": {
@@ -35,7 +36,8 @@
                 "payout",
                 "payment",
                 "security_log",
-                "role"
+                "role",
+                "settings"
               ]
             }
           }

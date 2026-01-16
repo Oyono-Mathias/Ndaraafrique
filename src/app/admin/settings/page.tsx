@@ -24,6 +24,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTranslation } from 'react-i18next';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { Skeleton } from '@/components/ui/skeleton';
+import { updateGlobalSettings } from '@/actions/settingsActions';
 
 const settingsSchema = z.object({
     siteName: z.string().min(3, "Le nom du site est requis."),
@@ -60,6 +61,7 @@ type SettingsFormValues = z.infer<typeof settingsSchema>;
 export default function AdminSettingsPage() {
     const { t } = useTranslation();
     const { toast } = useToast();
+    const { currentUser } = useRole();
     const db = getFirestore();
     const storage = getStorage();
     const [isSaving, setIsSaving] = useState(false);
@@ -157,6 +159,7 @@ export default function AdminSettingsPage() {
     };
 
     const onSubmit = async (data: SettingsFormValues) => {
+        if (!currentUser) return;
         setIsSaving(true);
         let finalLogoUrl = form.getValues('logoUrl') || '';
 
@@ -208,11 +211,21 @@ export default function AdminSettingsPage() {
                     }
                 }
             };
-            await setDoc(settingsRef, settingsPayload, { merge: true });
-            toast({ title: t('settings_saved_title'), description: t('settings_saved_desc') });
-        } catch (error) {
+            
+            const result = await updateGlobalSettings({
+                settings: settingsPayload,
+                adminId: currentUser.uid
+            });
+
+            if (result.success) {
+                 toast({ title: t('settings_saved_title'), description: t('settings_saved_desc') });
+            } else {
+                throw new Error(result.error);
+            }
+           
+        } catch (error: any) {
             console.error("Failed to save settings:", error);
-            toast({ variant: "destructive", title: t('errorTitle'), description: t('settings_save_error') });
+            toast({ variant: "destructive", title: t('errorTitle'), description: error.message || t('settings_save_error') });
         } finally {
             setIsSaving(false);
         }
