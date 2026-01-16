@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -122,7 +121,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   return (
     <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
       <header className="p-4 border-b border-white/10 flex items-center gap-2">
-        <Image src={logoUrl || "/icon.svg"} width={28} height={28} alt={`${siteName} Logo`} className="rounded-full" />
+        <Image src={logoUrl || "/icon.svg"} width={28} height={28} alt="Ndara Afrique Logo" className="rounded-full" />
         <span className="font-bold text-lg text-white">
           Ndara Afrique
         </span>
