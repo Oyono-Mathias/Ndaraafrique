@@ -360,13 +360,14 @@
       "type": "object",
       "description": "Represents a security-related event.",
       "properties": {
-        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change"] },
-        "userId": { "type": "string" },
+        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change", "user_suspended", "user_reinstated", "course_approved", "course_rejected"] },
+        "userId": { "type": "string", "description": "The user initiating the action (e.g., the admin)." },
+        "targetId": { "type": "string", "description": "The ID of the entity being acted upon (e.g., user ID, course ID)." },
         "timestamp": { "type": "string", "format": "date-time" },
         "ipAddress": { "type": "string", "format": "ipv4" },
-        "details": { "type": "string" }
+        "details": { "type": "string", "description": "A human-readable description of the event." }
       },
-      "required": ["eventType", "userId", "timestamp"]
+      "required": ["eventType", "userId", "timestamp", "details"]
     }
   },
   "auth": {

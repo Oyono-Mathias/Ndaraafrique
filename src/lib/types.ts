@@ -255,9 +255,10 @@ export interface Payment {
 
 export interface SecurityLog {
   id: string;
-  userId: string;
-  eventType: 'suspicious_login' | 'failed_payment' | 'profile_change';
-  ipAddress: string;
-  details: string;
+  userId: string; // The user PERFORMING the action (e.g., admin UID)
+  targetId: string; // The user or entity being affected
+  eventType: 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'suspicious_login' | 'failed_payment' | 'profile_change';
+  details: string; // Human-readable description
+  ipAddress?: string;
   timestamp: Timestamp;
 }

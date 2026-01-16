@@ -83,7 +83,8 @@ service cloud.firestore {
       }
       match /activity/{activityId} {
         allow read, list: if isActive() && isOwner(userId);
-        allow write: if false; // Backend only
+        allow create: if isActive() && isOwner(request.resource.data.userId); // User can log their own activities
+        allow update, delete: if false; // Activities are immutable from client
       }
     }
     
