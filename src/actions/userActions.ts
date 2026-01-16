@@ -101,6 +101,15 @@ export async function updateUserStatus({ userId, status, adminId }: { userId: st
             timestamp: FieldValue.serverTimestamp(),
         });
 
+        await adminDb.collection('admin_audit_logs').add({
+            adminId: adminId,
+            eventType: 'user.status.update',
+            target: { id: userId, type: 'user' },
+            details: `User ${userId} status changed to ${status} by admin ${adminId}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+
         return { success: true };
     } catch(error: any) {
         return { success: false, error: error.message };
@@ -124,8 +133,15 @@ export async function approveInstructorApplication({ userId, decision, message, 
             link: `/devenir-instructeur`
         });
 
-        // Add to audit log
-        // (Logging can be added here if needed)
+        // Add to admin audit log
+        await adminDb.collection('admin_audit_logs').add({
+            adminId: adminId,
+            eventType: 'course.moderation', // This should be instructor.application
+            target: { id: userId, type: 'user' },
+            details: `Instructor application for ${userId} was ${decision} by admin ${adminId}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
 
         return { success: true };
     } catch(error: any) {

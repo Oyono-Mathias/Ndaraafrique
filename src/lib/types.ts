@@ -271,3 +271,15 @@ export interface SecurityLog {
   timestamp: Timestamp;
   status?: 'open' | 'resolved';
 }
+
+export interface AdminAuditLog {
+  id: string;
+  adminId: string;
+  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve';
+  target: {
+    id: string;
+    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log';
+  };
+  timestamp: Timestamp;
+  details: string;
+}

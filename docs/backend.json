@@ -1,18 +1,79 @@
 {
   "entities": {
+    "AdminAuditLog": {
+      "title": "Admin Audit Log",
+      "type": "object",
+      "description": "Records an action performed by an administrator for auditing purposes.",
+      "properties": {
+        "adminId": {
+          "type": "string",
+          "description": "The UID of the admin performing the action."
+        },
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "user.status.update",
+            "user.role.update",
+            "course.moderation",
+            "payout.process",
+            "security.resolve"
+          ]
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "user",
+                "course",
+                "payout",
+                "payment",
+                "security_log"
+              ]
+            }
+          }
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "details": {
+          "type": "string",
+          "description": "A human-readable description of the event."
+        }
+      },
+      "required": [
+        "adminId",
+        "eventType",
+        "target",
+        "timestamp",
+        "details"
+      ]
+    },
     "Role": {
       "title": "Role",
       "type": "object",
       "description": "Defines a set of permissions for a user role.",
       "properties": {
-        "name": { "type": "string" },
+        "name": {
+          "type": "string"
+        },
         "permissions": {
           "type": "object",
           "description": "A map of permission keys to boolean values.",
-          "additionalProperties": { "type": "boolean" }
+          "additionalProperties": {
+            "type": "boolean"
+          }
         }
       },
-      "required": ["name", "permissions"]
+      "required": [
+        "name",
+        "permissions"
+      ]
     },
     "User": {
       "$schema": "http://json-schema.org/draft-07/schema#",
@@ -26,8 +87,8 @@
           "format": "uuid"
         },
         "username": {
-            "type": "string",
-            "description": "Unique, public-facing username for the user."
+          "type": "string",
+          "description": "Unique, public-facing username for the user."
         },
         "email": {
           "type": "string",
@@ -44,18 +105,30 @@
           "format": "uri"
         },
         "bio": {
-            "type": "string",
-            "description": "A short biography for the user, especially for instructors."
+          "type": "string",
+          "description": "A short biography for the user, especially for instructors."
         },
         "socialLinks": {
-            "type": "object",
-            "description": "URLs to the user's social media profiles.",
-            "properties": {
-                "website": { "type": "string", "format": "uri" },
-                "twitter": { "type": "string", "format": "uri" },
-                "linkedin": { "type": "string", "format": "uri" },
-                "youtube": { "type": "string", "format": "uri" }
+          "type": "object",
+          "description": "URLs to the user's social media profiles.",
+          "properties": {
+            "website": {
+              "type": "string",
+              "format": "uri"
+            },
+            "twitter": {
+              "type": "string",
+              "format": "uri"
+            },
+            "linkedin": {
+              "type": "string",
+              "format": "uri"
+            },
+            "youtube": {
+              "type": "string",
+              "format": "uri"
             }
+          }
         },
         "createdAt": {
           "type": "string",
@@ -68,41 +141,65 @@
           "default": "student"
         },
         "status": {
-            "type": "string",
-            "description": "The current status of the user account.",
-            "enum": ["active", "suspended"]
+          "type": "string",
+          "description": "The current status of the user account.",
+          "enum": [
+            "active",
+            "suspended"
+          ]
         },
         "isInstructorApproved": {
           "type": "boolean",
           "description": "Indicates whether the instructor's account has been approved by an admin."
         },
         "careerGoals": {
-            "type": "object",
-            "description": "User's career goals and interests. The `interestDomain` is used for chat matchmaking.",
-            "properties": {
-                "currentRole": { "type": "string" },
-                "interestDomain": { "type": "string", "description": "Used to match students with others in the same field of study." },
-                "mainGoal": { "type": "string" }
+          "type": "object",
+          "description": "User's career goals and interests. The `interestDomain` is used for chat matchmaking.",
+          "properties": {
+            "currentRole": {
+              "type": "string"
+            },
+            "interestDomain": {
+              "type": "string",
+              "description": "Used to match students with others in the same field of study."
+            },
+            "mainGoal": {
+              "type": "string"
             }
+          }
         },
         "isProfileComplete": {
-            "type": "boolean",
-            "description": "Flag indicating if the user has completed the essential parts of their profile (e.g., username, career goals)."
+          "type": "boolean",
+          "description": "Flag indicating if the user has completed the essential parts of their profile (e.g., username, career goals)."
         },
         "notificationPreferences": {
           "type": "object",
           "description": "Admin preferences for receiving push notifications.",
           "properties": {
-            "newPayouts": { "type": "boolean", "default": true },
-            "newApplications": { "type": "boolean", "default": true },
-            "newSupportTickets": { "type": "boolean", "default": true },
-            "financialAnomalies": { "type": "boolean", "default": true }
+            "newPayouts": {
+              "type": "boolean",
+              "default": true
+            },
+            "newApplications": {
+              "type": "boolean",
+              "default": true
+            },
+            "newSupportTickets": {
+              "type": "boolean",
+              "default": true
+            },
+            "financialAnomalies": {
+              "type": "boolean",
+              "default": true
+            }
           }
         },
         "permissions": {
-            "type": "object",
-            "description": "User-specific permission overrides. These take precedence over role-based permissions.",
-            "additionalProperties": { "type": "boolean" }
+          "type": "object",
+          "description": "User-specific permission overrides. These take precedence over role-based permissions.",
+          "additionalProperties": {
+            "type": "boolean"
+          }
         }
       },
       "required": [
@@ -121,32 +218,88 @@
       "type": "object",
       "description": "Represents a course offered on the Ndara Afrique platform.",
       "properties": {
-        "courseId": { "type": "string" },
-        "title": { "type": "string" },
-        "description": { "type": "string" },
-        "instructorId": { "type": "string" },
-        "category": { "type": "string" },
-        "price": { "type": "number" },
-        "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] }
+        "courseId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "instructorId": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Draft",
+            "Published",
+            "Pending Review"
+          ]
+        }
       },
-      "required": ["courseId", "title", "description", "instructorId", "category", "price", "status"]
+      "required": [
+        "courseId",
+        "title",
+        "description",
+        "instructorId",
+        "category",
+        "price",
+        "status"
+      ]
     },
     "CourseProgress": {
       "title": "Course Progress",
       "type": "object",
       "description": "Tracks a student's progress in a specific course for the 'Continue Learning' section.",
       "properties": {
-        "userId": { "type": "string", "description": "The student's UID." },
-        "courseId": { "type": "string" },
-        "courseTitle": { "type": "string" },
-        "courseCover": { "type": "string", "format": "uri" },
-        "lastLessonId": { "type": "string" },
-        "lastLessonTitle": { "type": "string" },
-        "progressPercent": { "type": "number", "description": "The completion percentage (0-100)." },
-        "lastVideoTime": { "type": "number", "description": "The timestamp in seconds of the last video watched." },
-        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of the last interaction." }
+        "userId": {
+          "type": "string",
+          "description": "The student's UID."
+        },
+        "courseId": {
+          "type": "string"
+        },
+        "courseTitle": {
+          "type": "string"
+        },
+        "courseCover": {
+          "type": "string",
+          "format": "uri"
+        },
+        "lastLessonId": {
+          "type": "string"
+        },
+        "lastLessonTitle": {
+          "type": "string"
+        },
+        "progressPercent": {
+          "type": "number",
+          "description": "The completion percentage (0-100)."
+        },
+        "lastVideoTime": {
+          "type": "number",
+          "description": "The timestamp in seconds of the last video watched."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of the last interaction."
+        }
       },
-      "required": ["userId", "courseId", "updatedAt", "progressPercent"]
+      "required": [
+        "userId",
+        "courseId",
+        "updatedAt",
+        "progressPercent"
+      ]
     },
     "Chat": {
       "title": "Chat",
@@ -156,59 +309,153 @@
         "participants": {
           "type": "array",
           "description": "An array containing the UIDs of the two users in the chat.",
-          "items": { "type": "string" }
+          "items": {
+            "type": "string"
+          }
         },
         "participantCategories": {
-            "type": "array",
-            "description": "An array containing the `interestDomain` of both participants. Used for security rules.",
-            "items": { "type": "string" }
+          "type": "array",
+          "description": "An array containing the `interestDomain` of both participants. Used for security rules.",
+          "items": {
+            "type": "string"
+          }
         },
-        "lastMessage": { "type": "string" },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "lastMessage": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["participants", "participantCategories", "updatedAt"]
+      "required": [
+        "participants",
+        "participantCategories",
+        "updatedAt"
+      ]
     },
     "Message": {
       "title": "Message",
       "type": "object",
       "description": "Represents a single message within a chat.",
       "properties": {
-        "senderId": { "type": "string" },
-        "text": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "senderId": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["senderId", "text", "createdAt"]
+      "required": [
+        "senderId",
+        "text",
+        "createdAt"
+      ]
     },
-     "SupportTicket": {
+    "SupportTicket": {
       "title": "Support Ticket",
       "type": "object",
       "description": "Represents a support request from a user.",
       "properties": {
-        "userId": { "type": "string", "description": "The UID of the user who created the ticket." },
-        "instructorId": { "type": "string", "description": "The UID of the instructor concerned by the ticket." },
-        "courseId": { "type": "string", "description": "The ID of the related course." },
-        "subject": { "type": "string" },
-        "lastMessage": { "type": "string" },
-        "status": { "type": "string", "enum": ["ouvert", "fermé"] },
-        "category": { "type": "string", "enum": ["Paiement", "Technique", "Pédagogique"] },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "updatedAt": { "type": "string", "format": "date-time" },
-        "resolution": { "type": "string", "description": "How the ticket was resolved, if closed." }
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who created the ticket."
+        },
+        "instructorId": {
+          "type": "string",
+          "description": "The UID of the instructor concerned by the ticket."
+        },
+        "courseId": {
+          "type": "string",
+          "description": "The ID of the related course."
+        },
+        "subject": {
+          "type": "string"
+        },
+        "lastMessage": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ouvert",
+            "fermé"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Paiement",
+            "Technique",
+            "Pédagogique"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "How the ticket was resolved, if closed."
+        }
       },
-      "required": ["userId", "instructorId", "courseId", "subject", "status", "category", "createdAt", "updatedAt"]
+      "required": [
+        "userId",
+        "instructorId",
+        "courseId",
+        "subject",
+        "status",
+        "category",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "Payout": {
-        "title": "Payout",
-        "type": "object",
-        "description": "Represents an instructor's request to withdraw funds.",
-        "properties": {
-            "instructorId": { "type": "string" },
-            "amount": { "type": "number" },
-            "method": { "type": "string", "enum": ["Mobile Money", "Virement"] },
-            "status": { "type": "string", "enum": ["en_attente", "valide", "rejete"] },
-            "date": { "type": "string", "format": "date-time" }
+      "title": "Payout",
+      "type": "object",
+      "description": "Represents an instructor's request to withdraw funds.",
+      "properties": {
+        "instructorId": {
+          "type": "string"
         },
-        "required": ["instructorId", "amount", "method", "status", "date"]
+        "amount": {
+          "type": "number"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "Mobile Money",
+            "Virement"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "en_attente",
+            "valide",
+            "rejete"
+          ]
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "instructorId",
+        "amount",
+        "method",
+        "status",
+        "date"
+      ]
     },
     "PromoCode": {
       "title": "Promo Code",
@@ -233,106 +480,287 @@
           "description": "Optional expiration date for the code."
         }
       },
-      "required": ["code", "discountPercentage", "isActive"]
+      "required": [
+        "code",
+        "discountPercentage",
+        "isActive"
+      ]
     },
     "CarouselSlide": {
       "title": "Carousel Slide",
       "type": "object",
       "description": "Represents a single slide in the homepage carousel.",
       "properties": {
-        "imageUrl": { "type": "string", "format": "uri", "description": "URL of the slide image." },
-        "link": { "type": "string", "format": "uri", "description": "Optional URL the slide links to." },
-        "order": { "type": "number", "description": "The display order of the slide." }
+        "imageUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL of the slide image."
+        },
+        "link": {
+          "type": "string",
+          "format": "uri",
+          "description": "Optional URL the slide links to."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the slide."
+        }
       },
-      "required": ["imageUrl", "order"]
+      "required": [
+        "imageUrl",
+        "order"
+      ]
     },
     "SubscriptionPlan": {
-        "title": "Subscription Plan",
-        "type": "object",
-        "description": "Represents a subscription plan offered on the platform.",
-        "properties": {
-            "planId": { "type": "string", "description": "Unique identifier for the plan." },
-            "name": { "type": "string", "description": "Public name of the plan (e.g., 'Ndara Pro')." },
-            "description": { "type": "string" },
-            "price": { "type": "number" },
-            "billingCycle": { "type": "string", "enum": ["monthly", "yearly"] },
-            "targetRole": { "type": "string", "enum": ["student", "instructor"] },
-            "features": { "type": "array", "items": { "type": "string" } },
-            "isActive": { "type": "boolean" }
+      "title": "Subscription Plan",
+      "type": "object",
+      "description": "Represents a subscription plan offered on the platform.",
+      "properties": {
+        "planId": {
+          "type": "string",
+          "description": "Unique identifier for the plan."
         },
-        "required": ["planId", "name", "price", "billingCycle", "targetRole", "isActive"]
+        "name": {
+          "type": "string",
+          "description": "Public name of the plan (e.g., 'Ndara Pro')."
+        },
+        "description": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "billingCycle": {
+          "type": "string",
+          "enum": [
+            "monthly",
+            "yearly"
+          ]
+        },
+        "targetRole": {
+          "type": "string",
+          "enum": [
+            "student",
+            "instructor"
+          ]
+        },
+        "features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "isActive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "planId",
+        "name",
+        "price",
+        "billingCycle",
+        "targetRole",
+        "isActive"
+      ]
     },
     "UserSubscription": {
-        "title": "User Subscription",
-        "type": "object",
-        "description": "Represents a user's subscription to a plan.",
-        "properties": {
-            "subscriptionId": { "type": "string" },
-            "userId": { "type": "string" },
-            "planId": { "type": "string" },
-            "status": { "type": "string", "enum": ["active", "canceled", "past_due", "expired"] },
-            "startDate": { "type": "string", "format": "date-time" },
-            "endDate": { "type": "string", "format": "date-time", "description": "The date when the current paid period ends." },
-            "canceledAt": { "type": "string", "format": "date-time", "description": "The date when the user canceled the subscription." }
+      "title": "User Subscription",
+      "type": "object",
+      "description": "Represents a user's subscription to a plan.",
+      "properties": {
+        "subscriptionId": {
+          "type": "string"
         },
-        "required": ["subscriptionId", "userId", "planId", "status", "startDate", "endDate"]
+        "userId": {
+          "type": "string"
+        },
+        "planId": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "active",
+            "canceled",
+            "past_due",
+            "expired"
+          ]
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date when the current paid period ends."
+        },
+        "canceledAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "The date when the user canceled the subscription."
+        }
+      },
+      "required": [
+        "subscriptionId",
+        "userId",
+        "planId",
+        "status",
+        "startDate",
+        "endDate"
+      ]
     },
     "UserActivity": {
       "title": "User Activity",
       "type": "object",
       "description": "Represents a single event in a user's activity feed.",
       "properties": {
-        "userId": { "type": "string", "description": "The ID of the user this activity belongs to." },
-        "type": { "type": "string", "enum": ["enrollment", "certificate", "review", "assignment"], "description": "The type of activity event." },
-        "title": { "type": "string", "description": "A short, displayable title for the activity." },
-        "description": { "type": "string", "description": "A short description of the activity, if any." },
-        "relatedId": { "type": "string", "description": "ID of the related entity (e.g., courseId, certificateId)." },
-        "link": { "type": "string", "format": "uri", "description": "A direct link to the relevant page for this activity." },
-        "read": { "type": "boolean", "default": false, "description": "Whether the user has seen this activity." },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp of when the activity occurred." }
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user this activity belongs to."
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "enrollment",
+            "certificate",
+            "review",
+            "assignment"
+          ],
+          "description": "The type of activity event."
+        },
+        "title": {
+          "type": "string",
+          "description": "A short, displayable title for the activity."
+        },
+        "description": {
+          "type": "string",
+          "description": "A short description of the activity, if any."
+        },
+        "relatedId": {
+          "type": "string",
+          "description": "ID of the related entity (e.g., courseId, certificateId)."
+        },
+        "link": {
+          "type": "string",
+          "format": "uri",
+          "description": "A direct link to the relevant page for this activity."
+        },
+        "read": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the user has seen this activity."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of when the activity occurred."
+        }
       },
-      "required": ["userId", "type", "title", "createdAt"]
+      "required": [
+        "userId",
+        "type",
+        "title",
+        "createdAt"
+      ]
     },
-     "Notification": {
+    "Notification": {
       "title": "Notification",
       "type": "object",
       "description": "Represents a single notification for a user.",
       "properties": {
-        "text": { "type": "string", "description": "The content of the notification." },
-        "link": { "type": "string", "format": "uri", "description": "A URL to navigate to when clicked." },
-        "read": { "type": "boolean", "default": false, "description": "Whether the user has read the notification." },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "type": { "type": "string", "enum": ["success", "info", "reminder", "alert"], "default": "info" }
-      },
-      "required": ["text", "createdAt"]
-    },
-     "FCMToken": {
-        "title": "FCM Token",
-        "type": "object",
-        "description": "A Firebase Cloud Messaging token for a user's device.",
-        "properties": {
-            "tokens": { 
-                "type": "array", 
-                "items": { "type": "string" }
-            },
-            "createdAt": { "type": "string", "format": "date-time" }
+        "text": {
+          "type": "string",
+          "description": "The content of the notification."
         },
-        "required": ["tokens", "createdAt"]
+        "link": {
+          "type": "string",
+          "format": "uri",
+          "description": "A URL to navigate to when clicked."
+        },
+        "read": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the user has read the notification."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "success",
+            "info",
+            "reminder",
+            "alert"
+          ],
+          "default": "info"
+        }
+      },
+      "required": [
+        "text",
+        "createdAt"
+      ]
+    },
+    "FCMToken": {
+      "title": "FCM Token",
+      "type": "object",
+      "description": "A Firebase Cloud Messaging token for a user's device.",
+      "properties": {
+        "tokens": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "tokens",
+        "createdAt"
+      ]
     },
     "RecommendedCourseItem": {
       "title": "Recommended Course Item",
       "type": "object",
       "description": "Represents a single recommended course within a user's recommendation list.",
       "properties": {
-        "courseId": { "type": "string" },
-        "title": { "type": "string" },
-        "coverImage": { "type": "string", "format": "uri" },
-        "instructorId": { "type": "string" },
-        "price": { "type": "number" },
-        "score": { "type": "number", "description": "The recommendation score." },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "courseId": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "coverImage": {
+          "type": "string",
+          "format": "uri"
+        },
+        "instructorId": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "score": {
+          "type": "number",
+          "description": "The recommendation score."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["courseId", "title", "coverImage", "instructorId", "price"]
+      "required": [
+        "courseId",
+        "title",
+        "coverImage",
+        "instructorId",
+        "price"
+      ]
     },
     "UserRecommendations": {
       "title": "User Recommendations",
@@ -345,53 +773,143 @@
             "$ref": "#/entities/RecommendedCourseItem"
           }
         },
-        "updatedAt": { "type": "string", "format": "date-time" }
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["courses", "updatedAt"]
+      "required": [
+        "courses",
+        "updatedAt"
+      ]
     },
     "Payment": {
       "title": "Payment",
       "type": "object",
       "description": "Represents a payment transaction for a course enrollment.",
       "properties": {
-        "userId": { "type": "string" },
-        "instructorId": { "type": "string" },
-        "courseId": { "type": "string" },
-        "amount": { "type": "number" },
-        "currency": { "type": "string" },
-        "date": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["Completed", "Pending", "Failed", "Refunded"] },
+        "userId": {
+          "type": "string"
+        },
+        "instructorId": {
+          "type": "string"
+        },
+        "courseId": {
+          "type": "string"
+        },
+        "amount": {
+          "type": "number"
+        },
+        "currency": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "Completed",
+            "Pending",
+            "Failed",
+            "Refunded"
+          ]
+        },
         "fraudReview": {
           "type": "object",
           "properties": {
-            "isSuspicious": { "type": "boolean" },
-            "riskScore": { "type": "number" },
-            "reason": { "type": "string" },
-            "checkedAt": { "type": "string", "format": "date-time" },
-            "reviewed": { "type": "boolean", "default": false, "description": "True if an admin has reviewed this transaction." }
+            "isSuspicious": {
+              "type": "boolean"
+            },
+            "riskScore": {
+              "type": "number"
+            },
+            "reason": {
+              "type": "string"
+            },
+            "checkedAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "reviewed": {
+              "type": "boolean",
+              "default": false,
+              "description": "True if an admin has reviewed this transaction."
+            }
           }
         }
       },
-      "required": ["userId", "instructorId", "courseId", "amount", "currency", "date", "status"]
+      "required": [
+        "userId",
+        "instructorId",
+        "courseId",
+        "amount",
+        "currency",
+        "date",
+        "status"
+      ]
     },
     "SecurityLog": {
       "title": "Security Log",
       "type": "object",
       "description": "Represents a security-related event.",
       "properties": {
-        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change", "user_suspended", "user_reinstated", "course_approved", "course_rejected", "alert_resolved"] },
-        "userId": { "type": "string", "description": "The user initiating the action (e.g., the admin)." },
-        "targetId": { "type": "string", "description": "The ID of the entity being acted upon (e.g., user ID, course ID)." },
-        "timestamp": { "type": "string", "format": "date-time" },
-        "ipAddress": { "type": "string", "format": "ipv4" },
-        "details": { "type": "string", "description": "A human-readable description of the event." },
-        "status": { "type": "string", "enum": ["open", "resolved"], "default": "open" }
+        "eventType": {
+          "type": "string",
+          "enum": [
+            "suspicious_login",
+            "failed_payment",
+            "profile_change",
+            "user_suspended",
+            "user_reinstated",
+            "course_approved",
+            "course_rejected",
+            "alert_resolved"
+          ]
+        },
+        "userId": {
+          "type": "string",
+          "description": "The user initiating the action (e.g., the admin)."
+        },
+        "targetId": {
+          "type": "string",
+          "description": "The ID of the entity being acted upon (e.g., user ID, course ID)."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "ipAddress": {
+          "type": "string",
+          "format": "ipv4"
+        },
+        "details": {
+          "type": "string",
+          "description": "A human-readable description of the event."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "resolved"
+          ],
+          "default": "open"
+        }
       },
-      "required": ["eventType", "userId", "timestamp", "details"]
+      "required": [
+        "eventType",
+        "userId",
+        "timestamp",
+        "details"
+      ]
     }
   },
   "auth": {
-    "providers": ["password", "google.com"]
+    "providers": [
+      "password",
+      "google.com"
+    ]
   },
   "firestore": {
     "indexes": [
@@ -399,224 +917,410 @@
         "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "role", "order": "ASCENDING"},
-          {"fieldPath": "isInstructorApproved", "order": "ASCENDING"},
-          {"fieldPath": "createdAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "role",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isInstructorApproved",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "courses",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "status", "order": "ASCENDING"},
-          {"fieldPath": "createdAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "payouts",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "status", "order": "ASCENDING"},
-          {"fieldPath": "date", "order": "DESCENDING"}
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "isProfileComplete", "order": "ASCENDING"},
-          {"fieldPath": "careerGoals.interestDomain", "order": "ASCENDING"}
+          {
+            "fieldPath": "isProfileComplete",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "careerGoals.interestDomain",
+            "order": "ASCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "reviews",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "courseId", "order": "ASCENDING"},
-          {"fieldPath": "createdAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "courseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "courses",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "instructorId", "order": "ASCENDING"},
-          {"fieldPath": "createdAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "instructorId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "enrollments",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "studentId", "order": "ASCENDING"},
-          {"fieldPath": "progress", "order": "ASCENDING"},
-          {"fieldPath": "lastAccessedAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "studentId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "progress",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "lastAccessedAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "courses",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "status", "order": "ASCENDING"},
-          {"fieldPath": "category", "order": "ASCENDING"}
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "category",
+            "order": "ASCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "course_progress",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "userId", "order": "ASCENDING"},
-          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "support_tickets",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "status", "order": "ASCENDING"},
-          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "support_tickets",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "userId", "order": "ASCENDING"},
-          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "support_tickets",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "instructorId", "order": "ASCENDING"},
-          {"fieldPath": "updatedAt", "order": "DESCENDING"}
+          {
+            "fieldPath": "instructorId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
-          {"fieldPath": "status", "order": "ASCENDING"}
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "payments",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
-          { "fieldPath": "date", "order": "DESCENDING" }
+          {
+            "fieldPath": "fraudReview.isSuspicious",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "payments",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "status", "order": "ASCENDING" },
-          { "fieldPath": "date", "order": "DESCENDING" }
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "security_logs",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "eventType", "order": "ASCENDING" },
-          { "fieldPath": "timestamp", "order": "DESCENDING" }
+          {
+            "fieldPath": "eventType",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
         "collectionGroup": "payments",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
-          { "fieldPath": "fraudReview.reviewed", "order": "ASCENDING" },
-          { "fieldPath": "date", "order": "DESCENDING" }
+          {
+            "fieldPath": "fraudReview.isSuspicious",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "fraudReview.reviewed",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
         ]
       },
-       {
+      {
         "collectionGroup": "security_logs",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "status", "order": "ASCENDING" },
-          { "fieldPath": "timestamp", "order": "DESCENDING" }
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "admin_audit_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "eventType",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "admin_audit_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "adminId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
         ]
       }
     ],
     "/roles/{roleId}": {
-      "schema": { "$ref": "#/entities/Role" },
+      "schema": {
+        "$ref": "#/entities/Role"
+      },
       "description": "Stores role definitions and their associated permissions."
     },
     "/users/{userId}": {
-      "schema": { "$ref": "#/entities/User" },
+      "schema": {
+        "$ref": "#/entities/User"
+      },
       "description": "Stores user profiles."
     },
     "/users/{userId}/subscriptions/{subscriptionId}": {
-      "schema": { "$ref": "#/entities/UserSubscription" },
+      "schema": {
+        "$ref": "#/entities/UserSubscription"
+      },
       "description": "Stores a user's subscription history."
     },
-     "/users/{userId}/activity/{activityId}": {
-      "schema": { "$ref": "#/entities/UserActivity" },
+    "/users/{userId}/activity/{activityId}": {
+      "schema": {
+        "$ref": "#/entities/UserActivity"
+      },
       "description": "Stores a user's specific activity events as a subcollection."
     },
-     "/users/{userId}/notifications/{notificationId}": {
-      "schema": { "$ref": "#/entities/Notification" },
+    "/users/{userId}/notifications/{notificationId}": {
+      "schema": {
+        "$ref": "#/entities/Notification"
+      },
       "description": "Stores notifications for a specific user."
     },
     "/users/{userId}/fcmTokens/{tokenId}": {
-      "schema": { "$ref": "#/entities/FCMToken" },
+      "schema": {
+        "$ref": "#/entities/FCMToken"
+      },
       "description": "Stores FCM tokens for a user's devices."
     },
     "/chats/{chatId}": {
-      "schema": { "$ref": "#/entities/Chat" },
+      "schema": {
+        "$ref": "#/entities/Chat"
+      },
       "description": "Stores metadata for each conversation."
     },
     "/chats/{chatId}/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/Message" },
+      "schema": {
+        "$ref": "#/entities/Message"
+      },
       "description": "Stores all messages for a specific conversation."
     },
     "/courses/{courseId}": {
-      "schema": { "$ref": "#/entities/Course" },
+      "schema": {
+        "$ref": "#/entities/Course"
+      },
       "description": "Stores course information."
     },
     "/course_progress/{progressId}": {
-      "schema": { "$ref": "#/entities/CourseProgress" },
+      "schema": {
+        "$ref": "#/entities/CourseProgress"
+      },
       "description": "Stores detailed student progress for quick resume."
     },
     "/payments/{paymentId}": {
-      "schema": { "$ref": "#/entities/Payment" },
+      "schema": {
+        "$ref": "#/entities/Payment"
+      },
       "description": "Stores payment transaction records."
     },
     "/payouts/{payoutId}": {
-        "schema": { "$ref": "#/entities/Payout" },
-        "description": "Stores instructor payout requests."
+      "schema": {
+        "$ref": "#/entities/Payout"
+      },
+      "description": "Stores instructor payout requests."
     },
     "/promoCodes/{codeId}": {
-        "schema": { "$ref": "#/entities/PromoCode" },
-        "description": "Stores promotional codes for discounts."
+      "schema": {
+        "$ref": "#/entities/PromoCode"
+      },
+      "description": "Stores promotional codes for discounts."
     },
     "/carousel_slides/{slideId}": {
-      "schema": { "$ref": "#/entities/CarouselSlide" },
+      "schema": {
+        "$ref": "#/entities/CarouselSlide"
+      },
       "description": "Stores the slides for the homepage carousel."
     },
     "/subscription_plans/{planId}": {
-      "schema": { "$ref": "#/entities/SubscriptionPlan" },
+      "schema": {
+        "$ref": "#/entities/SubscriptionPlan"
+      },
       "description": "Stores available subscription plans."
     },
     "/recommended_courses/{userId}": {
-      "schema": { "$ref": "#/entities/UserRecommendations" },
+      "schema": {
+        "$ref": "#/entities/UserRecommendations"
+      },
       "description": "Stores personalized course recommendations for each user."
     },
     "/security_logs/{logId}": {
-      "schema": { "$ref": "#/entities/SecurityLog" },
+      "schema": {
+        "$ref": "#/entities/SecurityLog"
+      },
       "description": "Stores security-related events for admin review."
     },
     "/support_tickets/{ticketId}": {
-      "schema": { "$ref": "#/entities/SupportTicket" },
+      "schema": {
+        "$ref": "#/entities/SupportTicket"
+      },
       "description": "Stores support tickets from users."
     },
     "/support_tickets/{ticketId}/messages/{messageId}": {
-      "schema": { "$ref": "#/entities/Message" },
+      "schema": {
+        "$ref": "#/entities/Message"
+      },
       "description": "Stores messages for a specific support ticket."
+    },
+    "/admin_audit_logs/{logId}": {
+      "schema": {
+        "$ref": "#/entities/AdminAuditLog"
+      },
+      "description": "Stores a log of all administrator actions for audit purposes."
     }
   }
 }

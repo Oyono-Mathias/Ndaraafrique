@@ -40,9 +40,9 @@ export async function resolveSecurityItem(params: ResolveSecurityItemParams): Pr
       batch.update(targetRef, updateData);
     }
     
-    // Log the resolution action
-    const logRef = adminDb.collection('security_logs').doc();
-    batch.set(logRef, {
+    // Log the resolution action to both security_logs and admin_audit_logs
+    const securityLogRef = adminDb.collection('security_logs').doc();
+    batch.set(securityLogRef, {
       eventType: 'alert_resolved',
       userId: adminId,
       targetId: itemId,
@@ -50,6 +50,16 @@ export async function resolveSecurityItem(params: ResolveSecurityItemParams): Pr
       timestamp: FieldValue.serverTimestamp(),
       status: 'resolved' // The log of a resolution is by definition resolved
     });
+    
+    const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+    batch.set(auditLogRef, {
+      adminId: adminId,
+      eventType: 'security.resolve',
+      target: { id: itemId, type: itemType },
+      details: `Admin ${adminId} resolved security item '${targetEntity}'.`,
+      timestamp: FieldValue.serverTimestamp(),
+    });
+
 
     await batch.commit();
 

@@ -82,11 +82,21 @@ export async function moderateCourse(
             publishedAt: decision === 'approve' ? FieldValue.serverTimestamp() : null
         });
 
+        // Log to security log
         await adminDb.collection('security_logs').add({
             eventType: decision === 'approve' ? 'course_approved' : 'course_rejected',
             userId: adminId,
             targetId: courseId,
             details: `Course "${courseDoc.data()?.title}" ${decision} by admin ${adminId}. Feedback: ${feedback || 'N/A'}`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        // Log to admin audit log
+        await adminDb.collection('admin_audit_logs').add({
+            adminId: adminId,
+            eventType: 'course.moderation',
+            target: { id: courseId, type: 'course' },
+            details: `Course "${courseDoc.data()?.title}" was ${decision}ed by admin ${adminId}.`,
             timestamp: FieldValue.serverTimestamp(),
         });
 
@@ -115,7 +125,14 @@ export async function processPayout(
         const payoutRef = adminDb.collection('payouts').doc(payoutId);
         await payoutRef.update({ status: decision });
 
-        // Future: Add audit log if needed
+        // Add to admin audit log
+        await adminDb.collection('admin_audit_logs').add({
+            adminId: adminId,
+            eventType: 'payout.process',
+            target: { id: payoutId, type: 'payout' },
+            details: `Payout ${payoutId} processed with decision '${decision}' by admin ${adminId}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
         
         return { success: true };
     } catch (error: any) {

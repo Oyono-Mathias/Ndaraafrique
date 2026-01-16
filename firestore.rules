@@ -1,4 +1,3 @@
-
 rules_version = '2';
 
 service cloud.firestore {
@@ -186,6 +185,11 @@ service cloud.firestore {
     
     match /security_logs/{logId} {
       allow read: if hasPermission('admin.security.read');
+      allow write: if false; // Backend only
+    }
+
+    match /admin_audit_logs/{logId} {
+      allow read: if hasPermission('admin.logs.read');
       allow write: if false; // Backend only
     }
 
