@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
@@ -41,6 +41,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/hooks/use-toast';
+import { startChat } from '@/lib/chat';
 
 // --- INTERFACES ---
 interface Chat {
@@ -94,6 +95,10 @@ export default function MessagesPage() {
   const [activeChatId, setActiveChatId] = useState<string | null>(activeChatIdFromUrl);
 
   useEffect(() => {
+    setActiveChatId(activeChatIdFromUrl);
+  }, [activeChatIdFromUrl]);
+
+  useEffect(() => {
     if (!user?.uid) {
       if (!isUserLoading) setIsLoading(false);
       return;
@@ -134,7 +139,9 @@ export default function MessagesPage() {
         setChatList(populated);
         
         if (!isMobile && !activeChatId && populated.length > 0) {
-          setActiveChatId(populated[0].id);
+          const firstChatId = populated[0].id;
+          setActiveChatId(firstChatId);
+          router.replace(`/messages/${firstChatId}`, { scroll: false });
         }
         setIsLoading(false);
     }, (error) => {
@@ -143,7 +150,7 @@ export default function MessagesPage() {
     });
 
     return () => unsubscribe();
-  }, [user?.uid, db, isUserLoading, isMobile, activeChatId]);
+  }, [user?.uid, db, isUserLoading, isMobile, activeChatId, router]);
   
   useEffect(() => {
     if (isNewChatModalOpen && allStudents.length === 0) {
@@ -157,60 +164,24 @@ export default function MessagesPage() {
     }
   }, [isNewChatModalOpen, allStudents.length, db]);
   
-  const handleStartChat = async (studentId: string) => {
-    if (!user || user.uid === studentId || !currentUser || !currentUser.careerGoals?.interestDomain) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de démarrer la conversation.' });
-      return;
-    }
+  const handleStartChat = useCallback(async (studentId: string) => {
+    if (!user) return;
     setIsCreatingChat(true);
-
-    const targetUserDoc = await getDoc(doc(db, 'users', studentId));
-    if (!targetUserDoc.exists()) {
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Utilisateur introuvable.'});
-        setIsCreatingChat(false);
-        return;
-    }
-    const targetUserData = targetUserDoc.data() as NdaraUser;
-
-    const chatsRef = collection(db, 'chats');
-    const sortedParticipants = [user.uid, studentId].sort();
-    
-    const q = query(chatsRef, where('participants', '==', sortedParticipants));
-    
     try {
-        const querySnapshot = await getDocs(q);
-        let chatId: string | null = null;
-        if (!querySnapshot.empty) {
-            chatId = querySnapshot.docs[0].id;
-        } else {
-            const newChatRef = doc(collection(db, 'chats'));
-            
-            const batch = writeBatch(db);
-
-            batch.set(newChatRef, {
-                participants: sortedParticipants,
-                participantCategories: [currentUser.careerGoals.interestDomain, targetUserData.careerGoals?.interestDomain],
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-                lastMessage: `Conversation initiée.`,
-            });
-            
-            await batch.commit();
-            chatId = newChatRef.id;
-        }
+        const chatId = await startChat(user.uid, studentId, db);
         setIsNewChatModalOpen(false);
         if (isMobile) {
             router.push(`/messages/${chatId}`);
         } else {
             setActiveChatId(chatId);
+            router.replace(`/messages/${chatId}`, { scroll: false });
         }
-    } catch (error: any) {
-        console.error("Error starting chat:", error);
-         toast({ variant: 'destructive', title: 'Erreur', description: error.message.includes('permission-denied') ? t('chat_permission_denied') : "Impossible de démarrer la conversation." });
+    } catch(error: any) {
+        toast({ variant: 'destructive', title: 'Erreur', description: error.message });
     } finally {
         setIsCreatingChat(false);
     }
-  };
+  }, [user, db, router, isMobile, toast]);
 
   const filteredChatList = useMemo(() => chatList.filter(chat => {
     const otherId = chat.participants.find(p => p !== user?.uid);
@@ -233,6 +204,11 @@ export default function MessagesPage() {
           return nameMatch && categoryMatch && isNotSelf;
       });
   }, [allStudents, modalSearchTerm, currentUser]);
+
+  const handleConversationSelect = (chatId: string) => {
+    setActiveChatId(chatId);
+    router.replace(`/messages/${chatId}`, { scroll: false });
+  };
 
   if (isLoading) {
     return (
@@ -286,7 +262,7 @@ export default function MessagesPage() {
                                 return (
                                     <button
                                         key={chat.id}
-                                        onClick={() => setActiveChatId(chat.id)}
+                                        onClick={() => handleConversationSelect(chat.id)}
                                         className={cn(
                                             "w-full text-left p-3 flex items-center gap-4 transition-all border-b border-slate-800",
                                             isActive ? "bg-primary/10" : "hover:bg-slate-800/50"

@@ -353,5 +353,3 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     </div>
   );
 }
-
-    
