@@ -1,7 +1,7 @@
 
 'use client';
 
-import { Bell, Search, Download } from 'lucide-react';
+import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { LanguageSelector } from './language-selector';
 import { UserNav } from './user-nav';
@@ -10,22 +10,14 @@ import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, limit, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, limit, orderBy, Timestamp, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/card';
-import { CheckCircle, ShieldAlert } from 'lucide-react';
+import type { Notification } from '@/lib/types';
 
-interface Notification {
-  id: string;
-  text: string;
-  createdAt: Timestamp;
-  read: boolean;
-  link?: string;
-  type?: 'success' | 'info' | 'reminder' | 'alert';
-}
 
 const useUnreadNotifications = (userId?: string) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -79,7 +71,7 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     }
 }
 
-const NotificationItem = ({ notif }: { notif: Notification }) => {
+const NotificationItem = ({ notif, onClick }: { notif: Notification, onClick: (notif: Notification) => void }) => {
   const content = (
     <div className="flex items-start gap-4 p-3 rounded-lg transition-colors hover:bg-muted/50 cursor-pointer">
       <div className="p-1 mt-1">
@@ -97,14 +89,26 @@ const NotificationItem = ({ notif }: { notif: Notification }) => {
     </div>
   );
 
-  return notif.link ? <Link href={notif.link}>{content}</Link> : <div>{content}</div>;
+  return <button onClick={() => onClick(notif)} className="w-full text-left">{content}</button>;
 }
 
 const HeaderNotificationButton = () => {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { user } = useRole();
+  const db = getFirestore();
   const { notifications, hasUnread, markAllAsRead } = useUnreadNotifications(user?.uid);
+  
+  const handleNotificationClick = async (notif: Notification) => {
+    if (!user) return;
+    if (!notif.read) {
+        const notifRef = doc(db, `users/${user.uid}/notifications`, notif.id);
+        await updateDoc(notifRef, { read: true });
+    }
+    if (notif.link) {
+        router.push(notif.link);
+    }
+  };
   
   if (isMobile) {
     return (
@@ -136,20 +140,25 @@ const HeaderNotificationButton = () => {
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
-          <Card className="border-0 bg-slate-800 border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b border-slate-700">
+          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
+            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b dark:border-slate-700">
                 <CardTitle className="text-base font-semibold text-white">Notifications</CardTitle>
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="text-slate-300 hover:bg-slate-700">Marquer comme lu</Button>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
             </CardHeader>
-            <CardContent className="p-2">
+            <CardContent className="p-2 max-h-96 overflow-y-auto">
               {notifications.length > 0 ? (
                 <div className="space-y-1">
-                  {notifications.map(n => <NotificationItem key={n.id} notif={n} />)}
+                  {notifications.map(n => <NotificationItem key={n.id} notif={n} onClick={handleNotificationClick} />)}
                 </div>
               ) : (
                 <p className="text-sm text-center text-muted-foreground py-8">Aucune notification.</p>
               )}
             </CardContent>
+             <CardFooter className="border-t border-slate-700 p-2">
+                <Button variant="link" size="sm" asChild className="w-full">
+                    <Link href="/notifications">Voir toutes les notifications</Link>
+                </Button>
+            </CardFooter>
           </Card>
       </PopoverContent>
     </Popover>
