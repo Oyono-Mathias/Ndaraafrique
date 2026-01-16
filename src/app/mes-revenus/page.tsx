@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -283,7 +282,7 @@ export default function MyRevenuePage() {
   const chartConfig = { revenue: { label: t('revenue_gains'), color: 'hsl(var(--primary))' }};
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto px-4">
+    <div className="space-y-8 max-w-7xl mx-auto">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">{t('revenue_title')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">{t('revenue_description')}</p>
