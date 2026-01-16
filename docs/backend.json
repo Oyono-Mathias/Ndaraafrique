@@ -1,4 +1,3 @@
-
 {
   "entities": {
     "AdminAuditLog": {
@@ -1294,142 +1293,16 @@
         "collectionGroup": "quizzes",
         "queryScope": "COLLECTION",
         "fields": [
-            { "fieldPath": "courseId", "order": "ASCENDING" },
-            { "fieldPath": "createdAt", "order": "DESCENDING" }
+          {
+            "fieldPath": "courseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       }
-    ],
-    "/roles/{roleId}": {
-      "schema": {
-        "$ref": "#/entities/Role"
-      },
-      "description": "Stores role definitions and their associated permissions."
-    },
-    "/users/{userId}": {
-      "schema": {
-        "$ref": "#/entities/User"
-      },
-      "description": "Stores user profiles."
-    },
-    "/users/{userId}/subscriptions/{subscriptionId}": {
-      "schema": {
-        "$ref": "#/entities/UserSubscription"
-      },
-      "description": "Stores a user's subscription history."
-    },
-    "/users/{userId}/activity/{activityId}": {
-      "schema": {
-        "$ref": "#/entities/UserActivity"
-      },
-      "description": "Stores a user's specific activity events as a subcollection."
-    },
-    "/users/{userId}/notifications/{notificationId}": {
-      "schema": {
-        "$ref": "#/entities/Notification"
-      },
-      "description": "Stores notifications for a specific user."
-    },
-    "/users/{userId}/fcmTokens/{tokenId}": {
-      "schema": {
-        "$ref": "#/entities/FCMToken"
-      },
-      "description": "Stores FCM tokens for a user's devices."
-    },
-    "/chats/{chatId}": {
-      "schema": {
-        "$ref": "#/entities/Chat"
-      },
-      "description": "Stores metadata for each conversation."
-    },
-    "/chats/{chatId}/messages/{messageId}": {
-      "schema": {
-        "$ref": "#/entities/Message"
-      },
-      "description": "Stores all messages for a specific conversation."
-    },
-    "/courses/{courseId}": {
-      "schema": {
-        "$ref": "#/entities/Course"
-      },
-      "description": "Stores course information."
-    },
-    "/quizzes/{quizId}": {
-        "schema": { "$ref": "#/entities/Quiz" },
-        "description": "Stores quizzes for a course."
-    },
-    "/quizzes/{quizId}/questions/{questionId}": {
-        "schema": { "$ref": "#/entities/Question" },
-        "description": "Stores questions for a quiz."
-    },
-    "/quizzes/{quizId}/attempts/{attemptId}": {
-        "schema": { "$ref": "#/entities/QuizAttempt" },
-        "description": "Stores user attempts for a quiz."
-    },
-    "/course_progress/{progressId}": {
-      "schema": {
-        "$ref": "#/entities/CourseProgress"
-      },
-      "description": "Stores detailed student progress for quick resume."
-    },
-    "/payments/{paymentId}": {
-      "schema": {
-        "$ref": "#/entities/Payment"
-      },
-      "description": "Stores payment transaction records."
-    },
-    "/payouts/{payoutId}": {
-      "schema": {
-        "$ref": "#/entities/Payout"
-      },
-      "description": "Stores instructor payout requests."
-    },
-    "/promoCodes/{codeId}": {
-      "schema": {
-        "$ref": "#/entities/PromoCode"
-      },
-      "description": "Stores promotional codes for discounts."
-    },
-    "/carousel_slides/{slideId}": {
-      "schema": {
-        "$ref": "#/entities/CarouselSlide"
-      },
-      "description": "Stores the slides for the homepage carousel."
-    },
-    "/subscription_plans/{planId}": {
-      "schema": {
-        "$ref": "#/entities/SubscriptionPlan"
-      },
-      "description": "Stores available subscription plans."
-    },
-    "/recommended_courses/{userId}": {
-      "schema": {
-        "$ref": "#/entities/UserRecommendations"
-      },
-      "description": "Stores personalized course recommendations for each user."
-    },
-    "/security_logs/{logId}": {
-      "schema": {
-        "$ref": "#/entities/SecurityLog"
-      },
-      "description": "Stores security-related events for admin review."
-    },
-    "/support_tickets/{ticketId}": {
-      "schema": {
-        "$ref": "#/entities/SupportTicket"
-      },
-      "description": "Stores support tickets from users."
-    },
-    "/support_tickets/{ticketId}/messages/{messageId}": {
-      "schema": {
-        "$ref": "#/entities/Message"
-      },
-      "description": "Stores messages for a specific support ticket."
-    },
-    "/admin_audit_logs/{logId}": {
-      "schema": {
-        "$ref": "#/entities/AdminAuditLog"
-      },
-      "description": "Stores a log of all administrator actions for audit purposes."
-    }
+    ]
   }
 }

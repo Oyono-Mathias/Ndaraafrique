@@ -5,7 +5,7 @@
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, where } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import {
   Table,
   TableBody,

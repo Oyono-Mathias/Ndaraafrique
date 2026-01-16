@@ -251,6 +251,34 @@ service cloud.firestore {
 
 
     /* ======================
+       QUIZZES
+    ====================== */
+    
+    match /quizzes/{quizId} {
+      // Instructors can manage quizzes for their own courses. Admins can manage all.
+      allow read, create, update, delete: if isApprovedInstructor() && isOwner(get(/databases/$(database)/documents/courses/$(resource.data.courseId)).data.instructorId)
+          || isAdmin();
+          
+      // Anyone enrolled in the course can view the quiz.
+      allow get: if get(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + resource.data.courseId)).exists;
+
+      // Questions can be read by enrolled students, managed by instructor/admin.
+      match /questions/{questionId} {
+          allow get: if get(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId)).exists;
+          allow list, create, update, delete: if isApprovedInstructor() && isOwner(get(/databases/$(database)/documents/courses/$(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId)).data.instructorId)
+              || isAdmin();
+      }
+
+      // Students can create their own attempts, read them. Instructors/Admins can read all attempts.
+      match /attempts/{attemptId} {
+        allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+        allow read: if isOwner(resource.data.userId) || isApprovedInstructor() || isAdmin();
+        allow list: if isApprovedInstructor() || isAdmin(); // Only instructors/admins can list all attempts for a quiz.
+      }
+    }
+
+
+    /* ======================
        DEFAULT DENY
     ====================== */
 
