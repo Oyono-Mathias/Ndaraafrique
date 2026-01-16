@@ -1,10 +1,11 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
 import Link from 'next/link';
-import type { Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
 import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, Play } from 'lucide-react';
@@ -17,7 +18,7 @@ import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 
-const LandingNav = () => {
+const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => {
     const [scrolled, setScrolled] = useState(false);
 
     useEffect(() => {
@@ -48,11 +49,17 @@ const LandingNav = () => {
                     <Button variant="ghost" size="icon" className="text-white sm:hidden">
                         <Search className="h-5 w-5" />
                     </Button>
-                    <Link href="/login">
-                        <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9">
-                            Se connecter
+                     {siteSettings.allowInstructorSignup ? (
+                        <Link href="/login">
+                            <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9">
+                                Se connecter
+                            </Button>
+                        </Link>
+                    ) : (
+                         <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white h-9" disabled>
+                            Connexion
                         </Button>
-                    </Link>
+                    )}
                 </div>
             </div>
         </nav>
@@ -276,32 +283,33 @@ const TrustSection = () => {
     );
 };
 
-const FinalCTA = () => (
+const FinalCTA = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => (
     <section className="text-center py-20">
         <h2 className="text-2xl md:text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
         <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
-        <Button size="lg" asChild className="mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary animate-pulse">
+        <Button size="lg" asChild className={cn("mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary", siteSettings.allowInstructorSignup && "animate-pulse")} disabled={!siteSettings.allowInstructorSignup}>
             <Link href="/login?tab=register">
-                Devenir Membre
-                <ChevronsRight className="ml-2 h-5 w-5" />
+                {siteSettings.allowInstructorSignup ? 'Devenir Membre' : 'Inscriptions fermées'}
+                {siteSettings.allowInstructorSignup && <ChevronsRight className="ml-2 h-5 w-5" />}
             </Link>
         </Button>
     </section>
 );
 
-const MobileCTA = () => (
+const MobileCTA = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => (
     <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/80 backdrop-blur-sm border-t border-slate-700 z-40">
-        <Button size="lg" className="w-full h-12 text-base nd-cta-primary" asChild>
-            <Link href="/login?tab=register">Démarrer</Link>
+        <Button size="lg" className="w-full h-12 text-base nd-cta-primary" asChild disabled={!siteSettings.allowInstructorSignup}>
+             <Link href="/login?tab=register">{siteSettings.allowInstructorSignup ? 'Démarrer' : 'Inscriptions fermées'}</Link>
         </Button>
     </div>
 );
 
-export default function LandingPage() {
+export default function LandingPage({ siteSettings }: { siteSettings?: Partial<Settings> }) {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const db = getFirestore();
+  const effectiveSiteSettings = siteSettings?.platform || { allowInstructorSignup: true };
 
   useEffect(() => {
     const q = query(
@@ -342,7 +350,7 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
-      <LandingNav />
+      <LandingNav siteSettings={effectiveSiteSettings} />
       <div className="container mx-auto px-4">
         
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
@@ -357,11 +365,17 @@ export default function LandingPage() {
             Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès.
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
-              <Link href="/login?tab=register">
-                  <button className="nd-cta-primary h-12 text-base md:h-auto md:text-sm">
-                      Démarrer mon parcours
-                  </button>
-              </Link>
+              {effectiveSiteSettings.allowInstructorSignup ? (
+                  <Link href="/login?tab=register">
+                      <button className="nd-cta-primary h-12 text-base md:h-auto md:text-sm">
+                          Démarrer mon parcours
+                      </button>
+                  </Link>
+              ) : (
+                  <Button className="h-12 text-base md:h-auto md:text-sm" disabled>
+                      Inscriptions fermées
+                  </Button>
+              )}
               <EnrollmentCounter />
           </div>
         </header>
@@ -390,11 +404,11 @@ export default function LandingPage() {
             isLoading={loading}
           />
           <TrustSection />
-          <FinalCTA />
+          <FinalCTA siteSettings={effectiveSiteSettings} />
         </main>
       </div>
       <Footer />
-      <MobileCTA />
+      <MobileCTA siteSettings={effectiveSiteSettings} />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -49,23 +50,26 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
    useEffect(() => {
     const auth = getAuth();
+    const handleBeforeUnload = () => {
+        if (auth.currentUser) {
+            const userDocRef = doc(db, 'users', auth.currentUser.uid);
+            // This is a best-effort synchronous update. In a real app,
+            // you might use navigator.sendBeacon or a Cloud Function for reliability.
+             updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() });
+        }
+    };
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
-        // Set user presence to online
         const userRef = doc(db, 'users', user.uid);
         await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
-
-        // Set offline on disconnect
-        const presenceRef = doc(db, 'users', user.uid);
-        // This part needs a more robust solution like Cloud Functions + Realtime Database for production
-        // For client-side, this is a best-effort approach
-        window.addEventListener('beforeunload', () => {
-            setDoc(presenceRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true });
-        });
+        window.addEventListener('beforeunload', handleBeforeUnload);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        unsubscribe();
+    };
   }, [db]);
 
 

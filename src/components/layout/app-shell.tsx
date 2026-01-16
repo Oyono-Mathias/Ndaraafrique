@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -30,7 +31,12 @@ const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/message
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const pathname = usePathname();
-  const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg', maintenanceMode: false });
+  const [siteSettings, setSiteSettings] = useState({ 
+      siteName: 'Ndara Afrique', 
+      logoUrl: '/icon.svg', 
+      maintenanceMode: false,
+      allowInstructorSignup: true,
+    });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
@@ -48,13 +54,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 siteName: 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
+                allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
             });
         }
     });
     return () => unsubscribe();
   }, [db]);
   
-  if (isLandingPage || isAuthPage || isLaunchPage) {
+  if (isLandingPage) {
+    // Pass settings down to the landing page if needed
+    // This allows CTA buttons to be enabled/disabled
+    return React.cloneElement(children as React.ReactElement, { siteSettings });
+  }
+  
+  if (isAuthPage || isLaunchPage) {
     return <>{children}</>;
   }
 

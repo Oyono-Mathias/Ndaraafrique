@@ -93,6 +93,7 @@ export interface Lecture {
   videoUrl?: string;
   duration?: number;
   isFreePreview?: boolean;
+  order?: number;
 }
 
 export interface Section {
@@ -205,6 +206,26 @@ export interface SupportTicket {
   createdAt: Timestamp;
   updatedAt: Timestamp;
   resolution?: string;
+}
+
+export interface CourseQuestion {
+  id: string;
+  courseId: string;
+  studentId: string;
+  title: string;
+  body: string;
+  createdAt: Timestamp;
+  status: 'answered' | 'unanswered';
+  answerCount: number;
+}
+
+export interface CourseAnswer {
+  id: string;
+  questionId: string;
+  userId: string; // ID of the user who answered (can be student or instructor)
+  body: string;
+  createdAt: Timestamp;
+  isOfficial: boolean; // True if the answer is from the course instructor
 }
 
 
