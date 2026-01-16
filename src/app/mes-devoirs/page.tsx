@@ -5,7 +5,7 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
-import { getFirestore, collection, query, where, getDocs, getDoc, doc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, getDoc, doc, setDoc, serverTimestamp, updateDoc, Timestamp } from 'firebase/firestore';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -152,7 +152,7 @@ const SubmissionModal = ({
                 await setDoc(submissionRef, newSubmissionData, { merge: true });
 
                 toast({ title: t('assignment_sent_title') });
-                onSubmissionSuccess(assignment.assignmentId, { id: submissionId, ...newSubmissionData, submittedAt: new Date() } as Submission);
+                onSubmissionSuccess(assignment.assignmentId, { id: submissionId, ...newSubmissionData, submittedAt: Timestamp.fromDate(new Date()) } as Submission);
                 onClose();
             }
         );
@@ -381,7 +381,5 @@ const AssignmentsGrid = ({ assignments, isLoading, emptyMessage, onOpenSubmit }:
         </div>
     );
 }
-
-    
 
     
