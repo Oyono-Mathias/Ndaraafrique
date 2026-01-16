@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -25,7 +24,6 @@ import { useToast } from '@/hooks/use-toast';
 import { gradeAssignment } from '@/ai/flows/grade-assignment-flow';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 
 type GradedResult = {
     note: string;
@@ -53,7 +51,7 @@ const SubmissionCard = ({ submission, assignment }: { submission: EnrichedSubmis
         try {
             // Note: In a real-world scenario, you'd fetch the file content from the URL.
             // For this simulation, we'll send the URL and a placeholder text. The AI is instructed to handle this.
-            const studentWork = `Le fichier de l'étudiant est disponible à cette URL: ${submission.fileURL}. Analysez ce travail en fonction des consignes.`;
+            const studentWork = `Le fichier de l'étudiant est disponible à cette URL: ${submission.fileURL}. Analyse ce travail en fonction des consignes.`;
 
             const result = await gradeAssignment({
                 correctionGuide: assignment.correctionGuide || 'Corrige ce devoir de manière standard.',
@@ -186,7 +184,7 @@ export default function SubmissionsPage() {
     return (
         <div className="space-y-8">
             <header>
-                 <Button variant="ghost" size="sm" onClick={() => router.push(`/instructor/devoirs/${courseId}`)} className="mb-2 dark:text-slate-300 dark:hover:bg-slate-800">
+                 <Button variant="ghost" size="sm" onClick={() => router.push(`/instructor/devoirs/${courseId}`)} className="mb-2 dark:text-slate-300 dark:hover:bg-slate-800 -ml-4">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour aux devoirs
                 </Button>
