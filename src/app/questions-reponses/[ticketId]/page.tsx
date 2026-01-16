@@ -41,6 +41,7 @@ interface Participant {
     id: string;
     fullName: string;
     profilePictureURL?: string;
+    role?: 'student' | 'instructor' | 'admin';
 }
 
 export default function TicketConversationPage() {
@@ -78,6 +79,7 @@ export default function TicketConversationPage() {
                 id: userData.uid,
                 fullName: userData.fullName || 'Utilisateur inconnu',
                 profilePictureURL: userData.profilePictureURL,
+                role: userData.role,
             });
         });
         setParticipants(newParticipants);
