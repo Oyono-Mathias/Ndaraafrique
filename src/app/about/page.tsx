@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,9 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ChevronsRight } from 'lucide-react';
 import Link from 'next/link';
+import { useDoc, useMemoFirebase } from '@/firebase';
+import { doc, getFirestore } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const SangoQuote = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -47,6 +51,28 @@ const TeamMember = ({ name, role, imageUrl, bio }: { name: string, role: string,
 
 
 export default function AboutPage() {
+  const db = getFirestore();
+  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings, isLoading } = useDoc(settingsRef);
+
+  const content = settings?.content?.aboutPage;
+  
+  if (isLoading) {
+    return (
+        <div className="min-h-screen bg-slate-900 text-white p-16">
+             <header className="text-center mb-16 md:mb-24">
+                <Skeleton className="h-14 w-3/4 mx-auto" />
+                <Skeleton className="h-6 w-1/2 mx-auto mt-4" />
+            </header>
+             <main className="max-w-4xl mx-auto">
+                <Skeleton className="h-40 w-full mb-16" />
+                <Skeleton className="h-10 w-full mb-16" />
+                <Skeleton className="h-40 w-full mb-16" />
+             </main>
+        </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-slate-900 text-white relative overflow-hidden">
         {/* Subtle background pattern */}
@@ -60,26 +86,26 @@ export default function AboutPage() {
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
             <header className="text-center mb-16 md:mb-24">
                 <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white">
-                    Le Manifeste Ndara
+                    {content?.mainTitle || "Le Manifeste Ndara"}
                 </h1>
                 <p className="mt-4 text-lg md:text-xl text-slate-400 max-w-3xl mx-auto">
-                    Plus qu'une plateforme. Un mouvement pour l'émancipation technologique du continent.
+                    {content?.mainSubtitle || "Plus qu'une plateforme. Un mouvement pour l'émancipation technologique du continent."}
                 </p>
             </header>
 
             <main className="max-w-4xl mx-auto">
                 <Section
-                    title="Notre Histoire"
-                    frenchText="Ndara Afrique est né d'une conviction profonde : le savoir est le levier le plus puissant pour le changement. Face à un continent en pleine mutation, nous avons vu un besoin urgent de formations accessibles, pertinentes et créées par des experts locaux pour des talents locaux."
-                    sangoText="Tene ti Ndara Afrique a lîngbi na ndö ti mbeni kpengba pensé: Ndara ayeke kpengba lege ti changement. Na lê ti mbeni kontinän so ayeke changé, e bâ so a yeke kota ye ti wara afango ye so alingbi na azo, so a leke ni na lege ti azo ti kodoro ndali ti azo ti kodoro."
+                    title={content?.historyTitle || "Notre Histoire"}
+                    frenchText={content?.historyFrench || "Ndara Afrique est né d'une conviction profonde : le savoir est le levier le plus puissant pour le changement. Face à un continent en pleine mutation, nous avons vu un besoin urgent de formations accessibles, pertinentes et créées par des experts locaux pour des talents locaux."}
+                    sangoText={content?.historySango || "Tene ti Ndara Afrique a lîngbi na ndö ti mbeni kpengba pensé: Ndara ayeke kpengba lege ti changement. Na lê ti mbeni kontinän so ayeke changé, e bâ so a yeke kota ye ti wara afango ye so alingbi na azo, so a leke ni na lege ti azo ti kodoro ndali ti azo ti kodoro."}
                 />
 
                 <SangoQuote>Bara ala, Tonga na ndara.</SangoQuote>
                 
                 <Section
-                    title="Notre Vision"
-                    frenchText="Notre ambition est de faire de l'Afrique non plus un consommateur, mais un créateur de technologie de premier plan. Nous bâtissons un écosystème où chaque jeune talent a les outils pour innover, pour construire les solutions de demain, et pour devenir un leader dans l'économie numérique mondiale."
-                    sangoText="Vision ti e ayeke ti tene que Afrique aga pëpe mbeni zo so ayeke vo ye senge, me mbeni kota zo so ayeke leke aye ti technologie. E yeke leke mbeni lege so na yâ ni, amaseka kue so ayeke na ndara awara aye so alingbi ti tene ala leke aye ti kekereke, na ala ga akozo zo na yâ ti économie numérique ti dunia."
+                    title={content?.visionTitle || "Notre Vision"}
+                    frenchText={content?.visionFrench || "Notre ambition est de faire de l'Afrique non plus un consommateur, mais un créateur de technologie de premier plan. Nous bâtissons un écosystème où chaque jeune talent a les outils pour innover, pour construire les solutions de demain, et pour devenir un leader dans l'économie numérique mondiale."}
+                    sangoText={content?.visionSango || "Vision ti e ayeke ti tene que Afrique aga pëpe mbeni zo so ayeke vo ye senge, me mbeni kota zo so ayeke leke aye ti technologie. E yeke leke mbeni lege so na yâ ni, amaseka kue so ayeke na ndara awara aye so alingbi ti tene ala leke aye ti kekereke, na ala ga akozo zo na yâ ti économie numérique ti dunia."}
                 />
                 
                 <Section title="L'Équipe Fondatrice">
@@ -108,8 +134,8 @@ export default function AboutPage() {
                 <Separator className="my-16 bg-slate-700" />
 
                 <section className="text-center">
-                     <h2 className="text-3xl font-bold text-white">Ga, mo mû mbage ti mo.</h2>
-                     <p className="mt-2 text-slate-400">Rejoignez des milliers d'apprenants et de formateurs qui construisent le futur.</p>
+                     <h2 className="text-3xl font-bold text-white">{content?.ctaTitle || "Ga, mo mû mbage ti mo."}</h2>
+                     <p className="mt-2 text-slate-400">{content?.ctaSubtitle || "Rejoignez des milliers d'apprenants et de formateurs qui construisent le futur."}</p>
                      <Button size="lg" asChild className="mt-6 h-14 text-lg animate-pulse">
                          <Link href="/login?tab=register">
                             Devenir Membre

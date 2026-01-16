@@ -241,6 +241,20 @@ export interface Settings {
     termsOfService: string;
     privacyPolicy: string;
   };
+  content?: {
+    aboutPage?: {
+      mainTitle: string;
+      mainSubtitle: string;
+      historyTitle: string;
+      historyFrench: string;
+      historySango: string;
+      visionTitle: string;
+      visionFrench: string;
+      visionSango: string;
+      ctaTitle: string;
+      ctaSubtitle: string;
+    };
+  };
 }
 
 export interface Payment {
@@ -275,10 +289,10 @@ export interface SecurityLog {
 export interface AdminAuditLog {
   id: string;
   adminId: string;
-  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve';
+  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update';
   target: {
     id: string;
-    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log';
+    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role';
   };
   timestamp: Timestamp;
   details: string;

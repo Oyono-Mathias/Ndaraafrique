@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -16,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wallet, DollarSign, Text } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -41,6 +42,17 @@ const settingsSchema = z.object({
     enableInternalMessaging: z.boolean().default(true),
     termsOfService: z.string().optional(),
     privacyPolicy: z.string().optional(),
+    // About Page Content
+    aboutTitle: z.string().optional(),
+    aboutSubtitle: z.string().optional(),
+    historyTitle: z.string().optional(),
+    historyFrench: z.string().optional(),
+    historySango: z.string().optional(),
+    visionTitle: z.string().optional(),
+    visionFrench: z.string().optional(),
+    visionSango: z.string().optional(),
+    ctaTitle: z.string().optional(),
+    ctaSubtitle: z.string().optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -75,106 +87,18 @@ export default function AdminSettingsPage() {
             allowInstructorSignup: true,
             autoApproveCourses: false,
             enableInternalMessaging: true,
-            termsOfService: `Bienvenue sur Ndara Afrique !
-
-Dernière mise à jour : 28 Juillet 2024
-
-Ces Conditions Générales d'Utilisation (CGU) régissent votre accès et votre utilisation de la plateforme Ndara Afrique. En vous inscrivant, vous acceptez d'être lié par ces conditions.
-
-**1. Votre Compte**
-
-- **Création :** Vous devez fournir des informations exactes lors de votre inscription. Vous êtes responsable de la sécurité de votre mot de passe et de toute activité sur votre compte.
-- **Unicité :** Chaque utilisateur ne peut détenir qu'un seul compte. La création de comptes multiples est interdite.
-
-**2. Rôles et Responsabilités**
-
-- **Étudiant :** Vous avez accès aux cours auxquels vous êtes inscrit. Vous vous engagez à respecter les droits de propriété intellectuelle des instructeurs et à ne pas distribuer le contenu des cours.
-- **Instructeur :** En publiant un cours, vous garantissez que vous en détenez tous les droits. Vous accordez à Ndara Afrique une licence pour héberger, commercialiser et distribuer votre cours sur la plateforme. Vous êtes responsable du contenu que vous publiez et de l'accompagnement de vos étudiants.
-- **Admin :** L'équipe de Ndara Afrique a le droit de modérer les contenus, de gérer les utilisateurs et d'assurer le bon fonctionnement de la plateforme.
-
-**3. Paiements et Remboursements**
-
-- **Paiements :** Les prix des cours sont fixés par les instructeurs et sont indiqués en Francs CFA (XOF). Les paiements sont traités via des passerelles sécurisées (Mobile Money, etc.).
-- **Revenus de l'Instructeur :** Ndara Afrique prélève une commission sur chaque vente. Le solde est versé à l'instructeur selon les modalités définies dans la section "Mes Revenus".
-- **Remboursements :** Les demandes de remboursement sont traitées au cas par cas. En règle générale, un remboursement peut être accordé si la demande est faite dans les 7 jours suivant l'achat et si moins de 20% du cours a été consulté.
-
-**4. Propriété Intellectuelle**
-
-- **Votre Contenu (Instructeurs) :** Vous conservez tous les droits de propriété sur le contenu que vous publiez.
-- **Contenu de Ndara Afrique :** La marque, le logo et le design de la plateforme sont la propriété exclusive de Ndara Afrique.
-
-**5. Suspension et Résiliation de Compte**
-
-Ndara Afrique se réserve le droit de suspendre ou de résilier votre compte sans préavis si vous ne respectez pas ces conditions, notamment en cas de :
-- Fraude ou tentative de fraude.
-- Violation des droits d'auteur.
-- Harcèlement ou comportement inapproprié envers d'autres utilisateurs.
-- Non-respect de nos standards de qualité pour les cours (instructeurs).
-
-**6. Limitation de Responsabilité**
-
-Ndara Afrique est une plateforme de mise en relation. Nous ne sommes pas responsables de la qualité intrinsèque du contenu fourni par les instructeurs. Cependant, nous nous engageons à mettre en place des processus de validation pour garantir un niveau de qualité élevé.
-
-**7. Modification des Conditions**
-
-Nous pouvons modifier ces CGU à tout moment. Vous serez notifié de tout changement important. Votre utilisation continue de la plateforme après une modification vaut acceptation des nouvelles conditions.
-
-Pour toute question, contactez-nous à support@ndara-afrique.com`,
-            privacyPolicy: `Politique de Confidentialité de Ndara Afrique
-
-Dernière mise à jour : 28 Juillet 2024
-
-Chez Ndara Afrique, la confiance de nos utilisateurs est notre priorité. Cette politique explique en termes simples quelles informations nous collectons et pourquoi.
-
-**1. Les Données que Nous Collectons**
-
-Pour faire fonctionner la plateforme, nous avons besoin de certaines informations :
-
-- **Informations de Compte :** Votre nom, votre adresse e-mail et votre mot de passe (chiffré). Ces informations sont essentielles pour créer votre compte, vous connecter et sécuriser votre accès.
-- **Informations de Profil :** Votre nom d'utilisateur, votre biographie, votre photo de profil et vos objectifs de carrière. Ces données permettent de personnaliser votre expérience et, si vous le souhaitez, d'interagir avec la communauté.
-- **Données de Cours :** Les cours auxquels vous vous inscrivez, votre progression, vos devoirs et les certificats que vous obtenez. C'est le cœur de votre parcours d'apprentissage.
-- **Données de Paiement :** Lorsque vous achetez un cours, nous enregistrons la transaction (montant, date, cours acheté). Nous ne stockons **jamais** vos informations de carte bancaire ou de Mobile Money ; elles sont traitées de manière sécurisée par notre partenaire de paiement.
-- **Communications :** Les messages que vous échangez avec les instructeurs ou d'autres utilisateurs via notre messagerie interne.
-
-**2. Pourquoi Nous Utilisons Vos Données**
-
-Nous utilisons ces informations uniquement pour :
-
-- **Fournir le Service :** Vous donner accès aux cours, suivre votre progression et vous délivrer vos certificats.
-- **Gérer les Paiements :** Traiter vos achats et rémunérer les instructeurs.
-- **Communiquer :** Vous envoyer des notifications importantes sur vos cours, des confirmations d'inscription ou des réponses de notre support.
-- **Améliorer la Plateforme :** Analyser des données anonymisées pour comprendre quels cours sont populaires et comment améliorer l'expérience utilisateur.
-
-**3. Stockage et Sécurité**
-
-- **Où ?** Vos données sont stockées de manière sécurisée sur les serveurs de Google Firebase, un service reconnu mondialement pour sa fiabilité et sa sécurité.
-- **Comment ?** Nous utilisons les meilleures pratiques, comme le chiffrement, pour protéger vos informations. L'accès à la base de données est strictement contrôlé par des règles de sécurité pour empêcher tout accès non autorisé.
-
-**4. Qui a Accès à Vos Données ?**
-
-Votre vie privée est essentielle. Voici qui peut voir quoi :
-
-- **Vous :** Vous avez accès à toutes les données de votre profil et de votre parcours.
-- **Les Instructeurs :** Un instructeur peut voir votre nom et votre progression **uniquement pour les cours que vous suivez avec lui**. Cela lui permet de vous accompagner.
-- **Les Autres Étudiants :** Si vous interagissez dans la communauté, les autres verront votre nom d'utilisateur et les informations que vous choisissez de rendre publiques sur votre profil.
-- **Les Administrateurs de Ndara Afrique :** Un nombre très restreint de personnes a un accès plus large pour assurer la maintenance, la modération et le support de la plateforme. Ils sont soumis à des obligations de confidentialité strictes.
-- **Tiers :** Nous ne vendons, ne louons et ne partagerons **jamais** vos données personnelles à des fins marketing à des entreprises tierces.
-
-**5. Vos Droits**
-
-Vous restez maître de vos données. Vous avez le droit de :
-
-- **Accéder :** Consulter à tout moment les informations de votre compte.
-- **Rectifier :** Mettre à jour votre nom, votre e-mail ou les informations de votre profil.
-- **Effacer :** Supprimer définitivement votre compte et toutes les données associées depuis les paramètres de votre profil.
-
-**6. Cookies**
-
-Nous utilisons des cookies techniques indispensables au bon fonctionnement du site (par exemple, pour vous maintenir connecté). Nous n'utilisons pas de cookies de suivi publicitaire tiers.
-
-**7. Contact**
-
-Pour toute question concernant vos données, contactez-nous à : support@ndara-afrique.com`,
+            termsOfService: '',
+            privacyPolicy: '',
+            aboutTitle: '',
+            aboutSubtitle: '',
+            historyTitle: '',
+            historyFrench: '',
+            historySango: '',
+            visionTitle: '',
+            visionFrench: '',
+            visionSango: '',
+            ctaTitle: '',
+            ctaSubtitle: '',
         },
     });
 
@@ -197,6 +121,16 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                 enableInternalMessaging: currentSettings.platform?.enableInternalMessaging ?? true,
                 termsOfService: currentSettings.legal?.termsOfService || '',
                 privacyPolicy: currentSettings.legal?.privacyPolicy || '',
+                aboutTitle: currentSettings.content?.aboutPage?.mainTitle || '',
+                aboutSubtitle: currentSettings.content?.aboutPage?.mainSubtitle || '',
+                historyTitle: currentSettings.content?.aboutPage?.historyTitle || '',
+                historyFrench: currentSettings.content?.aboutPage?.historyFrench || '',
+                historySango: currentSettings.content?.aboutPage?.historySango || '',
+                visionTitle: currentSettings.content?.aboutPage?.visionTitle || '',
+                visionFrench: currentSettings.content?.aboutPage?.visionFrench || '',
+                visionSango: currentSettings.content?.aboutPage?.visionSango || '',
+                ctaTitle: currentSettings.content?.aboutPage?.ctaTitle || '',
+                ctaSubtitle: currentSettings.content?.aboutPage?.ctaSubtitle || '',
             };
             form.reset(settingsData);
             if (settingsData.logoUrl) {
@@ -258,6 +192,20 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                 legal: {
                     termsOfService: data.termsOfService,
                     privacyPolicy: data.privacyPolicy
+                },
+                content: {
+                    aboutPage: {
+                        mainTitle: data.aboutTitle,
+                        mainSubtitle: data.aboutSubtitle,
+                        historyTitle: data.historyTitle,
+                        historyFrench: data.historyFrench,
+                        historySango: data.historySango,
+                        visionTitle: data.visionTitle,
+                        visionFrench: data.visionFrench,
+                        visionSango: data.visionSango,
+                        ctaTitle: data.ctaTitle,
+                        ctaSubtitle: data.ctaSubtitle,
+                    }
                 }
             };
             await setDoc(settingsRef, settingsPayload, { merge: true });
@@ -306,10 +254,11 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                 </header>
                 
                 <Tabs defaultValue="general" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 dark:bg-slate-800 dark:border-slate-700">
+                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
                         <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>{t('tab_general')}</TabsTrigger>
                         <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>{t('tab_commercial')}</TabsTrigger>
                         <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>{t('tab_platform')}</TabsTrigger>
+                        <TabsTrigger value="content"><Text className="w-4 h-4 mr-2"/>Contenu</TabsTrigger>
                         <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>{t('tab_legal')}</TabsTrigger>
                     </TabsList>
                     
@@ -402,6 +351,24 @@ Pour toute question concernant vos données, contactez-nous à : support@ndara-a
                                         )} />
                                 </CardContent>
                             </Card>
+                            </TabsContent>
+                            
+                            <TabsContent value="content" className="mt-6">
+                                <Card className="dark:bg-slate-800 dark:border-slate-700">
+                                    <CardHeader><CardTitle className="dark:text-white">Page "À Propos"</CardTitle></CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <FormField control={form.control} name="aboutTitle" render={({ field }) => ( <FormItem><FormLabel>Titre principal</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="aboutSubtitle" render={({ field }) => ( <FormItem><FormLabel>Sous-titre</FormLabel><FormControl><Textarea {...field} rows={2} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="historyTitle" render={({ field }) => ( <FormItem><FormLabel>Titre "Notre Histoire"</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="historyFrench" render={({ field }) => ( <FormItem><FormLabel>Texte "Notre Histoire" (FR)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="historySango" render={({ field }) => ( <FormItem><FormLabel>Texte "Notre Histoire" (Sango)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="visionTitle" render={({ field }) => ( <FormItem><FormLabel>Titre "Notre Vision"</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="visionFrench" render={({ field }) => ( <FormItem><FormLabel>Texte "Notre Vision" (FR)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="visionSango" render={({ field }) => ( <FormItem><FormLabel>Texte "Notre Vision" (Sango)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="ctaTitle" render={({ field }) => ( <FormItem><FormLabel>Titre du CTA final</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="ctaSubtitle" render={({ field }) => ( <FormItem><FormLabel>Sous-titre du CTA final</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                    </CardContent>
+                                </Card>
                             </TabsContent>
 
                             <TabsContent value="legal" className="mt-6">
