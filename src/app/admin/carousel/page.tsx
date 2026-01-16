@@ -14,7 +14,23 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, GalleryHorizontal, GripVertical } from 'lucide-react';
 import Image from 'next/image';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable, DroppableProps } from '@hello-pangea/dnd';
+
+// Wrapper to fix issue with React 18 strict mode
+const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
+  const [enabled, setEnabled] = useState(false);
+  useEffect(() => {
+    const animation = requestAnimationFrame(() => setEnabled(true));
+    return () => {
+      cancelAnimationFrame(animation);
+      setEnabled(false);
+    };
+  }, []);
+  if (!enabled) {
+    return null;
+  }
+  return <Droppable {...props}>{children}</Droppable>;
+};
 
 interface CarouselSlide {
   id: string;
@@ -124,7 +140,7 @@ export default function AdminCarouselPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="pb-20 md:pb-0">
               <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId="slides">
+                <StrictModeDroppable droppableId="slides">
                   {(provided: any) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
                       {fields.map((field, index) => (
@@ -183,7 +199,7 @@ export default function AdminCarouselPage() {
                       {provided.placeholder}
                     </div>
                   )}
-                </Droppable>
+                </StrictModeDroppable>
               </DragDropContext>
 
               <Button
