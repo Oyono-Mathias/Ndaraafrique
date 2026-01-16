@@ -2,8 +2,8 @@
 
 'use client';
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState, useEffect, useMemo } from 'react';
+import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, getFirestore, collection, query, orderBy, where, getDocs, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
@@ -68,24 +68,44 @@ const VideoPlayer = ({ videoUrl, onEnded }: { videoUrl?: string; onEnded?: () =>
 };
 
 
-const CourseSidebar = ({ courseId, activeLesson, onLessonClick, isEnrolled, completedLessons, allLectures }: { courseId: string, activeLesson: Lecture | null, onLessonClick: (lesson: Lecture) => void, isEnrolled: boolean, completedLessons: string[], allLectures: Map<string, Lecture[]> }) => {
+const CourseSidebar = ({ courseId, activeLesson, onLessonClick, isEnrolled, completedLessons, allLectures, enrollment }: { courseId: string, activeLesson: Lecture | null, onLessonClick: (lesson: Lecture) => void, isEnrolled: boolean, completedLessons: string[], allLectures: Map<string, Lecture[]>, enrollment: Enrollment | null | undefined }) => {
     const db = getFirestore();
     const sectionsQuery = useMemoFirebase(() => query(collection(db, 'courses', courseId, 'sections'), orderBy('order')), [db, courseId]);
     const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
     
-    // Effect to set the first lesson as active by default
+    // Effect to set the initial lesson
     useEffect(() => {
         if (sections && sections.length > 0 && allLectures.size > 0 && !activeLesson) {
-            const firstSectionId = sections[0].id;
-            const firstSectionLectures = allLectures.get(firstSectionId);
-            if (firstSectionLectures && firstSectionLectures.length > 0) {
-                const firstLesson = firstSectionLectures[0];
-                 if (isEnrolled || firstLesson.isFreePreview) {
-                    onLessonClick(firstLesson);
-                 }
+            let lessonToSet: Lecture | null = null;
+    
+            // 1. Try to set the last watched lesson
+            if (enrollment?.lastWatchedLesson) {
+                for (const lectures of allLectures.values()) {
+                    const found = lectures.find(l => l.id === enrollment.lastWatchedLesson);
+                    if (found) {
+                        lessonToSet = found;
+                        break;
+                    }
+                }
+            }
+    
+            // 2. If no last watched lesson, default to the first available lesson
+            if (!lessonToSet) {
+                for (const section of sections) {
+                    const lectures = allLectures.get(section.id);
+                    if (lectures && lectures.length > 0) {
+                        lessonToSet = lectures[0];
+                        break;
+                    }
+                }
+            }
+            
+            // 3. Set the lesson if it's accessible
+            if (lessonToSet && (isEnrolled || lessonToSet.isFreePreview)) {
+                onLessonClick(lessonToSet);
             }
         }
-    }, [sections, allLectures, activeLesson, onLessonClick, isEnrolled]);
+    }, [sections, allLectures, activeLesson, onLessonClick, isEnrolled, enrollment]);
 
     if (sectionsLoading) {
         return <Skeleton className="h-full w-full dark:bg-slate-800" />;
@@ -239,6 +259,17 @@ export default function CoursePlayerPage() {
         });
 
     }, [sections, sectionsLoading, courseId, db]);
+    
+    const handleLessonClick = (lesson: Lecture) => {
+        setActiveLesson(lesson);
+        if (enrollment) {
+            const enrollmentRef = doc(db, 'enrollments', enrollment.id);
+            updateDoc(enrollmentRef, {
+                lastWatchedLesson: lesson.id,
+                lastAccessedAt: serverTimestamp()
+            }).catch(err => console.error("Failed to update last accessed info", err));
+        }
+    };
 
     const isLoading = courseLoading || isUserLoading || enrollmentLoading || lecturesLoading;
 
@@ -283,6 +314,7 @@ export default function CoursePlayerPage() {
                 completedLessons: updatedCompletedLessons,
                 progress: newProgress,
                 lastWatchedLesson: activeLesson.id,
+                lastAccessedAt: serverTimestamp(),
             });
 
             toast({
@@ -318,7 +350,7 @@ export default function CoursePlayerPage() {
             const lectures = allLectures.get(section.id) || [];
             for (const lesson of lectures) {
                 if (foundCurrent) {
-                    setActiveLesson(lesson);
+                    handleLessonClick(lesson);
                     return; // Next lesson found and set
                 }
                 if (lesson.id === activeLesson.id) {
@@ -396,10 +428,11 @@ export default function CoursePlayerPage() {
                         <CourseSidebar 
                                 courseId={courseId as string} 
                                 activeLesson={activeLesson} 
-                                onLessonClick={setActiveLesson} 
+                                onLessonClick={handleLessonClick} 
                                 isEnrolled={isEnrolled}
                                 completedLessons={completedLessons}
                                 allLectures={allLectures}
+                                enrollment={enrollment}
                             />
                         </div>
                     </aside>

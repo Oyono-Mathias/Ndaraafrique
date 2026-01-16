@@ -138,6 +138,7 @@ export interface Enrollment {
     priceAtEnrollment: number; // Price when the user enrolled
     completedLessons?: string[];
     lastWatchedLesson?: string;
+    lastAccessedAt?: Timestamp;
 }
 
 export interface Review {

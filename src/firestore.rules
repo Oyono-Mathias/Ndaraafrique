@@ -126,7 +126,8 @@ service cloud.firestore {
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
       allow get: if resource.data.progress == 100;
-      allow list, update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
+      allow list: if (isSignedIn() && (request.query.where.studentId == request.auth.uid || request.query.where.instructorId == request.auth.uid)) || isAdmin();
+      allow update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
       allow delete: if isAdmin();
     }

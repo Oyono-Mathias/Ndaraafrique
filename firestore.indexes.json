@@ -1,3 +1,4 @@
+
 {
   "indexes": [
     {
@@ -84,6 +85,24 @@
         },
         {
           "fieldPath": "createdAt",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "enrollments",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "studentId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "progress",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "lastAccessedAt",
           "order": "DESCENDING"
         }
       ]
