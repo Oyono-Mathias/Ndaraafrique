@@ -1,11 +1,10 @@
-
 "use client";
 
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { User, Shield, UserCog } from 'lucide-react';
-import type { UserRole } from '@/context/RoleContext';
+import type { UserRole } from '@/lib/types';
 import { useRole } from '@/context/RoleContext';
 
 export function RoleSelector() {
@@ -55,5 +54,3 @@ export function RoleSelector() {
     </div>
   );
 }
-
-    
