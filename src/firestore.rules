@@ -126,10 +126,14 @@ service cloud.firestore {
     // --- Collection: enrollments ---
     match /enrollments/{enrollmentId} {
       allow get: if resource.data.progress == 100 || (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin()));
+      
       // The client query is responsible for filtering by studentId or instructorId.
-      allow list: if isSignedIn();
+      allow list: if isSignedIn(); 
+
       allow update: if (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId))) || isAdmin();
+      
       allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
+      
       allow delete: if isAdmin();
     }
     
