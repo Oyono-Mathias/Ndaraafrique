@@ -42,6 +42,15 @@ service cloud.firestore {
       return userData.isProfileComplete == true;
     }
 
+    function isEnrolled(courseId) {
+        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+    }
+    
+    function isCourseOwner(courseId) {
+        let courseData = get(/databases/$(database)/documents/courses/$(courseId)).data;
+        return isOwner(courseData.instructorId);
+    }
+
     /* ======================
        USERS
     ====================== */
@@ -90,14 +99,13 @@ service cloud.firestore {
     }
 
     /* ======================
-       COURSES
+       COURSES & Q&A
     ====================== */
 
     match /courses/{courseId} {
-      allow get: if resource.data.status == 'Published'
+      allow read: if resource.data.status == 'Published'
         || (isActive() && (isOwner(resource.data.instructorId) || isAdmin()));
 
-      allow list: if true;
       allow create: if isApprovedInstructor() || isAdmin();
 
       allow update, delete: if isAdmin()
@@ -118,6 +126,25 @@ service cloud.firestore {
             || (isActive() && isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId));
         }
       }
+      
+       // --- Public Q&A ---
+      match /questions/{questionId} {
+        allow create: if isEnrolled(courseId) && isOwner(request.resource.data.studentId);
+        allow read, list: if isEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+        allow update: if isCourseOwner(courseId) || isAdmin();
+        allow delete: if isCourseOwner(courseId) || isAdmin() || isOwner(resource.data.studentId);
+        
+        match /answers/{answerId} {
+          allow create: if isEnrolled(courseId) && isOwner(request.resource.data.userId);
+          allow read, list: if isEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+          allow update, delete: if isCourseOwner(courseId) || isAdmin() || isOwner(resource.data.userId);
+        }
+      }
+    }
+    
+     match /resources/{resourceId} {
+      allow read, list: if isEnrolled(request.resource.data.courseId) || isCourseOwner(request.resource.data.courseId) || isAdmin();
+      allow create, update, delete: if isCourseOwner(request.resource.data.courseId) || isAdmin();
     }
 
     /* ======================
@@ -256,16 +283,16 @@ service cloud.firestore {
     
     match /quizzes/{quizId} {
       // Instructors can manage quizzes for their own courses. Admins can manage all.
-      allow read, create, update, delete: if isApprovedInstructor() && isOwner(get(/databases/$(database)/documents/courses/$(resource.data.courseId)).data.instructorId)
+      allow read, create, update, delete: if isApprovedInstructor() && isCourseOwner(resource.data.courseId)
           || isAdmin();
           
       // Anyone enrolled in the course can view the quiz.
-      allow get: if get(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + resource.data.courseId)).exists;
+      allow get: if isEnrolled(resource.data.courseId);
 
       // Questions can be read by enrolled students, managed by instructor/admin.
       match /questions/{questionId} {
-          allow get: if get(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId)).exists;
-          allow list, create, update, delete: if isApprovedInstructor() && isOwner(get(/databases/$(database)/documents/courses/$(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId)).data.instructorId)
+          allow get: if isEnrolled(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId);
+          allow list, create, update, delete: if isApprovedInstructor() && isCourseOwner(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId)
               || isAdmin();
       }
 

@@ -103,10 +103,9 @@ service cloud.firestore {
     ====================== */
 
     match /courses/{courseId} {
-      allow get: if resource.data.status == 'Published'
+      allow read: if resource.data.status == 'Published'
         || (isActive() && (isOwner(resource.data.instructorId) || isAdmin()));
 
-      allow list: if true;
       allow create: if isApprovedInstructor() || isAdmin();
 
       allow update, delete: if isAdmin()
@@ -141,6 +140,11 @@ service cloud.firestore {
           allow update, delete: if isCourseOwner(courseId) || isAdmin() || isOwner(resource.data.userId);
         }
       }
+    }
+    
+     match /resources/{resourceId} {
+      allow read, list: if isEnrolled(request.resource.data.courseId) || isCourseOwner(request.resource.data.courseId) || isAdmin();
+      allow create, update, delete: if isCourseOwner(request.resource.data.courseId) || isAdmin();
     }
 
     /* ======================
