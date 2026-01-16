@@ -14,7 +14,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, GalleryHorizontal, GripVertical } from 'lucide-react';
 import Image from 'next/image';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 interface CarouselSlide {
   id: string;
@@ -34,22 +34,6 @@ const formSchema = z.object({
 });
 
 type FormValues = z.infer<typeof formSchema>;
-
-// Helper to disable strict mode checks for react-beautiful-dnd in development
-const StrictModeDroppable = ({ children, ...props }: any) => {
-    const [enabled, setEnabled] = useState(false);
-    useEffect(() => {
-        const animation = requestAnimationFrame(() => setEnabled(true));
-        return () => {
-            cancelAnimationFrame(animation);
-            setEnabled(false);
-        };
-    }, []);
-    if (!enabled) {
-        return null;
-    }
-    return <Droppable {...props}>{children}</Droppable>;
-};
 
 
 export default function AdminCarouselPage() {
@@ -140,11 +124,11 @@ export default function AdminCarouselPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="pb-20 md:pb-0">
               <DragDropContext onDragEnd={onDragEnd}>
-                <StrictModeDroppable droppableId="slides">
+                <Droppable droppableId="slides">
                   {(provided: any) => (
                     <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
                       {fields.map((field, index) => (
-                        <Draggable key={field.id} draggableId={field.id} index={index}>
+                        <Draggable key={field.id} draggableId={field.id!} index={index}>
                           {(provided: any) => (
                             <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                               <Card className="p-4 flex flex-col md:flex-row gap-4 items-start dark:bg-slate-900/50 dark:border-slate-700">
@@ -199,7 +183,7 @@ export default function AdminCarouselPage() {
                       {provided.placeholder}
                     </div>
                   )}
-                </StrictModeDroppable>
+                </Droppable>
               </DragDropContext>
 
               <Button
