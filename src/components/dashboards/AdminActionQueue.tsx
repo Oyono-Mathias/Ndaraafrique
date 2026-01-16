@@ -6,132 +6,114 @@ import { collection, query, where, getFirestore } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, UserCheck, Landmark, HelpCircle, UserX, ArrowRight } from 'lucide-react';
+import { ShieldAlert, UserCheck, Landmark, HelpCircle, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
-import { useTranslation } from 'react-i18next';
-import { Badge } from '../ui/badge';
-import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-interface ActionCardProps {
+interface ActionItem {
+    id: string;
+    type: 'course' | 'instructor' | 'payout' | 'ticket' | 'payment';
     title: string;
-    count: number;
+    description: string;
+    date: Date;
     link: string;
     icon: React.ElementType;
-    isLoading: boolean;
 }
 
-// NOTE: This component is deprecated and will be removed. Use AdminQuickActions instead.
-const ActionCard = ({ title, count, link, icon: Icon, isLoading }: ActionCardProps) => {
-    return (
-        <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-300">{title}</CardTitle>
-                <Icon className="h-4 w-4 text-slate-400" />
+const ActionItemCard = ({ item }: { item: ActionItem }) => (
+    <Link href={item.link} className="block group">
+        <Card className="dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col justify-between transition-all duration-200 hover:border-primary hover:-translate-y-1">
+            <CardHeader className="flex flex-row items-start gap-4 space-y-0">
+                <div className="p-3 bg-primary/10 rounded-full">
+                    <item.icon className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                    <CardTitle className="text-base font-bold text-white group-hover:text-primary transition-colors">{item.title}</CardTitle>
+                    <p className="text-xs text-slate-400 mt-1">{item.description}</p>
+                </div>
             </CardHeader>
-            <CardContent>
-                {isLoading ? (
-                     <Skeleton className="h-7 w-12 bg-slate-700" />
-                ) : (
-                    <div className="text-2xl font-bold text-white">{count}</div>
-                )}
-            </CardContent>
-            <CardFooter className="pt-0">
-                 <Button asChild variant="link" className="p-0 h-auto text-primary">
-                    <Link href={link}>
-                        Traiter
-                        <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                </Button>
+            <CardFooter>
+                 <p className="text-xs text-slate-500">
+                    {formatDistanceToNow(item.date, { addSuffix: true, locale: fr })}
+                </p>
             </CardFooter>
         </Card>
-    );
-};
+    </Link>
+)
 
 export function AdminActionQueue() {
-    const { t } = useTranslation();
     const db = getFirestore();
 
     const { data: pendingCourses, isLoading: loadingCourses } = useCollection(
         useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Pending Review')), [db])
     );
+    const { data: pendingInstructors, isLoading: loadingInstructors } = useCollection(
+        useMemoFirebase(() => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)), [db])
+    );
     const { data: pendingPayouts, isLoading: loadingPayouts } = useCollection(
         useMemoFirebase(() => query(collection(db, 'payouts'), where('status', '==', 'en_attente')), [db])
     );
-     const { data: openTickets, isLoading: loadingTickets } = useCollection(
+    const { data: openTickets, isLoading: loadingTickets } = useCollection(
         useMemoFirebase(() => query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')), [db])
     );
-     const { data: pendingInstructors, isLoading: loadingInstructors } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)), [db])
+    const { data: suspiciousPayments, isLoading: loadingPayments } = useCollection(
+        useMemoFirebase(() => query(collection(db, 'payments'), where('fraudReview.isSuspicious', '==', true)), [db])
     );
-    const { data: suspendedUsers, isLoading: loadingSuspended } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'users'), where('status', '==', 'suspended')), [db])
-    );
-
-    const isLoading = loadingCourses || loadingPayouts || loadingTickets || loadingInstructors || loadingSuspended;
-
-    const actions = [
-        {
-            title: "Candidatures Formateur",
-            count: pendingInstructors?.length || 0,
-            link: "/admin/instructors",
-            icon: UserCheck,
-            isLoading: isLoading
-        },
-        {
-            title: "Cours en attente",
-            count: pendingCourses?.length || 0,
-            link: "/admin/moderation",
-            icon: ShieldAlert,
-            isLoading: isLoading
-        },
-        {
-            title: "Demandes de retrait",
-            count: pendingPayouts?.length || 0,
-            link: "/admin/payouts",
-            icon: Landmark,
-            isLoading: isLoading
-        },
-        {
-            title: "Tickets ouverts",
-            count: openTickets?.length || 0,
-            link: "/admin/support",
-            icon: HelpCircle,
-            isLoading: isLoading
-        },
-         {
-            title: "Comptes suspendus",
-            count: suspendedUsers?.length || 0,
-            link: "/admin/users",
-            icon: UserX,
-            isLoading: isLoading
-        }
-    ];
     
-    const highPriorityActions = actions.filter(a => a.count > 0);
+    const isLoading = loadingCourses || loadingInstructors || loadingPayouts || loadingTickets || loadingPayments;
 
+    const allActions = useMemo(() => {
+        const actions: ActionItem[] = [];
+
+        pendingCourses?.forEach(item => actions.push({
+            id: item.id, type: 'course', title: "Nouveau cours", description: item.title,
+            date: item.createdAt?.toDate() || new Date(), link: '/admin/moderation', icon: ShieldAlert
+        }));
+        pendingInstructors?.forEach(item => actions.push({
+            id: item.id, type: 'instructor', title: "Nouvel instructeur", description: item.fullName,
+            date: item.instructorApplication?.submittedAt?.toDate() || new Date(), link: '/admin/instructors', icon: UserCheck
+        }));
+        pendingPayouts?.forEach(item => actions.push({
+            id: item.id, type: 'payout', title: "Demande de retrait", description: `${item.amount.toLocaleString('fr-FR')} XOF`,
+            date: item.date?.toDate() || new Date(), link: '/admin/payouts', icon: Landmark
+        }));
+        openTickets?.forEach(item => actions.push({
+            id: item.id, type: 'ticket', title: "Nouveau ticket", description: item.subject,
+            date: item.createdAt?.toDate() || new Date(), link: `/admin/support/${item.id}`, icon: HelpCircle
+        }));
+        suspiciousPayments?.forEach(item => actions.push({
+            id: item.id, type: 'payment', title: "Paiement suspect", description: `${item.amount.toLocaleString('fr-FR')} XOF`,
+            date: item.date?.toDate() || new Date(), link: `/admin/payments`, icon: AlertTriangle
+        }));
+
+        return actions.sort((a, b) => b.date.getTime() - a.date.getTime());
+    }, [pendingCourses, pendingInstructors, pendingPayouts, openTickets, suspiciousPayments]);
+    
     if (isLoading) {
         return (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-                 {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-36 w-full bg-slate-800" />)}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-36 w-full bg-slate-800" />)}
             </div>
         )
     }
 
-    if (highPriorityActions.length === 0) {
+    if (allActions.length === 0) {
         return (
              <Card className="dark:bg-green-900/30 dark:border-green-700/50">
-                <CardHeader className="items-center text-center">
+                <CardContent className="p-6 text-center">
                     <CardTitle className="text-lg font-semibold text-green-400">Tout est à jour !</CardTitle>
-                    <CardDescription className="text-slate-400">Aucune action prioritaire ne requiert votre attention.</CardDescription>
-                </CardHeader>
+                    <CardDescription className="text-slate-400 mt-1">Aucune action prioritaire ne requiert votre attention.</CardDescription>
+                </CardContent>
             </Card>
         )
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-            {highPriorityActions.map(action => (
-                <ActionCard key={action.title} {...action} />
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {allActions.map(action => (
+                <ActionItemCard key={action.id} item={action} />
             ))}
         </div>
     );

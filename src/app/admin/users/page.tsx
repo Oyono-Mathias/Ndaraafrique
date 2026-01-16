@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -7,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
-import { deleteUserAccount, importUsersAction } from '@/app/actions/userActions';
+import { deleteUserAccount, importUsersAction, updateUserStatus } from '@/app/actions/userActions';
 import {
   Table,
   TableBody,
@@ -113,7 +112,7 @@ const getStatusBadgeVariant = (status: NdaraUser['status'] = 'active') => {
   return status === 'suspended' ? 'destructive' : 'default';
 };
 
-const UserActions = ({ user, onActionStart, onActionEnd, onUserUpdate }: { user: NdaraUser, onActionStart: () => void, onActionEnd: () => void, onUserUpdate: (userId: string, update: Partial<NdaraUser>) => void }) => {
+const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }: { user: NdaraUser, adminId: string, onActionStart: () => void, onActionEnd: () => void, onUserUpdate: (userId: string, update: Partial<NdaraUser>) => void }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
   const db = getFirestore();
@@ -140,17 +139,27 @@ const UserActions = ({ user, onActionStart, onActionEnd, onUserUpdate }: { user:
 
   const handleUpdate = async (field: 'role' | 'status', value: string) => {
     onActionStart();
-    const userDocRef = doc(db, 'users', user.uid);
-    try {
-        await updateDoc(userDocRef, { [field]: value });
-        toast({ title: "Mise à jour réussie", description: `Le ${field} de ${user.fullName} a été mis à jour.`});
-        onUserUpdate(user.uid, { [field]: value }); // Optimistic update
-    } catch (error) {
-        console.error(`Error updating ${field}:`, error);
-        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour l'utilisateur."});
-    } finally {
-        onActionEnd();
+    if (field === 'status') {
+      const result = await updateUserStatus({ userId: user.uid, status: value as 'active' | 'suspended', adminId });
+      if (result.success) {
+        toast({ title: "Mise à jour réussie", description: `Le statut de ${user.fullName} a été mis à jour.`});
+        onUserUpdate(user.uid, { status: value as 'active' | 'suspended' });
+      } else {
+        toast({ variant: 'destructive', title: "Erreur", description: result.error });
+      }
+    } else {
+      // Direct update for role, as it's less critical for audit for now.
+      const userDocRef = doc(db, 'users', user.uid);
+      try {
+          await updateDoc(userDocRef, { [field]: value });
+          toast({ title: "Mise à jour réussie", description: `Le ${field} de ${user.fullName} a été mis à jour.`});
+          onUserUpdate(user.uid, { [field]: value }); // Optimistic update
+      } catch (error) {
+          console.error(`Error updating ${field}:`, error);
+          toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour l'utilisateur."});
+      }
     }
+    onActionEnd();
   }
 
   return (
@@ -325,6 +334,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
   const db = getFirestore();
+  const { currentUser } = useRole();
   const [users, setUsers] = useState<NdaraUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -439,7 +449,7 @@ export default function AdminUsersPage() {
                            {user.createdAt ? format((user.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} />
+                          <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} />
                         </TableCell>
                       </TableRow>
                     ))
@@ -479,7 +489,7 @@ export default function AdminUsersPage() {
                                       <p className="font-bold dark:text-white">{user.fullName}</p>
                                       <p className="text-sm text-muted-foreground dark:text-slate-400">{user.email}</p>
                                   </div>
-                                  <UserActions user={user} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate}/>
+                                  <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate}/>
                               </div>
                               <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
                                    <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">

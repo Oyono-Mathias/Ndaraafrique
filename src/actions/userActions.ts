@@ -5,6 +5,7 @@ import { getAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/firebase/admin';
 import { DecodedIdToken } from 'firebase-admin/auth';
+import { sendUserNotification } from './notificationActions';
 
 // Helper function to verify the ID token and check if the caller is an admin
 async function verifyAdmin(idToken: string): Promise<DecodedIdToken | null> {
@@ -84,4 +85,50 @@ export async function importUsersAction(users: { fullName: string; email: string
     }
 
     return { success: overallSuccess, results };
+}
+
+
+export async function updateUserStatus({ userId, status, adminId }: { userId: string, status: 'active' | 'suspended', adminId: string }): Promise<{ success: boolean, error?: string }> {
+    try {
+        const userRef = adminDb.collection('users').doc(userId);
+        await userRef.update({ status });
+        
+        await adminDb.collection('security_logs').add({
+            eventType: status === 'suspended' ? 'user_suspended' : 'user_reinstated',
+            userId: adminId,
+            targetId: userId,
+            details: `User status changed to ${status} by admin ${adminId}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true };
+    } catch(error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function approveInstructorApplication({ userId, decision, message, adminId }: { userId: string, decision: 'accepted' | 'rejected', message: string, adminId: string }): Promise<{ success: boolean, error?: string }> {
+    try {
+        const userRef = adminDb.collection('users').doc(userId);
+
+        if (decision === 'accepted') {
+            await userRef.update({ isInstructorApproved: true });
+        } else {
+            await userRef.update({ role: 'student' });
+        }
+
+        // Send notification to user
+        await sendUserNotification(userId, {
+            title: `Votre candidature d'instructeur`,
+            body: message,
+            link: `/devenir-instructeur`
+        });
+
+        // Add to audit log
+        // (Logging can be added here if needed)
+
+        return { success: true };
+    } catch(error: any) {
+        return { success: false, error: error.message };
+    }
 }

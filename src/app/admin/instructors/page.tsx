@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useMemo } from 'react';
@@ -38,7 +37,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTranslation } from 'react-i18next';
 import { Label } from '@/components/ui/label';
-import { sendAdminNotification } from '@/app/actions/notificationActions';
+import { approveInstructorApplication } from '@/app/actions/userActions';
 
 
 interface Application extends NdaraUser {
@@ -62,7 +61,7 @@ const DecisionModal = ({
     application: Application | null; 
     isOpen: boolean; 
     onClose: () => void;
-    onConfirm: (userId: string, approve: boolean, message: string) => Promise<void>;
+    onConfirm: (userId: string, decision: Decision, message: string) => Promise<void>;
 }) => {
     const { t } = useTranslation();
     const [decision, setDecision] = useState<Decision>(null);
@@ -100,8 +99,9 @@ const DecisionModal = ({
     if (!application) return null;
     
     const handleConfirm = async () => {
+        if (!decision) return;
         setIsProcessing(true);
-        await onConfirm(application.uid, decision === 'accepted', message);
+        await onConfirm(application.uid, decision, message);
         setIsProcessing(false);
         onClose(); // Close the modal automatically on success
     };
@@ -209,21 +209,18 @@ export default function InstructorApplicationsPage() {
 
   const isLoading = isUserLoading || applicationsLoading;
 
-  const handleConfirmDecision = async (userId: string, approve: boolean, message: string) => {
-    const userRef = doc(db, 'users', userId);
-    try {
-        if (approve) {
-            await updateDoc(userRef, { isInstructorApproved: true });
-            toast({ title: t('applicationApprovedTitle'), description: t('applicationApprovedMessage') });
-        } else {
-            // Revert role to student on rejection
-            await updateDoc(userRef, { role: 'student' }); 
-            toast({ title: t('applicationRejectedTitle'), description: t('applicationRejectedMessage') });
-        }
-        // TODO: In a real app, send an email to the user with the `message` content.
-    } catch (error) {
-        console.error("Error updating application:", error);
-        toast({ variant: 'destructive', title: t('errorTitle'), description: t('applicationUpdateError') });
+  const handleConfirmDecision = async (userId: string, decision: Decision, message: string) => {
+    if (!adminUser || !decision) return;
+
+    const result = await approveInstructorApplication({ userId, decision, message, adminId: adminUser.uid });
+
+    if (result.success) {
+      const toastMessage = decision === 'accepted' 
+        ? { title: t('applicationApprovedTitle'), description: t('applicationApprovedMessage') }
+        : { title: t('applicationRejectedTitle'), description: t('applicationRejectedMessage') };
+      toast(toastMessage);
+    } else {
+      toast({ variant: 'destructive', title: t('errorTitle'), description: result.error || t('applicationUpdateError') });
     }
   };
 

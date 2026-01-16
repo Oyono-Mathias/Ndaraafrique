@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -47,6 +46,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import { useTranslation } from 'react-i18next';
 import * as XLSX from 'xlsx';
+import { processPayout } from '@/app/actions/supportActions';
 
 
 interface Payout {
@@ -172,21 +172,21 @@ export default function PayoutsPage() {
   }, [enrichedPayouts, activeTab]);
 
   const handleUpdateStatus = async () => {
-    if (!confirmationAction) return;
+    if (!confirmationAction || !adminUser) return;
 
     const { payoutId, status } = confirmationAction;
     setUpdatingId(payoutId);
-    const payoutRef = doc(db, 'payouts', payoutId);
-    try {
-      await updateDoc(payoutRef, { status: status });
-      toast({ title: t('payoutStatusUpdated'), description: t('payoutMarkedAs', { status: t(status) }) });
-    } catch (error) {
-      console.error("Error updating payout status:", error);
-      toast({ variant: 'destructive', title: t('errorTitle'), description: t('payoutUpdateError') });
-    } finally {
-      setUpdatingId(null);
-      setConfirmationAction(null);
+    
+    const result = await processPayout(payoutId, status, adminUser.uid);
+
+    if (result.success) {
+        toast({ title: t('payoutStatusUpdated'), description: t('payoutMarkedAs', { status: t(status) }) });
+    } else {
+        toast({ variant: 'destructive', title: t('errorTitle'), description: result.error || t('payoutUpdateError') });
     }
+    
+    setUpdatingId(null);
+    setConfirmationAction(null);
   };
 
   const handleExport = () => {

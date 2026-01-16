@@ -27,6 +27,8 @@ import { collection, doc, getDocs, getFirestore, query, serverTimestamp, updateD
 import type { Course, NdaraUser, Section, Lecture } from '@/lib/types';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { moderateCourse } from '@/app/actions/supportActions';
+import { useRole } from '@/context/RoleContext';
 
 
 // --- REFUSAL MODAL COMPONENT ---
@@ -164,6 +166,7 @@ export default function AdminModerationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [submittingAction, setSubmittingAction] = useState<{ id: string, action: 'approve' | 'refuse' } | null>(null);
   const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
+  const { currentUser } = useRole();
 
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -217,37 +220,27 @@ export default function AdminModerationPage() {
   }, [courses, coursesLoading, db, instructors]);
 
   const handleApprove = async (courseId: string) => {
+    if (!currentUser) return;
     setSubmittingAction({ id: courseId, action: 'approve' });
-    try {
-        const courseRef = doc(db, 'courses', courseId);
-        await updateDoc(courseRef, {
-            status: 'Published',
-            publishedAt: serverTimestamp()
-        });
+    const result = await moderateCourse(courseId, 'approve', currentUser.uid);
+    if (result.success) {
         toast({ title: "Cours approuvé", description: "Le cours est maintenant publié et visible par tous." });
-    } catch (error) {
-        console.error("Error approving course:", error);
-        toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'approuver le cours." });
-    } finally {
-        setSubmittingAction(null);
+    } else {
+        toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible d'approuver le cours." });
     }
+    setSubmittingAction(null);
   };
 
   const handleRefuse = async (courseId: string, reason: string) => {
-     setSubmittingAction({ id: courseId, action: 'refuse' });
-     try {
-        const courseRef = doc(db, 'courses', courseId);
-        await updateDoc(courseRef, {
-            status: 'Draft',
-            moderationFeedback: reason,
-        });
-        toast({ title: "Cours refusé", description: "L'instructeur a été notifié de la décision.", variant: 'default' });
-    } catch (error) {
-         console.error("Error refusing course:", error);
-         toast({ variant: 'destructive', title: "Erreur", description: "Impossible de refuser le cours." });
-    } finally {
-        setSubmittingAction(null);
+    if (!currentUser) return;
+    setSubmittingAction({ id: courseId, action: 'refuse' });
+    const result = await moderateCourse(courseId, 'reject', currentUser.uid, reason);
+    if (result.success) {
+      toast({ title: "Cours refusé", description: "L'instructeur a été notifié de la décision.", variant: 'default' });
+    } else {
+      toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de refuser le cours." });
     }
+    setSubmittingAction(null);
   };
 
   return (
