@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -16,21 +17,7 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
     
-    function getRoleData(roleName) {
-      return get(/databases/$(database)/documents/roles/$(roleName)).data;
-    }
-
-    function isActive() {
-      // Defaults to active if 'status' field doesn't exist.
-      let userData = getUserData(request.auth.uid);
-      return isSignedIn() && userData.status == 'active';
-    }
-    
     function hasPermission(permission) {
-      if (!isActive()) {
-        return false;
-      }
-      
       let user = getUserData(request.auth.uid);
       
       // User-specific overrides take precedence
@@ -39,15 +26,19 @@ service cloud.firestore {
       }
       
       // Fallback to role-based permissions
-      let roleData = getRoleData(user.role);
+      let roleData = get(/databases/$(database)/documents/roles/$(user.role)).data;
       return permission in roleData.permissions && roleData.permissions[permission] == true;
     }
 
+    function isActive() {
+      let userData = getUserData(request.auth.uid);
+      return isSignedIn() && userData.status == 'active';
+    }
+
     // --- Collection: roles ---
-    // Roles are managed by super-admins, probably directly in the console or via a trusted backend.
     match /roles/{roleId} {
-      allow read: if isSignedIn(); // Allow users to read their own role definitions
-      allow write: if false; // Disallow client-side writes completely
+      allow read: if isSignedIn(); 
+      allow write: if false; 
     }
 
     // --- Collection: users ---
@@ -131,8 +122,8 @@ service cloud.firestore {
     }
     
     match /payments/{paymentId} {
-      allow get: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || hasPermission('admin.payments.read');
-      allow list: if hasPermission('admin.payments.list');
+      allow get: if isOwner(resource.data.userId) || hasPermission('admin.payments.read');
+      allow list: if isActive() || hasPermission('admin.payments.list');
       allow create: if false; // Server-side only
       allow update, delete: if hasPermission('admin.payments.manage');
     }
