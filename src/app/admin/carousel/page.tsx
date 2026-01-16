@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -14,23 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, GalleryHorizontal, GripVertical } from 'lucide-react';
 import Image from 'next/image';
-import { DragDropContext, Droppable, Draggable, DroppableProps } from '@hello-pangea/dnd';
-
-// Wrapper to prevent errors with React 18 Strict Mode
-const StrictModeDroppable = ({ children, ...props }: DroppableProps) => {
-  const [enabled, setEnabled] = useState(false);
-  useEffect(() => {
-    const animation = requestAnimationFrame(() => setEnabled(true));
-    return () => {
-      cancelAnimationFrame(animation);
-      setEnabled(false);
-    };
-  }, []);
-  if (!enabled) {
-    return null;
-  }
-  return <Droppable {...props}>{children}</Droppable>;
-};
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 interface CarouselSlide {
   id: string;
@@ -57,6 +40,11 @@ export default function AdminCarouselPage() {
   const db = getFirestore();
   const [isSaving, setIsSaving] = useState(false);
   const [initialSlides, setInitialSlides] = useState<CarouselSlide[]>([]);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const slidesQuery = useMemoFirebase(() => query(collection(db, 'carousel_slides'), orderBy('order', 'asc')), [db]);
   const { data: slidesData, isLoading } = useCollection<CarouselSlide>(slidesQuery);
@@ -140,66 +128,68 @@ export default function AdminCarouselPage() {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="pb-20 md:pb-0">
               <DragDropContext onDragEnd={onDragEnd}>
-                <StrictModeDroppable droppableId="slides">
-                  {(provided: any) => (
-                    <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
-                      {fields.map((field, index) => (
-                        <Draggable key={field.id} draggableId={field.id!} index={index}>
-                          {(provided: any) => (
-                            <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                              <Card className="p-4 flex flex-col md:flex-row gap-4 items-start dark:bg-slate-900/50 dark:border-slate-700">
-                                <GripVertical className="h-5 w-5 text-slate-400 mt-9 md:mt-1 cursor-grab shrink-0"/>
-                                <div className="w-full md:w-48 shrink-0">
-                                  <FormField
-                                    control={form.control}
-                                    name={`slides.${index}.imageUrl`}
-                                    render={({ field: imageField }) => (
-                                      <Image
-                                        src={imageField.value || '/placeholder.svg'}
-                                        alt={`Aperçu ${index + 1}`}
-                                        width={200}
-                                        height={112}
-                                        className="aspect-video object-cover rounded-md border dark:border-slate-600 bg-slate-100 dark:bg-slate-800"
-                                      />
-                                    )}
-                                  />
-                                </div>
-                                <div className="flex-1 space-y-3">
-                                  <FormField
-                                    control={form.control}
-                                    name={`slides.${index}.imageUrl`}
-                                    render={({ field: inputField }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-xs dark:text-slate-300">URL de l'image</FormLabel>
-                                        <FormControl><Input {...inputField} placeholder="https://..." className="dark:bg-slate-800 dark:border-slate-600" /></FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                  <FormField
-                                    control={form.control}
-                                    name={`slides.${index}.link`}
-                                    render={({ field: linkField }) => (
-                                      <FormItem>
-                                        <FormLabel className="text-xs dark:text-slate-300">Lien (optionnel)</FormLabel>
-                                        <FormControl><Input {...linkField} placeholder="/course/..." className="dark:bg-slate-800 dark:border-slate-600" /></FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                </div>
-                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="shrink-0 text-destructive">
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </Card>
-                            </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </StrictModeDroppable>
+                {isClient ? (
+                  <Droppable droppableId="slides">
+                    {(provided: any) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-4">
+                        {fields.map((field, index) => (
+                          <Draggable key={field.id} draggableId={field.id!} index={index}>
+                            {(provided: any) => (
+                              <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                <Card className="p-4 flex flex-col md:flex-row gap-4 items-start dark:bg-slate-900/50 dark:border-slate-700">
+                                  <GripVertical className="h-5 w-5 text-slate-400 mt-9 md:mt-1 cursor-grab shrink-0"/>
+                                  <div className="w-full md:w-48 shrink-0">
+                                    <FormField
+                                      control={form.control}
+                                      name={`slides.${index}.imageUrl`}
+                                      render={({ field: imageField }) => (
+                                        <Image
+                                          src={imageField.value || '/placeholder.svg'}
+                                          alt={`Aperçu ${index + 1}`}
+                                          width={200}
+                                          height={112}
+                                          className="aspect-video object-cover rounded-md border dark:border-slate-600 bg-slate-100 dark:bg-slate-800"
+                                        />
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="flex-1 space-y-3">
+                                    <FormField
+                                      control={form.control}
+                                      name={`slides.${index}.imageUrl`}
+                                      render={({ field: inputField }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-xs dark:text-slate-300">URL de l'image</FormLabel>
+                                          <FormControl><Input {...inputField} placeholder="https://..." className="dark:bg-slate-800 dark:border-slate-600" /></FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      control={form.control}
+                                      name={`slides.${index}.link`}
+                                      render={({ field: linkField }) => (
+                                        <FormItem>
+                                          <FormLabel className="text-xs dark:text-slate-300">Lien (optionnel)</FormLabel>
+                                          <FormControl><Input {...linkField} placeholder="/course/..." className="dark:bg-slate-800 dark:border-slate-600" /></FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="shrink-0 text-destructive">
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </Card>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                ) : null}
               </DragDropContext>
 
               <Button
