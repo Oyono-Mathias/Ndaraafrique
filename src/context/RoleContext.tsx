@@ -40,8 +40,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();
+    if (auth.currentUser) {
+        const userDocRef = doc(db, 'users', auth.currentUser.uid);
+        await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
+    }
     await signOut(auth);
-  }, []);
+  }, [db]);
 
    useEffect(() => {
     const auth = getAuth();
@@ -85,11 +89,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           const userData = userDoc.data() as Omit<NdaraUser, 'uid' | 'email' | 'availableRoles'>;
 
           if (userData.status === 'suspended') {
-            secureSignOut();
+            await secureSignOut();
             toast({
                 variant: 'destructive',
                 title: 'Compte suspendu',
-                description: 'Votre compte a été suspendu. Veuillez contacter le support.',
+                description: 'Votre compte a été suspendu. Veuillez contacter le support pour plus d\'informations.',
                 duration: Infinity,
             });
             setLoading(false);

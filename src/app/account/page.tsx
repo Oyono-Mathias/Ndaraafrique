@@ -228,10 +228,27 @@ export default function AccountPage() {
   const handleDeleteAccount = async () => {
     if (!user) return;
     setIsDeleting(true);
-    const idToken = await user.getIdToken(true);
-    await deleteUserAccount({ userId: user.uid, idToken });
-    // On success, user is signed out and redirected by auth listener.
-    setIsDeleting(false);
+    try {
+        const idToken = await user.getIdToken(true);
+        const result = await deleteUserAccount({ userId: user.uid, idToken });
+        
+        if (!result.success) {
+            toast({
+              variant: "destructive",
+              title: "Erreur de suppression",
+              description: result.error || "Une erreur inconnue est survenue.",
+            });
+            setIsDeleting(false);
+        }
+        // On success, the onAuthStateChanged listener in RoleContext will handle the redirect.
+    } catch (error: any) {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: error.message || "Une erreur est survenue lors de la suppression.",
+        });
+        setIsDeleting(false);
+    }
   };
   
   if (isUserLoading || !currentUser) {
