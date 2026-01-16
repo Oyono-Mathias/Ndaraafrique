@@ -173,6 +173,21 @@ export interface Message {
   status: 'sent' | 'delivered' | 'read';
 }
 
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  instructorId: string;
+  courseId: string;
+  subject: string;
+  lastMessage: string;
+  status: 'ouvert' | 'fermé';
+  category: 'Paiement' | 'Technique' | 'Pédagogique';
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  resolution?: string;
+}
+
+
 export interface Notification {
   id: string;
   text: string;

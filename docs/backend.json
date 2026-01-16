@@ -54,6 +54,11 @@
           "description": "Role of the user (student, instructor, or admin).",
           "enum": ["student", "instructor", "admin"]
         },
+        "status": {
+            "type": "string",
+            "description": "The current status of the user account.",
+            "enum": ["active", "suspended"]
+        },
         "isInstructorApproved": {
           "type": "boolean",
           "description": "Indicates whether the instructor's account has been approved by an admin."
@@ -88,6 +93,7 @@
         "username",
         "createdAt",
         "role",
+        "status",
         "isInstructorApproved"
       ]
     },
@@ -154,6 +160,24 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["senderId", "text", "createdAt"]
+    },
+     "SupportTicket": {
+      "title": "Support Ticket",
+      "type": "object",
+      "description": "Represents a support request from a user.",
+      "properties": {
+        "userId": { "type": "string", "description": "The UID of the user who created the ticket." },
+        "instructorId": { "type": "string", "description": "The UID of the instructor concerned by the ticket." },
+        "courseId": { "type": "string", "description": "The ID of the related course." },
+        "subject": { "type": "string" },
+        "lastMessage": { "type": "string" },
+        "status": { "type": "string", "enum": ["ouvert", "fermé"] },
+        "category": { "type": "string", "enum": ["Paiement", "Technique", "Pédagogique"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "resolution": { "type": "string", "description": "How the ticket was resolved, if closed." }
+      },
+      "required": ["userId", "instructorId", "courseId", "subject", "status", "category", "createdAt", "updatedAt"]
     },
     "Payout": {
         "title": "Payout",
@@ -435,6 +459,14 @@
     "/security_logs/{logId}": {
       "schema": { "$ref": "#/entities/SecurityLog" },
       "description": "Stores security-related events for admin review."
+    },
+    "/support_tickets/{ticketId}": {
+      "schema": { "$ref": "#/entities/SupportTicket" },
+      "description": "Stores support tickets from users."
+    },
+    "/support_tickets/{ticketId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Stores messages for a specific support ticket."
     }
   }
 }
