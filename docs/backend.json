@@ -17,7 +17,8 @@
             "user.role.update",
             "course.moderation",
             "payout.process",
-            "security.resolve"
+            "security.resolve",
+            "role.permissions.update"
           ]
         },
         "target": {
@@ -33,7 +34,8 @@
                 "course",
                 "payout",
                 "payment",
-                "security_log"
+                "security_log",
+                "role"
               ]
             }
           }

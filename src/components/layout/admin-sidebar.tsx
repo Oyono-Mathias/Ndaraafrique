@@ -23,6 +23,7 @@ import {
   MessageCircleQuestion,
   GalleryHorizontal,
   History,
+  Shield,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -83,6 +84,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
     { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "FAQ" },
     { href: "/admin/settings", icon: Settings, textKey: "navSettings" },
+    { href: "/admin/roles", icon: Shield, textKey: "navRoles" },
   ];
 
   const pendingInstructorsQuery = useMemoFirebase(() => 

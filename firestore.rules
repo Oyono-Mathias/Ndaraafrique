@@ -16,26 +16,40 @@ service cloud.firestore {
     function getUserData(userId) {
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
+
+    function isAdmin() {
+      if (!isSignedIn()) {
+        return false;
+      }
+      let userData = getUserData(request.auth.uid);
+      return userData != null && userData.role == 'admin';
+    }
     
     function hasPermission(permission) {
       if (!isSignedIn()) {
         return false;
       }
       let user = getUserData(request.auth.uid);
+      if (user == null) {
+        return false;
+      }
       
       // User-specific overrides take precedence
-      if (permission in user.permissions) {
+      if (user.permissions != null && permission in user.permissions) {
         return user.permissions[permission] == true;
       }
       
       // Fallback to role-based permissions
+      if (user.role == null) {
+        return false;
+      }
       let roleData = get(/databases/$(database)/documents/roles/$(user.role)).data;
-      return permission in roleData.permissions && roleData.permissions[permission] == true;
+      return roleData != null && roleData.permissions != null && permission in roleData.permissions && roleData.permissions[permission] == true;
     }
 
     function isActive() {
       let userData = getUserData(request.auth.uid);
-      return isSignedIn() && userData.status == 'active';
+      return isSignedIn() && userData != null && userData.status == 'active';
     }
 
     function isEnrolled(courseId) {
@@ -44,8 +58,7 @@ service cloud.firestore {
 
     // --- Collection: roles ---
     match /roles/{roleId} {
-      allow read: if isSignedIn(); 
-      allow write: if false; 
+      allow read, write: if isAdmin();
     }
 
     // --- Collection: users ---
