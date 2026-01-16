@@ -1,12 +1,11 @@
-
 'use client';
 
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ShieldAlert, UserCheck, Landmark, HelpCircle, ArrowRight } from 'lucide-react';
+import { ShieldAlert, UserCheck, Landmark, HelpCircle, ArrowRight, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
