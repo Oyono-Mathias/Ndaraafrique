@@ -677,7 +677,7 @@
         "link": {
           "type": "string",
           "format": "uri",
-          "description": "A URL to navigate to when clicked."
+          "description": "A URL to navigate to when a user clicks on a notification."
         },
         "read": {
           "type": "boolean",
@@ -1287,6 +1287,14 @@
             "order": "DESCENDING"
           }
         ]
+      },
+      {
+        "collectionGroup": "quizzes",
+        "queryScope": "COLLECTION",
+        "fields": [
+            { "fieldPath": "courseId", "order": "ASCENDING" },
+            { "fieldPath": "createdAt", "order": "DESCENDING" }
+        ]
       }
     ],
     "/roles/{roleId}": {
@@ -1343,23 +1351,17 @@
       },
       "description": "Stores course information."
     },
-    "/courses/{courseId}/quizzes/{quizId}": {
-      "schema": {
-        "$ref": "#/entities/Quiz"
-      },
-      "description": "Stores quizzes for a course."
+    "/quizzes/{quizId}": {
+        "schema": { "$ref": "#/entities/Quiz" },
+        "description": "Stores quizzes for a course."
     },
-    "/courses/{courseId}/quizzes/{quizId}/questions/{questionId}": {
-      "schema": {
-        "$ref": "#/entities/Question"
-      },
-      "description": "Stores questions for a quiz."
+    "/quizzes/{quizId}/questions/{questionId}": {
+        "schema": { "$ref": "#/entities/Question" },
+        "description": "Stores questions for a quiz."
     },
-    "/courses/{courseId}/quizzes/{quizId}/attempts/{attemptId}": {
-      "schema": {
-        "$ref": "#/entities/QuizAttempt"
-      },
-      "description": "Stores user attempts for a quiz."
+    "/quizzes/{quizId}/attempts/{attemptId}": {
+        "schema": { "$ref": "#/entities/QuizAttempt" },
+        "description": "Stores user attempts for a quiz."
     },
     "/course_progress/{progressId}": {
       "schema": {
@@ -1429,5 +1431,3 @@
     }
   }
 }
-
-    

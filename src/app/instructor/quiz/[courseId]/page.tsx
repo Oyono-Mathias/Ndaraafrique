@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -16,6 +15,7 @@ import {
   serverTimestamp,
   getCountFromServer,
   onSnapshot,
+  where,
 } from 'firebase/firestore';
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from '@/components/ui/card';
@@ -38,14 +38,9 @@ import { useToast } from '@/hooks/use-toast';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Course } from '@/lib/types';
+import type { Course, Quiz } from '@/lib/types';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-
-interface Quiz {
-    id: string;
-    title: string;
-}
 
 const quizSchema = z.object({
     title: z.string().min(3, { message: 'Le titre doit contenir au moins 3 caractères.' }),
@@ -59,7 +54,7 @@ const QuizRow = ({ courseId, quiz }: { courseId: string; quiz: Quiz }) => {
     const [loading, setLoading] = useState(true);
 
     useMemo(() => {
-        const attemptsRef = collection(db, `courses/${courseId}/quizzes/${quiz.id}/attempts`);
+        const attemptsRef = collection(db, `quizzes/${quiz.id}/attempts`);
         const unsubscribe = onSnapshot(attemptsRef, (snapshot) => {
             setAttemptCount(snapshot.size);
             setLoading(false);
@@ -71,13 +66,13 @@ const QuizRow = ({ courseId, quiz }: { courseId: string; quiz: Quiz }) => {
     }, [db, courseId, quiz.id]);
 
     return (
-        <TableRow>
-            <TableCell className="font-medium">{quiz.title}</TableCell>
-            <TableCell>
-                {loading ? <Skeleton className="h-5 w-5" /> : attemptCount}
+        <TableRow className="dark:border-slate-700 dark:hover:bg-slate-800/50">
+            <TableCell className="font-medium dark:text-slate-100">{quiz.title}</TableCell>
+            <TableCell className="dark:text-slate-300">
+                {loading ? <Skeleton className="h-5 w-5 dark:bg-slate-700" /> : attemptCount}
             </TableCell>
             <TableCell className="text-right">
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="dark:bg-slate-700 dark:hover:bg-slate-600 dark:border-slate-600">
                     <Link href={`/instructor/quiz/edit/${quiz.id}`}>
                         Modifier / Voir les résultats
                     </Link>
@@ -102,7 +97,7 @@ export default function CourseQuizzesPage() {
     const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
     
     const quizzesQuery = useMemoFirebase(
-        () => query(collection(db, `courses/${courseId}/quizzes`), orderBy('createdAt', 'desc')),
+        () => query(collection(db, 'quizzes'), where('courseId', '==', courseId as string), orderBy('createdAt', 'desc')),
         [db, courseId]
     );
     const { data: quizzes, isLoading: quizzesLoading, error: quizzesError } = useCollection<Quiz>(quizzesQuery);
@@ -124,7 +119,7 @@ export default function CourseQuizzesPage() {
         };
 
         try {
-            const quizzesCollection = collection(db, `courses/${courseId}/quizzes`);
+            const quizzesCollection = collection(db, 'quizzes');
             const docRef = await addDoc(quizzesCollection, quizPayload);
             toast({ title: "Quiz créé !", description: "Vous pouvez maintenant y ajouter des questions." });
             setIsDialogOpen(false);
@@ -133,7 +128,7 @@ export default function CourseQuizzesPage() {
         } catch (error) {
             console.error("Error creating quiz:", error);
             errorEmitter.emit('permission-error', new FirestorePermissionError({
-                path: `courses/${courseId}/quizzes`,
+                path: 'quizzes',
                 operation: 'create',
                 requestResourceData: quizPayload,
             }));
@@ -147,19 +142,19 @@ export default function CourseQuizzesPage() {
     return (
         <div className="space-y-8">
             <header>
-                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/quiz')} className="mb-2">
+                <Button variant="ghost" size="sm" onClick={() => router.push('/instructor/quiz')} className="mb-2 dark:text-slate-300 dark:hover:bg-slate-800">
                     <ArrowLeft className="h-4 w-4 mr-2" />
                     Retour à la liste des cours
                 </Button>
                 {courseLoading ? (
                     <>
-                        <Skeleton className="h-8 w-1/2" />
-                        <Skeleton className="h-4 w-1/3 mt-2" />
+                        <Skeleton className="h-8 w-1/2 dark:bg-slate-700" />
+                        <Skeleton className="h-4 w-1/3 mt-2 dark:bg-slate-700" />
                     </>
                 ) : (
                     <>
                         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Quiz pour "{course?.title}"</h1>
-                        <p className="text-muted-foreground">Créez et gérez les quiz pour ce cours.</p>
+                        <p className="text-muted-foreground dark:text-slate-400">Créez et gérez les quiz pour ce cours.</p>
                     </>
                 )}
             </header>
@@ -171,11 +166,11 @@ export default function CourseQuizzesPage() {
                 </div>
             )}
 
-            <Card className="bg-card shadow-sm">
+            <Card className="dark:bg-slate-800 dark:border-slate-700 shadow-sm">
                 <CardHeader className="flex flex-row items-center justify-between">
                     <div>
-                        <CardTitle>Liste des quiz</CardTitle>
-                        <CardDescription>Modifiez un quiz pour ajouter des questions ou voir les résultats.</CardDescription>
+                        <CardTitle className="dark:text-white">Liste des quiz</CardTitle>
+                        <CardDescription className="dark:text-slate-400">Modifiez un quiz pour ajouter des questions ou voir les résultats.</CardDescription>
                     </div>
                     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                         <DialogTrigger asChild>
@@ -184,10 +179,10 @@ export default function CourseQuizzesPage() {
                                 Créer un quiz
                             </Button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800 dark:text-white">
                             <DialogHeader>
                                 <DialogTitle>Créer un nouveau quiz</DialogTitle>
-                                <DialogDescription>Renseignez le titre et la description du quiz.</DialogDescription>
+                                <DialogDescription className="dark:text-slate-400">Renseignez le titre et la description du quiz.</DialogDescription>
                             </DialogHeader>
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(handleCreateQuiz)} className="space-y-4">
@@ -196,9 +191,9 @@ export default function CourseQuizzesPage() {
                                         name="title"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Titre du quiz</FormLabel>
+                                                <FormLabel className="dark:text-slate-300">Titre du quiz</FormLabel>
                                                 <FormControl>
-                                                    <Input placeholder="Ex: Quiz de fin de module" {...field} />
+                                                    <Input placeholder="Ex: Quiz de fin de module" {...field} className="dark:bg-slate-800 dark:border-slate-700" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
@@ -209,16 +204,16 @@ export default function CourseQuizzesPage() {
                                         name="description"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel>Description (facultatif)</FormLabel>
+                                                <FormLabel className="dark:text-slate-300">Description (facultatif)</FormLabel>
                                                 <FormControl>
-                                                    <Textarea placeholder="Décrivez le but de ce quiz..." {...field} rows={3} />
+                                                    <Textarea placeholder="Décrivez le but de ce quiz..." {...field} rows={3} className="dark:bg-slate-800 dark:border-slate-700" />
                                                 </FormControl>
                                                 <FormMessage />
                                             </FormItem>
                                         )}
                                     />
                                     <DialogFooter>
-                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)}>Annuler</Button>
+                                        <Button type="button" variant="ghost" onClick={() => setIsDialogOpen(false)} className="dark:text-slate-300 dark:hover:bg-slate-800">Annuler</Button>
                                         <Button type="submit" disabled={isSubmitting}>
                                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                             Créer et modifier
@@ -232,19 +227,19 @@ export default function CourseQuizzesPage() {
                 <CardContent>
                     <Table>
                         <TableHeader>
-                            <TableRow>
-                                <TableHead>Titre</TableHead>
-                                <TableHead>Tentatives</TableHead>
-                                <TableHead className="text-right">Action</TableHead>
+                            <TableRow className="dark:border-slate-700">
+                                <TableHead className="dark:text-slate-300">Titre</TableHead>
+                                <TableHead className="dark:text-slate-300">Soumissions</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {isLoading ? (
                                 [...Array(3)].map((_, i) => (
-                                    <TableRow key={i}>
-                                        <TableCell><Skeleton className="h-5 w-48" /></TableCell>
-                                        <TableCell><Skeleton className="h-5 w-5" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-36" /></TableCell>
+                                    <TableRow key={i} className="dark:border-slate-700">
+                                        <TableCell><Skeleton className="h-5 w-48 dark:bg-slate-700" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-5 dark:bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-28 dark:bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : quizzes && quizzes.length > 0 ? (
@@ -252,9 +247,9 @@ export default function CourseQuizzesPage() {
                                     <QuizRow key={quiz.id} courseId={courseId as string} quiz={quiz} />
                                 ))
                             ) : (
-                                <TableRow>
+                                <TableRow className="dark:border-slate-700">
                                     <TableCell colSpan={3} className="h-32 text-center">
-                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <FileQuestion className="h-10 w-10" />
                                             <span className="font-medium">Aucun quiz pour ce cours</span>
                                             <span className="text-sm">Cliquez sur "Créer un quiz" pour commencer.</span>

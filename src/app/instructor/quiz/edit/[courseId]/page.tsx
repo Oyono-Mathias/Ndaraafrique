@@ -90,6 +90,7 @@ export default function EditQuizPage() {
   };
   
   const onSubmit = async (data: QuizFormValues) => {
+    if (!quiz) return;
     setIsSaving(true);
     const batch = writeBatch(db);
 
@@ -132,7 +133,7 @@ export default function EditQuizPage() {
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <Button variant="ghost" onClick={() => router.back()}>
+      <Button variant="ghost" onClick={() => router.push(`/instructor/quiz/${quiz?.courseId}`)}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Retour au cours
       </Button>

@@ -16,7 +16,7 @@ import {
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, ArrowLeft, Send, Check, X, Award } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
@@ -39,19 +39,19 @@ export default function TakeQuizPage() {
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const quizRef = useMemoFirebase(() => doc(db, `courses/${courseId}/quizzes/${quizId}`), [db, courseId, quizId]);
+  const quizRef = useMemoFirebase(() => doc(db, 'quizzes', quizId as string), [db, quizId]);
   const { data: quiz, isLoading: isQuizLoading } = useDoc<Quiz>(quizRef);
 
   useEffect(() => {
     if (quiz) {
       const fetchQuestions = async () => {
-        const questionsQuery = query(collection(db, `courses/${courseId}/quizzes/${quizId}/questions`));
+        const questionsQuery = query(collection(db, `quizzes/${quizId}/questions`));
         const questionsSnap = await getDocs(questionsQuery);
         setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
       };
       fetchQuestions();
     }
-  }, [quiz, db, courseId, quizId]);
+  }, [quiz, db, quizId]);
 
   const isLoading = isQuizLoading || questions.length === 0;
 
@@ -87,7 +87,7 @@ export default function TakeQuizPage() {
 
     try {
       const attemptId = `${user.uid}_${quizId}`;
-      const attemptRef = doc(db, `courses/${courseId}/quizzes/${quizId}/attempts`, attemptId);
+      const attemptRef = doc(db, `quizzes/${quizId}/attempts`, attemptId);
       await setDoc(attemptRef, {
         userId: user.uid,
         quizId,
@@ -192,5 +192,3 @@ export default function TakeQuizPage() {
     </div>
   );
 }
-
-    
