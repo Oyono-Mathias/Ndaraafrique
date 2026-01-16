@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -15,6 +16,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { AreaChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer } from 'recharts';
 import { Progress } from '@/components/ui/progress';
 import { AdminActionQueue } from './AdminActionQueue';
+import { AdminSecurityAlerts } from './AdminSecurityAlerts';
 
 // --- TYPES ---
 interface Stats {
@@ -200,6 +202,7 @@ const AdminDashboard = () => {
   return (
     <div className="space-y-8">
       <AdminActionQueue />
+      <AdminSecurityAlerts />
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {statCards.map(card => (
             <StatCard

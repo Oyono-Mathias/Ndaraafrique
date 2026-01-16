@@ -220,3 +220,29 @@ export interface Settings {
     privacyPolicy: string;
   };
 }
+
+export interface Payment {
+  id: string;
+  userId: string;
+  instructorId: string;
+  courseId: string;
+  amount: number;
+  currency: string;
+  date: any; // Firestore Timestamp
+  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
+  fraudReview?: {
+    isSuspicious: boolean;
+    riskScore: number;
+    reason: string;
+    checkedAt: any;
+  }
+}
+
+export interface SecurityLog {
+  id: string;
+  userId: string;
+  eventType: 'suspicious_login' | 'failed_payment' | 'profile_change';
+  ipAddress: string;
+  details: string;
+  timestamp: Timestamp;
+}

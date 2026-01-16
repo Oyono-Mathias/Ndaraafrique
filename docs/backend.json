@@ -280,6 +280,43 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["courses", "updatedAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "type": "object",
+      "description": "Represents a payment transaction for a course enrollment.",
+      "properties": {
+        "userId": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "amount": { "type": "number" },
+        "currency": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["Completed", "Pending", "Failed", "Refunded"] },
+        "fraudReview": {
+          "type": "object",
+          "properties": {
+            "isSuspicious": { "type": "boolean" },
+            "riskScore": { "type": "number" },
+            "reason": { "type": "string" },
+            "checkedAt": { "type": "string", "format": "date-time" }
+          }
+        }
+      },
+      "required": ["userId", "instructorId", "courseId", "amount", "currency", "date", "status"]
+    },
+    "SecurityLog": {
+      "title": "Security Log",
+      "type": "object",
+      "description": "Represents a security-related event.",
+      "properties": {
+        "eventType": { "type": "string", "enum": ["suspicious_login", "failed_payment", "profile_change"] },
+        "userId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" },
+        "ipAddress": { "type": "string", "format": "ipv4" },
+        "details": { "type": "string" }
+      },
+      "required": ["eventType", "userId", "timestamp"]
     }
   },
   "auth": {
@@ -296,13 +333,6 @@
         ]
       },
       {
-        "collectionGroup": "payments",
-        "queryScope": "COLLECTION",
-        "fields": [
-          {"fieldPath": "date", "order": "DESCENDING"}
-        ]
-      },
-       {
         "collectionGroup": "payouts",
         "queryScope": "COLLECTION",
         "fields": [
@@ -323,6 +353,30 @@
           {"fieldPath": "status", "order": "ASCENDING"},
           {"fieldPath": "category", "order": "ASCENDING"},
           {"fieldPath": "createdAt", "order": "DESCENDING"}
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "security_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "eventType", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
         ]
       }
     ],
@@ -354,6 +408,10 @@
       "schema": { "$ref": "#/entities/CourseProgress" },
       "description": "Stores detailed student progress for quick resume."
     },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Stores payment transaction records."
+    },
     "/payouts/{payoutId}": {
         "schema": { "$ref": "#/entities/Payout" },
         "description": "Stores instructor payout requests."
@@ -373,6 +431,10 @@
     "/recommended_courses/{userId}": {
       "schema": { "$ref": "#/entities/UserRecommendations" },
       "description": "Stores personalized course recommendations for each user."
+    },
+    "/security_logs/{logId}": {
+      "schema": { "$ref": "#/entities/SecurityLog" },
+      "description": "Stores security-related events for admin review."
     }
   }
 }

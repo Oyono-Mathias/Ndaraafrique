@@ -136,9 +136,7 @@ service cloud.firestore {
     // --- Collection: payments ---
     match /payments/{paymentId} {
       allow get: if isAdmin() || isOwner(resource.data.userId);
-      allow list: if isAdmin();
-      allow create: if isOwner(request.resource.data.userId);
-      allow update, delete: if isAdmin();
+      allow list, create, update, delete: if isAdmin();
     }
     
     // --- Collection: payouts ---
@@ -201,6 +199,12 @@ service cloud.firestore {
         allow read, list: if isSignedIn() && isChatParticipant();
         allow create: if isSignedIn() && isChatParticipant() && isOwner(request.resource.data.senderId);
       }
+    }
+    
+    // --- Collection: security_logs ---
+    match /security_logs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only backend can write logs
     }
 
     // --- Collection: faqs ---
