@@ -1,21 +1,22 @@
 
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
 import { useTranslation } from 'react-i18next';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
-import { Users, Star, BookOpen, DollarSign } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp, Book } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
+import { Button } from '../ui/button';
 
 interface RevenueDataPoint {
     month: string;
@@ -23,22 +24,30 @@ interface RevenueDataPoint {
 }
 
 const StatCard = ({ title, value, icon: Icon, isLoading, change, accentColor }: { title: string, value: string, icon: React.ElementType, isLoading: boolean, change?: string, accentColor?: string }) => (
-    <Card className={cn("border-t-4", accentColor)}>
+    <Card className={cn("dark:bg-slate-800/50 dark:border-slate-700/80 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/10", accentColor)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
-            <Icon className="h-4 w-4 text-muted-foreground" />
+            <Icon className="h-4 w-4 text-slate-400" />
         </CardHeader>
         <CardContent>
             {isLoading ? (
                 <Skeleton className="h-8 w-3/4 bg-slate-700" />
             ) : (
                 <>
-                    <div className="text-2xl font-bold text-white">{value}</div>
+                    <div className="text-3xl font-bold text-white">{value}</div>
                     {change && <p className="text-xs text-muted-foreground">{change}</p>}
                 </>
             )}
         </CardContent>
     </Card>
+);
+
+const EmptyState = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
+    <div className="flex flex-col items-center justify-center text-center p-8 h-full text-slate-500">
+        <Icon className="w-12 h-12 mb-4" />
+        <h3 className="font-semibold text-lg text-slate-300">{title}</h3>
+        <p className="text-sm">{description}</p>
+    </div>
 );
 
 
@@ -84,7 +93,6 @@ function InstructorDashboardContent() {
                  return;
             }
 
-            // Firestore 'in' query is limited to 30 items. Batching is needed for larger scale.
             const courseIdChunks: string[][] = [];
             for (let i = 0; i < courseIds.length; i += 30) {
                 courseIdChunks.push(courseIds.slice(i, i + 30));
@@ -177,16 +185,16 @@ function InstructorDashboardContent() {
 
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-8 md:space-y-12">
             <header>
                 <h1 className="text-3xl font-bold text-white">{t('navDashboard')}</h1>
-                <p className="text-muted-foreground">{t('welcome_message', { name: instructor?.fullName || 'Instructeur' })}</p>
+                <p className="text-muted-foreground">{t('welcome_message', { name: instructor?.fullName?.split(' ')[0] || 'Instructeur' })}</p>
             </header>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <StatCard 
                     title={t('statStudents')}
-                    value={stats.totalStudents.toLocaleString()} 
+                    value={stats.totalStudents.toLocaleString('fr-FR')} 
                     icon={Users} 
                     isLoading={isLoading} 
                     accentColor="border-t-blue-500"
@@ -196,7 +204,7 @@ function InstructorDashboardContent() {
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
-                    change={stats.totalReviews > 0 ? `${t('based_on_reviews', { count: stats.totalReviews })}` : t('waiting_for_reviews')}
+                    change={stats.totalReviews > 0 ? t('based_on_reviews', { count: stats.totalReviews }) : t('waiting_for_reviews')}
                     accentColor="border-t-amber-500"
                 />
                 <StatCard 
@@ -215,37 +223,43 @@ function InstructorDashboardContent() {
                 />
             </section>
 
-            <section className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2">
-                    <h2 className="text-2xl font-semibold mb-4 text-white">{t('revenue_evolution')}</h2>
-                    <Card>
+            <section className="grid lg:grid-cols-5 gap-6">
+                <div className="lg:col-span-3">
+                    <h2 className="text-xl font-semibold mb-4 text-white">{t('revenue_evolution')}</h2>
+                    <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="pt-6">
-                            {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : (
+                            {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : revenueTrendData.length > 0 ? (
                                 <ChartContainer config={chartConfig} className="h-72 w-full">
                                     <ResponsiveContainer>
                                         <BarChart data={revenueTrendData}>
                                             <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
-                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400"/>
+                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400 text-xs" />
+                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400 text-xs"/>
                                             <Tooltip
                                                 cursor={false}
                                                 content={<ChartTooltipContent
                                                     indicator="dot"
-                                                    className="bg-slate-900 border-slate-700"
+                                                    className="dark:bg-slate-900 dark:border-slate-700"
                                                     formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
                                                 />}
                                             />
-                                            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
+                                            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
                                         </BarChart>
                                     </ResponsiveContainer>
                                 </ChartContainer>
+                            ) : (
+                                <EmptyState 
+                                    icon={TrendingUp}
+                                    title="Graphique Indisponible"
+                                    description="Les données sur vos revenus apparaîtront ici dès que vous réaliserez des ventes."
+                                />
                             )}
                         </CardContent>
                     </Card>
                 </div>
-                <div>
-                     <h2 className="text-2xl font-semibold mb-4 text-white">{t('top_courses')}</h2>
-                      <Card>
+                <div className="lg:col-span-2">
+                     <h2 className="text-xl font-semibold mb-4 text-white">{t('top_courses')}</h2>
+                      <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
@@ -257,15 +271,27 @@ function InstructorDashboardContent() {
                                 <TableBody>
                                     {isLoading ? [...Array(5)].map((_, i) => (
                                         <TableRow key={i} className="dark:border-slate-700">
-                                            <TableCell><Skeleton className="h-5 w-32 dark:bg-slate-700" /></TableCell>
+                                            <TableCell><Skeleton className="h-5 w-full dark:bg-slate-700" /></TableCell>
                                             <TableCell className="text-right"><Skeleton className="h-5 w-10 dark:bg-slate-700" /></TableCell>
                                         </TableRow>
-                                    )) : topCourses.map(course => (
+                                    )) : topCourses.length > 0 ? (
+                                      topCourses.map(course => (
                                         <TableRow key={course.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                                            <TableCell className="font-medium truncate max-w-xs dark:text-slate-200">{course.title}</TableCell>
-                                            <TableCell className="text-right font-bold text-white">{course.enrollmentCount}</TableCell>
+                                            <TableCell className="font-medium truncate max-w-[200px] text-sm text-slate-200">{course.title}</TableCell>
+                                            <TableCell className="text-right font-bold text-base text-white">{course.enrollmentCount}</TableCell>
                                         </TableRow>
-                                    ))}
+                                      ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={2}>
+                                                <EmptyState
+                                                    icon={Book}
+                                                    title="Aucun cours populaire"
+                                                    description="Vos cours les plus populaires apparaîtront ici."
+                                                />
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -279,3 +305,5 @@ function InstructorDashboardContent() {
 export function InstructorDashboard() {
     return <InstructorDashboardContent />;
 }
+
+    
