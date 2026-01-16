@@ -1,5 +1,5 @@
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
@@ -13,8 +13,13 @@ export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
   description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
   keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
   themeColor: '#007bff',
 };
 
