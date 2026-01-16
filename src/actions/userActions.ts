@@ -32,14 +32,26 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
     }
     
     try {
+        const batch = adminDb.batch();
+
         // Delete from Auth
         await adminAuth.deleteUser(userId);
         
         // Delete from Firestore
-        await adminDb.collection('users').doc(userId).delete();
+        const userRef = adminDb.collection('users').doc(userId);
+        batch.delete(userRef);
+
+        // Log the deletion to the audit log
+        const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+        batch.set(auditLogRef, {
+            adminId: decodedToken.uid,
+            eventType: 'user.delete',
+            target: { id: userId, type: 'user' },
+            details: `User account ${userId} deleted by ${decodedToken.uid}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
         
-        // Note: For full GDPR compliance, a Cloud Function triggered by user deletion
-        // should be used to clean up all user-related data across subcollections and other collections.
+        await batch.commit();
         
         return { success: true };
     } catch (error: any) {
@@ -53,9 +65,10 @@ export async function sendEncouragementMessage({ studentId }: { studentId: strin
      return { success: false, error: "L'envoi de message est temporairement désactivé." };
 }
 
-export async function importUsersAction(users: { fullName: string; email: string }[]): Promise<{ success: boolean, results: { email: string, status: 'success' | 'error', error?: string }[] }> {
+export async function importUsersAction({ users, adminId }: { users: { fullName: string; email: string }[], adminId: string }): Promise<{ success: boolean, results: { email: string, status: 'success' | 'error', error?: string }[] }> {
     const results: { email: string, status: 'success' | 'error', error?: string }[] = [];
     let overallSuccess = true;
+    const batch = adminDb.batch();
 
     for (const user of users) {
         try {
@@ -68,7 +81,8 @@ export async function importUsersAction(users: { fullName: string; email: string
             });
 
             // Create user document in Firestore
-            await adminDb.collection('users').doc(userRecord.uid).set({
+            const userRef = adminDb.collection('users').doc(userRecord.uid);
+            batch.set(userRef, {
                 uid: userRecord.uid,
                 email: user.email,
                 fullName: user.fullName,
@@ -76,6 +90,7 @@ export async function importUsersAction(users: { fullName: string; email: string
                 createdAt: FieldValue.serverTimestamp(),
                 isInstructorApproved: false,
             });
+
             results.push({ email: user.email, status: 'success' });
         } catch (error: any) {
             console.error(`Failed to import user ${user.email}:`, error);
@@ -83,6 +98,19 @@ export async function importUsersAction(users: { fullName: string; email: string
             overallSuccess = false;
         }
     }
+    
+    // Add a single audit log entry for the bulk operation
+    const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+    batch.set(auditLogRef, {
+        adminId: adminId,
+        eventType: 'user.import',
+        target: { id: adminId, type: 'user' }, // Target is the admin performing the action
+        details: `Bulk imported ${users.length} users. ${results.filter(r => r.status === 'success').length} succeeded, ${results.filter(r => r.status === 'error').length} failed.`,
+        timestamp: FieldValue.serverTimestamp(),
+    });
+
+
+    await batch.commit();
 
     return { success: overallSuccess, results };
 }
@@ -123,7 +151,8 @@ export async function approveInstructorApplication({ userId, decision, message, 
         if (decision === 'accepted') {
             await userRef.update({ isInstructorApproved: true });
         } else {
-            await userRef.update({ role: 'student' });
+            // Optional: Revert role to student if rejected
+            await userRef.update({ isInstructorApproved: false }); 
         }
 
         // Send notification to user
@@ -136,7 +165,7 @@ export async function approveInstructorApplication({ userId, decision, message, 
         // Add to admin audit log
         await adminDb.collection('admin_audit_logs').add({
             adminId: adminId,
-            eventType: 'course.moderation', // This should be instructor.application
+            eventType: 'instructor.application', // Corrected eventType
             target: { id: userId, type: 'user' },
             details: `Instructor application for ${userId} was ${decision} by admin ${adminId}.`,
             timestamp: FieldValue.serverTimestamp(),

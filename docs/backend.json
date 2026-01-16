@@ -19,7 +19,10 @@
             "payout.process",
             "security.resolve",
             "role.permissions.update",
-            "settings.update"
+            "settings.update",
+            "user.delete",
+            "user.import",
+            "instructor.application"
           ]
         },
         "target": {

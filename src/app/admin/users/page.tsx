@@ -218,6 +218,7 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }
 
 const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onImportComplete: () => void }) => {
     const { t } = useTranslation();
+    const { currentUser } = useRole();
     const [file, setFile] = useState<File | null>(null);
     const [usersToImport, setUsersToImport] = useState<{ fullName: string; email: string }[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -254,9 +255,10 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
     };
     
     const handleImport = async () => {
+        if (!currentUser) return;
         setIsLoading(true);
         setImportResults(null);
-        const result = await importUsersAction(usersToImport);
+        const result = await importUsersAction({ users: usersToImport, adminId: currentUser.uid });
         setImportResults(result.results);
         setIsLoading(false);
         if (result.success) {
