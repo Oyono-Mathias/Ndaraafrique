@@ -23,7 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, PlusCircle, Trash2, Video, Book, Image as ImageIcon } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 
 const courseEditSchema = z.object({
@@ -45,8 +45,8 @@ export default function EditCoursePage() {
   const { toast } = useToast();
   const db = getFirestore();
   const storage = getStorage();
-  const { t } = useTranslation();
   const { currentUser, isUserLoading } = useRole();
+  const t = useTranslations();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);

@@ -33,7 +33,7 @@ export default function CreateCoursePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({
-    resolver: zodResolver(courseCreateSchema(t as any)),
+    resolver: zodResolver(courseCreateSchema(t)),
     defaultValues: {
       title: '',
     },

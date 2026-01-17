@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
@@ -50,7 +51,6 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
-import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { startChat } from '@/lib/chat';
@@ -59,6 +59,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useTranslations } from 'next-intl';
 
 const countryCodeToEmoji = (code: string | undefined): string => {
   if (!code || code.length !== 2) return '🏳️';
@@ -130,6 +131,7 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
   const auth = getAuth();
   const router = useRouter();
   const { currentUser } = useRole();
+  const t = useTranslations();
   
   const handleContact = async () => {
     if (!currentUser) return;
@@ -202,31 +204,31 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
           <DropdownMenuItem onClick={handleContact} className="cursor-pointer dark:focus:bg-slate-700">
             <MessageSquare className="mr-2 h-4 w-4"/>
-            Contacter
+            {t('contact')}
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => onGrantAccess(user)} className="cursor-pointer dark:focus:bg-slate-700">
             <Gift className="mr-2 h-4 w-4"/>
-            Offrir un cours
+            {t('offer_course')}
           </DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer dark:focus:bg-slate-700">
               <UserCog className="mr-2 h-4 w-4"/>
-              Changer le rôle
+              {t('change_role')}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="dark:bg-slate-800 dark:border-slate-700">
-              <DropdownMenuItem onClick={() => handleUpdate('role', 'student')} className="cursor-pointer dark:focus:bg-slate-700">Étudiant</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdate('role', 'instructor')} className="cursor-pointer dark:focus:bg-slate-700">Instructeur</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdate('role', 'admin')} className="cursor-pointer dark:focus:bg-slate-700">Admin</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdate('role', 'student')} className="cursor-pointer dark:focus:bg-slate-700">{t('student')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdate('role', 'instructor')} className="cursor-pointer dark:focus:bg-slate-700">{t('instructor')}</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => handleUpdate('role', 'admin')} className="cursor-pointer dark:focus:bg-slate-700">{t('admin')}</DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
           <DropdownMenuItem onClick={() => handleUpdate('status', user.status === 'suspended' ? 'active' : 'suspended')} className="cursor-pointer dark:focus:bg-slate-700">
             <Ban className="mr-2 h-4 w-4"/>
-            {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
+            {user.status === 'suspended' ? t('reactivate') : t('suspend')}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="dark:bg-slate-700" />
           <DropdownMenuItem onClick={() => setIsAlertOpen(true)} className="text-destructive dark:text-red-400 cursor-pointer dark:focus:bg-destructive/10 dark:focus:text-red-400">
             <Trash2 className="mr-2 h-4 w-4"/>
-            Supprimer
+            {t('delete')}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -234,15 +236,15 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
        <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer la suppression ?</AlertDialogTitle>
+                  <AlertDialogTitle>{t('delete_user_confirm_title')}</AlertDialogTitle>
                   <AlertDialogDescription>
-                      Cette action est irréversible. Elle supprimera définitivement l'utilisateur <strong>{user.fullName}</strong> de l'authentification et de la base de données.
+                    <span dangerouslySetInnerHTML={{ __html: t('delete_user_confirm_message', {userName: user.fullName}) }}/>
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogCancel>{t('cancel')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                      Supprimer
+                      {t('delete')}
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
@@ -252,7 +254,7 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
 };
 
 const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onImportComplete: () => void }) => {
-    const { t } = useTranslation();
+    const t = useTranslations();
     const { currentUser } = useRole();
     const [file, setFile] = useState<File | null>(null);
     const [usersToImport, setUsersToImport] = useState<{ fullName: string; email: string }[]>([]);
@@ -273,7 +275,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
                     const json = XLSX.utils.sheet_to_json<{ Nom: string; Email: string }>(worksheet);
                     
                     if (!json[0] || !('Nom' in json[0]) || !('Email' in json[0])) {
-                        alert("Format de fichier incorrect. Assurez-vous que les colonnes s'appellent 'Nom' et 'Email'.");
+                        alert(t('file_format_incorrect'));
                         reset();
                         return;
                     }
@@ -281,7 +283,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
                     const parsedUsers = json.map(row => ({ fullName: row.Nom, email: row.Email }));
                     setUsersToImport(parsedUsers);
                 } catch (error) {
-                    alert("Erreur lors de la lecture du fichier. Est-il au bon format (.xlsx) ?");
+                    alert(t('file_read_error'));
                     reset();
                 }
             };
@@ -313,7 +315,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
                 <DialogHeader>
                     <DialogTitle className="dark:text-white">Importer des utilisateurs</DialogTitle>
                     <DialogDescription className="dark:text-slate-400">
-                        Importez une liste d'étudiants via un fichier Excel (.xlsx). Le fichier doit contenir les colonnes "Nom" et "Email".
+                        {t('import_users_desc')}
                     </DialogDescription>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
@@ -327,12 +329,12 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
                             <Input id="import-file" type="file" className="hidden" accept=".xlsx" onChange={handleFileChange}/>
                         </label>
                         {usersToImport.length > 0 && (
-                            <div className="text-sm text-slate-300">{usersToImport.length} utilisateur(s) trouvé(s) et prêt(s) à être importé(s).</div>
+                            <div className="text-sm text-slate-300">{t('users_found', { count: usersToImport.length })}</div>
                         )}
                      </>
                    ) : (
                      <div className="max-h-64 overflow-y-auto space-y-2 p-2 rounded-lg bg-slate-800/50">
-                        <h4 className="font-semibold text-white">Résultats de l'importation :</h4>
+                        <h4 className="font-semibold text-white">{t('import_results')}</h4>
                          <TooltipProvider>
                             {importResults.map(res => (
                                 <div key={res.email} className="flex justify-between items-center text-sm">
@@ -355,10 +357,11 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
                 </div>
                  <DialogFooter>
                     {importResults ? (
-                        <Button onClick={() => onOpenChange(false)}>Fermer</Button>
+                        <Button onClick={() => onOpenChange(false)}>{t('close')}</Button>
                     ) : (
                         <Button onClick={handleImport} disabled={usersToImport.length === 0 || isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Importer"}
+                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {t('import')}
                         </Button>
                     )}
                  </DialogFooter>
@@ -486,6 +489,7 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
   const db = getFirestore();
+  const t = useTranslations();
   const { currentUser } = useRole();
   const [users, setUsers] = useState<NdaraUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -539,7 +543,7 @@ export default function AdminUsersPage() {
         </div>
         <Button onClick={() => setIsImportOpen(true)}>
           <Upload className="mr-2 h-4 w-4"/>
-          Importer des utilisateurs
+          {t('import_users_button')}
         </Button>
       </header>
 

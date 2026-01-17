@@ -11,7 +11,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, up
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -136,7 +136,7 @@ export default function LoginClient() {
         await setDoc(userDocRef, { lastLogin: serverTimestamp() }, { merge: true });
     }
     
-    toast({ title: t('loginSuccessTitle') });
+    toast({ title: "Connexion réussie !" });
     router.push(targetRoute);
   };
 
@@ -145,7 +145,7 @@ export default function LoginClient() {
     try {
       const userCredential = await signInWithEmailAndPassword(getAuth(), values.email, values.password);
       await handleAuthSuccess(userCredential.user);
-    } catch (error) { toast({ variant: 'destructive', title: t('errorTitle'), description: t('loginError') }); }
+    } catch (error) { toast({ variant: 'destructive', title: "Erreur", description: "Email ou mot de passe incorrect." }); }
     finally { setIsLoading(false); }
   };
 
@@ -157,9 +157,9 @@ export default function LoginClient() {
       await handleAuthSuccess(userCredential.user, values.terms);
     } catch (error) { 
         if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
-            toast({ variant: 'destructive', title: t('errorTitle'), description: t('registerErrorEmailInUse') });
+            toast({ variant: 'destructive', title: "Erreur", description: "Cette adresse e-mail est déjà utilisée." });
         } else {
-            toast({ variant: 'destructive', title: t('errorTitle'), description: t('registerError') });
+            toast({ variant: 'destructive', title: "Erreur", description: "Une erreur est survenue lors de l'inscription." });
         }
     }
     finally { setIsLoading(false); }

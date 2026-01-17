@@ -65,5 +65,11 @@
   "navCarousel": "Carrousel",
   "navRoles": "aRôle",
   "FAQ": "FAQ",
-  "admin_mode": "Mode ti Admin"
+  "admin_mode": "Mode ti Admin",
+  "statusPublished": "A sigi",
+  "statusReview": "A yeke bâa ni",
+  "statusDraft": "Brouillon",
+  "confirm_refusal": "Yeda ti ke",
+  "cancel": "Annuler",
+  "delete": "Fa"
 }

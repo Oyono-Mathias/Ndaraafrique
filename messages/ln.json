@@ -65,5 +65,11 @@
   "navCarousel": "Carrousel",
   "navRoles": "Ba Rôle",
   "FAQ": "FAQ",
-  "admin_mode": "Mode ya Admin"
+  "admin_mode": "Mode ya Admin",
+  "statusPublished": "Ebimi",
+  "statusReview": "Bazali kotala",
+  "statusDraft": "Brouillon",
+  "confirm_refusal": "Ndima koboya",
+  "cancel": "Zongisa",
+  "delete": "Longola"
 }

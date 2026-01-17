@@ -39,7 +39,7 @@ import {
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatRoom } from '@/components/chat/ChatRoom';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { toast } from '@/hooks/use-toast';
 import { startChat } from '@/lib/chat';
 import { Badge } from '@/components/ui/badge';
@@ -56,7 +56,7 @@ interface Chat {
 }
 
 const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, onGoToProfile: () => void }) => {
-    const { t } = useTranslation();
+    const t = useTranslations();
     return (
         <Dialog open={isOpen}>
             <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
@@ -111,7 +111,7 @@ export default function MessagesPage() {
   const db = getFirestore();
   const router = useRouter();
   const isMobile = useIsMobile();
-  const { t } = useTranslation();
+  const t = useTranslations();
   
   const [chatList, setChatList] = useState<Chat[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -200,7 +200,7 @@ export default function MessagesPage() {
     if (!user) return;
     setIsCreatingChat(true);
     try {
-        const chatId = await startChat(user.uid, studentId, db);
+        const chatId = await startChat(user.uid, studentId);
         setIsNewChatModalOpen(false);
         if (isMobile) {
             router.push(`/messages/${chatId}`);
@@ -213,7 +213,7 @@ export default function MessagesPage() {
     } finally {
         setIsCreatingChat(false);
     }
-  }, [user, db, router, isMobile, toast]);
+  }, [user, router, isMobile, toast]);
 
   const filteredChatList = useMemo(() => chatList.filter(chat => {
     const otherId = chat.participants.find(p => p !== user?.uid);

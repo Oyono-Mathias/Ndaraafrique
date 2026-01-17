@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { format, startOfMonth, subDays, eachDayOfInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { DateRange } from "react-day-picker";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -367,7 +367,7 @@ const StatsDashboard = () => {
 };
 
 export default function StatisticsPage() {
-    const { t } = useTranslation();
+    const t = useTranslations();
     return (
          <div className="space-y-8 max-w-7xl mx-auto">
               <header>

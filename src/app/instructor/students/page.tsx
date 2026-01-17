@@ -37,7 +37,7 @@ import { MessageSquare, Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { NdaraUser, Enrollment, Course } from '@/lib/types';
 import { startChat } from '@/lib/chat';
 import { Card } from '@/components/ui/card';
@@ -107,7 +107,7 @@ export default function MyStudentsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const db = getFirestore();
   const router = useRouter();
-  const { t } = useTranslation();
+  const t = useTranslations();
 
   const [time, setTime] = useState(Date.now());
   useEffect(() => {
@@ -179,12 +179,12 @@ export default function MyStudentsPage() {
   const handleStartChat = useCallback(async (studentId: string) => {
     if (!user) return;
     try {
-        const chatId = await startChat(user.uid, studentId, db);
+        const chatId = await startChat(user.uid, studentId);
         router.push(`/messages/${chatId}`);
     } catch(error: any) {
         toast({ variant: 'destructive', title: 'Erreur', description: error.message });
     }
-  }, [user, db, router, toast]);
+  }, [user, router, toast]);
 
   const filteredStudents = useMemo(() => {
     if (!debouncedSearchTerm) return students;

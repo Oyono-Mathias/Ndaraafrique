@@ -65,5 +65,11 @@
   "navCarousel": "Carousel",
   "navRoles": "Roles & Permissions",
   "FAQ": "FAQ",
-  "admin_mode": "Admin Mode"
+  "admin_mode": "Admin Mode",
+  "statusPublished": "Published",
+  "statusReview": "Pending Review",
+  "statusDraft": "Draft",
+  "confirm_refusal": "Confirm Refusal",
+  "cancel": "Cancel",
+  "delete": "Delete"
 }

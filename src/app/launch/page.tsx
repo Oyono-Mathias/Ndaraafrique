@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { addToWaitlist } from '@/app/actions/waitlistActions';
 import { Facebook, Twitter } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 
 const waitlistSchema = z.object({
@@ -59,7 +59,7 @@ const useCountdown = (targetDate: Date) => {
 };
 
 export default function LaunchPage() {
-    const { t } = useTranslation();
+    const t = useTranslations();
     const { toast } = useToast();
     const launchDate = new Date('2024-12-01T00:00:00');
     const timeLeft = useCountdown(launchDate);
@@ -156,4 +156,3 @@ export default function LaunchPage() {
         </div>
     );
 }
-

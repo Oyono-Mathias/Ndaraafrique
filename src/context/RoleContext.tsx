@@ -1,6 +1,5 @@
 
 
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -8,7 +7,6 @@ import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase/provider';
 import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
-import i18n from '@/i18n';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -146,13 +144,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               permissions: finalPermissions,
           };
           
-          const currentLang = i18n.language;
-          const preferredLang = resolvedUser.preferredLanguage;
-          if (preferredLang && currentLang !== preferredLang && !currentLang.startsWith(preferredLang)) {
-              i18n.changeLanguage(preferredLang);
-          }
-
-
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
 

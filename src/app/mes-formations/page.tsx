@@ -99,7 +99,7 @@ export default function MyLearningPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('navMyLearning')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">{t('navMyCourses')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">Reprenez là où vous vous êtes arrêté.</p>
       </header>
 

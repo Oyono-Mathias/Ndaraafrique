@@ -65,5 +65,11 @@
   "navCarousel": "العارض الدوار",
   "navRoles": "الأدوار والصلاحيات",
   "FAQ": "الأسئلة الشائعة",
-  "admin_mode": "وضع المسؤول"
+  "admin_mode": "وضع المسؤول",
+  "statusPublished": "منشور",
+  "statusReview": "في انتظار المراجعة",
+  "statusDraft": "مسودة",
+  "confirm_refusal": "تأكيد الرفض",
+  "cancel": "إلغاء",
+  "delete": "حذف"
 }

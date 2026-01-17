@@ -85,9 +85,9 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
     const router = useRouter();
     const getStatusText = (status: Course['status'] = 'Draft') => {
         switch(status) {
-            case 'Published': return t('published');
-            case 'Pending Review': return t('review');
-            case 'Draft': return t('draft');
+            case 'Published': return t('statusPublished');
+            case 'Pending Review': return t('statusReview');
+            case 'Draft': return t('statusDraft');
             default: return status;
         }
     }
@@ -130,9 +130,9 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
     const router = useRouter();
     const getStatusText = (status: Course['status'] = 'Draft') => {
         switch(status) {
-            case 'Published': return t('published');
-            case 'Pending Review': return t('review');
-            case 'Draft': return t('draft');
+            case 'Published': return t('statusPublished');
+            case 'Pending Review': return t('statusReview');
+            case 'Draft': return t('statusDraft');
             default: return status;
         }
     }

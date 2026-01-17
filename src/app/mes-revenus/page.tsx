@@ -46,7 +46,7 @@ import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Toolti
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
 import { useTranslations } from 'next-intl';
-import { sendAdminNotification } from '../actions/notificationActions';
+import { sendAdminNotification } from '@/actions/notificationActions';
 
 
 interface Transaction {
@@ -284,7 +284,7 @@ export default function MyRevenuePage() {
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('revenue_title')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">{t('navFinance')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">{t('revenue_description')}</p>
       </header>
 
@@ -466,7 +466,7 @@ export default function MyRevenuePage() {
                                 <TableRow key={payout.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
                                 <TableCell className="text-muted-foreground dark:text-slate-400">{payout.date ? format(payout.date.toDate(), 'dd/MM/yy', { locale: fr }) : 'N/A'}</TableCell>
                                 <TableCell className="dark:text-slate-200">{payout.method}</TableCell>
-                                <TableCell>{getStatusBadge(payout.status, t as any)}</TableCell>
+                                <TableCell>{getStatusBadge(payout.status, t)}</TableCell>
                                 <TableCell className="text-right font-semibold font-mono dark:text-white">{formatCurrency(payout.amount)}</TableCell>
                                 </TableRow>
                             ))
@@ -488,7 +488,7 @@ export default function MyRevenuePage() {
                             <Card key={payout.id} className="p-3 dark:bg-slate-900/50 dark:border-slate-700">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2">
-                                        {getStatusBadge(payout.status, t as any)}
+                                        {getStatusBadge(payout.status, t)}
                                         <p className="font-semibold text-sm dark:text-white">{payout.method}</p>
                                     </div>
                                     <p className="font-bold font-mono dark:text-white">{formatCurrency(payout.amount)}</p>
