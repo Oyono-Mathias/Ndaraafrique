@@ -1,13 +1,10 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
 
 export function SplashScreen() {
-  const t = useTranslations();
   const [isVisible, setIsVisible] = useState(false);
   const [isFading, setIsFading] = useState(false);
 
