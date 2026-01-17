@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname } from '@/navigation'; // Corrected import for locale-free path
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -25,9 +25,23 @@ function MaintenancePage() {
     );
 }
 
+// Define public paths that do not require authentication
+const PUBLIC_PATHS = [
+    '/', 
+    '/about',
+    '/cgu',
+    '/mentions-legales',
+    '/paiements',
+    '/payment',
+    '/verify',
+    '/course',
+    '/instructor',
+    '/abonnements'
+];
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
-  const pathname = usePathname();
+  const pathname = usePathname(); // From next-intl, locale-free
   const [siteSettings, setSiteSettings] = useState({ 
       siteName: 'Ndara Afrique', 
       logoUrl: '/icon.svg', 
@@ -39,8 +53,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
   const isLaunchPage = pathname.startsWith('/launch');
-  const isVerificationPage = pathname.startsWith('/verify');
-  const isLandingPage = pathname === '/';
+  // Check if the current page is public
+  const isPublicPage = PUBLIC_PATHS.some(p => p === '/' ? pathname === p : pathname.startsWith(p));
   const isAdminArea = pathname.startsWith('/admin');
 
   useEffect(() => {
@@ -59,19 +73,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
   
-  if (isLandingPage) {
-    return React.cloneElement(children as React.ReactElement, { siteSettings });
+  // If this is a special page that doesn't use the main shell, return it directly.
+  if (isAuthPage || isLaunchPage) {
+    return <>{children}</>;
   }
   
-  if (isAuthPage || isLaunchPage || isVerificationPage) {
-    return <>{children}</>;
+  // If this is the admin area, it has its own layout.
+  if (isAdminArea) {
+      return <>{children}</>;
   }
 
   // --- STABLE LAYOUT LOGIC ---
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
-  const showLoader = !isUserLoading && !user && !showMaintenance;
-  const showApp = !isUserLoading && user && !showMaintenance;
-  
+  const showAppContent = isPublicPage || (!isUserLoading && user);
+  const showLoader = !showAppContent && !showMaintenance;
+
   const handleSidebarLinkClick = () => {
       setIsSheetOpen(false);
   };
@@ -84,10 +100,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isFullScreenPage = pathname.startsWith('/courses/');
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
-  
-  if (isAdminArea) {
-      return <>{children}</>;
-  }
 
   return (
       <>
@@ -99,13 +111,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <MaintenancePage />
         </div>
 
-        {/* Loader for redirecting unauthenticated users */}
+        {/* Loader for redirecting unauthenticated users on protected pages */}
         <div className={cn("flex h-screen w-full items-center justify-center", { 'hidden': !showLoader })}>
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
         
         {/* Main Application Layout */}
-        <div className={cn({ 'hidden': !showApp })}>
+        <div className={cn({ 'hidden': !showAppContent })}>
           <div className={cn("min-h-screen w-full bg-slate-900 text-white", isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]")}>
             <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
               <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
