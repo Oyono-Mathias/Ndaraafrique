@@ -71,14 +71,14 @@ export default function LaunchPage() {
         const result = await addToWaitlist(data.email);
         if (result.success) {
             toast({
-                title: "Merci !",
+                title: 'Merci !',
                 description: "Vous êtes bien inscrit sur la liste d'attente.",
             });
             form.reset();
         } else {
             toast({
                 variant: 'destructive',
-                title: "Erreur",
+                title: 'Erreur',
                 description: result.error,
             });
         }
@@ -108,10 +108,10 @@ export default function LaunchPage() {
                 </h1>
 
                 <div className="grid grid-cols-4 gap-2 md:gap-4 my-8 md:my-12">
-                    <CountdownCard value={timeLeft.days} unit="Jours" />
-                    <CountdownCard value={timeLeft.hours} unit="Heures" />
-                    <CountdownCard value={timeLeft.minutes} unit="Minutes" />
-                    <CountdownCard value={timeLeft.seconds} unit="Secondes" />
+                    <CountdownCard value={timeLeft.days} unit={"Jours"} />
+                    <CountdownCard value={timeLeft.hours} unit={"Heures"} />
+                    <CountdownCard value={timeLeft.minutes} unit={"Minutes"} />
+                    <CountdownCard value={timeLeft.seconds} unit={"Secondes"} />
                 </div>
                 
                 <p className="max-w-xl mx-auto text-base md:text-lg text-slate-300">
@@ -128,7 +128,7 @@ export default function LaunchPage() {
                                     <FormControl>
                                         <Input
                                             type="email"
-                                            placeholder="Entrez votre email..."
+                                            placeholder={"Entrez votre email..."}
                                             {...field}
                                             className="h-14 text-base bg-slate-800/50 border-slate-700 backdrop-blur-sm focus:border-primary focus:ring-primary/20"
                                         />

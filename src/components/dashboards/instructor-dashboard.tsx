@@ -279,7 +279,3 @@ function InstructorDashboardContent() {
         </div>
     );
 }
-
-export function InstructorDashboard() {
-    return <InstructorDashboardContent />;
-}
