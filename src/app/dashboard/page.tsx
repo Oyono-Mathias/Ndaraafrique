@@ -4,7 +4,6 @@
 import { useRole } from '@/context/RoleContext';
 import { StudentDashboard } from '@/components/dashboards/student-dashboard';
 import { InstructorDashboard } from '@/components/dashboards/instructor-dashboard';
-import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
@@ -25,27 +24,29 @@ export default function DashboardPage() {
     if (!isUserLoading && user && currentUser?.role === 'admin' && role === 'admin') {
       router.push('/admin');
     }
-  }, [user, isUserLoading, currentUser, role, router]);
+  }, [isUserLoading, user, currentUser, role, router]);
 
-  // Show a loader while redirecting or if the user role is still being determined.
-  if (isUserLoading || !user || (currentUser?.role === 'admin' && role === 'admin')) {
-    return (
-        <div className="flex h-screen w-full items-center justify-center bg-background dark:bg-slate-900">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
+  // Determine if the loader should be shown.
+  const showLoader = isUserLoading || !user || (currentUser?.role === 'admin' && role === 'admin');
 
-  // Render both dashboards but only show the one corresponding to the current role.
-  // This prevents React from unmounting/remounting large component trees on role change,
-  // which is the root cause of the "NotFoundError: Failed to execute 'removeChild'" error.
+  // Always return a stable component structure.
+  // Toggle visibility using `hidden` class instead of conditional rendering.
   return (
     <>
-      <div className={cn({ 'hidden': role !== 'student' })}>
-        <StudentDashboard />
+      <div className={cn(
+        "flex h-screen w-full items-center justify-center bg-background dark:bg-slate-900",
+        { 'hidden': !showLoader }
+      )}>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
-      <div className={cn({ 'hidden': role !== 'instructor' })}>
-        <InstructorDashboard />
+
+      <div className={cn({ 'hidden': showLoader })}>
+        <div className={cn({ 'hidden': role !== 'student' })}>
+          <StudentDashboard />
+        </div>
+        <div className={cn({ 'hidden': role !== 'instructor' })}>
+          <InstructorDashboard />
+        </div>
       </div>
     </>
   );
