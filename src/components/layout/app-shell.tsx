@@ -44,9 +44,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setIsClient(true);
   }, []);
   
-  const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
-  const isLaunchPage = pathname === '/launch';
-  const isLandingPage = pathname === '/' && !isLaunchPage;
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
+  const isLaunchPage = pathname.startsWith('/launch');
+  const isVerificationPage = pathname.startsWith('/verify');
+  const isLandingPage = pathname === '/';
   const isAdminArea = pathname.startsWith('/admin');
 
   useEffect(() => {
@@ -55,7 +56,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
-                siteName: 'Ndara Afrique',
+                siteName: settingsData.general?.siteName || 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
@@ -65,15 +66,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
   
+  if (!isClient) {
+    return <SplashScreen />;
+  }
+
   if (isLandingPage) {
     return React.cloneElement(children as React.ReactElement, { siteSettings });
   }
   
-  if (isAuthPage || isLaunchPage) {
+  if (isAuthPage || isLaunchPage || isVerificationPage) {
     return <>{children}</>;
   }
 
-  if (!isClient || isUserLoading) {
+  if (isUserLoading) {
     return <SplashScreen />;
   }
 
