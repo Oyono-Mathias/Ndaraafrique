@@ -3,12 +3,6 @@ import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-import { FirebaseClientProvider } from "@/firebase/client-provider";
-import { RoleProvider } from "@/context/RoleContext";
-import { AppShell } from "@/components/layout/app-shell";
-import { Toaster } from "@/components/ui/toaster";
-import { I18nProvider } from "@/context/I18nProvider";
-
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
   description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
@@ -41,14 +35,7 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        <I18nProvider>
-          <FirebaseClientProvider>
-            <RoleProvider>
-              <AppShell>{children}</AppShell>
-              <Toaster />
-            </RoleProvider>
-          </FirebaseClientProvider>
-        </I18nProvider>
+        {children}
       </body>
     </html>
   );

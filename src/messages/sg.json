@@ -1,1 +1,25 @@
-{}
+{
+  "Marketing": {
+    "title": "A ye ti Dengo Buze",
+    "description": "Mu ngangu na buze ti mo, mo maï.",
+    "generateBtn": "Sigi na Pub via IA",
+    "noPromo": "Code promo ayeke da ape."
+  },
+  "Auth": {
+    "login": "Lî na yâ ni",
+    "register": "Sû iri ti mo",
+    "welcome": "Gara na Ndara Afrique",
+    "forgotPass": "Bobi a girisa Code ?"
+  },
+  "Nav": {
+    "dashboard": "Tablo ti Commandement",
+    "courses": "A formation ti mbi",
+    "instructor": "Ndo ti Maître",
+    "settings": "A réglage",
+    "logout": "Sigi"
+  },
+  "Hero": {
+    "title": "Ndara ti Africa ti Fini Ngoi",
+    "subtitle": "Place so hingango-ye aga mosoro."
+  }
+}

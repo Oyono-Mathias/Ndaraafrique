@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-import { useI18n } from '@/context/I18nProvider';
+import { useParams } from 'next/navigation';
+import { useRouter, usePathname } from '@/navigation';
 
 interface LanguageOption {
     code: string;
@@ -21,18 +22,27 @@ const languages: LanguageOption[] = [
 ];
 
 export function LanguageSelector() {
-    const { locale, setLocale } = useI18n();
+    const router = useRouter();
+    const pathname = usePathname();
+    const params = useParams();
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const changeLanguage = (lng: string) => {
         startTransition(() => {
-          setLocale(lng as 'fr' | 'en');
+          router.replace(
+            // @ts-expect-error -- TypeScript will validate that only known `params`
+            // are used in combination with a given `pathname`. Since the two will
+            // always match for the current route, we can skip runtime checks.
+            {pathname, params},
+            {locale: lng}
+          );
         });
         setIsOpen(false);
     };
-
-    const selectedLanguage = languages.find(l => locale.startsWith(l.code)) || languages[0];
+    
+    const locale = params.locale as string || 'fr';
+    const selectedLanguage = languages.find(l => l.code === locale) || languages[0];
 
     return (
         <Popover open={isOpen} onOpenChange={setIsOpen}>
@@ -49,14 +59,14 @@ export function LanguageSelector() {
                             variant="ghost"
                             className={cn(
                                 "w-full justify-start gap-3 pl-3 h-9",
-                                locale.startsWith(lang.code) ? 'bg-primary/10 text-primary' : 'dark:text-slate-200'
+                                locale === lang.code ? 'bg-primary/10 text-primary' : 'dark:text-slate-200'
                             )}
                             onClick={() => changeLanguage(lang.code)}
                             disabled={isPending}
                         >
                             <Image src={lang.flag} alt={lang.name} width={20} height={15} className="rounded-sm"/>
                             <span>{lang.name}</span>
-                            {locale.startsWith(lang.code) && <Check className="h-4 w-4 ml-auto text-primary"/>}
+                            {locale === lang.code && <Check className="h-4 w-4 ml-auto text-primary"/>}
                         </Button>
                     ))}
                 </div>
