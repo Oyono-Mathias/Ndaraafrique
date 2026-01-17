@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from 'next/link';
@@ -12,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Star, Play, Award } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface CourseCardProps {
   course: Course & { progress?: number };
@@ -74,11 +74,23 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
       <div className="p-4 flex flex-col flex-grow">
         <Link href={isStudentView ? `/courses/${course.id}` : `/course/${course.id}`} className="block">
             <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{course.title}</h3>
-            <p className="text-xs text-slate-400 truncate mt-1">Par {instructor?.fullName || t('unknown_instructor')}</p>
-            <div className="flex items-center pt-1">
-                <StarRating rating={4.7} reviewCount={123} />
-            </div>
         </Link>
+
+        {instructor && course.instructorId ? (
+            <Link href={`/instructor/${course.instructorId}`} className="flex items-center gap-2 mt-2 group" onClick={(e) => e.stopPropagation()}>
+                <Avatar className="h-6 w-6 border border-slate-700">
+                    <AvatarImage src={instructor.profilePictureURL} />
+                    <AvatarFallback className="text-xs bg-slate-700 text-slate-300">{instructor.fullName?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <p className="text-xs text-slate-400 group-hover:text-primary transition-colors truncate">{instructor.fullName || t('unknown_instructor')}</p>
+            </Link>
+        ) : (
+             <p className="text-xs text-slate-400 truncate mt-1">Par {t('unknown_instructor')}</p>
+        )}
+
+        <div className="flex items-center pt-1">
+            <StarRating rating={4.7} reviewCount={123} />
+        </div>
         <div className="flex-grow" />
         <div className="mt-4">
             {isStudentView ? (

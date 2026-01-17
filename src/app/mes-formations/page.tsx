@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 
 interface EnrolledCourse extends Course {
   progress: number;
-  instructorName: string;
+  instructor: Partial<NdaraUser> | null;
 }
 
 export default function MyLearningPage() {
@@ -72,7 +72,7 @@ export default function MyLearningPage() {
           return {
               ...(course as Course),
               progress: enrollment.progress,
-              instructorName: instructor?.fullName || 'Instructeur Inconnu',
+              instructor: instructor || null,
           };
       }).filter(c => c.id); // Filter out any cases where course details were not found
 
@@ -156,7 +156,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
                  <CourseCard 
                     key={course.id}
                     course={course} 
-                    instructor={{ fullName: course.instructorName }}
+                    instructor={course.instructor}
                     variant="student" 
                 />
             ))}

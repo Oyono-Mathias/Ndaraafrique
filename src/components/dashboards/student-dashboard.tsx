@@ -110,7 +110,7 @@ export function StudentDashboard() {
                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
                 const userSnapshots = await getDocs(usersQuery);
                 userSnapshots.forEach(doc => {
-                    newInstructors.set(doc.data().uid, doc.data());
+                    newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
                 });
             }
             setInstructorsMap(newInstructors);

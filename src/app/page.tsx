@@ -329,8 +329,12 @@ export default function LandingPage({ siteSettings }: { siteSettings?: Partial<S
             const userSnapshots = await getDocs(usersQuery);
             const newInstructors = new Map<string, Partial<NdaraUser>>();
             userSnapshots.forEach(doc => {
-                const userData = doc.data();
-                newInstructors.set(userData.uid, { fullName: userData.fullName });
+                const userData = doc.data() as NdaraUser;
+                newInstructors.set(userData.uid, {
+                    uid: userData.uid,
+                    fullName: userData.fullName,
+                    profilePictureURL: userData.profilePictureURL,
+                });
             });
             setInstructorsMap(newInstructors);
         }

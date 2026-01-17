@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -58,8 +59,12 @@ export function RecommendedCourses() {
                  const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
                  const userSnapshots = await getDocs(usersQuery);
                  userSnapshots.forEach(doc => {
-                    const userData = doc.data();
-                    newInstructors.set(userData.uid, { fullName: userData.fullName });
+                    const userData = doc.data() as NdaraUser;
+                    newInstructors.set(userData.uid, { 
+                        uid: userData.uid,
+                        fullName: userData.fullName,
+                        profilePictureURL: userData.profilePictureURL,
+                    });
                 });
             }
             setInstructorsMap(prev => new Map([...prev, ...newInstructors]));
