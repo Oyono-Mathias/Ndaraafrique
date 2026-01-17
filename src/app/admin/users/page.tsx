@@ -1,12 +1,12 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
-import { deleteUserAccount, importUsersAction, updateUserStatus } from '@/actions/userActions';
+import { deleteUserAccount, importUsersAction, updateUserStatus, grantCourseAccess } from '@/actions/userActions';
 import {
   Table,
   TableBody,
@@ -43,8 +43,8 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare } from 'lucide-react';
-import type { NdaraUser } from '@/lib/types';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift } from 'lucide-react';
+import type { NdaraUser, Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -54,7 +54,11 @@ import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { startChat } from '@/lib/chat';
-
+import { useCollection } from '@/firebase';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { zodResolver } from '@hookform/resolvers/zod';
+import * as z from 'zod';
 
 // --- SKELETON LOADER ---
 const UserTableSkeleton = () => (
@@ -113,7 +117,7 @@ const getStatusBadgeVariant = (status: NdaraUser['status'] = 'active') => {
   return status === 'suspended' ? 'destructive' : 'default';
 };
 
-const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }: { user: NdaraUser, adminId: string, onActionStart: () => void, onActionEnd: () => void, onUserUpdate: (userId: string, update: Partial<NdaraUser>) => void }) => {
+const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, onGrantAccess }: { user: NdaraUser, adminId: string, onActionStart: () => void, onActionEnd: () => void, onUserUpdate: (userId: string, update: Partial<NdaraUser>) => void, onGrantAccess: (user: NdaraUser) => void }) => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const { toast } = useToast();
   const db = getFirestore();
@@ -125,7 +129,7 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }
     if (!currentUser) return;
     onActionStart();
     try {
-        const chatId = await startChat(currentUser.uid, user.uid, db);
+        const chatId = await startChat(currentUser.uid, user.uid);
         router.push(`/messages/${chatId}`);
     } catch (error: any) {
         toast({
@@ -196,6 +200,10 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }
           <DropdownMenuItem onClick={handleContact} className="cursor-pointer dark:focus:bg-slate-700">
             <MessageSquare className="mr-2 h-4 w-4"/>
             Contacter
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onGrantAccess(user)} className="cursor-pointer dark:focus:bg-slate-700">
+            <Gift className="mr-2 h-4 w-4"/>
+            Offrir un cours
           </DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer dark:focus:bg-slate-700">
@@ -356,6 +364,106 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
     );
 };
 
+const grantAccessSchema = z.object({
+  courseId: z.string().min(1, "Veuillez sélectionner un cours."),
+  reason: z.string().min(10, "Veuillez fournir une brève raison."),
+});
+
+const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | null, isOpen: boolean, onOpenChange: () => void }) => {
+    const db = getFirestore();
+    const { currentUser: adminUser } = useRole();
+    const { toast } = useToast();
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    
+    const coursesQuery = useMemo(() => query(collection(db, 'courses'), where('status', '==', 'Published')), [db]);
+    const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+
+    const form = useForm<z.infer<typeof grantAccessSchema>>({
+        resolver: zodResolver(grantAccessSchema),
+    });
+    
+    useEffect(() => {
+        if (!isOpen) {
+            form.reset();
+        }
+    }, [isOpen, form]);
+
+    const onSubmit = async (values: z.infer<typeof grantAccessSchema>) => {
+        if (!user || !adminUser) return;
+        setIsSubmitting(true);
+        const result = await grantCourseAccess({
+            studentId: user.uid,
+            courseId: values.courseId,
+            adminId: adminUser.uid,
+            reason: values.reason,
+        });
+
+        if (result.success) {
+            toast({ title: "Accès accordé !", description: `${user.fullName} a maintenant accès au cours.` });
+            onOpenChange();
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        }
+        setIsSubmitting(false);
+    };
+
+    if (!user) return null;
+
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
+                <DialogHeader>
+                    <DialogTitle className="dark:text-white">Offrir un cours à {user.fullName}</DialogTitle>
+                    <DialogDescription className="dark:text-slate-400">Sélectionnez le cours à offrir gratuitement à cet utilisateur.</DialogDescription>
+                </DialogHeader>
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
+                        <FormField
+                            control={form.control}
+                            name="courseId"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Cours</FormLabel>
+                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger disabled={coursesLoading} className="dark:bg-slate-800 dark:border-slate-700">
+                                                <SelectValue placeholder={coursesLoading ? "Chargement..." : "Sélectionner un cours"} />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
+                                            {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="reason"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Raison</FormLabel>
+                                    <FormControl>
+                                        <Input {...field} placeholder="Ex: Gagnant du concours, partenaire..." className="dark:bg-slate-800 dark:border-slate-700" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={onOpenChange}>Annuler</Button>
+                            <Button type="submit" disabled={isSubmitting}>
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Offrir l'accès
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+            </DialogContent>
+        </Dialog>
+    );
+};
+
 
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
@@ -366,6 +474,7 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [grantUser, setGrantUser] = useState<NdaraUser | null>(null);
 
   const fetchUsers = React.useCallback(async () => {
     setIsLoading(true);
@@ -475,7 +584,7 @@ export default function AdminUsersPage() {
                            {user.createdAt ? format((user.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
-                          <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} />
+                          <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} onGrantAccess={setGrantUser} />
                         </TableCell>
                       </TableRow>
                     ))
@@ -515,7 +624,7 @@ export default function AdminUsersPage() {
                                       <p className="font-bold dark:text-white">{user.fullName}</p>
                                       <p className="text-sm text-muted-foreground dark:text-slate-400">{user.email}</p>
                                   </div>
-                                  <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate}/>
+                                  <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} onGrantAccess={setGrantUser} />
                               </div>
                               <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
                                    <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
@@ -539,6 +648,7 @@ export default function AdminUsersPage() {
         </CardContent>
       </Card>
       <ImportUsersDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} onImportComplete={fetchUsers}/>
+      <GrantAccessDialog user={grantUser} isOpen={!!grantUser} onOpenChange={() => setGrantUser(null)} />
     </div>
   );
 }

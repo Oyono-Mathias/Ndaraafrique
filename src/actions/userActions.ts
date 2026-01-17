@@ -177,3 +177,65 @@ export async function approveInstructorApplication({ userId, decision, message, 
         return { success: false, error: error.message };
     }
 }
+
+export async function grantCourseAccess(
+    { studentId, courseId, adminId, reason }: 
+    { studentId: string; courseId: string; adminId: string; reason: string }
+): Promise<{ success: boolean; error?: string }> {
+  const batch = adminDb.batch();
+
+  try {
+    const enrollmentId = `${studentId}_${courseId}`;
+    const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
+    
+    const enrollmentDoc = await enrollmentRef.get();
+    if (enrollmentDoc.exists) {
+        return { success: false, error: 'Cet utilisateur est déjà inscrit à ce cours.' };
+    }
+
+    const courseDoc = await adminDb.collection('courses').doc(courseId).get();
+    if (!courseDoc.exists) {
+        return { success: false, error: 'Le cours sélectionné est introuvable.' };
+    }
+    const courseData = courseDoc.data();
+    if (!courseData) {
+         return { success: false, error: 'Les données du cours sont invalides.' };
+    }
+
+    batch.set(enrollmentRef, {
+        studentId: studentId,
+        courseId: courseId,
+        instructorId: courseData.instructorId,
+        enrollmentDate: FieldValue.serverTimestamp(),
+        progress: 0,
+        priceAtEnrollment: 0,
+        enrollmentType: 'admin_grant',
+    });
+
+    const grantRef = adminDb.collection('admin_grants').doc();
+    batch.set(grantRef, {
+        studentId: studentId,
+        courseId: courseId,
+        grantedBy: adminId,
+        reason: reason,
+        createdAt: FieldValue.serverTimestamp(),
+    });
+    
+    const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+    batch.set(auditLogRef, {
+        adminId: adminId,
+        eventType: 'course.grant',
+        target: { id: enrollmentId, type: 'enrollment' },
+        details: `L'administrateur ${adminId} a offert le cours '${courseData.title}' à l'utilisateur ${studentId}. Raison: ${reason}`,
+        timestamp: FieldValue.serverTimestamp(),
+    });
+
+
+    await batch.commit();
+    return { success: true };
+
+  } catch (error: any) {
+    console.error('Error granting course access:', error);
+    return { success: false, error: "Une erreur interne est survenue." };
+  }
+}

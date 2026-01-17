@@ -1,6 +1,19 @@
 
 {
   "entities": {
+    "AdminGrant": {
+      "title": "Admin Course Grant",
+      "type": "object",
+      "description": "Records when an admin grants free access to a course for a user.",
+      "properties": {
+        "studentId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "grantedBy": { "type": "string", "description": "UID of the admin who granted access." },
+        "reason": { "type": "string", "description": "Reason for granting access." },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["studentId", "courseId", "grantedBy", "createdAt"]
+    },
     "AdminAuditLog": {
       "title": "Admin Audit Log",
       "type": "object",
@@ -22,7 +35,8 @@
             "settings.update",
             "user.delete",
             "user.import",
-            "instructor.application"
+            "instructor.application",
+            "course.grant"
           ]
         },
         "target": {
@@ -40,7 +54,8 @@
                 "payment",
                 "security_log",
                 "role",
-                "settings"
+                "settings",
+                "enrollment"
               ]
             }
           }
@@ -1370,6 +1385,9 @@
           }
         ]
       }
-    ]
+    ],
+    "admin_grants/{grantId}": {
+        "schema": { "$ref": "#/entities/AdminGrant" }
+    }
   }
 }
