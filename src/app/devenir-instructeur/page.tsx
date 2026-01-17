@@ -51,7 +51,7 @@ export default function BecomeInstructorPage() {
   const router = useRouter();
   const { user, currentUser, isUserLoading } = useRole();
   const { toast } = useToast();
-  const t = useTranslations();
+  const t = useTranslations('BecomeInstructor');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const db = getFirestore();
 

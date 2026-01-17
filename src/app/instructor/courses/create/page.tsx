@@ -28,12 +28,12 @@ type CourseCreateFormValues = z.infer<ReturnType<typeof courseCreateSchema>>;
 export default function CreateCoursePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const t = useTranslations();
+  const t = useTranslations('InstructorCreateCourse');
   const { currentUser, isUserLoading } = useRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({
-    resolver: zodResolver(courseCreateSchema(t)),
+    resolver: zodResolver(courseCreateSchema(t as any)),
     defaultValues: {
       title: '',
     },
