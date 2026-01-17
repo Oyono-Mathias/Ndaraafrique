@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -6,7 +7,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, Play } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, Play, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -15,6 +16,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
+import { useRole } from '@/context/RoleContext';
+import { useRouter } from 'next/navigation';
 
 const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => {
     const [scrolled, setScrolled] = useState(false);
@@ -303,6 +306,9 @@ const MobileCTA = ({ siteSettings }: { siteSettings: Partial<Settings['platform'
 );
 
 export default function LandingPage() {
+  const { user, isUserLoading } = useRole();
+  const router = useRouter();
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
@@ -310,21 +316,24 @@ export default function LandingPage() {
   const db = getFirestore();
 
   useEffect(() => {
-    const fetchSettings = async () => {
-        try {
-            const settingsRef = doc(db, 'settings', 'global');
-            const settingsSnap = await getDoc(settingsRef);
-            if (settingsSnap.exists()) {
-                setSiteSettings(settingsSnap.data().platform || { allowInstructorSignup: true });
-            }
-        } catch (error) {
-            console.error("Failed to fetch site settings for landing page:", error);
-        }
+    if (!isUserLoading && user) {
+      router.push('/dashboard');
     }
-    fetchSettings();
-  }, [db]);
+  }, [isUserLoading, user, router]);
 
   useEffect(() => {
+    if (isUserLoading || user) {
+        setLoading(false);
+        return;
+    };
+
+    const settingsRef = doc(db, 'settings', 'global');
+    const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
+        if (docSnap.exists()) {
+            setSiteSettings(docSnap.data().platform || { allowInstructorSignup: true });
+        }
+    });
+
     const q = query(
       collection(db, "courses"),
       where("status", "==", "Published"),
@@ -354,11 +363,23 @@ export default function LandingPage() {
       }
       setLoading(false);
     }, (error) => {
-      console.error("Erreur Firebase:", error);
+      console.error("Firebase Error:", error);
       setLoading(false);
     });
-    return () => unsubscribe();
-  }, [db]);
+
+    return () => {
+        unsubSettings();
+        unsubscribe();
+    };
+  }, [db, isUserLoading, user]);
+
+  if (isUserLoading || user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
   
   const popularCourses = courses.filter(c => c.isPopular).slice(0, 8);
   const freeCourses = courses.filter(c => c.price === 0).slice(0, 8);
