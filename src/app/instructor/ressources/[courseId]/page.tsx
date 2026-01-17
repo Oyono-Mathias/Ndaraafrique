@@ -1,11 +1,10 @@
 
-
 'use client';
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase, useIsMobile } from '@/firebase';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -42,14 +41,9 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { Resource } from '@/lib/types';
 
-interface Resource {
-    id: string;
-    title: string;
-    type: 'link' | 'file';
-    url: string;
-    createdAt: any;
-}
 
 const resourceSchema = z.object({
     title: z.string().min(3, { message: 'Le titre doit contenir au moins 3 caractères.' }),
@@ -75,7 +69,7 @@ const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: a
                     name="title"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Titre de la ressource</FormLabel>
+                            <FormLabel className="dark:text-slate-300">Titre de la ressource</FormLabel>
                             <FormControl>
                                 <Input placeholder="Ex: Slides du chapitre 1" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
                             </FormControl>
@@ -88,7 +82,7 @@ const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: a
                     name="type"
                     render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Type</FormLabel>
+                            <FormLabel className="dark:text-slate-300">Type</FormLabel>
                             <Select onValueChange={field.onChange} defaultValue={field.value}>
                                 <FormControl>
                                     <SelectTrigger className="dark:bg-slate-700 dark:border-slate-600">
@@ -110,7 +104,7 @@ const ResourceForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: a
                         name="url"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>URL</FormLabel>
+                                <FormLabel className="dark:text-slate-300">URL</FormLabel>
                                 <FormControl>
                                     <Input placeholder="https://example.com/ressource" {...field} className="dark:bg-slate-700 dark:border-slate-600"/>
                                 </FormControl>
@@ -253,7 +247,7 @@ export default function ResourcesPage() {
                                         <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
                                         <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
                                         <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : resources && resources.length > 0 ? (
@@ -266,7 +260,7 @@ export default function ResourcesPage() {
                                         <TableCell className="hidden sm:table-cell">{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
                                         <TableCell className="hidden sm:table-cell">{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-red-500 hover:text-red-400">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-destructive hover:bg-destructive/10">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
@@ -290,3 +284,5 @@ export default function ResourcesPage() {
         </div>
     )
 }
+
+    

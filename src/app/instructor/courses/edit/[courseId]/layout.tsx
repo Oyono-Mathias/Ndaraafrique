@@ -22,7 +22,6 @@ const StudioNav = () => {
      const navItems = [
         { href: `/instructor/courses/edit/${courseId}`, label: "Informations" },
         { href: `/instructor/courses/edit/${courseId}/content`, label: "Programme" },
-        { href: `/instructor/courses/edit/${courseId}/resources`, label: "Ressources" },
         { href: `/instructor/courses/edit/${courseId}/pricing`, label: "Prix & Promo" },
     ];
 
@@ -181,3 +180,5 @@ export default function CourseEditLayout({
         </div>
     );
 }
+
+    

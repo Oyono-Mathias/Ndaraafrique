@@ -143,8 +143,9 @@ service cloud.firestore {
     }
     
      match /resources/{resourceId} {
-      allow read, list: if isEnrolled(request.resource.data.courseId) || isCourseOwner(request.resource.data.courseId) || isAdmin();
-      allow create, update, delete: if isCourseOwner(request.resource.data.courseId) || isAdmin();
+      allow read, list: if isEnrolled(resource.data.courseId) || isCourseOwner(resource.data.courseId) || isAdmin();
+      allow create: if isCourseOwner(request.resource.data.courseId) || isAdmin();
+      allow update, delete: if isCourseOwner(resource.data.courseId) || isAdmin();
     }
 
     /* ======================
@@ -318,3 +319,5 @@ service cloud.firestore {
     }
   }
 }
+
+    

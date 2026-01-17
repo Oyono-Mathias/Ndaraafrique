@@ -4,7 +4,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, orderBy, DocumentData, QuerySnapshot } from 'firebase/firestore';
 import ReactPlayer from 'react-player/lazy';
@@ -13,8 +13,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, CheckCircle, FileText, Loader2, MessageSquare, PlayCircle } from 'lucide-react';
-import type { Section, Lecture, Course, CourseProgress, Enrollment } from '@/lib/types';
+import { ArrowLeft, CheckCircle, FileText, Loader2, MessageSquare, PlayCircle, Link2 } from 'lucide-react';
+import type { Section, Lecture, Course, CourseProgress, Enrollment, Resource } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { toast } from '@/hooks/use-toast';
@@ -63,6 +63,13 @@ function CoursePlayerSidebar({ course, sections, lecturesMap, activeLessonId, on
     );
 }
 
+const ResourceItem = ({ resource }: { resource: Resource }) => (
+    <a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors">
+        <Link2 className="h-5 w-5 text-slate-400 shrink-0" />
+        <span className="text-sm font-medium text-slate-200">{resource.title}</span>
+    </a>
+)
+
 export default function CoursePlayerPage() {
     const { courseId } = useParams();
     const router = useRouter();
@@ -83,6 +90,9 @@ export default function CoursePlayerPage() {
 
     const progressRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [db, user, courseId]);
     const { data: progressDoc, isLoading: progressLoading } = useDoc<CourseProgress>(progressRef);
+    
+    const resourcesQuery = useMemoFirebase(() => courseId ? query(collection(db, 'resources'), where('courseId', '==', courseId)) : null, [db, courseId]);
+    const { data: resources, isLoading: resourcesLoading } = useCollection<Resource>(resourcesQuery);
 
     const handleLessonClick = useCallback((lesson: Lecture) => {
         setActiveLesson(lesson);
@@ -115,7 +125,7 @@ export default function CoursePlayerPage() {
             for (const section of fetchedSections) {
                 const lecturesQuery = query(collection(db, 'courses', courseId as string, 'sections', section.id, 'lectures'), orderBy('order'));
                 const lecturesSnap = await getDocs(lecturesQuery);
-                const lectures = lecturesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Lecture);
+                const lectures = lecturesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture));
                 allLecturesMap.set(section.id, lectures);
             }
             setLecturesMap(allLecturesMap);
@@ -188,7 +198,7 @@ export default function CoursePlayerPage() {
                         />
                     ) : (
                         <div className="text-center text-slate-400">
-                            <Video className="h-12 w-12 mx-auto mb-2" />
+                            <PlayCircle className="h-12 w-12 mx-auto mb-2" />
                             <p>Sélectionnez une leçon pour commencer.</p>
                         </div>
                     )}
@@ -207,12 +217,18 @@ export default function CoursePlayerPage() {
                             {course?.description || "Aucune description pour ce cours."}
                         </TabsContent>
                         <TabsContent value="resources" className="mt-4">
-                            {/* Resources list would go here */}
-                             <p className="text-sm text-center text-slate-500 py-8">Aucune ressource pour cette leçon.</p>
+                           {resourcesLoading ? (
+                                <Skeleton className="h-20 w-full" />
+                           ) : resources && resources.length > 0 ? (
+                               <div className="space-y-2">
+                                   {resources.map(res => <ResourceItem key={res.id} resource={res} />)}
+                               </div>
+                           ) : (
+                                <p className="text-sm text-center text-slate-500 py-8">Aucune ressource pour ce cours.</p>
+                           )}
                         </TabsContent>
                         <TabsContent value="q-a" className="mt-4">
-                            {/* Q&A section would go here */}
-                             <Button asChild><Link href="/questions-reponses"><MessageSquare className="mr-2 h-4 w-4"/> Poser une question</Link></Button>
+                             <Button asChild><Link href={`/questions-reponses/${courseId}`}><MessageSquare className="mr-2 h-4 w-4"/> Poser une question</Link></Button>
                         </TabsContent>
                     </Tabs>
                 </div>

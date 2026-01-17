@@ -1,5 +1,4 @@
 
-
 import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -356,3 +355,15 @@ export interface QuizAttempt {
     score: number;
     submittedAt: Timestamp;
 }
+
+export interface Resource {
+    id: string;
+    courseId: string;
+    instructorId: string;
+    title: string;
+    type: 'link' | 'file';
+    url: string;
+    createdAt: Timestamp;
+}
+
+    

@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase, useIsMobile } from '@/firebase';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -40,14 +41,9 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useIsMobile } from '@/firebase';
+import type { Resource } from '@/lib/types';
 
-interface Resource {
-    id: string;
-    title: string;
-    type: 'link' | 'file';
-    url: string;
-    createdAt: any;
-}
 
 const resourceSchema = z.object({
     title: z.string().min(3, { message: 'Le titre doit contenir au moins 3 caractères.' }),
@@ -251,7 +247,7 @@ export default function ResourcesPage() {
                                         <TableCell><Skeleton className="h-5 w-48 bg-slate-700" /></TableCell>
                                         <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-16 bg-slate-700" /></TableCell>
                                         <TableCell className="hidden sm:table-cell"><Skeleton className="h-5 w-24 bg-slate-700" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto bg-slate-700" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : resources && resources.length > 0 ? (
@@ -288,3 +284,5 @@ export default function ResourcesPage() {
         </div>
     )
 }
+
+    
