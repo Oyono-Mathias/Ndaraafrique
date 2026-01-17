@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle } from 'lucide-react';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -53,6 +53,7 @@ import * as XLSX from 'xlsx';
 import { useTranslation } from 'react-i18next';
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { startChat } from '@/lib/chat';
 
 
 // --- SKELETON LOADER ---
@@ -117,7 +118,26 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }
   const { toast } = useToast();
   const db = getFirestore();
   const auth = getAuth();
+  const router = useRouter();
+  const { currentUser } = useRole();
   
+  const handleContact = async () => {
+    if (!currentUser) return;
+    onActionStart();
+    try {
+        const chatId = await startChat(currentUser.uid, user.uid, db);
+        router.push(`/messages/${chatId}`);
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Erreur de messagerie",
+            description: error.message,
+        });
+    } finally {
+        onActionEnd();
+    }
+  };
+
   const handleDelete = async () => {
     onActionStart();
     const adminUser = auth.currentUser;
@@ -173,6 +193,10 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate }
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={handleContact} className="cursor-pointer dark:focus:bg-slate-700">
+            <MessageSquare className="mr-2 h-4 w-4"/>
+            Contacter
+          </DropdownMenuItem>
            <DropdownMenuSub>
             <DropdownMenuSubTrigger className="cursor-pointer dark:focus:bg-slate-700">
               <UserCog className="mr-2 h-4 w-4"/>
