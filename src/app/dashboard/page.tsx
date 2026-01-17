@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -7,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
   const { role, isUserLoading, user, currentUser } = useRole();
@@ -34,10 +36,17 @@ export default function DashboardPage() {
     );
   }
 
-  if (role === 'instructor') {
-     return <InstructorDashboard />;
-  }
-
-  // Default to student dashboard
-  return <StudentDashboard />;
+  // Render both dashboards but only show the one corresponding to the current role.
+  // This prevents React from unmounting/remounting large component trees on role change,
+  // which is the root cause of the "NotFoundError: Failed to execute 'removeChild'" error.
+  return (
+    <>
+      <div className={cn({ 'hidden': role !== 'student' })}>
+        <StudentDashboard />
+      </div>
+      <div className={cn({ 'hidden': role !== 'instructor' })}>
+        <InstructorDashboard />
+      </div>
+    </>
+  );
 }
