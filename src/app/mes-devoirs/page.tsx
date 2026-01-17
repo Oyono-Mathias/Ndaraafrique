@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -21,8 +20,6 @@ import type { Course, Enrollment, Assignment, Submission } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslations } from 'next-intl';
-
 
 interface StudentAssignment {
     id: string; // combination of courseId and assignmentId
@@ -37,22 +34,21 @@ interface StudentAssignment {
     submission?: Submission;
 }
 
-const getStatusInfo = (status: StudentAssignment['status'], t: (key: string) => string) => {
+const getStatusInfo = (status: StudentAssignment['status']) => {
     switch (status) {
         case 'pending':
-            return { text: t('assignment_status_pending'), icon: <Edit className="h-4 w-4" />, color: 'text-blue-500' };
+            return { text: "À faire", icon: <Edit className="h-4 w-4" />, color: 'text-blue-500' };
         case 'submitted':
-            return { text: t('assignment_status_in_review'), icon: <Clock className="h-4 w-4" />, color: 'text-amber-500' };
+            return { text: "En cours de correction", icon: <Clock className="h-4 w-4" />, color: 'text-amber-500' };
         case 'graded':
-            return { text: t('assignment_status_graded'), icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-500' };
+            return { text: "Corrigé", icon: <CheckCircle className="h-4 w-4" />, color: 'text-green-500' };
         default:
             return { text: "Inconnu", icon: <ClipboardList className="h-4 w-4" />, color: 'text-gray-500' };
     }
 };
 
 function AssignmentCard({ assignment, onOpenSubmit }: { assignment: StudentAssignment, onOpenSubmit: (assignment: StudentAssignment) => void }) {
-  const t = useTranslations();
-  const statusInfo = getStatusInfo(assignment.status, t);
+  const statusInfo = getStatusInfo(assignment.status);
   const isOverdue = assignment.dueDate ? isPast(assignment.dueDate) : false;
 
   return (
@@ -97,7 +93,6 @@ const SubmissionModal = ({
 }) => {
     const { user } = useRole();
     const { toast } = useToast();
-    const t = useTranslations();
     const [file, setFile] = useState<File | null>(null);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const storage = getStorage();
@@ -231,7 +226,6 @@ const SubmissionModal = ({
 export default function MyAssignmentsPage() {
     const { user, isUserLoading } = useRole();
     const db = getFirestore();
-    const t = useTranslations();
     const [assignments, setAssignments] = useState<StudentAssignment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [selectedAssignment, setSelectedAssignment] = useState<StudentAssignment | null>(null);
@@ -323,7 +317,7 @@ export default function MyAssignmentsPage() {
     return (
         <div className="space-y-6">
             <header>
-                <h1 className="text-3xl font-bold dark:text-white">{t('navMyAssignments')}</h1>
+                <h1 className="text-3xl font-bold dark:text-white">Mes Devoirs</h1>
                 <p className="text-slate-500 dark:text-slate-400">Gardez une trace de vos travaux à faire et de vos résultats.</p>
             </header>
 

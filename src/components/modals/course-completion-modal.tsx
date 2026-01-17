@@ -2,7 +2,6 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, Share2, Trophy } from 'lucide-react';
@@ -25,7 +24,6 @@ export function CourseCompletionModal({
   onDownload,
   onShare,
 }: CourseCompletionModalProps) {
-  const t = useTranslations();
 
   useEffect(() => {
     if (isOpen) {
@@ -48,21 +46,21 @@ export function CourseCompletionModal({
             <div className="absolute inset-0 bg-amber-400/20 rounded-full blur-xl -z-10 animate-pulse"></div>
           </div>
           <DialogTitle className="text-2xl font-bold text-slate-900 dark:text-white">
-            {t('course_complete_title', { studentName })}
+            Félicitations, {studentName} !
           </DialogTitle>
           <DialogDescription className="text-slate-500 dark:text-slate-400">
-            {t('course_complete_desc')}
+            Vous avez terminé la formation avec succès :
              <span className="font-semibold text-slate-600 dark:text-slate-300 block mt-1">"{courseName}"</span>
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3 pt-4">
             <Button size="lg" className="h-12 text-base font-bold" onClick={onDownload}>
                 <Download className="mr-2 h-5 w-5"/>
-                {t('download_certificate')}
+                Télécharger mon certificat
             </Button>
             <Button variant="link" onClick={onShare} className="text-primary dark:text-blue-400">
                 <Share2 className="mr-2 h-4 w-4"/>
-                {t('share_success')}
+                Partager ma réussite
             </Button>
         </div>
       </DialogContent>

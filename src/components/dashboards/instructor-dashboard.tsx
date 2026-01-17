@@ -1,9 +1,7 @@
 
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { useTranslations } from 'next-intl';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -26,7 +24,6 @@ interface RevenueDataPoint {
 
 function InstructorDashboardContent() {
     const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
-    const t = useTranslations();
     const db = getFirestore();
 
     const [stats, setStats] = useState({
@@ -155,7 +152,7 @@ function InstructorDashboardContent() {
     }, [courses, enrollments]);
 
     const chartConfig = {
-        revenue: { label: t('navFinance'), color: 'hsl(var(--primary))' },
+        revenue: { label: "Revenus", color: 'hsl(var(--primary))' },
     };
 
     if (error) {
@@ -172,8 +169,8 @@ function InstructorDashboardContent() {
     return (
         <div className="space-y-8 md:space-y-12">
             <header>
-                <h1 className="text-3xl font-bold text-white">{t('dashboard_title')}</h1>
-                <p className="text-muted-foreground">{t('welcome_message', { name: instructor?.fullName?.split(' ')[0] || 'Instructeur' })}</p>
+                <h1 className="text-3xl font-bold text-white">Tableau de bord</h1>
+                <p className="text-muted-foreground">Bienvenue, {instructor?.fullName?.split(' ')[0] || 'Instructeur'} !</p>
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -206,7 +203,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-3">
-                    <SectionHeader title={t('revenue_evolution_title')} className="mb-4" />
+                    <SectionHeader title="Évolution des revenus" className="mb-4" />
                     <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : revenueTrendData.length > 0 ? (
@@ -239,7 +236,7 @@ function InstructorDashboardContent() {
                     </Card>
                 </div>
                 <div className="lg:col-span-2">
-                     <SectionHeader title={t('top_courses_title')} className="mb-4" />
+                     <SectionHeader title="Vos cours populaires" className="mb-4" />
                       <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="p-0">
                             <Table>

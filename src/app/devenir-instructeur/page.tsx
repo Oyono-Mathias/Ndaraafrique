@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -22,24 +21,23 @@ import 'react-phone-number-input/style.css';
 import { africanCountries } from '@/lib/countries';
 import { Checkbox } from '@/components/ui/checkbox';
 import { sendNewInstructorApplicationEmail } from '@/lib/emails';
-import { useTranslations } from 'next-intl';
 import { sendAdminNotification } from '@/actions/notificationActions';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import type { Settings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const instructorApplicationSchema = (t: (key: string) => string) => z.object({
-  specialty: z.string().min(3, { message: t('specialty_required') }),
-  whatsappNumber: z.string().min(10, { message: t('whatsapp_required') }),
-  youtubeUrl: z.string().url({ message: t('youtube_url_invalid') }).optional().or(z.literal('')),
-  facebookUrl: z.string().url({ message: t('facebook_url_invalid') }).optional().or(z.literal('')),
-  presentationVideoUrl: z.string().url({ message: t('video_url_required') }),
-  professionalExperience: z.string().min(50, { message: t('experience_min_char') }),
-  linkedinUrl: z.string().url({ message: t('linkedin_url_invalid') }).optional().or(z.literal('')),
-  portfolioUrl: z.string().url({ message: t('portfolio_url_invalid') }).optional().or(z.literal('')),
-  firstCourseTitle: z.string().min(10, { message: t('course_title_min_char') }),
-  firstCourseDescription: z.string().min(30, { message: t('course_desc_min_char') }),
-  hasEquipment: z.boolean().refine(val => val === true, { message: t('equipment_certify_required') }),
+const instructorApplicationSchema = () => z.object({
+  specialty: z.string().min(3, { message: "La spécialité est requise." }),
+  whatsappNumber: z.string().min(10, { message: "Le numéro WhatsApp est requis." }),
+  youtubeUrl: z.string().url({ message: "URL YouTube invalide." }).optional().or(z.literal('')),
+  facebookUrl: z.string().url({ message: "URL Facebook invalide." }).optional().or(z.literal('')),
+  presentationVideoUrl: z.string().url({ message: "L'URL de la vidéo de présentation est requise." }),
+  professionalExperience: z.string().min(50, { message: "L'expérience doit contenir au moins 50 caractères." }),
+  linkedinUrl: z.string().url({ message: "URL LinkedIn invalide." }).optional().or(z.literal('')),
+  portfolioUrl: z.string().url({ message: "URL de portfolio invalide." }).optional().or(z.literal('')),
+  firstCourseTitle: z.string().min(10, { message: "Le titre du cours doit contenir au moins 10 caractères." }),
+  firstCourseDescription: z.string().min(30, { message: "La description du cours doit contenir au moins 30 caractères." }),
+  hasEquipment: z.boolean().refine(val => val === true, { message: "Vous devez certifier que vous avez le matériel nécessaire." }),
 });
 
 type ApplicationFormValues = z.infer<ReturnType<typeof instructorApplicationSchema>>;
@@ -51,7 +49,6 @@ export default function BecomeInstructorPage() {
   const router = useRouter();
   const { user, currentUser, isUserLoading } = useRole();
   const { toast } = useToast();
-  const t = useTranslations('BecomeInstructor');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const db = getFirestore();
 
@@ -60,19 +57,19 @@ export default function BecomeInstructorPage() {
   const allowSignup = settings?.platform?.allowInstructorSignup ?? false;
 
   const form = useForm<ApplicationFormValues>({
-    resolver: zodResolver(instructorApplicationSchema(t as any)),
+    resolver: zodResolver(instructorApplicationSchema()),
   });
   
   useEffect(() => {
     if (!isUserLoading && !user) {
         toast({
             variant: "destructive",
-            title: t('access_denied_title'),
-            description: t('access_denied_create_account'),
+            title: "Accès refusé",
+            description: "Vous devez créer un compte pour postuler.",
         });
         router.push('/login?tab=register');
     }
-  }, [user, isUserLoading, router, toast, t]);
+  }, [user, isUserLoading, router, toast]);
 
   const onSubmit = async (data: ApplicationFormValues) => {
     if (!currentUser) return;
@@ -94,13 +91,13 @@ export default function BecomeInstructorPage() {
 
       toast({
         duration: 10000,
-        title: t('application_sent_title'),
-        description: t('application_sent_desc'),
+        title: "Candidature envoyée !",
+        description: "Merci ! Votre candidature est en cours d'examen. Nous vous répondrons dans les plus brefs délais.",
       });
       router.push('/dashboard');
     } catch (error) {
       console.error("Failed to submit application:", error);
-      toast({ variant: 'destructive', title: t('error_title'), description: t('application_submit_error') });
+      toast({ variant: 'destructive', title: "Erreur", description: "Une erreur est survenue lors de l'envoi de votre candidature." });
     } finally {
       setIsSubmitting(false);
     }
@@ -115,9 +112,9 @@ export default function BecomeInstructorPage() {
   if (currentUser?.role === 'instructor' && currentUser?.isInstructorApproved) {
     return (
         <div className="text-center p-8">
-            <h1 className="text-2xl font-bold">{t('already_instructor_title')}</h1>
-            <p className="text-muted-foreground mt-2">{t('already_instructor_desc')}</p>
-            <Button asChild className="mt-4"><Link href="/instructor/courses/create">{t('create_course_button')}</Link></Button>
+            <h1 className="text-2xl font-bold">Vous êtes déjà instructeur !</h1>
+            <p className="text-muted-foreground mt-2">Votre compte est approuvé. Vous pouvez commencer à créer des formations.</p>
+            <Button asChild className="mt-4"><Link href="/instructor/courses/create">Créer un cours</Link></Button>
         </div>
     );
   }
@@ -125,9 +122,9 @@ export default function BecomeInstructorPage() {
    if (currentUser?.role === 'instructor' && !currentUser?.isInstructorApproved) {
     return (
         <div className="text-center p-8">
-            <h1 className="text-2xl font-bold">{t('application_in_review_title')}</h1>
-            <p className="text-muted-foreground mt-2">{t('application_in_review_desc')}</p>
-             <Button asChild className="mt-4"><Link href="/dashboard">{t('back_to_dashboard')}</Link></Button>
+            <h1 className="text-2xl font-bold">Candidature en cours d'examen</h1>
+            <p className="text-muted-foreground mt-2">Nous examinons actuellement votre profil. Merci de votre patience !</p>
+             <Button asChild className="mt-4"><Link href="/dashboard">Retour au tableau de bord</Link></Button>
         </div>
     );
   }
@@ -150,21 +147,21 @@ export default function BecomeInstructorPage() {
     <div className="max-w-3xl mx-auto py-12 px-4">
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center dark:text-white">{t('become_instructor_title')}</CardTitle>
-          <CardDescription className="text-center dark:text-slate-400">{t('become_instructor_desc')}</CardDescription>
+          <CardTitle className="text-3xl font-bold text-center dark:text-white">Devenir Instructeur</CardTitle>
+          <CardDescription className="text-center dark:text-slate-400">Rejoignez notre communauté d'experts et partagez votre savoir.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               
               <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
-                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><BookUser className="h-5 w-5 text-primary"/>{t('identity_contact_title')}</h3>
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><BookUser className="h-5 w-5 text-primary"/>Identité & Contact</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="specialty" render={({ field }) => (
-                      <FormItem><FormLabel className="dark:text-slate-300">{t('specialty_label')}</FormLabel><FormControl><Input placeholder={t('specialty_placeholder')} {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem>
+                      <FormItem><FormLabel className="dark:text-slate-300">Votre spécialité principale</FormLabel><FormControl><Input placeholder="Ex: Développement web, Marketing digital" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem>
                     )} />
                     <Controller control={form.control} name="whatsappNumber" render={({ field }) => (
-                        <FormItem><FormLabel className="dark:text-slate-300">{t('whatsapp_label')}</FormLabel>
+                        <FormItem><FormLabel className="dark:text-slate-300">N° WhatsApp</FormLabel>
                           <FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-10 w-full rounded-md border border-input dark:bg-slate-700 dark:border-slate-600 px-3 py-2 text-sm shadow-sm" countries={africanCountryCodes} countryOptionsOrder={prioritizedCountries} /></FormControl>
                         <FormMessage /></FormItem>
                      )}/>
@@ -172,38 +169,38 @@ export default function BecomeInstructorPage() {
               </div>
               
               <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
-                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Youtube className="h-5 w-5 text-destructive"/>{t('social_presence_title')}</h3>
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Youtube className="h-5 w-5 text-destructive"/>Présence Sociale</h3>
                  <FormField control={form.control} name="youtubeUrl" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('youtube_label')}</FormLabel><FormControl><Input placeholder="https://youtube.com/channel/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">{t('youtube_desc')}</FormDescription><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Chaîne Youtube (optionnel)</FormLabel><FormControl><Input placeholder="https://youtube.com/channel/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">Partagez si vous avez déjà du contenu vidéo.</FormDescription><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="facebookUrl" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('facebook_label')}</FormLabel><FormControl><Input placeholder="https://facebook.com/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">{t('facebook_desc')}</FormDescription><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Page Facebook (optionnel)</FormLabel><FormControl><Input placeholder="https://facebook.com/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">Votre page professionnelle ou communautaire.</FormDescription><FormMessage /></FormItem>
                  )} />
               </div>
 
                <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
-                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Linkedin className="h-5 w-5 text-blue-500"/>{t('expertise_title')}</h3>
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Linkedin className="h-5 w-5 text-blue-500"/>Expertise & Expérience</h3>
                  <FormField control={form.control} name="professionalExperience" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('experience_label')}</FormLabel><FormControl><Textarea placeholder={t('experience_placeholder')} {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Décrivez votre expérience professionnelle</FormLabel><FormControl><Textarea placeholder="Ex: 'Développeur Full-Stack depuis 5 ans avec une expertise en React et Node.js, j'ai mené plusieurs projets pour des startups...'" {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('linkedin_label')}</FormLabel><FormControl><Input placeholder="https://linkedin.com/in/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Profil LinkedIn (optionnel)</FormLabel><FormControl><Input placeholder="https://linkedin.com/in/..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
                   <FormField control={form.control} name="portfolioUrl" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('portfolio_label')}</FormLabel><FormControl><Input placeholder="https://mon-portfolio.com" {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Portfolio ou site web (optionnel)</FormLabel><FormControl><Input placeholder="https://mon-portfolio.com" {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
               </div>
 
               <div className="space-y-4 p-6 border rounded-lg dark:border-slate-700">
-                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Presentation className="h-5 w-5 text-green-500"/>{t('course_project_title')}</h3>
+                <h3 className="font-semibold text-lg flex items-center gap-2 dark:text-white"><Presentation className="h-5 w-5 text-green-500"/>Projet de Cours</h3>
                  <FormField control={form.control} name="presentationVideoUrl" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('video_label')}</FormLabel><FormControl><Input placeholder={t('video_placeholder')} {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">{t('video_desc')}</FormDescription><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Vidéo de présentation (1-2 min)</FormLabel><FormControl><Input placeholder="Lien YouTube, Vimeo, Google Drive..." {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormDescription className="dark:text-slate-400">Présentez-vous et expliquez pourquoi vous voulez enseigner sur Ndara Afrique.</FormDescription><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="firstCourseTitle" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('first_course_title_label')}</FormLabel><FormControl><Input placeholder={t('first_course_title_placeholder')} {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Titre de votre premier cours</FormLabel><FormControl><Input placeholder="Ex: Maîtriser le design d'interfaces avec Figma" {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
                  <FormField control={form.control} name="firstCourseDescription" render={({ field }) => (
-                    <FormItem><FormLabel className="dark:text-slate-300">{t('first_course_desc_label')}</FormLabel><FormControl><Textarea placeholder={t('first_course_desc_placeholder')} {...field} rows={3} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                    <FormItem><FormLabel className="dark:text-slate-300">Description de ce cours</FormLabel><FormControl><Textarea placeholder="En quelques lignes, que vont apprendre les étudiants ?" {...field} rows={3} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
                  )} />
               </div>
 
@@ -212,8 +209,8 @@ export default function BecomeInstructorPage() {
                     <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow dark:border-slate-600">
                         <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                         <div className="space-y-1 leading-none">
-                            <FormLabel className="dark:text-slate-200">{t('tech_validation_label')}</FormLabel>
-                            <FormDescription className="dark:text-slate-400">{t('tech_validation_desc')}</FormDescription>
+                            <FormLabel className="dark:text-slate-200">Validation Technique</FormLabel>
+                            <FormDescription className="dark:text-slate-400">Je certifie avoir le matériel nécessaire (micro de qualité, caméra, bonne connexion internet) pour produire des cours de haute qualité.</FormDescription>
                             <FormMessage />
                         </div>
                     </FormItem>
@@ -222,7 +219,7 @@ export default function BecomeInstructorPage() {
 
               <Button type="submit" className="w-full h-12 text-lg" disabled={isSubmitting}>
                 {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
-                {t('submit_application_button')}
+                Envoyer ma candidature
               </Button>
             </form>
           </Form>

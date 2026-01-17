@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter, Link } from '@/navigation';
+import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,7 +11,7 @@ import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,7 +24,6 @@ const forgotPasswordSchema = z.object({
 });
 
 export default function ForgotPasswordPage() {
-  const t = useTranslations();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
@@ -66,13 +65,13 @@ export default function ForgotPasswordPage() {
       await sendPasswordResetEmail(auth, values.email);
       setIsSubmitted(true); // Show success message instead of toast
     } catch (error) {
-       let description = t('forgotPasswordErrorDefault');
+       let description = "Une erreur est survenue. Veuillez réessayer.";
        if (error instanceof FirebaseError) {
          if (error.code === 'auth/user-not-found') {
-           description = t('forgotPasswordErrorUserNotFound');
+           description = "Aucun utilisateur trouvé avec cette adresse e-mail.";
          }
        }
-       toast({ variant: 'destructive', title: t('errorTitle'), description });
+       toast({ variant: 'destructive', title: "Erreur", description });
     } finally {
       setIsLoading(false);
     }
@@ -90,14 +89,14 @@ export default function ForgotPasswordPage() {
                     <div className="animate-in fade-in-50 duration-500">
                         <div className="text-center pb-4">
                             <MailCheck className="h-12 w-12 text-green-400 mb-4 mx-auto"/>
-                            <h1 className="text-2xl font-bold text-white">{t('forgotPasswordSuccessTitle')}</h1>
+                            <h1 className="text-2xl font-bold text-white">E-mail envoyé !</h1>
                         </div>
                         <div className="space-y-4 pb-4 text-center">
                             <p className="text-slate-300">
-                                {t('forgotPasswordSuccessMessage')}
+                                Un lien pour réinitialiser votre mot de passe a été envoyé à votre adresse e-mail.
                             </p>
                             <Button onClick={() => router.push('/login')} className="w-full bg-primary hover:bg-primary/90 h-11 text-base !mt-5">
-                                {t('okGotIt')}
+                                OK, j'ai compris
                             </Button>
                         </div>
                     </div>
@@ -105,15 +104,15 @@ export default function ForgotPasswordPage() {
                     <>
                         <div className="text-center pb-4">
                              {logoUrl ? <Image src={logoUrl} alt={siteName} width={40} height={40} className="mb-4 mx-auto rounded-full" /> : <Link href="/" className="mb-4 inline-block"><Image src="/icon.svg" alt="Ndara Afrique Logo" width={40} height={40}/></Link>}
-                            <h1 className="text-2xl font-bold text-white">{t('password_forgot')}</h1>
-                            <p className="text-slate-300 text-center text-sm pt-2">{t('forgotPasswordDescription')}</p>
+                            <h1 className="text-2xl font-bold text-white">Mot de passe oublié ?</h1>
+                            <p className="text-slate-300 text-center text-sm pt-2">Entrez votre e-mail pour recevoir un lien de réinitialisation.</p>
                         </div>
                         <div className="space-y-4 pb-4">
                             <Form {...form}>
                                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                                     <FormField control={form.control} name="email" render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel>
+                                            <FormLabel className="text-slate-300">Adresse e-mail</FormLabel>
                                             <FormControl>
                                                 <Input placeholder="votre.email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
                                             </FormControl>
@@ -122,14 +121,14 @@ export default function ForgotPasswordPage() {
                                     )} />
                                     <Button type="submit" className="w-full bg-primary hover:bg-primary/90 h-12 text-lg font-semibold !mt-6" disabled={isLoading}>
                                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                        {t('forgotPasswordSendLink')}
+                                        Envoyer le lien
                                     </Button>
                                 </form>
                             </Form>
                         </div>
                         <div className="p-4 pt-0 text-center text-sm">
                             <Link href="/login" className="font-semibold text-primary hover:underline">
-                                {t('backToLogin')}
+                                Retour à la connexion
                             </Link>
                         </div>
                     </>

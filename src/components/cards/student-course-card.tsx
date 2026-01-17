@@ -9,7 +9,6 @@ import { Progress } from '@/components/ui/progress';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Play } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 import { CourseCard } from './CourseCard';
 
 interface EnrolledCourse extends Course {

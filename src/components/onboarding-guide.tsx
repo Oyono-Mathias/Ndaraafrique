@@ -3,7 +3,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -12,8 +11,8 @@ import { cn } from '@/lib/utils';
 
 interface TourStep {
   id: string;
-  titleKey: string;
-  descriptionKey: string;
+  title: string;
+  description: string;
   targetId: string;
   icon: React.ElementType;
 }
@@ -21,22 +20,22 @@ interface TourStep {
 const tourSteps: TourStep[] = [
   {
     id: 'step1',
-    titleKey: 'tour_step1_title',
-    descriptionKey: 'tour_step1_desc',
+    title: "Recherchez des cours",
+    description: "Utilisez la barre de recherche pour trouver des formations sur n'importe quel sujet qui vous passionne.",
     targetId: 'sidebar-nav-search',
     icon: Search,
   },
   {
     id: 'step2',
-    titleKey: 'tour_step2_title',
-    descriptionKey: 'tour_step2_desc',
+    title: 'Discutez avec MATHIAS',
+    description: "Votre tuteur IA est là pour répondre à toutes vos questions et vous guider dans votre apprentissage.",
     targetId: 'sidebar-nav-tutor',
     icon: Bot,
   },
   {
     id: 'step3',
-    titleKey: 'tour_step3_title',
-    descriptionKey: 'tour_step3_desc',
+    title: 'Obtenez vos certificats',
+    description: "Une fois un cours terminé, retrouvez tous vos certificats ici pour les partager fièrement.",
     targetId: 'sidebar-nav-mes-certificats',
     icon: Award,
   },
@@ -44,7 +43,6 @@ const tourSteps: TourStep[] = [
 
 export function OnboardingGuide() {
   const { user } = useRole();
-  const t = useTranslations();
   const [isClient, setIsClient] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [tourStep, setTourStep] = useState<number | null>(null);
@@ -91,10 +89,10 @@ export function OnboardingGuide() {
       <Dialog open={showWelcome} onOpenChange={setShowWelcome}>
         <DialogContent className="sm:max-w-md text-center">
           <DialogHeader>
-            <DialogTitle className="text-2xl">{t('welcome_title')}</DialogTitle>
-            <DialogDescription className="mt-2">{t('welcome_desc')}</DialogDescription>
+            <DialogTitle className="text-2xl">Bienvenue sur Ndara Afrique !</DialogTitle>
+            <DialogDescription className="mt-2">Prêt à commencer votre parcours d'apprentissage ? Suivez cette courte visite guidée pour découvrir les fonctionnalités clés.</DialogDescription>
           </DialogHeader>
-          <Button onClick={startTour} className="mt-4">{t('start_tour')}</Button>
+          <Button onClick={startTour} className="mt-4">Commencer la visite</Button>
         </DialogContent>
       </Dialog>
       
@@ -122,13 +120,13 @@ export function OnboardingGuide() {
                          <div className="p-2 bg-primary/10 rounded-full">
                             <currentStepData.icon className="h-5 w-5 text-primary" />
                         </div>
-                        <h4 className="font-bold leading-none text-base dark:text-white">{t(currentStepData.titleKey)}</h4>
+                        <h4 className="font-bold leading-none text-base dark:text-white">{currentStepData.title}</h4>
                     </div>
-                    <p className="text-sm text-muted-foreground dark:text-slate-300">{t(currentStepData.descriptionKey)}</p>
+                    <p className="text-sm text-muted-foreground dark:text-slate-300">{currentStepData.description}</p>
                     <div className="flex justify-between items-center">
                         <span className="text-xs text-muted-foreground">{tourStep! + 1} / {tourSteps.length}</span>
                         <Button onClick={nextStep} size="sm">
-                            {tourStep === tourSteps.length - 1 ? t('finish') : t('next')}
+                            {tourStep === tourSteps.length - 1 ? 'Terminer' : 'Suivant'}
                         </Button>
                     </div>
                 </div>
