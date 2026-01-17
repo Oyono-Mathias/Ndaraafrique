@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -9,6 +10,7 @@ export function SplashScreen() {
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
+    // This logic now only runs on the client, after the initial render.
     const sessionStarted = sessionStorage.getItem('ndara-session-started');
     if (!sessionStarted) {
       setIsVisible(true);
@@ -26,8 +28,11 @@ export function SplashScreen() {
         clearTimeout(fadeTimer);
         clearTimeout(hideTimer);
       };
+    } else {
+        // If the session has already started, ensure the splash screen is not visible.
+        setIsVisible(false);
     }
-  }, []);
+  }, []); // The empty dependency array is crucial here.
 
   if (!isVisible) {
     return null;
