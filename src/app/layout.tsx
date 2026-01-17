@@ -7,6 +7,8 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
@@ -27,21 +29,24 @@ const fontSans = Inter({
   variable: "--font-sans",
 });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const messages = await getMessages();
 
   return (
     <html lang="fr" className="dark" style={{ colorScheme: 'dark' }}>
        <body className={cn("min-h-screen bg-background font-sans antialiased page-transition", fontSans.variable)}>
-        <FirebaseClientProvider>
-          <RoleProvider>
-            <AppShell>{children}</AppShell>
-            <Toaster />
-          </RoleProvider>
-        </FirebaseClientProvider>
+        <NextIntlClientProvider messages={messages}>
+          <FirebaseClientProvider>
+            <RoleProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster />
+            </RoleProvider>
+          </FirebaseClientProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
