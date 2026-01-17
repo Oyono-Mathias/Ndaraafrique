@@ -75,6 +75,7 @@ export async function startChat(
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastMessage: 'Conversation démarrée.',
+        unreadBy: [], // Initialize unreadBy as an empty array
       });
 
       await batch.commit();
@@ -89,3 +90,4 @@ export async function startChat(
     throw error;
   }
 }
+
