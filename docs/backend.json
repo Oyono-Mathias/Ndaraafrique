@@ -1086,304 +1086,264 @@
     "indexes": [
       {
         "collectionGroup": "users",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "role",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "isInstructorApproved",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "createdAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "role", "order": "ASCENDING" },
+          { "fieldPath": "isInstructorApproved", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "courses",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "createdAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "payouts",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "date",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "users",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "isProfileComplete",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "careerGoals.interestDomain",
-            "order": "ASCENDING"
-          }
+          { "fieldPath": "isProfileComplete", "order": "ASCENDING" },
+          { "fieldPath": "careerGoals.interestDomain", "order": "ASCENDING" }
         ]
       },
       {
         "collectionGroup": "reviews",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "courseId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "createdAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "courseId", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "courses",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "instructorId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "createdAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "enrollments",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "studentId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "progress",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "lastAccessedAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "studentId", "order": "ASCENDING" },
+          { "fieldPath": "progress", "order": "ASCENDING" },
+          { "fieldPath": "lastAccessedAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "courses",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "category",
-            "order": "ASCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "category", "order": "ASCENDING" }
         ]
       },
       {
         "collectionGroup": "course_progress",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "userId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "updatedAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "userId", "order": "ASCENDING" },
+          { "fieldPath": "updatedAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "support_tickets",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "updatedAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "updatedAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "support_tickets",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "userId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "updatedAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "userId", "order": "ASCENDING" },
+          { "fieldPath": "updatedAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "support_tickets",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "instructorId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "updatedAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "updatedAt", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "users",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" }
         ]
       },
       {
         "collectionGroup": "payments",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "fraudReview.isSuspicious",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "date",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "payments",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "date",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "security_logs",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "eventType",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "timestamp",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "eventType", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "security_logs",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "status",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "timestamp",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "status", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "payments",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "fraudReview.isSuspicious",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "fraudReview.reviewed",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "date",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "fraudReview.isSuspicious", "order": "ASCENDING" },
+          { "fieldPath": "fraudReview.reviewed", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "admin_audit_logs",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "eventType",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "timestamp",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "eventType", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "admin_audit_logs",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "adminId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "timestamp",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "adminId", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
         ]
       },
       {
         "collectionGroup": "quizzes",
-        "queryScope": "COLLECTION",
+        "queryScope": "COLLECTION_GROUP",
         "fields": [
-          {
-            "fieldPath": "courseId",
-            "order": "ASCENDING"
-          },
-          {
-            "fieldPath": "createdAt",
-            "order": "DESCENDING"
-          }
+          { "fieldPath": "courseId", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "subscription_plans", "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "isActive", "order": "ASCENDING" },
+          { "fieldPath": "targetRole", "order": "ASCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "faqs", "queryScope": "COLLECTION",
+        "fields": [ { "fieldPath": "order", "order": "ASCENDING" } ]
+      },
+      {
+        "collectionGroup": "promoCodes", "queryScope": "COLLECTION",
+        "fields": [ { "fieldPath": "createdAt", "order": "DESCENDING" } ]
+      },
+      {
+        "collectionGroup": "payments", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "status", "order": "ASCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payouts", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "status", "order": "ASCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "reviews", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "enrollments", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "courseId", "order": "ASCENDING" },
+          { "fieldPath": "progress", "order": "ASCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "enrollments", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "studentId", "order": "ASCENDING" },
+          { "fieldPath": "courseId", "order": "ASCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payments", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "userId", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "chats", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "participants", "arrayConfig": "CONTAINS" },
+          { "fieldPath": "updatedAt", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "users", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "role", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "ASCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "resources", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "courseId", "order": "ASCENDING" },
+          { "fieldPath": "createdAt", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payments", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
+        ]
+      },
+      {
+        "collectionGroup": "payouts", "queryScope": "COLLECTION_GROUP",
+        "fields": [
+          { "fieldPath": "instructorId", "order": "ASCENDING" },
+          { "fieldPath": "date", "order": "DESCENDING" }
         ]
       }
     ],
