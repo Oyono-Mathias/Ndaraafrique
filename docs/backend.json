@@ -285,6 +285,15 @@
           "additionalProperties": {
             "type": "boolean"
           }
+        },
+        "isOnline": {
+            "type": "boolean",
+            "description": "Indicates if the user is currently online."
+        },
+        "lastSeen": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Timestamp of the user's last activity."
         }
       },
       "required": [

@@ -14,9 +14,9 @@ if (!admin.apps.length) {
     });
   } catch (error: any) {
     console.error('Firebase Admin Initialization Error:', error.stack);
-    // In a real-world scenario, you might want to handle this more gracefully
-    // For now, we let it throw, which will cause server actions to fail.
-    throw new Error('Failed to initialize Firebase Admin SDK. Check server environment variables.');
+    // We log the error but don't re-throw. 
+    // This allows the server to start, and individual server actions will fail gracefully
+    // if they depend on the uninitialized admin SDK.
   }
 }
 

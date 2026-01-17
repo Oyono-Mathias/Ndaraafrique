@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
-import { deleteUserAccount, importUsersAction, updateUserStatus, grantCourseAccess } from '@/actions/userActions';
+import { deleteUserAccount, importUsersAction, updateUserStatus, grantCourseAccess, updateUserRole } from '@/actions/userActions';
 import {
   Table,
   TableBody,
@@ -44,7 +44,7 @@ import {
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift } from 'lucide-react';
-import type { NdaraUser, Course } from '@/lib/types';
+import type { NdaraUser, Course, UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -177,17 +177,14 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
       } else {
         toast({ variant: 'destructive', title: "Erreur", description: result.error });
       }
-    } else {
-      // Direct update for role, as it's less critical for audit for now.
-      const userDocRef = doc(db, 'users', user.uid);
-      try {
-          await updateDoc(userDocRef, { [field]: value });
-          toast({ title: "Mise à jour réussie", description: `Le ${field} de ${user.fullName} a été mis à jour.`});
-          onUserUpdate(user.uid, { [field]: value }); // Optimistic update
-      } catch (error) {
-          console.error(`Error updating ${field}:`, error);
-          toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour l'utilisateur."});
-      }
+    } else if (field === 'role') {
+        const result = await updateUserRole({ userId: user.uid, role: value as UserRole, adminId });
+        if (result.success) {
+            toast({ title: "Mise à jour réussie", description: `Le rôle de ${user.fullName} a été mis à jour.` });
+            onUserUpdate(user.uid, { role: value as UserRole });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        }
     }
     onActionEnd();
   }

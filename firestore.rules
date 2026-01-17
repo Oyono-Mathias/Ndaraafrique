@@ -63,7 +63,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if true; // Publicly readable for names/profiles (e.g. for certificates)
-      allow list: if isSignedIn() && isProfileComplete(); // Allow directory search
+      allow list: if isAdmin() || (isSignedIn() && isProfileComplete()); // Admins can list all. Students with complete profiles can list for directory (client query must filter).
       allow create: if isOwner(userId);
 
       allow update: if isAdmin() || (

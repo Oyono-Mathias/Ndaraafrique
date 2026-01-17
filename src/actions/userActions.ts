@@ -6,6 +6,7 @@ import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/firebase/admin';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { sendUserNotification } from './notificationActions';
+import type { UserRole } from '@/lib/types';
 
 // Helper function to verify the ID token and check if the caller is an admin
 async function verifyAdmin(idToken: string): Promise<DecodedIdToken | null> {
@@ -38,11 +39,15 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
         // 1. Delete from Auth
         await adminAuth.deleteUser(userId);
         
-        // 2. Delete from Firestore
+        // 2. Delete from Firestore user document
         const userRef = adminDb.collection('users').doc(userId);
         batch.delete(userRef);
 
-        // 3. Log the deletion to the audit log if the deleter is an admin
+        // 3. Delete user's FCM tokens
+        const fcmTokensRef = adminDb.collection('fcmTokens').doc(userId);
+        batch.delete(fcmTokensRef);
+
+        // 4. Log the deletion to the audit log if the deleter is an admin
         if (decodedToken.uid !== userId) { // i.e., an admin is deleting someone else
             const auditLogRef = adminDb.collection('admin_audit_logs').doc();
             batch.set(auditLogRef, {
@@ -255,4 +260,28 @@ export async function grantCourseAccess(
     console.error('Error granting course access:', error);
     return { success: false, error: "Une erreur interne est survenue." };
   }
+}
+
+export async function updateUserRole({ userId, role, adminId }: { userId: string, role: UserRole, adminId: string }): Promise<{ success: boolean, error?: string }> {
+    try {
+        const userRef = adminDb.collection('users').doc(userId);
+        
+        const batch = adminDb.batch();
+        batch.update(userRef, { role });
+
+        // Add to admin audit log
+        batch.set(adminDb.collection('admin_audit_logs').doc(), {
+            adminId: adminId,
+            eventType: 'user.role.update',
+            target: { id: userId, type: 'user' },
+            details: `User role for ${userId} changed to ${role} by admin ${adminId}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        await batch.commit();
+
+        return { success: true };
+    } catch(error: any) {
+        return { success: false, error: error.message };
+    }
 }
