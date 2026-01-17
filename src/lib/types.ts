@@ -174,6 +174,8 @@ export interface Enrollment {
     completedLessons?: string[];
     lastWatchedLesson?: string;
     lastAccessedAt?: Timestamp;
+    expiresAt?: Timestamp;
+    enrollmentType?: 'paid' | 'admin_grant';
 }
 
 export interface Review {

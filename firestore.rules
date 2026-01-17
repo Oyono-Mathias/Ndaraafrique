@@ -43,7 +43,13 @@ service cloud.firestore {
     }
     
     function isEnrolled(courseId) {
-        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+        let enrollmentPath = /databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId);
+        if (!exists(enrollmentPath)) {
+          return false;
+        }
+        let enrollmentData = get(enrollmentPath).data;
+        // Allow if no expiration is set OR if expiration is in the future.
+        return !('expiresAt' in enrollmentData) || enrollmentData.expiresAt > request.time;
     }
     
     function isCourseOwner(courseId) {

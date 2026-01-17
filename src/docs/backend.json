@@ -1,6 +1,20 @@
 
 {
   "entities": {
+    "AdminGrant": {
+      "title": "Admin Course Grant",
+      "type": "object",
+      "description": "Records when an admin grants free access to a course for a user.",
+      "properties": {
+        "studentId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "grantedBy": { "type": "string", "description": "UID of the admin who granted access." },
+        "reason": { "type": "string", "description": "Reason for granting access." },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time", "description": "When the granted access expires." }
+      },
+      "required": ["studentId", "courseId", "grantedBy", "createdAt"]
+    },
     "AdminAuditLog": {
       "title": "Admin Audit Log",
       "type": "object",
@@ -18,7 +32,12 @@
             "course.moderation",
             "payout.process",
             "security.resolve",
-            "role.permissions.update"
+            "role.permissions.update",
+            "settings.update",
+            "user.delete",
+            "user.import",
+            "instructor.application",
+            "course.grant"
           ]
         },
         "target": {
@@ -35,7 +54,9 @@
                 "payout",
                 "payment",
                 "security_log",
-                "role"
+                "role",
+                "settings",
+                "enrollment"
               ]
             }
           }
@@ -97,6 +118,10 @@
           "type": "string",
           "description": "Email address of the user (private).",
           "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "User's phone number, for contact or payout purposes."
         },
         "fullName": {
           "type": "string",
@@ -194,6 +219,63 @@
             "financialAnomalies": {
               "type": "boolean",
               "default": true
+            }
+          }
+        },
+        "instructorNotificationPreferences": {
+          "type": "object",
+          "description": "Instructor preferences for receiving notifications.",
+          "properties": {
+            "newEnrollment": {
+              "type": "boolean",
+              "default": true
+            },
+            "newMessage": {
+              "type": "boolean",
+              "default": true
+            },
+            "newAssignmentSubmission": {
+              "type": "boolean",
+              "default": true
+            },
+            "courseStatusUpdate": {
+              "type": "boolean",
+              "default": true
+            },
+            "payoutUpdate": {
+              "type": "boolean",
+              "default": true
+            }
+          }
+        },
+        "pedagogicalPreferences": {
+          "type": "object",
+          "description": "Instructor preferences for teaching tools.",
+          "properties": {
+            "aiAssistanceEnabled": {
+              "type": "boolean",
+              "default": true
+            },
+            "aiInterventionLevel": {
+              "type": "string",
+              "enum": [
+                "low",
+                "medium",
+                "high"
+              ],
+              "default": "medium"
+            }
+          }
+        },
+        "payoutInfo": {
+          "type": "object",
+          "properties": {
+            "mobileMoneyNumber": {
+              "type": "string"
+            },
+            "bankInfo": {
+              "type": "string",
+              "description": "Placeholder for structured bank info"
             }
           }
         },
@@ -359,33 +441,67 @@
         "createdAt"
       ]
     },
-    "CourseQuestion": {
-        "title": "Course Question",
-        "type": "object",
-        "description": "A public question asked by a student about a specific course.",
-        "properties": {
-            "courseId": { "type": "string" },
-            "studentId": { "type": "string" },
-            "title": { "type": "string" },
-            "body": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "status": { "type": "string", "enum": ["answered", "unanswered"] },
-            "answerCount": { "type": "number", "default": 0 }
+    "SupportTicket": {
+      "title": "Support Ticket",
+      "type": "object",
+      "description": "Represents a support request from a user.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who created the ticket."
         },
-        "required": ["courseId", "studentId", "title", "body", "createdAt", "status"]
-    },
-    "CourseAnswer": {
-        "title": "Course Answer",
-        "type": "object",
-        "description": "A reply to a public course question.",
-        "properties": {
-            "questionId": { "type": "string" },
-            "userId": { "type": "string" },
-            "body": { "type": "string" },
-            "createdAt": { "type": "string", "format": "date-time" },
-            "isOfficial": { "type": "boolean", "description": "True if the answer is from the course instructor." }
+        "instructorId": {
+          "type": "string",
+          "description": "The UID of the instructor concerned by the ticket."
         },
-        "required": ["questionId", "userId", "body", "createdAt", "isOfficial"]
+        "courseId": {
+          "type": "string",
+          "description": "The ID of the related course."
+        },
+        "subject": {
+          "type": "string"
+        },
+        "lastMessage": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ouvert",
+            "fermé"
+          ]
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Paiement",
+            "Technique",
+            "Pédagogique"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "resolution": {
+          "type": "string",
+          "description": "How the ticket was resolved, if closed."
+        }
+      },
+      "required": [
+        "userId",
+        "instructorId",
+        "courseId",
+        "subject",
+        "status",
+        "category",
+        "createdAt",
+        "updatedAt"
+      ]
     },
     "Payout": {
       "title": "Payout",
@@ -969,33 +1085,310 @@
   "firestore": {
     "indexes": [
       {
-        "collectionGroup": "courses",
+        "collectionGroup": "users",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "instructorId", "order": "ASCENDING" },
-          { "fieldPath": "createdAt", "order": "DESCENDING" }
+          {
+            "fieldPath": "role",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "isInstructorApproved",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       },
       {
-        "collectionGroup": "questions",
+        "collectionGroup": "courses",
         "queryScope": "COLLECTION",
         "fields": [
-          { "fieldPath": "courseId", "order": "ASCENDING" },
-          { "fieldPath": "createdAt", "order": "DESCENDING" }
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "payouts",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "isProfileComplete",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "careerGoals.interestDomain",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "reviews",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "courseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "courses",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "instructorId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "enrollments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "studentId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "progress",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "lastAccessedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "courses",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "category",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "course_progress",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "userId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "support_tickets",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "instructorId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "updatedAt",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "users",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "fraudReview.isSuspicious",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "security_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "eventType",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "security_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "status",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "payments",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "fraudReview.isSuspicious",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "fraudReview.reviewed",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "date",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "admin_audit_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "eventType",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "admin_audit_logs",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "adminId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "timestamp",
+            "order": "DESCENDING"
+          }
+        ]
+      },
+      {
+        "collectionGroup": "quizzes",
+        "queryScope": "COLLECTION",
+        "fields": [
+          {
+            "fieldPath": "courseId",
+            "order": "ASCENDING"
+          },
+          {
+            "fieldPath": "createdAt",
+            "order": "DESCENDING"
+          }
         ]
       }
     ],
-    "users/{userId}": {
-        "schema": { "$ref": "#/entities/User" }
-    },
-    "courses/{courseId}": {
-        "schema": { "$ref": "#/entities/Course" }
-    },
-    "courses/{courseId}/questions/{questionId}": {
-        "schema": { "$ref": "#/entities/CourseQuestion" }
-    },
-    "courses/{courseId}/questions/{questionId}/answers/{answerId}": {
-        "schema": { "$ref": "#/entities/CourseAnswer" }
+    "admin_grants/{grantId}": {
+        "schema": { "$ref": "#/entities/AdminGrant" }
     }
   }
 }

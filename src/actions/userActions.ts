@@ -2,7 +2,7 @@
 'use server';
 
 import { getAuth } from 'firebase-admin/auth';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { adminAuth, adminDb } from '@/firebase/admin';
 import { DecodedIdToken } from 'firebase-admin/auth';
 import { sendUserNotification } from './notificationActions';
@@ -179,8 +179,8 @@ export async function approveInstructorApplication({ userId, decision, message, 
 }
 
 export async function grantCourseAccess(
-    { studentId, courseId, adminId, reason }: 
-    { studentId: string; courseId: string; adminId: string; reason: string }
+    { studentId, courseId, adminId, reason, expirationInDays }: 
+    { studentId: string; courseId: string; adminId: string; reason: string; expirationInDays?: number }
 ): Promise<{ success: boolean; error?: string }> {
   const batch = adminDb.batch();
 
@@ -202,7 +202,7 @@ export async function grantCourseAccess(
          return { success: false, error: 'Les données du cours sont invalides.' };
     }
 
-    batch.set(enrollmentRef, {
+    const enrollmentPayload: any = {
         studentId: studentId,
         courseId: courseId,
         instructorId: courseData.instructorId,
@@ -210,23 +210,36 @@ export async function grantCourseAccess(
         progress: 0,
         priceAtEnrollment: 0,
         enrollmentType: 'admin_grant',
-    });
-
-    const grantRef = adminDb.collection('admin_grants').doc();
-    batch.set(grantRef, {
+    };
+    
+    const grantPayload: any = {
         studentId: studentId,
         courseId: courseId,
         grantedBy: adminId,
         reason: reason,
         createdAt: FieldValue.serverTimestamp(),
-    });
+    };
+    
+    let expirationDetails = "Accès permanent.";
+    if (expirationInDays && expirationInDays > 0) {
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + expirationInDays);
+        enrollmentPayload.expiresAt = Timestamp.fromDate(expiresAt);
+        grantPayload.expiresAt = Timestamp.fromDate(expiresAt);
+        expirationDetails = `Accès expire le ${expiresAt.toLocaleDateString('fr-FR')}.`;
+    }
+
+    batch.set(enrollmentRef, enrollmentPayload);
+
+    const grantRef = adminDb.collection('admin_grants').doc();
+    batch.set(grantRef, grantPayload);
     
     const auditLogRef = adminDb.collection('admin_audit_logs').doc();
     batch.set(auditLogRef, {
         adminId: adminId,
         eventType: 'course.grant',
         target: { id: enrollmentId, type: 'enrollment' },
-        details: `L'administrateur ${adminId} a offert le cours '${courseData.title}' à l'utilisateur ${studentId}. Raison: ${reason}`,
+        details: `L'administrateur ${adminId} a offert le cours '${courseData.title}' à l'utilisateur ${studentId}. Raison: ${reason}. ${expirationDetails}`,
         timestamp: FieldValue.serverTimestamp(),
     });
 

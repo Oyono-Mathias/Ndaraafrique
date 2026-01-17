@@ -8,7 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/
 import { AreaChart, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer, Bar } from 'recharts';
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert, CheckCircle, UserPlus, Calendar as CalendarIcon } from 'lucide-react';
+import { Users, Star, BookOpen, DollarSign, TrendingUp, ShieldAlert, CheckCircle, UserPlus, Calendar as CalendarIcon, Gift } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { format, startOfMonth, subDays, eachDayOfInterval } from 'date-fns';
@@ -115,7 +115,9 @@ const StatsDashboard = () => {
   interface TopCourse {
     id: string;
     title: string;
-    enrollmentCount: number;
+    paidCount: number;
+    grantedCount: number;
+    totalCount: number;
   }
 
   const [date, setDate] = useState<DateRange | undefined>({
@@ -197,17 +199,34 @@ const StatsDashboard = () => {
     const topCoursesEnrollmentsQuery = query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startDate), where('enrollmentDate', '<=', endDate));
     unsubscribes.push(onSnapshot(topCoursesEnrollmentsQuery, async (snapshot) => {
         if (snapshot.empty) { setTopCourses([]); return; }
-        const enrollmentCounts: Record<string, number> = {};
+        const enrollmentCounts: Record<string, { paid: number, granted: number, total: number }> = {};
         snapshot.docs.forEach(doc => {
-            const courseId = doc.data().courseId;
-            enrollmentCounts[courseId] = (enrollmentCounts[courseId] || 0) + 1;
+            const enrollment = doc.data() as Enrollment;
+            const courseId = enrollment.courseId;
+            if (!enrollmentCounts[courseId]) {
+                enrollmentCounts[courseId] = { paid: 0, granted: 0, total: 0 };
+            }
+            if (enrollment.enrollmentType === 'admin_grant') {
+                enrollmentCounts[courseId].granted++;
+            } else {
+                enrollmentCounts[courseId].paid++;
+            }
+            enrollmentCounts[courseId].total++;
         });
-        const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b] - enrollmentCounts[a]).slice(0, 5);
+
+        const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b].total - enrollmentCounts[a].total).slice(0, 5);
+        
         if (sortedCourseIds.length > 0) {
              const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', sortedCourseIds)));
              const coursesData: Record<string, string> = {};
              coursesSnap.forEach(d => coursesData[d.id] = d.data().title);
-             setTopCourses(sortedCourseIds.map(id => ({ id, title: coursesData[id] || 'Inconnu', enrollmentCount: enrollmentCounts[id] })));
+             setTopCourses(sortedCourseIds.map(id => ({ 
+                id, 
+                title: coursesData[id] || 'Inconnu', 
+                paidCount: enrollmentCounts[id].paid,
+                grantedCount: enrollmentCounts[id].granted,
+                totalCount: enrollmentCounts[id].total,
+             })));
         } else {
             setTopCourses([]);
         }
@@ -309,13 +328,13 @@ const StatsDashboard = () => {
                 </CardHeader>
                 <CardContent>
                     <Table>
-                        <TableHeader><TableRow><TableHead>Cours</TableHead><TableHead className="text-right">Inscriptions</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow><TableHead>Cours</TableHead><TableHead className="text-right">Total</TableHead><TableHead className="text-right">Payées</TableHead><TableHead className="text-right">Offertes</TableHead></TableRow></TableHeader>
                         <TableBody>
                         {isLoading ? (
-                            [...Array(5)].map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-5 w-full" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell></TableRow>)
+                            [...Array(5)].map((_, i) => <TableRow key={i}><TableCell><Skeleton className="h-5 w-full" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell><TableCell><Skeleton className="h-5 w-10 ml-auto" /></TableCell></TableRow>)
                         ) : topCourses.length > 0 ? (
-                            topCourses.map((course) => <TableRow key={course.id}><TableCell className="font-medium truncate max-w-xs">{course.title}</TableCell><TableCell className="text-right font-bold">{course.enrollmentCount}</TableCell></TableRow>)
-                        ) : <TableRow><TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Aucune inscription sur cette période.</TableCell></TableRow> }
+                            topCourses.map((course) => <TableRow key={course.id}><TableCell className="font-medium truncate max-w-[200px]">{course.title}</TableCell><TableCell className="text-right font-bold">{course.totalCount}</TableCell><TableCell className="text-right text-green-400">{course.paidCount}</TableCell><TableCell className="text-right text-amber-400">{course.grantedCount}</TableCell></TableRow>)
+                        ) : <TableRow><TableCell colSpan={4} className="h-24 text-center text-muted-foreground">Aucune inscription sur cette période.</TableCell></TableRow> }
                         </TableBody>
                     </Table>
                 </CardContent>

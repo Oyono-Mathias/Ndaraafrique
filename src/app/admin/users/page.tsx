@@ -367,6 +367,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen:
 const grantAccessSchema = z.object({
   courseId: z.string().min(1, "Veuillez sélectionner un cours."),
   reason: z.string().min(10, "Veuillez fournir une brève raison."),
+  expirationInDays: z.coerce.number().int().min(1, "La durée doit être d'au moins 1 jour.").optional().or(z.literal('')),
 });
 
 const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | null, isOpen: boolean, onOpenChange: () => void }) => {
@@ -396,6 +397,7 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
             courseId: values.courseId,
             adminId: adminUser.uid,
             reason: values.reason,
+            expirationInDays: values.expirationInDays ? Number(values.expirationInDays) : undefined,
         });
 
         if (result.success) {
@@ -446,6 +448,19 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
                                     <FormLabel>Raison</FormLabel>
                                     <FormControl>
                                         <Input {...field} placeholder="Ex: Gagnant du concours, partenaire..." className="dark:bg-slate-800 dark:border-slate-700" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="expirationInDays"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Durée d'accès (en jours)</FormLabel>
+                                    <FormControl>
+                                        <Input type="number" {...field} placeholder="Optionnel (ex: 30 pour 1 mois)" className="dark:bg-slate-800 dark:border-slate-700" />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
