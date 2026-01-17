@@ -9,7 +9,6 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useLocale } from 'next-intl';
 
 interface RoleContextType {
   role: UserRole;
@@ -37,7 +36,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
-  const locale = useLocale();
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();

@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from "next/link";
@@ -32,7 +31,7 @@ import { Progress } from "../ui/progress";
 import { OnboardingGuide } from "../onboarding-guide";
 import { UserNav } from "./user-nav";
 import { useToast } from "@/hooks/use-toast";
-import { useTranslations } from "next-intl";
+
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean }) => {
   const pathname = usePathname();
@@ -87,7 +86,6 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, availableRoles, user, currentUser } = useRole();
-  const t = useTranslations();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
   const [unreadMessages, setUnreadMessages] = useState(0);
@@ -99,34 +97,34 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
 
   const studentMenu = [
     {
-      label: t('Sidebar.personal'),
+      label: "Personnel",
       items: [
         { href: "/dashboard", icon: Star, label: "Pour vous", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/mes-formations", icon: Play, textKey: 'Nav.courses', id: 'sidebar-nav-mes-formations' },
+        { href: "/mes-formations", icon: Play, label: 'Mes Cours', id: 'sidebar-nav-mes-formations' },
         { href: "/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
     {
-      label: t('Sidebar.follow_up'),
+      label: "Suivi",
       items: [
-        { href: "/mes-certificats", icon: Award, textKey: 'Nav.certificates', id: 'sidebar-nav-mes-certificats' },
-        { href: "/liste-de-souhaits", icon: Heart, textKey: 'Nav.wishlist', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'Nav.assignments', id: 'sidebar-nav-mes-devoirs' },
+        { href: "/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
+        { href: "/liste-de-souhaits", icon: Heart, label: 'Liste de souhaits', id: 'sidebar-nav-liste-de-souhaits' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {
-      label: t('Sidebar.community'),
+      label: "Communauté",
       items: [
-        { href: "/annuaire", icon: Users, textKey: 'Nav.directory', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
-        { href: "/messages", icon: MessageSquare, textKey: 'Nav.messages', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
+        { href: "/annuaire", icon: Users, label: 'Annuaire', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
+        { href: "/messages", icon: MessageSquare, label: 'Messagerie', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
       ]
     },
     {
-      label: t('Sidebar.account'),
+      label: "Compte",
       items: [
-        { href: "/account", icon: User, textKey: 'Nav.account', id: 'sidebar-nav-account' },
-        { href: "/notifications", icon: Bell, textKey: 'Nav.notifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
+        { href: "/account", icon: User, label: 'Mon Compte', id: 'sidebar-nav-account' },
+        { href: "/notifications", icon: Bell, label: 'Notifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
       ],
     },
   ];
@@ -203,7 +201,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
                   key={item.href}
                   href={item.href}
                   icon={item.icon}
-                  label={item.label || t(item.textKey)}
+                  label={item.label}
                   id={item.id}
                   unreadCount={item.count}
                   disabled={item.disabled}
@@ -219,20 +217,20 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           {isInstructor ? (
               <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={() => switchRole('instructor')}>
                   <LogIn className="mr-2 h-4 w-4" />
-                  {t('Sidebar.instructor_mode')}
+                  Passer en mode Instructeur
               </Button>
           ) : showInstructorSignup && (
               <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" asChild>
                   <Link href="/devenir-instructeur">
                       <Briefcase className="mr-2 h-4 w-4" />
-                      {t('Sidebar.be_instructor')}
+                      Devenir Formateur
                   </Link>
               </Button>
           )}
           {isAdmin && (
               <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                   <Shield className="mr-2 h-4 w-4" />
-                  {t('Sidebar.admin_mode')}
+                  Mode Admin
               </Button>
           )}
         </footer>

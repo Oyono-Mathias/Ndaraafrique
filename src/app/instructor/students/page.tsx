@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -37,7 +36,6 @@ import { MessageSquare, Search, Users } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from '@/components/ui/skeleton';
-import { useTranslations } from 'next-intl';
 import { NdaraUser, Enrollment, Course } from '@/lib/types';
 import { startChat } from '@/lib/chat';
 import { Card } from '@/components/ui/card';
@@ -107,7 +105,6 @@ export default function MyStudentsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const db = getFirestore();
   const router = useRouter();
-  const t = useTranslations();
 
   const [time, setTime] = useState(Date.now());
   useEffect(() => {
@@ -221,7 +218,7 @@ export default function MyStudentsPage() {
     <div className="space-y-6">
       <header className="flex items-center justify-between">
         <div>
-            <h1 className="text-3xl font-bold dark:text-white">{t('navMyStudents')}</h1>
+            <h1 className="text-3xl font-bold dark:text-white">Mes Étudiants</h1>
             <p className="text-muted-foreground dark:text-slate-400">
               Suivez et interagissez avec vos apprenants.
             </p>

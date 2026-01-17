@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
-import { useTranslations } from "next-intl";
 import {
   LayoutDashboard,
   Users,
@@ -35,7 +34,6 @@ import { useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";
 import { UserNav } from "./user-nav";
-import { LanguageSelector } from "./language-selector";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
@@ -69,25 +67,24 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
 
 
 export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
-  const t = useTranslations();
   const db = getFirestore();
 
   const adminMenu = [
-    { href: "/admin/statistiques", icon: BarChart3, textKey: "Nav.statistics" },
-    { href: "/admin/users", icon: Users, textKey: "Nav.users" },
-    { href: "/admin/instructors", icon: UserCheck, textKey: "Nav.applications", countId: 'pendingInstructors' },
-    { href: "/admin/moderation", icon: ShieldAlert, textKey: "Nav.moderation", countId: 'pendingCourses' },
-    { href: "/admin/courses", icon: BookOpen, textKey: "Nav.courses" },
-    { href: "/admin/payments", icon: CreditCard, textKey: "Nav.transactions" },
-    { href: "/admin/payouts", icon: Landmark, textKey: "Nav.payouts", countId: 'pendingPayouts' },
-    { href: "/admin/support", icon: HelpCircle, textKey: "Nav.support", countId: 'openTickets' },
-    { href: "/admin/logs", icon: History, textKey: "Nav.audit" },
-    { href: "/admin/marketing", icon: Sparkles, textKey: "Nav.marketing" },
-    { href: "/admin/carousel", icon: GalleryHorizontal, textKey: "Nav.carousel" },
-    { href: "/messages", icon: MessageSquare, textKey: "Nav.messages" },
-    { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "Nav.FAQ" },
-    { href: "/admin/settings", icon: Settings, textKey: "Nav.settings" },
-    { href: "/admin/roles", icon: Shield, textKey: "Nav.roles" },
+    { href: "/admin/statistiques", icon: BarChart3, label: "Statistiques" },
+    { href: "/admin/users", icon: Users, label: "Utilisateurs" },
+    { href: "/admin/instructors", icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
+    { href: "/admin/moderation", icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
+    { href: "/admin/courses", icon: BookOpen, label: "Cours" },
+    { href: "/admin/payments", icon: CreditCard, label: "Transactions" },
+    { href: "/admin/payouts", icon: Landmark, label: "Retraits", countId: 'pendingPayouts' },
+    { href: "/admin/support", icon: HelpCircle, label: "Support", countId: 'openTickets' },
+    { href: "/admin/logs", icon: History, label: "Journal d'Audit" },
+    { href: "/admin/marketing", icon: Sparkles, label: "Marketing" },
+    { href: "/admin/carousel", icon: GalleryHorizontal, label: "Carrousel" },
+    { href: "/messages", icon: MessageSquare, label: "Messagerie" },
+    { href: "/admin/faq", icon: MessageCircleQuestion, label: "FAQ" },
+    { href: "/admin/settings", icon: Settings, label: "Paramètres" },
+    { href: "/admin/roles", icon: Shield, label: "Rôles & Permissions" },
   ];
 
   const pendingInstructorsQuery = useMemoFirebase(() => 
@@ -135,7 +132,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
               key={item.href} 
               href={item.href} 
               icon={item.icon} 
-              label={t(item.textKey as any)}
+              label={item.label}
               count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
               onClick={onLinkClick}
           />

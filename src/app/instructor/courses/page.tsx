@@ -1,19 +1,16 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where, getCountFromServer, deleteDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Search, Users, BookOpen, Trash2, Edit } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -23,7 +20,6 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
   const [loadingCount, setLoadingCount] = useState(true);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const db = getFirestore();
-  const t = useTranslations();
 
   useEffect(() => {
     const getCount = async () => {
@@ -68,7 +64,7 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
             {loadingCount ? <Skeleton className="h-4 w-20" /> : (
                 <div className="flex items-center gap-1.5">
                     <Users className="w-4 h-4" />
-                    <span>{t('studentLabel', { count: enrollmentCount })}</span>
+                    <span>{`${enrollmentCount} étudiant(s)`}</span>
                 </div>
             )}
             <span className="font-semibold">{course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}</span>
@@ -76,10 +72,10 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
         </div>
         <div className="p-2 border-t border-slate-100 dark:border-slate-700/50 flex gap-1">
              <Button variant="ghost" size="sm" className="w-full justify-center text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-primary" asChild>
-                <Link href={`/instructor/courses/edit/${course.id}`}><Edit className="h-4 w-4 mr-2" /> {t('editButton')}</Link>
+                <Link href={`/instructor/courses/edit/${course.id}`}><Edit className="h-4 w-4 mr-2" /> Éditer</Link>
              </Button>
              <Button variant="ghost" size="sm" className="w-full justify-center text-slate-600 hover:text-destructive dark:text-slate-300 dark:hover:text-destructive" onClick={handleDeleteClick}>
-                 <Trash2 className="h-4 w-4 mr-2" /> {t('deleteButton')}
+                 <Trash2 className="h-4 w-4 mr-2" /> Supprimer
              </Button>
         </div>
       </div>
@@ -87,15 +83,15 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
       <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
           <AlertDialogContent>
               <AlertDialogHeader>
-                  <AlertDialogTitle>{t('deleteCourseConfirmationTitle')}</AlertDialogTitle>
+                  <AlertDialogTitle>Confirmer la suppression ?</AlertDialogTitle>
                   <AlertDialogDescription>
-                      {t('deleteCourseConfirmationMessage', { courseTitle: course.title })}
+                      La suppression du cours "{course.title}" est définitive et irréversible.
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel>{t('cancelButton')}</AlertDialogCancel>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
                   <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-                      {t('deleteButton')}
+                      Supprimer
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
@@ -107,7 +103,6 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
 export default function InstructorCoursesPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const t = useTranslations();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -132,15 +127,15 @@ export default function InstructorCoursesPage() {
         // Note: Subcollections like sections, lectures, etc., are not deleted automatically.
         // A cloud function would be needed for cascading deletes in a production app.
         toast({
-            title: t('courseDeletedTitle'),
-            description: t('courseDeletedMessage'),
+            title: "Cours supprimé",
+            description: "Le cours a été retiré de la plateforme.",
         });
     } catch (error) {
         console.error("Error deleting course:", error);
         toast({
             variant: "destructive",
-            title: t('errorTitle'),
-            description: t('courseDeletionErrorMessage'),
+            title: "Erreur",
+            description: "Impossible de supprimer le cours.",
         });
     }
   };
@@ -151,13 +146,13 @@ export default function InstructorCoursesPage() {
     <div className="p-4 md:p-6 space-y-6 dark:bg-[#0f172a] min-h-screen">
       <header className="flex justify-between items-center">
         <div>
-            <h1 className="text-3xl font-bold dark:text-white">{t('navMyCourses')}</h1>
-            <p className="text-slate-500 dark:text-slate-400">{t('myCoursesDescription')}</p>
+            <h1 className="text-3xl font-bold dark:text-white">Mes cours</h1>
+            <p className="text-slate-500 dark:text-slate-400">Gérez, modifiez et créez de nouvelles formations ici.</p>
         </div>
          <Button asChild className="hidden md:flex">
             <Link href="/instructor/courses/create">
                 <PlusCircle className="mr-2 h-4 w-4" />
-                {t('createNewCourse')}
+                Créer un nouveau cours
             </Link>
          </Button>
       </header>
@@ -165,7 +160,7 @@ export default function InstructorCoursesPage() {
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
         <Input
-          placeholder={t('searchCoursePlaceholder')}
+          placeholder="Rechercher un cours..."
           className="pl-10 dark:bg-slate-800 border-slate-200 dark:border-slate-700 dark:text-white placeholder:text-slate-500 focus-visible:ring-primary"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -187,15 +182,15 @@ export default function InstructorCoursesPage() {
       ) : (
         <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-8">
           <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">{t('noCoursesFoundTitle')}</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t('noCoursesFoundMessage')}</p>
+          <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Aucun cours trouvé</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Cliquez sur "Créer un nouveau cours" pour commencer.</p>
         </div>
       )}
       
       <Button asChild className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90 md:hidden">
         <Link href="/instructor/courses/create">
           <PlusCircle className="h-8 w-8" />
-          <span className="sr-only">{t('createNewCourse')}</span>
+          <span className="sr-only">Créer un nouveau cours</span>
         </Link>
       </Button>
     </div>

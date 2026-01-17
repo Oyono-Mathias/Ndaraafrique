@@ -2,6 +2,10 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { RoleProvider } from "@/context/RoleContext";
+import { AppShell } from "@/components/layout/app-shell";
+import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
@@ -35,7 +39,12 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {children}
+        <FirebaseClientProvider>
+          <RoleProvider>
+            <AppShell>{children}</AppShell>
+            <Toaster />
+          </RoleProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

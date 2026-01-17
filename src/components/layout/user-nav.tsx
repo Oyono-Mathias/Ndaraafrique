@@ -19,14 +19,11 @@ import {
   import { useRole } from "@/context/RoleContext"
   import { useRouter } from "next/navigation";
   import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
-  import { useTranslations } from "next-intl";
-  import { LanguageSelector } from "./language-selector";
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
 
   
 export function UserNav() {
-    const t = useTranslations();
     const { currentUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 
@@ -70,7 +67,7 @@ export function UserNav() {
                   </div>
                    {!currentUser.isProfileComplete && (
                         <span className="text-xs text-amber-400 font-semibold flex items-center gap-1">
-                           <BadgeAlert className="h-3 w-3"/> {t('profile_incomplete')}
+                           <BadgeAlert className="h-3 w-3"/> Profil incomplet
                         </span>
                     )}
                 </div>
@@ -80,21 +77,21 @@ export function UserNav() {
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer dark:focus:bg-slate-700">
               <UserIcon className="mr-2 h-4 w-4" />
-              <span>{t('Nav.account')}</span>
+              <span>Mon Compte</span>
             </DropdownMenuItem>
              <DropdownMenuItem onClick={() => router.push('/historique-paiements')} className="cursor-pointer dark:focus:bg-slate-700">
               <CreditCard className="mr-2 h-4 w-4" />
-              <span>{t('payments')}</span>
+              <span>Paiements</span>
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => router.push('/questions-reponses')} className="cursor-pointer dark:focus:bg-slate-700">
               <LifeBuoy className="mr-2 h-4 w-4" />
-              <span>{t('support')}</span>
+              <span>Support</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
           <DropdownMenuSeparator className="dark:bg-slate-700"/>
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 dark:focus:bg-red-500/10 dark:focus:text-red-400">
             <LogOut className="mr-2 h-4 w-4" />
-            <span>{t('Nav.logout')}</span>
+            <span>Déconnexion</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

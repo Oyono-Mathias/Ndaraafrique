@@ -25,13 +25,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { UserNav } from "./user-nav";
-import { useTranslations } from "next-intl";
 
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname();
   const { currentUser } = useRole();
-  const t = useTranslations();
   const { toast } = useToast();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
@@ -78,34 +76,33 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
 export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, availableRoles } = useRole();
-  const t = useTranslations();
   const isAdmin = availableRoles.includes('admin');
 
   const instructorMenu = [
     {
-      label: t('Sidebar.instructor_group_work'),
+      label: "Mon Travail",
       items: [
-        { href: '/dashboard', icon: LayoutDashboard, textKey: 'Nav.dashboard' },
-        { href: '/instructor/courses', icon: BookOpen, textKey: 'Nav.courses' },
-        { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'Nav.assignments' },
-        { href: '/instructor/quiz', icon: FileQuestion, textKey: 'Nav.quiz' },
-        { href: '/instructor/ressources', icon: Folder, textKey: 'Nav.resources' },
+        { href: '/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
+        { href: '/instructor/courses', icon: BookOpen, label: 'Mes Cours' },
+        { href: '/instructor/devoirs', icon: ClipboardCheck, label: 'Devoirs' },
+        { href: '/instructor/quiz', icon: FileQuestion, label: 'Quiz' },
+        { href: '/instructor/ressources', icon: Folder, label: 'Ressources' },
       ],
     },
     {
-      label: t('Sidebar.instructor_group_finances'),
+      label: "Finances & Communauté",
       items: [
-        { href: '/instructor/students', icon: Users, textKey: 'Nav.my_students' },
-        { href: '/mes-revenus', icon: DollarSign, textKey: 'Nav.finance' },
-        { href: '/certificats-instructor', icon: Award, textKey: 'Nav.certificates' },
+        { href: '/instructor/students', icon: Users, label: 'Mes Étudiants' },
+        { href: '/mes-revenus', icon: DollarSign, label: 'Mes Revenus' },
+        { href: '/certificats-instructor', icon: Award, label: 'Certificats Décernés' },
       ],
     },
     {
-      label: t('Sidebar.instructor_group_communication'),
+      label: "Communication",
       items: [
-        { href: '/messages', icon: MessagesSquare, textKey: 'Nav.messages' },
-        { href: '/questions-reponses', icon: MessagesSquare, textKey: 'Nav.qa' },
-        { href: '/avis', icon: Star, textKey: 'Nav.reviews' },
+        { href: '/messages', icon: MessagesSquare, label: 'Messagerie' },
+        { href: '/questions-reponses', icon: MessagesSquare, label: 'Q&R' },
+        { href: '/avis', icon: Star, label: 'Avis' },
       ],
     },
   ];
@@ -133,7 +130,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
                 key={item.href} 
                 href={item.href} 
                 icon={item.icon} 
-                label={t(item.textKey as any)}
+                label={item.label}
                 onClick={onLinkClick} />
             ))}
           </div>
@@ -148,12 +145,12 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
           onClick={() => switchRole('student')}
         >
           <LogIn className="mr-2 h-4 w-4" />
-          {t('Sidebar.student_mode')}
+          Passer en mode Étudiant
         </Button>
         {isAdmin && (
             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                 <Shield className="mr-2 h-4 w-4" />
-                {t('Sidebar.admin_mode')}
+                Mode Admin
             </Button>
         )}
       </footer>

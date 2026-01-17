@@ -1,5 +1,3 @@
-
-
 'use client';
 
 import { useState } from 'react';
@@ -15,25 +13,23 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
-import { errorEmitter } from '@/firebase/error-emitter';
+import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useTranslations } from 'next-intl';
 
-const courseCreateSchema = (t: (key: string) => string) => z.object({
-  title: z.string().min(5, t('course_title_min_char')),
+const courseCreateSchema = z.object({
+  title: z.string().min(5, "Le titre du cours doit contenir au moins 5 caractères."),
 });
 
-type CourseCreateFormValues = z.infer<ReturnType<typeof courseCreateSchema>>;
+type CourseCreateFormValues = z.infer<typeof courseCreateSchema>;
 
 export default function CreateCoursePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const t = useTranslations('InstructorCreateCourse');
   const { currentUser, isUserLoading } = useRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({
-    resolver: zodResolver(courseCreateSchema(t as any)),
+    resolver: zodResolver(courseCreateSchema),
     defaultValues: {
       title: '',
     },
@@ -43,8 +39,8 @@ export default function CreateCoursePage() {
     if (!currentUser || !currentUser.isInstructorApproved) {
       toast({
         variant: 'destructive',
-        title: t('access_denied_title'),
-        description: t('instructor_approval_required'),
+        title: "Accès refusé",
+        description: "Votre compte doit être approuvé par un administrateur pour créer un cours.",
       });
       return;
     }
@@ -77,8 +73,8 @@ export default function CreateCoursePage() {
       const docRef = await addDoc(coursesCollection, newCoursePayload);
       
       toast({
-        title: t('course_create_success_title'),
-        description: t('course_create_success_desc'),
+        title: "Cours créé !",
+        description: "Vous pouvez maintenant commencer à ajouter du contenu.",
       });
 
       router.push(`/instructor/courses/edit/${docRef.id}`);
@@ -97,16 +93,16 @@ export default function CreateCoursePage() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8 max-w-4xl mx-auto">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('create_new_course')}</h1>
-        <p className="text-slate-500 mt-1">{t('create_course_start_with_title')}</p>
+        <h1 className="text-3xl font-bold dark:text-white">Créer un nouveau cours</h1>
+        <p className="text-slate-500 mt-1">Commençons par donner un titre à votre cours. Vous pourrez modifier les autres détails plus tard.</p>
       </header>
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Card className="bg-white dark:bg-card">
             <CardHeader>
-              <CardTitle className="dark:text-white">{t('course_title')}</CardTitle>
+              <CardTitle className="dark:text-white">Titre du cours</CardTitle>
               <CardDescription>
-                {t('create_course_title_desc')}
+                Un bon titre est accrocheur et décrit clairement le sujet de votre formation.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -115,10 +111,10 @@ export default function CreateCoursePage() {
                 name="title"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="sr-only">{t('course_title')}</FormLabel>
+                    <FormLabel className="sr-only">Titre du cours</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder={t('course_title_placeholder')}
+                        placeholder="Ex: Le guide complet de la photographie mobile"
                         {...field} 
                         className="text-lg py-6"
                       />
@@ -130,11 +126,11 @@ export default function CreateCoursePage() {
             </CardContent>
             <CardFooter className="flex justify-end gap-4">
                 <Button type="button" variant="ghost" onClick={() => router.back()}>
-                  {t('cancelButton')}
+                  Annuler
                 </Button>
                 <Button type="submit" disabled={isSubmitting || isUserLoading} className="bg-blue-600 hover:bg-blue-700">
                   {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  {t('continue')}
+                  Continuer
                 </Button>
             </CardFooter>
           </Card>
