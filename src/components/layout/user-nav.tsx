@@ -20,14 +20,14 @@ import {
   import { useRole } from "@/context/RoleContext"
   import { useRouter } from "next/navigation";
   import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
-  import { useTranslations } from "next-intl";
+  import { useI18n } from "@/context/I18nProvider";
   import { LanguageSelector } from "./language-selector";
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
 
   
 export function UserNav() {
-    const t = useTranslations();
+    const { t } = useI18n();
     const { currentUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 
@@ -81,7 +81,7 @@ export function UserNav() {
           <DropdownMenuGroup>
             <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer dark:focus:bg-slate-700">
               <UserIcon className="mr-2 h-4 w-4" />
-              <span>{t('navAccount')}</span>
+              <span>{t('Nav.account')}</span>
             </DropdownMenuItem>
              <DropdownMenuItem onClick={() => router.push('/historique-paiements')} className="cursor-pointer dark:focus:bg-slate-700">
               <CreditCard className="mr-2 h-4 w-4" />
@@ -95,7 +95,7 @@ export function UserNav() {
           <DropdownMenuSeparator className="dark:bg-slate-700"/>
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 dark:focus:bg-red-500/10 dark:focus:text-red-400">
             <LogOut className="mr-2 h-4 w-4" />
-            <span>{t('logout')}</span>
+            <span>{t('Nav.logout')}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

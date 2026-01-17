@@ -27,7 +27,7 @@ export function LanguageSelector() {
 
     const changeLanguage = (lng: string) => {
         startTransition(() => {
-          setLocale(lng);
+          setLocale(lng as 'fr' | 'en');
         });
         setIsOpen(false);
     };

@@ -83,11 +83,12 @@ export function AiTutorClient() {
   }, [user]);
 
   const displayedMessages = useMemo(() => {
-    if (messages.length > 0) {
-        return [...messages].reverse(); // Reverse for chronological order display
+    const sortedMessages = [...messages].sort((a, b) => (a.timestamp?.toDate ? a.timestamp.toDate() : a.timestamp) - (b.timestamp?.toDate ? b.timestamp.toDate() : b.timestamp));
+    if (messages.length === 0 && !isHistoryLoading) {
+        return [initialGreeting];
     }
-    return [initialGreeting];
-  }, [messages, initialGreeting]);
+    return sortedMessages;
+  }, [messages, isHistoryLoading, initialGreeting]);
 
 
   useEffect(() => {
@@ -106,22 +107,10 @@ export function AiTutorClient() {
 
     const userMessageText = input;
     setInput("");
-
-    const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
-    const userMessagePayload = { sender: "user" as const, text: userMessageText, timestamp: serverTimestamp() };
     
-    try {
-      const docRef = await addDoc(chatCollectionRef, userMessagePayload);
-      // Optimistically update UI
-      setMessages(prev => [{id: docRef.id, ...userMessagePayload, timestamp: new Date() } as AiTutorMessage, ...prev]);
-    } catch(err) {
-       errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: chatCollectionRef.path,
-            operation: 'create',
-            requestResourceData: userMessagePayload,
-        }));
-        return; 
-    }
+    const tempUserMessage = { id: 'temp-user-' + Date.now(), sender: "user" as const, text: userMessageText, timestamp: new Date() };
+    setMessages(prev => [...prev, tempUserMessage]);
+
 
     setIsAiResponding(true);
 
@@ -130,15 +119,22 @@ export function AiTutorClient() {
       const result = await mathiasTutor(chatInput);
       
       const aiMessagePayload = { sender: "ai" as const, text: result.response, timestamp: serverTimestamp() };
-      const docRef = await addDoc(chatCollectionRef, aiMessagePayload);
-      // Optimistically update UI
-       setMessages(prev => [{id: docRef.id, ...aiMessagePayload, timestamp: new Date() } as AiTutorMessage, ...prev]);
+      
+      const batch = getFirestore().batch();
+      const userMessageRef = doc(collection(db, `users/${user.uid}/chatHistory`));
+      batch.set(userMessageRef, { sender: "user", text: userMessageText, timestamp: serverTimestamp() });
+      
+      const aiMessageRef = doc(collection(db, `users/${user.uid}/chatHistory`));
+      batch.set(aiMessageRef, aiMessagePayload);
 
+      await batch.commit();
+      
+      // Replace optimistic UI update with real data from the effect
+      
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessagePayload = { sender: "ai" as const, text: "Désolé, une erreur est survenue. Veuillez réessayer.", timestamp: serverTimestamp() };
-      const docRef = await addDoc(chatCollectionRef, errorMessagePayload);
-       setMessages(prev => [{id: docRef.id, ...errorMessagePayload, timestamp: new Date() } as AiTutorMessage, ...prev]);
+      await addDoc(collection(db, `users/${user.uid}/chatHistory`), errorMessagePayload);
     } finally {
       setIsAiResponding(false);
     }

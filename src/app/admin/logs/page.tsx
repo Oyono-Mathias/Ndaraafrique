@@ -3,8 +3,6 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
 import {
   getFirestore,
   collection,

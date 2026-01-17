@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
-import { useTranslations } from "next-intl";
+import { useI18n } from "@/context/I18nProvider";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -32,7 +32,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname();
   const { currentUser } = useRole();
-  const t = useTranslations();
+  const { t } = useI18n();
   const { toast } = useToast();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
@@ -79,7 +79,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
 export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, currentUser, availableRoles } = useRole();
-  const t = useTranslations();
+  const { t } = useI18n();
   const isAdmin = availableRoles.includes('admin');
 
   const instructorMenu = [

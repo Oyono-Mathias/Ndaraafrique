@@ -31,7 +31,7 @@ import type { NdaraUser, UserRole } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useTranslations } from 'next-intl';
+import { useI18n } from '@/context/I18nProvider';
 import { useToast } from '@/hooks/use-toast';
 import type { Message } from '@/lib/types';
 
@@ -56,7 +56,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const t = useTranslations();
+  const { t } = useI18n();
   const { toast } = useToast();
 
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');

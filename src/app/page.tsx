@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -16,12 +17,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
-import { useTranslations } from 'next-intl';
+import { useI18n } from '@/context/I18nProvider';
 import { useRole } from '@/context/RoleContext';
 
 const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => {
     const [scrolled, setScrolled] = useState(false);
-    const t = useTranslations('Auth');
+    const { t } = useI18n();
     const { user, isUserLoading } = useRole();
     const router = useRouter();
 
@@ -63,12 +64,12 @@ const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform
                     ) : siteSettings.allowInstructorSignup ? (
                         <Link href="/login">
                             <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9">
-                                {t('login')}
+                                {t('Auth.login')}
                             </Button>
                         </Link>
                     ) : (
                          <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white h-9" disabled>
-                            {t('login')}
+                            {t('Auth.login')}
                         </Button>
                     )}
                 </div>
@@ -329,7 +330,7 @@ export default function LandingPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [siteSettings, setSiteSettings] = useState<Partial<Settings['platform']>>({ allowInstructorSignup: true });
   const db = getFirestore();
-  const t = useTranslations('Hero');
+  const { t } = useI18n();
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -395,13 +396,13 @@ export default function LandingPage() {
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
           <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up">
             <Sparkles className="w-3 h-3 mr-2" />
-            {t('badge')}
+            {t('Hero.badge')}
           </Badge>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            {t('title')}
+            {t('Hero.title')}
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            {t('subtitle')}
+            {t('Hero.subtitle')}
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
               {siteSettings.allowInstructorSignup ? (
@@ -422,7 +423,7 @@ export default function LandingPage() {
         <main className="space-y-12 sm:space-y-16 pb-24 sm:pb-0">
           <DynamicCarousel />
 
-          <CourseCarousel
+          <CourseCarousel 
             title="Les nouveautés à ne pas rater"
             courses={recentCourses}
             instructorsMap={instructorsMap}
@@ -430,13 +431,13 @@ export default function LandingPage() {
           />
           <InteractiveSteps />
           <PaymentMethodsSection />
-          <CourseCarousel
+          <CourseCarousel 
             title="Populaires ce mois-ci"
             courses={popularCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
           />
-          <CourseCarousel
+          <CourseCarousel 
             title="Découvrir gratuitement"
             courses={freeCourses}
             instructorsMap={instructorsMap}

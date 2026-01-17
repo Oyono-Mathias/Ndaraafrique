@@ -1,10 +1,9 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore, initializeFirestore } from 'firebase/firestore'
+import { getFirestore, initializeFirestore } from 'firebase/firestore';
 
 // IMPORTANT: DO NOT MODIFY THIS FUNCTION
 export function initializeFirebase() {
@@ -43,3 +42,20 @@ export function getSdks(firebaseApp: FirebaseApp) {
     }),
   };
 }
+
+// Re-export hooks
+export {
+  FirebaseProvider,
+  useFirebase,
+  useAuth,
+  useFirestore,
+  useFirebaseApp,
+  useUser,
+  useMemoFirebase,
+} from './provider';
+export { useCollection } from './firestore/use-collection';
+export { useDoc } from './firestore/use-doc';
+export type { UseCollectionResult, WithId } from './firestore/use-collection';
+export type { UseDocResult } from './firestore/use-doc';
+export { FirebaseClientProvider } from './client-provider';
+export { errorEmitter } from './error-emitter';
