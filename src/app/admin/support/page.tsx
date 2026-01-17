@@ -61,8 +61,8 @@ export default function AdminSupportPage() {
   const [activeTab, setActiveTab] = useState('ouvert');
 
   const ticketsQuery = useMemoFirebase(
-    () => query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc')),
-    [db]
+    () => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc')) : null,
+    [db, currentUser]
   );
   const { data: tickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
 
@@ -208,5 +208,3 @@ export default function AdminSupportPage() {
     </div>
   );
 }
-
-    

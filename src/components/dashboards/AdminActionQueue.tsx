@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useRole } from '@/context/RoleContext';
 
 interface ActionItem {
     id: string;
@@ -46,6 +47,7 @@ const ActionItemCard = ({ item }: { item: ActionItem }) => (
 
 export function AdminActionQueue() {
     const db = getFirestore();
+    const { currentUser } = useRole();
 
     const { data: pendingCourses, isLoading: loadingCourses } = useCollection(
         useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Pending Review')), [db])
@@ -57,7 +59,7 @@ export function AdminActionQueue() {
         useMemoFirebase(() => query(collection(db, 'payouts'), where('status', '==', 'en_attente')), [db])
     );
     const { data: openTickets, isLoading: loadingTickets } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null, [db, currentUser])
     );
     const { data: suspiciousPayments, isLoading: loadingPayments } = useCollection(
         useMemoFirebase(() => query(collection(db, 'payments'), where('fraudReview.isSuspicious', '==', true)), [db])
