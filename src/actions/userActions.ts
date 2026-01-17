@@ -32,25 +32,29 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
     }
     
     try {
+        // Use a batch to ensure atomicity
         const batch = adminDb.batch();
 
-        // Delete from Auth
+        // 1. Delete from Auth
         await adminAuth.deleteUser(userId);
         
-        // Delete from Firestore
+        // 2. Delete from Firestore
         const userRef = adminDb.collection('users').doc(userId);
         batch.delete(userRef);
 
-        // Log the deletion to the audit log
-        const auditLogRef = adminDb.collection('admin_audit_logs').doc();
-        batch.set(auditLogRef, {
-            adminId: decodedToken.uid,
-            eventType: 'user.delete',
-            target: { id: userId, type: 'user' },
-            details: `User account ${userId} deleted by ${decodedToken.uid}.`,
-            timestamp: FieldValue.serverTimestamp(),
-        });
+        // 3. Log the deletion to the audit log if the deleter is an admin
+        if (decodedToken.uid !== userId) { // i.e., an admin is deleting someone else
+            const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+            batch.set(auditLogRef, {
+                adminId: decodedToken.uid,
+                eventType: 'user.delete',
+                target: { id: userId, type: 'user' },
+                details: `User account ${userId} deleted by admin ${decodedToken.uid}.`,
+                timestamp: FieldValue.serverTimestamp(),
+            });
+        }
         
+        // Commit all operations
         await batch.commit();
         
         return { success: true };

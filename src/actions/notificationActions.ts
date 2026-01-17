@@ -124,12 +124,13 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
       const user = adminUsersData.find(u => u.uid === doc.id);
       if(user) {
           const prefs = user.notificationPreferences;
-          // Send notification if prefs are not set, or if the specific type is not explicitly set to false.
-          if (!prefs || (payload.type && prefs[payload.type] !== false)) {
-              const tokens = doc.data().tokens;
-              if (tokens && Array.isArray(tokens)) {
-                  adminTokens.push(...tokens);
-              }
+          // Do not send if the specific notification type is explicitly set to false
+          if (payload.type && prefs && prefs[payload.type] === false) {
+              return; 
+          }
+          const tokens = doc.data().tokens;
+          if (tokens && Array.isArray(tokens)) {
+              adminTokens.push(...tokens);
           }
       }
   });
