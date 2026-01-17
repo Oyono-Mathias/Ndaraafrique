@@ -51,8 +51,7 @@ const PasswordInput = ({ field }: { field: any }) => {
 
 
 export default function LoginClient() {
-  const t = useTranslations();
-  const locale = useLocale();
+  const t = useTranslations('Auth');
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -67,6 +66,7 @@ export default function LoginClient() {
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading } = useRole();
+  const locale = useLocale();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
@@ -230,7 +230,7 @@ export default function LoginClient() {
                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-1" /></FormControl>
                                  <div className="space-y-1 leading-none">
                                     <FormLabel className="text-xs font-normal text-slate-400">
-                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>.
+                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>

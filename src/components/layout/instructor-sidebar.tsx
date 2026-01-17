@@ -32,8 +32,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname();
   const { currentUser } = useRole();
-  const { toast } = useToast();
   const t = useTranslations();
+  const { toast } = useToast();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
   const isAllowedPath = (path: string) => {
@@ -47,8 +47,8 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
         e.preventDefault();
         toast({
             variant: "destructive",
-            title: t('access_denied_title'),
-            description: t('instructor_approval_required_sidebar'),
+            title: "Accès refusé",
+            description: "Votre compte doit être approuvé pour accéder à cette section.",
         });
     } else {
       onClick();
@@ -84,29 +84,29 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
 
   const instructorMenu = [
     {
-      label: t('instructor_sidebar_group_work'),
+      label: t('Sidebar.instructor_group_work'),
       items: [
-        { href: '/dashboard', icon: LayoutDashboard, textKey: 'navDashboard' },
-        { href: '/instructor/courses', icon: BookOpen, textKey: 'navMyCourses' },
-        { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'navAssignments' },
-        { href: '/instructor/quiz', icon: FileQuestion, textKey: 'navQuiz' },
-        { href: '/instructor/ressources', icon: Folder, textKey: 'navResources' },
+        { href: '/dashboard', icon: LayoutDashboard, textKey: 'Nav.dashboard' },
+        { href: '/instructor/courses', icon: BookOpen, textKey: 'Nav.courses' },
+        { href: '/instructor/devoirs', icon: ClipboardCheck, textKey: 'Nav.assignments' },
+        { href: '/instructor/quiz', icon: FileQuestion, textKey: 'Nav.quiz' },
+        { href: '/instructor/ressources', icon: Folder, textKey: 'Nav.resources' },
       ],
     },
     {
-      label: t('instructor_sidebar_group_finances'),
+      label: t('Sidebar.instructor_group_finances'),
       items: [
-        { href: '/instructor/students', icon: Users, textKey: 'navMyStudents' },
-        { href: '/mes-revenus', icon: DollarSign, textKey: 'navFinance' },
-        { href: '/certificats-instructor', icon: Award, textKey: 'navCertificates' },
+        { href: '/instructor/students', icon: Users, textKey: 'Nav.my_students' },
+        { href: '/mes-revenus', icon: DollarSign, textKey: 'Nav.finance' },
+        { href: '/certificats-instructor', icon: Award, textKey: 'Nav.certificates' },
       ],
     },
     {
-      label: t('instructor_sidebar_group_communication'),
+      label: t('Sidebar.instructor_group_communication'),
       items: [
-        { href: '/messages', icon: MessagesSquare, textKey: 'navMessages' },
-        { href: '/questions-reponses', icon: MessagesSquare, textKey: 'navQA' },
-        { href: '/avis', icon: Star, textKey: 'navReviews' },
+        { href: '/messages', icon: MessagesSquare, textKey: 'Nav.messages' },
+        { href: '/questions-reponses', icon: MessagesSquare, textKey: 'Nav.qa' },
+        { href: '/avis', icon: Star, textKey: 'Nav.reviews' },
       ],
     },
   ];
@@ -134,7 +134,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
                 key={item.href} 
                 href={item.href} 
                 icon={item.icon} 
-                label={t(item.textKey)}
+                label={t(item.textKey as any)}
                 onClick={onLinkClick} />
             ))}
           </div>
@@ -149,12 +149,12 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
           onClick={() => switchRole('student')}
         >
           <LogIn className="mr-2 h-4 w-4" />
-          {t('userRoleStudent')}
+          {t('Sidebar.student_mode')}
         </Button>
         {isAdmin && (
             <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                 <Shield className="mr-2 h-4 w-4" />
-                {t('admin_mode')}
+                {t('Sidebar.admin_mode')}
             </Button>
         )}
       </footer>

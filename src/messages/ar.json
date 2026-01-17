@@ -1,0 +1,73 @@
+{
+  "Marketing": {
+    "title": "أدوات التسويق",
+    "description": "عزز ظهورك وأدر حملاتك الإعلانية.",
+    "generateBtn": "إنشاء إعلان بالذكاء الاصطناعي",
+    "noPromo": "لا توجد رموز ترويجية نشطة."
+  },
+  "Auth": {
+    "login": "تسجيل الدخول",
+    "register": "إنشاء حساب",
+    "welcome": "مرحبًا بكم في نضارة أفريقيا",
+    "forgotPass": "هل نسيت كلمة المرور؟",
+    "loginButton": "تسجيل الدخول",
+    "registerButton": "إنشاء حساب",
+    "emailLabel": "البريد الإلكتروني",
+    "passwordLabel": "كلمة المرور",
+    "password_forgot": "هل نسيت كلمة المرور؟",
+    "fullNameLabel": "الاسم الكامل",
+    "i_agree_to": "أوافق على",
+    "terms_of_use": "شروط الاستخدام",
+    "and": "و",
+    "privacy_policy": "سياسة الخصوصية",
+    "create_account": "إنشاء حساب"
+  },
+  "Nav": {
+    "dashboard": "لوحة التحكم",
+    "courses": "دوراتي",
+    "instructor": "منطقة المدربين",
+    "settings": "الإعدادات",
+    "logout": "خروج",
+    "assignments": "واجباتي",
+    "certificates": "شهاداتي",
+    "wishlist": "قائمة الرغبات",
+    "directory": "الدليل",
+    "messages": "الرسائل",
+    "account": "حسابي",
+    "notifications": "الإشعارات",
+    "finance": "إيراداتي",
+    "qa": "أسئلة وأجوبة",
+    "reviews": "التقييمات",
+    "my_students": "طلابي",
+    "statistics": "الإحصائيات",
+    "users": "المستخدمون",
+    "applications": "الطلبات",
+    "moderation": "الإشراف",
+    "transactions": "المعاملات",
+    "payouts": "المدفوعات",
+    "support": "الدعم",
+    "audit": "سجل التدقيق",
+    "marketing": "التسويق",
+    "carousel": "عرض الشرائح",
+    "roles": "الأدوار والصلاحيات",
+    "quiz": "الاختبارات",
+    "resources": "الموارد"
+  },
+  "Hero": {
+    "title": "التميز الرقمي الأفريقي",
+    "subtitle": "المنصة التي تحول المعرفة إلى نجاح.",
+    "badge": "المنصة رقم 1 للمهارات المستقبلية في أفريقيا"
+  },
+  "Sidebar": {
+    "personal": "شخصي",
+    "follow_up": "متابعة",
+    "community": "مجتمع",
+    "be_instructor": "كن مدربًا",
+    "student_mode": "التبديل إلى وضع الطالب",
+    "instructor_mode": "التبديل إلى وضع المدرب",
+    "admin_mode": "وضع المسؤول",
+    "instructor_group_work": "عملي",
+    "instructor_group_finances": "المالية والمجتمع",
+    "instructor_group_communication": "التواصل"
+  }
+}

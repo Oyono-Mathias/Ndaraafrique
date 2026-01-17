@@ -24,6 +24,8 @@ import {
   GalleryHorizontal,
   History,
   Shield,
+  FileQuestion,
+  Folder,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -66,25 +68,25 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
 
 
 export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
-  const t = useTranslations();
+  const t = useTranslations('Nav');
   const db = getFirestore();
 
   const adminMenu = [
-    { href: "/admin/statistiques", icon: BarChart3, textKey: "navStatistics" },
-    { href: "/admin/users", icon: Users, textKey: "navUsers" },
-    { href: "/admin/instructors", icon: UserCheck, textKey: "navApplications", countId: 'pendingInstructors' },
-    { href: "/admin/moderation", icon: ShieldAlert, textKey: "navModeration", countId: 'pendingCourses' },
-    { href: "/admin/courses", icon: BookOpen, textKey: "navCourses" },
-    { href: "/admin/payments", icon: CreditCard, textKey: "navTransactions" },
-    { href: "/admin/payouts", icon: Landmark, textKey: "navPayouts", countId: 'pendingPayouts' },
-    { href: "/admin/support", icon: HelpCircle, textKey: "navSupport", countId: 'openTickets' },
-    { href: "/admin/logs", icon: History, textKey: "navAudit" },
-    { href: "/admin/marketing", icon: Sparkles, textKey: "navMarketing" },
-    { href: "/admin/carousel", icon: GalleryHorizontal, textKey: "navCarousel" },
-    { href: "/messages", icon: MessageSquare, textKey: "navMessages" },
+    { href: "/admin/statistiques", icon: BarChart3, textKey: "statistics" },
+    { href: "/admin/users", icon: Users, textKey: "users" },
+    { href: "/admin/instructors", icon: UserCheck, textKey: "applications", countId: 'pendingInstructors' },
+    { href: "/admin/moderation", icon: ShieldAlert, textKey: "moderation", countId: 'pendingCourses' },
+    { href: "/admin/courses", icon: BookOpen, textKey: "courses" },
+    { href: "/admin/payments", icon: CreditCard, textKey: "transactions" },
+    { href: "/admin/payouts", icon: Landmark, textKey: "payouts", countId: 'pendingPayouts' },
+    { href: "/admin/support", icon: HelpCircle, textKey: "support", countId: 'openTickets' },
+    { href: "/admin/logs", icon: History, textKey: "audit" },
+    { href: "/admin/marketing", icon: Sparkles, textKey: "marketing" },
+    { href: "/admin/carousel", icon: GalleryHorizontal, textKey: "carousel" },
+    { href: "/messages", icon: MessageSquare, textKey: "messages" },
     { href: "/admin/faq", icon: MessageCircleQuestion, textKey: "FAQ" },
-    { href: "/admin/settings", icon: Settings, textKey: "navSettings" },
-    { href: "/admin/roles", icon: Shield, textKey: "navRoles" },
+    { href: "/admin/settings", icon: Settings, textKey: "settings" },
+    { href: "/admin/roles", icon: Shield, textKey: "roles" },
   ];
 
   const pendingInstructorsQuery = useMemoFirebase(() => 
@@ -132,7 +134,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
               key={item.href} 
               href={item.href} 
               icon={item.icon} 
-              label={t(item.textKey)}
+              label={t(item.textKey as any)}
               count={item.countId ? counts[item.countId as keyof typeof counts] : undefined}
               onClick={onLinkClick}
           />

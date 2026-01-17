@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import Link from "next/link";
@@ -84,34 +83,34 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
 
   const studentMenu = [
     {
-      label: t('navPersonal'),
+      label: t('Sidebar.personal'),
       items: [
         { href: "/dashboard", icon: Star, label: "Pour vous", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/mes-formations", icon: Play, textKey: 'navMyCourses', id: 'sidebar-nav-mes-formations' },
+        { href: "/mes-formations", icon: Play, textKey: 'Nav.courses', id: 'sidebar-nav-mes-formations' },
         { href: "/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
     {
-      label: t('navFollowUp'),
+      label: t('Sidebar.follow_up'),
       items: [
-        { href: "/mes-certificats", icon: Award, textKey: 'navCertificates', id: 'sidebar-nav-mes-certificats' },
-        { href: "/liste-de-souhaits", icon: Heart, textKey: 'navWishlist', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, label: "Mes Devoirs", id: 'sidebar-nav-mes-devoirs' },
+        { href: "/mes-certificats", icon: Award, textKey: 'Nav.certificates', id: 'sidebar-nav-mes-certificats' },
+        { href: "/liste-de-souhaits", icon: Heart, textKey: 'Nav.wishlist', id: 'sidebar-nav-liste-de-souhaits' },
+        { href: "/mes-devoirs", icon: ClipboardCheck, textKey: 'Nav.assignments', id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {
-      label: t('navCommunity'),
+      label: t('Sidebar.community'),
       items: [
-        { href: "/annuaire", icon: Users, textKey: 'navDirectory', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
-        { href: "/messages", icon: MessageSquare, textKey: 'navMessages', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
+        { href: "/annuaire", icon: Users, textKey: 'Nav.directory', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
+        { href: "/messages", icon: MessageSquare, textKey: 'Nav.messages', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
       ]
     },
     {
-      label: t('navAccount'),
+      label: t('Sidebar.account'),
       items: [
-        { href: "/account", icon: User, textKey: 'navAccount', id: 'sidebar-nav-account' },
-        { href: "/notifications", icon: Bell, textKey: 'navNotifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
+        { href: "/account", icon: User, textKey: 'Nav.account', id: 'sidebar-nav-account' },
+        { href: "/notifications", icon: Bell, textKey: 'Nav.notifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
       ],
     },
   ];
@@ -204,20 +203,20 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           {isInstructor ? (
               <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={() => switchRole('instructor')}>
                   <LogIn className="mr-2 h-4 w-4" />
-                  {t('userRoleInstructor')}
+                  {t('Sidebar.instructor_mode')}
               </Button>
           ) : showInstructorSignup && (
               <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" asChild>
                   <Link href="/devenir-instructeur">
                       <Briefcase className="mr-2 h-4 w-4" />
-                      {t('be_instructor')}
+                      {t('Sidebar.be_instructor')}
                   </Link>
               </Button>
           )}
           {isAdmin && (
               <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                   <Shield className="mr-2 h-4 w-4" />
-                  {t('admin_mode')}
+                  {t('Sidebar.admin_mode')}
               </Button>
           )}
         </footer>

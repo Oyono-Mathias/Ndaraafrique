@@ -1,0 +1,73 @@
+{
+  "Marketing": {
+    "title": "A ye ti Dengo Buze",
+    "description": "Mu ngangu na buze ti mo, mo maï.",
+    "generateBtn": "Sigi na Pub via IA",
+    "noPromo": "Code promo ayeke da ape."
+  },
+  "Auth": {
+    "login": "Lî na yâ ni",
+    "register": "Sû iri ti mo",
+    "welcome": "Gara na Ndara Afrique",
+    "forgotPass": "Bobi a girisa Code ?",
+    "loginButton": "Lî na yâ ni",
+    "registerButton": "Sû iri ti mo",
+    "emailLabel": "Adresse email ti mo",
+    "passwordLabel": "Code ti mo",
+    "password_forgot": "Bobi a girisa Code ?",
+    "fullNameLabel": "Iri ti mo kue",
+    "i_agree_to": "Mbi yeda na",
+    "terms_of_use": "A lè ti kua",
+    "and": "na",
+    "privacy_policy": "A lè ti batango ye ti zo",
+    "create_account": "Sû iri ti mo"
+  },
+  "Nav": {
+    "dashboard": "Tablo ti Commandement",
+    "courses": "A formation ti mbi",
+    "instructor": "Ndo ti Maître",
+    "settings": "A réglage",
+    "logout": "Sigi",
+    "assignments": "A devoir ti mbi",
+    "certificates": "A diplôme ti mbi",
+    "wishlist": "Liste ti mbi",
+    "directory": "Annuaire",
+    "messages": "A-Message",
+    "account": "Compte ti mbi",
+    "notifications": "A-Notification",
+    "finance": "A-finance ti mbi",
+    "qa": "A-hunda na a-réponse",
+    "reviews": "A-avis",
+    "my_students": "A-étudiant ti mbi",
+    "statistics": "A-statistique",
+    "users": "A-utilisateur",
+    "applications": "A-candidature",
+    "moderation": "Modération",
+    "transactions": "A-transaction",
+    "payouts": "A-retrait",
+    "support": "Support",
+    "audit": "Journal d'audit",
+    "marketing": "Marketing",
+    "carousel": "Carrousel",
+    "roles": "A-rôle na a-permission",
+    "quiz": "A-quiz",
+    "resources": "A-ressource"
+  },
+  "Hero": {
+    "title": "Ndara ti Africa ti Fini Ngoi",
+    "subtitle": "Place so hingango-ye aga mosoro.",
+    "badge": "Place ti kozo ndali ti a ndara ti kekereke na Afrika"
+  },
+  "Sidebar": {
+    "personal": "Ti mbi mveni",
+    "follow_up": "Ti landa na pekoni",
+    "community": "Ti bungbi",
+    "be_instructor": "Ga Maître",
+    "student_mode": "Mode ti Wamandango ye",
+    "instructor_mode": "Mode ti Maître",
+    "admin_mode": "Mode ti Gbia",
+    "instructor_group_work": "Kua ti mbi",
+    "instructor_group_finances": "A-finance na bungbi",
+    "instructor_group_communication": "Communication"
+  }
+}

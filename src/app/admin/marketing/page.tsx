@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -41,7 +40,7 @@ interface PromoCode {
 }
 
 export default function AdminMarketingPage() {
-  const t = useTranslations();
+  const t = useTranslations('Marketing');
   const { toast } = useToast();
   const db = getFirestore();
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -110,8 +109,8 @@ export default function AdminMarketingPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('marketingTitle')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('marketingDescription')}</p>
+        <h1 className="text-3xl font-bold dark:text-white">{t('title')}</h1>
+        <p className="text-muted-foreground dark:text-slate-400">{t('description')}</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -142,7 +141,7 @@ export default function AdminMarketingPage() {
               />
               <Button type="submit" disabled={isAiLoading} className="w-full sm:w-auto h-12 text-base md:h-auto md:text-sm">
                 {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                {t('generate_btn')}
+                {t('generateBtn')}
               </Button>
             </form>
           </Form>
@@ -217,7 +216,7 @@ export default function AdminMarketingPage() {
                         ) : (
                              <TableRow className="dark:border-slate-700">
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-500">
-                                    {t('noPromoCodes')}
+                                    {t('noPromo')}
                                 </TableCell>
                             </TableRow>
                         )}
