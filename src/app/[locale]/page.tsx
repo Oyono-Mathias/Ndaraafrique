@@ -17,9 +17,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
+import { useTranslations } from 'next-intl';
 
 const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => {
     const [scrolled, setScrolled] = useState(false);
+    const t = useTranslations();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -52,12 +54,12 @@ const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform
                      {siteSettings.allowInstructorSignup ? (
                         <Link href="/login">
                             <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9">
-                                Se connecter
+                                {t('auth_login_btn')}
                             </Button>
                         </Link>
                     ) : (
                          <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white h-9" disabled>
-                            Connexion
+                            {t('auth_login_btn')}
                         </Button>
                     )}
                 </div>
@@ -310,6 +312,7 @@ export default function LandingPage({ siteSettings }: { siteSettings?: Partial<S
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const db = getFirestore();
   const effectiveSiteSettings = siteSettings?.platform || { allowInstructorSignup: true };
+  const t = useTranslations();
 
   useEffect(() => {
     const q = query(
@@ -360,13 +363,13 @@ export default function LandingPage({ siteSettings }: { siteSettings?: Partial<S
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
           <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up">
             <Sparkles className="w-3 h-3 mr-2" />
-            La plateforme N°1 pour les compétences du futur en Afrique
+            {t('hero_badge')}
           </Badge>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Apprenez. Construisez. Prospérez.
+            {t('hero_main_title')}
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès.
+            {t('hero_main_subtitle')}
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
               {effectiveSiteSettings.allowInstructorSignup ? (

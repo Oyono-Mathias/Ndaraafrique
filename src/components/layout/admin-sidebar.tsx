@@ -36,7 +36,7 @@ import { LanguageSelector } from "./language-selector";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin' && pathname === href) || (href !== '/admin' && pathname.startsWith(href));
+  const isActive = (href === '/admin' && pathname.startsWith('/admin/statistiques')) || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link

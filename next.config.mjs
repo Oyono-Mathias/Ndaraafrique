@@ -1,45 +1,11 @@
+
+import createNextIntlPlugin from 'next-intl/plugin';
+ 
+const withNextIntl = createNextIntlPlugin('./src/i18n.ts');
+ 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    images: {
-      remotePatterns: [
-        {
-          protocol: 'https',
-          hostname: 'upload.wikimedia.org',
-          port: '',
-          pathname: '/**',
-        },
-        {
-            protocol: 'https',
-            hostname: 'images.unsplash.com',
-            port: '',
-            pathname: '/**',
-        },
-        {
-            protocol: 'https',
-            hostname: 'picsum.photos',
-            port: '',
-            pathname: '/**',
-        },
-        {
-            protocol: 'https',
-            hostname: 'api.dicebear.com',
-            port: '',
-            pathname: '/**',
-        },
-        {
-            protocol: 'https',
-            hostname: 'www.gstatic.com',
-            port: '',
-            pathname: '/**',
-        },
-        {
-            protocol: 'https',
-            hostname: 'i.postimg.cc',
-            port: '',
-            pathname: '/**',
-        }
-      ],
-    },
+  // Vous pouvez ajouter d'autres options de configuration Next.js ici si nécessaire
 };
-
-export default nextConfig;
+ 
+export default withNextIntl(nextConfig);

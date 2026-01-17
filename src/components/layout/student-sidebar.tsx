@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import Link from "next/link";
@@ -87,7 +88,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/dashboard", icon: Star, label: "Pour vous", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/mes-formations", icon: Play, textKey: 'navMyLearning', id: 'sidebar-nav-mes-formations' },
+        { href: "/mes-formations", icon: Play, textKey: 'navMyCourses', id: 'sidebar-nav-mes-formations' },
         { href: "/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
@@ -216,7 +217,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
           {isAdmin && (
               <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
                   <Shield className="mr-2 h-4 w-4" />
-                  Mode Admin
+                  {t('admin_mode')}
               </Button>
           )}
         </footer>

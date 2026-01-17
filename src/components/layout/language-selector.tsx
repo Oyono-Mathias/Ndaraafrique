@@ -1,8 +1,9 @@
+
 "use client";
 
 import { useState } from 'react';
 import { useLocale } from 'next-intl';
-import { usePathname, useRouter } from 'next-intl/client';
+import { usePathname, useRouter } from 'next-intl/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';

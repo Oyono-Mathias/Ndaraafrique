@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -205,7 +206,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-3">
-                    <SectionHeader title="Évolution des revenus" className="mb-4" />
+                    <SectionHeader title={t('revenue_evolution_title')} className="mb-4" />
                     <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : revenueTrendData.length > 0 ? (
@@ -238,7 +239,7 @@ function InstructorDashboardContent() {
                     </Card>
                 </div>
                 <div className="lg:col-span-2">
-                     <SectionHeader title="Top 5 des cours" className="mb-4" />
+                     <SectionHeader title={t('top_courses_title')} className="mb-4" />
                       <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="p-0">
                             <Table>

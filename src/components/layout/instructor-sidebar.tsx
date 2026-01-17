@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
-import { useTranslation } from "react-i18next";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
@@ -33,7 +33,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const pathname = usePathname();
   const { currentUser } = useRole();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
   const isAllowedPath = (path: string) => {
@@ -79,7 +79,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
 export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, currentUser, availableRoles } = useRole();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const isAdmin = availableRoles.includes('admin');
 
   const instructorMenu = [
@@ -145,7 +145,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         <UserNav />
         <Button
           variant="outline"
-          className="w-full justify-center bg-slate-800/50 border-slate-700 hover:bg-slate-700/80 text-white"
+          className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white"
           onClick={() => switchRole('student')}
         >
           <LogIn className="mr-2 h-4 w-4" />
@@ -161,5 +161,3 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     </div>
   );
 }
-
-    

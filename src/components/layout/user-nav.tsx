@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import {
@@ -42,14 +43,18 @@ export function UserNav() {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+          <Button variant="ghost" className="relative h-10 w-full rounded-lg p-0 flex items-center justify-start gap-3 text-left">
             <Avatar className="h-10 w-10 border-2 border-slate-700">
               <AvatarImage src={currentUser.profilePictureURL} alt={currentUser.fullName} />
               <AvatarFallback className="bg-slate-700 text-slate-300">{currentUser.fullName?.charAt(0)}</AvatarFallback>
             </Avatar>
              {!currentUser.isProfileComplete && (
-                <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-amber-400 ring-2 ring-background" />
+                <span className="absolute bottom-0 left-7 block h-3 w-3 rounded-full bg-amber-400 ring-2 ring-background" />
             )}
+            <div className="flex flex-col">
+                <span className="font-semibold text-sm text-white truncate">{currentUser.username}</span>
+                 <span className="text-xs text-slate-400 capitalize">{currentUser.role}</span>
+            </div>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent className="w-64 dark:bg-slate-800 dark:border-slate-700" align="end" forceMount>
