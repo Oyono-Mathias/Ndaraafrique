@@ -21,7 +21,6 @@ import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wal
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTranslations } from 'next-intl';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { Skeleton } from '@/components/ui/skeleton';
 import { updateGlobalSettings } from '@/actions/settingsActions';
@@ -59,7 +58,6 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function AdminSettingsPage() {
-    const t = useTranslations();
     const { toast } = useToast();
     const { currentUser } = useRole();
     const db = getFirestore();
@@ -89,30 +87,54 @@ export default function AdminSettingsPage() {
             allowInstructorSignup: true,
             autoApproveCourses: false,
             enableInternalMessaging: true,
-            termsOfService: '',
-            privacyPolicy: '',
-            aboutTitle: '',
-            aboutSubtitle: '',
-            historyTitle: '',
-            historyFrench: '',
-            historySango: '',
-            visionTitle: '',
-            visionFrench: '',
-            visionSango: '',
-            ctaTitle: '',
-            ctaSubtitle: '',
+            termsOfService: `
+Article 1 : Objet
+Les présentes conditions générales d'utilisation (CGU) ont pour objet de définir les modalités de mise à disposition de la plateforme Ndara Afrique et ses conditions d'utilisation.
+
+Article 2 : Accès au service
+L'accès à la plateforme est réservé aux utilisateurs inscrits. Ndara Afrique se réserve le droit de suspendre ou de refuser l'accès à tout utilisateur ne respectant pas les présentes CGU.
+
+Article 3 : Propriété intellectuelle
+L'ensemble des contenus (textes, vidéos, logos) présents sur le site sont la propriété exclusive de Ndara Afrique ou de ses instructeurs partenaires. Toute reproduction est interdite sans autorisation.
+
+Article 4 : Responsabilité
+Ndara Afrique s'efforce de fournir un service de qualité mais ne saurait être tenu pour responsable des interruptions de service ou des erreurs techniques.
+            `,
+            privacyPolicy: `
+Article 1 : Collecte des données
+Nous collectons les données que vous nous fournissez lors de votre inscription (nom, email, etc.) ainsi que les données relatives à votre progression dans les cours.
+
+Article 2 : Utilisation des données
+Vos données sont utilisées pour personnaliser votre expérience d'apprentissage, assurer le suivi de votre progression, et communiquer avec vous. Elles ne sont jamais vendues à des tiers.
+
+Article 3 : Sécurité
+Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles pour protéger vos données personnelles contre la perte, l'altération ou la divulgation non autorisée.
+
+Article 4 : Vos droits
+Conformément à la législation en vigueur, vous disposez d'un droit d'accès, de rectification, et de suppression de vos données personnelles en nous contactant à l'adresse contact@ndara-afrique.com.
+            `,
+            aboutTitle: 'Le Manifeste Ndara',
+            aboutSubtitle: "Plus qu'une plateforme. Un mouvement pour l'émancipation technologique du continent.",
+            historyTitle: "Notre Histoire",
+            historyFrench: "Ndara Afrique est né d'une conviction profonde : le savoir est le levier le plus puissant pour le changement. Face à un continent en pleine mutation, nous avons vu un besoin urgent de formations accessibles, pertinentes et créées par des experts locaux pour des talents locaux.",
+            historySango: "Tene ti Ndara Afrique a lîngbi na ndö ti mbeni kpengba pensé: Ndara ayeke kpengba lege ti changement. Na lê ti mbeni kontinän so ayeke changé, e bâ so a yeke kota ye ti wara afango ye so alingbi na azo, so a leke ni na lege ti azo ti kodoro ndali ti azo ti kodoro.",
+            visionTitle: "Notre Vision",
+            visionFrench: "Notre ambition est de faire de l'Afrique non plus un consommateur, mais un créateur de technologie de premier plan. Nous bâtissons un écosystème où chaque jeune talent a les outils pour innover, pour construire les solutions de demain, et pour devenir un leader dans l'économie numérique mondiale.",
+            visionSango: "Vision ti e ayeke ti tene que Afrique aga pëpe mbeni zo so ayeke vo ye senge, me mbeni kota zo so ayeke leke aye ti technologie. E yeke leke mbeni lege so na yâ ni, amaseka kue so ayeke na ndara awara aye so alingbi ti tene ala leke aye ti kekereke, na ala ga akozo zo na yâ ti économie numérique ti dunia.",
+            ctaTitle: "Ga, mo mû mbage ti mo.",
+            ctaSubtitle: "Rejoignez des milliers d'apprenants et de formateurs qui construisent le futur."
         },
     });
 
     useEffect(() => {
         if (currentSettings) {
             const settingsData = {
-                siteName: currentSettings.general?.siteName || '',
-                logoUrl: currentSettings.general?.logoUrl || '',
-                contactEmail: currentSettings.general?.contactEmail || '',
+                siteName: currentSettings.general?.siteName || form.getValues('siteName'),
+                logoUrl: currentSettings.general?.logoUrl || form.getValues('logoUrl'),
+                contactEmail: currentSettings.general?.contactEmail || form.getValues('contactEmail'),
                 maintenanceMode: currentSettings.platform?.maintenanceMode || false,
-                loginBackgroundImage: currentSettings.general?.loginBackgroundImage || '',
-                supportPhone: currentSettings.general?.supportPhone || '',
+                loginBackgroundImage: currentSettings.general?.loginBackgroundImage || form.getValues('loginBackgroundImage'),
+                supportPhone: currentSettings.general?.supportPhone || form.getValues('supportPhone'),
                 platformCommission: currentSettings.commercial?.platformCommission,
                 currency: currentSettings.commercial?.currency || 'XOF',
                 minPayoutThreshold: currentSettings.commercial?.minPayoutThreshold,
@@ -121,18 +143,18 @@ export default function AdminSettingsPage() {
                 allowInstructorSignup: currentSettings.platform?.allowInstructorSignup ?? true,
                 autoApproveCourses: currentSettings.platform?.autoApproveCourses ?? false,
                 enableInternalMessaging: currentSettings.platform?.enableInternalMessaging ?? true,
-                termsOfService: currentSettings.legal?.termsOfService || '',
-                privacyPolicy: currentSettings.legal?.privacyPolicy || '',
-                aboutTitle: currentSettings.content?.aboutPage?.mainTitle || '',
-                aboutSubtitle: currentSettings.content?.aboutPage?.mainSubtitle || '',
-                historyTitle: currentSettings.content?.aboutPage?.historyTitle || '',
-                historyFrench: currentSettings.content?.aboutPage?.historyFrench || '',
-                historySango: currentSettings.content?.aboutPage?.historySango || '',
-                visionTitle: currentSettings.content?.aboutPage?.visionTitle || '',
-                visionFrench: currentSettings.content?.aboutPage?.visionFrench || '',
-                visionSango: currentSettings.content?.aboutPage?.visionSango || '',
-                ctaTitle: currentSettings.content?.aboutPage?.ctaTitle || '',
-                ctaSubtitle: currentSettings.content?.aboutPage?.ctaSubtitle || '',
+                termsOfService: currentSettings.legal?.termsOfService || form.getValues('termsOfService'),
+                privacyPolicy: currentSettings.legal?.privacyPolicy || form.getValues('privacyPolicy'),
+                aboutTitle: currentSettings.content?.aboutPage?.mainTitle || form.getValues('aboutTitle'),
+                aboutSubtitle: currentSettings.content?.aboutPage?.mainSubtitle || form.getValues('aboutSubtitle'),
+                historyTitle: currentSettings.content?.aboutPage?.historyTitle || form.getValues('historyTitle'),
+                historyFrench: currentSettings.content?.aboutPage?.historyFrench || form.getValues('historyFrench'),
+                historySango: currentSettings.content?.aboutPage?.historySango || form.getValues('historySango'),
+                visionTitle: currentSettings.content?.aboutPage?.visionTitle || form.getValues('visionTitle'),
+                visionFrench: currentSettings.content?.aboutPage?.visionFrench || form.getValues('visionFrench'),
+                visionSango: currentSettings.content?.aboutPage?.visionSango || form.getValues('visionSango'),
+                ctaTitle: currentSettings.content?.aboutPage?.ctaTitle || form.getValues('ctaTitle'),
+                ctaSubtitle: currentSettings.content?.aboutPage?.ctaSubtitle || form.getValues('ctaSubtitle'),
             };
             form.reset(settingsData);
             if (settingsData.logoUrl) {
