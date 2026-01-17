@@ -3,8 +3,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -106,7 +106,6 @@ export default function LoginClient() {
             createdAt: serverTimestamp() as any,
             lastLogin: serverTimestamp() as any,
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-            preferredLanguage: 'fr',
             isProfileComplete: false,
         };
         if (acceptedTerms) {
@@ -207,7 +206,7 @@ export default function LoginClient() {
                     <TabsContent value="register" className="mt-6">
                         <Form {...registerForm}>
                             <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Nom complet</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Nom Complet</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Adresse e-mail</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Mot de passe</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="terms" render={({ field }) => (

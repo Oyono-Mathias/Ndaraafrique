@@ -18,7 +18,6 @@ import { Search, Users, UserX } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslations } from 'next-intl';
 import {
     Dialog,
     DialogContent,
@@ -32,7 +31,6 @@ import { startChat } from '@/lib/chat';
 import { MemberCard } from '@/components/cards/MemberCard';
 
 const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, onGoToProfile: () => void }) => {
-    const t = useTranslations();
     return (
         <Dialog open={isOpen}>
             <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
@@ -40,11 +38,11 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
                     <div className="p-3 rounded-full bg-destructive/10 w-fit mb-2">
                         <UserX className="text-destructive h-6 w-6"/> 
                     </div>
-                    <DialogTitle>{t('profile_incomplete_title')}</DialogTitle>
-                    <DialogDescription className="pt-2">{t('profile_incomplete_desc_directory')}</DialogDescription>
+                    <DialogTitle>Profil Incomplet</DialogTitle>
+                    <DialogDescription className="pt-2">Pour accéder à l'annuaire et à la messagerie, vous devez d'abord compléter les informations essentielles de votre profil.</DialogDescription>
                 </DialogHeader>
                  <DialogFooter>
-                    <Button onClick={onGoToProfile} className="w-full">{t('complete_profile_btn')}</Button>
+                    <Button onClick={onGoToProfile} className="w-full">Compléter mon profil</Button>
                  </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -56,7 +54,6 @@ export default function DirectoryPage() {
   const db = getFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const [members, setMembers] = useState<NdaraUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);

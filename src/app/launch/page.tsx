@@ -70,14 +70,14 @@ export default function LaunchPage() {
         const result = await addToWaitlist(data.email);
         if (result.success) {
             toast({
-                title: 'Merci !',
+                title: "Merci !",
                 description: "Vous êtes bien inscrit sur la liste d'attente.",
             });
             form.reset();
         } else {
             toast({
                 variant: 'destructive',
-                title: 'Erreur',
+                title: "Erreur",
                 description: result.error,
             });
         }
@@ -85,6 +85,7 @@ export default function LaunchPage() {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-[#0f172a] text-white overflow-hidden">
+
             <main className="flex flex-col items-center text-center z-10 w-full max-w-4xl mx-auto">
                  <div className="relative mb-6">
                     <Image

@@ -79,7 +79,6 @@ export interface NdaraUser {
   lastSeen?: Timestamp;
   termsAcceptedAt?: Timestamp;
   isProfileComplete?: boolean;
-  preferredLanguage?: 'fr' | 'en';
   badges?: string[];
   permissions?: { [key: string]: boolean };
 };

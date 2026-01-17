@@ -124,8 +124,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (userData.permissions) {
               finalPermissions = { ...finalPermissions, ...userData.permissions };
           }
-          
-          const preferredLang = userData.preferredLanguage || 'fr';
 
           const resolvedUser: NdaraUser = {
               ...userData,
@@ -138,7 +136,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               status: userData.status || 'active',
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
               permissions: finalPermissions,
-              preferredLanguage: preferredLang,
           };
           
           setCurrentUser(resolvedUser);
@@ -171,7 +168,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 availableRoles: ['student'],
                 profilePictureURL: user.photoURL || '',
                 isProfileComplete: false,
-                preferredLanguage: 'fr',
             };
             setCurrentUser(defaultUser);
             setAvailableRoles(['student']);
