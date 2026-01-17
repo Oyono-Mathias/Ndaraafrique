@@ -39,6 +39,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const isAuthPage = pathname === '/login' || pathname === '/register' || pathname === '/forgot-password';
   const isLaunchPage = pathname === '/launch';
@@ -62,8 +67,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [db]);
   
   if (isLandingPage) {
-    // Pass settings down to the landing page if needed
-    // This allows CTA buttons to be enabled/disabled
     return React.cloneElement(children as React.ReactElement, { siteSettings });
   }
   
@@ -71,7 +74,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (isUserLoading) {
+  if (!isClient || isUserLoading) {
     return <SplashScreen />;
   }
 
@@ -102,12 +105,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     isFullScreenPage && "!p-0" // Force no padding for course player
   );
   
-  // Admin layout is different. The actual layout is handled in /admin/layout.tsx
   if (isAdminArea) {
       return <>{children}</>;
   }
 
-  // Member (Student/Instructor) Layout
   return (
       <div className={cn("min-h-screen w-full bg-slate-900 text-white", isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]")}>
         <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
