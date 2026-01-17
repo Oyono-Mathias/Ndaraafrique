@@ -3,13 +3,15 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import {
   getFirestore,
   collection,
   query,
   orderBy,
   where,
+  onSnapshot,
   getDocs
 } from 'firebase/firestore';
 import {

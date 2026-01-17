@@ -1,9 +1,9 @@
 
-
 'use client';
 
 import Link from 'next/link';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
 import { Frown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';

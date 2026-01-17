@@ -1,11 +1,11 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import Image from 'next/image';
 import {

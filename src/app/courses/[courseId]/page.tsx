@@ -3,7 +3,8 @@
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useMemoFirebase } from '@/firebase/provider';
 import { useRole } from '@/context/RoleContext';
 import {
   doc,
@@ -18,6 +19,8 @@ import {
   QueryDocumentSnapshot,
   updateDoc,
   serverTimestamp,
+  getDoc,
+  setDoc
 } from 'firebase/firestore';
 import { Player, Youtube, Vimeo, DefaultUi, DefaultControls } from '@vime/react';
 import '@vime/core/themes/default.css';

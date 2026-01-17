@@ -17,7 +17,8 @@ import {
   serverTimestamp,
   writeBatch,
 } from 'firebase/firestore';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';

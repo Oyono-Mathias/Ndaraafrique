@@ -1,7 +1,9 @@
+
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useMemoFirebase } from '@/firebase/provider';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BadgeCheck, ShieldAlert } from 'lucide-react';

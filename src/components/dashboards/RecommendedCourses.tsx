@@ -1,12 +1,12 @@
 
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, getDocs, doc } from 'firebase/firestore';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useMemoFirebase } from '@/firebase/provider';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';

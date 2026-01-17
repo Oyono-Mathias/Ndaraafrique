@@ -1,10 +1,10 @@
 
-
 'use client';
 
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
@@ -112,5 +112,3 @@ export default function ResourcesDashboardPage() {
         </div>
     );
 }
-
-    

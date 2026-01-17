@@ -3,7 +3,8 @@
 
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import {
   Table,
@@ -45,7 +46,7 @@ export default function QuizzesDashboardPage() {
             </header>
 
              {error && (
-                <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
+                <div className="p-4 bg-red-900/50 text-red-300 border border-red-700 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
                     <p>
                         Une erreur est survenue lors du chargement des cours. 

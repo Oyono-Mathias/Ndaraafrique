@@ -4,7 +4,9 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import {
   getFirestore,
   collection,
@@ -336,4 +338,3 @@ export default function CourseAssignmentsPage() {
         </div>
     );
 }
-

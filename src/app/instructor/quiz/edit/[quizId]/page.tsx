@@ -16,7 +16,9 @@ import {
   deleteDoc,
   getDocs,
 } from 'firebase/firestore';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import type { Quiz, Question } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

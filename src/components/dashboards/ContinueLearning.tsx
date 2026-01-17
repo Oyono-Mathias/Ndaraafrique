@@ -3,14 +3,15 @@
 
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
+import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, getFirestore, orderBy, limit } from 'firebase/firestore';
 import type { CourseProgress } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookOpen, Play } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
 

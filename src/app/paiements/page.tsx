@@ -1,10 +1,10 @@
 
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase/firestore/use-doc';
+import { useMemoFirebase } from '@/firebase/provider';
 import { useRole } from '@/context/RoleContext';
 import { doc, getFirestore } from 'firebase/firestore';
 import Image from 'next/image';
