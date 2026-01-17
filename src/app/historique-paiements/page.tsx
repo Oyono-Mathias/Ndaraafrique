@@ -28,7 +28,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CreditCard, ShoppingCart } from 'lucide-react';
 import type { Payment, Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
 
 interface EnrichedPayment extends Payment {
   courseTitle?: string;
@@ -39,7 +38,6 @@ const formatCurrency = (amount: number, currency: string = 'XOF') => {
 };
 
 const StatusBadge = ({ status }: { status: Payment['status'] }) => {
-    const t = useTranslations();
     const statusMap = {
         Completed: { text: 'Terminé', className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
         Failed: { text: 'Échoué', className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },

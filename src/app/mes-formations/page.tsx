@@ -160,5 +160,3 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
         </div>
     );
 };
-
-    
