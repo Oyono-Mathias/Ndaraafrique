@@ -10,7 +10,8 @@
         "courseId": { "type": "string" },
         "grantedBy": { "type": "string", "description": "UID of the admin who granted access." },
         "reason": { "type": "string", "description": "Reason for granting access." },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "expiresAt": { "type": "string", "format": "date-time", "description": "When the granted access expires." }
       },
       "required": ["studentId", "courseId", "grantedBy", "createdAt"]
     },
@@ -1387,7 +1388,19 @@
       }
     ],
     "admin_grants/{grantId}": {
-        "schema": { "$ref": "#/entities/AdminGrant" }
+      "schema": { "$ref": "#/entities/AdminGrant" }
+    },
+    "admin_audit_logs/{logId}": {
+      "schema": { "$ref": "#/entities/AdminAuditLog" },
+      "description": "Log of actions performed by administrators."
+    },
+    "security_logs/{logId}": {
+      "schema": { "$ref": "#/entities/SecurityLog" },
+      "description": "Log of security-related events."
+    },
+    "promoCodes/{codeId}": {
+      "schema": { "$ref": "#/entities/PromoCode" },
+      "description": "Promotional codes for discounts."
     }
   }
 }

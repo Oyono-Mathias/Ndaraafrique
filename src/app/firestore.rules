@@ -41,9 +41,15 @@ service cloud.firestore {
       let userData = getUserData(request.auth.uid);
       return userData.isProfileComplete == true;
     }
-
+    
     function isEnrolled(courseId) {
-        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+        let enrollmentPath = /databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId);
+        if (!exists(enrollmentPath)) {
+          return false;
+        }
+        let enrollmentData = get(enrollmentPath).data;
+        // Allow if no expiration is set OR if expiration is in the future.
+        return !('expiresAt' in enrollmentData) || enrollmentData.expiresAt > request.time;
     }
     
     function isCourseOwner(courseId) {
@@ -56,8 +62,8 @@ service cloud.firestore {
     ====================== */
 
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
-      allow list: if isAdmin();
+      allow get: if true; // Publicly readable for names/profiles (e.g. for certificates)
+      allow list: if isSignedIn() && isProfileComplete(); // Allow directory search
       allow create: if isOwner(userId);
 
       allow update: if isAdmin() || (
@@ -78,7 +84,7 @@ service cloud.firestore {
       }
 
       match /notifications/{id} {
-        allow read, write: if isActive() && isOwner(userId);
+        allow read, write, list: if isActive() && isOwner(userId);
       }
 
       match /subscriptions/{id} {
@@ -143,8 +149,9 @@ service cloud.firestore {
     }
     
      match /resources/{resourceId} {
-      allow read, list: if isEnrolled(request.resource.data.courseId) || isCourseOwner(request.resource.data.courseId) || isAdmin();
-      allow create, update, delete: if isCourseOwner(request.resource.data.courseId) || isAdmin();
+      allow read, list: if isEnrolled(resource.data.courseId) || isCourseOwner(resource.data.courseId) || isAdmin();
+      allow create: if isCourseOwner(request.resource.data.courseId) || isAdmin();
+      allow update, delete: if isCourseOwner(resource.data.courseId) || isAdmin();
     }
 
     /* ======================
@@ -152,15 +159,9 @@ service cloud.firestore {
     ====================== */
 
     match /course_progress/{progressId} {
-      // Students can only read their own progress documents. Admins can read all.
-      // For LIST operations, this rule requires a `where('userId', '==', request.auth.uid)` clause
-      // in the query for non-admin users. This is the correct and secure way to handle this.
-      allow read: if isActive() && (isOwner(resource.data.userId) || isAdmin());
-      
-      // A student can only create or update their own progress.
+      allow get: if isActive() && (isOwner(resource.data.userId) || isAdmin());
+      allow list: if isActive() && (isAdmin() || request.query.where.userId == request.auth.uid);
       allow create, update: if isActive() && request.resource.data.userId == request.auth.uid;
-      
-      // A student can delete their own progress, or an admin can.
       allow delete: if isActive() && (isOwner(resource.data.userId) || isAdmin());
     }
 
@@ -170,10 +171,9 @@ service cloud.firestore {
     ====================== */
 
     match /enrollments/{id} {
-      // A user can list/get their own enrollments. An admin can read all.
-      // List queries must be constrained by studentId for non-admins.
-      allow read: if isActive() && (isOwner(resource.data.studentId) || isAdmin());
-      allow create: if isActive() && request.resource.data.studentId == request.auth.uid;
+      allow get: if true;
+      allow list: if isAdmin() || (isActive() && request.query.where.studentId == request.auth.uid);
+      allow create: if (isActive() && request.resource.data.studentId == request.auth.uid) || isAdmin();
       allow update: if isAdmin()
         || (isActive() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId)));
     }
@@ -223,6 +223,19 @@ service cloud.firestore {
       allow read: if (isActive() && isOwner(resource.data.instructorId)) || isAdmin();
       allow update, delete: if isAdmin();
     }
+    
+    /* ======================
+       ADMINISTRATION & GRANTS
+    ====================== */
+
+    match /admin_grants/{grantId} {
+        allow read, delete: if isAdmin();
+        allow create: if isAdmin() && request.resource.data.grantedBy == request.auth.uid;
+    }
+
+    match /admin_audit_logs/{logId} {
+        allow read, list: if isAdmin();
+    }
 
 
     /* ======================
@@ -262,10 +275,13 @@ service cloud.firestore {
         return request.auth.uid in resource.data.participants;
       }
       
-      allow create: if isActive() 
-                      && isProfileComplete()
-                      && request.auth.uid in request.resource.data.participants
-                      && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1];
+      allow create: if isActive() && request.auth.uid in request.resource.data.participants && (
+          (
+            isProfileComplete() &&
+            request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1]
+          ) || 
+          isAdmin()
+      );
                       
       allow read, update: if isActive() && isChatParticipant();
       allow list: if isActive(); // `list` is secured by the client query filtering `where('participants', 'array-contains', uid)`
@@ -283,11 +299,11 @@ service cloud.firestore {
     
     match /quizzes/{quizId} {
       // Instructors can manage quizzes for their own courses. Admins can manage all.
-      allow read, create, update, delete: if isApprovedInstructor() && isCourseOwner(resource.data.courseId)
+      allow read, create, update, delete: if isApprovedInstructor() && isCourseOwner(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId)
           || isAdmin();
           
       // Anyone enrolled in the course can view the quiz.
-      allow get: if isEnrolled(resource.data.courseId);
+      allow get: if isEnrolled(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId);
 
       // Questions can be read by enrolled students, managed by instructor/admin.
       match /questions/{questionId} {
