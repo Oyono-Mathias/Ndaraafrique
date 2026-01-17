@@ -32,7 +32,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareDashed, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NdaraUser } from '@/lib/types';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 
 
 interface SupportTicket {
@@ -58,7 +58,7 @@ const getCategoryBadge = (category: SupportTicket['category'], t: (key: string) 
 export default function AdminSupportPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [activeTab, setActiveTab] = useState('ouvert');
 
   const ticketsQuery = useMemoFirebase(
@@ -139,7 +139,7 @@ export default function AdminSupportPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                           {getCategoryBadge(ticket.category, t)}
+                           {getCategoryBadge(ticket.category, t as any)}
                         </TableCell>
                         <TableCell className="text-muted-foreground dark:text-slate-400">
                           {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
@@ -179,7 +179,7 @@ export default function AdminSupportPage() {
                                   <div className="flex justify-between items-start gap-4">
                                       <div className="flex-1">
                                            <div className="flex items-center gap-2 mb-2">
-                                              {getCategoryBadge(ticket.category, t)}
+                                              {getCategoryBadge(ticket.category, t as any)}
                                               {ticket.status === 'ouvert' && isOverdue && <Badge variant="destructive" className="animate-pulse">Urgent</Badge>}
                                            </div>
                                            <p className="font-bold text-sm text-white line-clamp-2">{ticket.subject}</p>

@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen } from 'lucide-react';
 import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 import { CourseCard } from '@/components/cards/CourseCard';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 
 interface EnrolledCourse extends Course {
   progress: number;
@@ -23,7 +23,7 @@ interface EnrolledCourse extends Course {
 export default function MyLearningPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -127,7 +127,7 @@ export default function MyLearningPage() {
 }
 
 const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit à aucun cours." }: { courses: EnrolledCourse[], isLoading: boolean, emptyMessage?: string }) => {
-    const { t } = useTranslation();
+    const t = useTranslations();
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

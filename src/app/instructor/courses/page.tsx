@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Search, Users, BookOpen, Trash2, Edit } from 'lucide-react';
 import type { Course } from '@/lib/types';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
@@ -23,7 +23,7 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
   const [loadingCount, setLoadingCount] = useState(true);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const db = getFirestore();
-  const { t } = useTranslation();
+  const t = useTranslations();
 
   useEffect(() => {
     const getCount = async () => {
@@ -107,7 +107,7 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
 export default function InstructorCoursesPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
 

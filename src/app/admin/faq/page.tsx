@@ -57,7 +57,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion, ChevronUp, ChevronDown } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 
 interface FAQ {
   id: string;
@@ -107,7 +107,7 @@ const FaqForm = ({ form, onSubmit, isSubmitting, t }: { form: any, onSubmit: (da
 
 
 export default function AdminFaqPage() {
-  const { t } = useTranslation();
+  const t = useTranslations();
   const db = getFirestore();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -177,7 +177,7 @@ export default function AdminFaqPage() {
         handleCloseForm();
     } catch (error) {
         console.error("Error saving FAQ:", error);
-        toast({ variant: 'destructive', title: t('errorTitle'), description: 'Impossible de sauvegarder la FAQ.' });
+        toast({ variant: 'destructive', title: "Erreur", description: 'Impossible de sauvegarder la FAQ.' });
     } finally {
         setIsSubmitting(false);
     }
@@ -195,7 +195,7 @@ export default function AdminFaqPage() {
         toast({ title: 'FAQ supprimée avec succès.' });
     } catch (error) {
         console.error("Error deleting FAQ:", error);
-        toast({ variant: 'destructive', title: t('errorTitle'), description: 'Impossible de supprimer la FAQ.' });
+        toast({ variant: 'destructive', title: "Erreur", description: 'Impossible de supprimer la FAQ.' });
     } finally {
         setDeleteAlertOpen(false);
         setFaqToDelete(null);

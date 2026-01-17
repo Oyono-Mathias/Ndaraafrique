@@ -31,7 +31,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-react';
 import type { Course, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 
@@ -118,7 +118,7 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
             </div>
             <div className="flex justify-between items-center mt-2 pt-2 border-t dark:border-slate-700">
                  <p className="font-bold text-lg dark:text-white">
-                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : t('price_free')}
+                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : "Gratuit"}
                 </p>
                 <CourseActions course={course} />
             </div>
@@ -157,7 +157,7 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
                   {getStatusText(course.status)}
                 </Badge>
                 <p className="font-bold text-xs dark:text-white">
-                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : t('price_free')}
+                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : "Gratuit"}
                 </p>
             </div>
         </div>
@@ -169,7 +169,7 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
 export default function AdminCoursesPage() {
   const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
@@ -229,7 +229,7 @@ export default function AdminCoursesPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('course_mgmt')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">Gestion des cours</h1>
         <p className="text-muted-foreground dark:text-slate-400">Consultez et gérez toutes les formations de la plateforme.</p>
       </header>
 
@@ -256,7 +256,7 @@ export default function AdminCoursesPage() {
                     [...Array(8)].map((_, i) => <Skeleton key={i} className="h-80 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
                     filteredCourses.map(course => (
-                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t} />
+                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t as any} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-10">
@@ -272,7 +272,7 @@ export default function AdminCoursesPage() {
                     [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
                      filteredCourses.map(course => (
-                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t} />
+                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t as any} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-10">

@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useMemo } from 'react';
@@ -19,13 +20,13 @@ import { AlertCircle, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 
 
 export default function AssignmentsDashboardPage() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
-    const { t } = useTranslation();
+    const t = useTranslations();
 
     const coursesQuery = useMemoFirebase(
         () => currentUser?.uid

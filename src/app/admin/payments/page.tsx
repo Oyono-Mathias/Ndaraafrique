@@ -23,7 +23,7 @@ import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -73,12 +73,12 @@ const FraudBadge = ({ fraudReview }: { fraudReview?: Payment['fraudReview'] }) =
 }
 
 const StatusBadge = ({ status }: { status: Payment['status'] }) => {
-    const { t } = useTranslation();
+    const t = useTranslations();
     const statusMap = {
-        Completed: { text: t('statusCompleted'), className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
-        Failed: { text: t('statusFailed'), className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
-        Refunded: { text: t('statusRefunded'), className: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' },
-        Pending: { text: t('statusPending'), className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
+        Completed: { text: "Terminé", className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
+        Failed: { text: "Échoué", className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
+        Refunded: { text: "Remboursé", className: 'bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300' },
+        Pending: { text: "En attente", className: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' },
     };
     const { text, className } = statusMap[status] || { text: status, className: 'bg-slate-100 text-slate-800' };
 
@@ -89,7 +89,7 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
 export default function AdminPaymentsPage() {
   const { currentUser: adminUser } = useRole();
   const db = getFirestore();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -109,11 +109,11 @@ export default function AdminPaymentsPage() {
             setPayments(paymentsData);
         } catch (e: any) {
             console.error("Error fetching payments", e);
-            setError(t('firestoreIndexError'));
+            setError("L'index Firestore pour cette requête est manquant.");
         }
     }
     fetchPayments();
-  }, [db, t]);
+  }, [db]);
 
 
   useEffect(() => {
@@ -167,7 +167,7 @@ export default function AdminPaymentsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">{t('navTransactions')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('transactionsDescription')}</p>
+        <p className="text-muted-foreground dark:text-slate-400">Suivez toutes les transactions et paiements sur la plateforme.</p>
       </header>
 
       {error && (
@@ -205,14 +205,14 @@ export default function AdminPaymentsPage() {
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white">{t('sales_history')}</CardTitle>
+          <CardTitle className="dark:text-white">Historique des ventes</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            {t('transactionsSearchDescription')}
+            Recherchez des transactions spécifiques par nom, email ou ID de transaction.
           </CardDescription>
           <div className="relative pt-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t('searchPlaceholder')}
+              placeholder="Rechercher une transaction..."
               className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -274,11 +274,11 @@ export default function AdminPaymentsPage() {
                    <TableRow>
                     <TableCell colSpan={5} className="h-48 text-center text-muted-foreground dark:text-slate-400">
                         <ShoppingCart className="mx-auto h-12 w-12" />
-                        <p className="mt-2 font-medium">{t('noTransactionsFound')}</p>
+                        <p className="mt-2 font-medium">Aucune transaction trouvée</p>
                         <p className="text-sm">
                             {searchTerm 
-                                ? t('noResultsFor', { term: searchTerm })
-                                : t('noTransactionsYet')
+                                ? `Aucun résultat pour "${searchTerm}".`
+                                : "Aucune transaction n'a encore été effectuée."
                             }
                         </p>
                     </TableCell>
@@ -319,7 +319,7 @@ export default function AdminPaymentsPage() {
              ) : (
                  <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                     <ShoppingCart className="h-12 w-12" />
-                    <p className="font-medium">{t('noTransactionsFound')}</p>
+                    <p className="font-medium">Aucune transaction trouvée</p>
                 </div>
              )}
           </div>

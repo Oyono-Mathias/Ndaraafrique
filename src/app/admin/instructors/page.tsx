@@ -35,7 +35,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { Label } from '@/components/ui/label';
 import { approveInstructorApplication } from '@/actions/userActions';
 
@@ -63,7 +63,7 @@ const DecisionModal = ({
     onClose: () => void;
     onConfirm: (userId: string, decision: Decision, message: string) => Promise<void>;
 }) => {
-    const { t } = useTranslation();
+    const t = useTranslations();
     const [decision, setDecision] = useState<Decision>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [message, setMessage] = useState('');
@@ -89,7 +89,7 @@ const DecisionModal = ({
         if (decision === 'accepted') {
             setMessage(acceptanceTemplate);
         } else if (decision === 'rejected') {
-            const template = rejectionTemplates[rejectionReason as keyof typeof rejectionTemplates] || t('rejectionTemplateGeneric');
+            const template = rejectionTemplates[rejectionReason as keyof typeof rejectionTemplates] || "Raison générique de rejet";
             setMessage(template);
         } else {
             setMessage('');
@@ -126,14 +126,14 @@ const DecisionModal = ({
 
                 <div className="py-4 space-y-6">
                     <div>
-                        <h4 className="font-semibold mb-2 dark:text-slate-300">{t('step1_makeDecision')}</h4>
+                        <h4 className="font-semibold mb-2 dark:text-slate-300">Étape 1 : Prendre une décision</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Button 
                                 variant={decision === 'accepted' ? 'default' : 'outline'} 
                                 onClick={() => setDecision('accepted')}
                                 className={cn("h-20 text-lg", decision === 'accepted' && 'bg-green-600 hover:bg-green-700 border-green-600 ring-4 ring-green-500/20')}
                             >
-                                <Check className="mr-2 h-6 w-6"/> {t('accept')}
+                                <Check className="mr-2 h-6 w-6"/> {t('approve')}
                             </Button>
                              <Button 
                                 variant={decision === 'rejected' ? 'destructive' : 'outline'} 
@@ -149,22 +149,22 @@ const DecisionModal = ({
                         <div className="animate-in fade-in-50 duration-500 space-y-4">
                              {decision === 'rejected' && (
                                 <div>
-                                    <Label htmlFor="rejection-reason" className="dark:text-slate-300">{t('step2_rejectionReason')}</Label>
+                                    <Label htmlFor="rejection-reason" className="dark:text-slate-300">Étape 2 (Optionnel) : Choisir un modèle de refus</Label>
                                     <Select onValueChange={setRejectionReason}>
                                         <SelectTrigger id="rejection-reason" className="w-full mt-1 dark:bg-slate-800 dark:border-slate-700">
-                                            <SelectValue placeholder={t('chooseReason')} />
+                                            <SelectValue placeholder="Choisir une raison" />
                                         </SelectTrigger>
                                         <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
-                                            <SelectItem value="quality">{t('reasonQuality')}</SelectItem>
-                                            <SelectItem value="topic">{t('reasonTopic')}</SelectItem>
-                                            <SelectItem value="incomplete">{t('reasonIncomplete')}</SelectItem>
+                                            <SelectItem value="quality">Qualité de la vidéo</SelectItem>
+                                            <SelectItem value="topic">Sujet non pertinent</SelectItem>
+                                            <SelectItem value="incomplete">Dossier incomplet</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                              )}
                              <div>
                                 <h4 className="font-semibold mb-2 dark:text-slate-300">
-                                    {decision === 'accepted' ? t('step2_welcomeMessage') : t('step3_rejectionMessage')}
+                                    {decision === 'accepted' ? "Étape 2 : Message de bienvenue" : "Étape 3 : Message de refus"}
                                 </h4>
                                 <Textarea 
                                     value={message} 
@@ -181,7 +181,7 @@ const DecisionModal = ({
                     <Button variant="ghost" onClick={onClose} disabled={isProcessing}>{t('cancelButton')}</Button>
                     <Button onClick={handleConfirm} disabled={!decision || isProcessing}>
                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        <Send className="mr-2 h-4 w-4"/> {t('confirmAndSend')}
+                        <Send className="mr-2 h-4 w-4"/> Confirmer et envoyer
                     </Button>
                 </DialogFooter>
             </DialogContent>
@@ -193,7 +193,7 @@ export default function InstructorApplicationsPage() {
   const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   const applicationsQuery = useMemoFirebase(
@@ -216,17 +216,17 @@ export default function InstructorApplicationsPage() {
 
     if (result.success) {
       const toastMessage = decision === 'accepted' 
-        ? { title: t('applicationApprovedTitle'), description: t('applicationApprovedMessage') }
-        : { title: t('applicationRejectedTitle'), description: t('applicationRejectedMessage') };
+        ? { title: "Candidature approuvée", description: "L'instructeur a été notifié et son compte est activé." }
+        : { title: "Candidature rejetée", description: "L'instructeur a été notifié de la décision." };
       toast(toastMessage);
     } else {
-      toast({ variant: 'destructive', title: t('errorTitle'), description: result.error || t('applicationUpdateError') });
+      toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour le statut de la candidature." });
     }
   };
 
 
   if (adminUser?.role !== 'admin') {
-    return <div className="p-8 text-center">{t('unauthorizedAccess')}</div>;
+    return <div className="p-8 text-center">Accès non autorisé à cette page.</div>;
   }
 
   return (
@@ -234,7 +234,7 @@ export default function InstructorApplicationsPage() {
     <div className="space-y-6">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">{t('navApplications')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('reviewApplicationsDescription')}</p>
+        <p className="text-muted-foreground dark:text-slate-400">Examinez et approuvez les nouveaux instructeurs.</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -259,7 +259,7 @@ export default function InstructorApplicationsPage() {
                     </CardHeader>
                      <CardContent className="flex-grow">
                         <p className="text-sm text-muted-foreground dark:text-slate-400 line-clamp-3">
-                            {app.instructorApplication?.motivation || t('noMotivationProvided')}
+                            {app.instructorApplication?.motivation || "Aucune motivation fournie."}
                         </p>
                          <div className="flex gap-2 mt-4">
                            {app.instructorApplication?.presentationVideoUrl && (
@@ -272,15 +272,15 @@ export default function InstructorApplicationsPage() {
                         </div>
                     </CardContent>
                      <CardContent className="text-xs text-muted-foreground">
-                        {t('app_date')} {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt.toDate(), { addSuffix: true, locale: fr }) : t('recently')}
+                        Candidature envoyée {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt.toDate(), { addSuffix: true, locale: fr }) : "récemment"}
                     </CardContent>
                 </Card>
             ))
         ) : (
              <div className="md:col-span-2 xl:col-span-3 h-64 flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400 border-2 border-dashed dark:border-slate-700 rounded-xl">
                 <UserCheck className="h-12 w-12" />
-                <p className="font-medium">{t('noNewApplications')}</p>
-                <p className="text-sm">{t('allApplicationsProcessed')}</p>
+                <p className="font-medium">Aucune nouvelle candidature</p>
+                <p className="text-sm">Toutes les candidatures ont été traitées.</p>
             </div>
         )}
       </div>

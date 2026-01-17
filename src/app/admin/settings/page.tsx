@@ -21,7 +21,7 @@ import { Loader2, Settings, FileText, Percent, Building, Image as ImageIcon, Wal
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { Skeleton } from '@/components/ui/skeleton';
 import { updateGlobalSettings } from '@/actions/settingsActions';
@@ -59,7 +59,7 @@ const settingsSchema = z.object({
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function AdminSettingsPage() {
-    const { t } = useTranslation();
+    const t = useTranslations();
     const { toast } = useToast();
     const { currentUser } = useRole();
     const db = getFirestore();
@@ -218,14 +218,14 @@ export default function AdminSettingsPage() {
             });
 
             if (result.success) {
-                 toast({ title: t('settings_saved_title'), description: t('settings_saved_desc') });
+                 toast({ title: "Paramètres enregistrés", description: "Les paramètres globaux du site ont été mis à jour." });
             } else {
                 throw new Error(result.error);
             }
            
         } catch (error: any) {
             console.error("Failed to save settings:", error);
-            toast({ variant: "destructive", title: t('errorTitle'), description: error.message || t('settings_save_error') });
+            toast({ variant: "destructive", title: "Erreur", description: error.message || "Impossible de sauvegarder les paramètres." });
         } finally {
             setIsSaving(false);
         }
@@ -257,22 +257,22 @@ export default function AdminSettingsPage() {
             <div className="space-y-8">
                 <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold dark:text-white">{t('site_settings')}</h1>
-                        <p className="text-muted-foreground dark:text-slate-400">{t('settings_desc')}</p>
+                        <h1 className="text-3xl font-bold dark:text-white">Paramètres du Site</h1>
+                        <p className="text-muted-foreground dark:text-slate-400">Configurez les aspects globaux de la plateforme.</p>
                     </div>
                      <Button onClick={form.handleSubmit(onSubmit)} disabled={isSaving} className="w-full sm:w-auto h-12 text-base md:text-sm">
                         {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        {t('save_btn')}
+                        Sauvegarder
                     </Button>
                 </header>
                 
                 <Tabs defaultValue="general" className="w-full">
                     <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
-                        <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>{t('tab_general')}</TabsTrigger>
-                        <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>{t('tab_commercial')}</TabsTrigger>
-                        <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>{t('tab_platform')}</TabsTrigger>
+                        <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>Général</TabsTrigger>
+                        <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>Commercial</TabsTrigger>
+                        <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>Plateforme</TabsTrigger>
                         <TabsTrigger value="content"><Text className="w-4 h-4 mr-2"/>Contenu</TabsTrigger>
-                        <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>{t('tab_legal')}</TabsTrigger>
+                        <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>Légal</TabsTrigger>
                     </TabsList>
                     
                      <Form {...form}>
@@ -280,13 +280,13 @@ export default function AdminSettingsPage() {
                             <TabsContent value="general" className="mt-6">
                                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                                 <CardHeader>
-                                    <CardTitle className="dark:text-white">{t('platform_identity')}</CardTitle>
+                                    <CardTitle className="dark:text-white">Identité de la Plateforme</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="siteName" render={({ field }) => ( <FormItem><FormLabel>{t('site_name')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="siteName" render={({ field }) => ( <FormItem><FormLabel>Nom du site</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:border-primary" /></FormControl><FormMessage /></FormItem> )} />
                                         
                                         <FormItem>
-                                            <FormLabel>{t('logo_url')}</FormLabel>
+                                            <FormLabel>Logo</FormLabel>
                                             <div className="flex items-start gap-4">
                                                 <label htmlFor="logo-upload" className="cursor-pointer shrink-0">
                                                     <div className="w-20 h-20 rounded-lg border-2 border-dashed border-slate-600 flex items-center justify-center text-slate-400 hover:border-primary hover:text-primary transition-all relative overflow-hidden bg-slate-900">
@@ -305,7 +305,7 @@ export default function AdminSettingsPage() {
                                             </div>
                                         </FormItem>
 
-                                        <FormField control={form.control} name="contactEmail" render={({ field }) => ( <FormItem><FormLabel>{t('contact_email')}</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="contactEmail" render={({ field }) => ( <FormItem><FormLabel>Email de contact</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
                                 </CardContent>
                             </Card>
                             </TabsContent>
@@ -313,30 +313,30 @@ export default function AdminSettingsPage() {
                             <TabsContent value="commercial" className="mt-6">
                             <Card className="dark:bg-slate-800 dark:border-slate-700">
                                 <CardHeader>
-                                    <CardTitle className="dark:text-white">{t('commercial_settings')}</CardTitle>
+                                    <CardTitle className="dark:text-white">Paramètres Commerciaux</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                         <FormField control={form.control} name="platformCommission" render={({ field }) => ( 
                                             <FormItem>
-                                                <FormLabel className="flex items-center gap-2"><Percent className="h-4 w-4"/> {t('commission_rate')}</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><Percent className="h-4 w-4"/> Taux de commission (%)</FormLabel>
                                                 <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
-                                                <FormDescription>{t('commission_desc')}</FormDescription>
+                                                <FormDescription>La commission que la plateforme prend sur chaque vente.</FormDescription>
                                                 <FormMessage />
                                             </FormItem> 
                                         )} />
                                         <FormField control={form.control} name="currency" render={({ field }) => ( 
                                             <FormItem>
-                                                <FormLabel className="flex items-center gap-2"><DollarSign className="h-4 w-4"/> {t('currency')}</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><DollarSign className="h-4 w-4"/> Devise</FormLabel>
                                                 <FormControl><Input readOnly {...field} className="dark:bg-slate-900/50 dark:border-slate-700 cursor-not-allowed" /></FormControl>
-                                                <FormDescription>{t('currency_desc')}</FormDescription>
+                                                <FormDescription>La devise par défaut pour tous les paiements.</FormDescription>
                                                 <FormMessage />
                                             </FormItem> 
                                         )} />
                                         <FormField control={form.control} name="minPayoutThreshold" render={({ field }) => ( 
                                             <FormItem>
-                                                <FormLabel className="flex items-center gap-2"><Wallet className="h-4 w-4"/> {t('payout_threshold')}</FormLabel>
+                                                <FormLabel className="flex items-center gap-2"><Wallet className="h-4 w-4"/> Seuil minimum de retrait</FormLabel>
                                                 <FormControl><Input type="number" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
-                                                <FormDescription>{t('payout_threshold_desc')}</FormDescription>
+                                                <FormDescription>Le montant minimum qu'un instructeur doit avoir pour demander un retrait.</FormDescription>
                                                 <FormMessage />
                                             </FormItem> 
                                         )} />
@@ -347,14 +347,14 @@ export default function AdminSettingsPage() {
                             <TabsContent value="platform" className="mt-6">
                                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                                 <CardHeader>
-                                    <CardTitle className="dark:text-white">{t('platform_config')}</CardTitle>
+                                    <CardTitle className="dark:text-white">Configuration de la Plateforme</CardTitle>
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                         <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>{t('maintenance')}</FormLabel><FormDescription>{t('maintenance_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Mode Maintenance</FormLabel><FormDescription>Met le site en maintenance pour tous sauf les admins.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                                         )} />
                                         <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
-                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>{t('allow_applications')}</FormLabel><FormDescription>{t('allow_applications_desc')}</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
+                                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Autoriser les candidatures d'instructeurs</FormLabel><FormDescription>Active ou désactive la page "Devenir instructeur".</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
                                         )} />
                                         <FormField control={form.control} name="autoApproveCourses" render={({ field }) => (
                                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm dark:border-slate-700"><div className="space-y-0.5"><FormLabel>Approbation automatique des cours</FormLabel><FormDescription>Si activé, les cours soumis par les instructeurs seront publiés immédiatement.</FormDescription></div><FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl></FormItem>
@@ -386,10 +386,10 @@ export default function AdminSettingsPage() {
 
                             <TabsContent value="legal" className="mt-6">
                             <Card className="dark:bg-slate-800 dark:border-slate-700">
-                                <CardHeader><CardTitle className="dark:text-white">{t('legal_texts')}</CardTitle></CardHeader>
+                                <CardHeader><CardTitle className="dark:text-white">Textes légaux</CardTitle></CardHeader>
                                 <CardContent className="space-y-4">
-                                        <FormField control={form.control} name="termsOfService" render={({ field }) => ( <FormItem><FormLabel>{t('cgu')}</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu des CGU ici..." className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem> )} />
-                                        <FormField control={form.control} name="privacyPolicy" render={({ field }) => ( <FormItem><FormLabel>{t('privacy_policy')}</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu de la politique de confidentialité ici..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="termsOfService" render={({ field }) => ( <FormItem><FormLabel>Conditions Générales d'Utilisation</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu des CGU ici..." className="dark:bg-slate-700 dark:border-slate-600" /></FormControl><FormMessage /></FormItem> )} />
+                                        <FormField control={form.control} name="privacyPolicy" render={({ field }) => ( <FormItem><FormLabel>Politique de Confidentialité</FormLabel><FormControl><Textarea {...field} rows={8} placeholder="Collez le contenu de la politique de confidentialité ici..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem> )} />
                                 </CardContent>
                             </Card>
                             </TabsContent>

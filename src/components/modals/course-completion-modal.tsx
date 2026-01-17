@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Download, Share2, Trophy } from 'lucide-react';
@@ -25,7 +25,7 @@ export function CourseCompletionModal({
   onDownload,
   onShare,
 }: CourseCompletionModalProps) {
-  const { t } = useTranslation();
+  const t = useTranslations();
 
   useEffect(() => {
     if (isOpen) {

@@ -2,7 +2,7 @@
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -25,7 +25,7 @@ interface RevenueDataPoint {
 
 function InstructorDashboardContent() {
     const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
-    const { t } = useTranslation();
+    const t = useTranslations();
     const db = getFirestore();
 
     const [stats, setStats] = useState({
@@ -171,32 +171,32 @@ function InstructorDashboardContent() {
     return (
         <div className="space-y-8 md:space-y-12">
             <header>
-                <h1 className="text-3xl font-bold text-white">{t('navDashboard')}</h1>
+                <h1 className="text-3xl font-bold text-white">{t('dashboard_title')}</h1>
                 <p className="text-muted-foreground">{t('welcome_message', { name: instructor?.fullName?.split(' ')[0] || 'Instructeur' })}</p>
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
                 <StatCard 
-                    title={t('statStudents')}
+                    title="Étudiants au total"
                     value={stats.totalStudents.toLocaleString('fr-FR')} 
                     icon={Users} 
                     isLoading={isLoading} 
                 />
                 <StatCard 
-                    title={t('statAverageRating')} 
+                    title="Note moyenne" 
                     value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
                     icon={Star} 
                     isLoading={isLoading} 
-                    description={stats.totalReviews > 0 ? t('based_on_reviews', { count: stats.totalReviews }) : t('waiting_for_reviews')}
+                    description={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"}
                 />
                 <StatCard 
-                    title={t('statCourses')}
+                    title="Cours publiés"
                     value={stats.publishedCourses.toString()} 
                     icon={BookOpen} 
                     isLoading={isLoading}
                 />
                 <StatCard 
-                    title={t('statRevenue')}
+                    title="Revenus (ce mois-ci)"
                     value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={DollarSign} 
                     isLoading={isLoading}
@@ -205,7 +205,7 @@ function InstructorDashboardContent() {
 
             <section className="grid lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-3">
-                    <SectionHeader title={t('revenue_evolution')} className="mb-4" />
+                    <SectionHeader title="Évolution des revenus" className="mb-4" />
                     <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="pt-6">
                             {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : revenueTrendData.length > 0 ? (
@@ -238,14 +238,14 @@ function InstructorDashboardContent() {
                     </Card>
                 </div>
                 <div className="lg:col-span-2">
-                     <SectionHeader title={t('top_courses')} className="mb-4" />
+                     <SectionHeader title="Top 5 des cours" className="mb-4" />
                       <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
                         <CardContent className="p-0">
                             <Table>
                                 <TableHeader>
                                     <TableRow className="dark:border-slate-700">
-                                        <TableHead className="dark:text-slate-400">{t('course')}</TableHead>
-                                        <TableHead className="text-right dark:text-slate-400">{t('enrollments')}</TableHead>
+                                        <TableHead className="dark:text-slate-400">Cours</TableHead>
+                                        <TableHead className="text-right dark:text-slate-400">Inscriptions</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

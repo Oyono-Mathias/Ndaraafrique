@@ -22,7 +22,7 @@ import 'react-phone-number-input/style.css';
 import { africanCountries } from '@/lib/countries';
 import { Checkbox } from '@/components/ui/checkbox';
 import { sendNewInstructorApplicationEmail } from '@/lib/emails';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { sendAdminNotification } from '@/actions/notificationActions';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import type { Settings } from '@/lib/types';
@@ -51,7 +51,7 @@ export default function BecomeInstructorPage() {
   const router = useRouter();
   const { user, currentUser, isUserLoading } = useRole();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const db = getFirestore();
 
@@ -60,7 +60,7 @@ export default function BecomeInstructorPage() {
   const allowSignup = settings?.platform?.allowInstructorSignup ?? false;
 
   const form = useForm<ApplicationFormValues>({
-    resolver: zodResolver(instructorApplicationSchema(t)),
+    resolver: zodResolver(instructorApplicationSchema(t as any)),
   });
   
   useEffect(() => {

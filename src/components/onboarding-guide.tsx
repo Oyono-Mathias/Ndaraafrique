@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
@@ -44,7 +44,7 @@ const tourSteps: TourStep[] = [
 
 export function OnboardingGuide() {
   const { user } = useRole();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [isClient, setIsClient] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [tourStep, setTourStep] = useState<number | null>(null);

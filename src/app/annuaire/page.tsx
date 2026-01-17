@@ -18,7 +18,7 @@ import { Search, Users, UserX } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import {
     Dialog,
     DialogContent,
@@ -32,7 +32,7 @@ import { startChat } from '@/lib/chat';
 import { MemberCard } from '@/components/cards/MemberCard';
 
 const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, onGoToProfile: () => void }) => {
-    const { t } = useTranslation();
+    const t = useTranslations();
     return (
         <Dialog open={isOpen}>
             <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
@@ -56,7 +56,7 @@ export default function DirectoryPage() {
   const db = getFirestore();
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const [members, setMembers] = useState<NdaraUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,7 +112,7 @@ export default function DirectoryPage() {
     if (!user || !currentUser) return;
     setIsCreatingChat(true);
     try {
-      const chatId = await startChat(user.uid, contactId, db);
+      const chatId = await startChat(user.uid, contactId);
       router.push(`/messages/${chatId}`);
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erreur de Chat', description: error.message });

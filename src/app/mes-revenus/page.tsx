@@ -45,7 +45,7 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { sendAdminNotification } from '../actions/notificationActions';
 
 
@@ -107,7 +107,7 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, valu
 
 export default function MyRevenuePage() {
   const { currentUser: instructor, isUserLoading: isInstructorLoading } = useRole();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [settings, setSettings] = useState({ platformCommission: 30, minPayoutThreshold: 5000 });
@@ -366,7 +366,7 @@ export default function MyRevenuePage() {
                                     <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                     <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                     <Tooltip content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} className="dark:bg-slate-900 dark:border-slate-700" />} />
-                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={8} />
+                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </ChartContainer>
@@ -466,7 +466,7 @@ export default function MyRevenuePage() {
                                 <TableRow key={payout.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
                                 <TableCell className="text-muted-foreground dark:text-slate-400">{payout.date ? format(payout.date.toDate(), 'dd/MM/yy', { locale: fr }) : 'N/A'}</TableCell>
                                 <TableCell className="dark:text-slate-200">{payout.method}</TableCell>
-                                <TableCell>{getStatusBadge(payout.status, t)}</TableCell>
+                                <TableCell>{getStatusBadge(payout.status, t as any)}</TableCell>
                                 <TableCell className="text-right font-semibold font-mono dark:text-white">{formatCurrency(payout.amount)}</TableCell>
                                 </TableRow>
                             ))
@@ -488,7 +488,7 @@ export default function MyRevenuePage() {
                             <Card key={payout.id} className="p-3 dark:bg-slate-900/50 dark:border-slate-700">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2">
-                                        {getStatusBadge(payout.status, t)}
+                                        {getStatusBadge(payout.status, t as any)}
                                         <p className="font-semibold text-sm dark:text-white">{payout.method}</p>
                                     </div>
                                     <p className="font-bold font-mono dark:text-white">{formatCurrency(payout.amount)}</p>

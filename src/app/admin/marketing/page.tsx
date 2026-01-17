@@ -20,7 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Tag, Speaker, AlertCircle, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { generatePromoCode } from '@/ai/flows/generate-promo-code-flow';
 import { sendGlobalNotification } from '@/actions/notificationActions';
 
@@ -40,7 +40,7 @@ interface PromoCode {
 }
 
 export default function AdminMarketingPage() {
-  const { t } = useTranslation();
+  const t = useTranslations();
   const { toast } = useToast();
   const db = getFirestore();
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -115,9 +115,9 @@ export default function AdminMarketingPage() {
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white flex items-center gap-2"><Sparkles className="text-amber-400 h-5 w-5"/> {t('mkt_assistant')}</CardTitle>
+          <CardTitle className="dark:text-white flex items-center gap-2"><Sparkles className="text-amber-400 h-5 w-5"/> Assistant Marketing</CardTitle>
           <CardDescription className="dark:text-slate-400">
-            {t('mktExamples')}
+            Utilisez des instructions simples pour générer des promotions ou des messages. Ex: "Créer un code de 20% pour Pâques" ou "Rédiger une annonce pour un nouveau cours d'IA".
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -130,7 +130,7 @@ export default function AdminMarketingPage() {
                   <FormItem className="flex-1">
                     <FormControl>
                       <Input
-                        placeholder={t('prompt_label')}
+                        placeholder="Votre instruction pour l'IA..."
                         className="h-12 text-base md:text-sm dark:bg-slate-700 dark:border-slate-600"
                         {...field}
                       />
@@ -149,7 +149,7 @@ export default function AdminMarketingPage() {
           {isAiLoading && (
              <div className="mt-6 p-4 rounded-lg bg-muted dark:bg-slate-700/50 flex items-center gap-3 animate-pulse">
                 <Speaker className="h-5 w-5 text-muted-foreground"/>
-                <p className="text-sm text-muted-foreground">{t('aiWriting')}</p>
+                <p className="text-sm text-muted-foreground">L'IA est en train d'écrire...</p>
             </div>
           )}
           {aiResponse && (
@@ -168,23 +168,23 @@ export default function AdminMarketingPage() {
       
        <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white flex items-center gap-2"><Tag className="h-5 w-5"/> {t('existingPromoCodes')}</CardTitle>
+          <CardTitle className="dark:text-white flex items-center gap-2"><Tag className="h-5 w-5"/> Codes Promo Existants</CardTitle>
         </CardHeader>
         <CardContent>
            {error && (
                 <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
-                    <p>{t('promoLoadError')}</p>
+                    <p>Impossible de charger les codes promo.</p>
                 </div>
             )}
             <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
                         <TableRow className="dark:border-slate-700">
-                            <TableHead className="dark:text-slate-400">{t('code')}</TableHead>
-                            <TableHead className="dark:text-slate-400">{t('discount')}</TableHead>
-                            <TableHead className="dark:text-slate-400">{t('expiration')}</TableHead>
-                            <TableHead className="text-right dark:text-slate-400">{t('active')}</TableHead>
+                            <TableHead className="dark:text-slate-400">Code</TableHead>
+                            <TableHead className="dark:text-slate-400">Réduction</TableHead>
+                            <TableHead className="dark:text-slate-400">Expiration</TableHead>
+                            <TableHead className="text-right dark:text-slate-400">Actif</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -203,7 +203,7 @@ export default function AdminMarketingPage() {
                                     <TableCell className="font-mono font-semibold dark:text-slate-100">{code.code}</TableCell>
                                     <TableCell className="font-medium dark:text-slate-300">{code.discountPercentage}%</TableCell>
                                     <TableCell className="text-muted-foreground dark:text-slate-400">
-                                        {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : t('never')}
+                                        {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : "N'expire jamais"}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Switch

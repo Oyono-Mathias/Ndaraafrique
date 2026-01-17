@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Star, Play, Award } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
@@ -28,7 +28,7 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 );
 
 export function CourseCard({ course, instructor, variant = 'catalogue' }: CourseCardProps) {
-  const { t } = useTranslation();
+  const t = useTranslations();
   const [imageLoading, setImageLoading] = useState(true);
   
   const progress = course.progress ?? 0;
@@ -82,10 +82,10 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
                     <AvatarImage src={instructor.profilePictureURL} />
                     <AvatarFallback className="text-xs bg-slate-700 text-slate-300">{instructor.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-xs text-slate-400 group-hover:text-primary transition-colors truncate">{instructor.fullName || t('unknown_instructor')}</p>
+                <p className="text-xs text-slate-400 group-hover:text-primary transition-colors truncate">{instructor.fullName || 'Instructeur inconnu'}</p>
             </Link>
         ) : (
-             <p className="text-xs text-slate-400 truncate mt-1">Par {t('unknown_instructor')}</p>
+             <p className="text-xs text-slate-400 truncate mt-1">Par un instructeur</p>
         )}
 
         <div className="flex items-center pt-1">

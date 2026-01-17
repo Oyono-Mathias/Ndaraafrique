@@ -19,14 +19,14 @@ import {
   import { useRole } from "@/context/RoleContext"
   import { useRouter } from "next/navigation";
   import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
-  import { useTranslation } from "react-i18next";
+  import { useTranslations } from "next-intl";
   import { LanguageSelector } from "./language-selector";
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
 
   
 export function UserNav() {
-    const { t } = useTranslation();
+    const t = useTranslations();
     const { currentUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 

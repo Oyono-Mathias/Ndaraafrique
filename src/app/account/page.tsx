@@ -10,7 +10,7 @@ import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUserAccount } from '@/actions/userActions';
 
@@ -44,9 +44,9 @@ import {
 
 // --- Validation Schema ---
 const accountFormSchema = (t: (key: string) => string) => z.object({
-  username: z.string().min(3, { message: t('username_min_char') }).max(20, { message: t('username_max_char') }).regex(/^[a-zA-Z0-9_]+$/, { message: t('username_regex') }),
-  fullName: z.string().min(3, { message: t('fullname_min_char') }),
-  bio: z.string().max(500, t('bio_max_char')).optional(),
+  username: z.string().min(3, { message: "Le nom d'utilisateur doit contenir au moins 3 caractères." }).max(20, { message: "Le nom d'utilisateur ne peut pas dépasser 20 caractères." }).regex(/^[a-zA-Z0-9_]+$/, { message: "Caractères non autorisés." }),
+  fullName: z.string().min(3, { message: "Le nom doit contenir au moins 3 caractères." }),
+  bio: z.string().max(500, "La biographie ne peut pas dépasser 500 caractères.").optional(),
   phoneNumber: z.string().optional(),
   // Social Links
   'socialLinks.linkedin': z.string().url().or(z.literal('')).optional(),
@@ -79,7 +79,7 @@ const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: Reac
 
 export default function AccountPage() {
   const { user, currentUser, role, isUserLoading } = useRole();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -91,7 +91,7 @@ export default function AccountPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   
   const form = useForm<AccountFormValues>({
-    resolver: zodResolver(accountFormSchema(t)),
+    resolver: zodResolver(accountFormSchema(t as any)),
     mode: 'onChange'
   });
 
@@ -171,9 +171,9 @@ export default function AccountPage() {
           await updateProfile(auth.currentUser, { displayName: data.fullName });
         }
 
-        toast({ title: t('profile_updated_title') });
+        toast({ title: "Profil mis à jour" });
     } catch (error) {
-      toast({ variant: 'destructive', title: t('error_title'), description: t('profile_update_error') });
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil." });
     } finally {
       setIsSaving(false);
     }
@@ -206,10 +206,10 @@ export default function AccountPage() {
       const snapshot = await uploadBytes(storageRef, croppedImage);
       const downloadURL = await getDownloadURL(snapshot.ref);
       await updateDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL });
-      toast({ title: t('avatar_updated_title') });
+      toast({ title: "Avatar mis à jour" });
       setImagePreview(downloadURL);
     } catch (error) {
-      toast({ variant: 'destructive', title: t('error_upload_title'), description: t('avatar_update_error') });
+      toast({ variant: 'destructive', title: 'Erreur d\'upload', description: "Impossible de mettre à jour l'avatar." });
     } finally {
       setIsUploading(false);
     }
@@ -266,7 +266,7 @@ export default function AccountPage() {
         
         <header className="text-center">
             <h1 className="text-4xl font-bold text-white mb-2">{t('navAccount')}</h1>
-            <p className="text-lg text-slate-400">{t('account_description')}</p>
+            <p className="text-lg text-slate-400">Gérez les informations de votre compte et vos préférences.</p>
         </header>
 
         {role === 'instructor' && (

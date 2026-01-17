@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 
 const courseCreateSchema = (t: (key: string) => string) => z.object({
   title: z.string().min(5, t('course_title_min_char')),
@@ -28,12 +28,12 @@ type CourseCreateFormValues = z.infer<ReturnType<typeof courseCreateSchema>>;
 export default function CreateCoursePage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { t } = useTranslation();
+  const t = useTranslations();
   const { currentUser, isUserLoading } = useRole();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<CourseCreateFormValues>({
-    resolver: zodResolver(courseCreateSchema(t)),
+    resolver: zodResolver(courseCreateSchema(t as any)),
     defaultValues: {
       title: '',
     },

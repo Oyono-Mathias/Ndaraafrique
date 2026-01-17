@@ -15,14 +15,6 @@ import {
   onSnapshot,
 } from 'firebase/firestore';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -44,9 +36,17 @@ import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
-import { useTranslation } from 'react-i18next';
+import { useTranslations } from 'next-intl';
 import * as XLSX from 'xlsx';
 import { processPayout } from '@/actions/supportActions';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 
 interface Payout {
@@ -81,7 +81,7 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function PayoutsPage() {
-  const { t } = useTranslation();
+  const t = useTranslations();
   const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
@@ -182,7 +182,7 @@ export default function PayoutsPage() {
     if (result.success) {
         toast({ title: t('payoutStatusUpdated'), description: t('payoutMarkedAs', { status: t(status) }) });
     } else {
-        toast({ variant: 'destructive', title: t('errorTitle'), description: result.error || t('payoutUpdateError') });
+        toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour le statut du retrait." });
     }
     
     setUpdatingId(null);
@@ -215,8 +215,8 @@ export default function PayoutsPage() {
     <>
       <div className="space-y-6">
         <header>
-          <h1 className="text-3xl font-bold dark:text-white">{t('payout_requests')}</h1>
-          <p className="text-muted-foreground dark:text-slate-400">{t('payoutsManagementDescription')}</p>
+          <h1 className="text-3xl font-bold dark:text-white">Demandes de retrait</h1>
+          <p className="text-muted-foreground dark:text-slate-400">Gérez les demandes de retrait des instructeurs.</p>
         </header>
 
         <Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -240,11 +240,11 @@ export default function PayoutsPage() {
               <Table>
                 <TableHeader>
                   <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                    <TableHead className="dark:text-slate-400">{t('instructor')}</TableHead>
-                    <TableHead className="dark:text-slate-400">{t('amount')}</TableHead>
+                    <TableHead className="dark:text-slate-400">Instructeur</TableHead>
+                    <TableHead className="dark:text-slate-400">Montant</TableHead>
                     <TableHead className="dark:text-slate-400">Solde Instructeur</TableHead>
-                    <TableHead className="dark:text-slate-400">{t('method')}</TableHead>
-                    <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
+                    <TableHead className="dark:text-slate-400">Méthode</TableHead>
+                    <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -287,7 +287,7 @@ export default function PayoutsPage() {
                                   </Button>
                                   <Button onClick={() => setConfirmationAction({payoutId: payout.id, status: 'valide'})} size="sm" variant="default" disabled={!!updatingId}>
                                       <Check className="mr-2 h-4 w-4"/>
-                                      {t('approve_pay')}
+                                      Approuver & Payer
                                   </Button>
                               </div>
                           ) : getStatusBadge(payout.status, t)}
@@ -299,8 +299,8 @@ export default function PayoutsPage() {
                       <TableCell colSpan={5} className="h-48 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                             <Wallet className="h-12 w-12" />
-                            <p className="font-medium">{t('noPayoutRequests')}</p>
-                            <p className="text-sm">{t('noPayoutsForStatus', { status: t(activeTab) })}</p>
+                            <p className="font-medium">Aucune demande de retrait</p>
+                            <p className="text-sm">Il n'y a pas de demande de retrait {t(activeTab)}.</p>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -339,7 +339,7 @@ export default function PayoutsPage() {
                                   </Button>
                                   <Button onClick={() => setConfirmationAction({payoutId: payout.id, status: 'valide'})} className="flex-1" disabled={!!updatingId}>
                                       <Check className="mr-2 h-4 w-4"/>
-                                      {t('approve_pay')}
+                                      Approuver & Payer
                                   </Button>
                               </CardContent>
                           )}
@@ -354,7 +354,7 @@ export default function PayoutsPage() {
                   <div className="h-48 text-center flex items-center justify-center">
                       <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <Wallet className="h-12 w-12" />
-                          <p className="font-medium">{t('noPayoutRequests')}</p>
+                          <p className="font-medium">Aucune demande de retrait</p>
                       </div>
                   </div>
               )}
@@ -378,7 +378,7 @@ export default function PayoutsPage() {
                   <AlertDialogCancel onClick={() => setConfirmationAction(null)}>{t('cancelButton')}</AlertDialogCancel>
                   <AlertDialogAction onClick={handleUpdateStatus} disabled={!!updatingId} className={cn(confirmationAction?.status === 'rejete' && 'bg-destructive hover:bg-destructive/90')}>
                       {updatingId === confirmationAction?.payoutId ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                      {t('confirmButton')}
+                      Confirmer
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
