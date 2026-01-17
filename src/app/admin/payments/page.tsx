@@ -23,7 +23,6 @@ import type { NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
@@ -73,7 +72,6 @@ const FraudBadge = ({ fraudReview }: { fraudReview?: Payment['fraudReview'] }) =
 }
 
 const StatusBadge = ({ status }: { status: Payment['status'] }) => {
-    const t = useTranslations();
     const statusMap = {
         Completed: { text: "Terminé", className: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' },
         Failed: { text: "Échoué", className: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' },
@@ -89,7 +87,6 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
 export default function AdminPaymentsPage() {
   const { currentUser: adminUser } = useRole();
   const db = getFirestore();
-  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
@@ -166,7 +163,7 @@ export default function AdminPaymentsPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('navTransactions')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">Transactions</h1>
         <p className="text-muted-foreground dark:text-slate-400">Suivez toutes les transactions et paiements sur la plateforme.</p>
       </header>
 
@@ -318,7 +315,7 @@ export default function AdminPaymentsPage() {
                  ))
              ) : (
                  <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                    <ShoppingCart className="h-12 w-12" />
+                    <ShoppingCart className="mx-auto h-12 w-12" />
                     <p className="font-medium">Aucune transaction trouvée</p>
                 </div>
              )}

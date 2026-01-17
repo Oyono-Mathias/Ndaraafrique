@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from "next/link";
@@ -93,7 +94,6 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
   const isProfileComplete = currentUser?.isProfileComplete || false;
-  const { toast } = useToast();
 
   const studentMenu = [
     {

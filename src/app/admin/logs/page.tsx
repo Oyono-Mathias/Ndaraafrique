@@ -30,7 +30,6 @@ import type { AdminAuditLog, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useTranslations } from 'next-intl';
 
 
 const eventTypeMap = {
@@ -49,7 +48,6 @@ const LogIcon = ({ eventType }: { eventType: AdminAuditLog['eventType'] }) => {
 export default function AdminLogsPage() {
   const { currentUser: adminUser } = useRole();
   const db = getFirestore();
-  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);

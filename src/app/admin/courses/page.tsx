@@ -31,7 +31,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-react';
 import type { Course, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
-import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 
@@ -81,13 +80,13 @@ const CourseActions = ({ course }: { course: Course }) => {
     );
 };
 
-const CourseCard = ({ course, instructorName, t }: { course: Course, instructorName: string, t: (key: string) => string }) => {
+const CourseCard = ({ course, instructorName }: { course: Course, instructorName: string }) => {
     const router = useRouter();
     const getStatusText = (status: Course['status'] = 'Draft') => {
         switch(status) {
-            case 'Published': return t('statusPublished');
-            case 'Pending Review': return t('statusReview');
-            case 'Draft': return t('statusDraft');
+            case 'Published': return 'Publié';
+            case 'Pending Review': return 'En révision';
+            case 'Draft': return 'Brouillon';
             default: return status;
         }
     }
@@ -126,13 +125,13 @@ const CourseCard = ({ course, instructorName, t }: { course: Course, instructorN
     </Card>
 )};
 
-const CourseRow = ({ course, instructorName, t }: { course: Course, instructorName: string, t: (key: string) => string }) => {
+const CourseRow = ({ course, instructorName }: { course: Course, instructorName: string }) => {
     const router = useRouter();
     const getStatusText = (status: Course['status'] = 'Draft') => {
         switch(status) {
-            case 'Published': return t('statusPublished');
-            case 'Pending Review': return t('statusReview');
-            case 'Draft': return t('statusDraft');
+            case 'Published': return 'Publié';
+            case 'Pending Review': return 'En révision';
+            case 'Draft': return 'Brouillon';
             default: return status;
         }
     }
@@ -169,7 +168,6 @@ const CourseRow = ({ course, instructorName, t }: { course: Course, instructorNa
 export default function AdminCoursesPage() {
   const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const t = useTranslations();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
@@ -256,7 +254,7 @@ export default function AdminCoursesPage() {
                     [...Array(8)].map((_, i) => <Skeleton key={i} className="h-80 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
                     filteredCourses.map(course => (
-                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t as any} />
+                       <CourseCard key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-10">
@@ -272,7 +270,7 @@ export default function AdminCoursesPage() {
                     [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
                      filteredCourses.map(course => (
-                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} t={t as any} />
+                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
                     ))
                 ) : (
                     <div className="col-span-full text-center py-10">

@@ -35,7 +35,6 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useTranslations } from 'next-intl';
 import { Label } from '@/components/ui/label';
 import { approveInstructorApplication } from '@/actions/userActions';
 
@@ -63,19 +62,18 @@ const DecisionModal = ({
     onClose: () => void;
     onConfirm: (userId: string, decision: Decision, message: string) => Promise<void>;
 }) => {
-    const t = useTranslations();
     const [decision, setDecision] = useState<Decision>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [message, setMessage] = useState('');
     const [isProcessing, setIsProcessing] = useState(false);
 
     const rejectionTemplates = {
-        quality: t('rejectionTemplateQuality'),
-        topic: t('rejectionTemplateTopic'),
-        incomplete: t('rejectionTemplateIncomplete')
+        quality: "La qualité de votre vidéo de présentation n'est pas suffisante.",
+        topic: "Le sujet que vous proposez n'est pas pertinent pour notre audience.",
+        incomplete: "Votre dossier de candidature est incomplet."
     };
 
-    const acceptanceTemplate = t('acceptanceTemplate');
+    const acceptanceTemplate = "Félicitations ! Votre candidature a été acceptée. Vous pouvez maintenant commencer à créer des cours.";
 
     React.useEffect(() => {
         if (application) {
@@ -94,7 +92,7 @@ const DecisionModal = ({
         } else {
             setMessage('');
         }
-    }, [decision, rejectionReason, acceptanceTemplate, rejectionTemplates, t]);
+    }, [decision, rejectionReason, acceptanceTemplate, rejectionTemplates]);
 
     if (!application) return null;
     
@@ -118,7 +116,7 @@ const DecisionModal = ({
                         <div>
                             <DialogTitle className="text-2xl dark:text-white">{application.fullName}</DialogTitle>
                             <DialogDescription className="dark:text-slate-400">
-                                {t('decisionModalTitle')} - {application.instructorApplication?.specialty || t('unspecifiedSpecialty')}
+                                Décision sur la candidature - {application.instructorApplication?.specialty || 'Spécialité non spécifiée'}
                             </DialogDescription>
                         </div>
                     </div>
@@ -133,14 +131,14 @@ const DecisionModal = ({
                                 onClick={() => setDecision('accepted')}
                                 className={cn("h-20 text-lg", decision === 'accepted' && 'bg-green-600 hover:bg-green-700 border-green-600 ring-4 ring-green-500/20')}
                             >
-                                <Check className="mr-2 h-6 w-6"/> {t('approve')}
+                                <Check className="mr-2 h-6 w-6"/> Approuver
                             </Button>
                              <Button 
                                 variant={decision === 'rejected' ? 'destructive' : 'outline'} 
                                 onClick={() => setDecision('rejected')}
                                 className={cn("h-20 text-lg", decision === 'rejected' && 'ring-4 ring-red-500/20')}
                             >
-                                <X className="mr-2 h-6 w-6"/> {t('reject')}
+                                <X className="mr-2 h-6 w-6"/> Rejeter
                             </Button>
                         </div>
                     </div>
@@ -178,7 +176,7 @@ const DecisionModal = ({
                 </div>
                 
                 <DialogFooter>
-                    <Button variant="ghost" onClick={onClose} disabled={isProcessing}>{t('cancelButton')}</Button>
+                    <Button variant="ghost" onClick={onClose} disabled={isProcessing}>Annuler</Button>
                     <Button onClick={handleConfirm} disabled={!decision || isProcessing}>
                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         <Send className="mr-2 h-4 w-4"/> Confirmer et envoyer
@@ -193,7 +191,6 @@ export default function InstructorApplicationsPage() {
   const { currentUser: adminUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
-  const t = useTranslations();
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   const applicationsQuery = useMemoFirebase(
@@ -233,7 +230,7 @@ export default function InstructorApplicationsPage() {
     <>
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('navApplications')}</h1>
+        <h1 className="text-3xl font-bold dark:text-white">Candidatures Instructeurs</h1>
         <p className="text-muted-foreground dark:text-slate-400">Examinez et approuvez les nouveaux instructeurs.</p>
       </header>
 
@@ -254,7 +251,7 @@ export default function InstructorApplicationsPage() {
                           </Avatar>
                           <div>
                             <CardTitle className="dark:text-slate-100">{app.fullName}</CardTitle>
-                            <CardDescription className="dark:text-slate-400">{app.instructorApplication?.specialty || t('unspecifiedSpecialty')}</CardDescription>
+                            <CardDescription className="dark:text-slate-400">{app.instructorApplication?.specialty || 'Spécialité non spécifiée'}</CardDescription>
                           </div>
                     </CardHeader>
                      <CardContent className="flex-grow">
