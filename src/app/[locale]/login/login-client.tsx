@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from '@/navigation';
+import { useRouter, useSearchParams, Link } from '@/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -20,7 +20,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
-import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 
 const loginSchema = z.object({

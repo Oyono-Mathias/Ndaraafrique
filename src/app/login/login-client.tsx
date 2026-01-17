@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, Link } from '@/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -10,7 +11,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, up
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,9 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
-import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
-import { useI18n } from '@/context/I18nProvider';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -66,7 +65,7 @@ export default function LoginClient() {
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading } = useRole();
-  const { locale } = useI18n();
+  const locale = useLocale();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
