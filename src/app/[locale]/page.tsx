@@ -1,9 +1,8 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer, doc } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
@@ -21,7 +20,7 @@ import { useTranslations } from 'next-intl';
 
 const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => {
     const [scrolled, setScrolled] = useState(false);
-    const t = useTranslations();
+    const t = useTranslations('Auth');
 
     useEffect(() => {
         const handleScroll = () => {
@@ -54,12 +53,12 @@ const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform
                      {siteSettings.allowInstructorSignup ? (
                         <Link href="/login">
                             <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9">
-                                {t('auth_login_btn')}
+                                {t('login')}
                             </Button>
                         </Link>
                     ) : (
                          <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white h-9" disabled>
-                            {t('auth_login_btn')}
+                            {t('login')}
                         </Button>
                     )}
                 </div>
@@ -306,13 +305,28 @@ const MobileCTA = ({ siteSettings }: { siteSettings: Partial<Settings['platform'
     </div>
 );
 
-export default function LandingPage({ siteSettings }: { siteSettings?: Partial<Settings> }) {
+export default function LandingPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
+  const [siteSettings, setSiteSettings] = useState<Partial<Settings['platform']>>({ allowInstructorSignup: true });
   const db = getFirestore();
-  const effectiveSiteSettings = siteSettings?.platform || { allowInstructorSignup: true };
-  const t = useTranslations();
+  const t = useTranslations('Hero');
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+        try {
+            const settingsRef = doc(db, 'settings', 'global');
+            const settingsSnap = await getDoc(settingsRef);
+            if (settingsSnap.exists()) {
+                setSiteSettings(settingsSnap.data().platform || { allowInstructorSignup: true });
+            }
+        } catch (error) {
+            console.error("Failed to fetch site settings for landing page:", error);
+        }
+    }
+    fetchSettings();
+  }, [db]);
 
   useEffect(() => {
     const q = query(
@@ -357,22 +371,22 @@ export default function LandingPage({ siteSettings }: { siteSettings?: Partial<S
 
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
-      <LandingNav siteSettings={effectiveSiteSettings} />
+      <LandingNav siteSettings={siteSettings} />
       <div className="container mx-auto px-4">
         
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
           <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up">
             <Sparkles className="w-3 h-3 mr-2" />
-            {t('hero_badge')}
+            {t('badge')}
           </Badge>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            {t('hero_main_title')}
+            {t('title')}
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            {t('hero_main_subtitle')}
+            {t('subtitle')}
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
-              {effectiveSiteSettings.allowInstructorSignup ? (
+              {siteSettings.allowInstructorSignup ? (
                   <Link href="/login?tab=register">
                       <button className="nd-cta-primary h-12 text-base md:h-auto md:text-sm">
                           Démarrer mon parcours
@@ -411,11 +425,11 @@ export default function LandingPage({ siteSettings }: { siteSettings?: Partial<S
             isLoading={loading}
           />
           <TrustSection />
-          <FinalCTA siteSettings={effectiveSiteSettings} />
+          <FinalCTA siteSettings={siteSettings} />
         </main>
       </div>
       <Footer />
-      <MobileCTA siteSettings={effectiveSiteSettings} />
+      <MobileCTA siteSettings={siteSettings} />
     </div>
   );
 };

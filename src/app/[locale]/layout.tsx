@@ -1,13 +1,13 @@
+
 import type { Metadata, Viewport } from "next";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/toaster";
 import "../globals.css";
-import { cn } from "@/lib/utils";
-import { Inter } from "next/font/google";
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
+import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
@@ -23,36 +23,32 @@ export const viewport: Viewport = {
   themeColor: '#007bff',
 };
 
-const fontSans = Inter({
-  subsets: ["latin"],
-  variable: "--font-sans",
-});
-
 export function generateStaticParams() {
   return [{locale: 'fr'}, {locale: 'en'}];
 }
 
-export default async function RootLayout({
+export default async function LocaleLayout({
   children,
   params: {locale}
 }: {
   children: React.ReactNode;
   params: {locale: string};
 }) {
-  const messages = await getMessages();
+  let messages;
+  try {
+    messages = await getMessages();
+  } catch (error) {
+    notFound();
+  }
 
   return (
-    <html lang={locale} className="dark" style={{ colorScheme: 'dark' }}>
-       <body className={cn("min-h-screen bg-background font-sans antialiased page-transition", fontSans.variable)}>
-        <NextIntlClientProvider locale={locale} messages={messages}>
-          <FirebaseClientProvider>
-            <RoleProvider>
-              <AppShell>{children}</AppShell>
-              <Toaster />
-            </RoleProvider>
-          </FirebaseClientProvider>
-        </NextIntlClientProvider>
-      </body>
-    </html>
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <FirebaseClientProvider>
+        <RoleProvider>
+          <AppShell>{children}</AppShell>
+          <Toaster />
+        </RoleProvider>
+      </FirebaseClientProvider>
+    </NextIntlClientProvider>
   );
 }

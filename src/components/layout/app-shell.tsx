@@ -25,8 +25,6 @@ function MaintenancePage() {
     );
 }
 
-const BOTTOM_NAV_ROUTES = ['/dashboard', '/search', '/mes-formations', '/messages', '/account', '/notifications'];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const pathname = usePathname();
@@ -38,11 +36,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
   
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
   const isLaunchPage = pathname.startsWith('/launch');
@@ -66,10 +59,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
   
-  if (!isClient) {
-    return <SplashScreen />;
-  }
-
   if (isLandingPage) {
     return React.cloneElement(children as React.ReactElement, { siteSettings });
   }
@@ -78,17 +67,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  if (isUserLoading) {
-    return <SplashScreen />;
-  }
-
-  if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
-    return <MaintenancePage />;
-  }
-  
-  if (!user) {
-    return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
-  }
+  // --- STABLE LAYOUT LOGIC ---
+  const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
+  const showLoader = !isUserLoading && !user && !showMaintenance;
+  const showApp = !isUserLoading && user && !showMaintenance;
   
   const handleSidebarLinkClick = () => {
       setIsSheetOpen(false);
@@ -101,65 +83,63 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
   
   const isFullScreenPage = pathname.startsWith('/courses/');
-
-  const mainContentPadding = cn(
-    "p-6",
-    isFullScreenPage && "!p-0" // Force no padding for course player
-  );
+  const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
   
   if (isAdminArea) {
       return <>{children}</>;
   }
 
   return (
-      <div className={cn("min-h-screen w-full bg-slate-900 text-white", isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]")}>
-        <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
-          <div className={cn({ 'hidden': role !== 'student' })}>
-            <StudentSidebar {...sidebarProps} />
-          </div>
-          <div className={cn({ 'hidden': role !== 'instructor' })}>
-            <InstructorSidebar {...sidebarProps} />
-          </div>
-          <div className={cn({ 'hidden': role !== 'admin' })}>
-            <AdminSidebar {...sidebarProps} />
-          </div>
-        </aside>
-        <div className="flex flex-col">
-          <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
-             <div className="md:hidden">
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                    <SheetTrigger asChild>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 bg-transparent border-slate-700"
-                    >
-                        <PanelLeft className="h-5 w-5" />
-                        <span className="sr-only">Ouvrir le menu</span>
-                    </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
-                      <div className={cn({ 'hidden': role !== 'student' })}>
-                        <StudentSidebar {...sidebarProps} />
-                      </div>
-                      <div className={cn({ 'hidden': role !== 'instructor' })}>
-                        <InstructorSidebar {...sidebarProps} />
-                      </div>
-                      <div className={cn({ 'hidden': role !== 'admin' })}>
-                        <AdminSidebar {...sidebarProps} />
-                      </div>
-                    </SheetContent>
-                </Sheet>
-            </div>
-            <div className="w-full flex justify-end">
-                <Header />
-            </div>
-          </header>
-          
-          <main className={mainContentPadding}>
-              {children}
-          </main>
+      <>
+        {/* SplashScreen is absolutely positioned and manages its own lifecycle. */}
+        <SplashScreen />
+
+        {/* Maintenance Page */}
+        <div className={cn({ 'hidden': !showMaintenance })}>
+            <MaintenancePage />
         </div>
-      </div>
+
+        {/* Loader for redirecting unauthenticated users */}
+        <div className={cn("flex h-screen w-full items-center justify-center", { 'hidden': !showLoader })}>
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+        
+        {/* Main Application Layout */}
+        <div className={cn({ 'hidden': !showApp })}>
+          <div className={cn("min-h-screen w-full bg-slate-900 text-white", isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]")}>
+            <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
+              <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
+              <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
+              <div className={cn({ 'hidden': role !== 'admin' })}><AdminSidebar {...sidebarProps} /></div>
+            </aside>
+            <div className="flex flex-col">
+              <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
+                <div className="md:hidden">
+                    <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="icon" className="shrink-0 bg-transparent border-slate-700">
+                                <PanelLeft className="h-5 w-5" />
+                                <span className="sr-only">Ouvrir le menu</span>
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
+                            <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
+                            <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
+                            <div className={cn({ 'hidden': role !== 'admin' })}><AdminSidebar {...sidebarProps} /></div>
+                        </SheetContent>
+                    </Sheet>
+                </div>
+                <div className="w-full flex justify-end">
+                    <Header />
+                </div>
+              </header>
+              
+              <main className={mainContentPadding}>
+                  {children}
+              </main>
+            </div>
+          </div>
+        </div>
+      </>
   );
 }

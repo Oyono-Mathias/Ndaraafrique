@@ -1,27 +1,13 @@
 
-import type { Metadata, Viewport } from "next";
-import { FirebaseClientProvider } from "@/firebase/client-provider";
-import { RoleProvider } from "@/context/RoleContext";
-import { AppShell } from "@/components/layout/app-shell";
-import { Toaster } from "@/components/ui/toaster";
-import "./globals.css";
-import { cn } from "@/lib/utils";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { cn } from "@/lib/utils";
+import "./globals.css";
 
+// This metadata is a fallback. The specific metadata is in [locale]/layout.tsx
 export const metadata: Metadata = {
-  title: "Ndara Afrique - L'excellence par le savoir",
-  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
-  keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
-  manifest: '/manifest.json',
-};
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: '#007bff',
+  title: "Ndara Afrique",
+  description: "L'excellence par le savoir.",
 };
 
 const fontSans = Inter({
@@ -29,24 +15,20 @@ const fontSans = Inter({
   variable: "--font-sans",
 });
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const messages = await getMessages();
-
   return (
     <html lang="fr" className="dark" style={{ colorScheme: 'dark' }}>
-       <body className={cn("min-h-screen bg-background font-sans antialiased page-transition", fontSans.variable)}>
-        <NextIntlClientProvider messages={messages}>
-          <FirebaseClientProvider>
-            <RoleProvider>
-              <AppShell>{children}</AppShell>
-              <Toaster />
-            </RoleProvider>
-          </FirebaseClientProvider>
-        </NextIntlClientProvider>
+      <body
+        className={cn(
+          "min-h-screen bg-background font-sans antialiased",
+          fontSans.variable
+        )}
+      >
+        {children}
       </body>
     </html>
   );
