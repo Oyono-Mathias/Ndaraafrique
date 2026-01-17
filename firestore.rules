@@ -307,6 +307,11 @@ service cloud.firestore {
         allow create: if isActive() && isChatParticipant() && isOwner(request.resource.data.senderId);
       }
     }
+    
+    match /recommended_courses/{userId} {
+        allow read: if isOwner(userId) || isAdmin();
+        allow write: if isAdmin();
+    }
 
 
     /* ======================
@@ -346,5 +351,3 @@ service cloud.firestore {
     }
   }
 }
-
-    

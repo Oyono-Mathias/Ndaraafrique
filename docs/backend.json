@@ -1390,9 +1390,11 @@
     },
     "reviews/{reviewId}": {
         "schema": { "$ref": "#/entities/Review" }
+    },
+    "recommended_courses/{userId}": {
+      "schema": { "$ref": "#/entities/UserRecommendations" },
+      "description": "Personalized course recommendations for a user."
     }
   }
 }
 
-
-    
