@@ -37,7 +37,8 @@ import { UserNav } from "./user-nav";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin' && pathname === '/admin/statistiques') || (href !== '/admin' && pathname.startsWith(href));
+  const isActive = (href === '/admin' && pathname === '/admin') || (href !== '/admin' && pathname.startsWith(href));
+
 
   return (
     <Link
@@ -70,6 +71,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   const db = getFirestore();
 
   const adminMenu = [
+    { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
     { href: "/admin/statistiques", icon: BarChart3, label: "Statistiques" },
     { href: "/admin/users", icon: Users, label: "Utilisateurs" },
     { href: "/admin/instructors", icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
