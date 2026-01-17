@@ -5,7 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
-import { useI18n } from "@/context/I18nProvider";
 import { Button } from "@/components/ui/button";
 import {
   Book,
@@ -33,6 +32,7 @@ import { Progress } from "../ui/progress";
 import { OnboardingGuide } from "../onboarding-guide";
 import { UserNav } from "./user-nav";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslations } from "next-intl";
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean }) => {
   const pathname = usePathname();
@@ -87,7 +87,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const router = useRouter();
   const { switchRole, availableRoles, user, currentUser } = useRole();
-  const { t } = useI18n();
+  const t = useTranslations();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
   const [unreadMessages, setUnreadMessages] = useState(0);

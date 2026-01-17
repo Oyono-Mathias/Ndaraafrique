@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useRole } from "@/context/RoleContext";
-import { useI18n } from "@/context/I18nProvider";
+import { useTranslations } from "next-intl";
 import {
   LayoutDashboard,
   Users,
@@ -69,7 +69,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
 
 
 export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
-  const { t } = useI18n();
+  const t = useTranslations();
   const db = getFirestore();
 
   const adminMenu = [

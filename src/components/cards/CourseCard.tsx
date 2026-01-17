@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Star, Play, Award } from 'lucide-react';
-import { useI18n } from '@/context/I18nProvider';
+import { useTranslations } from 'next-intl';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
@@ -28,7 +28,7 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 );
 
 export function CourseCard({ course, instructor, variant = 'catalogue' }: CourseCardProps) {
-  const { t } = useI18n();
+  const t = useTranslations();
   const [imageLoading, setImageLoading] = useState(true);
   
   const progress = course.progress ?? 0;

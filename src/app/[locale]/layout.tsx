@@ -5,7 +5,7 @@ import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/toaster";
 import {NextIntlClientProvider} from 'next-intl';
-import {getMessages} from 'next-intl/server';
+import {getLocale, getMessages} from 'next-intl/server';
 import { notFound } from "next/navigation";
 
 export const metadata: Metadata = {

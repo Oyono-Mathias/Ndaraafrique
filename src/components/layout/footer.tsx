@@ -4,11 +4,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Linkedin } from 'lucide-react';
-import { useI18n } from '@/context/I18nProvider';
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';
+import { useTranslations } from 'next-intl';
 
 export function Footer() {
-  const { t } = useI18n();
+  const t = useTranslations();
 
   return (
     <footer className="mt-32 border-t border-white/10 bg-[#020617] pt-16 pb-8">

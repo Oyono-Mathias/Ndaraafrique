@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import {
@@ -20,14 +19,14 @@ import {
   import { useRole } from "@/context/RoleContext"
   import { useRouter } from "next/navigation";
   import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
-  import { useI18n } from "@/context/I18nProvider";
+  import { useTranslations } from "next-intl";
   import { LanguageSelector } from "./language-selector";
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
 
   
 export function UserNav() {
-    const { t } = useI18n();
+    const t = useTranslations();
     const { currentUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
 

@@ -9,7 +9,7 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useI18n } from './I18nProvider';
+import { useLocale } from 'next-intl';
 
 interface RoleContextType {
   role: UserRole;
@@ -37,7 +37,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
-  const { setLocale } = useI18n();
+  const locale = useLocale();
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();
@@ -145,8 +145,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
-          setLocale(preferredLang);
-
+          
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           
           let newRole: UserRole;
@@ -187,7 +186,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user, isUserLoading, db, secureSignOut, toast, setLocale]);
+  }, [user, isUserLoading, db, secureSignOut, toast]);
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
