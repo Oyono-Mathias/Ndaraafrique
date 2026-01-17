@@ -45,7 +45,6 @@ import { FirestorePermissionError } from '@/firebase/errors';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { cn } from '@/lib/utils';
-import { useTranslations } from 'next-intl';
 import { sendAdminNotification } from '@/actions/notificationActions';
 
 
@@ -75,16 +74,16 @@ const formatCurrency = (amount: number) => {
   return `${amount.toLocaleString('fr-FR')} XOF`;
 };
 
-const getStatusBadge = (status: 'valide' | 'en_attente' | 'rejete', t: (key: string) => string) => {
+const getStatusBadge = (status: 'valide' | 'en_attente' | 'rejete') => {
   switch (status) {
     case 'valide':
-      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">{t('payout_status_approved')}</Badge>;
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300">Approuvé</Badge>;
     case 'en_attente':
-      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">{t('payout_status_pending')}</Badge>;
+      return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300">En attente</Badge>;
     case 'rejete':
-      return <Badge variant="destructive">{t('payout_status_rejected')}</Badge>;
+      return <Badge variant="destructive">Rejeté</Badge>;
     default:
-      return <Badge variant="secondary">{t('payout_status_unknown')}</Badge>;
+      return <Badge variant="secondary">Inconnu</Badge>;
   }
 };
 
@@ -107,7 +106,6 @@ const StatCard = ({ title, value, icon: Icon, isLoading }: { title: string, valu
 
 export default function MyRevenuePage() {
   const { currentUser: instructor, isUserLoading: isInstructorLoading } = useRole();
-  const t = useTranslations();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [payouts, setPayouts] = useState<Payout[]>([]);
   const [settings, setSettings] = useState({ platformCommission: 30, minPayoutThreshold: 5000 });
@@ -161,7 +159,7 @@ export default function MyRevenuePage() {
         setError(null);
     }, (err) => {
         console.error("Erreur de chargement des revenus:", err);
-        setError(t('error_loading_transactions'));
+        setError("Erreur lors du chargement des transactions.");
     }));
 
     // Fetch payouts
@@ -172,12 +170,12 @@ export default function MyRevenuePage() {
         setIsLoading(false); // Consider loading finished after all initial data is fetched
     }, (err) => {
         console.error("Erreur de chargement des retraits:", err);
-        setError(t('error_loading_payouts'));
+        setError("Erreur lors du chargement des retraits.");
         setIsLoading(false);
     }));
     
     return () => unsubscribes.forEach(unsub => unsub());
-  }, [instructor, isInstructorLoading, db, t]);
+  }, [instructor, isInstructorLoading, db]);
 
   const { totalRevenue, monthlyRevenue, availableBalance, revenueTrendData } = useMemo(() => {
     const now = new Date();
@@ -279,19 +277,19 @@ export default function MyRevenuePage() {
     }
   }
 
-  const chartConfig = { revenue: { label: t('revenue_gains'), color: 'hsl(var(--primary))' }};
+  const chartConfig = { revenue: { label: "Gains (nets)", color: 'hsl(var(--primary))' }};
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('navFinance')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('revenue_description')}</p>
+        <h1 className="text-3xl font-bold dark:text-white">Finance</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Suivez vos revenus et gérez vos retraits.</p>
       </header>
 
       <section className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card className="lg:col-span-2 dark:bg-slate-800/80 dark:border-slate-700 p-6 flex flex-col justify-between">
            <div>
-                <CardTitle className="text-sm font-medium text-slate-400">{t('revenue_available_balance')}</CardTitle>
+                <CardTitle className="text-sm font-medium text-slate-400">Solde disponible</CardTitle>
                 {isLoading ? <Skeleton className="h-16 w-3/4 mt-2 bg-slate-700" /> : (
                   <p className="text-5xl font-bold font-mono tracking-tighter text-white mt-2">{formatCurrency(availableBalance)}</p>
                 )}
@@ -300,33 +298,33 @@ export default function MyRevenuePage() {
                 <DialogTrigger asChild>
                     <Button disabled={availableBalance < settings.minPayoutThreshold || isLoading} className="w-full sm:w-auto mt-4 h-12 text-base">
                         <Landmark className="mr-2 h-4 w-4" />
-                        {t('revenue_request_payout_button')}
+                        Demander un retrait
                     </Button>
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[425px] dark:bg-slate-900 dark:border-slate-700">
                     <DialogHeader>
-                        <DialogTitle className="dark:text-white">{t('revenue_request_payout_button')}</DialogTitle>
+                        <DialogTitle className="dark:text-white">Demander un retrait</DialogTitle>
                         <DialogDescription className="dark:text-slate-400">
-                           {t('revenue_modal_desc', { threshold: formatCurrency(settings.minPayoutThreshold), balance: formatCurrency(availableBalance) })}
+                           Le seuil minimum est de {formatCurrency(settings.minPayoutThreshold)}. Votre solde est de {formatCurrency(availableBalance)}.
                         </DialogDescription>
                     </DialogHeader>
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 py-4">
                             <FormField control={form.control} name="amount" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="dark:text-slate-300">{t('revenue_modal_amount')}</FormLabel>
+                                    <FormLabel className="dark:text-slate-300">Montant</FormLabel>
                                     <FormControl><Input type="number" placeholder="5000" {...field} className="dark:bg-slate-800 dark:border-slate-700" /></FormControl>
                                     <FormMessage />
                                 </FormItem>
                             )} />
                             <FormField control={form.control} name="method" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="dark:text-slate-300">{t('revenue_modal_method')}</FormLabel>
+                                    <FormLabel className="dark:text-slate-300">Méthode de retrait</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl><SelectTrigger className="dark:bg-slate-800 dark:border-slate-700"><SelectValue placeholder={t('revenue_modal_select_method')} /></SelectTrigger></FormControl>
+                                        <FormControl><SelectTrigger className="dark:bg-slate-800 dark:border-slate-700"><SelectValue placeholder="Sélectionner une méthode" /></SelectTrigger></FormControl>
                                         <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
-                                            <SelectItem value="Mobile Money">{t('revenue_method_momo')}</SelectItem>
-                                            <SelectItem value="Virement">{t('revenue_method_transfer')}</SelectItem>
+                                            <SelectItem value="Mobile Money">Mobile Money</SelectItem>
+                                            <SelectItem value="Virement">Virement bancaire</SelectItem>
                                         </SelectContent>
                                     </Select>
                                     <FormMessage />
@@ -335,7 +333,7 @@ export default function MyRevenuePage() {
                             <DialogFooter>
                                 <Button type="submit" disabled={isSubmitting}>
                                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                    {t('revenue_modal_submit')}
+                                    Soumettre ma demande
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -343,8 +341,8 @@ export default function MyRevenuePage() {
                 </DialogContent>
             </Dialog>
         </Card>
-        <StatCard title={t('revenue_monthly_gross')} value={formatCurrency(monthlyRevenue)} icon={Calendar} isLoading={isLoading} />
-        <StatCard title={t('revenue_total_gross')} value={formatCurrency(totalRevenue)} icon={DollarSign} isLoading={isLoading} />
+        <StatCard title="Revenus bruts (ce mois-ci)" value={formatCurrency(monthlyRevenue)} icon={Calendar} isLoading={isLoading} />
+        <StatCard title="Revenus bruts (total)" value={formatCurrency(totalRevenue)} icon={DollarSign} isLoading={isLoading} />
       </section>
 
       {error && (
@@ -355,14 +353,14 @@ export default function MyRevenuePage() {
       )}
       
        <section>
-          <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_chart_title_net')}</h2>
+          <h2 className="text-2xl font-semibold mb-4 dark:text-white">Vos gains nets par mois</h2>
            <Card className="dark:bg-slate-800 dark:border-slate-700">
                 <CardContent className="pt-6">
                     {isLoading ? <Skeleton className="h-80 w-full dark:bg-slate-700" /> : (
                         <ChartContainer config={chartConfig} className="h-80 w-full">
                             <ResponsiveContainer>
                                 <BarChart data={revenueTrendData}>
-                                    <CartesianGrid vertical={false} strokeDasharray="3 3" className="dark:stroke-slate-700" />
+                                    <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
                                     <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                     <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                     <Tooltip content={<ChartTooltipContent formatter={(value) => formatCurrency(value as number)} className="dark:bg-slate-900 dark:border-slate-700" />} />
@@ -377,16 +375,16 @@ export default function MyRevenuePage() {
 
       <div className="grid lg:grid-cols-2 gap-8">
         <section>
-          <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_transactions_title')}</h2>
+          <h2 className="text-2xl font-semibold mb-4 dark:text-white">Dernières transactions</h2>
           <Card className="dark:bg-slate-800 dark:border-slate-700">
             <CardContent className="p-0">
               <div className="hidden sm:block">
                   <Table>
                     <TableHeader>
                       <TableRow className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                        <TableHead className="dark:text-slate-400">{t('date')}</TableHead>
-                        <TableHead className="dark:text-slate-400">{t('details')}</TableHead>
-                        <TableHead className="text-right dark:text-slate-400">{t('revenue_your_share')}</TableHead>
+                        <TableHead className="dark:text-slate-400">Date</TableHead>
+                        <TableHead className="dark:text-slate-400">Détails</TableHead>
+                        <TableHead className="text-right dark:text-slate-400">Vos gains (nets)</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -409,7 +407,7 @@ export default function MyRevenuePage() {
                       ) : (
                         <TableRow className="dark:border-slate-700">
                           <TableCell colSpan={3} className="h-24 text-center text-muted-foreground dark:text-slate-400">
-                            {t('revenue_no_transactions')}
+                            Aucune transaction pour le moment.
                           </TableCell>
                         </TableRow>
                       )}
@@ -426,11 +424,11 @@ export default function MyRevenuePage() {
                                 <p className="font-semibold text-sm dark:text-white">{tx.courseTitle}</p>
                                 <p className="font-bold font-mono text-green-600 dark:text-green-400">{formatCurrency(tx.amount * (1 - settings.platformCommission / 100))}</p>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-1 dark:text-slate-400">{t('date_on')} {tx.date ? format(tx.date.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</p>
+                            <p className="text-xs text-muted-foreground mt-1 dark:text-slate-400">le {tx.date ? format(tx.date.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</p>
                         </Card>
                      ))
                  ) : (
-                    <div className="h-24 text-center flex items-center justify-center text-muted-foreground dark:text-slate-400">{t('revenue_no_transactions')}</div>
+                    <div className="h-24 text-center flex items-center justify-center text-muted-foreground dark:text-slate-400">Aucune transaction</div>
                  )}
               </div>
             </CardContent>
@@ -438,17 +436,17 @@ export default function MyRevenuePage() {
         </section>
 
         <section>
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">{t('revenue_payouts_title')}</h2>
+            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Historique des retraits</h2>
             <Card className="dark:bg-slate-800 dark:border-slate-700">
             <CardContent className="p-0">
                 <div className="hidden sm:block">
                     <Table>
                         <TableHeader>
                             <TableRow className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                                <TableHead className="dark:text-slate-400">{t('date')}</TableHead>
-                                <TableHead className="dark:text-slate-400">{t('method')}</TableHead>
-                                <TableHead className="dark:text-slate-400">{t('status')}</TableHead>
-                                <TableHead className="text-right dark:text-slate-400">{t('amount')}</TableHead>
+                                <TableHead className="dark:text-slate-400">Date</TableHead>
+                                <TableHead className="dark:text-slate-400">Méthode</TableHead>
+                                <TableHead className="dark:text-slate-400">Statut</TableHead>
+                                <TableHead className="text-right dark:text-slate-400">Montant</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -466,14 +464,14 @@ export default function MyRevenuePage() {
                                 <TableRow key={payout.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
                                 <TableCell className="text-muted-foreground dark:text-slate-400">{payout.date ? format(payout.date.toDate(), 'dd/MM/yy', { locale: fr }) : 'N/A'}</TableCell>
                                 <TableCell className="dark:text-slate-200">{payout.method}</TableCell>
-                                <TableCell>{getStatusBadge(payout.status, t)}</TableCell>
+                                <TableCell>{getStatusBadge(payout.status)}</TableCell>
                                 <TableCell className="text-right font-semibold font-mono dark:text-white">{formatCurrency(payout.amount)}</TableCell>
                                 </TableRow>
                             ))
                             ) : (
                             <TableRow className="dark:border-slate-700">
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-400">
-                                {t('revenue_no_payouts')}
+                                Aucun retrait effectué.
                                 </TableCell>
                             </TableRow>
                             )}
@@ -488,16 +486,16 @@ export default function MyRevenuePage() {
                             <Card key={payout.id} className="p-3 dark:bg-slate-900/50 dark:border-slate-700">
                                 <div className="flex justify-between items-start">
                                     <div className="flex items-center gap-2">
-                                        {getStatusBadge(payout.status, t)}
+                                        {getStatusBadge(payout.status)}
                                         <p className="font-semibold text-sm dark:text-white">{payout.method}</p>
                                     </div>
                                     <p className="font-bold font-mono dark:text-white">{formatCurrency(payout.amount)}</p>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1 dark:text-slate-400">{t('date_on')} {payout.date ? format(payout.date.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</p>
+                                <p className="text-xs text-muted-foreground mt-1 dark:text-slate-400">le {payout.date ? format(payout.date.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</p>
                             </Card>
                          ))
                      ) : (
-                        <div className="h-24 text-center flex items-center justify-center text-muted-foreground dark:text-slate-400">{t('revenue_no_payouts')}</div>
+                        <div className="h-24 text-center flex items-center justify-center text-muted-foreground dark:text-slate-400">Aucun retrait</div>
                      )}
                 </div>
             </CardContent>
@@ -508,3 +506,5 @@ export default function MyRevenuePage() {
     </div>
   );
 }
+
+    

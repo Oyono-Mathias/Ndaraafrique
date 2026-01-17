@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useMemo } from 'react';
@@ -20,13 +19,11 @@ import { AlertCircle, ClipboardList } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
-import { useTranslations } from 'next-intl';
 
 
 export default function AssignmentsDashboardPage() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
-    const t = useTranslations();
 
     const coursesQuery = useMemoFirebase(
         () => currentUser?.uid
@@ -44,30 +41,30 @@ export default function AssignmentsDashboardPage() {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">{t('navAssignments')}</h1>
-                <p className="text-muted-foreground dark:text-slate-400">{t('assignments_description_instructor')}</p>
+                <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Devoirs</h1>
+                <p className="text-muted-foreground dark:text-slate-400">Gérez les devoirs pour chacun de vos cours.</p>
             </header>
 
              {error && (
                 <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
                     <AlertCircle className="h-5 w-5" />
                     <p>
-                       {t('firestoreIndexError')}
+                       Une erreur de chargement est survenue. Un index Firestore est peut-être manquant.
                     </p>
                 </div>
             )}
 
             <Card className="bg-card shadow-sm dark:bg-slate-800 dark:border-slate-700">
                 <CardHeader>
-                    <CardTitle className="dark:text-white">{t('course_list')}</CardTitle>
+                    <CardTitle className="dark:text-white">Liste des cours</CardTitle>
                 </CardHeader>
                 <CardContent>
                      <Table>
                         <TableHeader>
                             <TableRow className="dark:border-slate-700">
-                                <TableHead className="dark:text-slate-300">{t('course_title')}</TableHead>
-                                <TableHead className="dark:text-slate-300">{t('status')}</TableHead>
-                                <TableHead className="text-right dark:text-slate-300">{t('action')}</TableHead>
+                                <TableHead className="dark:text-slate-300">Titre du cours</TableHead>
+                                <TableHead className="dark:text-slate-300">Statut</TableHead>
+                                <TableHead className="text-right dark:text-slate-300">Action</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -90,7 +87,7 @@ export default function AssignmentsDashboardPage() {
                                         </TableCell>
                                         <TableCell className="text-right">
                                             <Link href={`/instructor/devoirs/${course.id}`} className="text-sm font-semibold text-primary hover:underline">
-                                                {t('manage_assignments')}
+                                                Gérer les devoirs
                                             </Link>
                                         </TableCell>
                                     </TableRow>
@@ -100,8 +97,8 @@ export default function AssignmentsDashboardPage() {
                                     <TableCell colSpan={3} className="h-32 text-center">
                                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                                             <ClipboardList className="h-10 w-10" />
-                                            <span className="font-medium">{t('no_courses_found')}</span>
-                                            <span className="text-sm">{t('create_course_for_assignments')}</span>
+                                            <span className="font-medium">Aucun cours trouvé</span>
+                                            <span className="text-sm">Créez un cours pour pouvoir y ajouter des devoirs.</span>
                                         </div>
                                     </TableCell>
                                 </TableRow>
@@ -113,3 +110,5 @@ export default function AssignmentsDashboardPage() {
         </div>
     );
 }
+
+    

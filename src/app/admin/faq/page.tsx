@@ -57,7 +57,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion, ChevronUp, ChevronDown } from 'lucide-react';
-import { useTranslations } from 'next-intl';
 
 interface FAQ {
   id: string;
@@ -75,7 +74,7 @@ const faqSchema = z.object({
 
 type FaqFormValues = z.infer<typeof faqSchema>;
 
-const FaqForm = ({ form, onSubmit, isSubmitting, t }: { form: any, onSubmit: (data: FaqFormValues) => void, isSubmitting: boolean, t: (key: string) => string }) => (
+const FaqForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: (data: FaqFormValues) => void, isSubmitting: boolean }) => (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField control={form.control} name="question_fr" render={({ field }) => (
@@ -94,11 +93,11 @@ const FaqForm = ({ form, onSubmit, isSubmitting, t }: { form: any, onSubmit: (da
             )} />
             
             <div className="flex justify-end gap-2 pt-4">
-                <SheetClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></SheetClose>
-                <DialogClose asChild><Button type="button" variant="ghost">{t('cancelButton')}</Button></DialogClose>
+                <SheetClose asChild><Button type="button" variant="ghost">Annuler</Button></SheetClose>
+                <DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    {t('save_button')}
+                    Sauvegarder
                 </Button>
             </div>
         </form>
@@ -107,7 +106,6 @@ const FaqForm = ({ form, onSubmit, isSubmitting, t }: { form: any, onSubmit: (da
 
 
 export default function AdminFaqPage() {
-  const t = useTranslations();
   const db = getFirestore();
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -292,7 +290,7 @@ export default function AdminFaqPage() {
             <FormHeader>
                 <FormTitle className="dark:text-white">{editingFaq ? 'Modifier la question' : 'Ajouter une question'}</FormTitle>
             </FormHeader>
-            <FaqForm form={form} onSubmit={onSubmit} isSubmitting={isSubmitting} t={t} />
+            <FaqForm form={form} onSubmit={onSubmit} isSubmitting={isSubmitting} />
         </FormContent>
       </FormWrapper>
       
@@ -305,9 +303,9 @@ export default function AdminFaqPage() {
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel>{t('cancelButton')}</AlertDialogCancel>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
                   <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
-                      {t('deleteButton')}
+                      Supprimer
                   </AlertDialogAction>
               </AlertDialogFooter>
           </AlertDialogContent>
@@ -315,3 +313,5 @@ export default function AdminFaqPage() {
     </>
   );
 }
+
+    

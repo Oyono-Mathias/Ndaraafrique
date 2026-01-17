@@ -3,14 +3,13 @@
 
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
-import { doc, collection, query, where, getFirestore, orderBy } from 'firebase/firestore';
+import { doc, collection, query, where, getFirestore, orderBy, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, ArrowLeft, MessageSquare, BadgeInfo, BadgeCheck } from 'lucide-react';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import type { Course, CourseQuestion, NdaraUser } from '@/lib/types';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { formatDistanceToNow } from 'date-fns';
@@ -147,3 +146,4 @@ export default function CourseQuestionsPage() {
     );
 }
 
+    

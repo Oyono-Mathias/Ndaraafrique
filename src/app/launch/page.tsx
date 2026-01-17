@@ -71,7 +71,7 @@ export default function LaunchPage() {
         if (result.success) {
             toast({
                 title: 'Merci !',
-                description: 'Vous êtes bien inscrit à la liste d\'attente.',
+                description: 'Vous êtes bien inscrit sur la liste d\'attente.',
             });
             form.reset();
         } else {
@@ -85,7 +85,6 @@ export default function LaunchPage() {
 
     return (
         <div className="min-h-screen w-full flex flex-col items-center justify-center p-4 bg-[#0f172a] text-white overflow-hidden">
-            
             <main className="flex flex-col items-center text-center z-10 w-full max-w-4xl mx-auto">
                  <div className="relative mb-6">
                     <Image
@@ -150,3 +149,5 @@ export default function LaunchPage() {
         </div>
     );
 }
+
+    

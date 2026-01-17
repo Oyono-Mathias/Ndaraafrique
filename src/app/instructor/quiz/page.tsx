@@ -74,7 +74,7 @@ export default function QuizzesDashboardPage() {
                                      <TableRow key={i}>
                                         <TableCell><Skeleton className="h-5 w-48" /></TableCell>
                                         <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                                        <TableCell className="text-right"><Skeleton className="h-8 w-24" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-8 w-32" /></TableCell>
                                     </TableRow>
                                 ))
                             ) : courses && courses.length > 0 ? (
@@ -111,3 +111,5 @@ export default function QuizzesDashboardPage() {
         </div>
     );
 }
+
+    

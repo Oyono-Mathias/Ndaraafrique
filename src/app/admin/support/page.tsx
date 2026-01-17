@@ -33,7 +33,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareDashed, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NdaraUser } from '@/lib/types';
-import { useTranslations } from 'next-intl';
 
 
 interface SupportTicket {
@@ -47,11 +46,11 @@ interface SupportTicket {
   category: 'Paiement' | 'Technique' | 'Pédagogique';
 }
 
-const getCategoryBadge = (category: SupportTicket['category'], t: (key: string) => string) => {
+const getCategoryBadge = (category: SupportTicket['category']) => {
     switch(category) {
-        case 'Paiement': return <Badge className='bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'>{t('payment')}</Badge>;
-        case 'Technique': return <Badge className='bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'>{t('technical')}</Badge>;
-        case 'Pédagogique': return <Badge className='bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'>{t('pedagogical')}</Badge>;
+        case 'Paiement': return <Badge className='bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'>Paiement</Badge>;
+        case 'Technique': return <Badge className='bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300'>Technique</Badge>;
+        case 'Pédagogique': return <Badge className='bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'>Pédagogique</Badge>;
         default: return <Badge className='bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-300'>{category}</Badge>;
     }
 }
@@ -59,7 +58,6 @@ const getCategoryBadge = (category: SupportTicket['category'], t: (key: string) 
 export default function AdminSupportPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const t = useTranslations();
   const [activeTab, setActiveTab] = useState('ouvert');
 
   const ticketsQuery = useMemoFirebase(
@@ -91,16 +89,16 @@ export default function AdminSupportPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('supportTitle')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('supportDescription')}</p>
+        <h1 className="text-3xl font-bold dark:text-white">Support Technique</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Gérez les demandes d'assistance des utilisateurs.</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
-              <TabsTrigger value="ouvert">{t('openTickets')}</TabsTrigger>
-              <TabsTrigger value="fermé">{t('closedTickets')}</TabsTrigger>
+              <TabsTrigger value="ouvert">Tickets ouverts</TabsTrigger>
+              <TabsTrigger value="fermé">Tickets fermés</TabsTrigger>
             </TabsList>
           </Tabs>
         </CardHeader>
@@ -110,10 +108,10 @@ export default function AdminSupportPage() {
             <Table>
               <TableHeader>
                 <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">{t('subject')}</TableHead>
-                  <TableHead className="dark:text-slate-400">{t('category')}</TableHead>
-                  <TableHead className="dark:text-slate-400">{t('lastUpdate')}</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">{t('actions')}</TableHead>
+                  <TableHead className="dark:text-slate-400">Sujet</TableHead>
+                  <TableHead className="dark:text-slate-400">Catégorie</TableHead>
+                  <TableHead className="dark:text-slate-400">Dernière mise à jour</TableHead>
+                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -140,14 +138,14 @@ export default function AdminSupportPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                           {getCategoryBadge(ticket.category, t as any)}
+                           {getCategoryBadge(ticket.category)}
                         </TableCell>
                         <TableCell className="text-muted-foreground dark:text-slate-400">
                           {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button asChild variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600">
-                            <Link href={`/admin/support/${ticket.id}`}>{t('open')}</Link>
+                            <Link href={`/admin/support/${ticket.id}`}>Ouvrir</Link>
                           </Button>
                         </TableCell>
                       </TableRow>
@@ -158,7 +156,7 @@ export default function AdminSupportPage() {
                     <TableCell colSpan={4} className="h-48 text-center">
                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <MessageSquareDashed className="h-12 w-12" />
-                          <p className="font-medium">{t('noTickets', { status: activeTab })}</p>
+                          <p className="font-medium">Aucun ticket {activeTab}</p>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -180,13 +178,13 @@ export default function AdminSupportPage() {
                                   <div className="flex justify-between items-start gap-4">
                                       <div className="flex-1">
                                            <div className="flex items-center gap-2 mb-2">
-                                              {getCategoryBadge(ticket.category, t as any)}
+                                              {getCategoryBadge(ticket.category)}
                                               {ticket.status === 'ouvert' && isOverdue && <Badge variant="destructive" className="animate-pulse">Urgent</Badge>}
                                            </div>
                                            <p className="font-bold text-sm text-white line-clamp-2">{ticket.subject}</p>
                                       </div>
                                       <Button asChild variant="default" size="sm">
-                                          <Link href={`/admin/support/${ticket.id}`}>{t('open')}</Link>
+                                          <Link href={`/admin/support/${ticket.id}`}>Ouvrir</Link>
                                       </Button>
                                   </div>
                                   <p className="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-700">
@@ -200,7 +198,7 @@ export default function AdminSupportPage() {
                    <div className="h-48 text-center flex items-center justify-center">
                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                           <MessageSquareDashed className="h-12 w-12" />
-                          <p className="font-medium">{t('noTickets', { status: activeTab })}</p>
+                          <p className="font-medium">Aucun ticket {activeTab}</p>
                       </div>
                     </div>
               )}
@@ -210,3 +208,5 @@ export default function AdminSupportPage() {
     </div>
   );
 }
+
+    

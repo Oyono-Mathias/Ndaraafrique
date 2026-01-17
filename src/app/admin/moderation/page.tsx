@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -29,13 +28,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { moderateCourse } from '@/actions/supportActions';
 import { useRole } from '@/context/RoleContext';
-import { useTranslations } from 'next-intl';
 
 
 // --- REFUSAL MODAL COMPONENT ---
 const RefusalModal = ({ course, onConfirm, isSubmitting }: { course: Course, onConfirm: (reason: string) => void, isSubmitting: boolean }) => {
     const [reason, setReason] = useState('');
-    const t = useTranslations();
 
     const handleConfirm = () => {
         if (reason.trim().length < 10) return;
@@ -45,27 +42,27 @@ const RefusalModal = ({ course, onConfirm, isSubmitting }: { course: Course, onC
     return (
         <DialogContent>
             <DialogHeader>
-                <DialogTitle>{t('refuse_course_title', { courseTitle: course.title })}</DialogTitle>
+                <DialogTitle>Refuser le cours : {course.title}</DialogTitle>
                 <DialogDescription>
-                    {t('refuse_course_desc')}
+                    Expliquez pourquoi le cours est refusé. Ce message sera envoyé à l'instructeur.
                 </DialogDescription>
             </DialogHeader>
             <div className="py-4">
                 <Textarea
-                    placeholder={t('reason_placeholder')}
+                    placeholder="Ex: La qualité de la vidéo est insuffisante, le contenu n'est pas pertinent..."
                     value={reason}
                     onChange={(e) => setReason(e.target.value)}
                     rows={5}
                 />
-                 {reason.trim().length < 10 && <p className="text-xs text-destructive mt-2">{t('reason_min_char')}</p>}
+                 {reason.trim().length < 10 && <p className="text-xs text-destructive mt-2">La raison doit faire au moins 10 caractères.</p>}
             </div>
             <DialogFooter>
                 <DialogClose asChild>
-                    <Button type="button" variant="ghost">{t('cancel')}</Button>
+                    <Button type="button" variant="ghost">Annuler</Button>
                 </DialogClose>
                 <Button type="button" variant="destructive" onClick={handleConfirm} disabled={isSubmitting || reason.trim().length < 10}>
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
-                    {t('confirm_refusal')}
+                    Confirmer le refus
                 </Button>
             </DialogFooter>
         </DialogContent>
@@ -76,7 +73,6 @@ const RefusalModal = ({ course, onConfirm, isSubmitting }: { course: Course, onC
 // --- PREVIEW MODAL COMPONENT ---
 const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClose: () => void }) => {
     const db = getFirestore();
-    const t = useTranslations();
     const sectionsQuery = useMemoFirebase(() => course ? query(collection(db, `courses/${course.id}/sections`), orderBy('order')) : null, [course, db]);
     const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
     const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
@@ -109,7 +105,7 @@ const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClos
         <Dialog open={!!course} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col dark:bg-slate-900 dark:border-slate-800">
                 <DialogHeader>
-                    <DialogTitle className="dark:text-white">{t('preview_course_title', { courseTitle: course?.title })}</DialogTitle>
+                    <DialogTitle className="dark:text-white">Aperçu : {course?.title}</DialogTitle>
                 </DialogHeader>
                 <ScrollArea className="flex-1 -mx-6 px-6">
                     <div className="space-y-6 pb-6">
@@ -118,7 +114,7 @@ const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClos
                             <p className="text-sm text-muted-foreground mt-1">{course?.description}</p>
                         </div>
                         <div>
-                            <h3 className="font-semibold mb-2 dark:text-slate-200">{t('course_program')}</h3>
+                            <h3 className="font-semibold mb-2 dark:text-slate-200">Programme du cours</h3>
                             {isLoading ? (
                                 <div className="space-y-2">
                                     <Skeleton className="h-12 w-full" />
@@ -149,13 +145,13 @@ const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClos
                                     ))}
                                 </Accordion>
                             ) : (
-                                <p className="text-sm text-muted-foreground text-center py-4">{t('no_program_added')}</p>
+                                <p className="text-sm text-muted-foreground text-center py-4">Aucun programme n'a été ajouté à ce cours.</p>
                             )}
                         </div>
                     </div>
                 </ScrollArea>
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>{t('close')}</Button>
+                    <Button variant="outline" onClick={onClose}>Fermer</Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -172,7 +168,6 @@ export default function AdminModerationPage() {
   const { currentUser } = useRole();
 
   const { toast } = useToast();
-  const t = useTranslations();
   const db = getFirestore();
 
   const coursesQuery = useMemoFirebase(
@@ -250,15 +245,15 @@ export default function AdminModerationPage() {
     <>
         <div className="space-y-6">
         <header>
-            <h1 className="text-3xl font-bold dark:text-white">{t('navModeration')}</h1>
-            <p className="text-muted-foreground dark:text-slate-400">{t('moderation_desc')}</p>
+            <h1 className="text-3xl font-bold dark:text-white">Modération</h1>
+            <p className="text-muted-foreground dark:text-slate-400">Examinez les cours soumis par les instructeurs avant leur publication.</p>
         </header>
 
         <Card className="dark:bg-slate-800 dark:border-slate-700">
             <CardHeader>
-            <CardTitle className="dark:text-white">{t('pending_review_title')}</CardTitle>
+            <CardTitle className="dark:text-white">Cours en attente de révision</CardTitle>
             <CardDescription className="dark:text-slate-400">
-                {t('pending_review_desc')}
+                Passez en revue les détails, le contenu et la qualité de chaque cours.
             </CardDescription>
             </CardHeader>
             <CardContent>
@@ -266,10 +261,10 @@ export default function AdminModerationPage() {
                 <Table>
                 <TableHeader>
                     <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
-                    <TableHead className="dark:text-slate-400">{t('course_title_header')}</TableHead>
-                    <TableHead className="hidden md:table-cell dark:text-slate-400">{t('instructor_header')}</TableHead>
-                    <TableHead className="hidden lg:table-cell dark:text-slate-400">{t('submission_date_header')}</TableHead>
-                    <TableHead className="text-center dark:text-slate-400">{t('actions_header')}</TableHead>
+                    <TableHead className="dark:text-slate-400">Titre du cours</TableHead>
+                    <TableHead className="hidden md:table-cell dark:text-slate-400">Instructeur</TableHead>
+                    <TableHead className="hidden lg:table-cell dark:text-slate-400">Date de soumission</TableHead>
+                    <TableHead className="text-center dark:text-slate-400">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -303,18 +298,18 @@ export default function AdminModerationPage() {
                         <TableCell className="text-center">
                             <div className="flex justify-center gap-2">
                                 <Button variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600" onClick={() => setPreviewCourse(course)}>
-                                <Eye className="mr-2 h-4 w-4"/> {t('preview_button')}
+                                <Eye className="mr-2 h-4 w-4"/> Aperçu
                                 </Button>
                                 <Dialog>
                                     <DialogTrigger asChild>
                                         <Button variant="destructive" size="sm" disabled={submittingAction?.id === course.id}>
-                                            {submittingAction?.id === course.id && submittingAction.action === 'refuse' ? <Loader2 className="h-4 w-4 animate-spin"/> : <XCircle className="mr-2 h-4 w-4"/>} {t('refuse_button')}
+                                            {submittingAction?.id === course.id && submittingAction.action === 'refuse' ? <Loader2 className="h-4 w-4 animate-spin"/> : <XCircle className="mr-2 h-4 w-4"/>} Refuser
                                         </Button>
                                     </DialogTrigger>
                                     <RefusalModal course={course} onConfirm={(reason) => handleRefuse(course.id, reason)} isSubmitting={submittingAction?.action === 'refuse'} />
                                 </Dialog>
                                 <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" className="bg-green-600 hover:bg-green-700" disabled={submittingAction?.id === course.id}>
-                                    {submittingAction?.id === course.id && submittingAction.action === 'approve' ? <Loader2 className="h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>} {t('approve_button')}
+                                    {submittingAction?.id === course.id && submittingAction.action === 'approve' ? <Loader2 className="h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>} Approuver
                                 </Button>
                             </div>
                         </TableCell>
@@ -325,8 +320,8 @@ export default function AdminModerationPage() {
                         <TableCell colSpan={4} className="h-48 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                             <ShieldAlert className="h-12 w-12" />
-                            <p className="font-medium">{t('no_pending_courses_title')}</p>
-                            <p className="text-sm">{t('no_pending_courses_desc')}</p>
+                            <p className="font-medium">Aucun cours en attente</p>
+                            <p className="text-sm">La file d'attente de modération est vide.</p>
                         </div>
                         </TableCell>
                     </TableRow>
@@ -341,3 +336,5 @@ export default function AdminModerationPage() {
     </>
   );
 }
+
+    

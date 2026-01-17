@@ -20,7 +20,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Tag, Speaker, AlertCircle, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useTranslations } from 'next-intl';
 import { generatePromoCode } from '@/ai/flows/generate-promo-code-flow';
 import { sendGlobalNotification } from '@/actions/notificationActions';
 
@@ -40,7 +39,6 @@ interface PromoCode {
 }
 
 export default function AdminMarketingPage() {
-  const t = useTranslations('Marketing');
   const { toast } = useToast();
   const db = getFirestore();
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -109,8 +107,8 @@ export default function AdminMarketingPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">{t('title')}</h1>
-        <p className="text-muted-foreground dark:text-slate-400">{t('description')}</p>
+        <h1 className="text-3xl font-bold dark:text-white">Outils Marketing</h1>
+        <p className="text-muted-foreground dark:text-slate-400">Boostez votre visibilité et gérez vos campagnes.</p>
       </header>
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -141,7 +139,7 @@ export default function AdminMarketingPage() {
               />
               <Button type="submit" disabled={isAiLoading} className="w-full sm:w-auto h-12 text-base md:h-auto md:text-sm">
                 {isAiLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
-                {t('generateBtn')}
+                Générer une Pub IA
               </Button>
             </form>
           </Form>
@@ -216,7 +214,7 @@ export default function AdminMarketingPage() {
                         ) : (
                              <TableRow className="dark:border-slate-700">
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-500">
-                                    {t('noPromo')}
+                                    Aucun code promo actif.
                                 </TableCell>
                             </TableRow>
                         )}
@@ -228,3 +226,5 @@ export default function AdminMarketingPage() {
     </div>
   );
 }
+
+    
