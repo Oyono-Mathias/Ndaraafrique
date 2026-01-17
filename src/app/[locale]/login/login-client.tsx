@@ -51,7 +51,7 @@ const PasswordInput = ({ field }: { field: any }) => {
 
 
 export default function LoginClient() {
-  const t = useTranslations();
+  const t = useTranslations('Auth');
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -60,8 +60,6 @@ export default function LoginClient() {
   const [siteName, setSiteName] = useState('Ndara Afrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   
-  const [detectedCountry, setDetectedCountry] = useState<{name: string; code: string; flag: string} | null>(null);
-
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
@@ -74,15 +72,6 @@ export default function LoginClient() {
   useEffect(() => { if (!isUserLoading && user) router.push('/dashboard'); }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    const fetchGeo = async () => {
-        try {
-            const response = await fetch('https://ipapi.co/json/');
-            const data = await response.json();
-            setDetectedCountry({ name: data.country_name, code: data.country_code, flag: data.country_calling_code });
-        } catch (error) { console.error("Could not fetch geo location"); }
-    };
-    fetchGeo();
-
     const fetchSettings = async () => {
         const settingsRef = doc(db, 'settings', 'global');
         const settingsSnap = await getDoc(settingsRef);
@@ -114,14 +103,13 @@ export default function LoginClient() {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             fullName: firebaseUser.displayName || 'Utilisateur Ndara',
+            username: firebaseUser.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + firebaseUser.uid.substring(0, 5),
             role: 'student',
             isInstructorApproved: false,
             createdAt: serverTimestamp() as any,
             lastLogin: serverTimestamp() as any,
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-            country: detectedCountry?.name,
-            countryCode: detectedCountry?.code?.toLowerCase(),
-            preferredLanguage: locale as 'fr' | 'en' | 'sg' | 'ln' | 'ar',
+            preferredLanguage: locale as 'fr' | 'en',
             isProfileComplete: false,
         };
         if (acceptedTerms) {
@@ -230,7 +218,7 @@ export default function LoginClient() {
                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-1" /></FormControl>
                                  <div className="space-y-1 leading-none">
                                     <FormLabel className="text-xs font-normal text-slate-400">
-                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>.
+                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>

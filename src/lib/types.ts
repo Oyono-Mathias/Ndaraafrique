@@ -78,10 +78,8 @@ export interface NdaraUser {
   isOnline?: boolean;
   lastSeen?: Timestamp;
   termsAcceptedAt?: Timestamp;
-  country?: string;
-  countryCode?: string;
   isProfileComplete?: boolean;
-  preferredLanguage?: 'fr' | 'en' | 'sg';
+  preferredLanguage?: 'fr' | 'en';
   badges?: string[];
   permissions?: { [key: string]: boolean };
 };

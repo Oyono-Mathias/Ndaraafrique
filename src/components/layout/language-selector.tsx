@@ -22,9 +22,6 @@ interface LanguageOption {
 const languages: LanguageOption[] = [
     { code: 'fr', name: 'Français', flag: '/flags/fr.svg' },
     { code: 'en', name: 'English', flag: '/flags/gb.svg' },
-    { code: 'sg', name: 'Sango', flag: '/flags/cf.svg' },
-    { code: 'ln', name: 'Lingála', flag: '/flags/cd.svg' },
-    { code: 'ar', name: 'العربية', flag: '/flags/ma.svg' },
 ];
 
 export function LanguageSelector() {

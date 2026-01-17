@@ -4,7 +4,6 @@ import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { Toaster } from "@/components/ui/toaster";
-import "../globals.css";
 import {NextIntlClientProvider} from 'next-intl';
 import {getMessages} from 'next-intl/server';
 import { notFound } from "next/navigation";
