@@ -22,7 +22,7 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Loader2, Send, Shield, ArrowLeft, Video, Phone, Check, CheckCheck } from 'lucide-react';
+import { Loader2, Send, Shield, ArrowLeft, Video, Phone, Check, CheckCheck, Briefcase, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -242,15 +242,29 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const RoleBadge = ({ role }: { role: UserRole | undefined }) => {
     if (!role || role === 'student') return null;
 
-    const styles = {
-        admin: 'bg-destructive text-destructive-foreground',
-        instructor: 'bg-blue-600 text-white',
+    const roleInfo = {
+        admin: {
+            label: 'Admin',
+            icon: Shield,
+            className: 'bg-destructive/10 text-destructive border-destructive/30',
+        },
+        instructor: {
+            label: 'Formateur',
+            icon: Briefcase,
+            className: 'bg-primary/10 text-primary border-primary/30',
+        },
+        student: {}
     };
+    
+    const currentRole = roleInfo[role];
+    if (!currentRole.label) return null;
+    
+    const { label, icon: Icon, className } = currentRole;
 
     return (
-        <Badge className={cn('ml-2 capitalize text-xs', styles[role])}>
-            <Shield className="h-3 w-3 mr-1"/>
-            {role}
+        <Badge className={cn('ml-2 capitalize text-xs font-semibold', className)}>
+            <Icon className="h-3 w-3 mr-1"/>
+            {label}
         </Badge>
     );
   };

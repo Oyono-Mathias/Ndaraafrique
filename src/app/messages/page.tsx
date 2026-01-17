@@ -24,7 +24,7 @@ import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MessageSquareDashed, Search, Plus, UserX } from 'lucide-react';
+import { MessageSquareDashed, Search, Plus, UserX, Shield, Briefcase, User } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { usePathname, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
@@ -36,18 +36,19 @@ import {
     DialogTitle,
     DialogDescription,
 } from '@/components/ui/dialog';
-import type { NdaraUser } from '@/lib/types';
+import type { NdaraUser, UserRole } from '@/lib/types';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatRoom } from '@/components/chat/ChatRoom';
 import { useTranslation } from 'react-i18next';
 import { toast } from '@/hooks/use-toast';
 import { startChat } from '@/lib/chat';
+import { Badge } from '@/components/ui/badge';
 
 // --- INTERFACES ---
 interface Chat {
   id: string;
   participants: string[];
-  participantDetails: Record<string, { username: string; profilePictureURL?: string; isOnline?: boolean }>;
+  participantDetails: Record<string, { username: string; profilePictureURL?: string; isOnline?: boolean, role: UserRole }>;
   lastMessage?: string;
   updatedAt?: any;
   lastSenderId?: string;
@@ -71,6 +72,37 @@ const ProfileCompletionModal = ({ isOpen, onGoToProfile }: { isOpen: boolean, on
         </Dialog>
     );
 };
+
+const RoleBadge = ({ role }: { role: UserRole | undefined }) => {
+  if (!role || role === 'student') return null;
+
+  const roleInfo = {
+      admin: {
+          label: 'Admin',
+          icon: Shield,
+          className: 'bg-destructive/10 text-destructive border-destructive/30',
+      },
+      instructor: {
+          label: 'Formateur',
+          icon: Briefcase,
+          className: 'bg-primary/10 text-primary border-primary/30',
+      },
+      student: {}
+  };
+  
+  const currentRole = roleInfo[role];
+  if (!currentRole.label) return null;
+  
+  const { label, icon: Icon, className } = currentRole;
+
+  return (
+      <Badge className={cn('ml-2 capitalize text-xs font-semibold', className)}>
+          <Icon className="h-3 w-3 mr-1"/>
+          {label}
+      </Badge>
+  );
+};
+
 
 // --- MAIN PAGE COMPONENT ---
 export default function MessagesPage() {
@@ -276,9 +308,12 @@ export default function MessagesPage() {
                                             {other?.isOnline && <span className="absolute bottom-0 right-0 block h-3 w-3 rounded-full bg-green-500 ring-2 ring-slate-900" />}
                                         </div>
                                         <div className="flex-1 overflow-hidden">
-                                            <p className={cn("truncate text-sm text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
-                                              {other?.username || "Utilisateur"}
-                                            </p>
+                                            <div className="flex items-center">
+                                                <p className={cn("truncate text-sm text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
+                                                  {other?.username || "Utilisateur"}
+                                                </p>
+                                                <RoleBadge role={other?.role} />
+                                            </div>
                                             <div className="flex justify-between items-center">
                                                 <p className={cn("text-sm truncate leading-relaxed", isUnread ? "font-medium text-slate-300" : "text-slate-400")}>
                                                     {isUnread && chat.lastSenderId !== user?.uid ? <span className="font-bold">Nouveau message: </span> : null}
@@ -393,9 +428,12 @@ export default function MessagesPage() {
                                     </div>
 
                                     <div className="flex-1 overflow-hidden">
-                                        <p className={cn("truncate text-sm dark:text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
-                                          {other?.username || "Utilisateur"}
-                                        </p>
+                                        <div className="flex items-center">
+                                            <p className={cn("truncate text-sm dark:text-slate-200", isUnread ? "font-bold" : "font-semibold")}>
+                                              {other?.username || "Utilisateur"}
+                                            </p>
+                                            <RoleBadge role={other?.role} />
+                                        </div>
                                         <div className="flex justify-between items-center">
                                             <p className={cn("text-sm truncate leading-relaxed", isUnread ? "font-medium text-slate-300" : "text-slate-400")}>
                                                 {isUnread && chat.lastSenderId !== user?.uid ? <span className="font-bold">Nouveau: </span> : null}
