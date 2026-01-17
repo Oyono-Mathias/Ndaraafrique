@@ -63,7 +63,8 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow get: if true; // Publicly readable for names/profiles (e.g. for certificates)
-      allow list: if isAdmin() || (isSignedIn() && isProfileComplete()); // Admins can list all. Students with complete profiles can list for directory (client query must filter).
+      allow list: if isAdmin(); // Only admins can list all users. This is a security fix.
+
       allow create: if isOwner(userId);
 
       allow update: if isAdmin() || (
@@ -225,7 +226,7 @@ service cloud.firestore {
     }
     
     /* ======================
-       ADMINISTRATION & GRANTS
+       ADMINISTRATION & LOGS
     ====================== */
 
     match /admin_grants/{grantId} {
@@ -234,6 +235,10 @@ service cloud.firestore {
     }
 
     match /admin_audit_logs/{logId} {
+        allow read, list: if isAdmin();
+    }
+    
+    match /security_logs/{logId} {
         allow read, list: if isAdmin();
     }
 
@@ -250,6 +255,17 @@ service cloud.firestore {
     match /faqs/{id} {
       allow read, list: if true;
       allow write: if isAdmin();
+    }
+    
+    match /reviews/{reviewId} {
+      allow read, list: if true;
+      allow create: if isEnrolled(request.resource.data.courseId) && isOwner(request.resource.data.userId);
+      allow update: if isOwner(resource.data.userId) || isAdmin();
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
+    }
+    
+    match /roles/{roleId} {
+      allow read, list, create, update, delete: if isAdmin();
     }
 
     match /settings/global {
@@ -330,3 +346,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
