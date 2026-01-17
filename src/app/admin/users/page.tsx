@@ -569,7 +569,6 @@ export default function AdminUsersPage() {
                   <TableHead className="dark:text-slate-400">Rôle</TableHead>
                   <TableHead className="dark:text-slate-400">Statut</TableHead>
                   <TableHead className="dark:text-slate-400">Date d'inscription</TableHead>
-                  <TableHead className="dark:text-slate-400">Pays</TableHead>
                   <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -601,14 +600,6 @@ export default function AdminUsersPage() {
                         <TableCell className="text-muted-foreground dark:text-slate-500">
                            {user.createdAt ? format((user.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
                         </TableCell>
-                        <TableCell className="text-muted-foreground dark:text-slate-400">
-                            {user.country && (
-                                <div className="flex items-center gap-2">
-                                    <span>{countryCodeToEmoji(user.countryCode)}</span>
-                                    {user.country}
-                                </div>
-                            )}
-                        </TableCell>
                         <TableCell className="text-right">
                           <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} onGrantAccess={setGrantUser} />
                         </TableCell>
@@ -616,7 +607,7 @@ export default function AdminUsersPage() {
                     ))
                   ) : (
                     <TableRow className="dark:border-slate-700">
-                      <TableCell colSpan={7} className="h-48 text-center">
+                      <TableCell colSpan={6} className="h-48 text-center">
                         <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
                             <UserX className="h-12 w-12" />
                             <p className="font-medium">Aucun utilisateur trouvé</p>
@@ -649,11 +640,6 @@ export default function AdminUsersPage() {
                                   <div className="flex-1">
                                       <p className="font-bold dark:text-white">{user.fullName}</p>
                                       <p className="text-sm text-muted-foreground dark:text-slate-400">{user.email}</p>
-                                      {user.country && (
-                                        <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
-                                            {countryCodeToEmoji(user.countryCode)} {user.country}
-                                        </p>
-                                      )}
                                   </div>
                                   <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} onGrantAccess={setGrantUser} />
                               </div>

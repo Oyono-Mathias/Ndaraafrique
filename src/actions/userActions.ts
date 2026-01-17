@@ -8,58 +8,69 @@ import { DecodedIdToken } from 'firebase-admin/auth';
 import { sendUserNotification } from './notificationActions';
 import type { UserRole } from '@/lib/types';
 
-// Helper function to verify the ID token and check if the caller is an admin
-async function verifyAdmin(idToken: string): Promise<DecodedIdToken | null> {
+// Helper to verify if the requester is an admin by checking their Firestore document
+async function isRequesterAdmin(idToken: string): Promise<{isAdmin: boolean; uid?: string}> {
     try {
         const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const userRecord = await adminAuth.getUser(decodedToken.uid);
-        if (userRecord.customClaims?.['role'] === 'admin') {
-            return decodedToken;
+        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
+        if (userDoc.exists && userDoc.data()?.role === 'admin') {
+            return { isAdmin: true, uid: decodedToken.uid };
         }
-        return decodedToken; // Return decoded token even if not admin for self-deletion check
+        return { isAdmin: false, uid: decodedToken.uid };
     } catch (error) {
         console.error("Error verifying admin token:", error);
-        return null;
+        return { isAdmin: false };
     }
 }
 
 
 export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
-    const decodedToken = await verifyAdmin(idToken);
-    
-    // Check for permission: either the user is deleting their own account OR an admin is deleting it.
-    if (!decodedToken || (decodedToken.uid !== userId && decodedToken.firebase.sign_in_provider !== 'admin')) {
-       return { success: false, error: "Permission refusée. Vous ne pouvez supprimer que votre propre compte ou être un administrateur." };
-    }
-    
     try {
-        // Use a batch to ensure atomicity
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        const requesterUid = decodedToken.uid;
+        let hasPermission = false;
+
+        // Case 1: User is deleting their own account
+        if (requesterUid === userId) {
+            hasPermission = true;
+        } else {
+        // Case 2: An admin is deleting the account
+            const requesterDoc = await adminDb.collection('users').doc(requesterUid).get();
+            if (requesterDoc.exists() && requesterDoc.data()?.role === 'admin') {
+                hasPermission = true;
+            }
+        }
+        
+        if (!hasPermission) {
+           return { success: false, error: "Permission refusée. Vous ne pouvez supprimer que votre propre compte ou être un administrateur." };
+        }
+    
         const batch = adminDb.batch();
 
-        // 1. Delete from Auth
+        // 1. Delete from Auth (this will trigger other cleanup via extensions/functions if set up)
         await adminAuth.deleteUser(userId);
         
-        // 2. Delete from Firestore user document
+        // 2. Delete Firestore user document
         const userRef = adminDb.collection('users').doc(userId);
         batch.delete(userRef);
 
-        // 3. Delete user's FCM tokens
+        // 3. Delete user's FCM tokens for better cleanup
         const fcmTokensRef = adminDb.collection('fcmTokens').doc(userId);
         batch.delete(fcmTokensRef);
 
-        // 4. Log the deletion to the audit log if the deleter is an admin
-        if (decodedToken.uid !== userId) { // i.e., an admin is deleting someone else
+        // 4. Log the deletion to the audit log if an admin is deleting someone else
+        if (requesterUid !== userId) {
             const auditLogRef = adminDb.collection('admin_audit_logs').doc();
             batch.set(auditLogRef, {
-                adminId: decodedToken.uid,
+                adminId: requesterUid,
                 eventType: 'user.delete',
                 target: { id: userId, type: 'user' },
-                details: `User account ${userId} deleted by admin ${decodedToken.uid}.`,
+                details: `User account ${userId} deleted by admin ${requesterUid}.`,
                 timestamp: FieldValue.serverTimestamp(),
             });
         }
         
-        // Commit all operations
+        // Commit all batched operations
         await batch.commit();
         
         return { success: true };
@@ -136,6 +147,7 @@ export async function updateUserStatus({ userId, status, adminId }: { userId: st
             targetId: userId,
             details: `User status changed to ${status} by admin ${adminId}.`,
             timestamp: FieldValue.serverTimestamp(),
+            status: 'resolved'
         });
 
         await adminDb.collection('admin_audit_logs').add({
