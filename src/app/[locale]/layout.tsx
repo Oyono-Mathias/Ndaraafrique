@@ -29,7 +29,7 @@ const fontSans = Inter({
 });
 
 export function generateStaticParams() {
-  return [{locale: 'fr'}, {locale: 'en'}, {locale: 'sg'}, {locale: 'ln'}, {locale: 'ar'}];
+  return [{locale: 'fr'}, {locale: 'en'}];
 }
 
 export default async function RootLayout({

@@ -1,7 +1,7 @@
 import createMiddleware from 'next-intl/middleware';
 import {NextRequest} from 'next/server';
 
-const locales = ['fr', 'en', 'sg', 'ln', 'ar'];
+const locales = ['fr', 'en'];
 const defaultLocale = 'fr';
 
 export default async function middleware(req: NextRequest) {
@@ -11,21 +11,11 @@ export default async function middleware(req: NextRequest) {
   
   let locale = defaultLocale;
   
-  switch(country) {
-    case 'NG':
-      locale = 'en';
-      break;
-    case 'CF':
-      locale = 'sg';
-      break;
-    case 'CD':
-      locale = 'ln';
-      break;
-    case 'MA':
-      locale = 'ar';
-      break;
-    default:
-      locale = 'fr';
+  // Simplified logic for fr/en
+  if (country === 'NG' || country === 'US' || country === 'GB') {
+    locale = 'en';
+  } else {
+    locale = 'fr';
   }
 
   const handle = createMiddleware({
