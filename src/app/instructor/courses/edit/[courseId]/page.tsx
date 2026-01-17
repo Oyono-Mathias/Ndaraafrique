@@ -23,7 +23,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, PlusCircle, Trash2, Video, Book, Image as ImageIcon } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useTranslations } from 'next-intl';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 
 const courseEditSchema = z.object({
@@ -46,7 +45,6 @@ export default function EditCoursePage() {
   const db = getFirestore();
   const storage = getStorage();
   const { currentUser, isUserLoading } = useRole();
-  const t = useTranslations();
 
   const [isSaving, setIsSaving] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
@@ -177,8 +175,8 @@ export default function EditCoursePage() {
 
       await updateDoc(courseDocRef, updatePayload);
       toast({
-        title: t('m_update_success'),
-        description: t('course_update_success_desc'),
+        title: "Mise à jour réussie",
+        description: "Les informations du cours ont été sauvegardées.",
       });
 
     } catch (error) {
@@ -238,9 +236,9 @@ export default function EditCoursePage() {
               </CardHeader>
               <CardContent>
                   <label htmlFor="cover-image-upload" className="cursor-pointer group">
-                      <div className="w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:border-primary group-hover:text-primary dark:group-hover:text-primary transition-all relative overflow-hidden">
+                      <div className="w-full aspect-video rounded-xl border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-400 group-hover:border-primary group-hover:text-primary dark:group-hover:text-primary transition-all relative overflow-hidden bg-slate-900">
                           {imagePreview ? (
-                              <Image src={imagePreview} alt="Aperçu de la couverture" fill className="object-cover" />
+                              <Image src={imagePreview} alt="Aperçu de la couverture" fill className="object-contain" />
                           ) : (
                               <div className="text-center">
                                   <ImageIcon className="mx-auto h-12 w-12"/>
