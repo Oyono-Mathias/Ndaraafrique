@@ -90,6 +90,7 @@ export interface Lecture {
   id: string;
   title: string;
   videoUrl?: string;
+  description?: string;
   duration?: number;
   isFreePreview?: boolean;
   order?: number;
@@ -365,5 +366,3 @@ export interface Resource {
     url: string;
     createdAt: Timestamp;
 }
-
-    

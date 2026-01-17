@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -18,15 +19,16 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, GripVertical, Trash2, ArrowLeft, Loader2, PlayCircle, Link as LinkIcon, ClockIcon, AlertCircle } from 'lucide-react';
+import { Plus, GripVertical, Trash2, ArrowLeft, Loader2, PlayCircle, Link as LinkIcon, ClockIcon, AlertCircle, Sparkles } from 'lucide-react';
 import type { Course, Section as SectionType, Lecture as LectureType } from '@/lib/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import { assistLectureCreation } from '@/ai/flows/assist-lecture-creation';
 
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
@@ -80,6 +82,7 @@ const VideoPlayer = ({ videoUrl }: { videoUrl?: string }) => {
 const lectureSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(1, "Le titre est requis."),
+  description: z.string().optional(),
   videoUrl: z.string().url("L'URL de la vidéo doit être valide.").optional().or(z.literal('')),
   duration: z.coerce.number().min(0, "La durée doit être un nombre positif.").optional(),
   isFreePreview: z.boolean().default(false),
@@ -189,6 +192,7 @@ export default function CourseContentPage() {
           batch.set(lectureRef, { 
               title: lecture.title || `Leçon ${lectureIndex + 1}`,
               videoUrl: lecture.videoUrl?.trim() || '',
+              description: lecture.description || '',
               duration: lecture.duration || 0,
               isFreePreview: lecture.isFreePreview || false,
             });
@@ -259,7 +263,7 @@ export default function CourseContentPage() {
                    </div>
 
                   <AccordionContent className="border-t dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 pt-4 px-4 pb-4">
-                    <LessonsArray sectionIndex={sectionIndex} form={form} onPreview={setPreviewingLesson} />
+                    <LessonsArray sectionIndex={sectionIndex} form={form} onPreview={setPreviewingLesson} courseTitle={course?.title || ''}/>
                   </AccordionContent>
                 </AccordionItem>
               ))}
@@ -299,11 +303,31 @@ export default function CourseContentPage() {
   );
 }
 
-function LessonsArray({ sectionIndex, form, onPreview }: { sectionIndex: number, form: any, onPreview: (lesson: LectureType) => void }) {
+function LessonsArray({ sectionIndex, form, onPreview, courseTitle }: { sectionIndex: number, form: any, onPreview: (lesson: LectureType) => void, courseTitle: string }) {
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: `sections.${sectionIndex}.lectures`,
   });
+  const { toast } = useToast();
+  const [aiLoadingIndex, setAiLoadingIndex] = useState<number | null>(null);
+
+  const handleAiAssist = async (lectureIndex: number) => {
+      const lectureTitle = form.getValues(`sections.${sectionIndex}.lectures.${lectureIndex}.title`);
+      if (!lectureTitle) {
+          toast({ variant: 'destructive', title: 'Titre manquant', description: 'Veuillez saisir un titre pour la leçon.' });
+          return;
+      }
+      setAiLoadingIndex(lectureIndex);
+      try {
+          const result = await assistLectureCreation({ courseTitle, lectureTitle });
+          form.setValue(`sections.${sectionIndex}.lectures.${lectureIndex}.description`, result.description, { shouldValidate: true });
+          toast({ title: 'Description générée par IA !' });
+      } catch (error) {
+          toast({ variant: 'destructive', title: 'Erreur IA', description: 'Génération de contenu échouée.' });
+      } finally {
+          setAiLoadingIndex(null);
+      }
+  };
 
   return (
     <div className="space-y-3">
@@ -326,6 +350,23 @@ function LessonsArray({ sectionIndex, form, onPreview }: { sectionIndex: number,
                       </FormItem>
                     )}
                   />
+                <FormField
+                    control={form.control}
+                    name={`sections.${sectionIndex}.lectures.${lessonIndex}.description`}
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex justify-between items-center text-gray-700 dark:text-slate-300 font-medium">
+                            <span>Description de la leçon</span>
+                            <Button type="button" variant="outline" size="xs" onClick={() => handleAiAssist(lessonIndex)} disabled={aiLoadingIndex === lessonIndex} className="dark:bg-slate-800 dark:border-slate-600 dark:hover:bg-slate-700">
+                                {aiLoadingIndex === lessonIndex ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4 mr-2" />}
+                                Assistance IA
+                            </Button>
+                        </FormLabel>
+                        <FormControl><Textarea placeholder="Décrivez ce que les étudiants apprendront dans cette leçon..." {...field} rows={3} className="border-gray-200 dark:bg-slate-700 dark:border-slate-600"/></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <FormField
                         control={form.control}
@@ -377,7 +418,7 @@ function LessonsArray({ sectionIndex, form, onPreview }: { sectionIndex: number,
         variant="outline"
         className="w-full border-dashed border-2 hover:bg-accent dark:hover:bg-slate-800 dark:border-slate-600 dark:text-slate-300 hover:border-solid"
         size="sm"
-        onClick={() => append({ title: '', videoUrl: '', duration: 0, isFreePreview: false })}
+        onClick={() => append({ title: '', description: '', videoUrl: '', duration: 0, isFreePreview: false })}
       >
         <Plus className="h-4 w-4 mr-2" />
         Ajouter une leçon

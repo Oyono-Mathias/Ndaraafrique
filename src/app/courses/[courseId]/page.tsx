@@ -6,250 +6,819 @@ import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useDoc, useMemoFirebase, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
-import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, orderBy, DocumentData, QuerySnapshot } from 'firebase/firestore';
-import ReactPlayer from 'react-player/lazy';
+import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, addDoc, orderBy, DocumentData, QuerySnapshot, getDoc, deleteDoc, writeBatch } from 'firebase/firestore';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft, CheckCircle, FileText, Loader2, MessageSquare, PlayCircle, Link2 } from 'lucide-react';
-import type { Section, Lecture, Course, CourseProgress, Enrollment, Resource } from '@/lib/types';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { CreditCard, Info, BookOpen, Gift, Loader2, Check, Star, AlertTriangle, MessageSquarePlus, MessageSquare, Video, PlayCircle, Lock, ChevronRight, ChevronDown, ChevronUp, Book, Globe, Clock, Users, Tv, FileText, ShoppingCart, Heart, Award } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { errorEmitter } from '@/firebase/error-emitter';
+import { FirestorePermissionError } from '@/firebase/errors';
+import type { Review, Section, Lecture, Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
-import { toast } from '@/hooks/use-toast';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { format, formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import { ReviewForm } from '@/components/reviews/review-form';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import dynamic from 'next/dynamic';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from '@/components/ui/badge';
+import { sendEnrollmentEmails } from '@/lib/emails';
+import Script from 'next/script';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { z } from 'zod';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
-function CoursePlayerSidebar({ course, sections, lecturesMap, activeLessonId, onLessonClick, progressPercent, isLoading, totalLessons, completedLessons }: { course: Course | null, sections: Section[], lecturesMap: Map<string, Lecture[]>, activeLessonId: string | null, onLessonClick: (lesson: Lecture) => void, progressPercent: number, isLoading: boolean, totalLessons: number, completedLessons: number }) {
-    return (
-        <div className="h-full flex flex-col bg-slate-800/50 border-l border-slate-700">
-            <div className="p-4 border-b border-slate-700">
-                <h2 className="font-bold text-white line-clamp-2">{course?.title}</h2>
-                <div className="mt-2 space-y-1">
-                    <Progress value={progressPercent} className="h-1.5" />
-                    <p className="text-xs text-slate-400">{completedLessons} / {totalLessons} leçons terminées</p>
-                </div>
-            </div>
-            <ScrollArea className="flex-1">
-                <Accordion type="multiple" defaultValue={sections.map(s => s.id)} className="w-full">
-                    {sections.map(section => (
-                        <AccordionItem key={section.id} value={section.id} className="border-b-0">
-                            <AccordionTrigger className="px-4 py-3 text-sm font-semibold text-slate-300 hover:no-underline hover:bg-slate-700/50">
-                                {section.title}
-                            </AccordionTrigger>
-                            <AccordionContent className="bg-slate-800/30">
-                                <ul className="divide-y divide-slate-700/50">
-                                    {isLoading ? <Skeleton className="h-10 w-full m-2 bg-slate-700" /> : 
-                                    (lecturesMap.get(section.id) || []).map(lecture => (
-                                        <li key={lecture.id}>
-                                            <button onClick={() => onLessonClick(lecture)} className={cn(
-                                                "w-full text-left flex items-start text-sm p-3 transition-colors hover:bg-slate-700/50 gap-3",
-                                                activeLessonId === lecture.id && "bg-primary/10"
-                                            )}>
-                                                <PlayCircle className={cn("h-5 w-5 text-slate-500 shrink-0 mt-px", activeLessonId === lecture.id && "text-primary")} />
-                                                <span className={cn("flex-1 text-slate-300", activeLessonId === lecture.id && "font-semibold text-primary")}>{lecture.title}</span>
-                                                <span className="text-xs text-slate-500">{lecture.duration ? `${lecture.duration}m` : ''}</span>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </AccordionContent>
-                        </AccordionItem>
-                    ))}
-                </Accordion>
-            </ScrollArea>
-        </div>
-    );
+const questionFormSchema = z.object({
+  subject: z.string().min(10, { message: "Le sujet doit contenir au moins 10 caractères." }),
+  message: z.string().min(20, { message: "Votre question doit contenir au moins 20 caractères." }),
+});
+type QuestionFormValues = z.infer<typeof questionFormSchema>;
+
+interface ReviewWithUser extends Review {
+  reviewerName?: string;
+  reviewerImage?: string;
 }
 
-const ResourceItem = ({ resource }: { resource: Resource }) => (
-    <a href={resource.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-800/50 transition-colors">
-        <Link2 className="h-5 w-5 text-slate-400 shrink-0" />
-        <span className="text-sm font-medium text-slate-200">{resource.title}</span>
-    </a>
-)
+const StarRating = ({ rating, reviewCount, size = 'md' }: { rating: number, reviewCount?: number, size?: 'sm' | 'md' | 'lg' }) => {
+  const starSizeClasses = {
+    sm: 'w-4 h-4',
+    md: 'w-5 h-5',
+    lg: 'w-6 h-6',
+  };
+  return (
+    <div className="flex items-center gap-2">
+      <span className={cn("font-bold text-amber-400", size === 'sm' ? 'text-sm' : 'text-base')}>{rating.toFixed(1)}</span>
+      <div className="flex items-center">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={cn(
+              starSizeClasses[size],
+              i < Math.round(rating) ? 'text-amber-400 fill-amber-400' : 'text-slate-500'
+            )}
+          />
+        ))}
+      </div>
+      {reviewCount && <span className="text-sm text-slate-400">({reviewCount.toLocaleString('fr-FR')} avis)</span>}
+    </div>
+  );
+};
 
-export default function CoursePlayerPage() {
-    const { courseId } = useParams();
-    const router = useRouter();
+const CourseCurriculum = ({ courseId, isEnrolled, onPreviewClick }: { courseId: string, isEnrolled: boolean, onPreviewClick: (lesson: Lecture) => void }) => {
     const db = getFirestore();
-    const { user, isUserLoading } = useRole();
-    const isMobile = useIsMobile();
-
-    const [activeLesson, setActiveLesson] = useState<Lecture | null>(null);
-    const [sections, setSections] = useState<Section[]>([]);
+    const sectionsQuery = useMemoFirebase(() => query(collection(db, 'courses', courseId, 'sections'), orderBy('order')), [db, courseId]);
+    const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
+    
     const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
-    const [pageLoading, setPageLoading] = useState(true);
+    const [lecturesLoading, setLecturesLoading] = useState(true);
 
-    const courseRef = useMemoFirebase(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
-    const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
-
-    const enrollmentRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [db, user, courseId]);
-    const { data: enrollment, isLoading: enrollmentLoading } = useDoc<Enrollment>(enrollmentRef);
-
-    const progressRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [db, user, courseId]);
-    const { data: progressDoc, isLoading: progressLoading } = useDoc<CourseProgress>(progressRef);
-    
-    const resourcesQuery = useMemoFirebase(() => courseId ? query(collection(db, 'resources'), where('courseId', '==', courseId)) : null, [db, courseId]);
-    const { data: resources, isLoading: resourcesLoading } = useCollection<Resource>(resourcesQuery);
-
-    const handleLessonClick = useCallback((lesson: Lecture) => {
-        setActiveLesson(lesson);
-        if (isMobile) {
-           window.scrollTo({ top: 0, behavior: 'smooth' });
+    useEffect(() => {
+        if (!sections || sectionsLoading) {
+            if (!sectionsLoading) setLecturesLoading(false);
+            return;
         }
-    }, [isMobile]);
 
-    useEffect(() => {
-        const checkEnrollment = () => {
-            if (!enrollmentLoading && !enrollment) {
-                toast({ variant: 'destructive', title: 'Accès non autorisé', description: "Vous n'êtes pas inscrit à ce cours." });
-                router.push(`/course/${courseId}`);
-            }
-        };
-        checkEnrollment();
-    }, [enrollment, enrollmentLoading, router, courseId]);
+        setLecturesLoading(true);
+        const allLecturesPromises: Promise<QuerySnapshot<DocumentData>>[] = [];
+        sections.forEach(section => {
+          const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('title'));
+          allLecturesPromises.push(getDocs(lecturesQuery));
+        });
 
-
-    useEffect(() => {
-        if (courseLoading) return;
-
-        const fetchCurriculum = async () => {
-            const sectionsQuery = query(collection(db, 'courses', courseId as string, 'sections'), orderBy('order'));
-            const sectionsSnap = await getDocs(sectionsQuery);
-            const fetchedSections = sectionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Section);
-            setSections(fetchedSections);
-
-            const allLecturesMap = new Map<string, Lecture[]>();
-            for (const section of fetchedSections) {
-                const lecturesQuery = query(collection(db, 'courses', courseId as string, 'sections', section.id, 'lectures'), orderBy('order'));
-                const lecturesSnap = await getDocs(lecturesQuery);
-                const lectures = lecturesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture));
-                allLecturesMap.set(section.id, lectures);
-            }
-            setLecturesMap(allLecturesMap);
-
-            // Set initial active lesson
-            if (!activeLesson) {
-                const lastLessonId = progressDoc?.lastLessonId;
-                let lessonToStart: Lecture | null = null;
-                if(lastLessonId) {
-                    for (const lectures of Array.from(allLecturesMap.values())) {
-                        const found = lectures.find(l => l.id === lastLessonId);
-                        if (found) {
-                            lessonToStart = found;
-                            break;
-                        }
-                    }
-                }
-                if (!lessonToStart && fetchedSections.length > 0) {
-                   const firstSectionId = fetchedSections[0].id;
-                   const firstSectionLectures = allLecturesMap.get(firstSectionId);
-                   if (firstSectionLectures && firstSectionLectures.length > 0) {
-                       lessonToStart = firstSectionLectures[0];
-                   }
-                }
-                setActiveLesson(lessonToStart);
-            }
-             setPageLoading(false);
-        };
-
-        fetchCurriculum();
-    }, [courseLoading, courseId, db, progressDoc, activeLesson, handleLessonClick]);
+        Promise.all(allLecturesPromises).then(lectureSnapshots => {
+            const newLecturesMap = new Map<string, Lecture[]>();
+            lectureSnapshots.forEach((snapshot, index) => {
+                const sectionId = sections[index].id;
+                const lectures = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture));
+                newLecturesMap.set(sectionId, lectures);
+            });
+            setLecturesMap(newLecturesMap);
+            setLecturesLoading(false);
+        }).catch(err => {
+            console.error("Error fetching lectures:", err);
+            setLecturesLoading(false);
+        });
+    }, [sections, sectionsLoading, db, courseId]);
     
-    const { totalLessons, completedLessons, progressPercent } = useMemo(() => {
-        const lessons = Array.from(lecturesMap.values()).flat();
-        const total = lessons.length;
-        // In a real app, completed lessons would come from user progress data
-        const completed = progressDoc?.progressPercent ? Math.floor(total * (progressDoc.progressPercent / 100)) : 0;
-        return {
-            totalLessons: total,
-            completedLessons: completed,
-            progressPercent: progressDoc?.progressPercent || 0,
-        };
-    }, [lecturesMap, progressDoc]);
+    if (sectionsLoading) {
+        return <Skeleton className="h-48 w-full" />;
+    }
 
-
-    if (isUserLoading || courseLoading || enrollmentLoading || progressLoading || pageLoading) {
-        return <div className="flex h-screen w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    if (!sections || sections.length === 0) {
+        return null;
     }
     
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_400px] h-screen bg-slate-900 text-white">
-            {/* Main Content */}
-            <main className="flex flex-col h-screen overflow-y-auto">
-                <header className="flex items-center gap-2 p-2 border-b border-slate-700 bg-slate-900 sticky top-0 z-10">
-                    <Button variant="ghost" size="icon" onClick={() => router.push('/mes-formations')}>
-                        <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    <span className="font-semibold text-sm truncate">{course?.title}</span>
-                </header>
-                
-                <div className="aspect-video bg-black flex items-center justify-center">
-                    {activeLesson?.videoUrl ? (
-                         <ReactPlayer
-                            url={activeLesson.videoUrl}
-                            width="100%"
-                            height="100%"
-                            controls
-                            playing
-                            config={{ youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } } }}
-                        />
-                    ) : (
-                        <div className="text-center text-slate-400">
-                            <PlayCircle className="h-12 w-12 mx-auto mb-2" />
-                            <p>Sélectionnez une leçon pour commencer.</p>
-                        </div>
-                    )}
-                </div>
-                
-                <div className="p-4 sm:p-6">
-                    <h1 className="text-xl sm:text-2xl font-bold">{activeLesson?.title || "Bienvenue dans votre cours"}</h1>
-                    
-                     <Tabs defaultValue="description" className="w-full mt-4">
-                        <TabsList className="grid w-full grid-cols-3 dark:bg-slate-800 dark:border-slate-700">
-                            <TabsTrigger value="description">Description</TabsTrigger>
-                            <TabsTrigger value="resources">Ressources</TabsTrigger>
-                            <TabsTrigger value="q-a">Q&R</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="description" className="mt-4 text-sm text-slate-300 leading-relaxed">
-                            {course?.description || "Aucune description pour ce cours."}
-                        </TabsContent>
-                        <TabsContent value="resources" className="mt-4">
-                           {resourcesLoading ? (
-                                <Skeleton className="h-20 w-full" />
-                           ) : resources && resources.length > 0 ? (
-                               <div className="space-y-2">
-                                   {resources.map(res => <ResourceItem key={res.id} resource={res} />)}
-                               </div>
-                           ) : (
-                                <p className="text-sm text-center text-slate-500 py-8">Aucune ressource pour ce cours.</p>
-                           )}
-                        </TabsContent>
-                        <TabsContent value="q-a" className="mt-4">
-                             <Button asChild><Link href={`/questions-reponses/${courseId}`}><MessageSquare className="mr-2 h-4 w-4"/> Poser une question</Link></Button>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </main>
-
-            {/* Sidebar */}
-            <aside className="hidden lg:flex flex-col h-screen">
-                 <CoursePlayerSidebar 
-                    course={course}
-                    sections={sections}
-                    lecturesMap={lecturesMap}
-                    activeLessonId={activeLesson?.id || null}
-                    onLessonClick={handleLessonClick}
-                    progressPercent={progressPercent}
-                    isLoading={pageLoading}
-                    totalLessons={totalLessons}
-                    completedLessons={completedLessons}
-                 />
-            </aside>
+        <div className="w-full space-y-2">
+           <h2 className="text-2xl font-bold text-white mb-4">Programme du cours</h2>
+           <Accordion type="multiple" defaultValue={sections.map(s => s.id)} className="w-full space-y-2">
+            {sections.map((section) => (
+              <AccordionItem key={section.id} value={section.id} className="bg-slate-800/50 border border-slate-700/80 rounded-lg overflow-hidden">
+                  <AccordionTrigger className="w-full flex justify-between items-center px-4 py-3 text-left font-semibold text-white hover:no-underline">
+                      <span>{section.title}</span>
+                  </AccordionTrigger>
+                  <AccordionContent className="bg-slate-800/20">
+                      {lecturesLoading ? <Skeleton className="h-10 w-full m-2" /> : (
+                          <ul className="divide-y divide-slate-700/50">
+                              {(lecturesMap.get(section.id) || []).map(lecture => {
+                                  const canAccess = isEnrolled || lecture.isFreePreview;
+                                  return (
+                                      <li key={lecture.id}>
+                                        <button onClick={() => canAccess && onPreviewClick(lecture)} disabled={!canAccess} className="w-full text-left flex items-center text-sm p-3 transition-colors hover:bg-slate-700/50 disabled:opacity-60 disabled:cursor-not-allowed">
+                                            <div className="flex-1 flex items-start gap-3">
+                                                {canAccess ? <PlayCircle className="h-5 w-5 mr-2 text-primary shrink-0 mt-0.5" /> : <Lock className="h-4 w-4 mr-2 text-slate-500 shrink-0 mt-0.5" />}
+                                                <span className="text-slate-300">{lecture.title}</span>
+                                            </div>
+                                            <div className="flex items-center gap-4 text-xs text-slate-400">
+                                                {lecture.isFreePreview && !isEnrolled && <Badge variant="outline" className="text-xs border-primary text-primary">Aperçu</Badge>}
+                                                <span>{lecture.duration ? `${lecture.duration} min` : ''}</span>
+                                            </div>
+                                        </button>
+                                      </li>
+                                  );
+                              })}
+                          </ul>
+                      )}
+                  </AccordionContent>
+              </AccordionItem>
+            ))}
+            </Accordion>
         </div>
     );
-}
+};
 
-    
+
+const ReviewsSection = ({ courseId, isEnrolled }: { courseId: string, isEnrolled: boolean }) => {
+  const db = getFirestore();
+  const { user, isUserLoading } = useRole();
+  const [hasReviewed, setHasReviewed] = useState(false);
+  const [reviewsWithUsers, setReviewsWithUsers] = useState<ReviewWithUser[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
+
+  const reviewsQuery = useMemoFirebase(() => query(collection(db, 'reviews'), where('courseId', '==', courseId)), [db, courseId]);
+  const { data: reviews, isLoading: rawReviewsLoading } = useCollection<Review>(reviewsQuery);
+  
+  useEffect(() => {
+    if (user && reviews) {
+      const userReview = reviews.find(r => r.userId === user.uid);
+      setHasReviewed(!!userReview);
+    }
+  }, [user, reviews]);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      if (!reviews || reviews.length === 0) {
+        setReviewsWithUsers([]);
+        setReviewsLoading(false);
+        return;
+      }
+      
+      setReviewsLoading(true);
+      const userIds = [...new Set(reviews.map(r => r.userId))];
+      if (userIds.length === 0) {
+          setReviewsWithUsers([]);
+          setReviewsLoading(false);
+          return;
+      }
+      const usersRef = collection(db, 'users');
+      // Firestore 'in' query has a limit of 30 items
+      const usersQuery = query(usersRef, where('uid', 'in', userIds.slice(0, 30)));
+      const userSnapshots = await getDocs(usersQuery);
+
+      const usersById = new Map();
+      userSnapshots.forEach(doc => usersById.set(doc.data().uid, doc.data()));
+
+      const populatedReviews = reviews.map(review => {
+        const user = usersById.get(review.userId);
+        return {
+          ...review,
+          reviewerName: user?.fullName || 'Anonyme',
+          reviewerImage: user?.profilePictureURL,
+        };
+      });
+
+      setReviewsWithUsers(populatedReviews);
+      setReviewsLoading(false);
+    };
+
+    if (!rawReviewsLoading) {
+      fetchUsers();
+    }
+  }, [reviews, db, rawReviewsLoading]);
+
+  const averageRating = useMemo(() => {
+    if (!reviews || reviews.length === 0) return 0;
+    const total = reviews.reduce((acc, review) => acc + review.rating, 0);
+    return total / reviews.length;
+  }, [reviews]);
+  
+  const isLoading = rawReviewsLoading || reviewsLoading || isUserLoading;
+
+  return (
+    <div className="space-y-8">
+        <h2 className="text-2xl font-bold text-white">Avis des étudiants</h2>
+        {isLoading ? (
+            <Skeleton className="h-48 w-full bg-slate-800" />
+        ) : reviewsWithUsers.length > 0 ? (
+            <div className="space-y-6">
+                <StarRating rating={averageRating} reviewCount={reviews?.length} size="lg" />
+                {reviewsWithUsers?.slice(0, 5).map(review => (
+                    <div key={review.id} className="flex gap-4 border-t border-slate-700 pt-6">
+                        <Avatar>
+                            <AvatarImage src={review.reviewerImage} />
+                            <AvatarFallback className="bg-slate-700 text-white">{review.reviewerName?.[0]}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="font-semibold text-white">{review.reviewerName}</p>
+                            <div className="flex items-center gap-2 text-sm text-slate-400 mb-1">
+                                <StarRating rating={review.rating} size="sm" />
+                                <span>{review.createdAt ? formatDistanceToNow(review.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}</span>
+                            </div>
+                            <p className="text-sm text-slate-300">{review.comment}</p>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : (
+             <div className="border-2 border-dashed border-slate-700 rounded-2xl p-6 text-center text-slate-400">
+                <p>Aucun avis pour ce cours pour le moment.</p>
+            </div>
+        )}
+
+        {user && !hasReviewed && isEnrolled && (
+          <div className="pt-8">
+             <h3 className="text-xl font-bold mb-4 text-white">Laissez votre avis</h3>
+             <ReviewForm courseId={courseId} userId={user.uid} onReviewSubmit={() => setHasReviewed(true)} />
+          </div>
+        )}
+    </div>
+  );
+};
+
+export default function CourseDetailsPage() {
+  const { courseId: courseIdParam } = useParams();
+  const courseId = courseIdParam as string;
+  const db = getFirestore();
+  const { toast } = useToast();
+  const router = useRouter();
+  const { user, currentUser, isUserLoading } = useRole();
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [isPaying, setIsPaying] = useState(false);
+  const [courseStats, setCourseStats] = useState({ totalDuration: 0, lessonCount: 0 });
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
+  const [previewLesson, setPreviewLesson] = useState<Lecture | null>(null);
+
+  const [isQuestionModalOpen, setIsQuestionModalOpen] = useState(false);
+  const [isSubmittingQuestion, setIsSubmittingQuestion] = useState(false);
+  const questionForm = useForm<QuestionFormValues>({ resolver: zodResolver(questionFormSchema) });
+
+  const courseRef = useMemoFirebase(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
+  const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+
+  const instructorRef = useMemoFirebase(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [db, course]);
+  const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
+
+  const enrollmentQuery = useMemoFirebase(() => {
+    if (!user || !courseId) return null;
+    return query(collection(db, 'enrollments'), where('studentId', '==', user.uid), where('courseId', '==', courseId));
+  }, [db, user, courseId]);
+
+  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection(enrollmentQuery);
+  const isEnrolled = useMemo(() => (enrollments?.length ?? 0) > 0 || currentUser?.role === 'admin', [enrollments, currentUser]);
+  
+  const wishlistRef = useMemoFirebase(() => (user && courseId) ? doc(db, 'users', user.uid, 'wishlist', courseId) : null, [user, courseId, db]);
+  const { data: wishlistItem, isLoading: isWishlistLoading } = useDoc(wishlistRef);
+  const isInWishlist = !!wishlistItem;
+  
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+        toast({
+            variant: "destructive",
+            title: "Accès non autorisé",
+            description: "Veuillez créer un compte pour accéder à ce contenu.",
+        });
+        router.push('/login?tab=register');
+    }
+  }, [isUserLoading, user, router, toast]);
+
+  const handlePreviewClick = (lesson: Lecture) => {
+    setPreviewLesson(lesson);
+    setIsPreviewModalOpen(true);
+  }
+  
+    const handleAskQuestion = async (data: QuestionFormValues) => {
+        if (!user || !course || !instructor) return;
+        setIsSubmittingQuestion(true);
+        try {
+            const ticketsCollection = collection(db, 'support_tickets');
+            const newTicketRef = doc(ticketsCollection);
+            
+            const ticketPayload = {
+                ticketId: newTicketRef.id,
+                userId: user.uid,
+                instructorId: instructor.uid,
+                courseId: course.id,
+                subject: data.subject,
+                lastMessage: data.message,
+                status: 'ouvert',
+                category: 'Pédagogique',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            };
+            
+            const userMessagePayload = {
+                senderId: user.uid,
+                text: data.message,
+                createdAt: serverTimestamp(),
+            };
+
+            const welcomeMessagePayload = {
+                senderId: 'SYSTEM',
+                text: "Bienvenue au support de Ndara Afrique ! Votre question a été envoyée au formateur. Il vous répondra dans les plus brefs délais.",
+                createdAt: serverTimestamp(),
+            };
+            
+            const batch = writeBatch(db);
+            batch.set(newTicketRef, ticketPayload);
+            batch.set(doc(collection(newTicketRef, 'messages')), userMessagePayload);
+            batch.set(doc(collection(newTicketRef, 'messages')), welcomeMessagePayload);
+
+            await batch.commit();
+
+            toast({ title: 'Question envoyée !', description: "L'instructeur a été notifié." });
+            setIsQuestionModalOpen(false);
+            questionForm.reset();
+            router.push(`/questions-reponses/${newTicketRef.id}`);
+
+        } catch (error) {
+             errorEmitter.emit('permission-error', new FirestorePermissionError({
+                path: 'support_tickets',
+                operation: 'create',
+            }));
+            console.error("Error creating support ticket:", error);
+        } finally {
+            setIsSubmittingQuestion(false);
+        }
+    }
+
+  const handleCheckout = () => {
+    if (!course || !user) {
+        toast({ variant: 'destructive', title: 'Non connecté', description: 'Veuillez vous connecter pour acheter ce cours.' });
+        router.push(`/login?redirect=/course/${courseId}`);
+        return;
+    }
+    router.push(`/paiements?courseId=${course.id}`);
+  };
+  
+    const handleToggleWishlist = async () => {
+        if (!user || !courseId) {
+            router.push(`/login?redirect=/course/${courseId}`);
+            return;
+        }
+
+        const wishlistDocRef = doc(db, 'users', user.uid, 'wishlist', courseId);
+        
+        try {
+            if (isInWishlist) {
+                await deleteDoc(wishlistDocRef);
+                toast({ title: "Cours retiré de votre liste de souhaits." });
+            } else {
+                await setDoc(wishlistDocRef, { courseId: courseId, addedAt: serverTimestamp() });
+                toast({ title: "Cours ajouté à votre liste de souhaits !" });
+            }
+        } catch (error) {
+            console.error("Wishlist toggle error:", error);
+            toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier la liste de souhaits." });
+        }
+    };
+
+  useEffect(() => {
+    if (!courseId || course?.contentType === 'ebook') return;
+
+    const fetchStats = async () => {
+        const sectionsQuery = query(collection(db, 'courses', courseId, 'sections'));
+        const sectionsSnap = await getDocs(sectionsQuery);
+        
+        let totalDuration = 0;
+        let lessonCount = 0;
+        
+        for (const sectionDoc of sectionsSnap.docs) {
+            const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', sectionDoc.id, 'lectures'));
+            const lecturesSnap = await getDocs(lecturesQuery);
+            lecturesSnap.forEach(lectureDoc => {
+                const lectureData = lectureDoc.data();
+                lessonCount++;
+                totalDuration += Number(lectureData.duration) || 0;
+            });
+        }
+        
+        setCourseStats({ totalDuration, lessonCount });
+    };
+
+    fetchStats();
+  }, [courseId, db, course?.contentType]);
+
+
+  const handleFreeEnrollment = async () => {
+    if (!user || !course || !course.instructorId || !instructor || !currentUser) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté et les détails du cours doivent être complets.' });
+        if(!user) router.push('/login');
+        return;
+    }
+
+    setIsEnrolling(true);
+
+    try {
+        if(isEnrolled) {
+            toast({ title: 'Déjà inscrit', description: 'Vous êtes déjà inscrit à ce cours.' });
+            router.push(`/courses/${course.id}`);
+            return;
+        }
+
+        const enrollmentId = `${user.uid}_${courseId}`;
+        const enrollmentRef = doc(db, 'enrollments', enrollmentId);
+        
+        const enrollmentPayload = {
+            enrollmentId: enrollmentId,
+            studentId: user.uid,
+            courseId: courseId,
+            instructorId: course.instructorId,
+            enrollmentDate: serverTimestamp(),
+            progress: 0,
+            priceAtEnrollment: 0,
+        };
+        
+        await setDoc(enrollmentRef, enrollmentPayload);
+
+        toast({ title: 'Inscription réussie!', description: `Vous avez maintenant accès à "${course.title}".` });
+        
+        await sendEnrollmentEmails(currentUser, course, instructor);
+
+        router.push(`/courses/${courseId}?newEnrollment=true`);
+
+    } catch (error) {
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `enrollments/${user.uid}_${courseId}`,
+            operation: 'create',
+            requestResourceData: { studentId: user.uid, courseId: courseId, progress: 0, instructorId: course.instructorId },
+        }));
+        setIsEnrolling(false);
+    }
+  };
+
+  const handleMainAction = () => {
+    if (!user) {
+        router.push(`/login?redirect=/course/${courseId}`);
+        return;
+    }
+    if(isEnrolled) {
+        router.push(`/courses/${courseId}`);
+    } else if (course?.price === 0) {
+        handleFreeEnrollment();
+    } else if(course && user && currentUser) {
+        handleCheckout();
+    }
+  };
+
+  const isLoading = courseLoading || instructorLoading || enrollmentsLoading || isUserLoading || isWishlistLoading;
+
+  if (isLoading || (!isUserLoading && !user)) {
+    return (
+      <div className="container mx-auto max-w-5xl py-8 px-4">
+        <div className="grid md:grid-cols-3 gap-8">
+            <div className="md:col-span-2 space-y-6">
+                <Skeleton className="h-10 w-3/4" />
+                <Skeleton className="h-6 w-full" />
+                <Skeleton className="h-6 w-5/6" />
+                <Skeleton className="h-64 w-full" />
+            </div>
+            <div className="space-y-4">
+                 <Skeleton className="h-96 w-full rounded-3xl" />
+            </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!course) {
+    return (
+      <div className="container mx-auto max-w-7xl py-12 text-center">
+        <Info className="mx-auto h-12 w-12 text-destructive" />
+        <h1 className="mt-4 text-2xl font-bold">Cours non trouvé</h1>
+        <p className="text-muted-foreground">Le cours que vous cherchez n'existe pas ou a été retiré.</p>
+        <Button onClick={() => router.push('/dashboard')} className="mt-6">Retour au tableau de bord</Button>
+      </div>
+    );
+  }
+  
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Course',
+    name: course.title,
+    description: course.description,
+    provider: {
+      '@type': 'Organization',
+      name: 'Ndara Afrique',
+      url: 'https://ndara-afrique.web.app',
+    },
+    offers: {
+      '@type': 'Offer',
+      price: course.price,
+      priceCurrency: 'XOF',
+      category: 'Paid',
+    },
+  };
+
+  const isFree = course.price === 0;
+  const isEbook = course.contentType === 'ebook';
+
+  const getButtonText = () => {
+    if(isEnrolled) return isEbook ? "Lire l'E-book" : "Aller au cours";
+    if(isFree) return isEbook ? "Obtenir l'E-book Gratuitement" : "S'inscrire Gratuitement";
+    return isEbook ? "Acheter l'E-book" : "Acheter maintenant";
+  }
+  
+  const hasValidLearningObjectives = course.learningObjectives && course.learningObjectives.length > 0 && course.learningObjectives[0].length > 2;
+  const defaultLearningObjectives = [
+    "Maîtriser les fondamentaux du sujet.",
+    "Acquérir des compétences pratiques et applicables.",
+    "Apprendre à utiliser les outils et technologies clés.",
+    "Développer une compréhension approfondie des concepts avancés.",
+  ];
+
+  return (
+    <>
+      <Script src="https://cdn.moneroo.io/checkout/v1/moneroo.js" strategy="afterInteractive" />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      
+      <div className="bg-[#020817] text-white">
+        {/* --- Header Section (Mobile) --- */}
+        <div className="lg:hidden">
+           <div className="relative aspect-video w-full bg-black">
+             <Image 
+                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
+                alt={course.title}
+                fill
+                objectFit="cover"
+                className="opacity-80"
+             />
+             <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
+                <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
+                    <PlayCircle className="h-5 w-5 mr-2"/>
+                    Afficher un aperçu
+                </Button>
+             </div>
+           </div>
+           <div className="p-4 space-y-3">
+              <h1 className="text-2xl font-bold">{course.title}</h1>
+              <p className={cn("text-slate-300", !isDescriptionExpanded && "line-clamp-3")}>{course.description}</p>
+                {course.description.length > 150 && (
+                    <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-primary font-semibold text-sm">
+                        {isDescriptionExpanded ? "Afficher moins" : "Lire la suite"}
+                    </button>
+                )}
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                {course.isPopular && <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>}
+                <StarRating rating={4.7} reviewCount={187212} size="sm" />
+                <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
+              </div>
+              <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe Ndara Afrique'}</Link></p>
+               <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
+                {(course.updatedAt || course.createdAt) && (
+                  <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
+                )}
+                {course.language && <span className="flex items-center gap-1.5"><Globe className="h-4 w-4"/>{course.language}</span>}
+              </div>
+           </div>
+        </div>
+
+        <div className="container mx-auto max-w-7xl py-8 px-4 lg:px-8">
+          <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+              <main className="lg:col-span-8 space-y-12">
+                 {/* --- Header Section (Desktop) --- */}
+                 <div className="hidden lg:block space-y-3">
+                    <h1 className="text-4xl font-extrabold tracking-tight">{course.title}</h1>
+                     <div className={cn("text-xl text-slate-300", !isDescriptionExpanded && "line-clamp-3")}>{course.description}</div>
+                     {course.description.length > 200 && (
+                        <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-primary font-semibold">
+                            {isDescriptionExpanded ? "Afficher moins" : "Lire la suite"}
+                        </button>
+                    )}
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-400">
+                      {course.isPopular && <Badge className="bg-amber-400/20 text-amber-300 border-amber-400/30">Bestseller</Badge>}
+                      <StarRating rating={4.7} reviewCount={187212} size="sm" />
+                      <span>{course.participantsCount?.toLocaleString('fr-FR') || '187K'} participants</span>
+                    </div>
+                     <p className="text-sm">Créé par <Link href={`/instructor/${instructor?.id}`} className="underline font-semibold">{instructor?.fullName || 'L\'équipe Ndara Afrique'}</Link></p>
+                     <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-slate-400">
+                         {(course.updatedAt || course.createdAt) && (
+                            <span className="flex items-center gap-1.5"><Clock className="h-4 w-4"/>Dernière M.À.J {format(course.updatedAt?.toDate() || course.createdAt?.toDate() || new Date(), 'MM/yyyy')}</span>
+                         )}
+                        {course.language && <span className="flex items-center gap-1.5"><Globe className="h-4 w-4"/>{course.language}</span>}
+                    </div>
+                 </div>
+
+                 {/* --- What you'll learn --- */}
+                {!isEbook && (
+                    <div className="border border-slate-700/80 rounded-lg p-6">
+                        <h2 className="text-2xl font-bold text-white mb-4">Ce que vous apprendrez</h2>
+                        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-slate-300">
+                            {(hasValidLearningObjectives ? course.learningObjectives : defaultLearningObjectives)?.map((obj: string, i: number) => (
+                                <li key={i} className="flex items-start"><Check className="w-5 h-5 mr-3 mt-1 text-primary shrink-0" /><span>{obj}</span></li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+                
+                {/* --- Curriculum --- */}
+                <CourseCurriculum courseId={courseId} isEnrolled={isEnrolled} onPreviewClick={handlePreviewClick} />
+                
+                 {/* --- Q&A Button --- */}
+                 {isEnrolled && (
+                    <div className="border-t border-slate-800 pt-8">
+                       <Button onClick={() => setIsQuestionModalOpen(true)} className="w-full md:w-auto" variant="secondary">
+                           <MessageSquarePlus className="mr-2 h-4 w-4"/>
+                           Poser une question à l'instructeur
+                       </Button>
+                    </div>
+                )}
+                
+                {/* --- Instructor --- */}
+                {instructor && (
+                  <div>
+                    <h2 className="text-2xl font-bold mb-4 text-white">À propos de l'instructeur</h2>
+                    <Link href={`/instructor/${instructor.id}`} className="block">
+                      <h3 className="font-bold text-lg hover:text-primary text-white">{instructor.fullName}</h3>
+                      <p className="text-sm text-slate-400 mb-2">{instructor.careerGoals?.currentRole || `Expert en ${course.category}`}</p>
+                      <div className="flex items-start gap-4">
+                          <Avatar className="h-12 w-12">
+                              <AvatarImage src={instructor.profilePictureURL} />
+                              <AvatarFallback className="text-white bg-slate-700">{instructor.fullName?.charAt(0) || '?'}</AvatarFallback>
+                          </Avatar>
+                          <p className="text-sm line-clamp-3 text-slate-300">{instructor.bio || `Découvrez le parcours et l'expertise de ${instructor.fullName}, un professionnel passionné qui vous guidera à travers ce cours.`}</p>
+                      </div>
+                    </Link>
+                  </div>
+                )}
+                
+                 {/* --- Reviews --- */}
+                <ReviewsSection courseId={courseId} isEnrolled={isEnrolled} />
+
+              </main>
+
+              <aside className="hidden lg:block lg:col-span-4">
+                  <div className="sticky top-24 space-y-4">
+                    <Card className="shadow-xl rounded-2xl bg-slate-800/50 border border-slate-700/80">
+                         <div className="relative group aspect-video w-full bg-black rounded-t-2xl overflow-hidden">
+                           <Image 
+                                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
+                                alt={course.title}
+                                fill
+                                objectFit="cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                               <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
+                                  <PlayCircle className="h-5 w-5 mr-2"/>
+                                  Afficher un aperçu
+                               </Button>
+                            </div>
+                        </div>
+                        <CardContent className="p-4 space-y-3">
+                            <div className="flex items-baseline gap-2">
+                                <h2 className="text-3xl font-bold text-white">
+                                    {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
+                                </h2>
+                                {course.originalPrice && (
+                                    <span className="text-base line-through text-slate-400">
+                                        {course.originalPrice.toLocaleString('fr-FR')} XOF
+                                    </span>
+                                )}
+                            </div>
+                            
+                            <Button className="w-full h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
+                                {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
+                                {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
+                            </Button>
+                            
+                             <div className="flex gap-2">
+                                <Button variant="outline" className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white">
+                                    <ShoppingCart className="h-4 w-4 mr-2" /> Ajouter au panier
+                                </Button>
+                                <Button variant="outline" className="w-full h-11 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white" onClick={handleToggleWishlist}>
+                                    <Heart className={cn("h-4 w-4 mr-2", isInWishlist && "fill-red-500 text-red-500")} /> {isInWishlist ? 'Dans la liste' : 'Liste de souhaits'}
+                                </Button>
+                             </div>
+
+                             <div className="space-y-2 pt-3">
+                                <h3 className="font-semibold text-white">Ce cours inclut :</h3>
+                                <ul className="space-y-1.5 text-sm text-slate-300">
+                                    {isEbook ? (
+                                        <>
+                                            <li className="flex items-center gap-2"><Book className="h-4 w-4 text-primary" /> Format PDF</li>
+                                            <li className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> Accès immédiat après achat</li>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <li className="flex items-center gap-2"><Video className="h-4 w-4 text-primary" /> {(courseStats.totalDuration / 60).toFixed(1)}h de vidéo</li>
+                                            <li className="flex items-center gap-2"><FileText className="h-4 w-4 text-primary" /> {courseStats.lessonCount} leçons</li>
+                                            <li className="flex items-center gap-2"><Tv className="h-4 w-4 text-primary" /> Accès sur mobile et TV</li>
+                                            <li className="flex items-center gap-2"><Gift className="h-4 w-4 text-primary" /> Accès complet à vie</li>
+                                            <li className="flex items-center gap-2"><Award className="h-4 w-4 text-primary" /> Certificat de réussite</li>
+                                        </>
+                                    )}
+                                </ul>
+                            </div>
+                        </CardContent>
+                    </Card>
+                  </div>
+              </aside>
+          </div>
+        </div>
+      </div>
+
+       {/* --- Mobile Sticky Footer --- */}
+       <div className="fixed bottom-0 left-0 right-0 lg:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-50 space-y-2">
+           <div className="flex items-baseline gap-2 justify-center">
+                 <h3 className="text-2xl font-bold text-white">
+                    {isFree ? 'Gratuit' : `${course.price.toLocaleString('fr-FR')} XOF`}
+                 </h3>
+                 {course.originalPrice && (
+                    <span className="text-base line-through text-slate-400">
+                        {course.originalPrice.toLocaleString('fr-FR')} XOF
+                    </span>
+                )}
+            </div>
+            <div className="flex gap-2">
+                <Button className="flex-1 h-12 text-base bg-primary hover:bg-primary/90 text-primary-foreground" size="lg" onClick={handleMainAction} disabled={isEnrolling || isPaying}>
+                  {isEnrolling || isPaying ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : isEnrolled ? <BookOpen className="mr-2 h-5 w-5" /> : <CreditCard className="mr-2 h-5 w-5" />}
+                  {isPaying ? 'Chargement...' : isEnrolling ? 'Inscription...' : getButtonText()}
+                </Button>
+                <Button variant="outline" size="icon" className="h-12 w-12 bg-transparent border-slate-600 text-white hover:bg-slate-700 hover:text-white" onClick={handleToggleWishlist}>
+                    <Heart className={cn("h-5 w-5", isInWishlist && "fill-red-500 text-red-500")} />
+                </Button>
+            </div>
+      </div>
+
+      {/* --- Video Preview Modal --- */}
+       <Dialog open={isPreviewModalOpen} onOpenChange={setIsPreviewModalOpen}>
+        <DialogContent className="max-w-3xl lg:max-w-4xl xl:max-w-5xl p-0 border-0 bg-black">
+          <DialogHeader className="p-4 sr-only">
+            <DialogTitle>{previewLesson?.title}</DialogTitle>
+          </DialogHeader>
+          <ReactPlayer url={previewLesson?.videoUrl || ''} width="100%" height="100%" controls playing={false} config={{ youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } } }} />
+        </DialogContent>
+      </Dialog>
+      
+       {/* --- Ask Question Modal --- */}
+       <Dialog open={isQuestionModalOpen} onOpenChange={setIsQuestionModalOpen}>
+           <DialogContent className="dark:bg-slate-800 dark:border-slate-700">
+                <DialogHeader>
+                    <DialogTitle className="dark:text-white">Poser une question à {instructor?.fullName}</DialogTitle>
+                    <DialogDescription className="dark:text-slate-400">Votre question sera envoyée directement à l'instructeur.</DialogDescription>
+                </DialogHeader>
+                 <Form {...questionForm}>
+                    <form onSubmit={questionForm.handleSubmit(handleAskQuestion)} className="space-y-4">
+                        <FormField control={questionForm.control} name="subject" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="dark:text-slate-300">Sujet</FormLabel>
+                                <FormControl><Input placeholder="Ex: Problème avec la leçon 5" {...field} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <FormField control={questionForm.control} name="message" render={({ field }) => (
+                             <FormItem>
+                                <FormLabel className="dark:text-slate-300">Votre question</FormLabel>
+                                <FormControl><Textarea placeholder="Bonjour, je n'ai pas bien compris..." {...field} rows={5} className="dark:bg-slate-700 dark:border-slate-600" /></FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        <DialogFooter>
+                            <Button type="button" variant="ghost" onClick={() => setIsQuestionModalOpen(false)}>Annuler</Button>
+                            <Button type="submit" disabled={isSubmittingQuestion}>
+                                {isSubmittingQuestion ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Envoyer la question
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </Form>
+           </DialogContent>
+       </Dialog>
+    </>
+  );
+}
