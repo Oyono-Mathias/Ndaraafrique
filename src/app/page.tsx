@@ -15,7 +15,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
-import { useRouter } from 'next/navigation';
 
 const LandingNav = ({ siteSettings }: { siteSettings: Partial<Settings['platform']> }) => {
     const [scrolled, setScrolled] = useState(false);
