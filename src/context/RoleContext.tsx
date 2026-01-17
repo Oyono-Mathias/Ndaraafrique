@@ -3,13 +3,13 @@
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
-import { useUser } from '@/firebase/provider';
+import { useUser } from '@/firebase';
 import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useLocale } from 'next-intl';
+import { useI18n } from './I18nProvider';
 
 interface RoleContextType {
   role: UserRole;
@@ -20,10 +20,10 @@ interface RoleContextType {
   secureSignOut: () => Promise<void>;
   loading: boolean;
   currentUser: NdaraUser | null;
-  ndaraUser: any; // Correction Maître pour la stabilité
-  formaAfriqueUser: any; // Correction Maître pour la stabilité
-  user: User | null; // From Firebase Auth
-  isUserLoading: boolean; // From Firebase Auth
+  ndaraUser: any;
+  formaAfriqueUser: any;
+  user: User | null;
+  isUserLoading: boolean;
   setCurrentUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
 }
 
@@ -37,7 +37,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
-  const locale = useLocale();
+  const { setLocale } = useI18n();
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();
@@ -53,9 +53,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const handleBeforeUnload = () => {
         if (auth.currentUser) {
             const userDocRef = doc(db, 'users', auth.currentUser.uid);
-            // This is a best-effort synchronous update. In a real app,
-            // you might use navigator.sendBeacon or a Cloud Function for reliability.
-             updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() });
+            updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() });
         }
     };
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
@@ -112,7 +110,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('admin');
           }
 
-           // Fetch role permissions
           let finalPermissions: { [key: string]: boolean } = {};
           if (userData.role) {
             try {
@@ -126,11 +123,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             }
           }
 
-          // Apply user-specific overrides
           if (userData.permissions) {
               finalPermissions = { ...finalPermissions, ...userData.permissions };
           }
-
+          
+          const preferredLang = userData.preferredLanguage || 'fr';
 
           const resolvedUser: NdaraUser = {
               ...userData,
@@ -143,11 +140,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               status: userData.status || 'active',
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
               permissions: finalPermissions,
-              preferredLanguage: userData.preferredLanguage || 'fr',
+              preferredLanguage: preferredLang,
           };
           
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
+          setLocale(preferredLang);
 
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           
@@ -176,7 +174,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 availableRoles: ['student'],
                 profilePictureURL: user.photoURL || '',
                 isProfileComplete: false,
-                preferredLanguage: locale as 'fr' | 'en',
+                preferredLanguage: 'fr',
             };
             setCurrentUser(defaultUser);
             setAvailableRoles(['student']);
@@ -189,7 +187,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user, isUserLoading, db, secureSignOut, toast, locale]);
+  }, [user, isUserLoading, db, secureSignOut, toast, setLocale]);
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
@@ -212,8 +210,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     user,
     isUserLoading,
     setCurrentUser,
-    ndaraUser: currentUser, // Backwards compatibility
-    formaAfriqueUser: currentUser, // Backwards compatibility
+    ndaraUser: currentUser,
+    formaAfriqueUser: currentUser,
   }), [role, availableRoles, switchRole, secureSignOut, isUserLoading, loading, currentUser, user]);
 
   return (

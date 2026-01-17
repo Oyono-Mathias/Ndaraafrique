@@ -1,17 +1,13 @@
 
 "use client";
 
-import { useState } from 'react';
-import { useLocale } from 'next-intl';
-import { usePathname, useRouter } from '@/navigation';
+import { useState, useTransition } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from '@/components/ui/button';
 import { Check } from 'lucide-react';
 import Image from 'next/image';
-import { useRole } from '@/context/RoleContext';
-import { doc, updateDoc, getFirestore } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
-import { useTransition } from 'react';
+import { useI18n } from '@/context/I18nProvider';
 
 interface LanguageOption {
     code: string;
@@ -25,26 +21,13 @@ const languages: LanguageOption[] = [
 ];
 
 export function LanguageSelector() {
-    const locale = useLocale();
-    const router = useRouter();
-    const pathname = usePathname();
-    const { user } = useRole();
-    const db = getFirestore();
+    const { locale, setLocale } = useI18n();
     const [isOpen, setIsOpen] = useState(false);
     const [isPending, startTransition] = useTransition();
 
-
     const changeLanguage = (lng: string) => {
-        if (user) {
-            try {
-                const userDocRef = doc(db, "users", user.uid);
-                updateDoc(userDocRef, { preferredLanguage: lng });
-            } catch (error) {
-                console.error("Failed to save language preference:", error);
-            }
-        }
         startTransition(() => {
-          router.replace(pathname, {locale: lng});
+          setLocale(lng);
         });
         setIsOpen(false);
     };

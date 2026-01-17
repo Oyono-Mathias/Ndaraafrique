@@ -30,8 +30,8 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useCollection } from '@/firebase';
+import { useMemoFirebase } from '@/firebase';
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";
 import { UserNav } from "./user-nav";
@@ -39,7 +39,7 @@ import { LanguageSelector } from "./language-selector";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin' && pathname.startsWith('/admin/statistiques')) || (href !== '/admin' && pathname.startsWith(href));
+  const isActive = (href === '/admin' && pathname === '/admin/statistiques') || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link

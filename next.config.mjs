@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['undici'],
-  },
   images: {
     remotePatterns: [
       {
@@ -15,15 +12,11 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'upload.wikimedia.org',
-      },
-      {
-        protocol: 'https',
         hostname: 'api.dicebear.com',
       },
       {
         protocol: 'https',
-        hostname: 'www.gstatic.com',
+        hostname: 'upload.wikimedia.org',
       },
     ],
   },

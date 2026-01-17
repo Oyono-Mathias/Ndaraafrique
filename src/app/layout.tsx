@@ -1,13 +1,26 @@
-
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-// This metadata is a fallback. The specific metadata is in [locale]/layout.tsx
+import { FirebaseClientProvider } from "@/firebase/client-provider";
+import { RoleProvider } from "@/context/RoleContext";
+import { AppShell } from "@/components/layout/app-shell";
+import { Toaster } from "@/components/ui/toaster";
+import { I18nProvider } from "@/context/I18nProvider";
+
 export const metadata: Metadata = {
-  title: "Ndara Afrique",
-  description: "L'excellence par le savoir.",
+  title: "Ndara Afrique - L'excellence par le savoir",
+  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
+  keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
+  manifest: '/manifest.json',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  themeColor: '#007bff',
 };
 
 const fontSans = Inter({
@@ -21,14 +34,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className="dark" style={{ colorScheme: 'dark' }}>
+    <html lang="fr" className="dark" style={{ colorScheme: 'dark' }} suppressHydrationWarning>
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
           fontSans.variable
         )}
       >
-        {children}
+        <I18nProvider>
+          <FirebaseClientProvider>
+            <RoleProvider>
+              <AppShell>{children}</AppShell>
+              <Toaster />
+            </RoleProvider>
+          </FirebaseClientProvider>
+        </I18nProvider>
       </body>
     </html>
   );

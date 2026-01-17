@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,7 +10,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, up
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslations, useLocale } from 'next-intl';
+import { useTranslations } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +21,7 @@ import { Loader2, Eye, EyeOff } from 'lucide-react';
 import type { NdaraUser } from '@/lib/types';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
+import { useI18n } from '@/context/I18nProvider';
 
 const loginSchema = z.object({
   email: z.string().email({ message: "Veuillez entrer une adresse e-mail valide." }),
@@ -66,7 +66,7 @@ export default function LoginClient() {
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading } = useRole();
-  const locale = useLocale();
+  const { locale } = useI18n();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
@@ -119,10 +119,8 @@ export default function LoginClient() {
             createdAt: serverTimestamp() as any,
             lastLogin: serverTimestamp() as any,
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-            country: detectedCountry?.name,
-            countryCode: detectedCountry?.code?.toLowerCase(),
-            preferredLanguage: locale as 'fr' | 'en' | 'sg' | 'ln' | 'ar',
             isProfileComplete: false,
+            preferredLanguage: locale,
         };
         if (acceptedTerms) {
             finalUserData.termsAcceptedAt = serverTimestamp() as any;

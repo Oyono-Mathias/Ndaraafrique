@@ -35,12 +35,26 @@ import { UserNav } from "./user-nav";
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean }) => {
   const pathname = usePathname();
+  const { toast } = useToast();
   const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
+  
+  const handleClick = (e: React.MouseEvent) => {
+    if (disabled) {
+        e.preventDefault();
+        toast({
+            variant: "destructive",
+            title: "Profil incomplet",
+            description: "Veuillez compléter votre profil pour accéder à cette fonctionnalité.",
+        });
+    } else {
+      onClick();
+    }
+  };
 
   return (
     <Link
-      href={disabled ? '#' : href}
-      onClick={disabled ? (e) => e.preventDefault() : onClick}
+      href={href}
+      onClick={handleClick}
       id={id}
       aria-disabled={disabled}
       className={cn(
@@ -80,6 +94,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
   const isProfileComplete = currentUser?.isProfileComplete || false;
+  const { toast } = useToast();
 
   const studentMenu = [
     {
