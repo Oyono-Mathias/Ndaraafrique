@@ -1,6 +1,10 @@
-// This file is now obsolete. The landing page logic has been moved to
-// src/app/[locale]/page.tsx to conform to next-intl's App Router structure.
-// This file can be safely deleted.
-export default function ObsoleteRootPage() {
-  return null;
+import { redirect } from 'next/navigation';
+import { locales } from '@/navigation';
+
+// This is the new root page, which will just redirect to the
+// default locale. We can get the default locale from our
+// navigation configuration.
+export default function RootPage() {
+  const defaultLocale = locales[0]; // 'fr'
+  redirect(`/${defaultLocale}`);
 }
