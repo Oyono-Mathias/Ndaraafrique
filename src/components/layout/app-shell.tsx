@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -89,13 +88,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleSidebarLinkClick = () => {
       setIsSheetOpen(false);
   };
-
-  const renderSidebar = () => {
-    const props = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
-    if (role === 'admin') return <AdminSidebar {...props} />;
-    if (role === 'instructor') return <InstructorSidebar {...props} />;
-    if (role === 'student') return <StudentSidebar {...props} />;
-    return null;
+  
+  const sidebarProps = {
+    siteName: siteSettings.siteName,
+    logoUrl: siteSettings.logoUrl,
+    onLinkClick: handleSidebarLinkClick,
   };
   
   const isFullScreenPage = pathname.startsWith('/courses/');
@@ -112,7 +109,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
       <div className={cn("min-h-screen w-full bg-slate-900 text-white", isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]")}>
         <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
-          {renderSidebar()}
+          <div className={cn({ 'hidden': role !== 'student' })}>
+            <StudentSidebar {...sidebarProps} />
+          </div>
+          <div className={cn({ 'hidden': role !== 'instructor' })}>
+            <InstructorSidebar {...sidebarProps} />
+          </div>
+          <div className={cn({ 'hidden': role !== 'admin' })}>
+            <AdminSidebar {...sidebarProps} />
+          </div>
         </aside>
         <div className="flex flex-col">
           <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
@@ -129,7 +134,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     </Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
-                      {renderSidebar()}
+                      <div className={cn({ 'hidden': role !== 'student' })}>
+                        <StudentSidebar {...sidebarProps} />
+                      </div>
+                      <div className={cn({ 'hidden': role !== 'instructor' })}>
+                        <InstructorSidebar {...sidebarProps} />
+                      </div>
+                      <div className={cn({ 'hidden': role !== 'admin' })}>
+                        <AdminSidebar {...sidebarProps} />
+                      </div>
                     </SheetContent>
                 </Sheet>
             </div>
