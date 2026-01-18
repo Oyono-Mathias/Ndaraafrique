@@ -1,9 +1,7 @@
-
 'use client';
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { Award, ShieldCheck, Wallet, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
@@ -11,6 +9,7 @@ import { useRole } from '@/context/RoleContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { Navbar } from '@/components/layout/navbar';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -42,22 +41,7 @@ export default function LandingPage() {
 
   return (
     <div className="bg-background text-foreground min-h-screen">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm">
-        <div className="container mx-auto px-4 h-20 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2 group">
-            <Image src="/icon.svg" alt="Ndara Afrique Logo" width={28} height={28} />
-            <span className="text-lg font-bold text-white">Ndara Afrique</span>
-          </Link>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" asChild>
-              <Link href="/login">Se connecter</Link>
-            </Button>
-            <Button asChild className="shadow-cta">
-              <Link href="/login?tab=register">S'inscrire</Link>
-            </Button>
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <main className="container mx-auto px-4 pt-32 pb-16">
         <section className="text-center max-w-3xl mx-auto">

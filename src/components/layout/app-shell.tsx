@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -122,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </aside>
             )}
             <div className="flex flex-col">
-              {!isAdminArea && (
+              {!isAdminArea && pathname !== '/' && (
                 <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
                   <div className="md:hidden">
                       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
