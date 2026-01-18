@@ -14,7 +14,7 @@ import { Stats } from '@/components/landing/Stats';
 import { logTrackingEvent } from '@/app/actions/trackingActions';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { Course, NdaraUser } from '@/lib/types';
-import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
 import { CourseCard } from '../cards/CourseCard';
 import { Skeleton } from '../ui/skeleton';
@@ -179,13 +179,17 @@ export function LandingPageClient() {
 
             const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
             if (instructorIds.length > 0) {
-                const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
-                const usersSnap = await getDocs(usersQuery);
-                const newInstructors = new Map<string, NdaraUser>();
-                usersSnap.forEach(doc => {
-                    newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
-                });
-                setInstructorsMap(newInstructors);
+                 const instructorPromises = instructorIds.map(id => getDoc(doc(db, 'users', id)));
+                 const instructorDocs = await Promise.all(instructorPromises);
+
+                 const newInstructors = new Map<string, NdaraUser>();
+                 instructorDocs.forEach(docSnap => {
+                     if (docSnap.exists()) {
+                         const instructorData = docSnap.data() as NdaraUser;
+                         newInstructors.set(instructorData.uid, instructorData);
+                     }
+                 });
+                 setInstructorsMap(newInstructors);
             }
         } catch (error) {
             console.error("Error fetching landing page data:", error);
