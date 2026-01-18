@@ -109,6 +109,10 @@ service cloud.firestore {
        COURSES & Q&A
     ====================== */
 
+    match /courses {
+      allow list: if true;
+    }
+
     match /courses/{courseId} {
       allow read: if resource.data.status == 'Published'
         || (isActive() && (isOwner(resource.data.instructorId) || isAdmin()));
