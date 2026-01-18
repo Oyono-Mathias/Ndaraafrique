@@ -69,6 +69,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string
 
 export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const db = getFirestore();
+  const { currentUser } = useRole();
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -91,26 +92,26 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
   ];
 
   const pendingInstructorsQuery = useMemoFirebase(() => 
-    query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)),
-    [db]
+    currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null,
+    [db, currentUser]
   );
   const { data: pendingInstructors } = useCollection(pendingInstructorsQuery);
 
   const pendingCoursesQuery = useMemoFirebase(() =>
-    query(collection(db, 'courses'), where('status', '==', 'Pending Review')),
-    [db]
+    currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null,
+    [db, currentUser]
   );
   const { data: pendingCourses } = useCollection(pendingCoursesQuery);
 
   const pendingPayoutsQuery = useMemoFirebase(() =>
-    query(collection(db, 'payouts'), where('status', '==', 'en_attente')),
-    [db]
+    currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null,
+    [db, currentUser]
   );
   const { data: pendingPayouts } = useCollection(pendingPayoutsQuery);
   
   const openTicketsQuery = useMemoFirebase(() =>
-    query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')),
-    [db]
+    currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null,
+    [db, currentUser]
   );
   const { data: openTickets } = useCollection(openTicketsQuery);
 
