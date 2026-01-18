@@ -314,6 +314,14 @@ service cloud.firestore {
         allow write: if isAdmin();
     }
 
+    /* ======================
+       ANALYTICS
+    ====================== */
+    match /tracking_events/{eventId} {
+      allow create: if true; // Allow anyone to write tracking events.
+      allow read, list, update, delete: if isAdmin(); // Only admins can read the data.
+    }
+
 
     /* ======================
        QUIZZES

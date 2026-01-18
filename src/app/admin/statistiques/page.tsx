@@ -369,8 +369,8 @@ export default function StatisticsPage() {
     return (
          <div className="space-y-8 max-w-7xl mx-auto">
               <header>
-                <h1 className="text-3xl font-bold dark:text-white">Statistiques</h1>
-                <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance de la plateforme.</p>
+                <h1 className="text-3xl font-bold dark:text-white">Statistiques Globales</h1>
+                <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance globale de la plateforme.</p>
             </header>
             <StatsDashboard />
         </div>

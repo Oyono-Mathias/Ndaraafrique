@@ -1,6 +1,13 @@
+
 import { Suspense } from 'react';
 import LoginClient from './login-client';
 import { Loader2 } from 'lucide-react';
+
+export const metadata = {
+  title: 'Connexion | Ndara Afrique',
+  description: 'Connectez-vous à votre compte ou créez-en un nouveau pour commencer à apprendre.',
+};
+
 
 export default function LoginPageWrapper() {
   return (

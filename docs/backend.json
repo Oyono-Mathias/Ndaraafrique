@@ -1,6 +1,28 @@
 
 {
   "entities": {
+    "TrackingEvent": {
+      "title": "Tracking Event",
+      "type": "object",
+      "description": "Records a specific user interaction for analytics.",
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "enum": ["page_view", "cta_click", "payment_method_click"]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "sessionId": { "type": "string" },
+        "pageUrl": { "type": "string" },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["eventType", "timestamp", "sessionId"]
+    },
     "AdminGrant": {
       "title": "Admin Course Grant",
       "type": "object",
@@ -1108,6 +1130,14 @@
   "firestore": {
     "indexes": [
       {
+        "collectionGroup": "tracking_events",
+        "queryScope": "COLLECTION",
+        "fields": [
+          { "fieldPath": "eventType", "order": "ASCENDING" },
+          { "fieldPath": "timestamp", "order": "DESCENDING" }
+        ]
+      },
+      {
         "collectionGroup": "users",
         "queryScope": "COLLECTION_GROUP",
         "fields": [
@@ -1394,7 +1424,9 @@
     "recommended_courses/{userId}": {
       "schema": { "$ref": "#/entities/UserRecommendations" },
       "description": "Personalized course recommendations for a user."
+    },
+    "tracking_events/{eventId}": {
+      "schema": { "$ref": "#/entities/TrackingEvent" }
     }
   }
 }
-
