@@ -27,17 +27,17 @@ interface UserRecommendations {
 }
 
 export function RecommendedCourses() {
-    const { currentUser, isUserLoading } = useRole();
+    const { currentUser, loading } = useRole(); // Utilise l'état de chargement combiné
     const db = getFirestore();
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
     const [isLoadingInstructors, setIsLoadingInstructors] = useState(true);
 
-    // This is the key change: ensure we don't create a ref until the user is loaded and confirmed not to be an admin.
+    // Cette condition est maintenant plus robuste et attend que le rôle soit confirmé.
     const recommendationRef = useMemoFirebase(
-        () => (!isUserLoading && currentUser && currentUser.role !== 'admin') 
-            ? doc(db, 'recommended_courses', currentUser.uid) 
-            : null,
-        [currentUser, isUserLoading, db]
+        () => (loading || !currentUser || currentUser.role === 'admin') 
+            ? null
+            : doc(db, 'recommended_courses', currentUser.uid),
+        [currentUser, loading, db]
     );
 
     const { data: recommendationDoc, isLoading: isRecsLoading } = useDoc<UserRecommendations>(recommendationRef);
@@ -80,14 +80,14 @@ export function RecommendedCourses() {
         fetchInstructors();
     }, [recommendedCourses, db, instructorsMap]);
 
-    const isLoading = isUserLoading || (recommendationRef !== null && (isRecsLoading || isLoadingInstructors));
+    const finalIsLoading = loading || (recommendationRef !== null && (isRecsLoading || isLoadingInstructors));
 
-    // After all hooks, we can return early for admins.
+    // Sécurité supplémentaire : ne jamais rien rendre si c'est un admin.
     if (currentUser?.role === 'admin') {
         return null;
     }
 
-    if (isLoading) {
+    if (finalIsLoading) {
          return (
              <section>
                 <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
