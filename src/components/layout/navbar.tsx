@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,11 +34,11 @@ export function Navbar() {
           <Image src="/icon.svg" alt="Ndara Afrique Logo" width={28} height={28} />
           <span className="text-lg font-bold text-white group-hover:text-primary transition-colors">Ndara Afrique</span>
         </Link>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" asChild>
+        <div className="flex items-center gap-1 md:gap-2">
+          <Button variant="ghost" asChild className="px-3 md:px-4">
             <Link href="/login">Se connecter</Link>
           </Button>
-          <Button asChild className="shadow-cta">
+          <Button asChild className="shadow-cta h-10 px-4 text-sm md:h-11 md:px-6 md:text-base">
             <Link href="/login?tab=register">S'inscrire</Link>
           </Button>
         </div>

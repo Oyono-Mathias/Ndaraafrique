@@ -87,17 +87,17 @@ const MobileMoneySection = ({ onTrackClick }: { onTrackClick: (provider: string)
             Ndara Afrique est intégré avec les solutions de paiement que vous utilisez tous les jours. L'accès à vos formations est instantané.
         </p>
         <div className="mt-12 flex justify-center items-center gap-4 md:gap-8 flex-wrap">
-            <div className="animate-fade-in-up" style={{ animationDelay: `0ms`, animationFillMode: 'both' }} onClick={() => onTrackClick('MTN')}>
+            <div onClick={() => onTrackClick('MTN')}>
                 <div className="flex items-center justify-center h-20 w-44 rounded-xl bg-mtn-yellow shadow-lg cursor-pointer">
                     <span className="font-black text-2xl text-black">MTN</span>
                 </div>
             </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: `150ms`, animationFillMode: 'both' }} onClick={() => onTrackClick('Orange')}>
+            <div onClick={() => onTrackClick('Orange')}>
                  <div className="flex items-center justify-center h-20 w-44 rounded-xl bg-orange-money shadow-lg cursor-pointer">
                     <span className="font-black text-2xl text-white">orange</span>
                 </div>
             </div>
-            <div className="animate-fade-in-up" style={{ animationDelay: `300ms`, animationFillMode: 'both' }} onClick={() => onTrackClick('Wave')}>
+            <div onClick={() => onTrackClick('Wave')}>
                  <div className="flex items-center justify-center h-20 w-44 rounded-xl bg-wave-blue shadow-lg cursor-pointer">
                     <span className="font-black text-3xl text-white">wave</span>
                 </div>
@@ -140,6 +140,17 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     );
 };
 
+const MobileCTA = ({ onClick }: { onClick: () => void }) => (
+  <div className="fixed bottom-0 left-0 right-0 md:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-40">
+    <Button size="lg" asChild className="w-full h-14 text-base shadow-cta" onClick={onClick}>
+      <Link href="/login?tab=register">
+        Commencer maintenant
+        <ArrowRight className="w-5 h-5 ml-2" />
+      </Link>
+    </Button>
+  </div>
+);
+
 let sessionId = '';
 
 export function LandingPageClient() {
@@ -149,52 +160,44 @@ export function LandingPageClient() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Generate or retrieve session ID
     sessionId = sessionStorage.getItem('ndara-session-id') || '';
     if (!sessionId) {
       sessionId = crypto.randomUUID();
       sessionStorage.setItem('ndara-session-id', sessionId);
     }
-
-    // Log page view event
-    logTrackingEvent({
-      eventType: 'page_view',
-      sessionId,
-      pageUrl: '/',
-    });
+    logTrackingEvent({ eventType: 'page_view', sessionId, pageUrl: '/' });
   }, []);
   
-    useEffect(() => {
-        const fetchCoursesAndInstructors = async () => {
-            setIsLoading(true);
-            try {
-                const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(coursesQuery);
-                const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-                setAllCourses(coursesData);
+  useEffect(() => {
+    const fetchCoursesAndInstructors = async () => {
+        setIsLoading(true);
+        try {
+            const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(coursesQuery);
+            const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+            setAllCourses(coursesData);
 
-                const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
-                if (instructorIds.length > 0) {
-                    const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
-                    const usersSnap = await getDocs(usersQuery);
-                    const newInstructors = new Map<string, NdaraUser>();
-                    usersSnap.forEach(doc => {
-                        newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
-                    });
-                    setInstructorsMap(newInstructors);
-                }
-            } catch (error) {
-                console.error("Error fetching landing page data:", error);
-            } finally {
-                setIsLoading(false);
+            const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
+            if (instructorIds.length > 0) {
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
+                const usersSnap = await getDocs(usersQuery);
+                const newInstructors = new Map<string, NdaraUser>();
+                usersSnap.forEach(doc => {
+                    newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
+                });
+                setInstructorsMap(newInstructors);
             }
-        };
+        } catch (error) {
+            console.error("Error fetching landing page data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    fetchCoursesAndInstructors();
+  }, [db]);
 
-        fetchCoursesAndInstructors();
-    }, [db]);
-
-    const popularCourses = useMemo(() => allCourses.filter(c => c.isPopular).slice(0, 12), [allCourses]);
-    const freeCourses = useMemo(() => allCourses.filter(c => c.price === 0).slice(0, 12), [allCourses]);
+  const popularCourses = useMemo(() => allCourses.filter(c => c.isPopular).slice(0, 12), [allCourses]);
+  const freeCourses = useMemo(() => allCourses.filter(c => c.price === 0).slice(0, 12), [allCourses]);
 
   const handleTrackedClick = (eventName: 'cta_click' | 'payment_method_click', metadata?: Record<string, any>) => {
     logTrackingEvent({
@@ -209,7 +212,7 @@ export function LandingPageClient() {
     <div className="bg-background text-foreground min-h-screen">
       <Navbar />
 
-      <main className="container mx-auto px-4 pt-10 pb-16 space-y-24">
+      <main className="container mx-auto px-4 pt-10 pb-24 md:pb-16 space-y-24">
         <section className="text-center pt-24 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white !leading-tight">
             La plateforme de formation <span className="text-primary">conçue pour l'Afrique</span>
@@ -217,7 +220,7 @@ export function LandingPageClient() {
           <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
             Développez des compétences d'avenir avec des cours d'experts. Payez simplement par Mobile Money et prenez votre carrière en main.
           </p>
-          <div className="mt-10 flex justify-center gap-4">
+          <div className="mt-10 hidden md:flex justify-center gap-4">
             <Button
               size="lg"
               asChild
@@ -282,7 +285,7 @@ export function LandingPageClient() {
             <p className="mt-4 text-slate-400 max-w-xl mx-auto">
                 Rejoignez des milliers d'apprenants et de formateurs qui construisent l'Afrique de demain. L'inscription est gratuite.
             </p>
-            <div className="mt-8 flex justify-center">
+            <div className="mt-8 hidden md:flex justify-center">
                 <Button
                   size="lg"
                   asChild
@@ -298,6 +301,9 @@ export function LandingPageClient() {
         </section>
 
       </main>
+      
+      <MobileCTA onClick={() => handleTrackedClick('cta_click', { button: 'mobile_sticky_cta' })} />
+
       <Footer />
     </div>
   );
