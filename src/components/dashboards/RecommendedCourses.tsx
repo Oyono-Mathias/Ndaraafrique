@@ -10,7 +10,7 @@ import { useMemoFirebase } from '@/firebase/provider';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
-import { Sparkles, Edit, Search } from 'lucide-react';
+import { Sparkles, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
@@ -30,19 +30,25 @@ export function RecommendedCourses() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
-    const [isLoadingInstructors, setIsLoadingInstructors] = useState(false);
+    const [isLoadingInstructors, setIsLoadingInstructors] = useState(true);
 
+    // This is the key change: ensure we don't create a ref until the user is loaded and confirmed not to be an admin.
     const recommendationRef = useMemoFirebase(
-        () => (currentUser?.uid && currentUser.role !== 'admin') ? doc(db, 'recommended_courses', currentUser.uid) : null,
-        [currentUser, db]
+        () => (!isUserLoading && currentUser && currentUser.role !== 'admin') 
+            ? doc(db, 'recommended_courses', currentUser.uid) 
+            : null,
+        [currentUser, isUserLoading, db]
     );
 
     const { data: recommendationDoc, isLoading: isRecsLoading } = useDoc<UserRecommendations>(recommendationRef);
 
-    const recommendedCourses = recommendationDoc?.courses || [];
+    const recommendedCourses = useMemo(() => recommendationDoc?.courses || [], [recommendationDoc]);
 
     useEffect(() => {
-        if (recommendedCourses.length === 0) return;
+        if (recommendedCourses.length === 0) {
+            setIsLoadingInstructors(false);
+            return;
+        };
 
         const fetchInstructors = async () => {
             setIsLoadingInstructors(true);
@@ -74,12 +80,13 @@ export function RecommendedCourses() {
         fetchInstructors();
     }, [recommendedCourses, db, instructorsMap]);
 
-    const isLoading = isUserLoading || isRecsLoading || isLoadingInstructors;
+    const isLoading = isUserLoading || (recommendationRef !== null && (isRecsLoading || isLoadingInstructors));
 
+    // After all hooks, we can return early for admins.
     if (currentUser?.role === 'admin') {
         return null;
     }
-    
+
     if (isLoading) {
          return (
              <section>
@@ -114,7 +121,6 @@ export function RecommendedCourses() {
         );
     }
     
-    // Convert RecommendedCourseItem to a shape CourseCard can use
     const coursesForCard: Course[] = recommendedCourses.map(rec => ({
         id: rec.courseId,
         title: rec.title,
