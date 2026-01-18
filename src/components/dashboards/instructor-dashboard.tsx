@@ -22,7 +22,7 @@ interface RevenueDataPoint {
     revenue: number;
 }
 
-function InstructorDashboardContent() {
+export function InstructorDashboard() {
     const { currentUser: instructor, isUserLoading: roleLoading } = useRole();
     const db = getFirestore();
 
