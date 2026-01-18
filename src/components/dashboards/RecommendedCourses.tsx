@@ -33,8 +33,8 @@ export function RecommendedCourses() {
     const [isLoadingInstructors, setIsLoadingInstructors] = useState(false);
 
     const recommendationRef = useMemoFirebase(
-        () => currentUser?.uid ? doc(db, 'recommended_courses', currentUser.uid) : null,
-        [currentUser?.uid, db]
+        () => (currentUser?.uid && currentUser.role !== 'admin') ? doc(db, 'recommended_courses', currentUser.uid) : null,
+        [currentUser, db]
     );
 
     const { data: recommendationDoc, isLoading: isRecsLoading } = useDoc<UserRecommendations>(recommendationRef);
@@ -76,12 +76,9 @@ export function RecommendedCourses() {
 
     const isLoading = isUserLoading || isRecsLoading || isLoadingInstructors;
 
-    if (isUserLoading) {
+    if (currentUser?.role === 'admin') {
         return null;
     }
-    
-    // Prompt to complete profile if interestDomain is missing - This logic is now handled by the backend generating recommendations.
-    // If no recommendations, we show a generic exploration message.
     
     if (isLoading) {
          return (
