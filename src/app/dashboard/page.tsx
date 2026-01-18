@@ -10,24 +10,24 @@ import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function DashboardPage() {
-  const { role, isUserLoading, user, currentUser } = useRole();
+  const { role, loading, user, currentUser } = useRole();
   const router = useRouter();
 
   useEffect(() => {
     // If loading is done and there's no user, redirect to login.
-    if (!isUserLoading && !user) {
+    if (!loading && !user) {
       router.push('/');
       return;
     }
     
     // If the user's primary role is admin AND they have selected the admin role, redirect to /admin
-    if (!isUserLoading && user && currentUser?.role === 'admin' && role === 'admin') {
+    if (!loading && user && currentUser?.role === 'admin' && role === 'admin') {
       router.push('/admin');
     }
-  }, [isUserLoading, user, currentUser, role, router]);
+  }, [loading, user, currentUser, role, router]);
 
-  // Determine if the loader should be shown.
-  const showLoader = isUserLoading || !user || (currentUser?.role === 'admin' && role === 'admin');
+  // Use the combined loading state. Redirect logic is handled in useEffect.
+  const showLoader = loading;
 
   // Always return a stable component structure.
   // Toggle visibility using `hidden` class instead of conditional rendering.
