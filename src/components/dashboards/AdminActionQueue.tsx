@@ -50,19 +50,19 @@ export function AdminActionQueue() {
     const { currentUser } = useRole();
 
     const { data: pendingCourses, isLoading: loadingCourses } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Pending Review')), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null, [db, currentUser])
     );
     const { data: pendingInstructors, isLoading: loadingInstructors } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null, [db, currentUser])
     );
     const { data: pendingPayouts, isLoading: loadingPayouts } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'payouts'), where('status', '==', 'en_attente')), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null, [db, currentUser])
     );
     const { data: openTickets, isLoading: loadingTickets } = useCollection(
         useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null, [db, currentUser])
     );
     const { data: suspiciousPayments, isLoading: loadingPayments } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'payments'), where('fraudReview.isSuspicious', '==', true)), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'payments'), where('fraudReview.isSuspicious', '==', true)) : null, [db, currentUser])
     );
     
     const isLoading = loadingCourses || loadingInstructors || loadingPayouts || loadingTickets || loadingPayments;

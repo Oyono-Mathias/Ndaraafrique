@@ -11,6 +11,7 @@ import { ShieldAlert, UserCheck, Landmark, Settings, Users, ArrowRight } from 'l
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useRole } from '@/context/RoleContext';
 
 
 interface QuickActionCardProps {
@@ -66,18 +67,19 @@ const QuickActionCard = ({ title, link, icon: Icon, isLoading, alerts = [] }: Qu
 
 export function AdminQuickActions() {
     const db = getFirestore();
+    const { currentUser } = useRole();
 
     const { data: pendingCourses, isLoading: loadingCourses } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Pending Review')), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null, [db, currentUser])
     );
     const { data: pendingPayouts, isLoading: loadingPayouts } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'payouts'), where('status', '==', 'en_attente')), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null, [db, currentUser])
     );
      const { data: pendingInstructors, isLoading: loadingInstructors } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null, [db, currentUser])
     );
     const { data: suspendedUsers, isLoading: loadingSuspended } = useCollection(
-        useMemoFirebase(() => query(collection(db, 'users'), where('status', '==', 'suspended')), [db])
+        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('status', '==', 'suspended')) : null, [db, currentUser])
     );
     
     const isLoading = loadingCourses || loadingPayouts || loadingInstructors || loadingSuspended;

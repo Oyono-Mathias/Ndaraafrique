@@ -194,13 +194,13 @@ export default function InstructorApplicationsPage() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   const applicationsQuery = useMemoFirebase(
-    () => query(
+    () => adminUser?.role === 'admin' ? query(
         collection(db, 'users'), 
         where('role', '==', 'instructor'), 
         where('isInstructorApproved', '==', false),
         orderBy('createdAt', 'desc')
-    ),
-    [db]
+    ) : null,
+    [db, adminUser]
   );
   const { data: applications, isLoading: applicationsLoading } = useCollection<Application>(applicationsQuery);
 
@@ -222,7 +222,7 @@ export default function InstructorApplicationsPage() {
   };
 
 
-  if (adminUser?.role !== 'admin') {
+  if (adminUser?.role !== 'admin' && !isUserLoading) {
     return <div className="p-8 text-center">Accès non autorisé à cette page.</div>;
   }
 
@@ -292,5 +292,3 @@ export default function InstructorApplicationsPage() {
     </>
   );
 }
-
-    
