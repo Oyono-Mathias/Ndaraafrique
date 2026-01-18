@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { ContinueLearning } from './ContinueLearning';
 import { RecommendedCourses } from './RecommendedCourses';
 import { RecentActivity } from './RecentActivity';
+import { useRole } from '@/context/RoleContext';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
@@ -53,6 +54,7 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
 };
 
 export function StudentDashboard() {
+  const { currentUser } = useRole();
   const db = getFirestore();
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
@@ -125,7 +127,7 @@ export function StudentDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2 space-y-12">
                 <ContinueLearning />
-                <RecommendedCourses />
+                {currentUser?.role !== 'admin' && <RecommendedCourses />}
             </div>
             <div className="lg:col-span-1">
                 <RecentActivity />
