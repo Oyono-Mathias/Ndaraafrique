@@ -6,7 +6,7 @@ import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, getFirestore, orderBy, limit } from 'firebase/firestore';
-import type { CourseProgress } from '@/lib/types';
+import type { CourseProgress, Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookOpen, Play } from 'lucide-react';
 import Link from 'next/link';
@@ -14,53 +14,24 @@ import Image from 'next/image';
 import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';
 import { cn } from '@/lib/utils';
+import { CourseCard } from '../cards/CourseCard';
 
 const ContinueLearningCard = ({ item }: { item: CourseProgress }) => {
-    const progress = item.progressPercent || 0;
-    const progressColorClass = cn({
-        "bg-red-500": progress < 40,
-        "bg-amber-500": progress >= 40 && progress < 80,
-        "bg-green-500": progress >= 80,
-    });
+    // Adapt CourseProgress to look like a Course for CourseCard
+    const courseForCard: Course = {
+        id: item.courseId,
+        title: item.courseTitle,
+        imageUrl: item.courseCover,
+        progress: item.progressPercent,
+        // Add dummy values for other required props
+        description: '',
+        category: '',
+        price: 0,
+        status: 'Published',
+        instructorId: '' // No instructor info in CourseProgress, so pass empty/null
+    };
 
-    return (
-        <div className="w-full h-full glassmorphism-card rounded-2xl overflow-hidden group flex flex-col">
-            <Link href={`/courses/${item.courseId}`} className="block">
-                <div className="relative aspect-video overflow-hidden bg-slate-800">
-                    <Image
-                        src={item.courseCover || `https://picsum.photos/seed/${item.courseId}/400/225`}
-                        alt={item.courseTitle}
-                        fill
-                        className="object-cover transition-all duration-300 group-hover:scale-105"
-                        loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                </div>
-            </Link>
-            <div className="p-4 flex flex-col flex-grow">
-                <Link href={`/courses/${item.courseId}`} className="block">
-                    <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{item.courseTitle}</h3>
-                </Link>
-                <div className="flex-grow" />
-                <div className="mt-4 space-y-2">
-                     <div>
-                        {progress > 0 && (
-                            <p className="text-xs text-center text-slate-400 mb-1">
-                                Plus que {100 - progress}% pour obtenir votre certificat !
-                            </p>
-                        )}
-                        <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
-                    </div>
-                    <Button size="sm" className="w-full font-bold bg-primary hover:bg-primary/90" asChild>
-                        <Link href={`/courses/${item.courseId}`}>
-                            <Play className="h-4 w-4 mr-2"/>
-                            Continuer
-                        </Link>
-                    </Button>
-                </div>
-            </div>
-        </div>
-    );
+    return <CourseCard course={courseForCard} instructor={null} variant="student" />;
 };
 
 

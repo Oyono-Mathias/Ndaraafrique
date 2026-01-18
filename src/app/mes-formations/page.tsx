@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/hooks';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BookOpen } from 'lucide-react';
 import type { Course, Enrollment, NdaraUser } from '@/lib/types';
 import { CourseCard } from '@/components/cards/CourseCard';
+import { useTranslations } from 'next-intl';
 
 interface EnrolledCourse extends Course {
   progress: number;
@@ -22,6 +23,7 @@ interface EnrolledCourse extends Course {
 export default function MyLearningPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
+  const t = useTranslations();
   const [courses, setCourses] = useState<EnrolledCourse[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -51,7 +53,7 @@ export default function MyLearningPage() {
       const coursesMap = new Map<string, Course>();
       if (courseIds.length > 0) {
           const coursesRef = collection(db, 'courses');
-          const q = query(coursesRef, where('__name__', 'in', courseIds.slice(0, 30)));
+          const q = query(coursesRef, where(documentId(), 'in', courseIds.slice(0, 30)));
           const courseSnap = await getDocs(q);
           courseSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
       }
@@ -97,15 +99,15 @@ export default function MyLearningPage() {
   return (
     <div className="space-y-6">
       <header>
-        <h1 className="text-3xl font-bold dark:text-white">Mes Cours</h1>
+        <h1 className="text-3xl font-bold dark:text-white">{t('Nav.courses')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">Reprenez là où vous vous êtes arrêté.</p>
       </header>
 
       <Tabs defaultValue="all" className="w-full">
         <TabsList className="grid w-full grid-cols-3 dark:bg-slate-800 dark:text-slate-300 dark:data-[state=active]:bg-background">
-          <TabsTrigger value="all">Tous</TabsTrigger>
-          <TabsTrigger value="in-progress">En cours</TabsTrigger>
-          <TabsTrigger value="completed">Terminés</TabsTrigger>
+          <TabsTrigger value="all">{t('all')}</TabsTrigger>
+          <TabsTrigger value="in-progress">{t('in_progress')}</TabsTrigger>
+          <TabsTrigger value="completed">{t('completed')}</TabsTrigger>
         </TabsList>
 
         <div className="mt-6">
@@ -125,6 +127,7 @@ export default function MyLearningPage() {
 }
 
 const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit à aucun cours." }: { courses: EnrolledCourse[], isLoading: boolean, emptyMessage?: string }) => {
+    const t = useTranslations();
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -141,7 +144,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit �
                 <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-300">{emptyMessage}</h3>
                 <Button asChild variant="link" className="mt-2">
-                    <Link href="/dashboard">Parcourir les cours</Link>
+                    <Link href="/dashboard">{t('browseCourses')}</Link>
                 </Button>
             </div>
         );
