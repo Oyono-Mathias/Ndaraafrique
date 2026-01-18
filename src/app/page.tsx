@@ -3,7 +3,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Award, ShieldCheck, Wallet, ArrowRight } from 'lucide-react';
+import { Award, ShieldCheck, Wallet, ArrowRight, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
 import { useRole } from '@/context/RoleContext';
@@ -12,6 +12,8 @@ import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
 import { HowItWorks } from '@/components/landing/HowItWorks';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -22,6 +24,55 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
     <p className="text-sm text-slate-400 mt-2">{description}</p>
   </div>
 );
+
+const TrustAndSecuritySection = () => {
+    const securityImage = PlaceHolderImages.find(img => img.id === 'payment-security');
+
+    return (
+        <section className="py-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div className="relative h-80 lg:h-[450px] w-full">
+                    {securityImage && (
+                        <Image
+                            src={securityImage.imageUrl}
+                            alt={securityImage.description}
+                            fill
+                            className="object-cover rounded-2xl shadow-2xl"
+                            data-ai-hint={securityImage.imageHint}
+                        />
+                    )}
+                </div>
+                <div className="space-y-6">
+                    <div className="inline-block px-3 py-1 bg-primary/10 text-primary text-sm font-semibold rounded-full">
+                        Sécurité des transactions
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-extrabold text-white">
+                        Une plateforme de confiance pour vos paiements
+                    </h2>
+                    <p className="text-slate-400">
+                        Chaque transaction est protégée par des technologies de chiffrement avancées. Nous collaborons avec des leaders du paiement pour garantir la sécurité et la traçabilité de chaque franc dépensé.
+                    </p>
+                    <ul className="space-y-4">
+                        <li className="flex items-start gap-3">
+                            <ShieldCheck className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                            <div>
+                                <h4 className="font-semibold text-white">Chiffrement de bout-en-bout</h4>
+                                <p className="text-sm text-slate-400">Vos informations de paiement sont sécurisées à chaque étape.</p>
+                            </div>
+                        </li>
+                        <li className="flex items-start gap-3">
+                            <Lock className="w-5 h-5 text-primary flex-shrink-0 mt-1" />
+                            <div>
+                                <h4 className="font-semibold text-white">Partenaires de paiement certifiés</h4>
+                                <p className="text-sm text-slate-400">Nous ne travaillons qu'avec des passerelles de paiement reconnues pour leur fiabilité.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+    );
+};
 
 export default function LandingPage() {
   const { user, isUserLoading } = useRole();
@@ -83,6 +134,8 @@ export default function LandingPage() {
         </section>
         
         <HowItWorks />
+
+        <TrustAndSecuritySection />
 
       </main>
       <Footer />

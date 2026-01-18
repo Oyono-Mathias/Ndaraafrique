@@ -35,6 +35,12 @@
       "description": "A digital certificate of completion on a screen.",
       "imageUrl": "https://images.unsplash.com/photo-1593113598332-cd288d649433?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
       "imageHint": "certificate screen"
+    },
+    {
+      "id": "payment-security",
+      "description": "Abstract image of a padlock on a screen with code, representing digital security.",
+      "imageUrl": "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageHint": "digital security"
     }
   ]
 }
