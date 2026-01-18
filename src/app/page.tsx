@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -76,7 +77,7 @@ export default function LandingPage() {
             <FeatureCard
               icon={Award}
               title="Certification Reconnue"
-              description="Obtenez des certificats à la fin de chaque formation pour valider vos nouvelles compétences."
+              description="Obtenez des certificats à la fin de chaque formation pour valider vos nouvelles compétences auprès des employeurs."
             />
           </div>
         </section>
