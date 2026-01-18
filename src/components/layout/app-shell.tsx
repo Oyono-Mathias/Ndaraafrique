@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -53,6 +54,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
   const isLaunchPage = pathname.startsWith('/launch');
   const isPublicPage = PUBLIC_PATHS.some(p => p === '/' ? pathname === p : pathname.startsWith(p));
+  
+  const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
+  const showAppContent = isPublicPage || (!isUserLoading && user);
+  const showLoader = !isPublicPage && !isUserLoading && !user;
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');
@@ -70,19 +75,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
   
-  if (isAuthPage || isLaunchPage) {
-    return <>{children}</>;
-  }
-
-  const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
-  const showAppContent = isPublicPage || (!isUserLoading && user);
-  const showLoader = !isPublicPage && !isUserLoading && !user;
-
   useEffect(() => {
     if (showLoader) {
       router.push('/login');
     }
   }, [showLoader, router]);
+
+  if (isAuthPage || isLaunchPage) {
+    return <>{children}</>;
+  }
 
   const handleSidebarLinkClick = () => {
       setIsSheetOpen(false);
