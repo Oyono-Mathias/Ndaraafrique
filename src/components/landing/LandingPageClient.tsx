@@ -1,9 +1,9 @@
 
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Award, ShieldCheck, Wallet, ArrowRight, Lock, Users, Briefcase } from 'lucide-react';
+import { Award, ShieldCheck, Wallet, ArrowRight, Lock, Users, Briefcase, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
 import { Navbar } from '@/components/layout/navbar';
@@ -12,6 +12,12 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Stats } from '@/components/landing/Stats';
 import { logTrackingEvent } from '@/app/actions/trackingActions';
+import { DynamicCarousel } from '../ui/DynamicCarousel';
+import { Course, NdaraUser } from '@/lib/types';
+import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
+import { CourseCard } from '../cards/CourseCard';
+import { Skeleton } from '../ui/skeleton';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -100,12 +106,51 @@ const MobileMoneySection = ({ onTrackClick }: { onTrackClick: (provider: string)
     </section>
 );
 
+const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
+    if (isLoading && courses.length === 0) {
+        return (
+            <section>
+                <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
+                <div className="flex space-x-6">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="w-[280px] shrink-0">
+                           <Skeleton className="h-80 rounded-2xl bg-slate-800" />
+                        </div>
+                    ))}
+                </div>
+            </section>
+        );
+    }
+    if (!courses || courses.length === 0) {
+        return null;
+    }
+    return (
+        <section>
+            <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
+             <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                <CarouselContent className="-ml-6">
+                    {courses.map(course => (
+                        <CarouselItem key={course.id} className="pl-6 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
+                        </CarouselItem>
+                    ))}
+                </CarouselContent>
+            </Carousel>
+        </section>
+    );
+};
+
 let sessionId = '';
 
 export function LandingPageClient() {
+  const db = getFirestore();
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     // Generate or retrieve session ID
-    sessionId = sessionStorage.getItem('ndara-session-id');
+    sessionId = sessionStorage.getItem('ndara-session-id') || '';
     if (!sessionId) {
       sessionId = crypto.randomUUID();
       sessionStorage.setItem('ndara-session-id', sessionId);
@@ -118,6 +163,38 @@ export function LandingPageClient() {
       pageUrl: '/',
     });
   }, []);
+  
+    useEffect(() => {
+        const fetchCoursesAndInstructors = async () => {
+            setIsLoading(true);
+            try {
+                const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
+                const querySnapshot = await getDocs(coursesQuery);
+                const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+                setAllCourses(coursesData);
+
+                const instructorIds = [...new Set(coursesData.map(c => c.instructorId))].filter(Boolean);
+                if (instructorIds.length > 0) {
+                    const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds));
+                    const usersSnap = await getDocs(usersQuery);
+                    const newInstructors = new Map<string, NdaraUser>();
+                    usersSnap.forEach(doc => {
+                        newInstructors.set(doc.data().uid, doc.data() as NdaraUser);
+                    });
+                    setInstructorsMap(newInstructors);
+                }
+            } catch (error) {
+                console.error("Error fetching landing page data:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCoursesAndInstructors();
+    }, [db]);
+
+    const popularCourses = useMemo(() => allCourses.filter(c => c.isPopular).slice(0, 12), [allCourses]);
+    const freeCourses = useMemo(() => allCourses.filter(c => c.price === 0).slice(0, 12), [allCourses]);
 
   const handleTrackedClick = (eventName: 'cta_click' | 'payment_method_click', metadata?: Record<string, any>) => {
     logTrackingEvent({
@@ -132,8 +209,8 @@ export function LandingPageClient() {
     <div className="bg-background text-foreground min-h-screen">
       <Navbar />
 
-      <main className="container mx-auto px-4 pt-32 pb-16">
-        <section className="text-center max-w-3xl mx-auto">
+      <main className="container mx-auto px-4 pt-10 pb-16 space-y-24">
+        <section className="text-center pt-24 max-w-4xl mx-auto">
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white !leading-tight">
             La plateforme de formation <span className="text-primary">conçue pour l'Afrique</span>
           </h1>
@@ -153,12 +230,12 @@ export function LandingPageClient() {
             </Button>
           </div>
         </section>
+        
+        <DynamicCarousel />
+        
+        <Stats />
 
-        <section className="py-24">
-            <Stats />
-        </section>
-
-        <section className="py-12">
+        <section>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FeatureCard
               icon={Wallet}
@@ -184,7 +261,21 @@ export function LandingPageClient() {
 
         <TrustAndSecuritySection />
 
-        <section className="py-24 text-center">
+        <CourseCarousel 
+            title="Formations populaires"
+            courses={popularCourses}
+            instructorsMap={instructorsMap}
+            isLoading={isLoading}
+        />
+
+         <CourseCarousel 
+            title="Commencez gratuitement"
+            courses={freeCourses}
+            instructorsMap={instructorsMap}
+            isLoading={isLoading}
+        />
+
+        <section className="py-12 text-center">
             <h2 className="text-3xl md:text-4xl font-extrabold text-white">
                 Prêt à transformer votre avenir ?
             </h2>
