@@ -18,7 +18,7 @@ export function Footer() {
                     <h3 className="text-2xl font-bold text-white group-hover:text-primary transition-colors">Ndara Afrique</h3>
                 </Link>
                 <p className="text-gray-400 text-sm leading-relaxed max-w-xs">
-                L'excellence par le savoir. La plateforme panafricaine pour les leaders de demain.
+                  L'excellence par le savoir. Construisons l'Afrique de demain.
                 </p>
             </div>
 

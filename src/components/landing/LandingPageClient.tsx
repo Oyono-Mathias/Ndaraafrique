@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { Award, ShieldCheck, Wallet, ArrowRight, Lock, Users, Briefcase, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -51,10 +51,10 @@ const TrustAndSecuritySection = () => {
                         Sécurité des transactions
                     </div>
                     <h2 className="text-3xl md:text-4xl font-extrabold text-white">
-                        Une plateforme de confiance pour vos paiements
+                        Une plateforme de confiance pour votre investissement
                     </h2>
                     <p className="text-slate-400">
-                        Chaque transaction est protégée par des technologies de chiffrement avancées. Nous collaborons avec des leaders du paiement pour garantir la sécurité et la traçabilité de chaque franc dépensé.
+                        Chaque transaction est protégée par un chiffrement de pointe. En partenariat avec les leaders du paiement, nous garantissons la sécurité et la traçabilité de chaque franc investi dans votre avenir.
                     </p>
                     <ul className="space-y-4">
                         <li className="flex items-start gap-3">
@@ -215,7 +215,7 @@ export function LandingPageClient() {
             La plateforme de formation <span className="text-primary">conçue pour l'Afrique</span>
           </h1>
           <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
-            Accédez à des compétences d'avenir, payez simplement avec votre mobile, et construisez votre futur.
+            Développez des compétences d'avenir avec des cours d'experts. Payez simplement par Mobile Money et prenez votre carrière en main.
           </p>
           <div className="mt-10 flex justify-center gap-4">
             <Button
