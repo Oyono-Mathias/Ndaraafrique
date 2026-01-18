@@ -12,6 +12,12 @@ interface TrackingEvent {
 }
 
 export async function logTrackingEvent(event: TrackingEvent): Promise<{ success: boolean; error?: string }> {
+  // Gracefully fail if the admin SDK is not initialized
+  if (!adminDb) {
+    console.warn("logTrackingEvent skipped: Firebase Admin SDK not initialized.");
+    return { success: true }; // Return success to not block client flow
+  }
+
   try {
     const eventRef = adminDb.collection('tracking_events').doc();
     await eventRef.set({

@@ -28,9 +28,14 @@ export async function startChat(
   currentUserId: string,
   contactId: string,
 ): Promise<string> {
+  if (!adminDb) {
+    throw new Error("La messagerie est temporairement indisponible.");
+  }
+  
   if (currentUserId === contactId) {
     throw new Error("Impossible de démarrer une conversation avec soi-même.");
   }
+
   const db = adminDb;
   const chatsRef = db.collection('chats');
   const sortedParticipants = [currentUserId, contactId].sort();

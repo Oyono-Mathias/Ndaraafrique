@@ -1,8 +1,18 @@
+
 'use server';
 
 import { adminDb } from '@/firebase/admin';
 
 export async function getPublicStats() {
+  // Gracefully fail if the admin SDK is not initialized (e.g., missing env var)
+  if (!adminDb) {
+    console.warn("getPublicStats skipped: Firebase Admin SDK not initialized.");
+    return {
+      success: true,
+      data: { studentCount: 0, instructorCount: 0 },
+    };
+  }
+
   try {
     // This is more performant than getting all documents
     const usersCollection = adminDb.collection('users');
