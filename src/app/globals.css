@@ -4,16 +4,16 @@
 
 @layer base {
   :root {
-    --background: 224 71% 4%;
+    --background: 224 71% 4%; /* Deep, professional blue-black */
     --foreground: 210 20% 98%;
 
-    --card: 224 71% 9%;
+    --card: 224 71% 9%; /* Slightly lighter than bg for depth */
     --card-foreground: 210 20% 98%;
     
     --popover: 224 71% 4%;
     --popover-foreground: 210 20% 98%;
     
-    --primary: 217 91% 60%;
+    --primary: 142 76% 36%; /* Vibrant, energetic green */
     --primary-foreground: 210 20% 98%;
     
     --secondary: 215 28% 17%;
@@ -22,7 +22,7 @@
     --muted: 215 28% 17%;
     --muted-foreground: 215 20% 65%;
     
-    --accent: 215 28% 25%;
+    --accent: 142 76% 28%; /* Darker green for accents */
     --accent-foreground: 210 20% 98%;
     
     --destructive: 0 72% 51%;
@@ -34,43 +34,34 @@
     --border: 215 28% 17%;
     --input: 215 28% 17%;
     
-    --ring: 217 91% 60%;
+    --ring: 142 76% 40%; /* Ring color based on primary green */
     
     --radius: 0.75rem;
   }
 
   .dark {
+    /* Same as :root for a forced dark theme */
     --background: 224 71% 4%;
     --foreground: 210 20% 98%;
-
     --card: 224 71% 9%;
     --card-foreground: 210 20% 98%;
-    
     --popover: 224 71% 4%;
     --popover-foreground: 210 20% 98%;
-    
-    --primary: 217 91% 60%;
+    --primary: 142 76% 36%;
     --primary-foreground: 210 20% 98%;
-    
     --secondary: 215 28% 17%;
     --secondary-foreground: 210 20% 98%;
-    
     --muted: 215 28% 17%;
     --muted-foreground: 215 20% 65%;
-    
-    --accent: 215 28% 25%;
+    --accent: 142 76% 28%;
     --accent-foreground: 210 20% 98%;
-    
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
-    
     --success: 142 76% 36%;
     --warning: 48 96% 53%;
-
     --border: 215 28% 17%;
     --input: 215 28% 17%;
-    
-    --ring: 217 91% 60%;
+    --ring: 142 76% 40%;
   }
 }
 
@@ -81,136 +72,5 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
-  }
-  
-  /* Reusable Component Classes */
-  .nd-hero {
-    @apply text-4xl font-extrabold tracking-tight md:text-6xl;
-  }
-  .nd-card {
-    @apply bg-card text-card-foreground rounded-xl border shadow-card transition-shadow hover:shadow-card-hover;
-  }
-  .nd-cta-primary {
-    @apply bg-primary text-primary-foreground font-bold shadow-cta rounded-full px-8 py-3 transition-transform hover:scale-105;
-  }
-  .nd-cta-secondary {
-    @apply bg-secondary text-secondary-foreground font-semibold rounded-full px-6 py-2 border hover:bg-accent;
-  }
-  .nd-badge {
-    @apply inline-block rounded-full border px-3 py-1 text-xs font-semibold;
-  }
-  .nd-table-small {
-    @apply w-full text-sm;
-  }
-  .nd-table-small th {
-    @apply text-left font-medium text-muted-foreground p-2;
-  }
-  .nd-table-small td {
-    @apply p-2;
-  }
-  .nd-skeleton {
-    @apply bg-muted animate-pulse rounded-md;
-  }
-  .nd-footer-link {
-    @apply text-muted-foreground hover:text-foreground transition-colors;
-  }
-
-  /* Glassmorphism Card Style */
-  .glassmorphism-card {
-    @apply bg-slate-800/30 backdrop-blur-xl border border-slate-700/50 rounded-2xl;
-  }
-
-  /* Accessibility & Mobile */
-  :focus-visible {
-    @apply ring-2 ring-ring ring-offset-2 ring-offset-background;
-  }
-  
-  /* Custom Scrollbar for dark theme */
-  .dark ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  .dark ::-webkit-scrollbar-track {
-    background: hsl(var(--background) / 0.5);
-  }
-  .dark ::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary) / 0.5);
-    border-radius: 10px;
-  }
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--primary));
-  }
-  
-  /* Layout Grids */
-  .admin-grid-layout {
-    display: grid;
-    grid-template-rows: auto 1fr;
-  }
-  @media (min-width: 768px) {
-    .admin-grid-layout {
-      grid-template-columns: 280px 1fr;
-      grid-template-rows: 1fr;
-    }
-  }
-
-  .admin-sidebar-container {
-    height: 100vh;
-    position: sticky;
-    top: 0;
-  }
-
-   /* Chat specific styles */
-  .chat-background {
-    background-color: #0b141a;
-    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%231a2831' fill-opacity='0.4' fill-rule='evenodd'%3E%3Cpath d='M0 40L40 0H20L0 20M40 40V20L20 40'/%3E%3C/g%3E%3C/svg%3E");
-  }
-
-  .chat-bubble-sent::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: -6px;
-    width: 0px;
-    height: 0px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid;
-    @apply text-[#dcf8c6] dark:text-[#075e54];
-  }
-  
-  .chat-bubble-received::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -6px;
-    width: 0px;
-    height: 0px;
-    border-left: 10px solid transparent;
-    border-right: 10px solid transparent;
-    border-top: 10px solid;
-    @apply text-white dark:text-slate-700;
-  }
-
-  .ai-avatar::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    border: 2px solid hsl(var(--primary));
-    animation: ai-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes ai-pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(1.2); }
-  }
-
-  @keyframes logoPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 hsla(var(--primary)/0.7); }
-    50% { transform: scale(1.05); box-shadow: 0 0 20px 10px hsla(var(--primary)/0); }
-  }
-   @keyframes logoSheen {
-    0% { transform: translateX(-150%) skewX(-15deg); }
-    100% { transform: translateX(150%) skewX(-15deg); }
   }
 }

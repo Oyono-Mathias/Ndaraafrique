@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -72,7 +71,7 @@ export default {
       boxShadow: {
         'card': '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
         'card-hover': '0 6px 20px 0 rgba(0, 0, 0, 0.07)',
-        'cta': '0 4px 20px 0 hsla(var(--primary) / 0.25)',
+        'cta': '0 4px 25px 0 hsla(var(--primary) / 0.3)',
       },
       keyframes: {
         'accordion-down': {
