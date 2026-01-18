@@ -485,7 +485,7 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
   const db = getFirestore();
-  const { currentUser } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const [users, setUsers] = useState<NdaraUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -508,8 +508,13 @@ export default function AdminUsersPage() {
   }, [db]);
 
   useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    if (isUserLoading) return;
+    if (currentUser?.role === 'admin') {
+      fetchUsers();
+    } else {
+      setIsLoading(false);
+    }
+  }, [fetchUsers, currentUser, isUserLoading]);
   
   const handleUserUpdate = (userId: string, update: Partial<NdaraUser>) => {
       setUsers(prevUsers => {
@@ -669,5 +674,3 @@ export default function AdminUsersPage() {
     </div>
   );
 }
-
-    

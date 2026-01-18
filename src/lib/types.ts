@@ -211,6 +211,7 @@ export interface CourseQuestion {
   id: string;
   courseId: string;
   studentId: string;
+  instructorId: string;
   title: string;
   body: string;
   createdAt: Timestamp;
@@ -322,10 +323,10 @@ export interface SecurityLog {
 export interface AdminAuditLog {
   id: string;
   adminId: string;
-  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update';
+  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update' | 'settings.update' | 'user.delete' | 'user.import' | 'instructor.application' | 'course.grant';
   target: {
     id: string;
-    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role';
+    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role' | 'settings' | 'enrollment';
   };
   timestamp: Timestamp;
   details: string;

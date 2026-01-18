@@ -85,7 +85,7 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
 
 
 export default function AdminPaymentsPage() {
-  const { currentUser: adminUser } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
@@ -96,6 +96,11 @@ export default function AdminPaymentsPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (isUserLoading || currentUser?.role !== 'admin') {
+      if(!isUserLoading) setIsLoading(false);
+      return;
+    }
+
     const fetchPayments = async () => {
         setIsLoading(true);
         setError(null);
@@ -110,12 +115,12 @@ export default function AdminPaymentsPage() {
         }
     }
     fetchPayments();
-  }, [db]);
+  }, [db, currentUser, isUserLoading]);
 
 
   useEffect(() => {
     if (payments.length === 0) {
-        setIsLoading(false);
+        if (!isLoading) setIsLoading(false); // Only set loading to false if we're not already loading payments
         return;
     }
 
@@ -144,7 +149,7 @@ export default function AdminPaymentsPage() {
         setIsLoading(false);
     }
     fetchDetails();
-  }, [payments, db]);
+  }, [payments, db, isLoading]);
 
   const filteredPayments = useMemo(() => {
     if (!debouncedSearchTerm) return enrichedPayments;

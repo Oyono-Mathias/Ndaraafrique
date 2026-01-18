@@ -55,7 +55,7 @@ export async function resolveSecurityItem(params: ResolveSecurityItemParams): Pr
     batch.set(auditLogRef, {
       adminId: adminId,
       eventType: 'security.resolve',
-      target: { id: itemId, type: itemType },
+      target: { id: itemId, type: itemType as 'payment' | 'security_log' },
       details: `Admin ${adminId} resolved security item '${targetEntity}'.`,
       timestamp: FieldValue.serverTimestamp(),
     });

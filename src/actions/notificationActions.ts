@@ -14,8 +14,8 @@ interface NotificationPayload {
 }
 
 const findUserByFCMToken = async (token: string): Promise<{userId: string; token: string} | null> => {
-    const usersCollection = adminDb.collectionGroup('fcmTokens');
-    const snapshot = await usersCollection.where('tokens', 'array-contains', token).limit(1).get();
+    const fcmTokensCollection = adminDb.collectionGroup('fcmTokens');
+    const snapshot = await fcmTokensCollection.where('tokens', 'array-contains', token).limit(1).get();
     
     if (!snapshot.empty) {
         const userDoc = snapshot.docs[0];
@@ -29,7 +29,7 @@ const findUserByFCMToken = async (token: string): Promise<{userId: string; token
 
 const cleanupInvalidTokens = async (tokensToRemove: string[], userId: string) => {
     if (tokensToRemove.length > 0 && userId) {
-        const userFcmTokensRef = adminDb.collection('fcmTokens').doc(userId);
+        const userFcmTokensRef = adminDb.collection('users').doc(userId).collection('fcmTokens').doc('tokens');
         await userFcmTokensRef.update({
             tokens: FieldValue.arrayRemove(...tokensToRemove)
         });
@@ -91,11 +91,11 @@ const sendNotifications = async (tokens: string[], payload: NotificationPayload)
 
 // --- Global Notification to ALL users with a token ---
 export async function sendGlobalNotification(payload: NotificationPayload): Promise<{ success: boolean; message: string; }> {
-    const usersSnapshot = await adminDb.collectionGroup('fcmTokens').get();
-    if(usersSnapshot.empty) return { success: true, message: "Aucun utilisateur avec un jeton de notification." };
+    const fcmTokensSnapshot = await adminDb.collectionGroup('fcmTokens').get();
+    if(fcmTokensSnapshot.empty) return { success: true, message: "Aucun utilisateur avec un jeton de notification." };
     
     const allTokens: string[] = [];
-    usersSnapshot.forEach(doc => {
+    fcmTokensSnapshot.forEach(doc => {
         const tokens = doc.data().tokens;
         if(Array.isArray(tokens)) {
             allTokens.push(...tokens);
@@ -115,16 +115,14 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
   const adminIds = adminsSnapshot.docs.map(doc => doc.id);
   const adminUsersData = adminsSnapshot.docs.map(doc => doc.data() as DocumentData);
 
-  const fcmTokensQuery = adminDb.collection('fcmTokens').where(admin.firestore.FieldPath.documentId(), 'in', adminIds);
-  const fcmTokensSnapshot = await fcmTokensQuery.get();
-
   const adminTokens: string[] = [];
-  
-  fcmTokensSnapshot.forEach(doc => {
-      const user = adminUsersData.find(u => u.uid === doc.id);
+
+  for (const adminId of adminIds) {
+    const fcmTokensSnapshot = await adminDb.collection('users').doc(adminId).collection('fcmTokens').get();
+    fcmTokensSnapshot.forEach(doc => {
+      const user = adminUsersData.find(u => u.uid === adminId);
       if(user) {
           const prefs = user.notificationPreferences;
-          // Do not send if the specific notification type is explicitly set to false
           if (payload.type && prefs && prefs[payload.type] === false) {
               return; 
           }
@@ -133,17 +131,25 @@ export async function sendAdminNotification(payload: NotificationPayload): Promi
               adminTokens.push(...tokens);
           }
       }
-  });
+    });
+  }
 
   return sendNotifications(Array.from(new Set(adminTokens)), payload);
 }
 
 // --- Single User Notification ---
 export async function sendUserNotification(userId: string, payload: NotificationPayload): Promise<{ success: boolean; message: string }> {
-  const userTokensDoc = await adminDb.collection('fcmTokens').doc(userId).get();
-  if (!userTokensDoc.exists) {
+  const fcmTokensSnapshot = await adminDb.collection('users').doc(userId).collection('fcmTokens').get();
+  if (fcmTokensSnapshot.empty) {
       return { success: true, message: "L'utilisateur n'a pas de jeton de notification." };
   }
-  const tokens = userTokensDoc.data()?.tokens || [];
-  return sendNotifications(tokens, payload);
+  const userTokens: string[] = [];
+  fcmTokensSnapshot.forEach(doc => {
+      const tokens = doc.data().tokens;
+      if (tokens && Array.isArray(tokens)) {
+        userTokens.push(...tokens);
+      }
+  });
+
+  return sendNotifications(userTokens, payload);
 }

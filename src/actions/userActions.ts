@@ -9,17 +9,13 @@ import { sendUserNotification } from './notificationActions';
 import type { UserRole } from '@/lib/types';
 
 // Helper to verify if the requester is an admin by checking their Firestore document
-async function isRequesterAdmin(idToken: string): Promise<{isAdmin: boolean; uid?: string}> {
+async function isRequesterAdmin(uid: string): Promise<boolean> {
     try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
-        const userDoc = await adminDb.collection('users').doc(decodedToken.uid).get();
-        if (userDoc.exists && userDoc.data()?.role === 'admin') {
-            return { isAdmin: true, uid: decodedToken.uid };
-        }
-        return { isAdmin: false, uid: decodedToken.uid };
+        const userDoc = await adminDb.collection('users').doc(uid).get();
+        return userDoc.exists && userDoc.data()?.role === 'admin';
     } catch (error) {
         console.error("Error verifying admin token:", error);
-        return { isAdmin: false };
+        return false;
     }
 }
 
@@ -35,8 +31,7 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
             hasPermission = true;
         } else {
         // Case 2: An admin is deleting the account
-            const requesterDoc = await adminDb.collection('users').doc(requesterUid).get();
-            if (requesterDoc.exists() && requesterDoc.data()?.role === 'admin') {
+            if (await isRequesterAdmin(requesterUid)) {
                 hasPermission = true;
             }
         }
@@ -107,6 +102,7 @@ export async function importUsersAction({ users, adminId }: { users: { fullName:
                 email: user.email,
                 fullName: user.fullName,
                 role: 'student',
+                status: 'active',
                 createdAt: FieldValue.serverTimestamp(),
                 isInstructorApproved: false,
             });
@@ -297,5 +293,3 @@ export async function updateUserRole({ userId, role, adminId }: { userId: string
         return { success: false, error: error.message };
     }
 }
-
-    

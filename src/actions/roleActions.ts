@@ -26,7 +26,7 @@ export async function updateRolePermissions({
       adminId,
       eventType: 'role.permissions.update',
       target: { id: roleId, type: 'role' },
-      details: `Permissions for role '${roleId}' were updated by admin ${adminId}.`,
+      details: `Permissions pour le rôle '${roleId}' ont été mises à jour.`,
       timestamp: FieldValue.serverTimestamp(),
     });
 

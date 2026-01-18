@@ -46,7 +46,7 @@ const LogIcon = ({ eventType }: { eventType: AdminAuditLog['eventType'] }) => {
 }
 
 export default function AdminLogsPage() {
-  const { currentUser: adminUser } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -57,6 +57,11 @@ export default function AdminLogsPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (isUserLoading || currentUser?.role !== 'admin') {
+      if(!isUserLoading) setIsLoading(false);
+      return;
+    }
+
     let q = query(collection(db, 'admin_audit_logs'), orderBy('timestamp', 'desc'));
     if (filterType !== 'all') {
         q = query(q, where('eventType', '==', filterType));
@@ -82,7 +87,7 @@ export default function AdminLogsPage() {
     });
 
     return () => unsubscribe();
-  }, [db, filterType, admins]);
+  }, [db, filterType, admins, currentUser, isUserLoading]);
 
   const filteredLogs = useMemo(() => {
     if (!debouncedSearchTerm) return logs;
