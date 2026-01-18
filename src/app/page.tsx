@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Award, ShieldCheck, Wallet, ArrowRight, Lock } from 'lucide-react';
+import { Award, ShieldCheck, Wallet, ArrowRight, Lock, Users, Briefcase } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
 import { useRole } from '@/context/RoleContext';
@@ -13,6 +13,7 @@ import { Navbar } from '@/components/layout/navbar';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { Stats } from '@/components/landing/Stats';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -141,7 +142,12 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* New Stats section for social proof */}
         <section className="py-24">
+            <Stats />
+        </section>
+
+        <section className="py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FeatureCard
               icon={Wallet}
@@ -166,6 +172,24 @@ export default function LandingPage() {
         <MobileMoneySection />
 
         <TrustAndSecuritySection />
+
+        {/* New Final CTA Section */}
+        <section className="py-24 text-center">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white">
+                Prêt à transformer votre avenir ?
+            </h2>
+            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
+                Rejoignez des milliers d'apprenants et de formateurs qui construisent l'Afrique de demain. L'inscription est gratuite.
+            </p>
+            <div className="mt-8 flex justify-center">
+                <Button size="lg" asChild className="h-14 text-lg shadow-cta">
+                <Link href="/login?tab=register">
+                    Créer mon compte gratuit
+                    <ArrowRight className="w-5 h-5 ml-2" />
+                </Link>
+                </Button>
+            </div>
+        </section>
 
       </main>
       <Footer />
