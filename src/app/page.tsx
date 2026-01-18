@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -11,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Navbar } from '@/components/layout/navbar';
+import { HowItWorks } from '@/components/landing/HowItWorks';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -80,6 +80,9 @@ export default function LandingPage() {
             />
           </div>
         </section>
+        
+        <HowItWorks />
+
       </main>
       <Footer />
     </div>
