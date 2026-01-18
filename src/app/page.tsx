@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -74,6 +73,35 @@ const TrustAndSecuritySection = () => {
     );
 };
 
+const MobileMoneySection = () => (
+    <section className="py-24 text-center">
+        <h2 className="text-3xl md:text-4xl font-extrabold text-white">
+            Payez simplement. Sans carte bancaire.
+        </h2>
+        <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+            Ndara Afrique est intégré avec les solutions de paiement que vous utilisez tous les jours. L'accès à vos formations est instantané.
+        </p>
+        <div className="mt-12 flex justify-center items-center gap-4 md:gap-8 flex-wrap">
+            <div className="animate-fade-in-up" style={{ animationDelay: `0ms`, animationFillMode: 'both' }}>
+                <div className="flex items-center justify-center h-20 w-44 rounded-xl bg-mtn-yellow shadow-lg">
+                    <span className="font-black text-2xl text-black">MTN</span>
+                </div>
+            </div>
+            <div className="animate-fade-in-up" style={{ animationDelay: `150ms`, animationFillMode: 'both' }}>
+                 <div className="flex items-center justify-center h-20 w-44 rounded-xl bg-orange-money shadow-lg">
+                    <span className="font-black text-2xl text-white">orange</span>
+                </div>
+            </div>
+            <div className="animate-fade-in-up" style={{ animationDelay: `300ms`, animationFillMode: 'both' }}>
+                 <div className="flex items-center justify-center h-20 w-44 rounded-xl bg-wave-blue shadow-lg">
+                    <span className="font-black text-3xl text-white">wave</span>
+                </div>
+            </div>
+        </div>
+    </section>
+);
+
+
 export default function LandingPage() {
   const { user, isUserLoading } = useRole();
   const router = useRouter();
@@ -134,6 +162,8 @@ export default function LandingPage() {
         </section>
         
         <HowItWorks />
+
+        <MobileMoneySection />
 
         <TrustAndSecuritySection />
 

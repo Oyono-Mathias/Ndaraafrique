@@ -61,6 +61,9 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        'mtn-yellow': '#ffcb05',
+        'orange-money': '#ff7900',
+        'wave-blue': '#41d7c8',
       },
       borderRadius: {
         xl: "calc(var(--radius) + 8px)",
