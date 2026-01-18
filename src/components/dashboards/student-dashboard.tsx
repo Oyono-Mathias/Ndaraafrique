@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, where, getFirestore, getDocs, limit, orderBy } from 'firebase/firestore';
+import { collection, query, where, getFirestore, getDocs, limit, orderBy, documentId } from 'firebase/firestore';
 import { Frown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
 import { Skeleton } from '../ui/skeleton';
@@ -107,7 +107,7 @@ export function StudentDashboard() {
 
             const newInstructors = new Map(instructorsMap);
             for (const chunk of chunks) {
-                const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
+                const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', chunk));
                 const userSnapshots = await getDocs(usersQuery);
                 userSnapshots.forEach(doc => {
                     newInstructors.set(doc.data().uid, doc.data() as NdaraUser);

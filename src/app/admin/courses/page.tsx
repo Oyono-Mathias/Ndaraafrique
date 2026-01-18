@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemoFirebase } from '@/firebase/provider';
-import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where, getDocs, documentId } from 'firebase/firestore';
 import Image from 'next/image';
 import {
   Table,
@@ -197,11 +197,11 @@ export default function AdminCoursesPage() {
         
         if (newIdsToFetch.length > 0) {
             // Firestore 'in' query limit is 30. For more, batching is required.
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', newIdsToFetch.slice(0, 30)));
+            const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', newIdsToFetch.slice(0, 30)));
             const usersSnap = await getDocs(usersQuery);
             
             const newInstructors = new Map(instructors);
-            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
+            usersSnap.forEach(doc => newInstructors.set(doc.id, doc.data() as NdaraUser));
             setInstructors(newInstructors);
         }
         setDataLoading(false);

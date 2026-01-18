@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer, doc, documentId } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
@@ -347,7 +347,7 @@ export default function LandingPage() {
       if (coursesData.length > 0) {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId).filter(Boolean))];
         if (instructorIds.length > 0) {
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
+            const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', instructorIds.slice(0, 30)));
             const userSnapshots = await getDocs(usersQuery);
             const newInstructors = new Map<string, Partial<NdaraUser>>();
             userSnapshots.forEach(doc => {
