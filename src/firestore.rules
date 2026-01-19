@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -6,100 +7,86 @@ service cloud.firestore {
     /* ==================================
        FONCTIONS D'AIDE (HELPERS)
     ================================== */
+
+    // L'utilisateur est-il authentifié ?
     function isSignedIn() {
       return request.auth != null;
     }
 
+    // L'utilisateur est-il le propriétaire du document/de la ressource ?
     function isOwner(userId) {
       return request.auth.uid == userId;
     }
 
-    function getUserData(userId) {
-      // Accède aux données de l'utilisateur dans la collection /users
-      return get(/databases/$(database)/documents/users/$(userId)).data;
+    // Récupère les données de l'utilisateur depuis la collection /users
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
+    // L'utilisateur est-il un administrateur ?
     function isAdmin() {
-      // Vérifie si l'utilisateur est connecté ET si son rôle est 'admin'
-      return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
+      // isSignedin() est implicite car getUserData() échouerait pour un non-connecté
+      return getUserData().role == 'admin';
     }
 
+    // L'utilisateur est-il un instructeur approuvé ?
     function isApprovedInstructor() {
-      // Vérifie si l'utilisateur est un instructeur approuvé
-      let userData = getUserData(request.auth.uid);
-      return isSignedIn() 
-        && userData.role == 'instructor'
+      let userData = getUserData();
+      return userData.role == 'instructor'
         && userData.isInstructorApproved == true;
     }
+
+    // L'utilisateur est-il le propriétaire du cours ?
+    function isCourseOwner(courseId) {
+      let courseData = get(/databases/$(database)/documents/courses/$(courseId)).data;
+      return isOwner(courseData.instructorId);
+    }
     
+    // L'utilisateur est-il inscrit au cours ?
     function isEnrolled(courseId) {
-      // Vérifie si l'utilisateur est bien inscrit au cours et si l'accès n'a pas expiré
       let enrollmentPath = /databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId);
       if (!exists(enrollmentPath)) {
         return false;
       }
       let enrollmentData = get(enrollmentPath).data;
+      // Autorise si pas d'expiration OU si l'expiration est dans le futur.
       return !('expiresAt' in enrollmentData) || enrollmentData.expiresAt > request.time;
     }
 
-    function isCourseOwner(courseId) {
-      // Vérifie si l'utilisateur est le propriétaire (instructeur) du cours
-      let courseData = get(/databases/$(database)/documents/courses/$(courseId)).data;
-      return isOwner(courseData.instructorId);
-    }
-    
     /* ==================================
        COLLECTION: USERS
     ================================== */
     match /users/{userId} {
-      // Les profils sont lisibles publiquement (nom, bio, etc. pour les pages instructeurs)
+      // Lecture publique pour les profils (instructeurs, certificats)
       allow get: if true;
-      // Seuls les admins peuvent lister tous les utilisateurs
+      // Seul un admin peut lister tous les utilisateurs
       allow list: if isAdmin();
-      // Un utilisateur peut créer son propre document
+      // Un utilisateur peut créer son propre document lors de l'inscription
       allow create: if isOwner(userId);
-      // Un utilisateur peut modifier son propre profil (mais pas son rôle/statut)
-      // L'admin peut tout modifier
+      // Un utilisateur peut modifier son propre profil, mais pas les champs critiques.
+      // L'admin peut tout modifier.
       allow update: if isAdmin() || (
         isOwner(userId) &&
         !('role' in request.resource.data) &&
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
-      // Un utilisateur peut supprimer son propre compte, un admin peut le faire aussi
-      allow delete: if isOwner(userId) || isAdmin();
-
-      // --- Sous-collections de 'users' ---
-      match /chatHistory/{docId} {
-        allow read, write, list: if isOwner(userId) || isAdmin();
-      }
-      match /wishlist/{docId} {
-        allow read, write, list, delete: if isOwner(userId) || isAdmin();
-      }
-      match /notifications/{docId} {
-        allow read, write, list: if isOwner(userId) || isAdmin();
-      }
-      match /subscriptions/{docId} {
-        allow read, list, create: if isOwner(userId) || isAdmin();
-        allow update, delete: if isAdmin();
-      }
-      match /fcmTokens/{docId} {
-        allow read, write, delete: if isOwner(userId) || isAdmin();
-      }
+      // Un utilisateur peut supprimer son propre compte. L'admin aussi.
+      allow delete: if isAdmin() || isOwner(userId);
     }
 
     /* ==================================
-       COLLECTION: COURSES & CONTENU
+       COLLECTION: COURSES & SOUS-COLLECTIONS
     ================================== */
     match /courses/{courseId} {
-      // Tout le monde peut voir la liste des cours et les détails d'un cours publié
+      // Tout le monde peut voir les cours
       allow get, list: if true;
-      // Seuls les instructeurs approuvés ou les admins peuvent créer un cours
+      // Seuls les instructeurs approuvés ou les admins peuvent créer des cours
       allow create: if isApprovedInstructor() || isAdmin();
       // Seul le propriétaire du cours ou un admin peut le modifier/supprimer
       allow update, delete: if isCourseOwner(courseId) || isAdmin();
 
-      // --- Sous-collections (sections, leçons, questions) ---
+      // Sections et leçons suivent les permissions du cours parent
       match /sections/{sectionId} {
         allow read, list: if true;
         allow create, update, delete: if isCourseOwner(courseId) || isAdmin();
@@ -109,28 +96,15 @@ service cloud.firestore {
           allow create, update, delete: if isCourseOwner(courseId) || isAdmin();
         }
       }
-
-      match /questions/{questionId} {
-        allow create: if isEnrolled(courseId) && isOwner(request.resource.data.studentId);
-        allow read, list: if isEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
-        allow update: if isCourseOwner(courseId) || isAdmin();
-        allow delete: if isOwner(resource.data.studentId) || isCourseOwner(courseId) || isAdmin();
-
-        match /answers/{answerId} {
-          allow create: if (isEnrolled(courseId) || isCourseOwner(courseId)) && isOwner(request.resource.data.userId);
-          allow read, list: if isEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
-          allow update, delete: if isOwner(resource.data.userId) || isCourseOwner(courseId) || isAdmin();
-        }
-      }
     }
     
     /* ==================================
        COLLECTION: COURSE_PROGRESS
     ================================== */
     match /course_progress/{progressId} {
-      // Lecture/écriture autorisée uniquement pour le propriétaire des données ou un admin
-      allow read, write: if isOwner(resource.data.userId) || isAdmin();
-      // Le listage est autorisé si l'utilisateur filtre par son propre ID, ou si c'est un admin
+      // L'utilisateur ne peut accéder qu'à sa propre progression. L'admin peut tout voir.
+      allow read, write, delete: if isOwner(resource.data.userId) || isAdmin();
+      // Le listage est autorisé seulement si la requête est filtrée par l'ID de l'utilisateur, ou si c'est un admin.
       allow list: if (isSignedIn() && request.query.where.userId == request.auth.uid) || isAdmin();
     }
 
@@ -138,12 +112,12 @@ service cloud.firestore {
        COLLECTION: ENROLLMENTS
     ================================== */
     match /enrollments/{enrollmentId} {
-      // L'étudiant peut s'inscrire lui-même
+      // L'étudiant peut s'inscrire lui-même.
       allow create: if isOwner(request.resource.data.studentId) || isAdmin();
-      // L'étudiant peut voir ses inscriptions, l'instructeur peut voir les inscrits à ses cours
-      allow read, list: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
-      allow update: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
-      // Seul un admin peut supprimer une inscription (pour un remboursement par ex.)
+      // L'étudiant et l'instructeur concerné peuvent voir l'inscription.
+      allow read, update: if isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin();
+      allow list: if (isSignedIn() && request.query.where.studentId == request.auth.uid) || isAdmin();
+      // Seul l'admin peut supprimer une inscription (ex: remboursement).
       allow delete: if isAdmin();
     }
     
@@ -151,13 +125,13 @@ service cloud.firestore {
        COLLECTION: PAYMENTS
     ================================== */
     match /payments/{paymentId} {
-      // Un utilisateur peut lire les détails d'un paiement qui le concerne
+      // L'étudiant et l'instructeur concernés peuvent lire le paiement.
       allow get: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin();
-      // Un utilisateur peut lister SES paiements (requête filtrée), l'admin peut tout lister
-      allow list: if (isSignedIn() && request.query.where.userId == request.auth.uid) || isAdmin();
-      // L'utilisateur peut créer un paiement pour lui-même
+      // Listage autorisé pour les admins, et pour les utilisateurs qui filtrent par leur ID.
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      // L'utilisateur peut créer un paiement pour lui-même.
       allow create: if isOwner(request.resource.data.userId);
-      // Seul un admin peut modifier/supprimer un paiement (ex: pour un remboursement)
+      // Seuls les admins peuvent modifier/supprimer (ex: remboursement).
       allow update, delete: if isAdmin();
     }
 
@@ -165,47 +139,45 @@ service cloud.firestore {
        COLLECTION: SUPPORT_TICKETS
     ================================== */
     match /support_tickets/{ticketId} {
-      function isParticipant() {
-        return isOwner(resource.data.userId) || isOwner(resource.data.instructorId);
-      }
-      
-      // Seuls les utilisateurs connectés peuvent créer un ticket
+      // Seuls les participants du ticket ou un admin peuvent le lire.
+      allow read, update: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin();
+      // Un utilisateur connecté peut créer son propre ticket.
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      // Seuls les participants du ticket ou un admin peuvent le lire/modifier
-      allow read, update: if isParticipant() || isAdmin();
-      // Seul un admin peut lister tous les tickets
+      // Seul un admin peut lister tous les tickets.
       allow list: if isAdmin();
 
+      // Messages à l'intérieur d'un ticket.
       match /messages/{messageId} {
-        allow create: if (isParticipant() || isAdmin()) && isOwner(request.resource.data.senderId);
-        allow read, list: if isParticipant() || isAdmin();
+        allow create: if (isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId) || isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.instructorId) || isAdmin()) && isOwner(request.resource.data.senderId);
+        allow read, list: if isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId) || isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.instructorId) || isAdmin();
       }
     }
-
+    
     /* ==================================
        COLLECTION: REVIEWS
     ================================== */
     match /reviews/{reviewId} {
       // Tout le monde peut lire les avis
       allow get, list: if true;
-      // Seuls les étudiants inscrits peuvent laisser un avis
+      // Seul un étudiant inscrit au cours peut laisser un avis
       allow create: if isEnrolled(request.resource.data.courseId) && isOwner(request.resource.data.userId);
       // Seul l'auteur de l'avis ou un admin peut le modifier/supprimer
       allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
     /* ==================================
-       COLLECTIONS PUBLIQUES
+       COLLECTION: recommended_courses
     ================================== */
-
-    // Ces collections sont en lecture seule pour tout le monde
-    match /faqs/{id} { allow get, list: if true; }
-    match /carousel_slides/{id} { allow get, list: if true; }
+    match /recommended_courses/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isAdmin();
+    }
 
     /* ==================================
        RÈGLE FINALE DE SÉCURITÉ
     ================================== */
     // Interdit toute lecture ou écriture qui n'a pas été explicitement autorisée ci-dessus.
+    // Cette règle est cruciale pour la sécurité.
     match /{path=**} {
       allow read, write: if false;
     }
