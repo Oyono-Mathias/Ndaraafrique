@@ -2,7 +2,7 @@
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
@@ -42,98 +42,95 @@ export function InstructorDashboard() {
     useEffect(() => {
         if (!instructor?.uid || roleLoading) {
             if (!roleLoading) setIsLoading(false);
-            return () => {};
+            return;
         }
 
-        setIsLoading(true);
-        const instructorId = instructor.uid;
-        const unsubs: (()=>void)[] = [];
+        const fetchData = async () => {
+            setIsLoading(true);
+            setError(null);
+            const instructorId = instructor.uid;
 
-        const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', instructorId));
-        const unsubCourses = onSnapshot(coursesQuery, (coursesSnapshot) => {
-            const courseList = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-            setCourses(courseList);
-            setStats(prev => ({ ...prev, publishedCourses: courseList.filter(c => c.status === 'Published').length }));
+            try {
+                // 1. Fetch Courses
+                const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', instructorId));
+                const coursesSnapshot = await getDocs(coursesQuery);
+                const courseList = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+                setCourses(courseList);
 
-            const courseIds = courseList.map(c => c.id);
-            if (courseIds.length === 0) {
-                 setIsLoading(false);
-                 setEnrollments([]);
-                 setStats(prev => ({ ...prev, totalStudents: 0, totalReviews: 0, averageRating: 0, monthlyRevenue: 0 }));
-                 setRevenueTrendData([]);
-                 return;
-            }
+                const courseIds = courseList.map(c => c.id);
+                if (courseIds.length === 0) {
+                    setStats({ totalStudents: 0, averageRating: 0, totalReviews: 0, publishedCourses: 0, monthlyRevenue: 0 });
+                    setEnrollments([]);
+                    setRevenueTrendData([]);
+                    setIsLoading(false);
+                    return;
+                }
 
-            const courseIdChunks: string[][] = [];
-            for (let i = 0; i < courseIds.length; i += 30) {
-                courseIdChunks.push(courseIds.slice(i, i + 30));
-            }
+                const courseIdChunks: string[][] = [];
+                for (let i = 0; i < courseIds.length; i += 30) {
+                    courseIdChunks.push(courseIds.slice(i, i + 30));
+                }
 
-            courseIdChunks.forEach(chunk => {
-                const reviewsQuery = query(collection(db, 'reviews'), where('courseId', 'in', chunk));
-                const unsubReviews = onSnapshot(reviewsQuery, (reviewSnapshot) => {
-                    const reviewList = reviewSnapshot.docs.map(doc => doc.data() as Review);
-                    const totalRating = reviewList.reduce((acc, r) => acc + r.rating, 0);
-                    setStats(prev => ({
-                        ...prev,
-                        totalReviews: reviewList.length,
-                        averageRating: reviewList.length > 0 ? totalRating / reviewList.length : 0,
-                    }));
-                }, (e) => { setError("Impossible de charger les avis."); console.error(e); });
-                unsubs.push(unsubReviews);
+                // 2. Fetch Reviews, Enrollments, and Payments in parallel
+                const reviewPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'reviews'), where('courseId', 'in', chunk))));
+                const enrollmentPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'enrollments'), where('courseId', 'in', chunk))));
+                const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
+                const paymentPromise = getDocs(paymentsQuery);
 
-                const enrollmentsQuery = query(collection(db, 'enrollments'), where('courseId', 'in', chunk));
-                const unsubEnrollments = onSnapshot(enrollmentsQuery, (enrollmentSnapshot) => {
-                    const enrollmentList = enrollmentSnapshot.docs.map(doc => doc.data() as Enrollment);
-                    setEnrollments(prev => [...prev.filter(e => !chunk.includes(e.courseId)), ...enrollmentList]);
-                    const uniqueStudents = new Set(enrollmentList.map(e => e.studentId));
-                    setStats(prev => ({ ...prev, totalStudents: uniqueStudents.size }));
-                }, (e) => { setError("Impossible de charger les inscriptions."); console.error(e); });
-                unsubs.push(unsubEnrollments);
-            });
+                const [reviewSnapshots, enrollmentSnapshots, paymentSnapshot] = await Promise.all([
+                    Promise.all(reviewPromises),
+                    Promise.all(enrollmentPromises),
+                    paymentPromise
+                ]);
 
-
-            const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
-            const unsubPayments = onSnapshot(paymentsQuery, (paymentSnapshot) => {
+                // 3. Process data
+                const allReviews = reviewSnapshots.flatMap(snap => snap.docs.map(doc => doc.data() as Review));
+                const totalRating = allReviews.reduce((acc, r) => acc + r.rating, 0);
+                
+                const allEnrollments = enrollmentSnapshots.flatMap(snap => snap.docs.map(doc => doc.data() as Enrollment));
+                setEnrollments(allEnrollments);
+                const uniqueStudents = new Set(allEnrollments.map(e => e.studentId));
+                
                 const now = new Date();
                 const startOfCurrentMonth = startOfMonth(now);
                 
                 const monthlyRev = paymentSnapshot.docs
                     .map(d => d.data())
-                    .filter(p => p.date && p.date.toDate() >= startOfCurrentMonth)
+                    .filter(p => p.date && p.status === 'Completed' && p.date.toDate() >= startOfCurrentMonth)
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
-
+                
                 const monthlyAggregates: Record<string, number> = {};
                 paymentSnapshot.docs.forEach(doc => {
                     const payment = doc.data();
-                    if (payment.date instanceof Timestamp) {
+                    if (payment.date instanceof Timestamp && payment.status === 'Completed') {
                         const date = payment.date.toDate();
                         const monthKey = format(date, 'MMM yy', { locale: fr });
                         monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
                     }
                 });
-
                 const trendData = Object.entries(monthlyAggregates)
                     .map(([month, revenue]) => ({ month, revenue }))
                     .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
+                // 4. Set all states at once
+                setStats({
+                    totalStudents: uniqueStudents.size,
+                    totalReviews: allReviews.length,
+                    averageRating: allReviews.length > 0 ? totalRating / allReviews.length : 0,
+                    monthlyRevenue: monthlyRev,
+                    publishedCourses: courseList.filter(c => c.status === 'Published').length
+                });
                 setRevenueTrendData(trendData);
-                setStats(prev => ({ ...prev, monthlyRevenue: monthlyRev }));
+
+            } catch (err: any) {
+                console.error("Error fetching instructor dashboard data:", err);
+                setError("Une erreur est survenue lors du chargement de vos données. Un index Firestore est peut-être manquant.");
+            } finally {
                 setIsLoading(false);
-            }, (e) => { setError("Impossible de charger les données financières."); console.error(e); });
-            unsubs.push(unsubPayments);
-
-        }, (error) => {
-            console.error("Error fetching courses:", error);
-            setError("Impossible de charger les cours.");
-            setIsLoading(false);
-        });
-        
-        unsubs.push(unsubCourses);
-
-        return () => {
-            unsubs.forEach(unsub => unsub());
+            }
         };
+
+        fetchData();
     }, [instructor?.uid, db, roleLoading]);
 
     const topCourses = useMemo(() => {
