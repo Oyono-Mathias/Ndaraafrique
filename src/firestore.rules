@@ -181,22 +181,18 @@ service cloud.firestore {
     }
     
     /* ======================
-       PAYMENTS (Version Corrigée)
+       PAYMENTS (Version Débloquée)
     ====================== */
     
     match /payments/{paymentId} {
-      // Autoriser la lecture individuelle
-      allow get: if isSignedIn();
-
-      // Autoriser le listage (le dashboard)
-      // On autorise le listage global, mais Firebase ne montrera rien 
-      // si la requête n'est pas filtrée correctement dans le code.
-      allow list: if isSignedIn(); 
-
-      // Création par l'utilisateur
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      // 'read' est trop vague, on sépare 'get' et 'list'
+      allow get: if isSignedIn(); 
       
-      // Seul l'admin peut modifier ou supprimer un paiement
+      // On autorise explicitement le listage pour les admins 
+      // ET pour les utilisateurs qui filtrent par leur propre ID
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
 
@@ -321,7 +317,7 @@ service cloud.firestore {
     }
     
     match /recommended_courses/{userId} {
-        allow read: if isOwner(userId);
+        allow read: if (isOwner(userId) || isAdmin());
         allow write: if isAdmin();
     }
 
