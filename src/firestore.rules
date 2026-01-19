@@ -185,8 +185,7 @@ service cloud.firestore {
     ====================== */
     
     match /payments/{paymentId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow list: if isAdmin();
+      allow read, list: if isAdmin() || isOwner(resource.data.userId) || isOwner(resource.data.instructorId);
       allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
