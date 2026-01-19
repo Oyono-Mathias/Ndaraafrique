@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
@@ -14,7 +13,7 @@ import { Stats } from '@/components/landing/Stats';
 import { logTrackingEvent } from '@/app/actions/trackingActions';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { Course, NdaraUser } from '@/lib/types';
-import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
 import { CourseCard } from '../cards/CourseCard';
 import { Skeleton } from '../ui/skeleton';
@@ -172,7 +171,7 @@ export function LandingPageClient() {
     const fetchCoursesAndInstructors = async () => {
         setIsLoading(true);
         try {
-            const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
+            const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'), limit(50));
             const querySnapshot = await getDocs(coursesQuery);
             const coursesData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
             setAllCourses(coursesData);
