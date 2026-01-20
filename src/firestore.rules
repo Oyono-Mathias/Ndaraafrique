@@ -144,8 +144,8 @@ service cloud.firestore {
                       && (isAdmin() || (getUserData(request.auth.uid).isProfileComplete == true && request.resource.data.participantCategories[0] == request.resource.data.participantCategories[1]));
 
       match /messages/{messageId} {
-        allow list, read: if isChatParticipant();
-        allow create: if isChatParticipant() && isOwner(request.resource.data.senderId);
+        allow read, list: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+        allow create: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants && isOwner(request.resource.data.senderId);
       }
     }
 
