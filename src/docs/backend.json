@@ -37,7 +37,8 @@
             "user.delete",
             "user.import",
             "instructor.application",
-            "course.grant"
+            "course.grant",
+            "course.delete"
           ]
         },
         "target": {
@@ -1098,34 +1099,70 @@
         "submittedAt"
       ]
     },
-    "CourseQuestion": {
-      "title": "Course Question",
+    "FAQ": {
+      "title": "FAQ",
       "type": "object",
-      "description": "A question asked by a student about a course.",
+      "description": "A single Frequently Asked Question and its answer.",
       "properties": {
-        "courseId": { "type": "string" },
-        "studentId": { "type": "string" },
-        "instructorId": { "type": "string" },
-        "title": { "type": "string" },
-        "body": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "status": { "type": "string", "enum": ["unanswered", "answered"] },
-        "answerCount": { "type": "number", "default": 0 }
+        "question_fr": {
+          "type": "string",
+          "description": "The question in French."
+        },
+        "answer_fr": {
+          "type": "string",
+          "description": "The answer in French."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Keywords for AI search, e.g., ['payment', 'certificate'].",
+          "items": { "type": "string" }
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the FAQ is visible to the public."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the question."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["courseId", "studentId", "instructorId", "title", "body", "createdAt", "status"]
+      "required": ["question_fr", "answer_fr", "isActive", "order", "createdAt"]
     },
-    "CourseAnswer": {
-      "title": "Course Answer",
+     "TrackingEvent": {
+      "title": "Tracking Event",
       "type": "object",
-      "description": "An answer to a course question.",
+      "description": "An event tracked for analytics purposes.",
       "properties": {
-        "questionId": { "type": "string" },
-        "userId": { "type": "string" },
-        "body": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
-        "isOfficial": { "type": "boolean", "description": "True if the answer is from the course instructor." }
+        "eventType": {
+          "type": "string",
+          "enum": ["page_view", "cta_click", "payment_method_click"]
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "An anonymous ID for the user's session."
+        },
+        "pageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
       },
-      "required": ["questionId", "userId", "body", "createdAt", "isOfficial"]
+      "required": ["eventType", "sessionId", "pageUrl", "timestamp"]
     }
   },
   "auth": {
@@ -1135,30 +1172,48 @@
     ]
   },
   "firestore": {
-    "/admin_grants/{grantId}": {
+    "admin_grants/{grantId}": {
       "schema": { "$ref": "#/entities/AdminGrant" }
     },
-    "/admin_audit_logs/{logId}": {
+    "admin_audit_logs/{logId}": {
       "schema": { "$ref": "#/entities/AdminAuditLog" },
       "description": "Log of actions performed by administrators."
     },
-    "/security_logs/{logId}": {
+    "security_logs/{logId}": {
       "schema": { "$ref": "#/entities/SecurityLog" },
       "description": "Log of security-related events."
     },
-    "/promoCodes/{codeId}": {
+    "promoCodes/{codeId}": {
       "schema": { "$ref": "#/entities/PromoCode" },
       "description": "Promotional codes for discounts."
     },
-    "/roles/{roleId}": {
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Records a payment transaction."
+    },
+    "roles/{roleId}": {
         "schema": { "$ref": "#/entities/Role" }
     },
-    "/reviews/{reviewId}": {
+    "reviews/{reviewId}": {
         "schema": { "$ref": "#/entities/Review" }
     },
-    "/recommended_courses/{userId}": {
+    "recommended_courses/{userId}": {
       "schema": { "$ref": "#/entities/UserRecommendations" },
       "description": "Personalized course recommendations for a user."
+    },
+    "tracking_events/{eventId}": {
+      "schema": { "$ref": "#/entities/TrackingEvent" }
+    },
+    "carousel_slides/{slideId}": {
+      "schema": { "$ref": "#/entities/CarouselSlide" },
+      "description": "Content for the homepage hero carousel."
+    },
+    "/faqs/{faqId}": {
+      "schema": { "$ref": "#/entities/FAQ" }
+    },
+    "/settings/{settingId}": {
+      "schema": { "$ref": "#/entities/Settings" },
+      "description": "Global settings for the application. This is a singleton collection containing only one document with the ID 'global'."
     }
   }
 }

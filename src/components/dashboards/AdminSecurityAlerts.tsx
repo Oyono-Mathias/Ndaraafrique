@@ -121,7 +121,7 @@ export function AdminSecurityAlerts() {
 
                 const [suspiciousPaymentsSnap, suspiciousLoginsSnap] = await Promise.all([
                     getDocs(suspiciousPaymentsQuery),
-                    getDocs(suspiciousLoginsSnap)
+                    getDocs(suspiciousLoginsQuery)
                 ]);
 
                 const alerts: AlertItem[] = [];

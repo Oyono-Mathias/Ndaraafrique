@@ -114,7 +114,7 @@ export function AdminActionQueue() {
     }
 
     return (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="space-y-4">
             {allActions.map(action => (
                 <ActionItemCard key={action.id} item={action} />
             ))}
