@@ -73,8 +73,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-    { href: "/admin/analytics", icon: BarChart3, label: "Analytics" },
-    { href: "/admin/statistiques", icon: BarChart3, label: "Statistiques Globales" },
+    { href: "/admin/statistiques", icon: BarChart3, label: "Statistiques" },
     { href: "/admin/users", icon: Users, label: "Utilisateurs" },
     { href: "/admin/instructors", icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
     { href: "/admin/moderation", icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
