@@ -166,45 +166,6 @@ const CourseCard = ({ course, instructorName }: { course: Course, instructorName
     </Card>
 )};
 
-const CourseRow = ({ course, instructorName }: { course: Course, instructorName: string }) => {
-    const router = useRouter();
-    const getStatusText = (status: Course['status'] = 'Draft') => {
-        switch(status) {
-            case 'Published': return 'Publié';
-            case 'Pending Review': return 'En révision';
-            case 'Draft': return 'Brouillon';
-            default: return status;
-        }
-    }
-    
-    return (
-     <div 
-        className="flex items-center gap-4 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/50 cursor-pointer"
-        onClick={() => router.push(`/instructor/courses/edit/${course.id}`)}
-     >
-        <Image
-            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/160/90`}
-            alt={course.title}
-            width={100}
-            height={56}
-            className="rounded-md aspect-video object-cover"
-        />
-        <div className="flex-1">
-            <p className="font-bold text-sm line-clamp-1 dark:text-white">{course.title}</p>
-            <p className="text-xs text-muted-foreground dark:text-slate-400">Par {instructorName}</p>
-            <div className="flex items-center gap-2 mt-1">
-                 <Badge variant={getStatusBadgeVariant(course.status)} className="capitalize text-xs">
-                  {getStatusText(course.status)}
-                </Badge>
-                <p className="font-bold text-xs dark:text-white">
-                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : "Gratuit"}
-                </p>
-            </div>
-        </div>
-        <CourseActions course={course} />
-     </div>
-)};
-
 
 export default function AdminCoursesPage() {
   const { currentUser: adminUser, isUserLoading } = useRole();
@@ -284,8 +245,7 @@ export default function AdminCoursesPage() {
           </div>
         </CardHeader>
         <CardContent>
-            {/* Desktop & Tablet Grid View */}
-            <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {isLoading ? (
                     [...Array(8)].map((_, i) => <Skeleton key={i} className="h-80 w-full dark:bg-slate-700"/>)
                 ) : filteredCourses.length > 0 ? (
@@ -299,23 +259,6 @@ export default function AdminCoursesPage() {
                     </div>
                 )}
             </div>
-            
-            {/* Mobile List View */}
-            <div className="block md:hidden space-y-2">
-                {isLoading ? (
-                    [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full dark:bg-slate-700"/>)
-                ) : filteredCourses.length > 0 ? (
-                     filteredCourses.map(course => (
-                       <CourseRow key={course.id} course={course} instructorName={instructors.get(course.instructorId)?.fullName || 'Anonyme'} />
-                    ))
-                ) : (
-                    <div className="col-span-full text-center py-10">
-                        <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-                        <p className="mt-4 font-medium">Aucun cours trouvé</p>
-                    </div>
-                )}
-            </div>
-
         </CardContent>
       </Card>
     </div>
