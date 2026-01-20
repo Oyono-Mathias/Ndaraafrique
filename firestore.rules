@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -21,7 +22,8 @@ service cloud.firestore {
 
     // Version Robuste: Vérifie l'existence du document avant de lire le rôle.
     function isAdmin() {
-      return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
 
     function isApprovedInstructor() {
@@ -160,7 +162,8 @@ service cloud.firestore {
        REVIEWS
     ====================== */
     match /reviews/{reviewId} {
-      allow read: if true;
+      allow get: if true;
+      allow list: if isSignedIn(); // Allow any signed-in user to query the reviews collection
       allow create: if isEnrolled(request.resource.data.courseId) && isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }
