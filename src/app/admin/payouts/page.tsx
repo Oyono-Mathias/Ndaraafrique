@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -285,7 +286,7 @@ export default function PayoutsPage() {
                                   </Button>
                                   <Button onClick={() => setConfirmationAction({payoutId: payout.id, status: 'valide'})} size="sm" variant="default" disabled={!!updatingId}>
                                       <Check className="mr-2 h-4 w-4"/>
-                                      Approuver & Payer
+                                      Approuver
                                   </Button>
                               </div>
                           ) : getStatusBadge(payout.status)}
@@ -337,7 +338,7 @@ export default function PayoutsPage() {
                                   </Button>
                                   <Button onClick={() => setConfirmationAction({payoutId: payout.id, status: 'valide'})} className="flex-1" disabled={!!updatingId}>
                                       <Check className="mr-2 h-4 w-4"/>
-                                      Approuver & Payer
+                                      Approuver
                                   </Button>
                               </CardContent>
                           )}

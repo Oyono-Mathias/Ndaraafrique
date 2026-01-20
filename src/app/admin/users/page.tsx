@@ -65,7 +65,7 @@ const countryCodeToEmoji = (code: string | undefined): string => {
   return String.fromCodePoint(...[...code.toUpperCase()].map(char => 0x1F1E6 + char.charCodeAt(0) - 'A'.charCodeAt(0)));
 }
 
-// --- SKELETON LOADER ---
+// --- SKELETON LOADERS ---
 const UserTableSkeleton = () => (
     <React.Fragment>
       {[...Array(5)].map((_, i) => (
@@ -79,8 +79,10 @@ const UserTableSkeleton = () => (
               </div>
             </div>
           </TableCell>
-          <TableCell className="hidden lg:table-cell"><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
+          <TableCell className="hidden lg:table-cell"><Skeleton className="h-4 w-48 dark:bg-slate-700" /></TableCell>
           <TableCell className="hidden sm:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-6 w-20 rounded-full dark:bg-slate-700" /></TableCell>
+          <TableCell className="hidden md:table-cell"><Skeleton className="h-4 w-24 dark:bg-slate-700" /></TableCell>
           <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto dark:bg-slate-700" /></TableCell>
         </TableRow>
       ))}
@@ -660,7 +662,7 @@ export default function AdminUsersPage() {
                       ))
                   ) : (
                        <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                          <UserX className="h-12 w-12" />
+                          <UserX className="mx-auto h-12 w-12" />
                           <p className="font-medium">Aucun utilisateur trouvé</p>
                       </div>
                   )
