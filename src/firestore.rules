@@ -35,7 +35,7 @@ service cloud.firestore {
       return userData.role == 'instructor'
         && userData.isInstructorApproved == true;
     }
-
+    
     // L'utilisateur est-il le propriétaire du cours ?
     function isCourseOwner(courseId) {
       let courseData = get(/databases/$(database)/documents/courses/$(courseId)).data;
@@ -67,7 +67,7 @@ service cloud.firestore {
       // L'admin peut tout modifier.
       allow update: if isAdmin() || (
         isOwner(userId) &&
-        !('role' in request.resource.data) &&
+        !('role' in request.resource.data) && 
         !('isInstructorApproved' in request.resource.data) &&
         !('status' in request.resource.data)
       );
@@ -153,16 +153,13 @@ service cloud.firestore {
        COLLECTION: PAYMENTS
     ================================== */
     match /payments/{paymentId} {
-      // Un utilisateur connecté peut lire un paiement spécifique.
+      // Autoriser la lecture individuelle si on est connecté
       allow get: if isSignedIn();
-      
-      // Le listage est plus restrictif.
+      // Autoriser le listage pour les admins, ou pour les utilisateurs qui filtrent par leur propre ID
       allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
-      
-      // L'utilisateur peut créer un paiement pour lui-même.
+      // L'utilisateur peut créer un paiement pour lui-même
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      
-      // Seul l'admin peut modifier ou supprimer (ex: remboursement).
+      // Seul l'admin peut modifier ou supprimer un paiement
       allow update, delete: if isAdmin();
     }
     
@@ -210,7 +207,7 @@ service cloud.firestore {
     ================================== */
     match /recommended_courses/{userId} {
       // Seul le propriétaire peut lire ses recommandations.
-      allow read: if isOwner(userId) || isAdmin();
+      allow read: if isOwner(userId);
       // Seul un admin peut écrire les recommandations (via un script backend)
       allow write: if isAdmin();
     }
@@ -273,7 +270,7 @@ service cloud.firestore {
     ================================== */
     match /admin_grants/{grantId}          { allow read, write: if isAdmin(); }
     match /admin_audit_logs/{logId}        { allow read, list: if isAdmin(); }
-    match /security_logs/{logId}           { allow read, write: if isAdmin(); }
+    match /security_logs/{logId}           { allow read, write, list: if isAdmin(); }
     match /promoCodes/{codeId}             { allow read, write: if isAdmin(); }
     match /roles/{roleId}                  { allow read, write: if isAdmin(); }
     match /carousel_slides/{id}            { allow read, list: if true; allow write: if isAdmin(); }
