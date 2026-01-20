@@ -129,7 +129,7 @@ service cloud.firestore {
        PAYMENTS
     ====================== */
     match /payments/{paymentId} {
-      allow get: if isSignedIn();
+      allow get: if isAdmin() || isOwner(resource.data.userId);
       allow list: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
