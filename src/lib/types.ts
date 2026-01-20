@@ -383,3 +383,13 @@ export interface TrackingEvent {
   pageUrl: string;
   metadata?: Record<string, any>;
 }
+
+export interface Chat {
+    id: string;
+    participants: string[];
+    participantCategories: string[];
+    lastMessage?: string;
+    updatedAt: Timestamp;
+    lastSenderId?: string;
+    unreadBy?: string[];
+}

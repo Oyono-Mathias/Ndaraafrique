@@ -533,7 +533,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
                         <Button onClick={() => onOpenChange(false)}>Fermer</Button>
                     )}
                 </FormFooter>
-            </DialogContent>
+            </FormContent>
         </FormWrapper>
     )
 }
@@ -753,5 +753,7 @@ export default function AdminUsersPage() {
     </>
   );
 }
+
+    
 
     
