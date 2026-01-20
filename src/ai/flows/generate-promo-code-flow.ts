@@ -1,7 +1,7 @@
 
 'use server';
 /**
- * @fileOverview A Genkit flow that uses a tool to create promo codes in Firestore.
+ * @fileOverview A Genkit flow that acts as an internal admin assistant (Mathias).
  */
 
 import { ai } from '@/ai/genkit';
@@ -10,6 +10,7 @@ import { adminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generateAnnouncement, GenerateAnnouncementInputSchema, GenerateAnnouncementOutputSchema } from './generate-announcement-flow';
 import type { GenerateAnnouncementInput, GenerateAnnouncementOutput } from './generate-announcement-flow';
+import { grantCourseAccessFromIdentifiers } from '@/actions/aiActions';
 
 
 // Define the tool's input schema using Zod
@@ -21,7 +22,7 @@ const PromoCodeSchema = z.object({
 });
 
 // Define the tool that the AI can use to create promo codes
-const createPromoCode = ai.defineTool(
+const createPromoCodeTool = ai.defineTool(
   {
     name: 'createPromoCode',
     description: 'Creates a new promotional code in the database. Use this tool ONLY when the user explicitly asks to CREATE a promo code, discount, or coupon.',
@@ -41,7 +42,7 @@ const createPromoCode = ai.defineTool(
       const dataToSet: any = { ...input, createdAt: FieldValue.serverTimestamp() };
       
       if (input.expiresAt) {
-        dataToSet.expiresAt = new Date(input.expiresAt); // Firestore admin SDK handles Date objects
+        dataToSet.expiresAt = new Date(input.expiresAt);
       }
 
       await promoRef.set(dataToSet);
@@ -62,46 +63,74 @@ const generateAnnouncementTool = ai.defineTool(
         outputSchema: GenerateAnnouncementOutputSchema,
     },
     async (input: GenerateAnnouncementInput) => {
-        // This tool simply calls the existing flow function
         return await generateAnnouncement(input);
+    }
+);
+
+// New tool for granting course access
+const grantCourseAccessTool = ai.defineTool(
+    {
+        name: 'grantCourseAccess',
+        description: "Grants free access to a course for a specific student. Use this tool when the admin asks to 'give' or 'offer' a course to a user.",
+        inputSchema: z.object({
+            studentEmail: z.string().describe("The email address of the student receiving access."),
+            courseTitle: z.string().describe("The exact title of the course to grant."),
+            reason: z.string().describe("The reason for granting access, inferred from the prompt (e.g., 'reward', 'partnership')."),
+            expirationInDays: z.number().optional().describe("Optional duration of access in days."),
+        }),
+        outputSchema: z.object({
+            success: z.boolean(),
+            error: z.string().optional(),
+        }),
+    },
+    async (input, context) => {
+        const { adminId } = context.auth as { adminId: string };
+        if (!adminId) {
+            return { success: false, error: "Admin ID is missing. Cannot perform this action." };
+        }
+        return await grantCourseAccessFromIdentifiers({ ...input, adminId });
     }
 );
 
 
 // Define the input and output schemas for the main flow
-const GeneratePromoCodeInputSchema = z.object({
+const AdminAssistantInputSchema = z.object({
   prompt: z.string().describe("The user's marketing request, e.g., 'Create a 20% discount for Easter' or 'Write an announcement for a new course'"),
+  adminId: z.string().describe("The UID of the administrator making the request."),
 });
-export type GeneratePromoCodeInput = z.infer<typeof GeneratePromoCodeInputSchema>;
+export type AdminAssistantInput = z.infer<typeof AdminAssistantInputSchema>;
 
-export const GeneratePromoCodeOutputSchema = z.object({
+export const AdminAssistantOutputSchema = z.object({
   response: z.string().describe("A confirmation or generated message back to the user, in French."),
 });
-export type GeneratePromoCodeOutput = z.infer<typeof GeneratePromoCodeOutputSchema>;
+export type AdminAssistantOutput = z.infer<typeof AdminAssistantOutputSchema>;
 
 
-// Define the prompt that uses the tool
-const generatePromoCodePrompt = ai.definePrompt({
-    name: 'generatePromoCodePrompt',
-    input: { schema: GeneratePromoCodeInputSchema },
-    output: { schema: GeneratePromoCodeOutputSchema },
-    tools: [createPromoCode, generateAnnouncementTool],
-    prompt: `You are Mathias, an AI marketing assistant for Ndara Afrique.
-    Your task is to help an administrator with marketing tasks.
-    - First, determine the user's primary intent from their prompt. Is the user asking to CREATE a promo code, or are they asking to WRITE an announcement/message?
+// Define the prompt that uses the tools
+const adminAssistantPrompt = ai.definePrompt({
+    name: 'adminAssistantPrompt',
+    input: { schema: z.object({ prompt: z.string() }) },
+    output: { schema: AdminAssistantOutputSchema },
+    tools: [createPromoCodeTool, generateAnnouncementTool, grantCourseAccessTool],
+    prompt: `You are Mathias, an AI assistant for Ndara Afrique's administrators. Your task is to help with daily management tasks.
+    - First, determine the user's primary intent from their prompt. Are they creating a promo code, writing an announcement, or granting course access?
 
-    - If the user's prompt is about CREATING a promotional code, discount, or coupon:
-      - Analyze the user's prompt to determine the code name, discount percentage, and any expiration details.
-      - If the user is vague, make reasonable assumptions (e.g., a 'welcome' code is active indefinitely, a holiday code might expire after the holiday).
-      - You MUST use the 'createPromoCode' tool to save the new code to the database.
-      - After calling the tool, respond to the user in French to confirm what you have done.
-      - If the tool call is successful, say something like: "C'est fait ! Le code promo [CODE] offrant [XX]% de réduction a été créé et activé."
-      - If the tool call fails, say: "Je suis désolé, je n'ai pas pu créer le code promo pour une raison technique."
+    - If the user's prompt is to CREATE a promotional code, discount, or coupon:
+      - Analyze the prompt for code name, discount percentage, and expiration.
+      - Make reasonable assumptions if details are missing.
+      - You MUST use the 'createPromoCodeTool'.
+      - After a successful call, respond in French: "C'est fait ! Le code promo [CODE] offrant [XX]% de réduction a été créé."
+      - If it fails, say: "Désolé, je n'ai pas pu créer le code promo."
 
-    - If the user's prompt is about WRITING an announcement, marketing message, or any other text content:
-      - You MUST call the 'generateAnnouncement' tool with the user's prompt as the 'topic'.
-      - The tool will return a structured object like \`{"announcement": "..."}\`.
-      - Your final output should be an object where the 'response' field contains the value of the 'announcement' field from the tool's result. For example: \`{"response": "valeur du champ announcement"}\`.
+    - If the user's prompt is to WRITE text (announcement, message, etc.):
+      - You MUST call the 'generateAnnouncementTool' with the prompt as the 'topic'.
+      - The tool returns \`{"announcement": "..."}\`. Your response must be an object \`{"response": "value of announcement field"}\`.
+
+    - If the user's prompt is to GRANT access, give a course, or enroll a student for free:
+      - Analyze the prompt for the student's email, the course title, and optionally a reason and duration.
+      - You MUST use the 'grantCourseAccessTool'.
+      - After a successful call, respond in French: "C'est fait ! L'accès au cours a été accordé."
+      - If it fails, respond with the error message: "Désolé, l'opération a échoué. Raison : [error message]".
 
     User's request: {{{prompt}}}
     `,
@@ -109,14 +138,21 @@ const generatePromoCodePrompt = ai.definePrompt({
 
 
 // Define the main flow that orchestrates the process
-export const generatePromoCode = ai.defineFlow(
+export const adminAssistantFlow = ai.defineFlow(
     {
-        name: 'generatePromoCodeFlow',
-        inputSchema: GeneratePromoCodeInputSchema,
-        outputSchema: GeneratePromoCodeOutputSchema,
+        name: 'adminAssistantFlow',
+        inputSchema: AdminAssistantInputSchema,
+        outputSchema: AdminAssistantOutputSchema,
     },
     async (input) => {
-        const { output } = await generatePromoCodePrompt(input);
+        const { output } = await adminAssistantPrompt(
+            { prompt: input.prompt },
+            { auth: { adminId: input.adminId } }
+        );
         return output!;
     }
 );
+
+export async function adminAssistant(input: AdminAssistantInput): Promise<AdminAssistantOutput> {
+  return adminAssistantFlow(input);
+}

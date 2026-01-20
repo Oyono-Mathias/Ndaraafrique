@@ -82,7 +82,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/payouts", icon: Landmark, label: "Retraits", countId: 'pendingPayouts' },
     { href: "/admin/support", icon: HelpCircle, label: "Support", countId: 'openTickets' },
     { href: "/admin/logs", icon: History, label: "Journal d'Audit" },
-    { href: "/admin/marketing", icon: Sparkles, label: "Marketing" },
+    { href: "/admin/assistant", icon: Sparkles, label: "Assistant IA" },
     { href: "/admin/carousel", icon: GalleryHorizontal, label: "Carrousel" },
     { href: "/messages", icon: MessageSquare, label: "Messagerie" },
     { href: "/admin/faq", icon: MessageCircleQuestion, label: "FAQ" },
