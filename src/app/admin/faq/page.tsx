@@ -92,9 +92,9 @@ const FaqForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: (data:
                 </FormItem>
             )} />
             
-            <div className="flex justify-end gap-2 pt-4">
-                <SheetClose asChild><Button type="button" variant="ghost">Annuler</Button></SheetClose>
-                <DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose>
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
+                <SheetClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto">Annuler</Button></SheetClose>
+                <DialogClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto">Annuler</Button></DialogClose>
                 <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                     Sauvegarder

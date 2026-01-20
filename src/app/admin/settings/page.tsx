@@ -277,28 +277,24 @@ Conformément à la législation en vigueur, vous disposez d'un droit d'accès, 
                 onClose={() => setImageToCrop(null)}
             />
             <div className="space-y-8">
-                <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                    <div>
-                        <h1 className="text-3xl font-bold dark:text-white">Paramètres du Site</h1>
-                        <p className="text-muted-foreground dark:text-slate-400">Configurez les aspects globaux de la plateforme.</p>
-                    </div>
-                     <Button onClick={form.handleSubmit(onSubmit)} disabled={isSaving} className="w-full sm:w-auto h-12 text-base md:text-sm">
-                        {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                        Sauvegarder
-                    </Button>
-                </header>
-                
-                <Tabs defaultValue="general" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
-                        <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>Général</TabsTrigger>
-                        <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>Commercial</TabsTrigger>
-                        <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>Plateforme</TabsTrigger>
-                        <TabsTrigger value="content"><Text className="w-4 h-4 mr-2"/>Contenu</TabsTrigger>
-                        <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>Légal</TabsTrigger>
-                    </TabsList>
-                    
-                     <Form {...form}>
-                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <Form {...form}>
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                        <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                            <div>
+                                <h1 className="text-3xl font-bold dark:text-white">Paramètres du Site</h1>
+                                <p className="text-muted-foreground dark:text-slate-400">Configurez les aspects globaux de la plateforme.</p>
+                            </div>
+                        </header>
+                        
+                        <Tabs defaultValue="general" className="w-full">
+                            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
+                                <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>Général</TabsTrigger>
+                                <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>Commercial</TabsTrigger>
+                                <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>Plateforme</TabsTrigger>
+                                <TabsTrigger value="content"><Text className="w-4 h-4 mr-2"/>Contenu</TabsTrigger>
+                                <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>Légal</TabsTrigger>
+                            </TabsList>
+                            
                             <TabsContent value="general" className="mt-6">
                                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                                 <CardHeader>
@@ -415,9 +411,16 @@ Conformément à la législation en vigueur, vous disposez d'un droit d'accès, 
                                 </CardContent>
                             </Card>
                             </TabsContent>
-                        </form>
-                    </Form>
-                </Tabs>
+                        </Tabs>
+
+                        <div className="fixed bottom-0 left-0 right-0 md:relative bg-background/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none border-t md:border-none p-4 md:p-0 md:flex md:justify-end mt-6 z-50">
+                            <Button type="submit" disabled={isSaving} className="w-full md:w-auto h-12 text-base md:text-sm">
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Enregistrer les Modifications
+                            </Button>
+                        </div>
+                    </form>
+                </Form>
             </div>
         </>
     );
