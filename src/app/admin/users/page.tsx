@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift, FileUp } from 'lucide-react';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift, FileUp, User as UserIcon } from 'lucide-react';
 import type { NdaraUser, Course, UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -197,6 +197,11 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
+          <DropdownMenuItem onClick={() => router.push(`/admin/users/${user.uid}`)} className="cursor-pointer dark:focus:bg-slate-700">
+            <UserIcon className="mr-2 h-4 w-4"/>
+            Voir le profil
+          </DropdownMenuItem>
+          <DropdownMenuSeparator className="dark:bg-slate-700" />
           <DropdownMenuItem onClick={handleContact} className="cursor-pointer dark:focus:bg-slate-700">
             <MessageSquare className="mr-2 h-4 w-4"/>
             Contacter
@@ -732,3 +737,5 @@ export default function AdminUsersPage() {
     </>
   );
 }
+
+    
