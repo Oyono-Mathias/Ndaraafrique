@@ -100,7 +100,8 @@ const generatePromoCodePrompt = ai.definePrompt({
 
     - If the user's prompt is about WRITING an announcement, marketing message, or any other text content:
       - You MUST call the 'generateAnnouncement' tool with the user's prompt as the 'topic'.
-      - The tool will return a structured object. Your final response should ONLY be the 'announcement' field from the tool's output.
+      - The tool will return a structured object like \`{"announcement": "..."}\`.
+      - Your final output should be an object where the 'response' field contains the value of the 'announcement' field from the tool's result. For example: \`{"response": "valeur du champ announcement"}\`.
 
     User's request: {{{prompt}}}
     `,
