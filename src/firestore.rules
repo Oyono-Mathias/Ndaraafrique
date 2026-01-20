@@ -162,7 +162,8 @@ service cloud.firestore {
        REVIEWS
     ====================== */
     match /reviews/{reviewId} {
-      allow get, list: if true;
+      allow get: if true;
+      allow list: if isSignedIn();
       allow create: if isEnrolled(request.resource.data.courseId) && isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }

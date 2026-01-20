@@ -163,7 +163,7 @@ service cloud.firestore {
     ====================== */
     match /reviews/{reviewId} {
       allow get: if true;
-      allow list: if isSignedIn(); // Allow any signed-in user to query the reviews collection
+      allow list: if isSignedIn();
       allow create: if isEnrolled(request.resource.data.courseId) && isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }
