@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,7 +10,7 @@ import {
   query,
   orderBy,
   where,
-  getDocs,
+  onSnapshot,
 } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -62,17 +61,32 @@ export default function AdminSupportPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // This is a placeholder for real data fetching
   useEffect(() => {
+    if (!currentUser || isUserLoading) {
+      if(!isUserLoading) setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
-    // Simulate fetching data
-    setTimeout(() => {
-      // In a real app, you would fetch from Firestore here.
-      // For now, we just show the empty/loading state.
-      setTickets([]); 
+    const ticketsQuery = query(
+      collection(db, 'support_tickets'),
+      where('status', '==', activeTab),
+      orderBy('updatedAt', 'desc')
+    );
+
+    const unsubscribe = onSnapshot(ticketsQuery, (snapshot) => {
+      const fetchedTickets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportTicket));
+      setTickets(fetchedTickets);
       setIsLoading(false);
-    }, 1500);
-  }, [activeTab]);
+      setError(null);
+    }, (err) => {
+      console.error("Error fetching tickets:", err);
+      setError("Erreur de chargement des tickets. Un index Firestore est peut-être manquant.");
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [activeTab, currentUser, isUserLoading, db]);
 
   if (error) {
     return (
@@ -92,7 +106,7 @@ export default function AdminSupportPage() {
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)}>
             <TabsList>
               <TabsTrigger value="ouvert">Tickets ouverts</TabsTrigger>
               <TabsTrigger value="fermé">Tickets fermés</TabsTrigger>
