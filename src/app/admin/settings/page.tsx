@@ -337,7 +337,7 @@ export default function AdminSettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-                
+
                 <TabsContent value="content" className="mt-6">
                     <Card className="dark:bg-slate-800 dark:border-slate-700">
                         <CardHeader>
@@ -378,7 +378,7 @@ export default function AdminSettingsPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
-
+                
                 <TabsContent value="legal" className="mt-6">
                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                     <CardHeader>
