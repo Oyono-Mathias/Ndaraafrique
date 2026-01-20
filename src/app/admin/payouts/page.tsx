@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -304,7 +303,7 @@ export default function PayoutsPage() {
                   </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                  <AlertDialogCancel onClick={() => setConfirmationAction(null)}>Annuler</AlertDialogCancel>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
                   <AlertDialogAction onClick={handleUpdateStatus} disabled={!!updatingId} className={cn(confirmationAction?.status === 'rejete' && 'bg-destructive hover:bg-destructive/90')}>
                       {updatingId === confirmationAction?.payoutId ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
                       Confirmer
