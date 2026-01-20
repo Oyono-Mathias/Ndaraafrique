@@ -270,7 +270,7 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
     const isMobile = useIsMobile();
     
     const coursesQuery = useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Published')), [db]);
-    const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+    const { data: courses } = useCollection<Course>(coursesQuery);
 
     const form = useForm<z.infer<typeof grantAccessSchema>>({
         resolver: zodResolver(grantAccessSchema),
@@ -328,8 +328,8 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
                                     <FormLabel>Cours</FormLabel>
                                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                                         <FormControl>
-                                            <SelectTrigger disabled={coursesLoading} className="dark:bg-slate-800 dark:border-slate-700">
-                                                <SelectValue placeholder={coursesLoading ? "Chargement..." : "Sélectionner un cours"} />
+                                            <SelectTrigger disabled={!courses} className="dark:bg-slate-800 dark:border-slate-700">
+                                                <SelectValue placeholder={!courses ? "Chargement..." : "Sélectionner un cours"} />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent className="dark:bg-slate-800 dark:border-slate-700">
@@ -543,10 +543,10 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<NdaraUser[]>([]);
   const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
-  const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [grantUser, setGrantUser] = useState<NdaraUser | null>(null);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -560,33 +560,34 @@ export default function AdminUsersPage() {
     if (!currentUser) return;
 
     if (loadMore) {
-        setIsLoadingMore(true);
+      if (!hasMore || isLoadingMore) return;
+      setIsLoadingMore(true);
     } else {
-        setIsLoading(true);
+      setIsLoading(true);
+      setLastVisible(null); // Reset for new fetches
     }
 
     try {
-        let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+      let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
 
-        if (loadMore && lastVisible) {
-            q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
-        }
+      if (loadMore && lastVisible) {
+        q = query(q, startAfter(lastVisible));
+      }
 
-        const documentSnapshots = await getDocs(q);
-        const newUsers = documentSnapshots.docs.map(doc => doc.data() as NdaraUser);
-        
-        setHasMore(newUsers.length === PAGE_SIZE);
-        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
-        setUsers(prev => loadMore ? [...prev, ...newUsers] : newUsers);
-
+      const documentSnapshots = await getDocs(q);
+      const newUsers = documentSnapshots.docs.map(doc => doc.data() as NdaraUser);
+      
+      setHasMore(newUsers.length === PAGE_SIZE);
+      setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1] || null);
+      setUsers(prev => loadMore ? [...prev, ...newUsers] : newUsers);
     } catch (error) {
-        console.error("Error fetching users: ", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger la liste des utilisateurs." });
+      console.error("Error fetching users: ", error);
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger la liste des utilisateurs." });
     } finally {
-        setIsLoading(false);
-        setIsLoadingMore(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
     }
-  }, [db, currentUser, toast, lastVisible]);
+  }, [db, currentUser, toast, hasMore, isLoadingMore, lastVisible]);
   
   useEffect(() => {
     if(currentUser) {
@@ -606,6 +607,7 @@ export default function AdminUsersPage() {
   }, []);
 
   const filteredUsers = useMemo(() => {
+    if (!debouncedSearchTerm) return users;
     return users.filter(user =>
       user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
@@ -659,7 +661,7 @@ export default function AdminUsersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                   {finalLoading ? <UserTableSkeleton /> : filteredUsers.length > 0 ? (
+                   {finalLoading && users.length === 0 ? <UserTableSkeleton /> : filteredUsers.length > 0 ? (
                         filteredUsers.map(user => (
                             <TableRow key={user.uid} className={cn("dark:border-slate-700", isUpdating && "opacity-50")}>
                                 <TableCell>
@@ -702,7 +704,7 @@ export default function AdminUsersPage() {
             
              {/* Mobile Card View */}
              <div className="md:hidden space-y-4">
-                {finalLoading ? <UserCardSkeleton /> : filteredUsers.length > 0 ? (
+                {finalLoading && users.length === 0 ? <UserCardSkeleton /> : filteredUsers.length > 0 ? (
                     filteredUsers.map(user => (
                         <Card key={user.uid} className="p-4 dark:bg-slate-900/50 dark:border-slate-700">
                              <div className="flex items-start gap-4">
@@ -737,7 +739,7 @@ export default function AdminUsersPage() {
                     </div>
                 )}
              </div>
-             {hasMore && !finalLoading && (
+             {hasMore && !finalLoading && !debouncedSearchTerm && (
                 <div className="mt-6 text-center">
                     <Button onClick={() => fetchUsers(true)} disabled={isLoadingMore}>
                         {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
