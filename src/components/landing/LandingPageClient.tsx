@@ -15,8 +15,7 @@ import { logTrackingEvent } from '@/app/actions/trackingActions';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { Course, NdaraUser } from '@/lib/types';
 import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
-import { Carousel, CarouselContent, CarouselItem } from '../ui/carousel';
-import { CourseCard } from '../cards/CourseCard';
+import { CourseCarousel } from './CourseCarousel';
 import { Skeleton } from '../ui/skeleton';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
@@ -105,40 +104,6 @@ const MobileMoneySection = ({ onTrackClick }: { onTrackClick: (provider: string)
         </div>
     </section>
 );
-
-const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
-    if (isLoading && courses.length === 0) {
-        return (
-            <section>
-                <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
-                <div className="flex space-x-6">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="w-[280px] shrink-0">
-                           <Skeleton className="h-80 rounded-2xl bg-slate-800" />
-                        </div>
-                    ))}
-                </div>
-            </section>
-        );
-    }
-    if (!courses || courses.length === 0) {
-        return null;
-    }
-    return (
-        <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">{title}</h2>
-             <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-6">
-                    {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-6 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
-        </section>
-    );
-};
 
 const MobileCTA = ({ onClick }: { onClick: () => void }) => (
   <div className="fixed bottom-0 left-0 right-0 md:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-40">
