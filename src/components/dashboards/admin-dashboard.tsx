@@ -1,10 +1,17 @@
+
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRole } from '@/context/RoleContext';
+import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs, doc, orderBy, limit } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Users, DollarSign, BookOpen, HelpCircle, Activity } from 'lucide-react';
+import { Users, DollarSign, BookOpen, HelpCircle, Activity, ShieldAlert } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { formatDistanceToNow } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import type { Enrollment, Course, NdaraUser } from '@/lib/types';
+import { startOfMonth } from 'date-fns';
 
 interface StatCardProps {
   title: string;
@@ -54,17 +61,99 @@ const ActivityItemSkeleton = () => (
     </div>
 );
 
+interface EnrichedActivity extends Enrollment {
+    studentName?: string;
+    studentAvatar?: string;
+    courseTitle?: string;
+}
+
 
 const AdminDashboard = () => {
+    const { currentUser, isUserLoading } = useRole();
+    const db = getFirestore();
+    const [stats, setStats] = useState({
+        totalStudents: 0,
+        monthlyRevenue: 0,
+        publishedCourses: 0,
+        openTickets: 0,
+    });
+    const [recentActivity, setRecentActivity] = useState<EnrichedActivity[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Simulate data fetching
     useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsLoading(false);
-        }, 1500);
-        return () => clearTimeout(timer);
-    }, []);
+        if (!currentUser || currentUser.role !== 'admin') {
+            if (!isUserLoading) setIsLoading(false);
+            return;
+        }
+
+        const unsubscribes: (() => void)[] = [];
+
+        // Total students
+        const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+        unsubscribes.push(onSnapshot(studentsQuery, snapshot => setStats(s => ({ ...s, totalStudents: snapshot.size }))));
+
+        // Monthly revenue
+        const startOfMonthDate = startOfMonth(new Date());
+        const revenueQuery = query(collection(db, 'payments'), where('status', '==', 'Completed'), where('date', '>=', Timestamp.fromDate(startOfMonthDate)));
+        unsubscribes.push(onSnapshot(revenueQuery, snapshot => {
+            const total = snapshot.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+            setStats(s => ({ ...s, monthlyRevenue: total }));
+        }));
+
+        // Published courses
+        const coursesQuery = query(collection(db, 'courses'), where('status', '==', 'Published'));
+        unsubscribes.push(onSnapshot(coursesQuery, snapshot => setStats(s => ({ ...s, publishedCourses: snapshot.size }))));
+        
+        // Open support tickets
+        const ticketsQuery = query(collection(db, 'support_tickets'), where('status', '==', 'ouvert'));
+        unsubscribes.push(onSnapshot(ticketsQuery, snapshot => setStats(s => ({ ...s, openTickets: snapshot.size }))));
+
+        // Recent activity
+        const activityQuery = query(collection(db, 'enrollments'), orderBy('enrollmentDate', 'desc'), limit(5));
+        unsubscribes.push(onSnapshot(activityQuery, async (snapshot) => {
+            const enrollments = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Enrollment));
+            const studentIds = [...new Set(enrollments.map(e => e.studentId))];
+            const courseIds = [...new Set(enrollments.map(e => e.courseId))];
+
+            const studentsData = new Map<string, NdaraUser>();
+            if (studentIds.length > 0) {
+                const studentsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 10))));
+                studentsSnap.forEach(doc => studentsData.set(doc.id, doc.data() as NdaraUser));
+            }
+            
+            const coursesData = new Map<string, Course>();
+            if (courseIds.length > 0) {
+                const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0, 10))));
+                coursesSnap.forEach(doc => coursesData.set(doc.id, doc.data() as Course));
+            }
+
+            const enrichedActivity = enrollments.map(e => ({
+                ...e,
+                studentName: studentsData.get(e.studentId)?.fullName || 'Un étudiant',
+                studentAvatar: studentsData.get(e.studentId)?.profilePictureURL || '',
+                courseTitle: coursesData.get(e.courseId)?.title || 'un cours',
+            }));
+            
+            setRecentActivity(enrichedActivity);
+        }));
+
+        // Initial loading is done after the first fetch of all listeners
+        const initialLoadTimer = setTimeout(() => setIsLoading(false), 2000);
+        unsubscribes.push(() => clearTimeout(initialLoadTimer));
+        
+        return () => unsubscribes.forEach(unsub => unsub());
+
+    }, [currentUser, isUserLoading, db]);
+
+    if (!isUserLoading && currentUser?.role !== 'admin') {
+      return (
+          <div className="flex flex-col items-center justify-center h-[60vh] text-center p-4">
+              <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+              <h1 className="text-2xl font-bold text-white">Accès Interdit</h1>
+              <p className="text-muted-foreground">Vous n'avez pas les permissions nécessaires pour voir ce tableau de bord.</p>
+          </div>
+      );
+    }
 
   return (
     <div className="space-y-8">
@@ -74,10 +163,10 @@ const AdminDashboard = () => {
         </header>
 
       <section className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard title="Total Étudiants" value="1,250" icon={Users} isLoading={isLoading} />
-        <StatCard title="Revenus (Mois)" value="1,500,000 XOF" icon={DollarSign} isLoading={isLoading} />
-        <StatCard title="Cours Publiés" value="58" icon={BookOpen} isLoading={isLoading} />
-        <StatCard title="Tickets Ouverts" value="3" icon={HelpCircle} isLoading={isLoading} />
+        <StatCard title="Total Étudiants" value={stats.totalStudents.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} />
+        <StatCard title="Revenus (Mois)" value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+        <StatCard title="Cours Publiés" value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} />
+        <StatCard title="Tickets Ouverts" value={stats.openTickets.toString()} icon={HelpCircle} isLoading={isLoading} />
       </section>
 
       <section>
@@ -96,21 +185,20 @@ const AdminDashboard = () => {
                   <ActivityItemSkeleton />
                   <ActivityItemSkeleton />
                 </>
-              ) : (
-                <>
+              ) : recentActivity.length > 0 ? (
+                recentActivity.map((item) => (
                     <RecentActivityItem 
-                        studentName="Amina Diallo"
-                        courseName="Introduction à React"
-                        time="il y a 5 minutes"
-                        avatar="/placeholder-avatars/amina.jpg"
+                        key={item.id}
+                        studentName={item.studentName || '...'}
+                        courseName={item.courseTitle || '...'}
+                        time={item.enrollmentDate ? formatDistanceToNow(item.enrollmentDate.toDate(), { addSuffix: true, locale: fr }) : 'récemment'}
+                        avatar={item.studentAvatar || ''}
                     />
-                     <RecentActivityItem 
-                        studentName="Kwame Nkrumah"
-                        courseName="Node.js pour débutants"
-                        time="il y a 2 heures"
-                        avatar="/placeholder-avatars/kwame.jpg"
-                    />
-                </>
+                ))
+              ) : (
+                <div className="text-center py-10 text-muted-foreground">
+                    Aucune activité récente.
+                </div>
               )}
             </div>
           </CardContent>
