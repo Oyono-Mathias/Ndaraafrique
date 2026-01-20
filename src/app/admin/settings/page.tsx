@@ -4,7 +4,7 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Settings, FileText, Percent, Building, Upload } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Upload, Briefcase, Check, MessagesSquare } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +26,11 @@ const settingsSchema = z.object({
     currency: z.string().length(3, "Le code devise doit faire 3 caractères."),
     minPayoutThreshold: z.coerce.number().min(0, "Doit être un nombre positif."),
   }),
+  platform: z.object({
+    allowInstructorSignup: z.boolean().default(true),
+    autoApproveCourses: z.boolean().default(false),
+    enableInternalMessaging: z.boolean().default(true),
+  }),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -43,6 +48,11 @@ export default function AdminSettingsPage() {
               platformCommission: 30,
               currency: 'XOF',
               minPayoutThreshold: 5000
+            },
+            platform: {
+                allowInstructorSignup: true,
+                autoApproveCourses: false,
+                enableInternalMessaging: true
             }
         }
     });
@@ -154,7 +164,33 @@ export default function AdminSettingsPage() {
                             <CardDescription className="dark:text-slate-400">Activez ou désactivez des fonctionnalités globales.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between rounded-lg border p-3 dark:border-slate-700"><p className="text-sm font-medium">Autoriser les candidatures d'instructeurs</p><Switch disabled checked /></div>
+                            <FormField control={form.control} name="platform.allowInstructorSignup" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 dark:border-slate-700">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="flex items-center gap-2"><Briefcase className="h-4 w-4"/>Autoriser les candidatures d'instructeurs</FormLabel>
+                                        <FormDescription>Permettre aux nouveaux utilisateurs de postuler pour devenir instructeur.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                             <FormField control={form.control} name="platform.autoApproveCourses" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 dark:border-slate-700">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="flex items-center gap-2"><Check className="h-4 w-4"/>Validation automatique des cours</FormLabel>
+                                        <FormDescription>Si activé, les cours soumis sont publiés sans modération (non recommandé).</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                             <FormField control={form.control} name="platform.enableInternalMessaging" render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 dark:border-slate-700">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="flex items-center gap-2"><MessagesSquare className="h-4 w-4"/>Activer la messagerie interne</FormLabel>
+                                        <FormDescription>Permettre aux utilisateurs de communiquer entre eux sur la plateforme.</FormDescription>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -235,3 +271,5 @@ export default function AdminSettingsPage() {
         </Form>
     );
 }
+
+    
