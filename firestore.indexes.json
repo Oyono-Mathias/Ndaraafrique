@@ -77,7 +77,7 @@
     },
     {
       "collectionGroup": "support_tickets",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }
@@ -85,7 +85,7 @@
     },
     {
       "collectionGroup": "support_tickets",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "userId", "order": "ASCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }
@@ -93,7 +93,7 @@
     },
     {
       "collectionGroup": "support_tickets",
-      "queryScope": "COLLECTION_GROUP",
+      "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "instructorId", "order": "ASCENDING" },
         { "fieldPath": "updatedAt", "order": "DESCENDING" }

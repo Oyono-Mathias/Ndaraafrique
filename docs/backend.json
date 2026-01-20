@@ -1214,6 +1214,10 @@
     "/settings/{settingId}": {
       "schema": { "$ref": "#/entities/Settings" },
       "description": "Global settings for the application. This is a singleton collection containing only one document with the ID 'global'."
+    },
+    "support_tickets/{ticketId}": {
+        "schema": { "$ref": "#/entities/SupportTicket" },
+        "description": "User support tickets."
     }
   }
 }
