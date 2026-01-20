@@ -161,7 +161,7 @@ const TestimonialsSection = () => {
     );
 };
 
-const InstructorCTASection = () => {
+const InstructorCTASection = ({ onTrackClick }: { onTrackClick: () => void }) => {
     return (
         <section className="py-24 bg-slate-800/30 rounded-2xl my-24">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -179,7 +179,7 @@ const InstructorCTASection = () => {
                     <p className="mt-4 text-slate-400">
                         Vous êtes un expert dans votre domaine ? Rejoignez notre communauté de formateurs et contribuez à l'éducation de la prochaine génération de leaders en Afrique.
                     </p>
-                    <Button asChild size="lg" className="mt-6 h-12 text-base">
+                    <Button asChild size="lg" className="mt-6 h-12 text-base" onClick={onTrackClick}>
                         <Link href="/devenir-instructeur">Devenir Formateur</Link>
                     </Button>
                 </div>
@@ -340,7 +340,7 @@ export function LandingPageClient() {
             isLoading={isLoading}
         />
 
-        <InstructorCTASection />
+        <InstructorCTASection onTrackClick={() => handleTrackedClick('cta_click', { button: 'instructor_cta' })} />
 
         <section className="relative py-24 my-24 text-center rounded-2xl overflow-hidden">
             <Image
