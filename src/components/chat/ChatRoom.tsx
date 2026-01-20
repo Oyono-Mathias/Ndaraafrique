@@ -185,7 +185,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                     ? "chat-bubble-sent bg-[#dcf8c6] text-slate-800 dark:bg-[#075e54] dark:text-slate-100" 
                                     : "chat-bubble-received bg-white text-slate-800 dark:bg-slate-700 dark:text-slate-100"
                             )}>
-                                {msg.text}
+                                <p className="whitespace-pre-wrap">{msg.text}</p>
                                 {isMe && (
                                   <div className="flex items-center gap-1 justify-end mt-1">
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400">
@@ -206,7 +206,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        <div className="p-2 border-t bg-slate-100 dark:bg-[#202c33] border-slate-200 dark:border-slate-900/50">
+        <div className="p-2 border-t bg-slate-100 dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
                 <Input
                     value={newMessage}
@@ -224,3 +224,4 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     </div>
   );
 }
+    
