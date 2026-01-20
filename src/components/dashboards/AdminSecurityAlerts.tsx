@@ -84,7 +84,7 @@ const AlertCard = ({ item }: { item: AlertItem }) => {
                         </p>
                     </div>
                 </div>
-                <div className="flex justify-end gap-2 mt-3">
+                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-3">
                     {item.userId && (
                          <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={isLoading}>
                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Ban className="h-3 w-3 mr-1.5"/>}
@@ -121,7 +121,7 @@ export function AdminSecurityAlerts() {
 
                 const [suspiciousPaymentsSnap, suspiciousLoginsSnap] = await Promise.all([
                     getDocs(suspiciousPaymentsQuery),
-                    getDocs(suspiciousLoginsQuery)
+                    getDocs(suspiciousLoginsSnap)
                 ]);
 
                 const alerts: AlertItem[] = [];
