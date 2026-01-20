@@ -1,20 +1,7 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRole } from '@/context/RoleContext';
-import {
-  getFirestore,
-  collection,
-  query,
-  orderBy,
-  doc,
-  updateDoc,
-  where,
-  getDocs,
-  onSnapshot,
-} from 'firebase/firestore';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,15 +17,13 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Check, X, Landmark, AlertTriangle, Wallet, FileDown } from 'lucide-react';
+import { Loader2, Check, X, Landmark, Wallet, FileDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { NdaraUser } from '@/lib/types';
 import { format, formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from '@/lib/utils';
 import * as XLSX from 'xlsx';
-import { processPayout } from '@/actions/supportActions';
 import {
   Table,
   TableBody,
@@ -52,16 +37,23 @@ import {
 interface Payout {
   id: string;
   instructorId: string;
+  instructorName: string;
+  instructorAvatar: string;
   amount: number;
-  method: string;
+  method: 'Mobile Money' | 'Virement';
   status: 'en_attente' | 'valide' | 'rejete';
-  date: any; // Firestore Timestamp
+  date: Date;
+  instructorBalance: number;
 }
 
-interface EnrichedPayout extends Payout {
-    instructor?: Pick<NdaraUser, 'fullName' | 'email' | 'profilePictureURL'>;
-    instructorBalance?: number;
-}
+// --- MOCK DATA ---
+const mockPayouts: Payout[] = [
+  { id: '1', instructorId: 'instr1', instructorName: 'Amina Diallo', instructorAvatar: '/placeholder-avatars/amina.jpg', amount: 75000, method: 'Mobile Money', status: 'en_attente', date: new Date(2024, 6, 20), instructorBalance: 150000 },
+  { id: '2', instructorId: 'instr2', instructorName: 'Kwame Nkrumah', instructorAvatar: '/placeholder-avatars/kwame.jpg', amount: 120000, method: 'Virement', status: 'en_attente', date: new Date(2024, 6, 19), instructorBalance: 110000 },
+  { id: '3', instructorId: 'instr3', instructorName: 'Fatou Diop', instructorAvatar: '/placeholder-avatars/fatou.jpg', amount: 55000, method: 'Mobile Money', status: 'en_attente', date: new Date(2024, 6, 18), instructorBalance: 250000 },
+  { id: '4', instructorId: 'instr4', instructorName: 'Jean Dupont', instructorAvatar: '/placeholder-avatars/jean.jpg', amount: 95000, method: 'Virement', status: 'valide', date: new Date(2024, 6, 15), instructorBalance: 0 },
+  { id: '5', instructorId: 'instr5', instructorName: 'Marie Claire', instructorAvatar: '/placeholder-avatars/marie.jpg', amount: 60000, method: 'Mobile Money', status: 'rejete', date: new Date(2024, 6, 12), instructorBalance: 100000 },
+];
 
 const getStatusBadge = (status: Payout['status']) => {
   switch (status) {
@@ -81,117 +73,44 @@ const formatCurrency = (amount: number) => {
 };
 
 export default function PayoutsPage() {
-  const { currentUser: adminUser, isUserLoading } = useRole();
-  const db = getFirestore();
   const { toast } = useToast();
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('en_attente');
   const [confirmationAction, setConfirmationAction] = useState<{payoutId: string, status: 'valide' | 'rejete'} | null>(null);
-  
   const [payouts, setPayouts] = useState<Payout[]>([]);
-  const [enrichedPayouts, setEnrichedPayouts] = useState<EnrichedPayout[]>([]);
-  const [payoutsLoading, setPayoutsLoading] = useState(true);
-  const [dataLoading, setDataLoading] = useState(true);
-  
-  const [settings, setSettings] = useState({ platformCommission: 30 });
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Simulate data fetching
   useEffect(() => {
-    const settingsRef = doc(db, 'settings', 'global');
-    const unsub = onSnapshot(settingsRef, (docSnap) => {
-        if (docSnap.exists()) {
-            setSettings({
-                platformCommission: docSnap.data().commercial?.platformCommission || 30,
-            });
-        }
-    });
-    return () => unsub();
-  }, [db]);
-
-
-  useEffect(() => {
-    const q = query(collection(db, 'payouts'), orderBy('date', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-        setPayouts(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payout)));
-        setPayoutsLoading(false);
-    });
-    return () => unsubscribe();
-  }, [db]);
-  
-
-  useEffect(() => {
-    if (payoutsLoading || payouts.length === 0) {
-        if(!payoutsLoading) setDataLoading(false);
-        return;
-    }
-
-    const fetchDetails = async () => {
-        setDataLoading(true);
-        const instructorIds = [...new Set(payouts.map(p => p.instructorId))];
-        if (instructorIds.length === 0) {
-            setEnrichedPayouts([]);
-            setDataLoading(false);
-            return;
-        }
-
-        const usersMap = new Map<string, NdaraUser>();
-        const usersRef = collection(db, 'users');
-        const q = query(usersRef, where('uid', 'in', instructorIds.slice(0,30)));
-        const usersSnap = await getDocs(q);
-        usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
-        
-        const instructorBalances = new Map<string, number>();
-
-        for (const id of instructorIds) {
-            const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', id), where('status', '==', 'Completed'));
-            const payoutsQuery = query(collection(db, 'payouts'), where('instructorId', '==', id), where('status', 'in', ['en_attente', 'valide']));
-            
-            const [paymentsSnap, payoutsSnap] = await Promise.all([getDocs(paymentsQuery), getDocs(payoutsQuery)]);
-            
-            const totalRevenue = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-            const totalPayouts = payoutsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-            
-            const instructorShare = totalRevenue * (1 - settings.platformCommission / 100);
-            instructorBalances.set(id, instructorShare - totalPayouts);
-        }
-
-        const enriched = payouts.map(payout => ({
-            ...payout,
-            instructor: usersMap.get(payout.instructorId),
-            instructorBalance: instructorBalances.get(payout.instructorId) || 0
-        }));
-
-        setEnrichedPayouts(enriched);
-        setDataLoading(false);
-    }
-    fetchDetails();
-  }, [payouts, payoutsLoading, db, settings.platformCommission]);
+    setTimeout(() => {
+        setPayouts(mockPayouts);
+        setIsLoading(false);
+    }, 1500)
+  }, []);
   
   const filteredPayouts = useMemo(() => {
-    return enrichedPayouts.filter(payout => payout.status === activeTab);
-  }, [enrichedPayouts, activeTab]);
+    return payouts.filter(payout => payout.status === activeTab);
+  }, [payouts, activeTab]);
 
   const handleUpdateStatus = async () => {
-    if (!confirmationAction || !adminUser) return;
-
+    if (!confirmationAction) return;
     const { payoutId, status } = confirmationAction;
     setUpdatingId(payoutId);
     
-    const result = await processPayout(payoutId, status, adminUser.uid);
-
-    if (result.success) {
-        toast({ title: "Statut du retrait mis à jour", description: `Le retrait a été marqué comme ${status === 'valide' ? 'validé' : 'rejeté'}.` });
-    } else {
-        toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour le statut du retrait." });
-    }
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    setPayouts(prev => prev.map(p => p.id === payoutId ? { ...p, status } : p));
+    toast({ title: "Statut du retrait mis à jour" });
     
     setUpdatingId(null);
     setConfirmationAction(null);
   };
-
-  const handleExport = () => {
+  
+   const handleExport = () => {
     const dataToExport = filteredPayouts.map(p => ({
-        Date: p.date ? format(p.date.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A',
-        Instructeur: p.instructor?.fullName || 'Inconnu',
+        Date: format(p.date, 'dd/MM/yyyy HH:mm'),
+        Instructeur: p.instructorName,
         Montant: p.amount,
         Méthode: p.method,
         Statut: p.status,
@@ -202,8 +121,6 @@ export default function PayoutsPage() {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Retraits");
     XLSX.writeFile(workbook, `NdaraAfrique_Retraits_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
   };
-
-  const isLoading = isUserLoading || payoutsLoading || dataLoading;
   
   const confirmationMessages = {
       valide: { title: "Confirmer l'approbation ?", description: "Cette action marquera le retrait comme payé et déplacera la transaction. Êtes-vous sûr ?" },
@@ -215,7 +132,7 @@ export default function PayoutsPage() {
       <div className="space-y-6">
         <header>
           <h1 className="text-3xl font-bold dark:text-white">Demandes de retrait</h1>
-          <p className="text-muted-foreground dark:text-slate-400">Gérez les demandes de retrait des instructeurs.</p>
+          <p className="text-muted-foreground dark:text-slate-400">Gérez les demandes de paiement des instructeurs.</p>
         </header>
 
         <Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -228,7 +145,7 @@ export default function PayoutsPage() {
                           <TabsTrigger value="rejete">Rejetés</TabsTrigger>
                       </TabsList>
                   </Tabs>
-                  <Button variant="outline" onClick={handleExport} disabled={filteredPayouts.length === 0}>
+                   <Button variant="outline" onClick={handleExport} disabled={filteredPayouts.length === 0}>
                       <FileDown className="mr-2 h-4 w-4" />
                       Exporter
                   </Button>
@@ -263,18 +180,18 @@ export default function PayoutsPage() {
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <Avatar>
-                              <AvatarImage src={payout.instructor?.profilePictureURL} alt={payout.instructor?.fullName} />
-                              <AvatarFallback>{payout.instructor?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                              <AvatarImage src={payout.instructorAvatar} alt={payout.instructorName} />
+                              <AvatarFallback>{payout.instructorName.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div>
-                              <span className="font-medium dark:text-slate-100">{payout.instructor?.fullName}</span>
-                               <p className="text-xs text-muted-foreground">{payout.date ? formatDistanceToNow(payout.date.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}</p>
+                              <span className="font-medium dark:text-slate-100">{payout.instructorName}</span>
+                               <p className="text-xs text-muted-foreground">{formatDistanceToNow(payout.date, { addSuffix: true, locale: fr })}</p>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell className="font-mono dark:text-slate-200">{formatCurrency(payout.amount)}</TableCell>
-                        <TableCell className={cn("font-mono dark:text-slate-400", (payout.instructorBalance ?? 0) < payout.amount ? 'text-destructive dark:text-destructive' : '')}>
-                            {formatCurrency(payout.instructorBalance ?? 0)}
+                        <TableCell className={cn("font-mono dark:text-slate-400", payout.instructorBalance < payout.amount ? 'text-destructive dark:text-destructive' : '')}>
+                            {formatCurrency(payout.instructorBalance)}
                         </TableCell>
                         <TableCell className="dark:text-slate-300">{payout.method}</TableCell>
                         <TableCell className="text-right">
@@ -316,18 +233,18 @@ export default function PayoutsPage() {
                       <Card key={payout.id} className="dark:bg-slate-900/50 dark:border-slate-700">
                           <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                             <Avatar>
-                                  <AvatarImage src={payout.instructor?.profilePictureURL} alt={payout.instructor?.fullName} />
-                                  <AvatarFallback>{payout.instructor?.fullName?.charAt(0) || 'U'}</AvatarFallback>
+                                  <AvatarImage src={payout.instructorAvatar} alt={payout.instructorName} />
+                                  <AvatarFallback>{payout.instructorName.charAt(0)}</AvatarFallback>
                               </Avatar>
                               <div>
-                                  <CardTitle className="text-base dark:text-white">{payout.instructor?.fullName}</CardTitle>
-                                  <p className="text-xs text-muted-foreground dark:text-slate-400">{payout.method} • {payout.date ? formatDistanceToNow(payout.date.toDate(), { addSuffix: true, locale: fr }) : 'N/A'}</p>
+                                  <CardTitle className="text-base dark:text-white">{payout.instructorName}</CardTitle>
+                                  <p className="text-xs text-muted-foreground dark:text-slate-400">{payout.method} • {formatDistanceToNow(payout.date, { addSuffix: true, locale: fr })}</p>
                               </div>
                           </CardHeader>
                           <CardContent className="text-center">
                               <p className="text-4xl font-extrabold tracking-tighter dark:text-white">{formatCurrency(payout.amount)}</p>
-                              <p className={cn("text-xs font-mono", (payout.instructorBalance ?? 0) < 0 ? "text-destructive" : "text-muted-foreground")}>
-                                Solde: {formatCurrency(payout.instructorBalance ?? 0)}
+                              <p className={cn("text-xs font-mono", payout.instructorBalance < 0 ? "text-destructive" : "text-muted-foreground")}>
+                                Solde: {formatCurrency(payout.instructorBalance)}
                               </p>
                           </CardContent>
                           {payout.status === 'en_attente' && (
@@ -342,7 +259,7 @@ export default function PayoutsPage() {
                                   </Button>
                               </CardContent>
                           )}
-                          {payout.status !== 'en_attente' && (
+                           {payout.status !== 'en_attente' && (
                               <CardContent className="flex justify-center">
                                   {getStatusBadge(payout.status)}
                               </CardContent>
@@ -385,5 +302,3 @@ export default function PayoutsPage() {
     </>
   );
 }
-
-    
