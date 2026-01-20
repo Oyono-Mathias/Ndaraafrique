@@ -9,7 +9,7 @@ import { StudentSidebar } from './student-sidebar';
 import { InstructorSidebar } from './instructor-sidebar';
 import { AdminSidebar } from './admin-sidebar';
 import { Button } from '../ui/button';
-import { Wrench, Loader2, PanelLeft } from 'lucide-react';
+import { Wrench, Loader2, PanelLeft, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '../splash-screen';
@@ -24,6 +24,54 @@ function MaintenancePage() {
         </div>
     );
 }
+
+function AnnouncementBanner() {
+    const [isVisible, setIsVisible] = useState(false);
+    const [announcement, setAnnouncement] = useState('');
+    const db = getFirestore();
+
+    useEffect(() => {
+        const settingsRef = doc(db, 'settings', 'global');
+        const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const message = docSnap.data().platform?.announcementMessage || '';
+                setAnnouncement(message);
+                if (message && sessionStorage.getItem('ndara-announcement-dismissed') !== message) {
+                    setIsVisible(true);
+                } else {
+                    setIsVisible(false);
+                }
+            }
+        });
+        return () => unsubscribe();
+    }, [db]);
+
+    const handleDismiss = () => {
+        setIsVisible(false);
+        sessionStorage.setItem('ndara-announcement-dismissed', announcement);
+    };
+
+    if (!isVisible || !announcement) {
+        return null;
+    }
+
+    const [mainMessage, ...translations] = announcement.split('Sango:');
+    const sangoLingala = translations.length > 0 ? `Sango: ${translations.join('Sango:')}` : '';
+
+    return (
+        <div className="bg-primary/90 text-primary-foreground p-3 flex items-center justify-center gap-4 text-sm font-medium relative">
+            <Megaphone className="h-5 w-5 hidden sm:block flex-shrink-0" />
+            <p className="text-center text-balance">
+                {mainMessage.trim()}
+                {sangoLingala && <span className="hidden md:inline text-primary-foreground/80 ml-2 italic">{sangoLingala}</span>}
+            </p>
+            <Button variant="ghost" size="icon" onClick={handleDismiss} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 hover:bg-black/20">
+                <X className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+}
+
 
 const PUBLIC_PATHS = [
     '/', 
@@ -47,6 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       logoUrl: '/icon.svg', 
       maintenanceMode: false,
       allowInstructorSignup: true,
+      announcementMessage: ''
     });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -69,6 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
+                announcementMessage: settingsData.platform?.announcementMessage || ''
             });
         }
     });
@@ -122,6 +172,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </aside>
             )}
             <div className="flex flex-col">
+              <AnnouncementBanner />
               {!isAdminArea && pathname !== '/' && (
                 <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
                   <div className="md:hidden">

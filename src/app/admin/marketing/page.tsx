@@ -12,13 +12,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Sparkles, Tag, Speaker, AlertCircle, Bell } from 'lucide-react';
+import { Loader2, Sparkles, Tag, Speaker, AlertCircle, Bell, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { generatePromoCode, type GeneratePromoCodeOutput } from '@/ai/flows/generate-promo-code-flow';
 import { useToast } from '@/hooks/use-toast';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection, useDoc, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, getFirestore, doc, updateDoc } from 'firebase/firestore';
+import { updateGlobalSettings } from '@/actions/settingsActions';
+import { useRole } from '@/context/RoleContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,9 +54,13 @@ export default function AdminMarketingPage() {
   const { toast } = useToast();
   const db = getFirestore();
   const [confirmationAlert, setConfirmationAlert] = useState({ open: false, code: null as PromoCode | null, newStatus: false });
+  const { currentUser } = useRole();
 
   const promoCodesQuery = useMemoFirebase(() => query(collection(db, 'promoCodes'), orderBy('createdAt', 'desc')), [db]);
   const { data: promoCodes, isLoading: codesLoading } = useCollection<PromoCode>(promoCodesQuery);
+
+  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings, isLoading: settingsLoading } = useDoc(settingsRef);
 
   const form = useForm<MarketingFormValues>({
     resolver: zodResolver(marketingFormSchema),
@@ -75,6 +81,22 @@ export default function AdminMarketingPage() {
     }
   };
   
+  const handleSetAnnouncement = async (announcement: string) => {
+    if (!currentUser) return;
+    setIsAiLoading(true);
+    const result = await updateGlobalSettings({
+      settings: { platform: { announcementMessage: announcement } },
+      adminId: currentUser.uid,
+    });
+    if (result.success) {
+      toast({ title: 'Annonce mise à jour !', description: 'La nouvelle annonce est maintenant active sur le site.' });
+      setAiResponse(null);
+    } else {
+      toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+    }
+    setIsAiLoading(false);
+  };
+  
   const handleToggleActive = async (code: PromoCode, isActive: boolean) => {
     try {
         const codeRef = doc(db, 'promoCodes', code.id);
@@ -93,10 +115,8 @@ export default function AdminMarketingPage() {
 
   const onSwitchChange = (code: PromoCode, checked: boolean) => {
     if (checked) {
-        // Activate directly
         handleToggleActive(code, true);
     } else {
-        // Ask for confirmation to deactivate
         setConfirmationAlert({ open: true, code: code, newStatus: false });
     }
   };
@@ -143,7 +163,7 @@ export default function AdminMarketingPage() {
               </form>
             </Form>
 
-            {isAiLoading && (
+            {isAiLoading && !aiResponse && (
               <div className="mt-6 p-4 rounded-lg bg-muted dark:bg-slate-700/50 flex items-center gap-3 animate-pulse">
                   <Speaker className="h-5 w-5 text-muted-foreground"/>
                   <p className="text-sm text-muted-foreground">L'IA est en train d'écrire...</p>
@@ -153,14 +173,30 @@ export default function AdminMarketingPage() {
               <div className="mt-6 p-4 rounded-lg bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 space-y-4">
                   <p className="text-sm font-medium text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{aiResponse.response}</p>
                   <div className="flex justify-end">
-                      <Button disabled size="sm">
-                          <Bell className="mr-2 h-4 w-4"/>
-                          Envoyer comme notification
+                      <Button onClick={() => handleSetAnnouncement(aiResponse.response)} disabled={isAiLoading} size="sm">
+                          {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4" />}
+                          Définir comme annonce active
                       </Button>
                   </div>
               </div>
             )}
           </CardContent>
+        </Card>
+        
+        <Card className="dark:bg-slate-800 dark:border-slate-700">
+            <CardHeader>
+                <CardTitle className="dark:text-white flex items-center gap-2"><Bell className="h-5 w-5"/> Annonce Actuelle</CardTitle>
+                <CardDescription className="dark:text-slate-400">
+                    Ceci est le message actuellement affiché dans la bannière du site.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                {settingsLoading ? <Skeleton className="h-10 w-full dark:bg-slate-700" /> : (
+                    <p className="text-sm text-slate-300 p-4 bg-slate-700/50 rounded-lg">
+                        {settings?.platform?.announcementMessage || "Aucune annonce active."}
+                    </p>
+                )}
+            </CardContent>
         </Card>
         
         <Card className="dark:bg-slate-800 dark:border-slate-700">
