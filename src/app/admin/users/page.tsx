@@ -570,12 +570,10 @@ export default function AdminUsersPage() {
             <h1 className="text-3xl font-bold dark:text-white">Utilisateurs</h1>
             <p className="text-muted-foreground dark:text-slate-400">Gérez les membres de la plateforme.</p>
           </div>
-           <DialogTrigger asChild>
-                <Button onClick={() => setIsImportModalOpen(true)}>
-                    <Upload className="mr-2 h-4 w-4"/>
-                    Importer des utilisateurs
-                </Button>
-            </DialogTrigger>
+           <Button onClick={() => setIsImportModalOpen(true)}>
+              <Upload className="mr-2 h-4 w-4"/>
+              Importer des utilisateurs
+          </Button>
         </header>
 
         <Card className="dark:bg-slate-800 dark:border-slate-700">
