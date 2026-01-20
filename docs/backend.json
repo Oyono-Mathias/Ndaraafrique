@@ -1159,6 +1159,10 @@
     },
     "tracking_events/{eventId}": {
       "schema": { "$ref": "#/entities/TrackingEvent" }
+    },
+    "carousel_slides/{slideId}": {
+      "schema": { "$ref": "#/entities/CarouselSlide" },
+      "description": "Content for the homepage hero carousel."
     }
   }
 }
