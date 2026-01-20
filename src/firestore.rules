@@ -126,23 +126,14 @@ service cloud.firestore {
     }
     
     /* ======================
-       PAYMENTS (Version Corrigée)
+       PAYMENTS
     ====================== */
-    
     match /payments/{paymentId} {
-      // Autoriser la lecture individuelle
-      allow get: if isSignedIn();
-
-      // Autoriser le listage pour les admins et les utilisateurs sur leurs propres données
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid); 
-
-      // Création par l'utilisateur
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      
-      // Seul l'admin peut modifier ou supprimer un paiement
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
-
     
     /* ======================
        PAYOUTS
@@ -251,6 +242,9 @@ service cloud.firestore {
     match /subscription_plans/{planId} {
         allow get, list: if true;
         allow create, update, delete: if isAdmin();
+    }
+    match /tracking_events/{eventId} {
+        allow read, list: if isAdmin();
     }
 
 

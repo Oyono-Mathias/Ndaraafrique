@@ -17,7 +17,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrendingUp, BookOpen, AlertCircle, Users, Star, DollarSign, CheckCircle, UserPlus, Calendar as CalendarIcon } from 'lucide-react';
+import { TrendingUp, BookOpen, AlertCircle, Users, Star, DollarSign, CheckCircle, UserPlus, Calendar as CalendarIcon, Gift, ShieldAlert } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 import {
   collection,
@@ -237,6 +237,16 @@ const StatsDashboard = () => {
     return () => unsubscribes.forEach(unsub => unsub());
   }, [currentUser, db, date]);
 
+  if (!isUserLoading && currentUser?.role !== 'admin') {
+    return (
+        <div className="flex flex-col items-center justify-center h-[60vh] text-center p-4">
+            <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
+            <h1 className="text-2xl font-bold text-white">Accès Interdit</h1>
+            <p className="text-muted-foreground">Vous n'avez pas les autorisations nécessaires.</p>
+        </div>
+    )
+  }
+
   const chartConfig = { revenue: { label: "Revenus", color: "hsl(var(--primary))" } };
   const userChartConfig = {
     etudiants: { label: "Étudiants", color: "hsl(var(--primary))" },
@@ -278,7 +288,7 @@ const StatsDashboard = () => {
                                   <stop offset="5%" stopColor="var(--color-revenue)" stopOpacity={0.8} />
                                   <stop offset="95%" stopColor="var(--color-revenue)" stopOpacity={0.1} />
                               </linearGradient>
-                          </defs>
+                              </defs>
                           <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border/50" />
                           <XAxis dataKey="month" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} className="fill-muted-foreground text-xs" />
                           <YAxis tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => `${Number(value) / 1000}k`} className="fill-muted-foreground text-xs" />
@@ -337,7 +347,7 @@ const StatsDashboard = () => {
 
 export default function StatisticsPage() {
     return (
-         <div className="space-y-8">
+         <div className="space-y-8 max-w-7xl mx-auto">
               <header>
                 <h1 className="text-3xl font-bold dark:text-white">Statistiques</h1>
                 <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance de la plateforme.</p>
