@@ -42,6 +42,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetFooter } from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift, FileUp, User as UserIcon } from 'lucide-react';
 import type { NdaraUser, Course, UserRole } from '@/lib/types';
@@ -60,6 +61,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useDebounce } from '@/hooks/use-debounce';
+import { useIsMobile } from '@/hooks/use-mobile';
+
 
 // --- SKELETON LOADERS ---
 const UserTableSkeleton = () => (
@@ -264,6 +267,7 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
     const { currentUser: adminUser } = useRole();
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const isMobile = useIsMobile();
     
     const coursesQuery = useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Published')), [db]);
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
@@ -300,13 +304,20 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
 
     if (!user) return null;
 
+    const FormWrapper = isMobile ? Sheet : Dialog;
+    const FormContent = isMobile ? SheetContent : DialogContent;
+    const FormHeader = isMobile ? SheetHeader : DialogHeader;
+    const FormTitle = isMobile ? SheetTitle : DialogTitle;
+    const FormDescription = isMobile ? SheetDescription : DialogDescription;
+    const FormFooter = isMobile ? SheetFooter : DialogFooter;
+
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader>
-                    <DialogTitle className="dark:text-white">Offrir un cours à {user.fullName}</DialogTitle>
-                    <DialogDescription className="dark:text-slate-400">Sélectionnez le cours à offrir gratuitement à cet utilisateur.</DialogDescription>
-                </DialogHeader>
+        <FormWrapper open={isOpen} onOpenChange={onOpenChange}>
+            <FormContent side={isMobile ? 'bottom' : undefined} className="dark:bg-slate-900 dark:border-slate-800">
+                <FormHeader>
+                    <FormTitle className="dark:text-white">Offrir un cours à {user.fullName}</FormTitle>
+                    <FormDescription className="dark:text-slate-400">Sélectionnez le cours à offrir gratuitement à cet utilisateur.</FormDescription>
+                </FormHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
                         <FormField
@@ -355,16 +366,16 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
                                 </FormItem>
                             )}
                         />
-                        <DialogFooter>
-                            <Button type="button" variant="ghost" onClick={onOpenChange}>Annuler</Button>
-                            <Button type="submit" disabled={isSubmitting}>
+                        <FormFooter className={isMobile ? "flex flex-col-reverse gap-2" : ""}>
+                            <Button type="button" variant="ghost" onClick={onOpenChange} className={isMobile ? "w-full" : ""}>Annuler</Button>
+                            <Button type="submit" disabled={isSubmitting} className={isMobile ? "w-full" : ""}>
                                 {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Offrir l'accès
                             </Button>
-                        </DialogFooter>
+                        </FormFooter>
                     </form>
                 </Form>
-            </DialogContent>
-        </Dialog>
+            </FormContent>
+        </FormWrapper>
     );
 };
 
@@ -375,11 +386,10 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
     const [fileName, setFileName] = useState('');
     const [error, setError] = useState<string | null>(null);
     const { currentUser } = useRole();
-    const { toast } = useToast();
+    const isMobile = useIsMobile();
 
     useEffect(() => {
         if (!isOpen) {
-            // Reset state when modal closes
             setTimeout(() => {
                 setStep('select');
                 setUsersToImport([]);
@@ -409,7 +419,6 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
                 const worksheet = workbook.Sheets[sheetName];
                 const json = XLSX.utils.sheet_to_json(worksheet);
 
-                // Validate data
                 if (json.length > 0 && ('fullName' in json[0] && 'email' in json[0])) {
                     setUsersToImport(json);
                     setStep('preview');
@@ -434,19 +443,26 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
 
     const successCount = importResults.filter(r => r.status === 'success').length;
     const errorCount = importResults.filter(r => r.status === 'error').length;
+
+    const FormWrapper = isMobile ? Sheet : Dialog;
+    const FormContent = isMobile ? SheetContent : DialogContent;
+    const FormHeader = isMobile ? SheetHeader : DialogHeader;
+    const FormTitle = isMobile ? SheetTitle : DialogTitle;
+    const FormDescription = isMobile ? SheetDescription : DialogDescription;
+    const FormFooter = isMobile ? SheetFooter : DialogFooter;
     
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader>
-                    <DialogTitle className="dark:text-white">Importer des Utilisateurs</DialogTitle>
-                    <DialogDescription className="dark:text-slate-400">
+        <FormWrapper open={isOpen} onOpenChange={onOpenChange}>
+            <FormContent side={isMobile ? 'bottom' : undefined} className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
+                <FormHeader>
+                    <FormTitle className="dark:text-white">Importer des Utilisateurs</FormTitle>
+                    <FormDescription className="dark:text-slate-400">
                         {step === 'select' && "Sélectionnez un fichier .xlsx ou .csv à importer."}
                         {step === 'preview' && `Aperçu des ${usersToImport.length} utilisateurs à importer.`}
                         {step === 'importing' && "Importation en cours, veuillez patienter..."}
                         {step === 'report' && "Rapport d'importation."}
-                    </DialogDescription>
-                </DialogHeader>
+                    </FormDescription>
+                </FormHeader>
                 <div className="py-4">
                     {step === 'select' && (
                         <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-800/50 dark:border-slate-700">
@@ -506,7 +522,7 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
                         </div>
                     )}
                 </div>
-                 <DialogFooter>
+                 <FormFooter className={isMobile ? "flex flex-col-reverse gap-2" : ""}>
                     {step === 'preview' && (
                         <>
                             <Button variant="ghost" onClick={() => setStep('select')}>Annuler</Button>
@@ -516,9 +532,9 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
                     {step === 'report' && (
                         <Button onClick={() => onOpenChange(false)}>Fermer</Button>
                     )}
-                </DialogFooter>
+                </FormFooter>
             </DialogContent>
-        </Dialog>
+        </FormWrapper>
     )
 }
 

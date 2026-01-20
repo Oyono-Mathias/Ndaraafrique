@@ -152,7 +152,7 @@ export default function AdminSettingsPage() {
 
     return (
         <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 pb-24 md:pb-0">
              <header>
                 <h1 className="text-3xl font-bold dark:text-white">Paramètres du Site</h1>
                 <p className="text-muted-foreground dark:text-slate-400">Configurez les aspects globaux de la plateforme.</p>
@@ -417,8 +417,8 @@ export default function AdminSettingsPage() {
                 </TabsContent>
             </Tabs>
 
-            <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={isSaving}>
+            <div className="fixed bottom-0 left-0 right-0 z-50 p-4 border-t md:relative md:p-0 md:border-none bg-background/80 md:bg-transparent backdrop-blur-sm md:backdrop-blur-none md:flex md:justify-end">
+                <Button type="submit" disabled={isSaving} className="w-full h-12 text-base md:w-auto md:h-auto md:text-sm">
                      {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Enregistrer les Modifications
                 </Button>
