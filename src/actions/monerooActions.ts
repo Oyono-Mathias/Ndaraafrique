@@ -88,14 +88,15 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
                         }
                     };
 
-                    // Call the AI flow without awaiting it to avoid blocking the user
+                    // Call the AI flow and update the document regardless of the outcome.
                     detectFraud(fraudCheckPayload).then(async (fraudResult) => {
                         await adminDb.collection('payments').doc(response.data.id).set({
                             fraudReview: {
                                 isSuspicious: fraudResult.isSuspicious,
                                 riskScore: fraudResult.riskScore,
                                 reason: fraudResult.reason,
-                                checkedAt: Timestamp.now()
+                                checkedAt: Timestamp.now(),
+                                reviewed: false // Always start as unreviewed
                             }
                         }, { merge: true });
 

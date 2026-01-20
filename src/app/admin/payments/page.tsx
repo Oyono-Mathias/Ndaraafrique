@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -26,13 +27,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, ShoppingCart, AlertCircle, CheckCircle, Shield } from 'lucide-react';
+import { Search, ShoppingCart, AlertCircle, CheckCircle, Shield, Loader2 } from 'lucide-react';
 import type { NdaraUser, Payment, Course } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { resolveSecurityItem } from '@/actions/securityActions';
 
 
 interface EnrichedPayment extends Payment {
@@ -41,26 +44,8 @@ interface EnrichedPayment extends Payment {
 }
 
 const formatCurrency = (amount: number, currency: string = 'XOF') => {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
 };
-
-const FraudBadge = ({ fraudReview }: { fraudReview?: Payment['fraudReview'] }) => {
-    if (!fraudReview) return null;
-    if (fraudReview.isSuspicious) {
-        return (
-            <Badge className='bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'>
-                <AlertCircle className="h-3 w-3 mr-1" />
-                Risque: {fraudReview.riskScore}
-            </Badge>
-        )
-    }
-    return (
-        <Badge className='bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300'>
-            <CheckCircle className="h-3 w-3 mr-1" />
-            Vérifié
-        </Badge>
-    )
-}
 
 const StatusBadge = ({ status }: { status: Payment['status'] }) => {
     const statusMap = {
@@ -74,6 +59,66 @@ const StatusBadge = ({ status }: { status: Payment['status'] }) => {
     return <Badge className={cn('font-semibold', className)}>{text}</Badge>;
 }
 
+const FraudBadge = ({ fraudReview }: { fraudReview?: Payment['fraudReview'] }) => {
+    if (!fraudReview) return null;
+    
+    if (fraudReview.isSuspicious && !fraudReview.reviewed) {
+        return (
+            <Badge className='bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300'>
+                <AlertCircle className="h-3 w-3 mr-1" />
+                Risque: {fraudReview.riskScore}
+            </Badge>
+        )
+    }
+
+    if (!fraudReview.isSuspicious) {
+        return (
+            <Badge className='bg-green-100/10 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none'>
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Vérifié
+            </Badge>
+        )
+    }
+
+    return null;
+}
+
+const SuspiciousTransactionCard = ({ payment }: { payment: EnrichedPayment }) => {
+    const { currentUser } = useRole();
+    const { toast } = useToast();
+    const [isResolving, setIsResolving] = useState(false);
+
+    const handleResolve = async () => {
+        if (!currentUser) return;
+        setIsResolving(true);
+        const result = await resolveSecurityItem({ 
+            itemId: payment.id, 
+            itemType: 'suspicious_payment', 
+            adminId: currentUser.uid 
+        });
+        if(result.success) {
+            toast({ title: 'Alerte résolue', description: 'La transaction a été marquée comme examinée.' });
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        }
+        setIsResolving(false);
+    }
+    
+    return (
+        <div className="flex justify-between items-center p-3 rounded-lg bg-slate-900/50">
+            <div>
+                <p className="font-semibold text-sm text-white">{payment.user?.fullName}</p>
+                <p className="text-xs text-amber-400">{payment.fraudReview?.reason}</p>
+            </div>
+            <div className="text-right">
+                <p className="font-mono text-base font-semibold text-white">{formatCurrency(payment.amount, payment.currency)}</p>
+                <Button size="sm" variant="outline" className="mt-1" onClick={handleResolve} disabled={isResolving}>
+                    {isResolving ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Marquer comme résolu'}
+                </Button>
+            </div>
+        </div>
+    )
+}
 
 export default function AdminPaymentsPage() {
   const { currentUser, isUserLoading } = useRole();
@@ -177,16 +222,7 @@ export default function AdminPaymentsPage() {
             <CardContent>
                 <div className="space-y-3">
                     {suspiciousTransactions.map(payment => (
-                        <div key={payment.id} className="flex justify-between items-center p-3 rounded-lg bg-slate-900/50">
-                            <div>
-                                <p className="font-semibold text-sm text-white">{payment.user?.fullName}</p>
-                                <p className="text-xs text-amber-400">{payment.fraudReview?.reason}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="font-mono text-base font-semibold text-white">{formatCurrency(payment.amount, payment.currency)}</p>
-                                <Button size="sm" variant="outline" className="mt-1">Examiner</Button>
-                            </div>
-                        </div>
+                       <SuspiciousTransactionCard key={payment.id} payment={payment} />
                     ))}
                 </div>
             </CardContent>
@@ -296,7 +332,7 @@ export default function AdminPaymentsPage() {
                                  <p className="text-xs text-muted-foreground dark:text-slate-500 mt-1">{payment.date ? format(payment.date.toDate(), 'dd MMM yy, HH:mm', { locale: fr }) : 'N/A'}</p>
                             </div>
                             <div className="text-right flex flex-col items-end gap-1">
-                                <p className="font-bold text-green-600 dark:text-green-400 text-base">+{formatCurrency(payment.amount, payment.currency)}</p>
+                                <p className="font-bold font-mono text-base text-green-400">{formatCurrency(payment.amount, payment.currency)}</p>
                                 <StatusBadge status={payment.status} />
                             </div>
                         </div>
