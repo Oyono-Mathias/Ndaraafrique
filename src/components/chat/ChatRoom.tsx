@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -58,182 +57,44 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
+  // Static data for UI design
   useEffect(() => {
-    audioRef.current = new Audio('/sounds/notification.mp3');
-  }, []);
-
-  useEffect(() => {
-    if (messages.length > 0) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.senderId !== user?.uid && lastMessage.status !== 'read') {
-        if (document.hidden) {
-          document.title = '(1) Nouveau message | Ndara Afrique';
-          audioRef.current?.play().catch(e => console.log("Audio play failed:", e));
-        } else {
-            audioRef.current?.play().catch(e => console.log("Audio play failed:", e));
-        }
-      }
-    }
-  }, [messages, user?.uid]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        document.title = 'Ndara Afrique | Messagerie';
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-
-  useEffect(() => {
-    if (!chatId || !user) return;
     setIsLoading(true);
-
-    const chatDocRef = doc(db, "chats", chatId);
-    const messagesCollectionRef = collection(chatDocRef, "messages");
-
-    const fetchParticipantDetails = async () => {
-      const chatDoc = await getDoc(chatDocRef);
-      if (chatDoc.exists()) {
-        const participants = chatDoc.data().participants as string[];
-        const otherId = participants.find(p => p !== user.uid);
-        if (otherId) {
-          setOtherParticipantId(otherId);
-          const userDocRef = doc(db, 'users', otherId);
-          onSnapshot(userDocRef, (userDoc) => {
-            if (userDoc.exists()) {
-                setOtherParticipant(userDoc.data() as ParticipantDetails);
-            }
-          });
-        }
-      }
-    };
-
-    fetchParticipantDetails();
-
-    const q = query(messagesCollectionRef, orderBy("createdAt", "asc"));
-    const unsubscribeMessages = onSnapshot(q, (snapshot) => {
-      const docs = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as Message));
-      setMessages(docs);
-      setIsLoading(false);
-    }, (error) => {
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `chats/${chatId}/messages`,
-            operation: 'list'
-        }));
-        setIsLoading(false);
+    setOtherParticipant({
+        username: 'Amina Diallo', profilePictureURL: '/placeholder-avatars/amina.jpg',
+        isOnline: true, role: 'student', lastSeen: new Date()
     });
-
-    return () => {
-      unsubscribeMessages();
-    };
-  }, [chatId, user, db]);
-
-  useEffect(() => {
-    if (messages.length === 0 || !otherParticipantId) return;
-
-    const markAsRead = async () => {
-        const chatRef = doc(db, 'chats', chatId);
-        const chatSnap = await getDoc(chatRef);
-        if (chatSnap.exists() && chatSnap.data().unreadBy?.includes(user?.uid || '')) {
-            const batch = writeBatch(db);
-            batch.update(chatRef, { unreadBy: [] });
-            
-            const lastMessage = messages[messages.length - 1];
-            if (lastMessage && lastMessage.senderId !== user?.uid) {
-                const messageRef = doc(db, 'chats', chatId, 'messages', lastMessage.id);
-                batch.update(messageRef, { status: 'read' });
-            }
-
-            await batch.commit();
-        }
-    };
-
-    if (document.visibilityState === 'visible') {
-        markAsRead();
-    }
-    
-    const handleVisibility = () => {
-        if(document.visibilityState === 'visible') {
-            markAsRead();
-        }
-    }
-    
-    document.addEventListener('visibilitychange', handleVisibility);
-    
-    return () => document.removeEventListener('visibilitychange', handleVisibility);
-
-  }, [messages, otherParticipantId, chatId, db, user?.uid]);
-
-
-  useEffect(() => {
-     if (scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-      if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
-      }
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    const updateLastSeen = () => {
-        if (otherParticipant?.lastSeen?.toDate) {
-            setTimeSinceLastSeen(formatDistanceToNow(otherParticipant.lastSeen.toDate(), { locale: fr, addSuffix: true }));
-        } else {
-            setTimeSinceLastSeen('Récemment');
-        }
-    };
-
-    updateLastSeen();
-    const interval = setInterval(updateLastSeen, 60000); // Update every minute
-    return () => clearInterval(interval);
-
-  }, [otherParticipant]);
+    setMessages([
+        { id: 'm1', senderId: 'other', text: 'Salut ! 👋', createdAt: new Timestamp(Date.now() / 1000 - 600, 0), status: 'read' },
+        { id: 'm2', senderId: 'me', text: 'Hey Amina ! Bien ?', createdAt: new Timestamp(Date.now() / 1000 - 500, 0), status: 'read' },
+        { id: 'm3', senderId: 'other', text: "Super et toi ? J'ai une petite question concernant la leçon sur le CSS Grid.", createdAt: new Timestamp(Date.now() / 1000 - 400, 0), status: 'read' },
+    ]);
+    setIsLoading(false);
+  }, [chatId]);
 
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user || !otherParticipantId) return;
+    if (!newMessage.trim() || !user ) return;
     
     setIsSending(true);
     const textToSend = newMessage.trim();
     setNewMessage("");
-    
-    const chatDocRef = doc(db, "chats", chatId);
-    const messagesCollectionRef = collection(chatDocRef, "messages");
 
-    try {
-        const batch = writeBatch(db);
-        
-        const messagePayload = {
-            text: textToSend,
-            senderId: user.uid,
-            createdAt: serverTimestamp(),
-            status: 'sent' as const,
-        };
-        const messageRef = doc(messagesCollectionRef);
-        batch.set(messageRef, messagePayload);
-        
-        batch.update(chatDocRef, {
-            lastMessage: textToSend,
-            updatedAt: serverTimestamp(),
-            lastSenderId: user.uid,
-            unreadBy: [otherParticipantId],
-        });
+    // optimistic UI update
+    const tempMessage = {
+        id: 'temp-' + Date.now(),
+        text: textToSend,
+        senderId: user.uid,
+        createdAt: Timestamp.now(),
+        status: 'sent' as const
+    };
+    setMessages(prev => [...prev, tempMessage]);
 
-        await batch.commit();
-
-    } catch (err: any) {
-      console.error(err);
-       toast({ variant: 'destructive', title: 'Erreur', description: err.message.includes('permission-denied') ? "Permission refusée. Vous ne pouvez discuter qu'avec les membres de votre filière." : "Impossible d'envoyer le message." });
-    } finally {
-        setIsSending(false);
-    }
+    // Simulate sending
+    setTimeout(() => {
+      setIsSending(false);
+    }, 500);
   };
   
   const RoleBadge = ({ role }: { role: UserRole | undefined }) => {
@@ -273,7 +134,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     if (status === 'delivered') {
       return <CheckCheck className="h-4 w-4 text-slate-400" />;
     }
-    // Default to 'sent'
     return <Check className="h-4 w-4 text-slate-400" />;
   };
 
@@ -301,7 +161,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">En ligne</span> : `Vu ${timeSinceLastSeen}`}
+                    {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">En ligne</span> : `Vu il y a 2h`}
                 </p>
             </div>
             <div className="flex items-center gap-2">
@@ -313,7 +173,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="p-4 sm:p-6 space-y-1">
                 {messages.map((msg) => {
-                    const isMe = msg.senderId === user?.uid;
+                    const isMe = msg.senderId !== 'other';
                     return (
                         <div 
                             key={msg.id} 
@@ -329,14 +189,14 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                 {isMe && (
                                   <div className="flex items-center gap-1 justify-end mt-1">
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                      {msg.createdAt ? msg.createdAt.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                      {msg.createdAt ? new Date(msg.createdAt.toDate ? msg.createdAt.toDate() : msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                     <ReadReceipt status={msg.status} />
                                   </div>
                                 )}
                                 {!isMe && (
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
-                                      {msg.createdAt ? msg.createdAt.toDate().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                      {msg.createdAt ? new Date(msg.createdAt.toDate ? msg.createdAt.toDate() : msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                 )}
                             </div>
