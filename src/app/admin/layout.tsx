@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { getDoc, doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { Header } from "@/components/layout/header";
 import { usePermissions } from "@/hooks/use-permissions";
+import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
 
 function AdminAccessRequiredScreen() {
     const router = useRouter();
@@ -107,9 +108,10 @@ export default function AdminLayout({
                     <Header />
                 </div>
             </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto pb-20 md:pb-6">
                 {children}
             </main>
+            <AdminBottomNav />
         </div>
     </div>
   )
