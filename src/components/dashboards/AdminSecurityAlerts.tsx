@@ -1,10 +1,8 @@
 
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
-import { collection, query, where, getFirestore, orderBy, limit, Timestamp } from 'firebase/firestore';
+import { useMemo, useState, useEffect } from 'react';
+import { collection, query, where, getFirestore, orderBy, limit, Timestamp, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -105,45 +103,65 @@ const AlertCard = ({ item }: { item: AlertItem }) => {
 
 export function AdminSecurityAlerts() {
     const db = getFirestore();
+    const { currentUser } = useRole();
+    const [allAlerts, setAllAlerts] = useState<AlertItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const suspiciousPaymentsQuery = useMemoFirebase(() => 
-        query(collection(db, 'payments'), where('fraudReview.isSuspicious', '==', true), where('fraudReview.reviewed', '!=', true), orderBy('fraudReview.reviewed'), orderBy('date', 'desc'), limit(5)),
-        [db]
-    );
-     const suspiciousLoginsQuery = useMemoFirebase(() => 
-        query(collection(db, 'security_logs'), where('status', '==', 'open'), orderBy('timestamp', 'desc'), limit(5)),
-        [db]
-    );
+    useEffect(() => {
+        if (currentUser?.role !== 'admin') {
+            setIsLoading(false);
+            return;
+        }
 
-    const { data: suspiciousPayments, isLoading: loadingSuspicious } = useCollection<Payment>(suspiciousPaymentsQuery);
-    const { data: suspiciousLogins, isLoading: loadingLogins } = useCollection<SecurityLog>(suspiciousLoginsQuery);
+        const fetchAlerts = async () => {
+            setIsLoading(true);
+            try {
+                const suspiciousPaymentsQuery = query(collection(db, 'payments'), where('fraudReview.isSuspicious', '==', true), where('fraudReview.reviewed', '!=', true), orderBy('fraudReview.reviewed'), orderBy('date', 'desc'), limit(5));
+                const suspiciousLoginsQuery = query(collection(db, 'security_logs'), where('status', '==', 'open'), orderBy('timestamp', 'desc'), limit(5));
+
+                const [suspiciousPaymentsSnap, suspiciousLoginsSnap] = await Promise.all([
+                    getDocs(suspiciousPaymentsQuery),
+                    getDocs(suspiciousLoginsQuery)
+                ]);
+
+                const alerts: AlertItem[] = [];
+
+                suspiciousPaymentsSnap.docs.forEach(p => {
+                    const data = p.data() as Payment;
+                    alerts.push({
+                        id: p.id,
+                        type: 'suspicious_payment',
+                        message: `Paiement suspect de ${data.amount.toLocaleString('fr-FR')} XOF. Score: ${data.fraudReview?.riskScore}.`,
+                        date: (data.date as Timestamp).toDate(),
+                        link: `/admin/payments?search=${p.id}`,
+                        userId: data.userId
+                    });
+                });
+                
+                suspiciousLoginsSnap.docs.filter(l => l.data().eventType === 'suspicious_login').forEach(l => {
+                    const data = l.data() as SecurityLog;
+                    alerts.push({
+                        id: l.id,
+                        type: 'suspicious_login',
+                        message: `Connexion suspecte détectée.`,
+                        date: data.timestamp.toDate(),
+                        link: `/admin/users?search=${data.targetId}`,
+                        userId: data.targetId,
+                    });
+                });
+
+                setAllAlerts(alerts.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5));
+
+            } catch (error) {
+                console.error("Failed to fetch security alerts:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAlerts();
+    }, [currentUser, db]);
     
-    const isLoading = loadingSuspicious || loadingLogins;
-
-    const allAlerts = useMemo(() => {
-        const alerts: AlertItem[] = [];
-
-        suspiciousPayments?.forEach(p => alerts.push({
-            id: p.id,
-            type: 'suspicious_payment',
-            message: `Paiement suspect de ${p.amount.toLocaleString('fr-FR')} XOF. Score: ${p.fraudReview?.riskScore}.`,
-            date: (p.date as Timestamp).toDate(),
-            link: `/admin/payments?search=${p.id}`,
-            userId: p.userId
-        }));
-        
-        suspiciousLogins?.filter(l => l.eventType === 'suspicious_login').forEach(l => alerts.push({
-            id: l.id,
-            type: 'suspicious_login',
-            message: `Connexion suspecte détectée.`,
-            date: l.timestamp.toDate(),
-            link: `/admin/users?search=${l.targetId}`,
-            userId: l.targetId,
-        }));
-
-        return alerts.sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
-
-    }, [suspiciousPayments, suspiciousLogins]);
 
     if (isLoading) {
         return (
