@@ -1,9 +1,10 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, collection, query, orderBy, where, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, where, getDocs, onSnapshot } from 'firebase/firestore';
 import Image from 'next/image';
 import {
   Table,
@@ -171,32 +172,43 @@ export default function AdminCoursesPage() {
   const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
   const [dataLoading, setDataLoading] = useState(true);
 
+  // Subscribe to courses in real-time
   useEffect(() => {
-    const fetchData = async () => {
-      setDataLoading(true);
-      
-      const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
-      const coursesSnap = await getDocs(coursesQuery);
-      const coursesData = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
-      setCourses(coursesData);
-      
-      const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
-      if (instructorIds.length > 0) {
-          const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
-          const usersSnap = await getDocs(usersQuery);
-          
-          const newInstructors = new Map<string, NdaraUser>();
-          usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
-          setInstructors(newInstructors);
-      }
-      setDataLoading(false);
-    };
+    const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(coursesQuery, (snapshot) => {
+        const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+        setCourses(coursesData);
+        setDataLoading(false); // Initial load done
+    }, (error) => {
+        console.error("Error fetching courses:", error);
+        setDataLoading(false);
+    });
 
-    fetchData();
+    return () => unsubscribe();
   }, [db]);
 
+  // Fetch instructors for the loaded courses
+  useEffect(() => {
+    const fetchInstructors = async () => {
+        if (courses.length === 0) return;
+        
+        const instructorIds = [...new Set(courses.map(c => c.instructorId))];
+        const newIdsToFetch = instructorIds.filter(id => id && !instructors.has(id));
+
+        if (newIdsToFetch.length > 0) {
+            // Firestore 'in' query has a limit of 30, for larger sets, chunking is needed.
+            const usersQuery = query(collection(db, 'users'), where('uid', 'in', newIdsToFetch.slice(0, 30)));
+            const usersSnap = await getDocs(usersQuery);
+            
+            const newInstructors = new Map(instructors);
+            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
+            setInstructors(newInstructors);
+        }
+    };
+    fetchInstructors();
+  }, [courses, db, instructors]);
+
   const filteredCourses = useMemo(() => {
-    if (!courses) return [];
     if (!debouncedSearchTerm) return courses;
     return courses.filter(course =>
       course.title?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
