@@ -1,8 +1,10 @@
+
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import dynamic from 'next/dynamic';
 
 import {
   Table,
@@ -27,7 +29,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { moderateCourse } from '@/actions/supportActions';
 import { useRole } from '@/context/RoleContext';
+import { cn } from '@/lib/utils';
 
+const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 // --- REFUSAL MODAL COMPONENT ---
 const RefusalModal = ({ course, onConfirm, isSubmitting }: { course: Course, onConfirm: (reason: string) => void, isSubmitting: boolean }) => {
@@ -72,70 +76,84 @@ const RefusalModal = ({ course, onConfirm, isSubmitting }: { course: Course, onC
 // --- PREVIEW MODAL COMPONENT ---
 const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClose: () => void }) => {
     const db = getFirestore();
+    const [selectedLecture, setSelectedLecture] = useState<Lecture | null>(null);
+
     const sectionsQuery = useMemoFirebase(() => course ? query(collection(db, `courses/${course.id}/sections`), orderBy('order')) : null, [course, db]);
     const { data: sections, isLoading: sectionsLoading } = useCollection<Section>(sectionsQuery);
+    
     const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
     const [lecturesLoading, setLecturesLoading] = useState(true);
 
     useEffect(() => {
-        if (sections && !sectionsLoading) {
-            const fetchLectures = async () => {
-                setLecturesLoading(true);
-                const lecturesPromises = sections.map(section => 
-                    getDocs(query(collection(db, `courses/${course!.id}/sections/${section.id}/lectures`), orderBy('title')))
-                );
-                const lecturesSnapshots = await Promise.all(lecturesPromises);
-                const newLecturesMap = new Map<string, Lecture[]>();
-                sections.forEach((section, index) => {
-                    newLecturesMap.set(section.id, lecturesSnapshots[index].docs.map(d => d.data() as Lecture));
-                });
-                setLecturesMap(newLecturesMap);
-                setLecturesLoading(false);
-            };
-            fetchLectures();
-        } else if (!sectionsLoading) {
-            setLecturesLoading(false);
+        if (!sections || sectionsLoading) {
+            if (!sectionsLoading) setLecturesLoading(false);
+            return;
         }
+
+        const fetchLectures = async () => {
+            setLecturesLoading(true);
+            const lecturesPromises = sections.map(section => 
+                getDocs(query(collection(db, `courses/${course!.id}/sections/${section.id}/lectures`), orderBy('title')))
+            );
+            const lecturesSnapshots = await Promise.all(lecturesPromises);
+            const newLecturesMap = new Map<string, Lecture[]>();
+            sections.forEach((section, index) => {
+                newLecturesMap.set(section.id, lecturesSnapshots[index].docs.map(d => ({ id: d.id, ...d.data() } as Lecture)));
+            });
+            setLecturesMap(newLecturesMap);
+            setLecturesLoading(false);
+        };
+        fetchLectures();
     }, [sections, sectionsLoading, db, course]);
+    
+     useEffect(() => {
+        if (sections && sections.length > 0 && lecturesMap.size > 0 && !selectedLecture) {
+            for (const section of sections) {
+                const lectures = lecturesMap.get(section.id);
+                if (lectures && lectures.length > 0) {
+                    setSelectedLecture(lectures[0]);
+                    break;
+                }
+            }
+        }
+    }, [sections, lecturesMap, selectedLecture]);
 
     const isLoading = sectionsLoading || lecturesLoading;
     
     return (
         <Dialog open={!!course} onOpenChange={(isOpen) => !isOpen && onClose()}>
-            <DialogContent className="sm:max-w-4xl max-h-[90vh] flex flex-col dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader>
-                    <DialogTitle className="dark:text-white">Aperçu : {course?.title}</DialogTitle>
+            <DialogContent className="sm:max-w-6xl max-h-[90vh] flex flex-col dark:bg-slate-900 dark:border-slate-800 p-0">
+                <DialogHeader className="p-6 pb-2">
+                    <DialogTitle className="dark:text-white text-2xl">Aperçu du cours</DialogTitle>
+                    <DialogDescription className="dark:text-slate-400">{course?.title}</DialogDescription>
                 </DialogHeader>
-                <ScrollArea className="flex-1 -mx-6 px-6">
-                    <div className="space-y-6 pb-6">
-                        <div>
-                            <h3 className="font-semibold dark:text-slate-200">Description</h3>
-                            <p className="text-sm text-muted-foreground mt-1">{course?.description}</p>
-                        </div>
-                        <div>
-                            <h3 className="font-semibold mb-2 dark:text-slate-200">Programme du cours</h3>
-                            {isLoading ? (
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-12 overflow-hidden">
+                    <ScrollArea className="md:col-span-4 border-r dark:border-slate-700 h-full">
+                        <div className="p-4 space-y-2">
+                           <h3 className="font-semibold mb-2 dark:text-slate-200 px-2">Programme</h3>
+                           {isLoading ? (
                                 <div className="space-y-2">
-                                    <Skeleton className="h-12 w-full" />
-                                    <Skeleton className="h-12 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
+                                    <Skeleton className="h-10 w-full" />
                                 </div>
                             ) : sections && sections.length > 0 ? (
-                                <Accordion type="multiple" defaultValue={sections.map(s => s.id)} className="space-y-2">
+                                <Accordion type="multiple" defaultValue={sections.map(s => s.id)} className="w-full space-y-1">
                                     {sections.map(section => (
-                                        <AccordionItem key={section.id} value={section.id} className="dark:bg-slate-800/50 rounded-lg border dark:border-slate-700">
-                                            <AccordionTrigger className="px-4 text-sm font-semibold dark:text-slate-300 hover:no-underline">{section.title}</AccordionTrigger>
-                                            <AccordionContent className="border-t dark:border-slate-700">
-                                                <ul className="divide-y dark:divide-slate-700">
+                                        <AccordionItem key={section.id} value={section.id} className="border dark:border-slate-700 rounded-lg">
+                                            <AccordionTrigger className="px-4 py-2 text-sm font-semibold dark:text-slate-300 hover:no-underline">{section.title}</AccordionTrigger>
+                                            <AccordionContent className="border-t dark:border-slate-700 pt-1">
+                                                <ul className="divide-y dark:divide-slate-800">
                                                     {(lecturesMap.get(section.id) || []).map(lecture => (
-                                                        <li key={lecture.id} className="flex items-center justify-between p-3">
-                                                            <div className="flex items-center gap-2">
-                                                                <Video className="h-4 w-4 text-muted-foreground" />
-                                                                <span className="text-sm dark:text-slate-300">{lecture.title}</span>
-                                                            </div>
-                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                                {lecture.isFreePreview && <Badge variant="outline" className="text-primary border-primary">Aperçu</Badge>}
-                                                                <span>{lecture.duration} min</span>
-                                                            </div>
+                                                        <li key={lecture.id}>
+                                                          <button 
+                                                            onClick={() => setSelectedLecture(lecture)}
+                                                            className={cn("w-full text-left flex items-center text-sm p-3 gap-3 transition-colors", selectedLecture?.id === lecture.id ? "bg-primary/10 text-primary" : "hover:bg-slate-800/50 text-slate-300")}
+                                                          >
+                                                              <PlayCircle className="h-4 w-4 shrink-0"/>
+                                                              <span className="flex-1">{lecture.title}</span>
+                                                              <span className="text-xs text-slate-500">{lecture.duration} min</span>
+                                                          </button>
                                                         </li>
                                                     ))}
                                                 </ul>
@@ -144,12 +162,35 @@ const CoursePreviewModal = ({ course, onClose }: { course: Course | null, onClos
                                     ))}
                                 </Accordion>
                             ) : (
-                                <p className="text-sm text-muted-foreground text-center py-4">Aucun programme n'a été ajouté à ce cours.</p>
+                                <p className="text-sm text-muted-foreground text-center py-4">Aucun programme ajouté.</p>
                             )}
                         </div>
+                    </ScrollArea>
+                    <div className="md:col-span-8 overflow-y-auto">
+                        {selectedLecture ? (
+                            <div className="flex flex-col h-full">
+                                <div className="aspect-video w-full bg-black">
+                                    <ReactPlayer
+                                        url={selectedLecture.videoUrl || ''}
+                                        width="100%"
+                                        height="100%"
+                                        controls={true}
+                                        config={{ youtube: { playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' } } }}
+                                    />
+                                </div>
+                                <div className="p-6 space-y-4">
+                                     <h2 className="font-bold text-xl text-white">{selectedLecture.title}</h2>
+                                     <p className="text-sm text-slate-300 whitespace-pre-wrap">{selectedLecture.description || "Aucune description pour cette leçon."}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-slate-500">
+                                <p>Sélectionnez une leçon pour voir l'aperçu.</p>
+                            </div>
+                        )}
                     </div>
-                </ScrollArea>
-                <DialogFooter>
+                </div>
+                <DialogFooter className="p-6 border-t dark:border-slate-700">
                     <Button variant="outline" onClick={onClose}>Fermer</Button>
                 </DialogFooter>
             </DialogContent>
