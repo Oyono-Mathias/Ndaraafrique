@@ -4,16 +4,16 @@
 
 @layer base {
   :root {
-    --background: 224 71% 4%; /* Deep, professional blue-black */
+    --background: 224 71% 4%;
     --foreground: 210 20% 98%;
 
-    --card: 224 71% 9%; /* Slightly lighter than bg for depth */
+    --card: 224 71% 9%;
     --card-foreground: 210 20% 98%;
     
     --popover: 224 71% 4%;
     --popover-foreground: 210 20% 98%;
     
-    --primary: 142 76% 36%; /* Vibrant, energetic green */
+    --primary: 142 76% 36%;
     --primary-foreground: 210 20% 98%;
     
     --secondary: 215 28% 17%;
@@ -22,25 +22,24 @@
     --muted: 215 28% 17%;
     --muted-foreground: 215 20% 65%;
     
-    --accent: 142 76% 28%; /* Darker green for accents */
+    --accent: 142 76% 28%;
     --accent-foreground: 210 20% 98%;
     
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 20% 98%;
-
+    
     --success: 142 76% 36%;
     --warning: 48 96% 53%;
-    
+
     --border: 215 28% 17%;
     --input: 215 28% 17%;
     
-    --ring: 142 76% 40%; /* Ring color based on primary green */
+    --ring: 142 76% 40%;
     
     --radius: 0.75rem;
   }
 
   .dark {
-    /* Same as :root for a forced dark theme */
     --background: 224 71% 4%;
     --foreground: 210 20% 98%;
     --card: 224 71% 9%;
@@ -73,4 +72,30 @@
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
+  
+  .auth-page-container {
+    @apply bg-slate-900 bg-cover bg-center bg-no-repeat;
+  }
+
+  .auth-card {
+    @apply bg-slate-900/50 backdrop-blur-lg border border-slate-700/80;
+  }
+  
+  .glassmorphism-card {
+     @apply bg-slate-800/30 backdrop-blur-sm border border-slate-700/50;
+  }
+
+  .admin-grid-layout {
+    @apply md:grid md:grid-cols-[280px_1fr];
+  }
+
+  .admin-sidebar-container {
+      @apply h-screen sticky top-0;
+  }
+}
+
+@layer utilities {
+    .glass-effect-sidebar {
+        @apply bg-slate-900/50 backdrop-blur-lg;
+    }
 }

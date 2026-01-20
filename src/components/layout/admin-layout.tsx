@@ -10,6 +10,8 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { getDoc, doc, getFirestore, onSnapshot } from "firebase/firestore";
 import { Header } from "@/components/layout/header";
+import { usePermissions } from "@/hooks/use-permissions";
+import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
 
 function AdminAccessRequiredScreen() {
     const router = useRouter();
@@ -30,7 +32,8 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { currentUser, isUserLoading, role, switchRole } = useRole();
+  const { isUserLoading, role, switchRole } = useRole();
+  const { hasPermission } = usePermissions();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg' });
@@ -42,7 +45,7 @@ export default function AdminLayout({
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
-                siteName: settingsData.general?.siteName || 'Ndara Afrique',
+                siteName: 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/icon.svg',
             });
         }
@@ -51,17 +54,17 @@ export default function AdminLayout({
   }, [db]);
 
   useEffect(() => {
-    if (!isUserLoading && currentUser?.role !== 'admin') {
+    if (!isUserLoading && !hasPermission('admin:access')) {
       router.push('/dashboard');
     }
-     // Automatically switch to admin role if the user is an admin but is in another role context
-    if (!isUserLoading && currentUser?.role === 'admin' && role !== 'admin') {
+     // Automatically switch to admin role if the user has the permission but is in another role context
+    if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
       switchRole('admin');
     }
-  }, [isUserLoading, currentUser, role, switchRole, router]);
+  }, [isUserLoading, hasPermission, role, switchRole, router]);
 
 
-  if (isUserLoading || role !== 'admin' || currentUser?.role !== 'admin') {
+  if (isUserLoading || !hasPermission('admin:access')) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -105,9 +108,10 @@ export default function AdminLayout({
                     <Header />
                 </div>
             </header>
-            <main className="flex-1 py-6 sm:px-6 lg:px-8 overflow-y-auto">
+            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto pb-20 md:pb-6">
                 {children}
             </main>
+            <AdminBottomNav />
         </div>
     </div>
   )
