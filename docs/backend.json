@@ -1,28 +1,6 @@
 
 {
   "entities": {
-    "TrackingEvent": {
-      "title": "Tracking Event",
-      "type": "object",
-      "description": "Records a specific user interaction for analytics.",
-      "properties": {
-        "eventType": {
-          "type": "string",
-          "enum": ["page_view", "cta_click", "payment_method_click"]
-        },
-        "timestamp": {
-          "type": "string",
-          "format": "date-time"
-        },
-        "sessionId": { "type": "string" },
-        "pageUrl": { "type": "string" },
-        "metadata": {
-          "type": "object",
-          "additionalProperties": true
-        }
-      },
-      "required": ["eventType", "timestamp", "sessionId"]
-    },
     "AdminGrant": {
       "title": "Admin Course Grant",
       "type": "object",
@@ -1119,6 +1097,43 @@
         "score",
         "submittedAt"
       ]
+    },
+    "FAQ": {
+      "title": "FAQ",
+      "type": "object",
+      "description": "A single Frequently Asked Question and its answer.",
+      "properties": {
+        "question_fr": {
+          "type": "string",
+          "description": "The question in French."
+        },
+        "answer_fr": {
+          "type": "string",
+          "description": "The answer in French."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Keywords for AI search, e.g., ['payment', 'certificate'].",
+          "items": { "type": "string" }
+        },
+        "isActive": {
+          "type": "boolean",
+          "description": "Whether the FAQ is visible to the public."
+        },
+        "order": {
+          "type": "number",
+          "description": "The display order of the question."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["question_fr", "answer_fr", "isActive", "order", "createdAt"]
     }
   },
   "auth": {
@@ -1163,6 +1178,9 @@
     "carousel_slides/{slideId}": {
       "schema": { "$ref": "#/entities/CarouselSlide" },
       "description": "Content for the homepage hero carousel."
+    },
+    "/faqs/{faqId}": {
+      "schema": { "$ref": "#/entities/FAQ" }
     }
   }
 }

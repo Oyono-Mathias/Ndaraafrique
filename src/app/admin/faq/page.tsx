@@ -1,49 +1,29 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { getFirestore, collection, query, orderBy, addDoc, updateDoc, deleteDoc, doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose
-} from '@/components/ui/dialog';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-  SheetClose,
-} from '@/components/ui/sheet';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter, SheetClose } from '@/components/ui/sheet';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion, ChevronUp, ChevronDown } from 'lucide-react';
+import type { FAQ } from '@/lib/types';
+import { cn } from '@/lib/utils';
+
 
 const faqSchema = z.object({
   question_fr: z.string().min(10, 'La question doit contenir au moins 10 caractères.'),
@@ -54,7 +34,7 @@ const faqSchema = z.object({
 
 type FaqFormValues = z.infer<typeof faqSchema>;
 
-const FaqForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: (data: FaqFormValues) => void, isSubmitting: boolean }) => (
+const FaqForm = ({ form, onSubmit, isSubmitting, onClose }: { form: any, onSubmit: (data: FaqFormValues) => void, isSubmitting: boolean, onClose: () => void }) => (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
             <FormField control={form.control} name="question_fr" render={({ field }) => (
@@ -93,8 +73,7 @@ const FaqForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: (data:
             />
             
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
-                <SheetClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto">Annuler</Button></SheetClose>
-                <DialogClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto">Annuler</Button></DialogClose>
+                <Button type="button" variant="ghost" onClick={onClose}>Annuler</Button>
                 <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
                     {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
                     Sauvegarder
@@ -109,29 +88,117 @@ export default function AdminFaqPage() {
   const isMobile = useIsMobile();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
+  const [faqToDelete, setFaqToDelete] = useState<FAQ | null>(null);
+  const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   
-  const [isLoading, setIsLoading] = useState(true);
-  const [faqs, setFaqs] = useState<any[]>([]);
+  const { toast } = useToast();
+  const db = getFirestore();
+
+  const faqsQuery = useMemoFirebase(() => query(collection(db, 'faqs'), orderBy('order', 'asc')), [db]);
+  const { data: faqs, isLoading } = useCollection<FAQ>(faqsQuery);
 
   const form = useForm<FaqFormValues>({
     resolver: zodResolver(faqSchema),
     defaultValues: { question_fr: '', answer_fr: '', tags: '', isActive: true },
   });
-  
-  useEffect(() => {
-    // Simulate fetching data
-    setTimeout(() => {
-      setFaqs([]);
-      setIsLoading(false);
-    }, 1500);
-  }, []);
 
-  const handleOpenForm = () => setIsFormOpen(true);
-  const onSubmit = (data: FaqFormValues) => {
-    console.log("Form submitted (logic not implemented yet)", data);
+  const handleOpenForm = (faq: FAQ | null = null) => {
+    setEditingFaq(faq);
+    if (faq) {
+        form.reset({
+            question_fr: faq.question_fr,
+            answer_fr: faq.answer_fr,
+            tags: faq.tags ? faq.tags.join(', ') : '',
+            isActive: faq.isActive,
+        });
+    } else {
+        form.reset({ question_fr: '', answer_fr: '', tags: '', isActive: true });
+    }
+    setIsFormOpen(true);
   };
-  const openDeleteDialog = () => setDeleteAlertOpen(true);
+
+  const handleCloseForm = () => {
+    setIsFormOpen(false);
+    setEditingFaq(null);
+    form.reset();
+  };
+
+  const onSubmit = async (data: FaqFormValues) => {
+    setIsSubmitting(true);
+    const payload = {
+        ...data,
+        tags: data.tags ? data.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [],
+        updatedAt: serverTimestamp(),
+    };
+
+    try {
+        if (editingFaq) {
+            const docRef = doc(db, 'faqs', editingFaq.id);
+            await updateDoc(docRef, payload);
+            toast({ title: 'FAQ mise à jour !' });
+        } else {
+            const faqsCollection = collection(db, 'faqs');
+            await addDoc(faqsCollection, {
+                ...payload,
+                order: faqs ? faqs.length : 0,
+                createdAt: serverTimestamp(),
+            });
+            toast({ title: 'FAQ ajoutée !' });
+        }
+        handleCloseForm();
+    } catch (error) {
+        console.error("Error saving FAQ:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder la FAQ.' });
+    } finally {
+        setIsSubmitting(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!faqToDelete) return;
+    try {
+        await deleteDoc(doc(db, 'faqs', faqToDelete.id));
+        toast({ title: 'FAQ supprimée' });
+    } catch (error) {
+        console.error("Error deleting FAQ:", error);
+        toast({ variant: 'destructive', title: 'Erreur de suppression' });
+    } finally {
+        setFaqToDelete(null);
+    }
+  };
+
+  const handleMove = async (index: number, direction: 'up' | 'down') => {
+    if (!faqs) return;
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= faqs.length) return;
+
+    const batch = writeBatch(db);
+    
+    const item1 = faqs[index];
+    const item2 = faqs[targetIndex];
+
+    const ref1 = doc(db, 'faqs', item1.id);
+    const ref2 = doc(db, 'faqs', item2.id);
+
+    batch.update(ref1, { order: item2.order });
+    batch.update(ref2, { order: item1.order });
+
+    try {
+        await batch.commit();
+    } catch (error) {
+        console.error("Error reordering FAQs:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de réorganiser l'élément." });
+    }
+  };
+
+  const handleToggleActive = async (faq: FAQ) => {
+    try {
+        const docRef = doc(db, 'faqs', faq.id);
+        await updateDoc(docRef, { isActive: !faq.isActive });
+    } catch(error) {
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de changer le statut.' });
+    }
+  }
   
   const FormWrapper = isMobile ? Sheet : Dialog;
   const FormContent = isMobile ? SheetContent : DialogContent;
@@ -146,7 +213,7 @@ export default function AdminFaqPage() {
                 <h1 className="text-3xl font-bold dark:text-white">Gestion de la FAQ</h1>
                 <p className="text-muted-foreground dark:text-slate-400">Ajoutez, modifiez et réorganisez les questions fréquentes.</p>
             </div>
-            <Button onClick={handleOpenForm}>
+            <Button onClick={() => handleOpenForm()}>
                 <Plus className="mr-2 h-4 w-4"/>
                 Ajouter une question
             </Button>
@@ -163,19 +230,25 @@ export default function AdminFaqPage() {
                             <CardHeader className="flex flex-row items-start justify-between">
                                 <CardTitle className="text-base dark:text-slate-200">{faq.question_fr}</CardTitle>
                                 <div className="flex items-center gap-1">
-                                     <Button variant="ghost" size="icon" onClick={() => {}} disabled={index === 0}><ChevronUp className="h-4 w-4"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={() => {}} disabled={index === faqs.length - 1}><ChevronDown className="h-4 w-4"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={handleOpenForm}><Edit className="h-4 w-4 text-blue-500"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={openDeleteDialog}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'up')} disabled={index === 0}><ChevronUp className="h-4 w-4"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'down')} disabled={index === faqs.length - 1}><ChevronDown className="h-4 w-4"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => handleOpenForm(faq)}><Edit className="h-4 w-4 text-blue-500"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => setFaqToDelete(faq)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <p className="text-sm text-muted-foreground dark:text-slate-400">{faq.answer_fr}</p>
-                                {faq.tags && (
-                                    <div className="flex gap-2 mt-4">
-                                        {faq.tags.map((tag: string) => <Badge key={tag} variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">{tag}</Badge>)}
+                                <div className="flex justify-between items-center mt-4">
+                                    <div className="flex gap-2">
+                                        {faq.tags?.map((tag: string) => <Badge key={tag} variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">{tag}</Badge>)}
                                     </div>
-                                )}
+                                    <div className="flex items-center gap-2">
+                                        <span className={cn("text-xs font-semibold", faq.isActive ? 'text-green-500' : 'text-slate-500')}>
+                                            {faq.isActive ? 'Actif' : 'Inactif'}
+                                        </span>
+                                        <Switch checked={faq.isActive} onCheckedChange={() => handleToggleActive(faq)} />
+                                    </div>
+                                </div>
                             </CardContent>
                         </Card>
                     ))
@@ -192,15 +265,15 @@ export default function AdminFaqPage() {
       </div>
 
       <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <FormContent className="dark:bg-slate-900 dark:border-slate-800">
+        <FormContent className="dark:bg-slate-900 dark:border-slate-800" onInteractOutside={(e) => { e.preventDefault(); }}>
             <FormHeader>
-                <FormTitle className="dark:text-white">Ajouter une question</FormTitle>
+                <FormTitle className="dark:text-white">{editingFaq ? 'Modifier la question' : 'Ajouter une question'}</FormTitle>
             </FormHeader>
-            <FaqForm form={form} onSubmit={onSubmit} isSubmitting={isSubmitting} />
+            <FaqForm form={form} onSubmit={onSubmit} isSubmitting={isSubmitting} onClose={handleCloseForm} />
         </FormContent>
       </FormWrapper>
       
-      <AlertDialog open={deleteAlertOpen} onOpenChange={setDeleteAlertOpen}>
+      <AlertDialog open={!!faqToDelete} onOpenChange={() => setFaqToDelete(null)}>
           <AlertDialogContent>
               <AlertDialogHeader>
                   <AlertDialogTitle>Confirmer la suppression ?</AlertDialogTitle>
@@ -210,7 +283,7 @@ export default function AdminFaqPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
+                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
                       Supprimer
                   </AlertDialogAction>
               </AlertDialogFooter>

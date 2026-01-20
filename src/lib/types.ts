@@ -1,4 +1,3 @@
-
 import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -14,6 +13,17 @@ export interface Role {
   id: string;
   name: string;
   permissions: { [key: string]: boolean };
+}
+
+export interface FAQ {
+  id: string;
+  question_fr: string;
+  answer_fr: string;
+  tags: string[];
+  isActive: boolean;
+  order: number;
+  createdAt: Timestamp;
+  updatedAt?: Timestamp;
 }
 
 export interface NdaraUser {
