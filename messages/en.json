@@ -1,0 +1,35 @@
+{
+  "Auth": {
+    "loginButton": "Log In",
+    "registerButton": "Register",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "fullNameLabel": "Full Name",
+    "password_forgot": "Forgot password?",
+    "create_account": "Create Account",
+    "i_agree_to": "I agree to the",
+    "and": "and",
+    "terms_of_use": "Terms of Use",
+    "privacy_policy": "Privacy Policy"
+  },
+  "Nav": {
+    "account": "Account",
+    "courses": "My Courses"
+  },
+  "all": "All",
+  "in_progress": "In Progress",
+  "completed": "Completed",
+  "browseCourses": "Browse Courses",
+  "coming_soon_title": "The Future of Education in Africa is",
+  "coming_soon_subtitle": "Under Construction",
+  "coming_soon_desc": "We are preparing a revolution in pan-African e-learning. Be the first to be notified of our launch and receive exclusive offers.",
+  "countdown_days": "Days",
+  "countdown_hours": "Hours",
+  "countdown_minutes": "Minutes",
+  "countdown_seconds": "Seconds",
+  "email_placeholder": "Enter your email...",
+  "notify_me_btn": "Notify Me",
+  "waitlist_success_title": "Thank you!",
+  "waitlist_success_desc": "You have been successfully added to our waitlist.",
+  "error_title": "Error"
+}
