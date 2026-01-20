@@ -158,7 +158,8 @@ service cloud.firestore {
        SUPPORT_TICKETS
     ====================== */
     match /support_tickets/{ticketId} {
-      allow read, update: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin();
+      allow read: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin();
+      allow update: if isAdmin();
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow list: if isAdmin();
 
