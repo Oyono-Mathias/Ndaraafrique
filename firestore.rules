@@ -130,7 +130,7 @@ service cloud.firestore {
     ====================== */
     match /payments/{paymentId} {
       allow get: if isSignedIn();
-      allow list: if isSignedIn();
+      allow list: if isAdmin();
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
@@ -171,7 +171,8 @@ service cloud.firestore {
        RECOMMENDED_COURSES
     ====================== */
     match /recommended_courses/{userId} {
-      allow read: if isOwner(userId);
+      allow get: if (isSignedIn() && isOwner(userId)) || isAdmin();
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
     
@@ -241,6 +242,9 @@ service cloud.firestore {
     match /subscription_plans/{planId} {
         allow get, list: if true;
         allow create, update, delete: if isAdmin();
+    }
+    match /tracking_events/{eventId} {
+        allow read, list: if isAdmin();
     }
 
 
