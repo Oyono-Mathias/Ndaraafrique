@@ -10,6 +10,10 @@ import type { UserRole } from '@/lib/types';
 
 // Helper to verify if the requester is an admin by checking their Firestore document
 async function isRequesterAdmin(uid: string): Promise<boolean> {
+    if (!adminDb) {
+      console.warn("isRequesterAdmin check skipped: Firebase Admin SDK not initialized.");
+      return false;
+    }
     try {
         const userDoc = await adminDb.collection('users').doc(uid).get();
         return userDoc.exists && userDoc.data()?.role === 'admin';
@@ -21,6 +25,9 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 
 export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
+    if (!adminAuth || !adminDb) {
+        return { success: false, error: "Le service est temporairement indisponible." };
+    }
     try {
         const decodedToken = await adminAuth.verifyIdToken(idToken);
         const requesterUid = decodedToken.uid;
@@ -50,8 +57,9 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
         batch.delete(userRef);
 
         // 3. Delete user's FCM tokens for better cleanup
-        const fcmTokensRef = adminDb.collection('fcmTokens').doc(userId);
-        batch.delete(fcmTokensRef);
+        const fcmTokensCollection = adminDb.collection('fcmTokens');
+        const userTokensRef = (await fcmTokensCollection.where('userId', '==', userId).get()).docs.map(d => d.ref);
+        userTokensRef.forEach(ref => batch.delete(ref));
 
         // 4. Log the deletion to the audit log if an admin is deleting someone else
         if (requesterUid !== userId) {
@@ -81,6 +89,9 @@ export async function sendEncouragementMessage({ studentId }: { studentId: strin
 }
 
 export async function importUsersAction({ users, adminId }: { users: { fullName: string; email: string }[], adminId: string }): Promise<{ success: boolean, results: { email: string, status: 'success' | 'error', error?: string }[] }> {
+    if (!adminAuth || !adminDb) {
+        return { success: false, results: users.map(u => ({ email: u.email, status: 'error', error: 'Service indisponible' })) };
+    }
     const results: { email: string, status: 'success' | 'error', error?: string }[] = [];
     let overallSuccess = true;
     const batch = adminDb.batch();
@@ -101,16 +112,18 @@ export async function importUsersAction({ users, adminId }: { users: { fullName:
                 uid: userRecord.uid,
                 email: user.email,
                 fullName: user.fullName,
+                username: user.email.split('@')[0],
                 role: 'student',
                 status: 'active',
                 createdAt: FieldValue.serverTimestamp(),
                 isInstructorApproved: false,
+                isProfileComplete: false,
             });
 
             results.push({ email: user.email, status: 'success' });
         } catch (error: any) {
             console.error(`Failed to import user ${user.email}:`, error);
-            results.push({ email: user.email, status: 'error', error: error.message });
+            results.push({ email: user.email, status: 'error', error: error.code || error.message });
             overallSuccess = false;
         }
     }
@@ -133,6 +146,7 @@ export async function importUsersAction({ users, adminId }: { users: { fullName:
 
 
 export async function updateUserStatus({ userId, status, adminId }: { userId: string, status: 'active' | 'suspended', adminId: string }): Promise<{ success: boolean, error?: string }> {
+    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
         const userRef = adminDb.collection('users').doc(userId);
         await userRef.update({ status });
@@ -162,6 +176,7 @@ export async function updateUserStatus({ userId, status, adminId }: { userId: st
 }
 
 export async function approveInstructorApplication({ userId, decision, message, adminId }: { userId: string, decision: 'accepted' | 'rejected', message: string, adminId: string }): Promise<{ success: boolean, error?: string }> {
+    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
         const userRef = adminDb.collection('users').doc(userId);
 
@@ -182,7 +197,7 @@ export async function approveInstructorApplication({ userId, decision, message, 
         // Add to admin audit log
         await adminDb.collection('admin_audit_logs').add({
             adminId: adminId,
-            eventType: 'instructor.application', // Corrected eventType
+            eventType: 'instructor.application',
             target: { id: userId, type: 'user' },
             details: `Instructor application for ${userId} was ${decision} by admin ${adminId}.`,
             timestamp: FieldValue.serverTimestamp(),
@@ -199,6 +214,7 @@ export async function grantCourseAccess(
     { studentId, courseId, adminId, reason, expirationInDays }: 
     { studentId: string; courseId: string; adminId: string; reason: string; expirationInDays?: number }
 ): Promise<{ success: boolean; error?: string }> {
+  if (!adminDb) return { success: false, error: "Service indisponible" };
   const batch = adminDb.batch();
 
   try {
@@ -271,6 +287,7 @@ export async function grantCourseAccess(
 }
 
 export async function updateUserRole({ userId, role, adminId }: { userId: string, role: UserRole, adminId: string }): Promise<{ success: boolean, error?: string }> {
+    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
         const userRef = adminDb.collection('users').doc(userId);
         
