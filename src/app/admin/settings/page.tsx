@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const settingsSchema = z.object({
   general: z.object({
@@ -21,7 +21,11 @@ const settingsSchema = z.object({
     contactEmail: z.string().email("Adresse e-mail invalide."),
     maintenanceMode: z.boolean().default(false),
   }),
-  // other tabs schemas...
+  commercial: z.object({
+    platformCommission: z.coerce.number().min(0, "Doit être un nombre positif.").max(100, "Ne peut pas dépasser 100."),
+    currency: z.string().length(3, "Le code devise doit faire 3 caractères."),
+    minPayoutThreshold: z.coerce.number().min(0, "Doit être un nombre positif."),
+  }),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -34,6 +38,11 @@ export default function AdminSettingsPage() {
                 siteName: "Ndara Afrique",
                 contactEmail: "support@ndara-afrique.com",
                 maintenanceMode: false
+            },
+            commercial: {
+              platformCommission: 30,
+              currency: 'XOF',
+              minPayoutThreshold: 5000
             }
         }
     });
@@ -150,19 +159,57 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
                 
-                {/* Other tabs remain as placeholders */}
                 <TabsContent value="commercial" className="mt-6">
-                <Card className="dark:bg-slate-800 dark:border-slate-700">
-                    <CardHeader>
-                        <CardTitle className="dark:text-white">Paramètres Commerciaux</CardTitle>
-                        <CardDescription className="dark:text-slate-400">Configurez la monétisation et les paiements.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         <div><FormLabel>Taux de commission (%)</FormLabel><Input type="number" disabled placeholder="30" className="dark:bg-slate-700 dark:border-slate-600"/></div>
-                         <div><FormLabel>Devise</FormLabel><Input disabled placeholder="XOF" className="dark:bg-slate-700 dark:border-slate-600"/></div>
-                         <div><FormLabel>Seuil minimum de retrait</FormLabel><Input type="number" disabled placeholder="5000" className="dark:bg-slate-700 dark:border-slate-600"/></div>
-                    </CardContent>
-                </Card>
+                    <Card className="dark:bg-slate-800 dark:border-slate-700">
+                        <CardHeader>
+                            <CardTitle className="dark:text-white">Paramètres Commerciaux</CardTitle>
+                            <CardDescription className="dark:text-slate-400">Configurez la monétisation et les paiements.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="commercial.platformCommission"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Taux de commission (%)</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" placeholder="30" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                                    </FormControl>
+                                    <FormDescription>Le pourcentage que la plateforme retient sur chaque vente.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="commercial.currency"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Devise</FormLabel>
+                                    <FormControl>
+                                    <Input placeholder="XOF" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                                    </FormControl>
+                                    <FormDescription>Code ISO à 3 lettres de la devise (ex: XOF, EUR, USD).</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="commercial.minPayoutThreshold"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Seuil minimum de retrait</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" placeholder="5000" {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                                    </FormControl>
+                                    <FormDescription>Montant minimum qu'un instructeur doit atteindre pour demander un retrait.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="legal" className="mt-6">
