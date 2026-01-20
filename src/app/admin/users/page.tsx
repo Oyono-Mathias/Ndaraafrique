@@ -369,7 +369,8 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
                         <FormFooter className={isMobile ? "flex flex-col-reverse gap-2" : ""}>
                             <Button type="button" variant="ghost" onClick={onOpenChange} className={isMobile ? "w-full" : ""}>Annuler</Button>
                             <Button type="submit" disabled={isSubmitting} className={isMobile ? "w-full" : ""}>
-                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Offrir l'accès
+                                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                                Offrir l'accès
                             </Button>
                         </FormFooter>
                     </form>
@@ -443,99 +444,116 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
 
     const successCount = importResults.filter(r => r.status === 'success').length;
     const errorCount = importResults.filter(r => r.status === 'error').length;
-
-    const FormWrapper = isMobile ? Sheet : Dialog;
-    const FormContent = isMobile ? SheetContent : DialogContent;
-    const FormHeader = isMobile ? SheetHeader : DialogHeader;
-    const FormTitle = isMobile ? SheetTitle : DialogTitle;
-    const FormDescription = isMobile ? SheetDescription : DialogDescription;
-    const FormFooter = isMobile ? SheetFooter : DialogFooter;
     
-    return (
-        <FormWrapper open={isOpen} onOpenChange={onOpenChange}>
-            <FormContent side={isMobile ? 'bottom' : undefined} className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
-                <FormHeader>
-                    <FormTitle className="dark:text-white">Importer des Utilisateurs</FormTitle>
-                    <FormDescription className="dark:text-slate-400">
-                        {step === 'select' && "Sélectionnez un fichier .xlsx ou .csv à importer."}
-                        {step === 'preview' && `Aperçu des ${usersToImport.length} utilisateurs à importer.`}
-                        {step === 'importing' && "Importation en cours, veuillez patienter..."}
-                        {step === 'report' && "Rapport d'importation."}
-                    </FormDescription>
-                </FormHeader>
-                <div className="py-4">
-                    {step === 'select' && (
-                        <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-800/50 dark:border-slate-700">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                                <FileUp className="w-10 h-10 mb-3 text-slate-400" />
-                                <p className="text-sm text-slate-400"><span className="font-semibold text-primary">Cliquez pour téléverser</span> ou glissez-déposez</p>
-                                <p className="text-xs text-slate-500">XLSX, CSV (max. 5MB)</p>
-                            </div>
-                            <Input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} accept=".xlsx, .csv" />
-                            {error && <p className="text-sm text-destructive mt-2">{error}</p>}
-                        </label>
-                    )}
-                    {step === 'preview' && (
-                         <div className="space-y-4">
-                            <p className="text-sm">Fichier : <span className="font-semibold">{fileName}</span></p>
-                            <div className="h-64 overflow-y-auto border rounded-lg dark:border-slate-700">
-                                <Table>
-                                    <TableHeader>
-                                        <TableRow className="dark:border-slate-700">
-                                            <TableHead>Nom complet</TableHead><TableHead>Email</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {usersToImport.slice(0, 100).map((user, i) => (
-                                            <TableRow key={i}><TableCell>{user.fullName}</TableCell><TableCell>{user.email}</TableCell></TableRow>
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                         </div>
-                    )}
-                     {step === 'importing' && (
-                        <div className="flex flex-col items-center justify-center h-48 text-center">
-                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-                            <p className="mt-4 text-lg font-semibold">Création des comptes...</p>
-                            <p className="text-sm text-slate-400">Cela peut prendre quelques instants.</p>
+    const dialogHeader = (
+        <DialogHeader>
+            <DialogTitle className="dark:text-white">Importer des Utilisateurs</DialogTitle>
+            <DialogDescription className="dark:text-slate-400">
+                {step === 'select' && "Sélectionnez un fichier .xlsx ou .csv à importer."}
+                {step === 'preview' && `Aperçu des ${usersToImport.length} utilisateurs à importer.`}
+                {step === 'importing' && "Importation en cours, veuillez patienter..."}
+                {step === 'report' && "Rapport d'importation."}
+            </DialogDescription>
+        </DialogHeader>
+    );
+
+    const dialogBody = (
+        <div className="py-4">
+            {step === 'select' && (
+                <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-800/50 dark:border-slate-700">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <FileUp className="w-10 h-10 mb-3 text-slate-400" />
+                        <p className="text-sm text-slate-400"><span className="font-semibold text-primary">Cliquez pour téléverser</span> ou glissez-déposez</p>
+                        <p className="text-xs text-slate-500">XLSX, CSV (max. 5MB)</p>
+                    </div>
+                    <Input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} accept=".xlsx, .csv" />
+                    {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+                </label>
+            )}
+            {step === 'preview' && (
+                 <div className="space-y-4">
+                    <p className="text-sm">Fichier : <span className="font-semibold">{fileName}</span></p>
+                    <div className="h-64 overflow-y-auto border rounded-lg dark:border-slate-700">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="dark:border-slate-700">
+                                    <TableHead>Nom complet</TableHead><TableHead>Email</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {usersToImport.slice(0, 100).map((user, i) => (
+                                    <TableRow key={i}><TableCell>{user.fullName}</TableCell><TableCell>{user.email}</TableCell></TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                 </div>
+            )}
+             {step === 'importing' && (
+                <div className="flex flex-col items-center justify-center h-48 text-center">
+                    <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                    <p className="mt-4 text-lg font-semibold">Création des comptes...</p>
+                    <p className="text-sm text-slate-400">Cela peut prendre quelques instants.</p>
+                </div>
+            )}
+            {step === 'report' && (
+                <div className="space-y-4">
+                    <div className="p-4 rounded-lg bg-slate-800/50 border dark:border-slate-700 text-center">
+                        <h3 className="text-xl font-bold text-white">Importation Terminée</h3>
+                        <div className="flex justify-center gap-8 mt-2">
+                            <div className="text-green-400"><span className="font-bold text-2xl">{successCount}</span> Succès</div>
+                            <div className="text-red-400"><span className="font-bold text-2xl">{errorCount}</span> Erreurs</div>
                         </div>
-                    )}
-                    {step === 'report' && (
-                        <div className="space-y-4">
-                            <div className="p-4 rounded-lg bg-slate-800/50 border dark:border-slate-700 text-center">
-                                <h3 className="text-xl font-bold text-white">Importation Terminée</h3>
-                                <div className="flex justify-center gap-8 mt-2">
-                                    <div className="text-green-400"><span className="font-bold text-2xl">{successCount}</span> Succès</div>
-                                    <div className="text-red-400"><span className="font-bold text-2xl">{errorCount}</span> Erreurs</div>
+                    </div>
+                    {errorCount > 0 && (
+                        <div className="h-48 overflow-y-auto border rounded-lg p-2 dark:border-slate-700">
+                             {importResults.filter(r => r.status === 'error').map((res, i) => (
+                                <div key={i} className="text-xs p-2 rounded bg-red-900/50">
+                                   <span className="font-bold">{res.email}:</span> {res.error?.includes('email-already-exists') ? 'Email déjà utilisé' : res.error}
                                 </div>
-                            </div>
-                            {errorCount > 0 && (
-                                <div className="h-48 overflow-y-auto border rounded-lg p-2 dark:border-slate-700">
-                                     {importResults.filter(r => r.status === 'error').map((res, i) => (
-                                        <div key={i} className="text-xs p-2 rounded bg-red-900/50">
-                                           <span className="font-bold">{res.email}:</span> {res.error?.includes('email-already-exists') ? 'Email déjà utilisé' : res.error}
-                                        </div>
-                                     ))}
-                                </div>
-                            )}
+                             ))}
                         </div>
                     )}
                 </div>
-                 <FormFooter className={isMobile ? "flex flex-col-reverse gap-2" : ""}>
-                    {step === 'preview' && (
-                        <>
-                            <Button variant="ghost" onClick={() => setStep('select')}>Annuler</Button>
-                            <Button onClick={handleConfirmImport}>Confirmer l'import</Button>
-                        </>
-                    )}
-                    {step === 'report' && (
-                        <Button onClick={() => onOpenChange(false)}>Fermer</Button>
-                    )}
-                </FormFooter>
-            </FormContent>
-        </FormWrapper>
-    )
+            )}
+        </div>
+    );
+    
+    const dialogFooter = (
+        <>
+            {step === 'preview' && (
+                <>
+                    <Button variant="ghost" onClick={() => setStep('select')}>Annuler</Button>
+                    <Button onClick={handleConfirmImport}>Confirmer l'import</Button>
+                </>
+            )}
+            {step === 'report' && (
+                <Button onClick={() => onOpenChange(false)}>Fermer</Button>
+            )}
+        </>
+    );
+
+    if (isMobile) {
+        return (
+            <Sheet open={isOpen} onOpenChange={onOpenChange}>
+                <SheetContent side={'bottom'} className="dark:bg-slate-900 dark:border-slate-800">
+                    <SheetHeader>{dialogHeader}</SheetHeader>
+                    {dialogBody}
+                    <SheetFooter className="flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">{dialogFooter}</SheetFooter>
+                </SheetContent>
+            </Sheet>
+        );
+    }
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
+                {dialogHeader}
+                {dialogBody}
+                <DialogFooter>{dialogFooter}</DialogFooter>
+            </DialogContent>
+        </Dialog>
+    );
 }
 
 // --- PAGE PRINCIPALE ---
@@ -759,4 +777,5 @@ export default function AdminUsersPage() {
     
 
     
+
 

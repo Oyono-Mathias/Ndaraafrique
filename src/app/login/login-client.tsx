@@ -1,8 +1,8 @@
-
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams, Link } from '@/navigation';
+import { Link, useRouter } from 'next-intl/navigation';
+import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
