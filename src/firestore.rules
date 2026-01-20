@@ -50,7 +50,7 @@ service cloud.firestore {
        USERS
     ====================== */
     match /users/{userId} {
-      allow get: if isSignedIn();
+      allow read: if isSignedIn(); // Allow any signed-in user to read profiles
       allow list: if isAdmin();
       allow create: if isOwner(userId);
       allow update: if isAdmin() || (
@@ -81,7 +81,12 @@ service cloud.firestore {
     match /courses/{courseId} {
       allow get, list: if true;
       allow create: if isApprovedInstructor() || isAdmin();
-      allow update, delete: if isCourseOwner(courseId) || isAdmin();
+      allow update: if 
+        isAdmin() || 
+        (isCourseOwner(courseId) && 
+         request.resource.data.status == resource.data.status &&
+         request.resource.data.instructorId == resource.data.instructorId);
+      allow delete: if isCourseOwner(courseId) || isAdmin();
 
       match /sections/{sectionId} {
         allow read, list: if true;
