@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -25,15 +24,19 @@ const settingsSchema = z.object({
   general: z.object({
     siteName: z.string().min(1, "Le nom du site est requis."),
     logoUrl: z.string().optional(),
+    loginBackgroundImage: z.string().url("URL invalide").optional().or(z.literal('')),
     contactEmail: z.string().email("Adresse e-mail invalide."),
-    maintenanceMode: z.boolean().default(false),
+    supportPhone: z.string().optional(),
   }),
   commercial: z.object({
     platformCommission: z.coerce.number().min(0, "Doit être un nombre positif.").max(100, "Ne peut pas dépasser 100."),
     currency: z.string().length(3, "Le code devise doit faire 3 caractères."),
     minPayoutThreshold: z.coerce.number().min(0, "Doit être un nombre positif."),
+    featuredCourseId: z.string().optional(),
   }),
   platform: z.object({
+    announcementMessage: z.string().optional(),
+    maintenanceMode: z.boolean().default(false),
     allowInstructorSignup: z.boolean().default(true),
     autoApproveCourses: z.boolean().default(false),
     enableInternalMessaging: z.boolean().default(true),
@@ -42,6 +45,20 @@ const settingsSchema = z.object({
     termsOfService: z.string().optional(),
     privacyPolicy: z.string().optional(),
   }),
+  content: z.object({
+    aboutPage: z.object({
+        mainTitle: z.string().optional(),
+        mainSubtitle: z.string().optional(),
+        historyTitle: z.string().optional(),
+        historyFrench: z.string().optional(),
+        historySango: z.string().optional(),
+        visionTitle: z.string().optional(),
+        visionFrench: z.string().optional(),
+        visionSango: z.string().optional(),
+        ctaTitle: z.string().optional(),
+        ctaSubtitle: z.string().optional(),
+    }).optional()
+  }).optional(),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
@@ -192,7 +209,7 @@ export default function AdminSettingsPage() {
                         <CardContent>
                             <FormField
                                 control={form.control}
-                                name="general.maintenanceMode"
+                                name="platform.maintenanceMode"
                                 render={({ field }) => (
                                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 dark:border-slate-700">
                                         <div className="space-y-0.5">

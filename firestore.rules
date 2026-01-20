@@ -249,7 +249,7 @@ service cloud.firestore {
     match /roles/{roleId}                  { allow read, write: if isAdmin(); }
     match /carousel_slides/{slideId}       { allow read: if true; allow list, create, update, delete: if isAdmin(); }
     match /faqs/{id}                       { allow read, write: if isAdmin(); }
-    match /settings/global                 { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{settingId}            { allow read: if true; allow write: if isAdmin(); }
     match /waitlist/{email}                { allow create: if true; }
     match /subscription_plans/{planId} {
         allow get, list: if true;

@@ -376,3 +376,10 @@ export interface Resource {
     url: string;
     createdAt: Timestamp;
 }
+
+export interface TrackingEvent {
+  eventType: 'page_view' | 'cta_click' | 'payment_method_click';
+  sessionId: string;
+  pageUrl: string;
+  metadata?: Record<string, any>;
+}
