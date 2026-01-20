@@ -41,13 +41,15 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion, ChevronUp, ChevronDown } from 'lucide-react';
 
 const faqSchema = z.object({
   question_fr: z.string().min(10, 'La question doit contenir au moins 10 caractères.'),
   answer_fr: z.string().min(20, 'La réponse doit contenir au moins 20 caractères.'),
-  tags: z.string().min(3, 'Ajoutez au moins un tag. Séparez par des virgules.'),
+  tags: z.string().optional(),
+  isActive: z.boolean().default(true),
 });
 
 type FaqFormValues = z.infer<typeof faqSchema>;
@@ -69,6 +71,26 @@ const FaqForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: (data:
                     <FormMessage />
                 </FormItem>
             )} />
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 dark:border-slate-700">
+                  <div className="space-y-0.5">
+                    <FormLabel className="dark:text-slate-200">Rendre visible</FormLabel>
+                    <FormDescription className="dark:text-slate-400">
+                      Si activé, cette question apparaîtra sur la page FAQ publique.
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
             
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
                 <SheetClose asChild><Button type="button" variant="ghost" className="w-full sm:w-auto">Annuler</Button></SheetClose>
@@ -94,7 +116,7 @@ export default function AdminFaqPage() {
 
   const form = useForm<FaqFormValues>({
     resolver: zodResolver(faqSchema),
-    defaultValues: { question_fr: '', answer_fr: '', tags: '' },
+    defaultValues: { question_fr: '', answer_fr: '', tags: '', isActive: true },
   });
   
   useEffect(() => {
