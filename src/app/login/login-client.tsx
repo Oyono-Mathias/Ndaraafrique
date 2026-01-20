@@ -2,9 +2,8 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams, Link } from '@/navigation';
 import Image from 'next/image';
-import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -12,6 +11,7 @@ import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, up
 import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
+import { useTranslations, useLocale } from 'next-intl';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,6 +50,7 @@ const PasswordInput = ({ field }: { field: any }) => {
 
 
 export default function LoginClient() {
+  const t = useTranslations('Auth');
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -61,12 +62,21 @@ export default function LoginClient() {
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
-  const { user, isUserLoading } = useRole();
+  const { user, isUserLoading, role } = useRole();
+  const locale = useLocale();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
   
-  useEffect(() => { if (!isUserLoading && user) router.push('/dashboard'); }, [user, isUserLoading, router]);
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      if (role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, isUserLoading, role, router]);
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -106,6 +116,7 @@ export default function LoginClient() {
             createdAt: serverTimestamp() as any,
             lastLogin: serverTimestamp() as any,
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
+            preferredLanguage: locale as 'fr' | 'en',
             isProfileComplete: false,
         };
         if (acceptedTerms) {
@@ -178,19 +189,19 @@ export default function LoginClient() {
             <div className="auth-card rounded-2xl p-6 sm:p-8">
                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 text-slate-300">
-                        <TabsTrigger value="login">Se connecter</TabsTrigger>
-                        <TabsTrigger value="register">S'inscrire</TabsTrigger>
+                        <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
+                        <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="login" className="space-y-6 mt-6">
                         <Form {...loginForm}>
                         <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Adresse e-mail</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Mot de passe</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-end">
-                              <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">Mot de passe oublié ?</Link>
+                              <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
-                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Se connecter</Button>
+                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
                          <div className="relative my-4 text-center">
@@ -206,21 +217,21 @@ export default function LoginClient() {
                     <TabsContent value="register" className="mt-6">
                         <Form {...registerForm}>
                             <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Nom Complet</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Adresse e-mail</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">Mot de passe</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="terms" render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-1" /></FormControl>
                                  <div className="space-y-1 leading-none">
                                     <FormLabel className="text-xs font-normal text-slate-400">
-                                      J'accepte les <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">Conditions d'utilisation</Link> et la <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">Politique de confidentialité</Link>
+                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>
                               </FormItem>
                             )} />
-                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Créer un compte</Button>
+                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
                             </form>
                         </Form>
                     </TabsContent>

@@ -9,14 +9,18 @@ import { Loader2 } from 'lucide-react';
 import { LandingPageClient } from '@/components/landing/LandingPageClient';
 
 export default function LandingPage() {
-  const { user, isUserLoading } = useRole();
+  const { user, isUserLoading, role } = useRole();
   const router = useRouter();
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      router.push('/dashboard');
+      if (role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
     }
-  }, [isUserLoading, user, router]);
+  }, [isUserLoading, user, role, router]);
 
   if (isUserLoading || user) {
     return (
