@@ -200,16 +200,16 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700 dark:text-white">
           <DropdownMenuLabel>Actions</DropdownMenuLabel>
-          <DropdownMenuItem onClick={() => router.push(`/admin/users/${user.uid}`)} className="cursor-pointer dark:focus:bg-slate-700">
+          <DropdownMenuItem onSelect={() => router.push(`/admin/users/${user.uid}`)} className="cursor-pointer dark:focus:bg-slate-700">
             <UserIcon className="mr-2 h-4 w-4"/>
             Voir le profil
           </DropdownMenuItem>
           <DropdownMenuSeparator className="dark:bg-slate-700" />
-          <DropdownMenuItem onClick={handleContact} className="cursor-pointer dark:focus:bg-slate-700">
+          <DropdownMenuItem onSelect={handleContact} className="cursor-pointer dark:focus:bg-slate-700">
             <MessageSquare className="mr-2 h-4 w-4"/>
             Contacter
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => onGrantAccess(user)} className="cursor-pointer dark:focus:bg-slate-700">
+          <DropdownMenuItem onSelect={() => onGrantAccess(user)} className="cursor-pointer dark:focus:bg-slate-700">
             <Gift className="mr-2 h-4 w-4"/>
             Offrir un cours
           </DropdownMenuItem>
@@ -219,17 +219,17 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
               Changer le rôle
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="dark:bg-slate-800 dark:border-slate-700">
-              <DropdownMenuItem onClick={() => handleUpdate('role', 'student')} className="cursor-pointer dark:focus:bg-slate-700">Étudiant</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdate('role', 'instructor')} className="cursor-pointer dark:focus:bg-slate-700">Instructeur</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleUpdate('role', 'admin')} className="cursor-pointer dark:focus:bg-slate-700">Admin</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleUpdate('role', 'student')} className="cursor-pointer dark:focus:bg-slate-700">Étudiant</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleUpdate('role', 'instructor')} className="cursor-pointer dark:focus:bg-slate-700">Instructeur</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => handleUpdate('role', 'admin')} className="cursor-pointer dark:focus:bg-slate-700">Admin</DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
-          <DropdownMenuItem onClick={() => handleUpdate('status', user.status === 'suspended' ? 'active' : 'suspended')} className="cursor-pointer dark:focus:bg-slate-700">
+          <DropdownMenuItem onSelect={() => handleUpdate('status', user.status === 'suspended' ? 'active' : 'suspended')} className="cursor-pointer dark:focus:bg-slate-700">
             <Ban className="mr-2 h-4 w-4"/>
             {user.status === 'suspended' ? 'Réactiver' : 'Suspendre'}
           </DropdownMenuItem>
           <DropdownMenuSeparator className="dark:bg-slate-700" />
-          <DropdownMenuItem onClick={() => setIsAlertOpen(true)} className="text-destructive dark:text-red-400 cursor-pointer dark:focus:bg-destructive/10 dark:focus:text-red-400">
+          <DropdownMenuItem onSelect={() => setIsAlertOpen(true)} className="text-destructive dark:text-red-400 cursor-pointer dark:focus:bg-destructive/10 dark:focus:text-red-400">
             <Trash2 className="mr-2 h-4 w-4"/>
             Supprimer
           </DropdownMenuItem>
@@ -759,3 +759,4 @@ export default function AdminUsersPage() {
     
 
     
+
