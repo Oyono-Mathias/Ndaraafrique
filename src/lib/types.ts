@@ -1,3 +1,4 @@
+
 import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -303,6 +304,7 @@ export interface Settings {
       howItWorks_step2_imageUrl?: string;
       howItWorks_step3_imageUrl?: string;
       securitySection_imageUrl?: string;
+      finalCta_imageUrl?: string;
     };
   };
 }

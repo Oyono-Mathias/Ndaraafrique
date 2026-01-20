@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
@@ -265,6 +266,7 @@ export function LandingPageClient() {
   };
 
   const securityImageUrl = landingPageContent?.securitySection_imageUrl || PlaceHolderImages.find(img => img.id === 'payment-security')?.imageUrl || '';
+  const finalCtaImageUrl = landingPageContent?.finalCta_imageUrl || PlaceHolderImages.find(img => img.id === 'final-cta-bg')?.imageUrl || '';
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -340,25 +342,35 @@ export function LandingPageClient() {
 
         <InstructorCTASection />
 
-        <section className="py-12 text-center">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-white">
-                Prêt à transformer votre avenir ?
-            </h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-                Rejoignez des milliers d'apprenants et de formateurs qui construisent l'Afrique de demain. L'inscription est gratuite.
-            </p>
-            <div className="mt-8 hidden md:flex justify-center">
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-14 text-lg shadow-cta"
-                  onClick={() => handleTrackedClick('cta_click', { button: 'final_cta' })}
-                >
-                    <Link href="/login?tab=register">
-                        Créer mon compte gratuit
-                        <ArrowRight className="w-5 h-5 ml-2" />
-                    </Link>
-                </Button>
+        <section className="relative py-24 my-24 text-center rounded-2xl overflow-hidden">
+            <Image
+                src={finalCtaImageUrl}
+                alt="Étudiants africains apprenant ensemble"
+                fill
+                className="object-cover"
+                data-ai-hint="students learning"
+            />
+            <div className="absolute inset-0 bg-slate-900/70"></div>
+            <div className="relative z-10">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-white">
+                    Prêt à transformer votre avenir ?
+                </h2>
+                <p className="mt-4 text-slate-300 max-w-xl mx-auto">
+                    Rejoignez des milliers d'apprenants et de formateurs qui construisent l'Afrique de demain. L'inscription est gratuite.
+                </p>
+                <div className="mt-8 hidden md:flex justify-center">
+                    <Button
+                      size="lg"
+                      asChild
+                      className="h-14 text-lg shadow-cta"
+                      onClick={() => handleTrackedClick('cta_click', { button: 'final_cta' })}
+                    >
+                        <Link href="/login?tab=register">
+                            Créer mon compte gratuit
+                            <ArrowRight className="w-5 h-5 ml-2" />
+                        </Link>
+                    </Button>
+                </div>
             </div>
         </section>
 

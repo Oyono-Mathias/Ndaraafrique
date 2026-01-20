@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -63,6 +64,7 @@ const settingsSchema = z.object({
         howItWorks_step2_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
         howItWorks_step3_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
         securitySection_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
+        finalCta_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
     }).optional(),
   }).optional(),
 });
@@ -116,6 +118,7 @@ export default function AdminSettingsPage() {
                     howItWorks_step2_imageUrl: '',
                     howItWorks_step3_imageUrl: '',
                     securitySection_imageUrl: '',
+                    finalCta_imageUrl: '',
                 }
             }
         }
@@ -353,7 +356,7 @@ export default function AdminSettingsPage() {
                     <Card className="dark:bg-slate-800 dark:border-slate-700">
                         <CardHeader>
                             <CardTitle className="dark:text-white">Page d'accueil</CardTitle>
-                            <CardDescription className="dark:text-slate-400">Modifiez les images des sections "Comment ça marche" et "Sécurité".</CardDescription>
+                            <CardDescription className="dark:text-slate-400">Modifiez les images des sections.</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-6">
                             <FormField control={form.control} name="content.landingPage.howItWorks_step1_imageUrl" render={({ field }) => (
@@ -380,6 +383,13 @@ export default function AdminSettingsPage() {
                             <FormField control={form.control} name="content.landingPage.securitySection_imageUrl" render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Image de la section "Sécurité des transactions"</FormLabel>
+                                    <FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.landingPage.finalCta_imageUrl" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Image de la section "Prêt à transformer votre avenir ?"</FormLabel>
                                     <FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl>
                                     <FormMessage />
                                 </FormItem>
