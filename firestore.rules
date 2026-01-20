@@ -50,7 +50,7 @@ service cloud.firestore {
        USERS
     ====================== */
     match /users/{userId} {
-      allow get: if true; 
+      allow get: if isOwner(userId) || isAdmin();
       allow list: if isAdmin();
       allow create: if isOwner(userId);
       allow update: if isAdmin() || (
@@ -129,9 +129,9 @@ service cloud.firestore {
        PAYMENTS
     ====================== */
     match /payments/{paymentId} {
-      allow get: if isAdmin() || isOwner(resource.data.userId);
-      allow list: if isAdmin();
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow get: if isOwner(resource.data.userId) || isAdmin();
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
     
