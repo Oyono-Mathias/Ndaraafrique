@@ -1,69 +1,6 @@
 
 {
   "entities": {
-    "Settings": {
-      "title": "Global Settings",
-      "type": "object",
-      "description": "Global settings for the Ndara Afrique platform.",
-      "properties": {
-        "general": {
-          "type": "object",
-          "properties": {
-            "siteName": { "type": "string" },
-            "logoUrl": { "type": "string", "format": "uri" },
-            "loginBackgroundImage": { "type": "string", "format": "uri" },
-            "contactEmail": { "type": "string", "format": "email" },
-            "supportPhone": { "type": "string" }
-          }
-        },
-        "commercial": {
-          "type": "object",
-          "properties": {
-            "platformCommission": { "type": "number" },
-            "currency": { "type": "string" },
-            "minPayoutThreshold": { "type": "number" },
-            "featuredCourseId": { "type": "string" }
-          }
-        },
-        "platform": {
-          "type": "object",
-          "properties": {
-            "announcementMessage": { "type": "string" },
-            "maintenanceMode": { "type": "boolean" },
-            "allowInstructorSignup": { "type": "boolean" },
-            "autoApproveCourses": { "type": "boolean" },
-            "enableInternalMessaging": { "type": "boolean" }
-          }
-        },
-        "legal": {
-          "type": "object",
-          "properties": {
-            "termsOfService": { "type": "string" },
-            "privacyPolicy": { "type": "string" }
-          }
-        },
-        "content": {
-            "type": "object",
-            "properties": {
-                "aboutPage": {
-                    "type": "object",
-                    "properties": {
-                        "mainTitle": {"type": "string"},
-                        "mainSubtitle": {"type": "string"},
-                        "historyTitle": {"type": "string"},
-                        "historyFrench": {"type": "string"},
-                        "historySango": {"type": "string"},
-                        "visionTitle": {"type": "string"},
-                        "visionFrench": {"type": "string"},
-                        "visionSango": {"type": "string"},
-                        "ctaTitle": {"type": "string"},
-                        "ctaSubtitle": {"type": "string"}
-                    }
-                }
-            }
-        }
-      }
-    },
     "AdminGrant": {
       "title": "Admin Course Grant",
       "type": "object",
@@ -1197,6 +1134,34 @@
         }
       },
       "required": ["question_fr", "answer_fr", "isActive", "order", "createdAt"]
+    },
+     "TrackingEvent": {
+      "title": "Tracking Event",
+      "type": "object",
+      "description": "An event tracked for analytics purposes.",
+      "properties": {
+        "eventType": {
+          "type": "string",
+          "enum": ["page_view", "cta_click", "payment_method_click"]
+        },
+        "sessionId": {
+          "type": "string",
+          "description": "An anonymous ID for the user's session."
+        },
+        "pageUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["eventType", "sessionId", "pageUrl", "timestamp"]
     }
   },
   "auth": {

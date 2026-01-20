@@ -37,7 +37,7 @@ import { UserNav } from "./user-nav";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin' && pathname === '/admin') || (href !== '/admin' && pathname.startsWith(href));
+  const isActive = (href === '/admin' && pathname === '/admin') || (href !== '/admin' && pathname.startsWith(href) && href.split('/').length > 2);
 
 
   return (
