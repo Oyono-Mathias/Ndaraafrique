@@ -16,61 +16,8 @@ import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { Loader2 } from 'lucide-react';
 import { DateRange } from "react-day-picker";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { Button } from '@/components/ui/button';
+import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 
-
-function DatePickerWithRange({
-  className,
-  date,
-  setDate
-}: {
-  className?: string
-  date: DateRange | undefined,
-  setDate: (date: DateRange | undefined) => void
-}) {
-  return (
-    <div className={cn("grid gap-2", className)}>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            id="date"
-            variant={"outline"}
-            className={cn(
-              "w-[300px] justify-start text-left font-normal dark:bg-slate-800 dark:border-slate-700",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {date?.from ? (
-              date.to ? (
-                <>
-                  {format(date.from, "dd LLL y", { locale: fr })} -{" "}
-                  {format(date.to, "dd LLL y", { locale: fr })}
-                </>
-              ) : (
-                format(date.from, "dd LLL y", { locale: fr })
-              )
-            ) : (
-              <span>Choisissez une période</span>
-            )}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="end">
-          <Calendar
-            initialFocus
-            mode="range"
-            defaultMonth={date?.from}
-            selected={date}
-            onSelect={setDate}
-            numberOfMonths={2}
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  )
-}
 
 interface StatCardProps {
   title: string;
@@ -369,8 +316,8 @@ export default function StatisticsPage() {
     return (
          <div className="space-y-8 max-w-7xl mx-auto">
               <header>
-                <h1 className="text-3xl font-bold dark:text-white">Statistiques Globales</h1>
-                <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance globale de la plateforme.</p>
+                <h1 className="text-3xl font-bold dark:text-white">Statistiques</h1>
+                <p className="text-muted-foreground dark:text-slate-400">Analyse de la performance de la plateforme.</p>
             </header>
             <StatsDashboard />
         </div>

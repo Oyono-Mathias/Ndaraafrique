@@ -11,7 +11,7 @@ import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import { DateRange } from "react-day-picker";
 import { subDays, format, eachDayOfInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { DatePickerWithRange } from '@/app/admin/statistiques/page'; // Re-using the date picker
+import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 
 interface StatCardProps {
   title: string;
