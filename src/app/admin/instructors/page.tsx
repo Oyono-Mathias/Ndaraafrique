@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -90,7 +91,6 @@ const DecisionModal = ({
         setIsProcessing(true);
         await onConfirm(application.uid, decision, message);
         setIsProcessing(false);
-        onClose();
     };
 
     return (
@@ -205,6 +205,7 @@ export default function InstructorApplicationsPage() {
     } else {
         toast({ variant: 'destructive', title: "Erreur", description: result.error || "Une erreur est survenue." });
     }
+    setSelectedApp(null);
   };
   
   const isLoading = isUserLoading || applicationsLoading;
