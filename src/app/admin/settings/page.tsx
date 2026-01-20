@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Settings, FileText, Percent, Building, Upload, Briefcase, Check, MessagesSquare } from 'lucide-react';
+import { Loader2, Settings, FileText, Percent, Building, Upload, Briefcase, Check, MessagesSquare, FileSignature } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -76,7 +77,6 @@ export default function AdminSettingsPage() {
             general: {
                 siteName: "Ndara Afrique",
                 contactEmail: "support@ndara-afrique.com",
-                maintenanceMode: false
             },
             commercial: {
               platformCommission: 30,
@@ -84,6 +84,7 @@ export default function AdminSettingsPage() {
               minPayoutThreshold: 5000
             },
             platform: {
+                maintenanceMode: false,
                 allowInstructorSignup: true,
                 autoApproveCourses: false,
                 enableInternalMessaging: true
@@ -91,6 +92,20 @@ export default function AdminSettingsPage() {
             legal: {
                 termsOfService: '',
                 privacyPolicy: '',
+            },
+            content: {
+                aboutPage: {
+                    mainTitle: '',
+                    mainSubtitle: '',
+                    historyTitle: '',
+                    historyFrench: '',
+                    historySango: '',
+                    visionTitle: '',
+                    visionFrench: '',
+                    visionSango: '',
+                    ctaTitle: '',
+                    ctaSubtitle: '',
+                }
             }
         }
     });
@@ -144,10 +159,11 @@ export default function AdminSettingsPage() {
             </header>
 
             <Tabs defaultValue="general" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 dark:bg-slate-800 dark:border-slate-700">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-5 dark:bg-slate-800 dark:border-slate-700">
                     <TabsTrigger value="general"><Settings className="w-4 h-4 mr-2"/>Général</TabsTrigger>
                     <TabsTrigger value="commercial"><Percent className="w-4 h-4 mr-2"/>Commercial</TabsTrigger>
                     <TabsTrigger value="platform"><Building className="w-4 h-4 mr-2"/>Plateforme</TabsTrigger>
+                    <TabsTrigger value="content"><FileSignature className="w-4 h-4 mr-2"/>Contenu</TabsTrigger>
                     <TabsTrigger value="legal"><FileText className="w-4 h-4 mr-2"/>Légal</TabsTrigger>
                 </TabsList>
                 
@@ -318,6 +334,47 @@ export default function AdminSettingsPage() {
                                 </FormItem>
                                 )}
                             />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                
+                <TabsContent value="content" className="mt-6">
+                    <Card className="dark:bg-slate-800 dark:border-slate-700">
+                        <CardHeader>
+                            <CardTitle className="dark:text-white">Page "À Propos"</CardTitle>
+                            <CardDescription className="dark:text-slate-400">Modifiez le contenu de la page "À propos de nous".</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                             <FormField control={form.control} name="content.aboutPage.mainTitle" render={({ field }) => (
+                                <FormItem><FormLabel>Titre Principal</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.mainSubtitle" render={({ field }) => (
+                                <FormItem><FormLabel>Sous-titre Principal</FormLabel><FormControl><Textarea {...field} rows={2} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.historyTitle" render={({ field }) => (
+                                <FormItem><FormLabel>Titre Section Histoire</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.historyFrench" render={({ field }) => (
+                                <FormItem><FormLabel>Texte Histoire (Français)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.historySango" render={({ field }) => (
+                                <FormItem><FormLabel>Texte Histoire (Sango)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.visionTitle" render={({ field }) => (
+                                <FormItem><FormLabel>Titre Section Vision</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.visionFrench" render={({ field }) => (
+                                <FormItem><FormLabel>Texte Vision (Français)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.visionSango" render={({ field }) => (
+                                <FormItem><FormLabel>Texte Vision (Sango)</FormLabel><FormControl><Textarea {...field} rows={4} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.ctaTitle" render={({ field }) => (
+                                <FormItem><FormLabel>Titre Appel à l'action</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
+                             <FormField control={form.control} name="content.aboutPage.ctaSubtitle" render={({ field }) => (
+                                <FormItem><FormLabel>Sous-titre Appel à l'action</FormLabel><FormControl><Input {...field} className="dark:bg-slate-700 dark:border-slate-600"/></FormControl><FormMessage /></FormItem>
+                            )} />
                         </CardContent>
                     </Card>
                 </TabsContent>
