@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -15,6 +15,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, Sparkles, Tag, Speaker, AlertCircle, Bell } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { generatePromoCode, type GeneratePromoCodeOutput } from '@/ai/flows/generate-promo-code-flow';
+import { useToast } from '@/hooks/use-toast';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, orderBy, getFirestore, doc, updateDoc } from 'firebase/firestore';
+
+interface PromoCode {
+    id: string;
+    code: string;
+    discountPercentage: number;
+    isActive: boolean;
+    expiresAt?: any; // Firestore Timestamp
+    createdAt: any; // Firestore Timestamp
+}
 
 const marketingFormSchema = z.object({
   prompt: z.string().min(10, { message: 'Veuillez entrer une instruction d\'au moins 10 caractères.' }),
@@ -22,20 +35,15 @@ const marketingFormSchema = z.object({
 
 type MarketingFormValues = z.infer<typeof marketingFormSchema>;
 
-interface PromoCode {
-    id: string;
-    code: string;
-    discountPercentage: number;
-    isActive: boolean;
-    expiresAt?: any;
-    createdAt: any;
-}
 
 export default function AdminMarketingPage() {
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiResponse, setAiResponse] = useState('');
-  const [codesLoading, setCodesLoading] = useState(true);
-  const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
+  const [aiResponse, setAiResponse] = useState<GeneratePromoCodeOutput | null>(null);
+  const { toast } = useToast();
+  const db = getFirestore();
+
+  const promoCodesQuery = useMemoFirebase(() => query(collection(db, 'promoCodes'), orderBy('createdAt', 'desc')), [db]);
+  const { data: promoCodes, isLoading: codesLoading } = useCollection<PromoCode>(promoCodesQuery);
 
   const form = useForm<MarketingFormValues>({
     resolver: zodResolver(marketingFormSchema),
@@ -43,24 +51,32 @@ export default function AdminMarketingPage() {
 
   const onSubmit: SubmitHandler<MarketingFormValues> = async (data) => {
     setIsAiLoading(true);
-    // Simulate AI response
-    setTimeout(() => {
-        setAiResponse(`Annonce générée pour : "${data.prompt}"`);
+    setAiResponse(null);
+    try {
+        const result = await generatePromoCode({ prompt: data.prompt });
+        setAiResponse(result);
+        toast({ title: "IA a terminé !", description: "La réponse de l'assistant est prête." });
+    } catch (error) {
+        console.error("AI flow error:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'L\'assistant IA n\'a pas pu traiter la demande.' });
+    } finally {
         setIsAiLoading(false);
-    }, 1500);
+    }
   };
   
-  // Simulate data fetching
-  useState(() => {
-    setTimeout(() => {
-        setPromoCodes([
-             { id: '1', code: 'BIENVENUE20', discountPercentage: 20, isActive: true, createdAt: new Date(), expiresAt: null },
-             { id: '2', code: 'NDARA10', discountPercentage: 10, isActive: true, createdAt: new Date(), expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24 * 30) },
-             { id: '3', code: 'ETE2024', discountPercentage: 15, isActive: false, createdAt: new Date(), expiresAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5) },
-        ]);
-        setCodesLoading(false);
-    }, 1000);
-  })
+  const handleToggleActive = async (code: PromoCode, isActive: boolean) => {
+    try {
+        const codeRef = doc(db, 'promoCodes', code.id);
+        await updateDoc(codeRef, { isActive });
+        toast({
+            title: `Code ${isActive ? 'activé' : 'désactivé'}`,
+            description: `Le code promo ${code.code} est maintenant ${isActive ? 'actif' : 'inactif'}.`
+        });
+    } catch (error) {
+        console.error("Error updating promo code status:", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de mettre à jour le statut du code.' });
+    }
+  }
 
 
   return (
@@ -72,7 +88,7 @@ export default function AdminMarketingPage() {
 
       <Card className="dark:bg-slate-800 dark:border-slate-700">
         <CardHeader>
-          <CardTitle className="dark:text-white flex items-center gap-2"><Sparkles className="text-amber-400 h-5 w-5"/> Assistant Marketing</CardTitle>
+          <CardTitle className="dark:text-white flex items-center gap-2"><Sparkles className="text-amber-400 h-5 w-5"/> Assistant Marketing (Mathias)</CardTitle>
           <CardDescription className="dark:text-slate-400">
             Utilisez des instructions simples pour générer des promotions ou des messages. Ex: "Créer un code de 20% pour Pâques" ou "Rédiger une annonce pour un nouveau cours d'IA".
           </CardDescription>
@@ -87,7 +103,7 @@ export default function AdminMarketingPage() {
                   <FormItem className="flex-1">
                     <FormControl>
                       <Input
-                        placeholder="Votre instruction pour l'IA..."
+                        placeholder="Votre instruction pour Mathias..."
                         className="h-12 text-base md:text-sm dark:bg-slate-700 dark:border-slate-600"
                         {...field}
                       />
@@ -111,7 +127,7 @@ export default function AdminMarketingPage() {
           )}
           {aiResponse && (
             <div className="mt-6 p-4 rounded-lg bg-blue-100 dark:bg-blue-900/50 border border-blue-200 dark:border-blue-700 space-y-4">
-                <p className="text-sm font-medium text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{aiResponse}</p>
+                <p className="text-sm font-medium text-blue-800 dark:text-blue-200 whitespace-pre-wrap">{aiResponse.response}</p>
                  <div className="flex justify-end">
                     <Button disabled size="sm">
                         <Bell className="mr-2 h-4 w-4"/>
@@ -154,19 +170,12 @@ export default function AdminMarketingPage() {
                                     <TableCell className="font-mono font-semibold dark:text-slate-100">{code.code}</TableCell>
                                     <TableCell className="font-medium dark:text-slate-300">{code.discountPercentage}%</TableCell>
                                     <TableCell className="text-muted-foreground dark:text-slate-400">
-                                        {code.expiresAt ? format(code.expiresAt, 'dd MMM yyyy', { locale: fr }) : "N'expire jamais"}
+                                        {code.expiresAt ? format(code.expiresAt.toDate(), 'dd MMM yyyy', { locale: fr }) : "N'expire jamais"}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Switch
                                             checked={code.isActive}
-                                            onCheckedChange={() => {
-                                                const newCodes = [...promoCodes];
-                                                const codeToUpdate = newCodes.find(c => c.id === code.id);
-                                                if (codeToUpdate) {
-                                                    codeToUpdate.isActive = !codeToUpdate.isActive;
-                                                    setPromoCodes(newCodes);
-                                                }
-                                            }}
+                                            onCheckedChange={(checked) => handleToggleActive(code, checked)}
                                         />
                                     </TableCell>
                                 </TableRow>
@@ -174,7 +183,7 @@ export default function AdminMarketingPage() {
                         ) : (
                              <TableRow className="dark:border-slate-700">
                                 <TableCell colSpan={4} className="h-24 text-center text-muted-foreground dark:text-slate-500">
-                                    Aucun code promo créé.
+                                    Aucun code promo créé. Utilisez l'assistant IA pour en générer un.
                                 </TableCell>
                             </TableRow>
                         )}
