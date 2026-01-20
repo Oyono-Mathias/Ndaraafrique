@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { 
   collection, 
@@ -8,31 +8,29 @@ import {
   orderBy, 
   onSnapshot, 
   doc,
-  getDoc,
   writeBatch,
   serverTimestamp,
   getFirestore,
-  where,
-  getDocs,
   addDoc,
-  Timestamp
+  Timestamp,
+  getDoc,
+  arrayRemove,
+  arrayUnion,
+  updateDoc
 } from 'firebase/firestore';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { ScrollArea } from '../ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
-import { Loader2, Send, Shield, ArrowLeft, Video, Phone, Check, CheckCheck, Briefcase, User } from 'lucide-react';
+import { Loader2, Send, Shield, ArrowLeft, Video, Phone, Check, CheckCheck, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from '../ui/badge';
-import type { NdaraUser, UserRole } from '@/lib/types';
+import type { NdaraUser, UserRole, Message } from '@/lib/types';
 import { useRouter } from 'next/navigation';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { toast } from '@/hooks/use-toast';
-import type { Message } from '@/lib/types';
-
 
 interface ParticipantDetails {
     username: string;
@@ -54,36 +52,112 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const lastMessageRef = useRef<string | null>(null);
   
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
-  // Static data for UI design
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+        audioRef.current = new Audio('/sounds/message-sent.mp3');
+        audioRef.current.volume = 0.5;
+    }
+  }, []);
+  
+  const playSentSound = useCallback(() => {
+    audioRef.current?.play().catch(e => console.error("Failed to play sound", e));
+  }, []);
+  
+  // Update "last seen" time every minute
+  useEffect(() => {
+    const updateLastSeen = () => {
+       if (otherParticipant?.lastSeen) {
+            setTimeSinceLastSeen(formatDistanceToNowStrict(otherParticipant.lastSeen.toDate(), { addSuffix: true, locale: fr }));
+        }
+    };
+    updateLastSeen();
+    const interval = setInterval(updateLastSeen, 60000);
+    return () => clearInterval(interval);
+  }, [otherParticipant?.lastSeen]);
+  
+  // Fetch chat doc and other participant details
+  useEffect(() => {
+    if (!chatId || !user) return;
     setIsLoading(true);
-    setOtherParticipant({
-        username: 'Amina Diallo', profilePictureURL: '/placeholder-avatars/amina.jpg',
-        isOnline: true, role: 'student', lastSeen: new Date()
+    const chatRef = doc(db, 'chats', chatId);
+    const unsubscribe = onSnapshot(chatRef, async (docSnap) => {
+        if (docSnap.exists()) {
+            const chatData = docSnap.data();
+            const otherId = chatData.participants.find((p: string) => p !== user.uid);
+            setOtherParticipantId(otherId);
+
+            if (otherId) {
+                const userRef = doc(db, 'users', otherId);
+                const userSnap = await getDoc(userRef);
+                if (userSnap.exists()) {
+                    setOtherParticipant(userSnap.data() as ParticipantDetails);
+                }
+            }
+            if (chatData.unreadBy?.includes(user.uid)) {
+                updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
+            }
+        } else {
+            router.push('/messages');
+        }
     });
-    setMessages([
-        { id: 'm1', senderId: 'other', text: 'Salut ! 👋', createdAt: new Timestamp(Date.now() / 1000 - 600, 0), status: 'read' },
-        { id: 'm2', senderId: 'me', text: 'Hey Amina ! Bien ?', createdAt: new Timestamp(Date.now() / 1000 - 500, 0), status: 'read' },
-        { id: 'm3', senderId: 'other', text: "Super et toi ? J'ai une petite question concernant la leçon sur le CSS Grid.", createdAt: new Timestamp(Date.now() / 1000 - 400, 0), status: 'read' },
-    ]);
-    setIsLoading(false);
-  }, [chatId]);
+    return () => unsubscribe();
+  }, [chatId, user, db, router]);
+
+  // Fetch messages
+  useEffect(() => {
+    if (!chatId) return;
+    const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
+    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
+        const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+        
+        // Optimistic check to avoid re-adding local messages
+        const serverMessages = msgs.filter(m => !m.id.startsWith('temp-'));
+        
+        const latestServerMessageId = serverMessages[serverMessages.length - 1]?.id;
+        
+        setMessages(prev => {
+            const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
+            if(latestServerMessageId === lastMessageRef.current) {
+                return [...serverMessages, ...tempMessages];
+            }
+            lastMessageRef.current = latestServerMessageId;
+            return serverMessages;
+        });
+
+        setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, [chatId, db]);
+
+  // Auto-scroll logic
+  useEffect(() => {
+    setTimeout(() => {
+        if (scrollAreaRef.current) {
+            const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+            if (viewport) {
+                viewport.scrollTop = viewport.scrollHeight;
+            }
+        }
+    }, 100);
+  }, [messages]);
 
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user ) return;
+    if (!newMessage.trim() || !user || isSending || !otherParticipantId) return;
     
     setIsSending(true);
     const textToSend = newMessage.trim();
     setNewMessage("");
-
-    // optimistic UI update
+    playSentSound();
+    
+    const tempId = 'temp-' + Date.now();
     const tempMessage = {
-        id: 'temp-' + Date.now(),
+        id: tempId,
         text: textToSend,
         senderId: user.uid,
         createdAt: Timestamp.now(),
@@ -91,10 +165,38 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     };
     setMessages(prev => [...prev, tempMessage]);
 
-    // Simulate sending
-    setTimeout(() => {
-      setIsSending(false);
-    }, 500);
+    try {
+        const batch = writeBatch(db);
+        const messagesRef = collection(db, `chats/${chatId}/messages`);
+        const newMsgRef = doc(messagesRef);
+        batch.set(newMsgRef, {
+            senderId: user.uid,
+            text: textToSend,
+            createdAt: serverTimestamp(),
+            status: 'sent',
+        });
+
+        const chatRef = doc(db, 'chats', chatId);
+        batch.update(chatRef, {
+            lastMessage: textToSend,
+            updatedAt: serverTimestamp(),
+            lastSenderId: user.uid,
+            unreadBy: arrayUnion(otherParticipantId)
+        });
+        
+        await batch.commit();
+
+    } catch(err) {
+        console.error("Error sending message:", err);
+        setMessages(prev => prev.filter(m => m.id !== tempId));
+        setNewMessage(textToSend);
+        errorEmitter.emit('permission-error', new FirestorePermissionError({
+            path: `chats/${chatId}/messages`,
+            operation: 'create'
+        }));
+    } finally {
+        setIsSending(false);
+    }
   };
   
   const RoleBadge = ({ role }: { role: UserRole | undefined }) => {
@@ -102,13 +204,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
     const roleInfo = {
         admin: {
-            label: 'Admin',
-            icon: Shield,
+            label: 'Admin', icon: Shield,
             className: 'bg-destructive/10 text-destructive border-destructive/30',
         },
         instructor: {
-            label: 'Formateur',
-            icon: Briefcase,
+            label: 'Formateur', icon: Briefcase,
             className: 'bg-primary/10 text-primary border-primary/30',
         },
         student: {}
@@ -128,12 +228,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   };
 
   const ReadReceipt = ({ status }: { status: Message['status'] }) => {
-    if (status === 'read') {
-      return <CheckCheck className="h-4 w-4 text-blue-500" />;
-    }
-    if (status === 'delivered') {
-      return <CheckCheck className="h-4 w-4 text-slate-400" />;
-    }
+    if (status === 'read') return <CheckCheck className="h-4 w-4 text-blue-500" />;
+    if (status === 'delivered') return <CheckCheck className="h-4 w-4 text-slate-400" />;
     return <Check className="h-4 w-4 text-slate-400" />;
   };
 
@@ -161,7 +257,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">En ligne</span> : `Vu il y a 2h`}
+                    {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">En ligne</span> : (timeSinceLastSeen ? `Vu ${timeSinceLastSeen}` : `Hors ligne`)}
                 </p>
             </div>
             <div className="flex items-center gap-2">
@@ -173,7 +269,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         <ScrollArea className="flex-1" ref={scrollAreaRef}>
             <div className="p-4 sm:p-6 space-y-1">
                 {messages.map((msg) => {
-                    const isMe = msg.senderId !== 'other';
+                    const isMe = msg.senderId === user?.uid;
                     return (
                         <div 
                             key={msg.id} 
@@ -224,4 +320,3 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     </div>
   );
 }
-    

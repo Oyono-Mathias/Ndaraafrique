@@ -11,7 +11,7 @@ export default function ChatConversationPage() {
   const isMobile = useIsMobile();
 
   // On Desktop, the main MessagesPage handles the rendering.
-  // We re-render the parent page to keep the URL in sync without duplicating layout logic.
+  // We re-render the parent page to keep the URL in sync and let it handle the layout.
   if (!isMobile) {
      return <MessagesPage />;
   }
