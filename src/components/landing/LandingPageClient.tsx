@@ -116,16 +116,16 @@ const TestimonialsSection = () => {
             avatar: "/placeholder-avatars/fatima.jpg"
         },
         {
-            quote: "La flexibilité de la plateforme m'a permis d'apprendre à mon rythme tout en travaillant. Le paiement par Mobile Money a été un vrai plus, simple et sécurisé. Je recommande à 100% !",
-            name: "Jean-Philippe Kouamé",
-            role: "Chef de projet Digital",
-            avatar: "/placeholder-avatars/jean-philippe.jpg"
+            quote: "Les formations sur l'agriculture durable ont complètement transformé ma façon de travailler. J'ai optimisé mes rendements et je gère mon exploitation de manière plus rentable et écologique.",
+            name: "Moussa Diop",
+            role: "Technicien Agricole",
+            avatar: "/placeholder-avatars/moussa.jpg"
         },
         {
-            quote: "En tant que femme entrepreneure, trouver des formations de qualité et accessibles était un défi. Ndara Afrique a été une révélation. J'ai pu monter en compétence sur le marketing digital et booster mon activité.",
-            name: "Aïcha Traoré",
-            role: "Entrepreneure",
-            avatar: "/placeholder-avatars/aicha.jpg"
+            quote: "J'ai suivi un cours sur la gestion d'un petit élevage et la commercialisation des produits. Cela m'a donné les outils pour lancer ma propre activité et devenir indépendante. Une vraie révolution pour moi !",
+            name: "Adja Sarr",
+            role: "Éleveuse & Entrepreneure",
+            avatar: "/placeholder-avatars/adja.jpg"
         }
     ];
 
