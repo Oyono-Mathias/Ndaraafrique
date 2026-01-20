@@ -1,6 +1,7 @@
 
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,12 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
+import { useRole } from '@/context/RoleContext';
+import { updateGlobalSettings } from '@/actions/settingsActions';
+import type { Settings as SettingsType } from '@/lib/types';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const settingsSchema = z.object({
   general: z.object({
@@ -31,11 +38,21 @@ const settingsSchema = z.object({
     autoApproveCourses: z.boolean().default(false),
     enableInternalMessaging: z.boolean().default(true),
   }),
+  legal: z.object({
+    termsOfService: z.string().optional(),
+    privacyPolicy: z.string().optional(),
+  }),
 });
 
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
 export default function AdminSettingsPage() {
+    const [isSaving, setIsSaving] = useState(false);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const { currentUser } = useRole();
+    const { toast } = useToast();
+    const db = getFirestore();
+
     const form = useForm<SettingsFormValues>({
         resolver: zodResolver(settingsSchema),
         defaultValues: {
@@ -53,13 +70,53 @@ export default function AdminSettingsPage() {
                 allowInstructorSignup: true,
                 autoApproveCourses: false,
                 enableInternalMessaging: true
+            },
+            legal: {
+                termsOfService: '',
+                privacyPolicy: '',
             }
         }
     });
     
-    const onSubmit = (data: SettingsFormValues) => {
-        console.log(data);
+    useEffect(() => {
+        const settingsRef = doc(db, 'settings', 'global');
+        const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const settingsData = docSnap.data() as SettingsType;
+                form.reset(settingsData);
+            }
+            setIsLoadingData(false);
+        });
+        return () => unsubscribe();
+    }, [db, form]);
+
+    const onSubmit = async (data: SettingsFormValues) => {
+      if (!currentUser) {
+          toast({ variant: "destructive", title: "Erreur", description: "Vous devez être connecté." });
+          return;
+      }
+      setIsSaving(true);
+      const result = await updateGlobalSettings({ settings: data, adminId: currentUser.uid });
+      if (result.success) {
+          toast({ title: "Paramètres sauvegardés", description: "Les modifications ont été enregistrées avec succès." });
+      } else {
+          toast({ variant: "destructive", title: "Erreur de sauvegarde", description: result.error });
+      }
+      setIsSaving(false);
     };
+
+    if (isLoadingData) {
+        return (
+             <div className="space-y-8">
+                <header>
+                  <Skeleton className="h-9 w-1/3" />
+                  <Skeleton className="h-5 w-1/2 mt-2" />
+                </header>
+                <Skeleton className="h-12 w-full" />
+                <Skeleton className="h-64 w-full" />
+             </div>
+        );
+    }
 
     return (
         <Form {...form}>
@@ -114,7 +171,7 @@ export default function AdminSettingsPage() {
                                 <FormLabel>Logo du site</FormLabel>
                                 <div className="flex items-center gap-4">
                                     <Avatar className="h-16 w-16 rounded-lg bg-slate-700">
-                                        <AvatarImage src="/icon.svg" />
+                                        <AvatarImage src={form.getValues('general.logoUrl')} />
                                         <AvatarFallback>NA</AvatarFallback>
                                     </Avatar>
                                     <Button type="button" variant="outline" className="dark:bg-slate-700 dark:border-slate-600">
@@ -252,18 +309,43 @@ export default function AdminSettingsPage() {
                 <Card className="dark:bg-slate-800 dark:border-slate-700">
                     <CardHeader>
                         <CardTitle className="dark:text-white">Textes légaux</CardTitle>
-                        <CardDescription className="dark:text-slate-400">Modifiez le contenu des pages légales.</CardDescription>
+                        <CardDescription className="dark:text-slate-400">Modifiez le contenu des pages légales qui seront affichées aux utilisateurs.</CardDescription>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div><FormLabel>Conditions Générales d'Utilisation</FormLabel><Textarea disabled rows={5} placeholder="Contenu des CGU..."/></div>
-                        <div><FormLabel>Politique de Confidentialité</FormLabel><Textarea disabled rows={5} placeholder="Contenu de la politique de confidentialité..."/></div>
+                    <CardContent className="space-y-6">
+                         <FormField
+                            control={form.control}
+                            name="legal.termsOfService"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Conditions Générales d'Utilisation</FormLabel>
+                                    <FormControl>
+                                        <Textarea rows={10} placeholder="Entrez le contenu des CGU ici..." {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="legal.privacyPolicy"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Politique de Confidentialité</FormLabel>
+                                    <FormControl>
+                                        <Textarea rows={10} placeholder="Entrez le contenu de la politique de confidentialité ici..." {...field} className="dark:bg-slate-700 dark:border-slate-600" />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                     </CardContent>
                 </Card>
                 </TabsContent>
             </Tabs>
 
             <div className="flex justify-end pt-4">
-                <Button type="submit" disabled>
+                <Button type="submit" disabled={isSaving}>
+                     {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Enregistrer les Modifications
                 </Button>
             </div>
@@ -271,5 +353,3 @@ export default function AdminSettingsPage() {
         </Form>
     );
 }
-
-    
