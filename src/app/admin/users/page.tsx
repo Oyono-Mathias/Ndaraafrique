@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit, where, onSnapshot } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit, where, startAfter, QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
 import { deleteUserAccount, importUsersAction, updateUserStatus, grantCourseAccess, updateUserRole } from '@/actions/userActions';
@@ -520,6 +520,9 @@ const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenCh
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<NdaraUser[]>([]);
+  const [lastVisible, setLastVisible] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isLoading, setIsLoading] = useState(true);
@@ -529,21 +532,48 @@ export default function AdminUsersPage() {
   
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
+  const { toast } = useToast();
+  const PAGE_SIZE = 50;
 
+  const fetchUsers = useCallback(async (loadMore = false) => {
+    if (!currentUser) return;
+
+    if (loadMore) {
+        setIsLoadingMore(true);
+    } else {
+        setIsLoading(true);
+    }
+
+    try {
+        let q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(PAGE_SIZE));
+
+        if (loadMore && lastVisible) {
+            q = query(collection(db, 'users'), orderBy('createdAt', 'desc'), startAfter(lastVisible), limit(PAGE_SIZE));
+        }
+
+        const documentSnapshots = await getDocs(q);
+        const newUsers = documentSnapshots.docs.map(doc => doc.data() as NdaraUser);
+        
+        setHasMore(newUsers.length === PAGE_SIZE);
+        setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1]);
+        setUsers(prev => loadMore ? [...prev, ...newUsers] : newUsers);
+
+    } catch (error) {
+        console.error("Error fetching users: ", error);
+        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de charger la liste des utilisateurs." });
+    } finally {
+        setIsLoading(false);
+        setIsLoadingMore(false);
+    }
+  }, [db, currentUser, toast, lastVisible]);
+  
   useEffect(() => {
-      if(isUserLoading || !currentUser) return;
-      
-      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-          const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as NdaraUser));
-          setUsers(usersData);
-          setIsLoading(false);
-      }, (error) => {
-          console.error("Error fetching users: ", error);
-          setIsLoading(false);
-      });
-      return () => unsubscribe();
-  }, [db, currentUser, isUserLoading]);
+    if(currentUser) {
+        fetchUsers();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentUser]);
+
 
   const onUserUpdate = useCallback((userId: string, update: Partial<NdaraUser>) => {
       setUsers(prevUsers => {
@@ -686,6 +716,14 @@ export default function AdminUsersPage() {
                     </div>
                 )}
              </div>
+             {hasMore && !finalLoading && (
+                <div className="mt-6 text-center">
+                    <Button onClick={() => fetchUsers(true)} disabled={isLoadingMore}>
+                        {isLoadingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                        Charger plus
+                    </Button>
+                </div>
+             )}
           </CardContent>
         </Card>
       </div>
@@ -694,3 +732,4 @@ export default function AdminUsersPage() {
     </>
   );
 }
+
