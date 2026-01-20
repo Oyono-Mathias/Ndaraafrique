@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getPublicStats } from '@/app/actions/statsActions';
+import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { Users, Briefcase } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -14,8 +14,8 @@ const StatItem = ({ value, label, icon: Icon, isLoading }: { value: string, labe
     <div className="text-center">
         {isLoading ? (
             <>
-                <Skeleton className="h-10 w-24 mx-auto mb-2" />
-                <Skeleton className="h-4 w-20 mx-auto" />
+                <Skeleton className="h-10 w-24 mx-auto mb-2 bg-slate-700" />
+                <Skeleton className="h-4 w-20 mx-auto bg-slate-700" />
             </>
         ) : (
             <>
@@ -30,19 +30,39 @@ const StatItem = ({ value, label, icon: Icon, isLoading }: { value: string, labe
 );
 
 export function Stats() {
-    const [stats, setStats] = useState<StatData | null>(null);
+    const [stats, setStats] = useState<StatData>({ studentCount: 0, instructorCount: 0 });
     const [isLoading, setIsLoading] = useState(true);
+    const db = getFirestore();
 
     useEffect(() => {
-        const fetchStats = async () => {
-            const result = await getPublicStats();
-            if (result.success) {
-                setStats(result.data);
-            }
+        setIsLoading(true);
+
+        const usersCollection = collection(db, 'users');
+        
+        const studentQuery = query(usersCollection, where('role', '==', 'student'));
+        const instructorQuery = query(usersCollection, where('role', '==', 'instructor'));
+
+        const unsubStudents = onSnapshot(studentQuery, (snapshot) => {
+            setStats(prevStats => ({ ...prevStats, studentCount: snapshot.size }));
             setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching student count:", error);
+            setIsLoading(false);
+        });
+
+        const unsubInstructors = onSnapshot(instructorQuery, (snapshot) => {
+            setStats(prevStats => ({ ...prevStats, instructorCount: snapshot.size }));
+            setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching instructor count:", error);
+            setIsLoading(false);
+        });
+
+        return () => {
+            unsubStudents();
+            unsubInstructors();
         };
-        fetchStats();
-    }, []);
+    }, [db]);
 
     const formatNumber = (num: number) => {
         if (num >= 1000) {
@@ -55,13 +75,13 @@ export function Stats() {
         <section className="py-20 bg-slate-900/50 rounded-2xl border border-slate-800">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
                 <StatItem 
-                    value={isLoading || !stats ? '...' : formatNumber(stats.studentCount)}
+                    value={isLoading ? '...' : formatNumber(stats.studentCount)}
                     label="Étudiants"
                     icon={Users}
                     isLoading={isLoading}
                 />
                 <StatItem 
-                    value={isLoading || !stats ? '...' : formatNumber(stats.instructorCount)}
+                    value={isLoading ? '...' : formatNumber(stats.instructorCount)}
                     label="Formateurs Experts"
                     icon={Briefcase}
                     isLoading={isLoading}
