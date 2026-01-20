@@ -11,7 +11,6 @@ import {
   where,
   getDocs,
   limit,
-  onSnapshot,
   documentId
 } from 'firebase/firestore';
 import {
@@ -136,13 +135,16 @@ export default function AdminPaymentsPage() {
         return;
     }
 
-    const paymentsQuery = query(
-        collection(db, 'payments'),
-        orderBy('date', 'desc'),
-        limit(100)
-    );
+    const fetchPayments = async () => {
+      setIsLoading(true);
+      const paymentsQuery = query(
+          collection(db, 'payments'),
+          orderBy('date', 'desc'),
+          limit(100)
+      );
 
-    const unsubscribe = onSnapshot(paymentsQuery, async (snapshot) => {
+      try {
+        const snapshot = await getDocs(paymentsQuery);
         if (snapshot.empty) {
             setPayments([]);
             setIsLoading(false);
@@ -175,14 +177,15 @@ export default function AdminPaymentsPage() {
         }));
 
         setPayments(enriched);
-        setIsLoading(false);
-    }, (err) => {
+      } catch(err: any) {
         console.error(err);
         setError("Erreur de chargement des transactions. Un index Firestore est peut-être manquant.");
+      } finally {
         setIsLoading(false);
-    });
+      }
+    };
 
-    return () => unsubscribe();
+    fetchPayments();
 }, [currentUser, isUserLoading, db]);
 
   const filteredPayments = useMemo(() => {

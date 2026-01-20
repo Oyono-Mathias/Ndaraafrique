@@ -8,12 +8,11 @@ import {
   collection,
   query,
   where,
-  onSnapshot,
+  getDocs,
   orderBy,
   Timestamp,
   addDoc,
   serverTimestamp,
-  getDoc,
   doc,
 } from 'firebase/firestore';
 import { useForm } from "react-hook-form";
@@ -130,51 +129,46 @@ export default function MyRevenuePage() {
       return;
     }
 
-    setIsLoading(true);
-    
-    const unsubscribes: (() => void)[] = [];
-
-    // Fetch settings
-    const settingsRef = doc(db, 'settings', 'global');
-    unsubscribes.push(onSnapshot(settingsRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const commercialSettings = docSnap.data().commercial;
-            setSettings({
-                platformCommission: commercialSettings?.platformCommission || 30,
-                minPayoutThreshold: commercialSettings?.minPayoutThreshold || 5000,
-            });
-        }
-    }));
-    
-    // Fetch payments
-    const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructor.uid), orderBy('date', 'desc'));
-    unsubscribes.push(onSnapshot(paymentsQuery, (snapshot) => {
-        const fetchedTransactions = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          courseTitle: doc.data().courseTitle || 'Cours non spécifié',
-          studentName: doc.data().studentName || 'Étudiant inconnu',
-        })) as Transaction[];
-        setTransactions(fetchedTransactions);
+    const fetchData = async () => {
+        setIsLoading(true);
         setError(null);
-    }, (err) => {
-        console.error("Erreur de chargement des revenus:", err);
-        setError("Erreur lors du chargement des transactions.");
-    }));
+        const instructorId = instructor.uid;
+        
+        try {
+            const settingsRef = doc(db, 'settings', 'global');
+            const settingsSnap = await getDoc(settingsRef);
+             if (settingsSnap.exists()) {
+                const commercialSettings = settingsSnap.data().commercial;
+                setSettings({
+                    platformCommission: commercialSettings?.platformCommission || 30,
+                    minPayoutThreshold: commercialSettings?.minPayoutThreshold || 5000,
+                });
+            }
 
-    // Fetch payouts
-    const payoutsQuery = query(collection(db, 'payouts'), where('instructorId', '==', instructor.uid), orderBy('date', 'desc'));
-    unsubscribes.push(onSnapshot(payoutsQuery, (snapshot) => {
-        const fetchedPayouts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Payout[];
-        setPayouts(fetchedPayouts);
-        setIsLoading(false); // Consider loading finished after all initial data is fetched
-    }, (err) => {
-        console.error("Erreur de chargement des retraits:", err);
-        setError("Erreur lors du chargement des retraits.");
-        setIsLoading(false);
-    }));
+            const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId), orderBy('date', 'desc'));
+            const paymentsSnap = await getDocs(paymentsQuery);
+            const fetchedTransactions = paymentsSnap.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+              courseTitle: doc.data().courseTitle || 'Cours non spécifié',
+              studentName: doc.data().studentName || 'Étudiant inconnu',
+            })) as Transaction[];
+            setTransactions(fetchedTransactions);
+
+            const payoutsQuery = query(collection(db, 'payouts'), where('instructorId', '==', instructorId), orderBy('date', 'desc'));
+            const payoutsSnap = await getDocs(payoutsQuery);
+            const fetchedPayouts = payoutsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })) as Payout[];
+            setPayouts(fetchedPayouts);
+
+        } catch(e: any) {
+            console.error("Error loading revenue data:", e);
+            setError("Erreur lors du chargement de vos données financières.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
     
-    return () => unsubscribes.forEach(unsub => unsub());
+    fetchData();
   }, [instructor, isInstructorLoading, db]);
 
   const { totalRevenue, monthlyRevenue, availableBalance, revenueTrendData } = useMemo(() => {
@@ -266,6 +260,7 @@ export default function MyRevenuePage() {
         });
         setIsDialogOpen(false);
         form.reset();
+        setPayouts(prev => [{...payoutPayload, id: 'temp', date: Timestamp.now()}, ...prev]);
     } catch(err) {
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: 'payouts',
@@ -506,5 +501,3 @@ export default function MyRevenuePage() {
     </div>
   );
 }
-
-    

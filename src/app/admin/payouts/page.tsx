@@ -34,7 +34,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, getFirestore, orderBy, getDocs, where } from 'firebase/firestore';
 import type { Payout as PayoutType, NdaraUser } from '@/lib/types';
 import { processPayout } from '@/actions/supportActions';
@@ -67,43 +66,50 @@ export default function PayoutsPage() {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'en_attente' | 'valide' | 'rejete'>('en_attente');
   const [confirmationAction, setConfirmationAction] = useState<{payoutId: string, status: 'valide' | 'rejete'} | null>(null);
-  
-  const payoutsQuery = useMemoFirebase(() => query(collection(db, 'payouts'), orderBy('date', 'desc')), [db]);
-  const { data: payouts, isLoading: payoutsLoading } = useCollection<PayoutType>(payoutsQuery);
-  
-  const [instructorsMap, setInstructorsMap] = useState<Map<string, NdaraUser>>(new Map());
-  const [instructorsLoading, setInstructorsLoading] = useState(true);
+  const [payouts, setPayouts] = useState<EnrichedPayout[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!payouts) return;
-    const fetchInstructors = async () => {
-        const instructorIds = [...new Set(payouts.map(p => p.instructorId))];
-        const newIdsToFetch = instructorIds.filter(id => id && !instructorsMap.has(id));
-
-        if (newIdsToFetch.length > 0) {
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', newIdsToFetch.slice(0, 30)));
-            const usersSnap = await getDocs(usersQuery);
+    if (isUserLoading || !currentUser) {
+        if (!isUserLoading) setIsLoading(false);
+        return;
+    }
+    
+    const fetchPayouts = async () => {
+        setIsLoading(true);
+        const q = query(collection(db, 'payouts'), where('status', '==', activeTab), orderBy('date', 'desc'));
+        
+        try {
+            const querySnapshot = await getDocs(q);
+            const payoutsData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PayoutType));
             
-            const newInstructors = new Map(instructorsMap);
-            usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
-            setInstructorsMap(newInstructors);
+            if (payoutsData.length > 0) {
+                const instructorIds = [...new Set(payoutsData.map(p => p.instructorId))];
+                const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
+                const usersSnap = await getDocs(usersQuery);
+                const instructorsMap = new Map<string, NdaraUser>(usersSnap.docs.map(doc => [doc.id, doc.data() as NdaraUser]));
+                
+                const enriched = payoutsData.map(p => ({
+                    ...p,
+                    instructor: instructorsMap.get(p.instructorId)
+                }));
+                setPayouts(enriched);
+            } else {
+                setPayouts([]);
+            }
+
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de charger les demandes de retrait.' });
+        } finally {
+            setIsLoading(false);
         }
-        setInstructorsLoading(false);
     };
-    fetchInstructors();
-  }, [payouts, db, instructorsMap]);
+    
+    fetchPayouts();
 
-  const enrichedPayouts = useMemo(() => {
-    if (!payouts) return [];
-    return payouts.map(p => ({
-      ...p,
-      instructor: instructorsMap.get(p.instructorId),
-    }));
-  }, [payouts, instructorsMap]);
+  }, [activeTab, db, currentUser, isUserLoading, toast]);
 
-  const filteredPayouts = useMemo(() => {
-    return enrichedPayouts.filter(payout => payout.status === activeTab);
-  }, [enrichedPayouts, activeTab]);
 
   const handleUpdateStatus = async () => {
     if (!confirmationAction || !currentUser) return;
@@ -114,6 +120,7 @@ export default function PayoutsPage() {
 
     if (result.success) {
         toast({ title: "Statut du retrait mis à jour" });
+        setPayouts(prev => prev.filter(p => p.id !== payoutId));
     } else {
         toast({ variant: "destructive", title: "Erreur", description: result.error });
     }
@@ -123,7 +130,7 @@ export default function PayoutsPage() {
   };
   
   const handleExport = () => {
-    const dataToExport = filteredPayouts.map(p => ({
+    const dataToExport = payouts.map(p => ({
         'Date': p.date ? format(p.date.toDate(), 'dd/MM/yyyy HH:mm') : 'N/A',
         'Instructeur': p.instructor?.fullName || p.instructorId,
         'Montant': p.amount,
@@ -141,8 +148,6 @@ export default function PayoutsPage() {
       valide: { title: "Confirmer l'approbation ?", description: "Cette action marquera le retrait comme payé et déplacera la transaction. Êtes-vous sûr ?" },
       rejete: { title: "Confirmer le rejet ?", description: "Cette action rejettera la demande de retrait de l'instructeur. Cette action est définitive."}
   };
-
-  const isLoading = isUserLoading || payoutsLoading || (payouts && payouts.length > 0 && instructorsLoading);
 
   return (
     <>
@@ -162,7 +167,7 @@ export default function PayoutsPage() {
                           <TabsTrigger value="rejete">Rejetés</TabsTrigger>
                       </TabsList>
                   </Tabs>
-                   <Button variant="outline" onClick={handleExport} disabled={filteredPayouts.length === 0}>
+                   <Button variant="outline" onClick={handleExport} disabled={payouts.length === 0}>
                       <FileDown className="mr-2 h-4 w-4" />
                       Exporter
                   </Button>
@@ -189,8 +194,8 @@ export default function PayoutsPage() {
                         <TableCell className="text-right"><div className="flex justify-end gap-2"><Skeleton className="h-8 w-20 dark:bg-slate-700" /><Skeleton className="h-8 w-20 dark:bg-slate-700" /></div></TableCell>
                       </TableRow>
                     ))
-                  ) : filteredPayouts.length > 0 ? (
-                    filteredPayouts.map((payout) => (
+                  ) : payouts.length > 0 ? (
+                    payouts.map((payout) => (
                       <TableRow key={payout.id} className="dark:hover:bg-slate-700/50 dark:border-slate-700">
                         <TableCell>
                           <div className="flex items-center gap-3">
@@ -239,8 +244,8 @@ export default function PayoutsPage() {
             <div className="md:hidden space-y-4">
               {isLoading ? (
                   [...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full dark:bg-slate-700" />)
-              ) : filteredPayouts.length > 0 ? (
-                  filteredPayouts.map((payout) => (
+              ) : payouts.length > 0 ? (
+                  payouts.map((payout) => (
                       <Card key={payout.id} className="dark:bg-slate-900/50 dark:border-slate-700">
                           <CardHeader className="flex flex-row items-center gap-4 space-y-0">
                             <Avatar>
@@ -310,5 +315,3 @@ export default function PayoutsPage() {
     </>
   );
 }
-
-    

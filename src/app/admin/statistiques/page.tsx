@@ -24,14 +24,13 @@ import {
   query,
   where,
   getFirestore,
-  onSnapshot,
   Timestamp,
   getDocs,
   doc,
   orderBy,
   limit
 } from 'firebase/firestore';
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { AreaChart, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Area, ResponsiveContainer, Bar } from 'recharts';
 import { ChartContainer, ChartTooltipContent } from '@/components/ui/chart';
 import type { Course, Enrollment, Payment } from '@/lib/types';
@@ -148,103 +147,103 @@ const StatsDashboard = () => {
         return;
     }
     
-    setIsLoading(true);
-    const startDate = Timestamp.fromDate(date.from);
-    const endDate = Timestamp.fromDate(date.to);
-    
-    const queries = {
-      tracking: query(collection(db, 'tracking_events'), where('timestamp', '>=', startDate), where('timestamp', '<=', endDate)),
-      users: query(collection(db, 'users'), where('createdAt', '>=', startDate), where('createdAt', '<=', endDate)),
-      payments: query(collection(db, 'payments'), where('status', '==', 'Completed'), where('date', '>=', startDate), where('date', '<=', endDate)),
-      allTimePayments: query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc')),
-      enrollments: query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startDate), where('enrollmentDate', '<=', endDate))
-    };
-
-    const unsubscribes = [
-      onSnapshot(queries.tracking, snap => {
-        const events = snap.docs.map(d => d.data());
-        const visits = events.filter(e => e.eventType === 'page_view').length;
-        const ctaClicks = events.filter(e => e.eventType === 'cta_click').length;
-        setStats(s => ({ ...s, visits, ctaClicks }));
-      }),
-      onSnapshot(queries.users, snap => {
-        const newUsers = snap.size;
-        const newInstructors = snap.docs.filter(d => d.data().role === 'instructor').length;
-        setStats(s => ({ ...s, newUsers, newInstructors }));
-      }),
-      onSnapshot(queries.payments, snap => {
-        const periodRevenue = snap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
-        setStats(s => ({ ...s, periodRevenue }));
-      }),
-      onSnapshot(queries.allTimePayments, snap => {
-        const monthlyAggregates: Record<string, number> = {};
-        snap.docs.forEach(doc => {
-            const p = doc.data();
-            if (p.date instanceof Timestamp) {
-                const d = p.date.toDate();
-                const mKey = format(d, 'MMM yy', { locale: fr });
-                monthlyAggregates[mKey] = (monthlyAggregates[mKey] || 0) + (p.amount || 0);
-            }
-        });
-        const trendData = Object.entries(monthlyAggregates).map(([month, revenue]) => ({ month, revenue })).sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime());
-        setRevenueTrendData(trendData);
-      }),
-      onSnapshot(queries.enrollments, async snap => {
-        if (snap.empty) { setTopCourses([]); return; }
-        const enrollmentCounts: Record<string, { total: number }> = {};
-        snap.docs.forEach(doc => {
-            const enrollment = doc.data() as Enrollment;
-            enrollmentCounts[enrollment.courseId] = { total: (enrollmentCounts[enrollment.courseId]?.total || 0) + 1 };
-        });
-
-        const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b].total - enrollmentCounts[a].total).slice(0, 5);
+    const fetchData = async () => {
+        setIsLoading(true);
+        const startDate = Timestamp.fromDate(date.from!);
+        const endDate = Timestamp.fromDate(date.to!);
         
-        if (sortedCourseIds.length > 0) {
-             const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', sortedCourseIds)));
-             const coursesData: Record<string, string> = {};
-             coursesSnap.forEach(d => coursesData[d.id] = d.data().title);
-             setTopCourses(sortedCourseIds.map(id => ({ id, title: coursesData[id] || 'Inconnu', totalCount: enrollmentCounts[id].total })));
-        } else { setTopCourses([]); }
-      }),
-      // This is still a global stat
-      onSnapshot(query(collection(db, 'enrollments')), s => {
-        if (s.empty) { setStats(prev => ({...prev, avgCompletionRate: 0 })); return; }
-        const totalProgress = s.docs.reduce((acc, doc) => acc + (doc.data().progress || 0), 0);
-        setStats(prev => ({...prev, avgCompletionRate: totalProgress / s.size}));
-      }),
-      onSnapshot(queries.users, (userSnap) => {
-        onSnapshot(queries.tracking, (trackingSnap) => {
+        try {
+            const [
+                trackingSnap, 
+                usersSnap,
+                paymentsSnap,
+                allTimePaymentsSnap,
+                enrollmentsSnap,
+                allEnrollmentsSnap
+            ] = await Promise.all([
+                getDocs(query(collection(db, 'tracking_events'), where('timestamp', '>=', startDate), where('timestamp', '<=', endDate))),
+                getDocs(query(collection(db, 'users'), where('createdAt', '>=', startDate), where('createdAt', '<=', endDate))),
+                getDocs(query(collection(db, 'payments'), where('status', '==', 'Completed'), where('date', '>=', startDate), where('date', '<=', endDate))),
+                getDocs(query(collection(db, 'payments'), where('status', '==', 'Completed'), orderBy('date', 'desc'))),
+                getDocs(query(collection(db, 'enrollments'), where('enrollmentDate', '>=', startDate), where('enrollmentDate', '<=', endDate))),
+                getDocs(query(collection(db, 'enrollments'))),
+            ]);
+            
+            // Process stats
+            const events = trackingSnap.docs.map(d => d.data());
+            const newUsers = usersSnap.size;
+            const newInstructors = usersSnap.docs.filter(d => d.data().role === 'instructor').length;
+            const periodRevenue = paymentsSnap.docs.reduce((sum, doc) => sum + (doc.data().amount || 0), 0);
+            const totalProgress = allEnrollmentsSnap.docs.reduce((acc, doc) => acc + (doc.data().progress || 0), 0);
+            setStats({
+                visits: events.filter(e => e.eventType === 'page_view').length,
+                ctaClicks: events.filter(e => e.eventType === 'cta_click').length,
+                newUsers: newUsers,
+                periodRevenue: periodRevenue,
+                avgCompletionRate: allEnrollmentsSnap.empty ? 0 : totalProgress / allEnrollmentsSnap.size,
+                newInstructors: newInstructors
+            });
+            
+            // Process charts and tables
+            // Revenue Trend
+            const monthlyAggregates: Record<string, number> = {};
+            allTimePaymentsSnap.docs.forEach(doc => {
+                const p = doc.data();
+                if (p.date instanceof Timestamp) {
+                    const d = p.date.toDate();
+                    const mKey = format(d, 'MMM yy', { locale: fr });
+                    monthlyAggregates[mKey] = (monthlyAggregates[mKey] || 0) + (p.amount || 0);
+                }
+            });
+            setRevenueTrendData(Object.entries(monthlyAggregates).map(([month, revenue]) => ({ month, revenue })).sort((a,b) => new Date(a.month).getTime() - new Date(b.month).getTime()));
+            
+            // Top Courses
+            if (!enrollmentsSnap.empty) {
+                const enrollmentCounts: Record<string, { total: number }> = {};
+                enrollmentsSnap.docs.forEach(doc => {
+                    const enrollment = doc.data() as Enrollment;
+                    enrollmentCounts[enrollment.courseId] = { total: (enrollmentCounts[enrollment.courseId]?.total || 0) + 1 };
+                });
+                const sortedCourseIds = Object.keys(enrollmentCounts).sort((a, b) => enrollmentCounts[b].total - enrollmentCounts[a].total).slice(0, 5);
+                if (sortedCourseIds.length > 0) {
+                     const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', sortedCourseIds)));
+                     const coursesData: Record<string, string> = {};
+                     coursesSnap.forEach(d => coursesData[d.id] = d.data().title);
+                     setTopCourses(sortedCourseIds.map(id => ({ id, title: coursesData[id] || 'Inconnu', totalCount: enrollmentCounts[id].total })));
+                } else { setTopCourses([]); }
+            } else { setTopCourses([]); }
+            
+            // Acquisition Chart
             const dailyData: { [key: string]: { visits: number, clicks: number, signups: number } } = {};
             const dateArray = eachDayOfInterval({ start: date.from!, end: date.to! });
             dateArray.forEach(d => {
                 const dateKey = format(d, 'dd MMM', { locale: fr });
                 dailyData[dateKey] = { visits: 0, clicks: 0, signups: 0 };
             });
-
-            trackingSnap.docs.forEach(e => {
-                const event = e.data();
+            events.forEach(event => {
                 const dateKey = format(event.timestamp.toDate(), 'dd MMM', { locale: fr });
                 if (dailyData[dateKey]) {
                     if (event.eventType === 'page_view') dailyData[dateKey].visits++;
                     if (event.eventType === 'cta_click') dailyData[dateKey].clicks++;
                 }
             });
-
-            userSnap.docs.forEach(d => {
+            usersSnap.docs.forEach(d => {
                 const dateKey = format(d.data().createdAt.toDate(), 'dd MMM', { locale: fr });
                 if (dailyData[dateKey]) {
                     dailyData[dateKey].signups++;
                 }
             });
             setAcquisitionChartData(Object.entries(dailyData).map(([date, data]) => ({ date, ...data })));
+
+        } catch (e) {
+            console.error(e)
+        } finally {
             setIsLoading(false);
-        });
-      })
-    ];
-
-    return () => unsubscribes.forEach(unsub => unsub());
-
-  }, [currentUser, db, date]);
+        }
+    }
+    
+    fetchData();
+  }, [currentUser, db, date, isUserLoading]);
 
   const conversionRate = stats.visits > 0 ? ((stats.ctaClicks / stats.visits) * 100).toFixed(1) + '%' : '0%';
   const signupConversionRate = stats.ctaClicks > 0 ? ((stats.newUsers / stats.ctaClicks) * 100).toFixed(1) + '%' : '0%';
@@ -294,7 +293,7 @@ const StatsDashboard = () => {
         <section>
             <h3 className="text-lg font-semibold mb-4 text-white">Revenus</h3>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <StatCard title="Revenus (Période)" value={`${stats.periodRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+                <StatCard title="Revenus (Période)" value={`${stats.periodRevenue?.toLocaleString('fr-FR') ?? '...'} XOF`} icon={DollarSign} isLoading={isLoading} />
                  <StatCard title="Nouveaux Formateurs" value={stats.newInstructors?.toLocaleString('fr-FR') ?? '...'} icon={UserPlus} isLoading={isLoading} />
             </div>
              <Card className="mt-6 bg-white dark:bg-card shadow-sm">
