@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -165,6 +164,7 @@ export default function AdminModerationPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [submittingAction, setSubmittingAction] = useState<{ id: string, action: 'approve' | 'refuse' } | null>(null);
   const [previewCourse, setPreviewCourse] = useState<Course | null>(null);
+  const [refusalCourse, setRefusalCourse] = useState<Course | null>(null);
   const { currentUser } = useRole();
 
   const { toast } = useToast();
@@ -191,7 +191,10 @@ export default function AdminModerationPage() {
 
     const fetchInstructors = async () => {
         const instructorIds = [...new Set(courses.map(c => c.instructorId).filter(Boolean))];
-        if (instructorIds.length === 0) return;
+        if (instructorIds.length === 0) {
+            setIsLoading(false);
+            return;
+        };
 
         const newIdsToFetch = instructorIds.filter(id => !instructors.has(id));
         if (newIdsToFetch.length === 0) {
@@ -229,16 +232,17 @@ export default function AdminModerationPage() {
     setSubmittingAction(null);
   };
 
-  const handleRefuse = async (courseId: string, reason: string) => {
-    if (!currentUser) return;
-    setSubmittingAction({ id: courseId, action: 'refuse' });
-    const result = await moderateCourse(courseId, 'reject', currentUser.uid, reason);
+  const handleRefuse = async (reason: string) => {
+    if (!currentUser || !refusalCourse) return;
+    setSubmittingAction({ id: refusalCourse.id, action: 'refuse' });
+    const result = await moderateCourse(refusalCourse.id, 'reject', currentUser.uid, reason);
     if (result.success) {
       toast({ title: "Cours refusé", description: "L'instructeur a été notifié de la décision.", variant: 'default' });
     } else {
       toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de refuser le cours." });
     }
     setSubmittingAction(null);
+    setRefusalCourse(null);
   };
 
   return (
@@ -300,14 +304,9 @@ export default function AdminModerationPage() {
                                 <Button variant="outline" size="sm" className="dark:bg-slate-700 dark:border-slate-600 dark:hover:bg-slate-600" onClick={() => setPreviewCourse(course)}>
                                 <Eye className="mr-2 h-4 w-4"/> Aperçu
                                 </Button>
-                                <Dialog>
-                                    <DialogTrigger asChild>
-                                        <Button variant="destructive" size="sm" disabled={submittingAction?.id === course.id}>
-                                            {submittingAction?.id === course.id && submittingAction.action === 'refuse' ? <Loader2 className="h-4 w-4 animate-spin"/> : <XCircle className="mr-2 h-4 w-4"/>} Refuser
-                                        </Button>
-                                    </DialogTrigger>
-                                    <RefusalModal course={course} onConfirm={(reason) => handleRefuse(course.id, reason)} isSubmitting={submittingAction?.action === 'refuse'} />
-                                </Dialog>
+                                <Button variant="destructive" size="sm" disabled={submittingAction?.id === course.id} onClick={() => setRefusalCourse(course)}>
+                                    {submittingAction?.id === course.id && submittingAction.action === 'refuse' ? <Loader2 className="h-4 w-4 animate-spin"/> : <XCircle className="mr-2 h-4 w-4"/>} Refuser
+                                </Button>
                                 <Button onClick={() => handleApprove(course.id)} size="sm" variant="default" className="bg-green-600 hover:bg-green-700" disabled={submittingAction?.id === course.id}>
                                     {submittingAction?.id === course.id && submittingAction.action === 'approve' ? <Loader2 className="h-4 w-4 animate-spin"/> : <CheckCircle className="mr-2 h-4 w-4"/>} Approuver
                                 </Button>
@@ -333,7 +332,9 @@ export default function AdminModerationPage() {
         </Card>
         </div>
         <CoursePreviewModal course={previewCourse} onClose={() => setPreviewCourse(null)} />
+        <Dialog open={!!refusalCourse} onOpenChange={(isOpen) => !isOpen && setRefusalCourse(null)}>
+            {refusalCourse && <RefusalModal course={refusalCourse} onConfirm={handleRefuse} isSubmitting={submittingAction?.action === 'refuse'} />}
+        </Dialog>
     </>
   );
 }
-
