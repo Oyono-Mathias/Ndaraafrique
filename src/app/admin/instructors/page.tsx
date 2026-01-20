@@ -1,7 +1,6 @@
-
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -14,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Check, X, UserCheck, Bot, Send } from 'lucide-react';
+import { Loader2, Check, X, UserCheck, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { NdaraUser } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,6 +23,10 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { useCollection, useMemoFirebase } from '@/firebase';
+import { collection, query, where, getFirestore } from 'firebase/firestore';
+import { approveInstructorApplication } from '@/actions/userActions';
+import { useRole } from '@/context/RoleContext';
 
 interface Application extends NdaraUser {
     instructorApplication?: {
@@ -37,20 +40,16 @@ interface Application extends NdaraUser {
 
 type Decision = 'accepted' | 'rejected' | null;
 
-// This is a placeholder for a real onConfirm function
-const handleConfirmPlaceholder = async (userId: string, decision: Decision, message: string) => {
-    console.log("Confirming decision:", { userId, decision, message });
-    await new Promise(res => setTimeout(res, 1000));
-};
-
 const DecisionModal = ({ 
     application, 
     isOpen, 
-    onClose
+    onClose,
+    onConfirm
 }: { 
     application: Application | null; 
     isOpen: boolean; 
     onClose: () => void;
+    onConfirm: (userId: string, decision: Decision, message: string) => Promise<void>;
 }) => {
     const [decision, setDecision] = useState<Decision>(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -58,12 +57,12 @@ const DecisionModal = ({
     const [isProcessing, setIsProcessing] = useState(false);
 
     const rejectionTemplates = {
-        quality: "La qualité de votre vidéo de présentation n'est pas suffisante.",
-        topic: "Le sujet que vous proposez n'est pas pertinent pour notre audience.",
-        incomplete: "Votre dossier de candidature est incomplet."
+        quality: "La qualité de votre vidéo de présentation ou de votre matériel n'est pas suffisante pour répondre à nos standards.",
+        topic: "Le sujet que vous proposez n'est pas aligné avec les besoins actuels de notre audience.",
+        incomplete: "Votre dossier de candidature est incomplet. Veuillez vérifier toutes les informations et soumettre à nouveau.",
     };
 
-    const acceptanceTemplate = "Félicitations ! Votre candidature a été acceptée. Vous pouvez maintenant commencer à créer des cours.";
+    const acceptanceTemplate = "Félicitations ! Votre candidature a été acceptée. Vous pouvez maintenant commencer à créer des cours et partager votre savoir sur Ndara Afrique.";
 
     React.useEffect(() => {
         if (application) {
@@ -77,7 +76,7 @@ const DecisionModal = ({
         if (decision === 'accepted') {
             setMessage(acceptanceTemplate);
         } else if (decision === 'rejected') {
-            const template = rejectionTemplates[rejectionReason as keyof typeof rejectionTemplates] || "Raison générique de rejet";
+            const template = rejectionTemplates[rejectionReason as keyof typeof rejectionTemplates] || "Nous ne pouvons malheureusement pas donner une suite favorable à votre candidature pour le moment.";
             setMessage(template);
         } else {
             setMessage('');
@@ -86,10 +85,10 @@ const DecisionModal = ({
 
     if (!application) return null;
     
-    const handleConfirm = async () => {
+    const handleConfirmClick = async () => {
         if (!decision) return;
         setIsProcessing(true);
-        await handleConfirmPlaceholder(application.uid, decision, message);
+        await onConfirm(application.uid, decision, message);
         setIsProcessing(false);
         onClose();
     };
@@ -143,7 +142,7 @@ const DecisionModal = ({
                                             <SelectValue placeholder="Choisir une raison" />
                                         </SelectTrigger>
                                         <SelectContent className="dark:bg-slate-900 dark:border-slate-700">
-                                            <SelectItem value="quality">Qualité de la vidéo</SelectItem>
+                                            <SelectItem value="quality">Qualité insuffisante</SelectItem>
                                             <SelectItem value="topic">Sujet non pertinent</SelectItem>
                                             <SelectItem value="incomplete">Dossier incomplet</SelectItem>
                                         </SelectContent>
@@ -167,7 +166,7 @@ const DecisionModal = ({
                 
                 <DialogFooter>
                     <Button variant="ghost" onClick={onClose} disabled={isProcessing}>Annuler</Button>
-                    <Button onClick={handleConfirm} disabled={!decision || isProcessing}>
+                    <Button onClick={handleConfirmClick} disabled={!decision || isProcessing}>
                         {isProcessing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         <Send className="mr-2 h-4 w-4"/> Confirmer et envoyer
                     </Button>
@@ -178,22 +177,37 @@ const DecisionModal = ({
 };
 
 export default function InstructorApplicationsPage() {
+  const { currentUser: adminUser, isUserLoading } = useRole();
+  const db = getFirestore();
+  const { toast } = useToast();
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [applications, setApplications] = useState<Application[]>([]);
 
-  // Simulate data fetching
-  useEffect(() => {
-    const timer = setTimeout(() => {
-        // To test empty state, set the array to []
-        setApplications([
-            { uid: '1', fullName: 'Amina Diallo', profilePictureURL: '/placeholder-avatars/amina.jpg', instructorApplication: { specialty: 'Ingénierie Pédagogique', motivation: 'Passionnée par la création de contenu éducatif impactant, je souhaite apporter mon expertise pour enrichir le catalogue de Ndara Afrique et former la prochaine génération de leaders.', submittedAt: new Date() } },
-            { uid: '2', fullName: 'Kwame Nkrumah', profilePictureURL: '/placeholder-avatars/kwame.jpg', instructorApplication: { specialty: 'Développement Backend', motivation: 'Avec 10 ans d\'expérience en Node.js et architecture système, je veux partager mes connaissances sur la construction d\'applications scalables et robustes.', submittedAt: new Date(Date.now() - 86400000 * 2) } },
-        ]);
-        setIsLoading(false);
-    }, 1500);
-    return () => clearTimeout(timer);
-  }, []);
+  const applicationsQuery = useMemoFirebase(
+    () => adminUser?.role === 'admin' 
+        ? query(collection(db, 'users'), where('isInstructorApproved', '==', false), where('role', '==', 'instructor')) 
+        : null,
+    [db, adminUser]
+  );
+  const { data: applications, isLoading: applicationsLoading } = useCollection<Application>(applicationsQuery);
+
+  const handleConfirmDecision = async (userId: string, decision: Decision, message: string) => {
+    if (!adminUser || !decision) return;
+
+    const result = await approveInstructorApplication({
+        userId,
+        decision,
+        message,
+        adminId: adminUser.uid,
+    });
+
+    if (result.success) {
+        toast({ title: "Décision enregistrée", description: `La candidature a été ${decision === 'accepted' ? 'approuvée' : 'rejetée'}.` });
+    } else {
+        toast({ variant: 'destructive', title: "Erreur", description: result.error || "Une erreur est survenue." });
+    }
+  };
+  
+  const isLoading = isUserLoading || applicationsLoading;
 
   return (
     <>
@@ -206,7 +220,7 @@ export default function InstructorApplicationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {isLoading ? (
             [...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full dark:bg-slate-700"/>)
-        ) : applications.length > 0 ? (
+        ) : applications && applications.length > 0 ? (
             applications.map((app) => (
                 <Card 
                     key={app.uid} 
@@ -232,7 +246,7 @@ export default function InstructorApplicationsPage() {
                             Voir détails & Décider
                         </Button>
                         <p className="text-xs text-center text-muted-foreground">
-                            Candidature envoyée {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt, { addSuffix: true, locale: fr }) : "récemment"}
+                            Candidature envoyée {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt.toDate(), { addSuffix: true, locale: fr }) : "récemment"}
                         </p>
                     </CardFooter>
                 </Card>
@@ -251,6 +265,7 @@ export default function InstructorApplicationsPage() {
         application={selectedApp} 
         isOpen={!!selectedApp} 
         onClose={() => setSelectedApp(null)}
+        onConfirm={handleConfirmDecision}
     />
     </>
   );
