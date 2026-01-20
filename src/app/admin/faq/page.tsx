@@ -1,23 +1,9 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  getFirestore,
-  collection,
-  query,
-  orderBy,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  writeBatch,
-} from 'firebase/firestore';
-import { useCollection, useMemoFirebase } from '@/firebase';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,14 +43,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Trash2, Edit, Loader2, MessageCircleQuestion, ChevronUp, ChevronDown } from 'lucide-react';
-
-interface FAQ {
-  id: string;
-  question_fr: string;
-  answer_fr: string;
-  tags: string[];
-  order: number;
-}
 
 const faqSchema = z.object({
   question_fr: z.string().min(10, 'La question doit contenir au moins 10 caractères.'),
@@ -106,131 +84,37 @@ const FaqForm = ({ form, onSubmit, isSubmitting }: { form: any, onSubmit: (data:
 
 
 export default function AdminFaqPage() {
-  const db = getFirestore();
-  const { toast } = useToast();
   const isMobile = useIsMobile();
-  
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editingFaq, setEditingFaq] = useState<FAQ | null>(null);
   const [deleteAlertOpen, setDeleteAlertOpen] = useState(false);
-  const [faqToDelete, setFaqToDelete] = useState<string | null>(null);
-
-  const faqsQuery = useMemoFirebase(() => query(collection(db, 'faqs'), orderBy('order', 'asc')), [db]);
-  const { data: faqs, isLoading } = useCollection<FAQ>(faqsQuery);
   
+  const [isLoading, setIsLoading] = useState(true);
+  const [faqs, setFaqs] = useState<any[]>([]);
+
   const form = useForm<FaqFormValues>({
     resolver: zodResolver(faqSchema),
-    defaultValues: {
-      question_fr: '',
-      answer_fr: '',
-      tags: '',
-    },
+    defaultValues: { question_fr: '', answer_fr: '', tags: '' },
   });
   
   useEffect(() => {
-    if (editingFaq) {
-      form.reset({
-        question_fr: editingFaq.question_fr,
-        answer_fr: editingFaq.answer_fr,
-        tags: editingFaq.tags?.join(', ') || '',
-      });
-      setIsFormOpen(true);
-    } else {
-      form.reset({ question_fr: '', answer_fr: '', tags: '' });
-    }
-  }, [editingFaq, form]);
+    // Simulate fetching data
+    setTimeout(() => {
+      setFaqs([]);
+      setIsLoading(false);
+    }, 1500);
+  }, []);
 
-  const handleOpenForm = (faq: FAQ | null = null) => {
-    setEditingFaq(faq);
-    setIsFormOpen(true);
+  const handleOpenForm = () => setIsFormOpen(true);
+  const onSubmit = (data: FaqFormValues) => {
+    console.log("Form submitted (logic not implemented yet)", data);
   };
-
-  const handleCloseForm = () => {
-    setIsFormOpen(false);
-    setEditingFaq(null);
-  };
-
-  const onSubmit = async (data: FaqFormValues) => {
-    setIsSubmitting(true);
-    const tagsArray = data.tags.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean);
-    
-    try {
-        if (editingFaq) {
-            // Update existing FAQ
-            const faqRef = doc(db, 'faqs', editingFaq.id);
-            await updateDoc(faqRef, { ...data, tags: tagsArray, updatedAt: serverTimestamp() });
-            toast({ title: 'FAQ mise à jour !' });
-        } else {
-            // Create new FAQ
-            const faqCollection = collection(db, 'faqs');
-            await addDoc(faqCollection, { 
-                ...data, 
-                tags: tagsArray, 
-                order: faqs?.length || 0, // Set order to the end of the list
-                createdAt: serverTimestamp() 
-            });
-            toast({ title: 'Nouvelle FAQ ajoutée !' });
-        }
-        handleCloseForm();
-    } catch (error) {
-        console.error("Error saving FAQ:", error);
-        toast({ variant: 'destructive', title: "Erreur", description: 'Impossible de sauvegarder la FAQ.' });
-    } finally {
-        setIsSubmitting(false);
-    }
-  };
-
-  const openDeleteDialog = (id: string) => {
-    setFaqToDelete(id);
-    setDeleteAlertOpen(true);
-  };
-
-  const handleDelete = async () => {
-    if (!faqToDelete) return;
-    try {
-        await deleteDoc(doc(db, 'faqs', faqToDelete));
-        toast({ title: 'FAQ supprimée avec succès.' });
-    } catch (error) {
-        console.error("Error deleting FAQ:", error);
-        toast({ variant: 'destructive', title: "Erreur", description: 'Impossible de supprimer la FAQ.' });
-    } finally {
-        setDeleteAlertOpen(false);
-        setFaqToDelete(null);
-    }
-  };
-
-  const handleMove = async (currentIndex: number, direction: 'up' | 'down') => {
-    if (!faqs) return;
-    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
-
-    if (targetIndex < 0 || targetIndex >= faqs.length) return;
-
-    const currentFaq = faqs[currentIndex];
-    const targetFaq = faqs[targetIndex];
-
-    const batch = writeBatch(db);
-    const currentFaqRef = doc(db, 'faqs', currentFaq.id);
-    const targetFaqRef = doc(db, 'faqs', targetFaq.id);
-
-    // Swap order values
-    batch.update(currentFaqRef, { order: targetFaq.order });
-    batch.update(targetFaqRef, { order: currentFaq.order });
-
-    try {
-        await batch.commit();
-        toast({ title: 'Ordre mis à jour !'});
-    } catch (error) {
-        console.error("Error reordering FAQs:", error);
-        toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de réorganiser les questions.' });
-    }
-  };
+  const openDeleteDialog = () => setDeleteAlertOpen(true);
   
   const FormWrapper = isMobile ? Sheet : Dialog;
   const FormContent = isMobile ? SheetContent : DialogContent;
   const FormHeader = isMobile ? SheetHeader : DialogHeader;
   const FormTitle = isMobile ? SheetTitle : DialogTitle;
-  const FormDescription = isMobile ? SheetDescription : DialogDescription;
   
   return (
     <>
@@ -240,7 +124,7 @@ export default function AdminFaqPage() {
                 <h1 className="text-3xl font-bold dark:text-white">Gestion de la FAQ</h1>
                 <p className="text-muted-foreground dark:text-slate-400">Ajoutez, modifiez et réorganisez les questions fréquentes.</p>
             </div>
-            <Button onClick={() => handleOpenForm()}>
+            <Button onClick={handleOpenForm}>
                 <Plus className="mr-2 h-4 w-4"/>
                 Ajouter une question
             </Button>
@@ -257,17 +141,17 @@ export default function AdminFaqPage() {
                             <CardHeader className="flex flex-row items-start justify-between">
                                 <CardTitle className="text-base dark:text-slate-200">{faq.question_fr}</CardTitle>
                                 <div className="flex items-center gap-1">
-                                     <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'up')} disabled={index === 0}><ChevronUp className="h-4 w-4"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={() => handleMove(index, 'down')} disabled={index === faqs.length - 1}><ChevronDown className="h-4 w-4"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={() => handleOpenForm(faq)}><Edit className="h-4 w-4 text-blue-500"/></Button>
-                                     <Button variant="ghost" size="icon" onClick={() => openDeleteDialog(faq.id)}><Trash2 className="h-4 w-4 text-destructive"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => {}} disabled={index === 0}><ChevronUp className="h-4 w-4"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={() => {}} disabled={index === faqs.length - 1}><ChevronDown className="h-4 w-4"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={handleOpenForm}><Edit className="h-4 w-4 text-blue-500"/></Button>
+                                     <Button variant="ghost" size="icon" onClick={openDeleteDialog}><Trash2 className="h-4 w-4 text-destructive"/></Button>
                                 </div>
                             </CardHeader>
                             <CardContent>
                                 <p className="text-sm text-muted-foreground dark:text-slate-400">{faq.answer_fr}</p>
                                 {faq.tags && (
                                     <div className="flex gap-2 mt-4">
-                                        {faq.tags.map(tag => <Badge key={tag} variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">{tag}</Badge>)}
+                                        {faq.tags.map((tag: string) => <Badge key={tag} variant="secondary" className="dark:bg-slate-700 dark:text-slate-300">{tag}</Badge>)}
                                     </div>
                                 )}
                             </CardContent>
@@ -288,7 +172,7 @@ export default function AdminFaqPage() {
       <FormWrapper open={isFormOpen} onOpenChange={setIsFormOpen}>
         <FormContent className="dark:bg-slate-900 dark:border-slate-800">
             <FormHeader>
-                <FormTitle className="dark:text-white">{editingFaq ? 'Modifier la question' : 'Ajouter une question'}</FormTitle>
+                <FormTitle className="dark:text-white">Ajouter une question</FormTitle>
             </FormHeader>
             <FaqForm form={form} onSubmit={onSubmit} isSubmitting={isSubmitting} />
         </FormContent>
@@ -304,7 +188,7 @@ export default function AdminFaqPage() {
               </AlertDialogHeader>
               <AlertDialogFooter>
                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
+                  <AlertDialogAction className="bg-destructive hover:bg-destructive/90">
                       Supprimer
                   </AlertDialogAction>
               </AlertDialogFooter>
@@ -313,5 +197,3 @@ export default function AdminFaqPage() {
     </>
   );
 }
-
-    
