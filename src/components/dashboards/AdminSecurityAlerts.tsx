@@ -30,9 +30,9 @@ interface AlertItem {
 
 const AlertIcon = ({ type }: { type: AlertType }) => {
     switch (type) {
-        case 'suspicious_payment': return <AlertTriangle className="h-4 w-4 text-amber-400" />;
-        case 'failed_payment': return <CreditCard className="h-4 w-4 text-red-400" />;
-        case 'suspicious_login': return <ShieldOff className="h-4 w-4 text-purple-400" />;
+        case 'suspicious_payment': return <AlertTriangle className="h-5 w-5 text-amber-400" />;
+        case 'failed_payment': return <CreditCard className="h-5 w-5 text-red-400" />;
+        case 'suspicious_login': return <ShieldOff className="h-5 w-5 text-purple-400" />;
     }
 }
 
@@ -75,7 +75,7 @@ const AlertCard = ({ item }: { item: AlertItem }) => {
     return (
         <Card className="dark:bg-slate-800/60 dark:border-slate-700">
             <CardContent className="p-4">
-                <div className="flex items-start gap-4">
+                 <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                     <AlertIcon type={item.type} />
                     <div className="flex-1">
                         <p className="text-sm font-semibold text-white">{item.message}</p>
@@ -83,18 +83,18 @@ const AlertCard = ({ item }: { item: AlertItem }) => {
                             {formatDistanceToNow(item.date, { addSuffix: true, locale: fr })}
                         </p>
                     </div>
-                </div>
-                <div className="flex flex-col sm:flex-row justify-end gap-2 mt-3">
-                    {item.userId && (
-                         <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={isLoading}>
-                            {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Ban className="h-3 w-3 mr-1.5"/>}
-                            Suspendre
+                    <div className="flex self-end sm:self-center flex-shrink-0 gap-2 mt-3 sm:mt-0">
+                        {item.userId && (
+                             <Button variant="destructive" size="sm" onClick={handleSuspend} disabled={isLoading}>
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Ban className="h-3 w-3 sm:mr-1.5"/>}
+                                <span className="hidden sm:inline">Suspendre</span>
+                            </Button>
+                        )}
+                        <Button variant="outline" size="sm" onClick={handleResolve} disabled={isLoading}>
+                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-3 w-3 sm:mr-1.5"/>}
+                            <span className="hidden sm:inline">Résoudre</span>
                         </Button>
-                    )}
-                    <Button variant="outline" size="sm" onClick={handleResolve} disabled={isLoading}>
-                         {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Check className="h-3 w-3 mr-1.5"/>}
-                        Résoudre
-                    </Button>
+                    </div>
                 </div>
             </CardContent>
         </Card>

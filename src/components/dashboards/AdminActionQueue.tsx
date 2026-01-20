@@ -27,16 +27,17 @@ interface ActionItem {
 const ActionItemCard = ({ item }: { item: ActionItem }) => (
     <Link href={item.link} className="block group">
         <Card className="dark:bg-slate-800 dark:border-slate-700 h-full flex flex-col justify-between transition-all duration-200 hover:border-primary hover:-translate-y-1">
-            <CardHeader className="flex flex-row items-start gap-4 space-y-0">
-                <div className="p-3 bg-primary/10 rounded-full">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center gap-4 space-y-2 sm:space-y-0">
+                <div className="p-3 bg-primary/10 rounded-full self-start">
                     <item.icon className="h-5 w-5 text-primary" />
                 </div>
-                <div>
+                <div className="flex-1">
                     <CardTitle className="text-base font-bold text-white group-hover:text-primary transition-colors">{item.title}</CardTitle>
-                    <p className="text-xs text-slate-400 mt-1">{item.description}</p>
+                    <p className="text-sm text-slate-400 mt-1 line-clamp-2">{item.description}</p>
                 </div>
+                 <ArrowRight className="h-5 w-5 text-slate-400 group-hover:text-primary transition-colors ml-auto hidden sm:block" />
             </CardHeader>
-            <CardFooter>
+             <CardFooter>
                  <p className="text-xs text-slate-500">
                     {formatDistanceToNow(item.date, { addSuffix: true, locale: fr })}
                 </p>
@@ -79,7 +80,7 @@ export function AdminActionQueue() {
             date: item.instructorApplication?.submittedAt?.toDate() || new Date(), link: '/admin/instructors', icon: UserCheck
         }));
         pendingPayouts?.forEach(item => actions.push({
-            id: item.id, type: 'payout', title: "Demande de retrait", description: `${item.amount.toLocaleString('fr-FR')} XOF`,
+            id: item.id, type: 'payout', title: "Demande de retrait", description: `${(item.amount || 0).toLocaleString('fr-FR')} XOF`,
             date: item.date?.toDate() || new Date(), link: '/admin/payouts', icon: Landmark
         }));
         openTickets?.forEach(item => actions.push({
@@ -87,7 +88,7 @@ export function AdminActionQueue() {
             date: item.createdAt?.toDate() || new Date(), link: `/admin/support/${item.id}`, icon: HelpCircle
         }));
         suspiciousPayments?.forEach(item => actions.push({
-            id: item.id, type: 'payment', title: "Paiement suspect", description: `${item.amount.toLocaleString('fr-FR')} XOF`,
+            id: item.id, type: 'payment', title: "Paiement suspect", description: `${(item.amount || 0).toLocaleString('fr-FR')} XOF`,
             date: item.date?.toDate() || new Date(), link: `/admin/payments`, icon: AlertTriangle
         }));
 
@@ -96,7 +97,7 @@ export function AdminActionQueue() {
     
     if (isLoading) {
         return (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="space-y-4">
                  {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-36 w-full bg-slate-800" />)}
             </div>
         )
