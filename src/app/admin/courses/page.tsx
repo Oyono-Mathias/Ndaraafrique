@@ -26,10 +26,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Search, BookOpen, Eye, Edit, Trash2, Loader2 } from 'lucide-react';
 import type { Course, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { cn } from '@/lib/utils';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { deleteCourse } from '@/actions/supportActions';
+import { useToast } from '@/hooks/use-toast';
 
 
 const getStatusBadgeVariant = (status?: Course['status']) => {
@@ -46,35 +49,75 @@ const getStatusBadgeVariant = (status?: Course['status']) => {
 
 const CourseActions = ({ course }: { course: Course }) => {
     const router = useRouter();
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const { toast } = useToast();
+    const { currentUser } = useRole();
 
     const handleActionClick = (e: React.MouseEvent) => {
         e.stopPropagation(); // Prevent card click from firing
     };
 
+    const handleDelete = async () => {
+        if (!currentUser) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Vous n\'êtes pas authentifié.' });
+            return;
+        }
+        setIsDeleting(true);
+        const result = await deleteCourse({ courseId: course.id, adminId: currentUser.uid });
+        if (result.success) {
+            toast({ title: 'Cours supprimé', description: `Le cours "${course.title}" a été supprimé.` });
+        } else {
+            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        }
+        setIsDeleting(false);
+        setIsAlertOpen(false);
+    };
+
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0" onClick={handleActionClick}>
-                    <span className="sr-only">Ouvrir le menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700" onClick={handleActionClick}>
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={() => window.open(`/course/${course.id}`, '_blank')}>
-                    <Eye className="mr-2 h-4 w-4" />
-                    Voir la page du cours
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => router.push(`/instructor/courses/edit/${course.id}`)}>
-                    <Edit className="mr-2 h-4 w-4" />
-                    Éditer le cours
-                </DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Supprimer
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <>
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0" onClick={handleActionClick}>
+                        <span className="sr-only">Ouvrir le menu</span>
+                        <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="dark:bg-slate-800 dark:border-slate-700" onClick={handleActionClick}>
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuItem onSelect={() => window.open(`/course/${course.id}`, '_blank')}>
+                        <Eye className="mr-2 h-4 w-4" />
+                        Voir la page du cours
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => router.push(`/instructor/courses/edit/${course.id}`)}>
+                        <Edit className="mr-2 h-4 w-4" />
+                        Éditer le cours
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setIsAlertOpen(true)} className="text-destructive focus:text-destructive focus:bg-destructive/10">
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Supprimer
+                    </DropdownMenuItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
+
+            <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+              <AlertDialogContent>
+                  <AlertDialogHeader>
+                      <AlertDialogTitle>Confirmer la suppression ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                          Cette action est irréversible et supprimera le cours "{course.title}". Les données associées (leçons, inscriptions) pourraient devenir orphelines. Êtes-vous sûr ?
+                      </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                          {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>}
+                          Supprimer
+                      </AlertDialogAction>
+                  </AlertDialogFooter>
+              </AlertDialogContent>
+          </AlertDialog>
+        </>
     );
 };
 

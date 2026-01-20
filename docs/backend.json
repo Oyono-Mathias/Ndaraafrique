@@ -37,7 +37,8 @@
             "user.delete",
             "user.import",
             "instructor.application",
-            "course.grant"
+            "course.grant",
+            "course.delete"
           ]
         },
         "target": {
