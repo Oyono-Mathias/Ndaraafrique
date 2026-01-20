@@ -298,6 +298,12 @@ export interface Settings {
       ctaTitle: string;
       ctaSubtitle: string;
     };
+    landingPage?: {
+      howItWorks_step1_imageUrl?: string;
+      howItWorks_step2_imageUrl?: string;
+      howItWorks_step3_imageUrl?: string;
+      securitySection_imageUrl?: string;
+    };
   };
 }
 

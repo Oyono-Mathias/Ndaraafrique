@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
@@ -13,12 +12,13 @@ import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Stats } from '@/components/landing/Stats';
 import { logTrackingEvent } from '@/app/actions/trackingActions';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
-import { Course, NdaraUser } from '@/lib/types';
+import { Course, NdaraUser, Settings } from '@/lib/types';
 import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import { CourseCarousel } from './CourseCarousel';
 import { Skeleton } from '../ui/skeleton';
 import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
 import { Card, CardContent } from '../ui/card';
+import { useDoc, useMemoFirebase } from '@/firebase';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -30,20 +30,18 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
   </div>
 );
 
-const TrustAndSecuritySection = () => {
-    const securityImage = PlaceHolderImages.find(img => img.id === 'payment-security');
-
+const TrustAndSecuritySection = ({ imageUrl }: { imageUrl: string }) => {
     return (
         <section className="py-24">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
                 <div className="relative h-80 lg:h-[450px] w-full">
-                    {securityImage && (
+                    {imageUrl && (
                         <Image
-                            src={securityImage.imageUrl}
-                            alt={securityImage.description}
+                            src={imageUrl}
+                            alt="Image représentant la sécurité des paiements"
                             fill
                             className="object-cover rounded-2xl shadow-2xl"
-                            data-ai-hint={securityImage.imageHint}
+                            data-ai-hint="digital security"
                         />
                     )}
                 </div>
@@ -209,6 +207,10 @@ export function LandingPageClient() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
+  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings } = useDoc<Settings>(settingsRef);
+  const landingPageContent = settings?.content?.landingPage;
+
   useEffect(() => {
     sessionId = sessionStorage.getItem('ndara-session-id') || '';
     if (!sessionId) {
@@ -261,6 +263,8 @@ export function LandingPageClient() {
       metadata,
     });
   };
+
+  const securityImageUrl = landingPageContent?.securitySection_imageUrl || PlaceHolderImages.find(img => img.id === 'payment-security')?.imageUrl || '';
 
   return (
     <div className="bg-background text-foreground min-h-screen">
@@ -318,7 +322,7 @@ export function LandingPageClient() {
         
         <TestimonialsSection />
 
-        <TrustAndSecuritySection />
+        <TrustAndSecuritySection imageUrl={securityImageUrl} />
 
         <CourseCarousel 
             title="Formations populaires"

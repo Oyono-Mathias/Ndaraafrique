@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -58,7 +57,13 @@ const settingsSchema = z.object({
         visionSango: z.string().optional(),
         ctaTitle: z.string().optional(),
         ctaSubtitle: z.string().optional(),
-    }).optional()
+    }).optional(),
+    landingPage: z.object({
+        howItWorks_step1_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
+        howItWorks_step2_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
+        howItWorks_step3_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
+        securitySection_imageUrl: z.string().url("URL invalide").optional().or(z.literal('')),
+    }).optional(),
   }).optional(),
 });
 
@@ -105,6 +110,12 @@ export default function AdminSettingsPage() {
                     visionSango: '',
                     ctaTitle: '',
                     ctaSubtitle: '',
+                },
+                landingPage: {
+                    howItWorks_step1_imageUrl: '',
+                    howItWorks_step2_imageUrl: '',
+                    howItWorks_step3_imageUrl: '',
+                    securitySection_imageUrl: '',
                 }
             }
         }
@@ -338,7 +349,43 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="content" className="mt-6">
+                <TabsContent value="content" className="mt-6 space-y-6">
+                    <Card className="dark:bg-slate-800 dark:border-slate-700">
+                        <CardHeader>
+                            <CardTitle className="dark:text-white">Page d'accueil</CardTitle>
+                            <CardDescription className="dark:text-slate-400">Modifiez les images des sections "Comment ça marche" et "Sécurité".</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-6">
+                            <FormField control={form.control} name="content.landingPage.howItWorks_step1_imageUrl" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Image "Étape 1: Choisissez votre formation"</FormLabel>
+                                    <FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="content.landingPage.howItWorks_step2_imageUrl" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Image "Étape 2: Payez simplement"</FormLabel>
+                                    <FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="content.landingPage.howItWorks_step3_imageUrl" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Image "Étape 3: Obtenez votre certification"</FormLabel>
+                                    <FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                            <FormField control={form.control} name="content.landingPage.securitySection_imageUrl" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Image de la section "Sécurité des transactions"</FormLabel>
+                                    <FormControl><Input {...field} placeholder="URL de l'image..." className="dark:bg-slate-700 dark:border-slate-600"/></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
+                        </CardContent>
+                    </Card>
                     <Card className="dark:bg-slate-800 dark:border-slate-700">
                         <CardHeader>
                             <CardTitle className="dark:text-white">Page "À Propos"</CardTitle>

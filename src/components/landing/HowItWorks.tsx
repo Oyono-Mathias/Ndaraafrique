@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useDoc, useMemoFirebase } from '@/firebase';
+import { doc, getFirestore } from 'firebase/firestore';
+import type { Settings } from '@/lib/types';
 
 const steps = [
   {
@@ -32,8 +35,30 @@ const steps = [
 export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(steps[0].id);
 
-  const activeStepData = steps.find(s => s.id === activeStep);
-  const activeImageData = PlaceHolderImages.find(img => img.id === activeStepData?.imageId);
+  const db = getFirestore();
+  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings } = useDoc<Settings>(settingsRef);
+
+  const landingPageContent = settings?.content?.landingPage;
+
+  const stepsWithImages = steps.map((step, index) => {
+    const defaultImage = PlaceHolderImages.find(img => img.id === step.imageId);
+    let imageUrl = defaultImage?.imageUrl || '';
+    
+    if (landingPageContent) {
+        if (index === 0) imageUrl = landingPageContent.howItWorks_step1_imageUrl || imageUrl;
+        if (index === 1) imageUrl = landingPageContent.howItWorks_step2_imageUrl || imageUrl;
+        if (index === 2) imageUrl = landingPageContent.howItWorks_step3_imageUrl || imageUrl;
+    }
+    
+    return {
+        ...step,
+        imageUrl,
+        imageHint: defaultImage?.imageHint || '',
+    }
+  });
+
+  const activeStepData = stepsWithImages.find(s => s.id === activeStep);
 
   return (
     <section className="py-24">
@@ -80,20 +105,19 @@ export function HowItWorks() {
         </div>
 
         <div className="relative h-80 lg:h-[450px] w-full">
-            {steps.map(step => {
-                const imageData = PlaceHolderImages.find(img => img.id === step.imageId);
+            {stepsWithImages.map(step => {
                 return (
                     <div key={step.id} className={cn(
                         "absolute inset-0 transition-opacity duration-500 ease-in-out",
                         activeStep === step.id ? 'opacity-100' : 'opacity-0'
                     )}>
-                        {imageData && (
+                        {step.imageUrl && (
                             <Image
-                                src={imageData.imageUrl}
-                                alt={imageData.description}
+                                src={step.imageUrl}
+                                alt={step.title}
                                 fill
                                 className="object-cover rounded-2xl shadow-2xl"
-                                data-ai-hint={imageData.imageHint}
+                                data-ai-hint={step.imageHint}
                             />
                         )}
                     </div>
