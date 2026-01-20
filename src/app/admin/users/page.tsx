@@ -59,12 +59,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
-const countryCodeToEmoji = (code: string | undefined): string => {
-  if (!code || code.length !== 2) return '🏳️';
-  // 0x1F1E6 is the regional indicator symbol letter 'A'
-  return String.fromCodePoint(...[...code.toUpperCase()].map(char => 0x1F1E6 + char.charCodeAt(0) - 'A'.charCodeAt(0)));
-}
-
 // --- SKELETON LOADERS ---
 const UserTableSkeleton = () => (
     <React.Fragment>
@@ -252,122 +246,6 @@ const UserActions = ({ user, adminId, onActionStart, onActionEnd, onUserUpdate, 
   );
 };
 
-const ImportUsersDialog = ({ isOpen, onOpenChange, onImportComplete }: { isOpen: boolean, onOpenChange: (open: boolean) => void, onImportComplete: () => void }) => {
-    const { currentUser } = useRole();
-    const [file, setFile] = useState<File | null>(null);
-    const [usersToImport, setUsersToImport] = useState<{ fullName: string; email: string }[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [importResults, setImportResults] = useState<{ email: string, status: 'success' | 'error', error?: string }[] | null>(null);
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedFile = e.target.files?.[0];
-        if (selectedFile) {
-            setFile(selectedFile);
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = new Uint8Array(event.target?.result as ArrayBuffer);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json<{ Nom: string; Email: string }>(worksheet);
-                    
-                    if (!json[0] || !('Nom' in json[0]) || !('Email' in json[0])) {
-                        alert("Le fichier doit contenir les colonnes 'Nom' et 'Email'.");
-                        reset();
-                        return;
-                    }
-
-                    const parsedUsers = json.map(row => ({ fullName: row.Nom, email: row.Email }));
-                    setUsersToImport(parsedUsers);
-                } catch (error) {
-                    alert("Erreur lors de la lecture du fichier.");
-                    reset();
-                }
-            };
-            reader.readAsArrayBuffer(selectedFile);
-        }
-    };
-    
-    const handleImport = async () => {
-        if (!currentUser) return;
-        setIsLoading(true);
-        setImportResults(null);
-        const result = await importUsersAction({ users: usersToImport, adminId: currentUser.uid });
-        setImportResults(result.results);
-        setIsLoading(false);
-        if (result.success) {
-            onImportComplete();
-        }
-    }
-    
-    const reset = () => {
-        setFile(null);
-        setUsersToImport([]);
-        setImportResults(null);
-    }
-
-    return (
-        <Dialog open={isOpen} onOpenChange={open => { if(!open) reset(); onOpenChange(open); }}>
-            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader>
-                    <DialogTitle className="dark:text-white">Importer des utilisateurs</DialogTitle>
-                    <DialogDescription className="dark:text-slate-400">
-                        Importez une liste d'utilisateurs depuis un fichier XLSX avec les colonnes "Nom" et "Email".
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="py-4 space-y-4">
-                   {!importResults ? (
-                     <>
-                        <label htmlFor="import-file" className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-800/50 dark:border-slate-700">
-                            <div className="flex flex-col items-center justify-center pt-5 pb-6 text-slate-400">
-                                <Upload className="w-8 h-8 mb-2" />
-                                <p className="text-sm">{file ? file.name : "Cliquez pour choisir un fichier"}</p>
-                            </div>
-                            <Input id="import-file" type="file" className="hidden" accept=".xlsx" onChange={handleFileChange}/>
-                        </label>
-                        {usersToImport.length > 0 && (
-                            <div className="text-sm text-slate-300">{usersToImport.length} utilisateurs trouvés.</div>
-                        )}
-                     </>
-                   ) : (
-                     <div className="max-h-64 overflow-y-auto space-y-2 p-2 rounded-lg bg-slate-800/50">
-                        <h4 className="font-semibold text-white">Résultats de l'import</h4>
-                         <TooltipProvider>
-                            {importResults.map(res => (
-                                <div key={res.email} className="flex justify-between items-center text-sm">
-                                    <span className="text-slate-300">{res.email}</span>
-                                    {res.status === 'success' ? <CheckCircle className="h-4 w-4 text-green-500" /> : (
-                                        <Tooltip>
-                                            <TooltipTrigger>
-                                                <AlertTriangle className="h-4 w-4 text-red-500" />
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>{res.error}</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    )}
-                                </div>
-                            ))}
-                         </TooltipProvider>
-                     </div>
-                   )}
-                </div>
-                 <DialogFooter>
-                    {importResults ? (
-                        <Button onClick={() => onOpenChange(false)}>Fermer</Button>
-                    ) : (
-                        <Button onClick={handleImport} disabled={usersToImport.length === 0 || isLoading}>
-                            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                            Importer
-                        </Button>
-                    )}
-                 </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
-};
-
 const grantAccessSchema = z.object({
   courseId: z.string().min(1, "Veuillez sélectionner un cours."),
   reason: z.string().min(10, "Veuillez fournir une brève raison."),
@@ -486,39 +364,13 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
 
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
-  const db = getFirestore();
-  const { currentUser, isUserLoading } = useRole();
   const [users, setUsers] = useState<NdaraUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isImportOpen, setIsImportOpen] = useState(false);
   const [grantUser, setGrantUser] = useState<NdaraUser | null>(null);
 
-  const fetchUsers = React.useCallback(async () => {
-    setIsLoading(true);
-    const usersQuery = query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(100));
-    try {
-        const snapshot = await getDocs(usersQuery);
-        const userList = snapshot.docs.map(doc => doc.data() as NdaraUser);
-        setUsers(userList);
-    } catch (error) {
-        console.error("Error fetching users:", error);
-    } finally {
-        setIsLoading(false);
-    }
-  }, [db]);
-
-  useEffect(() => {
-    if (isUserLoading) return;
-    if (currentUser?.role === 'admin') {
-      fetchUsers();
-    } else {
-      setIsLoading(false);
-    }
-  }, [fetchUsers, currentUser, isUserLoading]);
-  
-  const handleUserUpdate = (userId: string, update: Partial<NdaraUser>) => {
+  const onUserUpdate = (userId: string, update: Partial<NdaraUser>) => {
       setUsers(prevUsers => {
           if (update.status === 'deleted') {
               return prevUsers.filter(u => u.uid !== userId);
@@ -527,15 +379,6 @@ export default function AdminUsersPage() {
       });
   };
 
-  const filteredUsers = useMemo(() => {
-    if (!users) return [];
-    if (!searchTerm) return users;
-    return users.filter(user =>
-      user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [users, searchTerm]);
-
   return (
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -543,7 +386,7 @@ export default function AdminUsersPage() {
           <h1 className="text-3xl font-bold dark:text-white">Utilisateurs</h1>
           <p className="text-muted-foreground dark:text-slate-400">Gérez les membres de la plateforme.</p>
         </div>
-        <Button onClick={() => setIsImportOpen(true)}>
+        <Button>
           <Upload className="mr-2 h-4 w-4"/>
           Importer des utilisateurs
         </Button>
@@ -570,7 +413,7 @@ export default function AdminUsersPage() {
           <div className="overflow-x-auto hidden md:block">
             <Table>
               <TableHeader>
-                <TableRow className="dark:hover:bg-slate-700/50 dark:border-slate-700">
+                <TableRow className="dark:hover:bg-slate-700/50 dark:border-b dark:border-slate-700">
                   <TableHead className="dark:text-slate-400">Nom</TableHead>
                   <TableHead className="dark:text-slate-400">Email</TableHead>
                   <TableHead className="dark:text-slate-400">Rôle</TableHead>
@@ -580,99 +423,18 @@ export default function AdminUsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? <UserTableSkeleton /> : (
-                  filteredUsers.length > 0 ? (
-                    filteredUsers.map((user) => (
-                      <TableRow key={user.uid} className={cn("dark:hover:bg-slate-700/50 dark:border-b dark:border-slate-700", isUpdating && 'opacity-50')}>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            <Avatar>
-                              <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
-                              <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
-                            </Avatar>
-                            <span className="font-medium dark:text-slate-100">{user.fullName}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground dark:text-slate-400">{user.email}</TableCell>
-                        <TableCell>
-                          <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
-                            {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                           <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
-                            {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground dark:text-slate-500">
-                           {user.createdAt ? format((user.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} onGrantAccess={setGrantUser} />
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow className="dark:border-slate-700">
-                      <TableCell colSpan={6} className="h-48 text-center">
-                        <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                            <UserX className="h-12 w-12" />
-                            <p className="font-medium">Aucun utilisateur trouvé</p>
-                            <p className="text-sm">
-                                {searchTerm 
-                                    ? `Aucun résultat pour "${searchTerm}".`
-                                    : "La liste des utilisateurs est actuellement vide."
-                                }
-                            </p>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                )}
+                <UserTableSkeleton />
               </TableBody>
             </Table>
           </div>
           
            {/* Mobile Card View */}
            <div className="md:hidden space-y-4">
-              {isLoading ? <UserCardSkeleton /> : (
-                  filteredUsers.length > 0 ? (
-                      filteredUsers.map((user) => (
-                           <Card key={user.uid} className={cn("p-4 dark:bg-slate-900/50 dark:border-slate-700", isUpdating && 'opacity-50')}>
-                              <div className="flex items-start gap-4">
-                                  <Avatar>
-                                      <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
-                                      <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <div className="flex-1">
-                                      <p className="font-bold dark:text-white">{user.fullName}</p>
-                                      <p className="text-sm text-muted-foreground dark:text-slate-400">{user.email}</p>
-                                  </div>
-                                  <UserActions user={user} adminId={currentUser?.uid || ''} onActionStart={() => setIsUpdating(true)} onActionEnd={() => setIsUpdating(false)} onUserUpdate={handleUserUpdate} onGrantAccess={setGrantUser} />
-                              </div>
-                              <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
-                                   <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">
-                                      {user.role}
-                                    </Badge>
-                                    <Badge variant={getStatusBadgeVariant(user.status)} className={cn(user.status !== 'suspended' && 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>
-                                      {user.status === 'suspended' ? 'Suspendu' : 'Actif'}
-                                    </Badge>
-                              </div>
-                           </Card>
-                      ))
-                  ) : (
-                       <div className="h-48 text-center flex flex-col items-center justify-center gap-2 text-muted-foreground dark:text-slate-400">
-                          <UserX className="mx-auto h-12 w-12" />
-                          <p className="font-medium">Aucun utilisateur trouvé</p>
-                      </div>
-                  )
-              )}
+              <UserCardSkeleton />
            </div>
 
         </CardContent>
       </Card>
-      <ImportUsersDialog isOpen={isImportOpen} onOpenChange={setIsImportOpen} onImportComplete={fetchUsers}/>
-      <GrantAccessDialog user={grantUser} isOpen={!!grantUser} onOpenChange={() => setGrantUser(null)} />
     </div>
   );
 }
