@@ -136,7 +136,7 @@ service cloud.firestore {
     ====================== */
     match /payments/{paymentId} {
       allow get: if isOwner(resource.data.userId) || isAdmin();
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
+      allow list: if isAdmin();
       allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
@@ -145,9 +145,13 @@ service cloud.firestore {
        PAYOUTS
     ====================== */
     match /payouts/{payoutId} {
-      allow create: if isApprovedInstructor() && isOwner(request.resource.data.instructorId);
+      allow create: if isApprovedInstructor()
+                      && isOwner(request.resource.data.instructorId)
+                      && request.resource.data.status == 'en_attente';
       allow read: if isOwner(resource.data.instructorId) || isAdmin();
-      allow list, update, delete: if isAdmin();
+      allow list: if isAdmin();
+      allow update: if isAdmin() && !request.resource.data.diff(resource.data).affectedKeys.hasAny(['instructorId', 'amount', 'method', 'date']);
+      allow delete: if isAdmin();
     }
 
     /* ======================
