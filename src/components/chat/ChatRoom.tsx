@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -48,13 +49,16 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [otherParticipant, setOtherParticipant] = useState<ParticipantDetails | null>(null);
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
+  const [participantLoading, setParticipantLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lastMessageRef = useRef<string | null>(null);
   
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
+
+  const isLoading = participantLoading || messagesLoading;
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -81,8 +85,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   
   // Fetch chat doc and other participant details
   useEffect(() => {
-    if (!chatId || !user) return;
-    setIsLoading(true);
+    if (!chatId || !user) {
+        setParticipantLoading(false);
+        return;
+    };
+    setParticipantLoading(true);
     const chatRef = doc(db, 'chats', chatId);
     const unsubscribe = onSnapshot(chatRef, async (docSnap) => {
         if (docSnap.exists()) {
@@ -95,21 +102,34 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 const userSnap = await getDoc(userRef);
                 if (userSnap.exists()) {
                     setOtherParticipant(userSnap.data() as ParticipantDetails);
+                } else {
+                    setOtherParticipant(null);
                 }
+            } else {
+                setOtherParticipant(null);
             }
+
             if (chatData.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
             }
         } else {
             router.push('/messages');
         }
+        setParticipantLoading(false);
+    }, (error) => {
+        console.error("Error fetching participant:", error);
+        setParticipantLoading(false);
     });
     return () => unsubscribe();
-  }, [chatId, user, db, router]);
+}, [chatId, user, db, router]);
 
   // Fetch messages
   useEffect(() => {
-    if (!chatId) return;
+    if (!chatId) {
+        setMessagesLoading(false);
+        return;
+    }
+    setMessagesLoading(true);
     const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
         const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
@@ -128,7 +148,10 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             return serverMessages;
         });
 
-        setIsLoading(false);
+        setMessagesLoading(false);
+    }, (error) => {
+        console.error("Error fetching messages:", error);
+        setMessagesLoading(false);
     });
     return () => unsubscribe();
   }, [chatId, db]);
