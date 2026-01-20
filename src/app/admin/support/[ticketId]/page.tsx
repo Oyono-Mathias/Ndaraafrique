@@ -181,12 +181,12 @@ export default function TicketConversationPage() {
   const instructor = ticket ? participants.get(ticket.instructorId) : null;
 
   return (
-    <div className="flex flex-col h-full bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh_-_theme(spacing.28))] bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden">
       {isLoading ? (
         <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <>
-          <header className="p-4 border-b bg-slate-900/50 backdrop-blur z-10 border-slate-700 flex justify-between items-center">
+          <header className="p-4 border-b bg-slate-900/50 backdrop-blur z-10 border-slate-700 flex flex-col sm:flex-row justify-between sm:items-center gap-2">
             <div>
               <h2 className="font-semibold text-white">{ticket?.subject}</h2>
               <div className="text-xs text-slate-400 flex items-center gap-4 mt-1">
@@ -200,7 +200,7 @@ export default function TicketConversationPage() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 self-end sm:self-center">
                 <Button variant="outline" size="sm" onClick={() => setIsCloseAlertOpen(true)} disabled={ticket?.status === 'fermé'}>
                     <CheckCircle className="h-4 w-4 mr-2"/>
                     Clôturer le ticket
