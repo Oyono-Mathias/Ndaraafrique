@@ -53,7 +53,7 @@ import * as XLSX from 'xlsx';
 import React from 'react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { startChat } from '@/lib/chat';
-import { useCollection } from '@/firebase';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -259,7 +259,7 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
     const { toast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const coursesQuery = useMemo(() => query(collection(db, 'courses'), where('status', '==', 'Published')), [db]);
+    const coursesQuery = useMemoFirebase(() => query(collection(db, 'courses'), where('status', '==', 'Published')), [db]);
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
     const form = useForm<z.infer<typeof grantAccessSchema>>({
