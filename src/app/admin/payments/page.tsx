@@ -1,5 +1,4 @@
 
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -95,61 +94,17 @@ export default function AdminPaymentsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Mock initial data
   useEffect(() => {
-    if (isUserLoading || currentUser?.role !== 'admin') {
-      if(!isUserLoading) setIsLoading(false);
-      return;
-    }
-
-    const fetchPayments = async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const paymentsQuery = query(collection(db, 'payments'), orderBy('date', 'desc'), limit(100));
-            const snapshot = await getDocs(paymentsQuery);
-            const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-            setPayments(paymentsData);
-        } catch (e: any) {
-            console.error("Error fetching payments", e);
-            setError("L'index Firestore pour cette requête est manquant.");
-        }
-    }
-    fetchPayments();
-  }, [db, currentUser, isUserLoading]);
-
-
-  useEffect(() => {
-    if (payments.length === 0) {
-        if (!isLoading) setIsLoading(false); // Only set loading to false if we're not already loading payments
-        return;
-    }
-
-    const fetchDetails = async () => {
-        const userIds = [...new Set(payments.map(p => p.userId))];
-        const courseIds = [...new Set(payments.map(p => p.courseId))];
-
-        const usersMap = new Map<string, NdaraUser>();
-        if(userIds.length > 0) {
-            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0,30))));
-            usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
-        }
-
-        const coursesMap = new Map<string, {title: string}>();
-        if(courseIds.length > 0) {
-            const coursesSnap = await getDocs(query(collection(db, 'courses'), where('__name__', 'in', courseIds.slice(0,30))));
-            coursesSnap.forEach(doc => coursesMap.set(doc.id, { title: doc.data().title }));
-        }
-
-        const enriched = payments.map(payment => ({
-            ...payment,
-            user: usersMap.get(payment.userId),
-            courseTitle: coursesMap.get(payment.courseId)?.title || 'Cours supprimé'
-        }));
-        setEnrichedPayments(enriched);
+    // This is where you would fetch data from Firestore
+    // For now, we'll use mock data and a timeout to simulate loading
+    const timer = setTimeout(() => {
+        setEnrichedPayments([]);
         setIsLoading(false);
-    }
-    fetchDetails();
-  }, [payments, db, isLoading]);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredPayments = useMemo(() => {
     if (!debouncedSearchTerm) return enrichedPayments;
@@ -241,7 +196,7 @@ export default function AdminPaymentsPage() {
                       <TableCell><Skeleton className="h-4 w-40 dark:bg-slate-700" /></TableCell>
                       <TableCell><Skeleton className="h-4 w-28 dark:bg-slate-700" /></TableCell>
                       <TableCell><Skeleton className="h-6 w-24 rounded-full dark:bg-slate-700" /></TableCell>
-                      <TableCell className="text-right"><Skeleton className="h-4 w-20 dark:bg-slate-700" /></TableCell>
+                      <TableCell className="text-right"><Skeleton className="h-4 w-20 ml-auto dark:bg-slate-700" /></TableCell>
                     </TableRow>
                   ))
                 ) : filteredPayments.length > 0 ? (
