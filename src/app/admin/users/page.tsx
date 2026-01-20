@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit, where } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, doc, updateDoc, getDocs, limit, where, onSnapshot } from 'firebase/firestore';
 import { getAuth } from 'firebase/auth';
 import { useRole } from '@/context/RoleContext';
 import { deleteUserAccount, importUsersAction, updateUserStatus, grantCourseAccess, updateUserRole } from '@/actions/userActions';
@@ -58,6 +58,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
+import { useDebounce } from '@/hooks/use-debounce';
 
 // --- SKELETON LOADERS ---
 const UserTableSkeleton = () => (
@@ -366,75 +367,174 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<NdaraUser[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [grantUser, setGrantUser] = useState<NdaraUser | null>(null);
+  
+  const { currentUser, isUserLoading } = useRole();
+  const db = getFirestore();
 
-  const onUserUpdate = (userId: string, update: Partial<NdaraUser>) => {
+  useEffect(() => {
+      if(isUserLoading || !currentUser) return;
+      
+      const q = query(collection(db, 'users'), orderBy('createdAt', 'desc'));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+          const usersData = snapshot.docs.map(doc => ({ ...doc.data() } as NdaraUser));
+          setUsers(usersData);
+          setIsLoading(false);
+      }, (error) => {
+          console.error("Error fetching users: ", error);
+          setIsLoading(false);
+      });
+      return () => unsubscribe();
+  }, [db, currentUser, isUserLoading]);
+
+  const onUserUpdate = useCallback((userId: string, update: Partial<NdaraUser>) => {
       setUsers(prevUsers => {
           if (update.status === 'deleted') {
               return prevUsers.filter(u => u.uid !== userId);
           }
           return prevUsers.map(u => u.uid === userId ? { ...u, ...update } : u);
       });
-  };
+  }, []);
+
+  const filteredUsers = useMemo(() => {
+    return users.filter(user =>
+      user.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+      user.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+    );
+  }, [users, debouncedSearchTerm]);
+  
+  const finalLoading = isLoading || isUserLoading;
 
   return (
-    <div className="space-y-6">
-      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold dark:text-white">Utilisateurs</h1>
-          <p className="text-muted-foreground dark:text-slate-400">Gérez les membres de la plateforme.</p>
-        </div>
-        <Button>
-          <Upload className="mr-2 h-4 w-4"/>
-          Importer des utilisateurs
-        </Button>
-      </header>
-
-      <Card className="dark:bg-slate-800 dark:border-slate-700">
-        <CardHeader>
-          <CardTitle className="dark:text-white">Liste des utilisateurs</CardTitle>
-          <CardDescription className="dark:text-slate-400">
-            Retrouvez ici tous les utilisateurs inscrits sur la plateforme.
-          </CardDescription>
-          <div className="relative pt-4">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Rechercher par nom ou email..."
-              className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+    <>
+      <div className="space-y-6">
+        <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold dark:text-white">Utilisateurs</h1>
+            <p className="text-muted-foreground dark:text-slate-400">Gérez les membres de la plateforme.</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {/* Desktop Table View */}
-          <div className="overflow-x-auto hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow className="dark:hover:bg-slate-700/50 dark:border-b dark:border-slate-700">
-                  <TableHead className="dark:text-slate-400">Nom</TableHead>
-                  <TableHead className="dark:text-slate-400">Email</TableHead>
-                  <TableHead className="dark:text-slate-400">Rôle</TableHead>
-                  <TableHead className="dark:text-slate-400">Statut</TableHead>
-                  <TableHead className="dark:text-slate-400">Date d'inscription</TableHead>
-                  <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                <UserTableSkeleton />
-              </TableBody>
-            </Table>
-          </div>
-          
-           {/* Mobile Card View */}
-           <div className="md:hidden space-y-4">
-              <UserCardSkeleton />
-           </div>
+          <Button disabled>
+            <Upload className="mr-2 h-4 w-4"/>
+            Importer des utilisateurs
+          </Button>
+        </header>
 
-        </CardContent>
-      </Card>
-    </div>
+        <Card className="dark:bg-slate-800 dark:border-slate-700">
+          <CardHeader>
+            <CardTitle className="dark:text-white">Liste des utilisateurs</CardTitle>
+            <CardDescription className="dark:text-slate-400">
+              Retrouvez ici tous les utilisateurs inscrits sur la plateforme.
+            </CardDescription>
+            <div className="relative pt-4">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher par nom ou email..."
+                className="max-w-sm pl-10 dark:bg-slate-700 dark:border-slate-600"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Desktop Table View */}
+            <div className="overflow-x-auto hidden md:block">
+              <Table>
+                <TableHeader>
+                  <TableRow className="dark:hover:bg-slate-700/50 dark:border-b dark:border-slate-700">
+                    <TableHead className="dark:text-slate-400">Nom</TableHead>
+                    <TableHead className="dark:text-slate-400">Email</TableHead>
+                    <TableHead className="dark:text-slate-400">Rôle</TableHead>
+                    <TableHead className="dark:text-slate-400">Statut</TableHead>
+                    <TableHead className="dark:text-slate-400">Date d'inscription</TableHead>
+                    <TableHead className="text-right dark:text-slate-400">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                   {finalLoading ? <UserTableSkeleton /> : filteredUsers.length > 0 ? (
+                        filteredUsers.map(user => (
+                            <TableRow key={user.uid} className={cn("dark:border-slate-700", isUpdating && "opacity-50")}>
+                                <TableCell>
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10 border dark:border-slate-600">
+                                            <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                                            <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="font-semibold text-sm dark:text-white">{user.fullName}</p>
+                                            <p className="text-xs text-muted-foreground dark:text-slate-400">@{user.username}</p>
+                                        </div>
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-sm dark:text-slate-300">{user.email}</TableCell>
+                                <TableCell><Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{user.role}</Badge></TableCell>
+                                <TableCell><Badge variant={getStatusBadgeVariant(user.status)}>{user.status === 'suspended' ? 'Suspendu' : 'Actif'}</Badge></TableCell>
+                                <TableCell className="text-xs text-muted-foreground dark:text-slate-400">{user.createdAt ? format(user.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                                <TableCell className="text-right">
+                                    <UserActions 
+                                        user={user} 
+                                        adminId={currentUser?.uid || ''}
+                                        onActionStart={() => setIsUpdating(true)} 
+                                        onActionEnd={() => setIsUpdating(false)}
+                                        onUserUpdate={onUserUpdate}
+                                        onGrantAccess={setGrantUser}
+                                    />
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground dark:text-slate-400">
+                            <UserX className="mx-auto h-12 w-12" />
+                            <p className="mt-2 font-medium">Aucun utilisateur trouvé</p>
+                        </TableCell></TableRow>
+                    )}
+                </TableBody>
+              </Table>
+            </div>
+            
+             {/* Mobile Card View */}
+             <div className="md:hidden space-y-4">
+                {finalLoading ? <UserCardSkeleton /> : filteredUsers.length > 0 ? (
+                    filteredUsers.map(user => (
+                        <Card key={user.uid} className="p-4 dark:bg-slate-900/50 dark:border-slate-700">
+                             <div className="flex items-start gap-4">
+                                <Avatar className="h-10 w-10">
+                                    <AvatarImage src={user.profilePictureURL} alt={user.fullName} />
+                                    <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <p className="font-bold text-sm text-white">{user.fullName}</p>
+                                    <p className="text-xs text-muted-foreground dark:text-slate-400">{user.email}</p>
+                                </div>
+                                 <UserActions 
+                                    user={user} 
+                                    adminId={currentUser?.uid || ''}
+                                    onActionStart={() => setIsUpdating(true)} 
+                                    onActionEnd={() => setIsUpdating(false)}
+                                    onUserUpdate={onUserUpdate}
+                                    onGrantAccess={setGrantUser}
+                                />
+                            </div>
+                            <div className="flex items-center justify-between mt-4 pt-3 border-t dark:border-slate-800">
+                                <Badge variant={getRoleBadgeVariant(user.role)} className="capitalize">{user.role}</Badge>
+                                <Badge variant={getStatusBadgeVariant(user.status)}>{user.status === 'suspended' ? 'Suspendu' : 'Actif'}</Badge>
+                                <span className="text-xs text-muted-foreground">{user.createdAt ? format(user.createdAt.toDate(), 'dd/MM/yy') : 'N/A'}</span>
+                            </div>
+                        </Card>
+                    ))
+                ) : (
+                    <div className="h-48 text-center flex flex-col items-center justify-center text-muted-foreground dark:text-slate-400">
+                        <UserX className="mx-auto h-12 w-12" />
+                        <p className="font-medium">Aucun utilisateur trouvé</p>
+                    </div>
+                )}
+             </div>
+          </CardContent>
+        </Card>
+      </div>
+      <GrantAccessDialog user={grantUser} isOpen={!!grantUser} onOpenChange={() => setGrantUser(null)} />
+    </>
   );
 }
