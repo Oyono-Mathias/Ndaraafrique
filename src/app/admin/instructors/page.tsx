@@ -1,32 +1,20 @@
 
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
-import { useRole } from '@/context/RoleContext';
+import React, { useState, useMemo } from 'react';
 import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  doc,
-  updateDoc,
-  orderBy,
-  getDocs
-} from 'firebase/firestore';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Check, X, UserCheck, UserX, Bot, Send } from 'lucide-react';
+import { Loader2, Check, X, UserCheck, Bot, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { NdaraUser } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
@@ -36,8 +24,6 @@ import { cn } from '@/lib/utils';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { approveInstructorApplication } from '@/actions/userActions';
-
 
 interface Application extends NdaraUser {
     instructorApplication?: {
@@ -51,16 +37,20 @@ interface Application extends NdaraUser {
 
 type Decision = 'accepted' | 'rejected' | null;
 
+// This is a placeholder for a real onConfirm function
+const handleConfirmPlaceholder = async (userId: string, decision: Decision, message: string) => {
+    console.log("Confirming decision:", { userId, decision, message });
+    await new Promise(res => setTimeout(res, 1000));
+};
+
 const DecisionModal = ({ 
     application, 
     isOpen, 
-    onClose,
-    onConfirm
+    onClose
 }: { 
     application: Application | null; 
     isOpen: boolean; 
     onClose: () => void;
-    onConfirm: (userId: string, decision: Decision, message: string) => Promise<void>;
 }) => {
     const [decision, setDecision] = useState<Decision>(null);
     const [rejectionReason, setRejectionReason] = useState('');
@@ -99,9 +89,9 @@ const DecisionModal = ({
     const handleConfirm = async () => {
         if (!decision) return;
         setIsProcessing(true);
-        await onConfirm(application.uid, decision, message);
+        await handleConfirmPlaceholder(application.uid, decision, message);
         setIsProcessing(false);
-        onClose(); // Close the modal automatically on success
+        onClose();
     };
 
     return (
@@ -188,55 +178,22 @@ const DecisionModal = ({
 };
 
 export default function InstructorApplicationsPage() {
-  const { currentUser: adminUser, isUserLoading } = useRole();
-  const db = getFirestore();
-  const { toast } = useToast();
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [applications, setApplications] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [applications, setApplications] = useState<Application[]>([]);
 
+  // Simulate data fetching
   useEffect(() => {
-    if (!adminUser || adminUser.role !== 'admin') {
-        if (!isUserLoading) setIsLoading(false);
-        return;
-    }
-    const applicationsQuery = query(
-        collection(db, 'users'), 
-        where('role', '==', 'instructor'), 
-        where('isInstructorApproved', '==', false),
-        orderBy('createdAt', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
-        setApplications(snapshot.docs.map(doc => doc.data() as Application));
+    const timer = setTimeout(() => {
+        // To test empty state, set the array to []
+        setApplications([
+            { uid: '1', fullName: 'Amina Diallo', profilePictureURL: '/placeholder-avatars/amina.jpg', instructorApplication: { specialty: 'Ingénierie Pédagogique', motivation: 'Passionnée par la création de contenu éducatif impactant, je souhaite apporter mon expertise pour enrichir le catalogue de Ndara Afrique et former la prochaine génération de leaders.', submittedAt: new Date() } },
+            { uid: '2', fullName: 'Kwame Nkrumah', profilePictureURL: '/placeholder-avatars/kwame.jpg', instructorApplication: { specialty: 'Développement Backend', motivation: 'Avec 10 ans d\'expérience en Node.js et architecture système, je veux partager mes connaissances sur la construction d\'applications scalables et robustes.', submittedAt: new Date(Date.now() - 86400000 * 2) } },
+        ]);
         setIsLoading(false);
-    }, (error) => {
-        console.error("Error fetching applications:", error);
-        setIsLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, [db, adminUser, isUserLoading]);
-
-  const handleConfirmDecision = async (userId: string, decision: Decision, message: string) => {
-    if (!adminUser || !decision) return;
-
-    const result = await approveInstructorApplication({ userId, decision, message, adminId: adminUser.uid });
-
-    if (result.success) {
-      const toastMessage = decision === 'accepted' 
-        ? { title: "Candidature approuvée", description: "L'instructeur a été notifié et son compte est activé." }
-        : { title: "Candidature rejetée", description: "L'instructeur a été notifié de la décision." };
-      toast(toastMessage);
-    } else {
-      toast({ variant: 'destructive', title: "Erreur", description: result.error || "Impossible de mettre à jour le statut de la candidature." });
-    }
-  };
-
-
-  if (adminUser?.role !== 'admin' && !isUserLoading) {
-    return <div className="p-8 text-center">Accès non autorisé à cette page.</div>;
-  }
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <>
@@ -249,12 +206,11 @@ export default function InstructorApplicationsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {isLoading ? (
             [...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full dark:bg-slate-700"/>)
-        ) : applications && applications.length > 0 ? (
+        ) : applications.length > 0 ? (
             applications.map((app) => (
                 <Card 
                     key={app.uid} 
-                    className="dark:bg-slate-800 dark:border-slate-700 flex flex-col cursor-pointer hover:ring-2 hover:ring-primary transition-all"
-                    onClick={() => setSelectedApp(app)}
+                    className="dark:bg-slate-800 dark:border-slate-700 flex flex-col"
                 >
                     <CardHeader className="flex-row items-center gap-4 space-y-0">
                          <Avatar className="h-12 w-12">
@@ -270,19 +226,15 @@ export default function InstructorApplicationsPage() {
                         <p className="text-sm text-muted-foreground dark:text-slate-400 line-clamp-3">
                             {app.instructorApplication?.motivation || "Aucune motivation fournie."}
                         </p>
-                         <div className="flex gap-2 mt-4">
-                           {app.instructorApplication?.presentationVideoUrl && (
-                            <Button asChild variant="outline" size="sm">
-                                <a href={app.instructorApplication.presentationVideoUrl} target="_blank" rel="noopener noreferrer" onClick={e => e.stopPropagation()}>
-                                    <Bot className="mr-2 h-4 w-4"/> Vidéo
-                                </a>
-                            </Button>
-                          )}
-                        </div>
                     </CardContent>
-                     <CardContent className="text-xs text-muted-foreground">
-                        Candidature envoyée {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt.toDate(), { addSuffix: true, locale: fr }) : "récemment"}
-                    </CardContent>
+                    <CardFooter className="flex-col items-stretch gap-2">
+                         <Button className="w-full" onClick={() => setSelectedApp(app)}>
+                            Voir détails & Décider
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground">
+                            Candidature envoyée {app.instructorApplication?.submittedAt ? formatDistanceToNow(app.instructorApplication.submittedAt, { addSuffix: true, locale: fr }) : "récemment"}
+                        </p>
+                    </CardFooter>
                 </Card>
             ))
         ) : (
@@ -299,7 +251,6 @@ export default function InstructorApplicationsPage() {
         application={selectedApp} 
         isOpen={!!selectedApp} 
         onClose={() => setSelectedApp(null)}
-        onConfirm={handleConfirmDecision}
     />
     </>
   );
