@@ -17,6 +17,8 @@ import { Course, NdaraUser } from '@/lib/types';
 import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
 import { CourseCarousel } from './CourseCarousel';
 import { Skeleton } from '../ui/skeleton';
+import { Avatar, AvatarImage, AvatarFallback } from '../ui/avatar';
+import { Card, CardContent } from '../ui/card';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -104,6 +106,89 @@ const MobileMoneySection = ({ onTrackClick }: { onTrackClick: (provider: string)
         </div>
     </section>
 );
+
+const TestimonialsSection = () => {
+    const testimonials = [
+        {
+            quote: "Grâce à Ndara Afrique, j'ai pu acquérir des compétences en développement web qui m'ont ouvert les portes d'une nouvelle carrière. Les cours sont pratiques et les instructeurs sont des experts dans leur domaine.",
+            name: "Fatima Diallo",
+            role: "Développeuse Full-Stack",
+            avatar: "/placeholder-avatars/fatima.jpg"
+        },
+        {
+            quote: "La flexibilité de la plateforme m'a permis d'apprendre à mon rythme tout en travaillant. Le paiement par Mobile Money a été un vrai plus, simple et sécurisé. Je recommande à 100% !",
+            name: "Jean-Philippe Kouamé",
+            role: "Chef de projet Digital",
+            avatar: "/placeholder-avatars/jean-philippe.jpg"
+        },
+        {
+            quote: "En tant que femme entrepreneure, trouver des formations de qualité et accessibles était un défi. Ndara Afrique a été une révélation. J'ai pu monter en compétence sur le marketing digital et booster mon activité.",
+            name: "Aïcha Traoré",
+            role: "Entrepreneure",
+            avatar: "/placeholder-avatars/aicha.jpg"
+        }
+    ];
+
+    return (
+        <section className="py-24">
+            <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-white">
+                    Ils nous font confiance
+                </h2>
+                <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+                    Découvrez comment Ndara Afrique transforme les carrières et les ambitions à travers le continent.
+                </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {testimonials.map((testimonial, index) => (
+                    <Card key={index} className="bg-slate-800/50 border-slate-700/80 p-6 flex flex-col justify-between">
+                        <CardContent className="p-0">
+                            <blockquote className="text-slate-300 italic">"{testimonial.quote}"</blockquote>
+                        </CardContent>
+                        <footer className="mt-6 flex items-center gap-4">
+                            <Avatar className="h-12 w-12 border-2 border-primary/50">
+                                <AvatarImage src={testimonial.avatar} alt={testimonial.name} />
+                                <AvatarFallback>{testimonial.name.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                                <p className="font-bold text-white">{testimonial.name}</p>
+                                <p className="text-sm text-primary">{testimonial.role}</p>
+                            </div>
+                        </footer>
+                    </Card>
+                ))}
+            </div>
+        </section>
+    );
+};
+
+const InstructorCTASection = () => {
+    return (
+        <section className="py-24 bg-slate-800/30 rounded-2xl my-24">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                 <div className="relative h-64 md:h-80 w-full px-8">
+                    <Image
+                        src="https://images.unsplash.com/photo-1543269865-cbf427effbad?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                        alt="Un instructeur donnant un cours"
+                        fill
+                        className="object-cover rounded-xl shadow-lg"
+                        data-ai-hint="instructor teaching"
+                    />
+                </div>
+                <div className="px-8">
+                    <h2 className="text-3xl font-extrabold text-white">Partagez votre savoir. Transformez des vies.</h2>
+                    <p className="mt-4 text-slate-400">
+                        Vous êtes un expert dans votre domaine ? Rejoignez notre communauté de formateurs et contribuez à l'éducation de la prochaine génération de leaders en Afrique.
+                    </p>
+                    <Button asChild size="lg" className="mt-6 h-12 text-base">
+                        <Link href="/devenir-instructeur">Devenir Formateur</Link>
+                    </Button>
+                </div>
+            </div>
+        </section>
+    );
+};
+
 
 const MobileCTA = ({ onClick }: { onClick: () => void }) => (
   <div className="fixed bottom-0 left-0 right-0 md:hidden bg-slate-900/80 backdrop-blur-sm p-3 border-t border-slate-700 z-40">
@@ -230,6 +315,8 @@ export function LandingPageClient() {
         <HowItWorks />
 
         <MobileMoneySection onTrackClick={(provider) => handleTrackedClick('payment_method_click', { provider })} />
+        
+        <TestimonialsSection />
 
         <TrustAndSecuritySection />
 
@@ -246,6 +333,8 @@ export function LandingPageClient() {
             instructorsMap={instructorsMap}
             isLoading={isLoading}
         />
+
+        <InstructorCTASection />
 
         <section className="py-12 text-center">
             <h2 className="text-3xl md:text-4xl font-extrabold text-white">

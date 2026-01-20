@@ -943,10 +943,10 @@
             },
             "reviewed": {
               "type": "boolean",
-              "default": false,
               "description": "True if an admin has reviewed this transaction."
             }
-          }
+          },
+          "required": ["isSuspicious", "riskScore", "reason", "checkedAt", "reviewed"]
         }
       },
       "required": [

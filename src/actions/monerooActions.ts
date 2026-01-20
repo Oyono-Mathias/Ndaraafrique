@@ -96,7 +96,7 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
                                 riskScore: fraudResult.riskScore,
                                 reason: fraudResult.reason,
                                 checkedAt: Timestamp.now(),
-                                reviewed: false // Always start as unreviewed
+                                reviewed: false
                             }
                         }, { merge: true });
 
