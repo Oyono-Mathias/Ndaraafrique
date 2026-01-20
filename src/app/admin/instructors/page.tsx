@@ -1,9 +1,8 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
 import {
   getFirestore,
   collection,
@@ -11,7 +10,8 @@ import {
   where,
   doc,
   updateDoc,
-  orderBy
+  orderBy,
+  getDocs
 } from 'firebase/firestore';
 import {
   Table,
@@ -192,19 +192,31 @@ export default function InstructorApplicationsPage() {
   const db = getFirestore();
   const { toast } = useToast();
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const applicationsQuery = useMemoFirebase(
-    () => adminUser?.role === 'admin' ? query(
+  useEffect(() => {
+    if (!adminUser || adminUser.role !== 'admin') {
+        if (!isUserLoading) setIsLoading(false);
+        return;
+    }
+    const applicationsQuery = query(
         collection(db, 'users'), 
         where('role', '==', 'instructor'), 
         where('isInstructorApproved', '==', false),
         orderBy('createdAt', 'desc')
-    ) : null,
-    [db, adminUser]
-  );
-  const { data: applications, isLoading: applicationsLoading } = useCollection<Application>(applicationsQuery);
+    );
 
-  const isLoading = isUserLoading || applicationsLoading;
+    const unsubscribe = onSnapshot(applicationsQuery, (snapshot) => {
+        setApplications(snapshot.docs.map(doc => doc.data() as Application));
+        setIsLoading(false);
+    }, (error) => {
+        console.error("Error fetching applications:", error);
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, [db, adminUser, isUserLoading]);
 
   const handleConfirmDecision = async (userId: string, decision: Decision, message: string) => {
     if (!adminUser || !decision) return;

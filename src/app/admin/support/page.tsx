@@ -5,14 +5,13 @@ import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
 import {
   getFirestore,
   collection,
   query,
   orderBy,
   where,
+  getDocs,
 } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -59,29 +58,44 @@ export default function AdminSupportPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const [activeTab, setActiveTab] = useState('ouvert');
+  const [tickets, setTickets] = useState<SupportTicket[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const ticketsQuery = useMemoFirebase(
-    () => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc')) : null,
-    [db, currentUser]
-  );
-  const { data: tickets, isLoading: ticketsLoading, error } = useCollection<SupportTicket>(ticketsQuery);
+  useEffect(() => {
+    if (!currentUser || isUserLoading) {
+        if (!isUserLoading) setIsLoading(false);
+        return;
+    }
+
+    const fetchTickets = async () => {
+        setIsLoading(true);
+        setError(null);
+        try {
+            const ticketsQuery = query(collection(db, 'support_tickets'), orderBy('updatedAt', 'desc'));
+            const snapshot = await getDocs(ticketsQuery);
+            setTickets(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SupportTicket)));
+        } catch (err) {
+            console.error(err);
+            setError("Impossible de charger les tickets. Un index Firestore est peut-être manquant.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    fetchTickets();
+  }, [currentUser, isUserLoading, db]);
 
   const filteredTickets = useMemo(() => {
     if (!tickets) return [];
     return tickets.filter(ticket => ticket.status === activeTab);
   }, [tickets, activeTab]);
 
-  const isLoading = isUserLoading || ticketsLoading;
-
   if (error) {
     return (
         <div className="p-4 bg-destructive/10 text-destructive border border-destructive/50 rounded-lg flex items-center gap-3">
             <AlertTriangle className="h-5 w-5" />
-            <p>
-                Une erreur est survenue lors du chargement des tickets.
-                Un index Firestore (`support_tickets` trié par `updatedAt`) est peut-être manquant.
-                Veuillez consulter la documentation de votre projet ou les logs de la console pour créer l'index manquant.
-            </p>
+            <p>{error}</p>
         </div>
     );
   }

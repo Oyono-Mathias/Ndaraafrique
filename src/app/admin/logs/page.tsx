@@ -9,8 +9,8 @@ import {
   query,
   orderBy,
   where,
-  onSnapshot,
-  getDocs
+  getDocs,
+  limit
 } from 'firebase/firestore';
 import {
   Table,
@@ -62,12 +62,14 @@ export default function AdminLogsPage() {
       return;
     }
 
-    let q = query(collection(db, 'admin_audit_logs'), orderBy('timestamp', 'desc'));
-    if (filterType !== 'all') {
-        q = query(q, where('eventType', '==', filterType));
-    }
-    
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    const fetchData = async () => {
+        setIsLoading(true);
+        let q = query(collection(db, 'admin_audit_logs'), orderBy('timestamp', 'desc'), limit(100));
+        if (filterType !== 'all') {
+            q = query(q, where('eventType', '==', filterType));
+        }
+
+        const snapshot = await getDocs(q);
         const logsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AdminAuditLog));
         setLogs(logsData);
         
@@ -84,10 +86,11 @@ export default function AdminLogsPage() {
             }
         }
         setIsLoading(false);
-    });
+    };
+    
+    fetchData();
 
-    return () => unsubscribe();
-  }, [db, filterType, admins, currentUser, isUserLoading]);
+  }, [db, filterType, currentUser, isUserLoading]);
 
   const filteredLogs = useMemo(() => {
     if (!debouncedSearchTerm) return logs;

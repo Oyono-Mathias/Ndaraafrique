@@ -4,8 +4,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
 import { getFirestore, collection, query, orderBy, where, getDocs, documentId } from 'firebase/firestore';
 import Image from 'next/image';
 import {
@@ -170,45 +168,33 @@ export default function AdminCoursesPage() {
   const db = getFirestore();
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [instructors, setInstructors] = useState<Map<string, NdaraUser>>(new Map());
   const [dataLoading, setDataLoading] = useState(true);
 
-  const coursesQuery = useMemoFirebase(
-    () => query(collection(db, 'courses'), orderBy('createdAt', 'desc')),
-    [db]
-  );
-  const { data: courses, isLoading: coursesLoading, error } = useCollection<Course>(coursesQuery);
-
- useEffect(() => {
-    if (coursesLoading) {
+  useEffect(() => {
+    const fetchData = async () => {
       setDataLoading(true);
-      return;
-    }
-    if (!courses) {
-        setInstructors(new Map());
-        setDataLoading(false);
-        return;
-    }
-
-    const fetchInstructors = async () => {
-        setDataLoading(true);
-        const instructorIds = [...new Set(courses.map(c => c.instructorId))];
-        const newIdsToFetch = instructorIds.filter(id => !instructors.has(id));
-        
-        if (newIdsToFetch.length > 0) {
-            // Firestore 'in' query limit is 30. For more, batching is required.
-            const usersQuery = query(collection(db, 'users'), where(documentId(), 'in', newIdsToFetch.slice(0, 30)));
-            const usersSnap = await getDocs(usersQuery);
-            
-            const newInstructors = new Map(instructors);
-            usersSnap.forEach(doc => newInstructors.set(doc.id, doc.data() as NdaraUser));
-            setInstructors(newInstructors);
-        }
-        setDataLoading(false);
+      
+      const coursesQuery = query(collection(db, 'courses'), orderBy('createdAt', 'desc'));
+      const coursesSnap = await getDocs(coursesQuery);
+      const coursesData = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+      setCourses(coursesData);
+      
+      const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
+      if (instructorIds.length > 0) {
+          const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
+          const usersSnap = await getDocs(usersQuery);
+          
+          const newInstructors = new Map<string, NdaraUser>();
+          usersSnap.forEach(doc => newInstructors.set(doc.data().uid, doc.data() as NdaraUser));
+          setInstructors(newInstructors);
+      }
+      setDataLoading(false);
     };
-    fetchInstructors();
-  }, [courses, coursesLoading, db, instructors]);
 
+    fetchData();
+  }, [db]);
 
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
@@ -218,12 +204,8 @@ export default function AdminCoursesPage() {
     );
   }, [courses, debouncedSearchTerm]);
 
-  const isLoading = isUserLoading || coursesLoading || dataLoading;
+  const isLoading = isUserLoading || dataLoading;
   
-  if (error) {
-      return <div className="text-destructive p-4">Erreur: Impossible de charger les cours. L'index est peut-être manquant.</div>;
-  }
-
   return (
     <div className="space-y-6">
       <header>
