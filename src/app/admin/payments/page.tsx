@@ -1,9 +1,18 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, collection, query, orderBy, where, getDocs, limit } from 'firebase/firestore';
+import {
+  getFirestore,
+  collection,
+  query,
+  orderBy,
+  where,
+  getDocs,
+  limit,
+  onSnapshot,
+  documentId
+} from 'firebase/firestore';
 import {
   Table,
   TableBody,
@@ -18,7 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search, ShoppingCart, AlertCircle, CheckCircle, Shield } from 'lucide-react';
-import type { NdaraUser } from '@/lib/types';
+import type { NdaraUser, Payment, Course } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -26,30 +35,13 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 
 
-interface Payment {
-  id: string;
-  userId: string;
-  instructorId: string;
-  courseId: string;
-  amount: number;
-  currency: string;
-  date: any; // Firestore Timestamp
-  status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
-  fraudReview?: {
-    isSuspicious: boolean;
-    riskScore: number;
-    reason: string;
-    checkedAt: any;
-  }
-}
-
 interface EnrichedPayment extends Payment {
-    user?: Pick<NdaraUser, 'fullName' | 'email' | 'profilePictureURL'>;
+    user?: NdaraUser;
     courseTitle?: string;
 }
 
-const formatCurrency = (amount: number, currency: string) => {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency }).format(amount);
+const formatCurrency = (amount: number, currency: string = 'XOF') => {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(amount);
 };
 
 const FraudBadge = ({ fraudReview }: { fraudReview?: Payment['fraudReview'] }) => {
@@ -89,34 +81,76 @@ export default function AdminPaymentsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [enrichedPayments, setEnrichedPayments] = useState<EnrichedPayment[]>([]);
+  const [payments, setPayments] = useState<EnrichedPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Mock initial data
+  
   useEffect(() => {
-    // This is where you would fetch data from Firestore
-    // For now, we'll use mock data and a timeout to simulate loading
-    const timer = setTimeout(() => {
-        setEnrichedPayments([]);
-        setIsLoading(false);
-    }, 1500);
+    if (!currentUser || isUserLoading) {
+        if (!isUserLoading) setIsLoading(false);
+        return;
+    }
 
-    return () => clearTimeout(timer);
-  }, []);
+    const paymentsQuery = query(
+        collection(db, 'payments'),
+        orderBy('date', 'desc'),
+        limit(100)
+    );
+
+    const unsubscribe = onSnapshot(paymentsQuery, async (snapshot) => {
+        if (snapshot.empty) {
+            setPayments([]);
+            setIsLoading(false);
+            return;
+        }
+
+        const paymentsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
+        
+        const userIds = [...new Set(paymentsData.map(p => p.userId))];
+        const courseIds = [...new Set(paymentsData.map(p => p.courseId))];
+
+        const usersMap = new Map<string, NdaraUser>();
+        if (userIds.length > 0) {
+             const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
+             const usersSnap = await getDocs(usersQuery);
+             usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
+        }
+        
+        const coursesMap = new Map<string, Course>();
+        if (courseIds.length > 0) {
+             const coursesQuery = query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30)));
+             const coursesSnap = await getDocs(coursesQuery);
+             coursesSnap.forEach(doc => coursesMap.set(doc.id, doc.data() as Course));
+        }
+
+        const enriched = paymentsData.map(payment => ({
+            ...payment,
+            user: usersMap.get(payment.userId),
+            courseTitle: coursesMap.get(payment.courseId)?.title || 'Cours introuvable'
+        }));
+
+        setPayments(enriched);
+        setIsLoading(false);
+    }, (err) => {
+        console.error(err);
+        setError("Erreur de chargement des transactions. Un index Firestore est peut-être manquant.");
+        setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+}, [currentUser, isUserLoading, db]);
 
   const filteredPayments = useMemo(() => {
-    if (!debouncedSearchTerm) return enrichedPayments;
-    return enrichedPayments.filter(payment =>
+    if (!debouncedSearchTerm) return payments;
+    return payments.filter(payment =>
       payment.user?.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       payment.user?.email?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
       payment.id.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
     );
-  }, [enrichedPayments, debouncedSearchTerm]);
+  }, [payments, debouncedSearchTerm]);
   
   const suspiciousTransactions = useMemo(() => {
-    return filteredPayments.filter(p => p.fraudReview?.isSuspicious);
+    return filteredPayments.filter(p => p.fraudReview?.isSuspicious && !p.fraudReview?.reviewed);
   }, [filteredPayments]);
 
 
