@@ -37,7 +37,6 @@ type FormValues = z.infer<typeof formSchema>;
 export default function AdminCarouselPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [slides, setSlides] = useState<CarouselSlide[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [removedSlideIds, setRemovedSlideIds] = useState<string[]>([]);
 
@@ -57,7 +56,6 @@ export default function AdminCarouselPage() {
     const slidesQuery = query(collection(db, 'carousel_slides'), orderBy('order', 'asc'));
     const unsubscribe = onSnapshot(slidesQuery, (snapshot) => {
         const fetchedSlides = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CarouselSlide));
-        setSlides(fetchedSlides);
         form.reset({ slides: fetchedSlides });
         setIsLoading(false);
     }, (error) => {
