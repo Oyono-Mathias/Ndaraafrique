@@ -43,7 +43,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift } from 'lucide-react';
+import { MoreHorizontal, Search, UserX, Loader2, UserCog, Trash2, Ban, Upload, CheckCircle, AlertTriangle, MessageSquare, Gift, FileUp } from 'lucide-react';
 import type { NdaraUser, Course, UserRole } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -106,7 +106,7 @@ const UserCardSkeleton = () => (
 );
 
 
-// --- COMPOSANTS DE L'INTERFACE ---
+// --- UI COMPONENTS ---
 const getRoleBadgeVariant = (role: NdaraUser['role']) => {
   switch (role) {
     case 'admin': return 'destructive';
@@ -362,6 +362,159 @@ const GrantAccessDialog = ({ user, isOpen, onOpenChange }: { user: NdaraUser | n
     );
 };
 
+const ImportUsersDialog = ({ isOpen, onOpenChange }: { isOpen: boolean, onOpenChange: (open: boolean) => void }) => {
+    const [step, setStep] = useState<'select' | 'preview' | 'importing' | 'report'>('select');
+    const [usersToImport, setUsersToImport] = useState<any[]>([]);
+    const [importResults, setImportResults] = useState<{ email: string, status: string, error?: string }[]>([]);
+    const [fileName, setFileName] = useState('');
+    const [error, setError] = useState<string | null>(null);
+    const { currentUser } = useRole();
+    const { toast } = useToast();
+
+    useEffect(() => {
+        if (!isOpen) {
+            // Reset state when modal closes
+            setTimeout(() => {
+                setStep('select');
+                setUsersToImport([]);
+                setImportResults([]);
+                setFileName('');
+                setError(null);
+            }, 300);
+        }
+    }, [isOpen]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            parseFile(file);
+        }
+    };
+
+    const parseFile = (file: File) => {
+        setError(null);
+        setFileName(file.name);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[sheetName];
+                const json = XLSX.utils.sheet_to_json(worksheet);
+
+                // Validate data
+                if (json.length > 0 && ('fullName' in json[0] && 'email' in json[0])) {
+                    setUsersToImport(json);
+                    setStep('preview');
+                } else {
+                    setError("Fichier invalide. Assurez-vous qu'il contient les colonnes 'fullName' et 'email'.");
+                }
+            } catch (err) {
+                setError("Erreur lors de l'analyse du fichier.");
+                console.error(err);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const handleConfirmImport = async () => {
+        if (!currentUser) return;
+        setStep('importing');
+        const result = await importUsersAction({ users: usersToImport, adminId: currentUser.uid });
+        setImportResults(result.results);
+        setStep('report');
+    };
+
+    const successCount = importResults.filter(r => r.status === 'success').length;
+    const errorCount = importResults.filter(r => r.status === 'error').length;
+    
+    return (
+        <Dialog open={isOpen} onOpenChange={onOpenChange}>
+            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
+                <DialogHeader>
+                    <DialogTitle className="dark:text-white">Importer des Utilisateurs</DialogTitle>
+                    <DialogDescription className="dark:text-slate-400">
+                        {step === 'select' && "Sélectionnez un fichier .xlsx ou .csv à importer."}
+                        {step === 'preview' && `Aperçu des ${usersToImport.length} utilisateurs à importer.`}
+                        {step === 'importing' && "Importation en cours, veuillez patienter..."}
+                        {step === 'report' && "Rapport d'importation."}
+                    </DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                    {step === 'select' && (
+                        <label className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer hover:bg-slate-800/50 dark:border-slate-700">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                                <FileUp className="w-10 h-10 mb-3 text-slate-400" />
+                                <p className="text-sm text-slate-400"><span className="font-semibold text-primary">Cliquez pour téléverser</span> ou glissez-déposez</p>
+                                <p className="text-xs text-slate-500">XLSX, CSV (max. 5MB)</p>
+                            </div>
+                            <Input id="dropzone-file" type="file" className="hidden" onChange={handleFileChange} accept=".xlsx, .csv" />
+                            {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+                        </label>
+                    )}
+                    {step === 'preview' && (
+                         <div className="space-y-4">
+                            <p className="text-sm">Fichier : <span className="font-semibold">{fileName}</span></p>
+                            <div className="h-64 overflow-y-auto border rounded-lg dark:border-slate-700">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow className="dark:border-slate-700">
+                                            <TableHead>Nom complet</TableHead><TableHead>Email</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {usersToImport.slice(0, 100).map((user, i) => (
+                                            <TableRow key={i}><TableCell>{user.fullName}</TableCell><TableCell>{user.email}</TableCell></TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                         </div>
+                    )}
+                     {step === 'importing' && (
+                        <div className="flex flex-col items-center justify-center h-48 text-center">
+                            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                            <p className="mt-4 text-lg font-semibold">Création des comptes...</p>
+                            <p className="text-sm text-slate-400">Cela peut prendre quelques instants.</p>
+                        </div>
+                    )}
+                    {step === 'report' && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-lg bg-slate-800/50 border dark:border-slate-700 text-center">
+                                <h3 className="text-xl font-bold text-white">Importation Terminée</h3>
+                                <div className="flex justify-center gap-8 mt-2">
+                                    <div className="text-green-400"><span className="font-bold text-2xl">{successCount}</span> Succès</div>
+                                    <div className="text-red-400"><span className="font-bold text-2xl">{errorCount}</span> Erreurs</div>
+                                </div>
+                            </div>
+                            {errorCount > 0 && (
+                                <div className="h-48 overflow-y-auto border rounded-lg p-2 dark:border-slate-700">
+                                     {importResults.filter(r => r.status === 'error').map((res, i) => (
+                                        <div key={i} className="text-xs p-2 rounded bg-red-900/50">
+                                           <span className="font-bold">{res.email}:</span> {res.error?.includes('email-already-exists') ? 'Email déjà utilisé' : res.error}
+                                        </div>
+                                     ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+                 <DialogFooter>
+                    {step === 'preview' && (
+                        <>
+                            <Button variant="ghost" onClick={() => setStep('select')}>Annuler</Button>
+                            <Button onClick={handleConfirmImport}>Confirmer l'import</Button>
+                        </>
+                    )}
+                    {step === 'report' && (
+                        <Button onClick={() => onOpenChange(false)}>Fermer</Button>
+                    )}
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+    )
+}
 
 // --- PAGE PRINCIPALE ---
 export default function AdminUsersPage() {
@@ -371,6 +524,7 @@ export default function AdminUsersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [grantUser, setGrantUser] = useState<NdaraUser | null>(null);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
@@ -392,7 +546,7 @@ export default function AdminUsersPage() {
 
   const onUserUpdate = useCallback((userId: string, update: Partial<NdaraUser>) => {
       setUsers(prevUsers => {
-          if (update.status === 'deleted') {
+          if (update.status === 'deleted' as any) {
               return prevUsers.filter(u => u.uid !== userId);
           }
           return prevUsers.map(u => u.uid === userId ? { ...u, ...update } : u);
@@ -416,10 +570,12 @@ export default function AdminUsersPage() {
             <h1 className="text-3xl font-bold dark:text-white">Utilisateurs</h1>
             <p className="text-muted-foreground dark:text-slate-400">Gérez les membres de la plateforme.</p>
           </div>
-          <Button disabled>
-            <Upload className="mr-2 h-4 w-4"/>
-            Importer des utilisateurs
-          </Button>
+           <DialogTrigger asChild>
+                <Button onClick={() => setIsImportModalOpen(true)}>
+                    <Upload className="mr-2 h-4 w-4"/>
+                    Importer des utilisateurs
+                </Button>
+            </DialogTrigger>
         </header>
 
         <Card className="dark:bg-slate-800 dark:border-slate-700">
@@ -535,6 +691,7 @@ export default function AdminUsersPage() {
         </Card>
       </div>
       <GrantAccessDialog user={grantUser} isOpen={!!grantUser} onOpenChange={() => setGrantUser(null)} />
+      <ImportUsersDialog isOpen={isImportModalOpen} onOpenChange={setIsImportModalOpen} />
     </>
   );
 }
