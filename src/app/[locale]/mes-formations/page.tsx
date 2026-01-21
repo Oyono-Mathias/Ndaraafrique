@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/hooks';
 import { useMemoFirebase } from '@/firebase/hooks';
-import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -53,7 +53,7 @@ export default function MyLearningPage() {
       const coursesMap = new Map<string, Course>();
       if (courseIds.length > 0) {
           const coursesRef = collection(db, 'courses');
-          const q = query(coursesRef, where('__name__', 'in', courseIds.slice(0, 30)));
+          const q = query(coursesRef, where(documentId(), 'in', courseIds.slice(0, 30)));
           const courseSnap = await getDocs(q);
           courseSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
       }

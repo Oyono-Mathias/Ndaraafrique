@@ -62,13 +62,21 @@ export default function LoginClient() {
   const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
-  const { user, isUserLoading } = useRole();
+  const { user, isUserLoading, role } = useRole();
   const locale = useLocale();
 
   const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
   const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
   
-  useEffect(() => { if (!isUserLoading && user) router.push('/dashboard'); }, [user, isUserLoading, router]);
+  useEffect(() => {
+    if (!isUserLoading && user) {
+      if (role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, isUserLoading, role, router]);
 
   useEffect(() => {
     const fetchSettings = async () => {

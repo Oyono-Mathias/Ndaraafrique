@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,7 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Check, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface SubscriptionPlan {
