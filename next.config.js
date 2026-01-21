@@ -1,5 +1,5 @@
 const withNextIntl = require('next-intl/plugin')(
-    './src/i1A8n.ts'
+    './src/i18n.ts'
 );
  
 module.exports = withNextIntl({
