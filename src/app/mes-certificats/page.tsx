@@ -13,7 +13,7 @@ import {
   Timestamp,
   onSnapshot,
 } from 'firebase/firestore';
-import Link from 'next/link';
+import { Link } from 'next-intl/navigation';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,7 +38,7 @@ interface CompletedCourse extends Course {
 }
 
 export default function MyCertificatesPage() {
-  const { ndaraUser, isUserLoading } = useRole();
+  const { ndaraUser: currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
   const [completedCourses, setCompletedCourses] = useState<CompletedCourse[]>([]);
@@ -46,14 +46,14 @@ export default function MyCertificatesPage() {
   const [selectedCertificate, setSelectedCertificate] = useState<CompletedCourse | null>(null);
 
   const enrollmentsQuery = useMemo(
-    () => ndaraUser?.uid
+    () => currentUser?.uid
       ? query(
           collection(db, 'enrollments'), 
-          where('studentId', '==', ndaraUser.uid), 
+          where('studentId', '==', currentUser.uid), 
           where('progress', '==', 100)
         )
       : null,
-    [db, ndaraUser?.uid]
+    [db, currentUser?.uid]
   );
   
   useEffect(() => {
@@ -220,12 +220,12 @@ export default function MyCertificatesPage() {
         </CardContent>
       </Card>
 
-      {selectedCertificate && ndaraUser && (
+      {selectedCertificate && currentUser && (
         <CertificateModal
           isOpen={!!selectedCertificate}
           onClose={() => setSelectedCertificate(null)}
           courseName={selectedCertificate.title}
-          studentName={ndaraUser.fullName}
+          studentName={currentUser.fullName}
           instructorName={selectedCertificate.instructorName}
           completionDate={selectedCertificate.completionDate}
           certificateId={selectedCertificate.certificateId}

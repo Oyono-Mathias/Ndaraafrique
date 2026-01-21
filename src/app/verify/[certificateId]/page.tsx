@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useParams } from 'next/navigation';
+import { useParams, Link } from 'next-intl/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, getFirestore } from 'firebase/firestore';
@@ -11,7 +11,6 @@ import type { Enrollment, Course, NdaraUser } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Image from 'next/image';
-import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
 function VerificationPageContent() {

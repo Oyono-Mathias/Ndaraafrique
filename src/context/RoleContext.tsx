@@ -37,7 +37,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
-  const router = useRouter();
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();

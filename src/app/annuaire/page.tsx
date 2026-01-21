@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import {
   getFirestore,
