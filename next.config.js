@@ -4,7 +4,22 @@ const withNextIntl = require('next-intl/plugin')(
  
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Configuration options for Next.js can be placed here.
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: 'api.dicebear.com',
+      },
+    ],
+  },
 };
  
 module.exports = withNextIntl(nextConfig);
