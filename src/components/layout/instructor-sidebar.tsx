@@ -1,9 +1,9 @@
 
 "use client";
 
-import Link from "next/link";
+import { Link, useRouter } from "next-intl/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
-import { usePathname, useRouter } from "next-intl/navigation";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -57,17 +57,19 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
       href={href}
       onClick={handleClick}
       className={cn(
-        "flex items-center px-4 py-3 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
+        "flex items-center justify-between px-4 py-3 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
           ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
           : 'text-slate-300 hover:bg-slate-800'
       )}
     >
-      <Icon className={cn(
-        "w-5 h-5 mr-4",
-        isActive ? 'text-primary-foreground' : 'text-slate-400 group-hover:text-primary'
-      )} />
-      <span className="font-semibold text-sm leading-tight">{label}</span>
+      <div className="flex items-center">
+        <Icon className={cn(
+          "w-5 h-5 mr-4",
+          isActive ? 'text-primary-foreground' : 'text-slate-400 group-hover:text-primary'
+        )} />
+        <span className="font-semibold text-sm leading-tight">{label}</span>
+      </div>
       {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
     </Link>
   );
