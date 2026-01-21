@@ -19,17 +19,5 @@
   "all": "Tous",
   "in_progress": "En cours",
   "completed": "Terminés",
-  "browseCourses": "Parcourir les cours",
-  "coming_soon_title": "L'Avenir de la Formation en Afrique est",
-  "coming_soon_subtitle": "en Construction",
-  "coming_soon_desc": "Nous préparons une révolution dans l'e-learning panafricain. Soyez le premier à être informé de notre lancement et bénéficiez d'offres exclusives.",
-  "countdown_days": "Jours",
-  "countdown_hours": "Heures",
-  "countdown_minutes": "Minutes",
-  "countdown_seconds": "Secondes",
-  "email_placeholder": "Entrez votre email...",
-  "notify_me_btn": "Me notifier",
-  "waitlist_success_title": "Merci !",
-  "waitlist_success_desc": "Vous êtes bien inscrit sur notre liste d'attente.",
-  "error_title": "Erreur"
+  "browseCourses": "Parcourir les cours"
 }
