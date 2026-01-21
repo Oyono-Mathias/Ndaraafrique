@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next-intl/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -206,7 +206,7 @@ export default function LoginClient() {
                             <div className="flex items-center justify-end">
                               <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
-                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
+                            <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
                          <div className="relative my-4 text-center">
@@ -236,7 +236,7 @@ export default function LoginClient() {
                                  </div>
                               </FormItem>
                             )} />
-                            <Button style={{backgroundColor: '#007bff'}} type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
+                            <Button type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
                             </form>
                         </Form>
                     </TabsContent>

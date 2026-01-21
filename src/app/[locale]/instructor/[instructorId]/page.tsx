@@ -1,7 +1,8 @@
 
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, collection, query, where, getFirestore, getDocs, getCountFromServer, addDoc, serverTimestamp, limit, setDoc, writeBatch, updateDoc } from 'firebase/firestore';
@@ -40,7 +41,7 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 
 const CourseCard = ({ course }: { course: Course }) => {
     return (
-        <Link href={`/course/${course.id}`} className="block group">
+        <Link href={`/courses/${course.id}`} className="block group">
             <div className="bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/10">
                 <Image 
                     src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}

@@ -2,7 +2,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -104,7 +105,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const pathSegments = pathname.split('/').filter(Boolean);
   // This will be true for `/` and `/en` or `/fr` at the root
-  const isRootPath = pathSegments.length <= 1 && (pathname === '/' || pathSegments[0] === 'en' || pathSegments[0] === 'fr');
+  const isRootPath = pathSegments.length <= 1;
   
   const isPublicPage = isRootPath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
   

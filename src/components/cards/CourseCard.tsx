@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -47,7 +48,7 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
 
   return (
     <div className="w-full h-full glassmorphism-card rounded-2xl overflow-hidden group flex flex-col">
-       <Link href={isStudentView ? `/courses/${course.id}` : `/course/${course.id}`} className="block">
+       <Link href={`/courses/${course.id}`} className="block">
         <div className="relative aspect-video overflow-hidden bg-slate-800">
           <Image
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
@@ -69,7 +70,7 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
         </div>
       </Link>
       <div className="p-4 flex flex-col flex-grow">
-        <Link href={isStudentView ? `/courses/${course.id}` : `/course/${course.id}`} className="block">
+        <Link href={`/courses/${course.id}`} className="block">
             <h3 className="font-bold text-base text-slate-100 line-clamp-2 h-12 group-hover:text-primary transition-colors">{course.title}</h3>
         </Link>
 

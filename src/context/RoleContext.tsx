@@ -9,7 +9,7 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter } from "next-intl/navigation";
 
 interface RoleContextType {
   role: UserRole;
@@ -46,7 +46,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
     await signOut(auth);
-  }, [db]);
+    router.push('/');
+  }, [db, router]);
 
    useEffect(() => {
     const auth = getAuth();

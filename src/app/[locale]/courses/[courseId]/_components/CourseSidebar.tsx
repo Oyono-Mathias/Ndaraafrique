@@ -28,7 +28,7 @@ export function CourseSidebar({
     return (
         <>
             <div className="p-4 border-b border-slate-800">
-                <Link href={`/course/${course?.id}`} className="flex items-center gap-3 group">
+                <Link href={`/student/mes-formations`} className="flex items-center gap-3 group">
                     <div className="relative h-10 w-16 bg-slate-700 rounded-md overflow-hidden">
                         {course?.imageUrl && <Image src={course.imageUrl} alt={course.title} fill className="object-cover" />}
                     </div>
