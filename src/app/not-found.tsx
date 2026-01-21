@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Frown } from 'lucide-react';
 import Image from 'next/image';
