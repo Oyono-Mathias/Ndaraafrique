@@ -23,10 +23,7 @@ const navItems = [
 const NavItem = ({ href, icon: Icon, label }: typeof navItems[0]) => {
   const pathname = usePathname();
   
-  // Specific check for dashboard to avoid it being active on all /admin/* routes
-  const isDashboardActive = pathname === '/admin' && href === '/admin';
-  const isOtherPagesActive = href !== '/admin' && pathname.startsWith(href);
-  const isActive = isDashboardActive || isOtherPagesActive;
+  const isActive = href === '/admin' ? pathname === href : pathname.startsWith(href);
 
   return (
     <Link href={href} className="flex flex-col items-center justify-center gap-1 flex-1 p-1 h-full">

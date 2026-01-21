@@ -78,9 +78,10 @@ const PUBLIC_PATHS = [
     '/cgu',
     '/mentions-legales',
     '/verify',
-    '/courses', 
+    '/courses',
     '/instructor',
-    '/abonnements'
+    '/abonnements',
+    '/search'
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -102,11 +103,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isRootPath = pathname === '/';
   const isPublicSubPage = PUBLIC_PATHS.some(p => pathname.startsWith(p));
+  
   const isPublicPage = isRootPath || isPublicSubPage;
   
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
   const showAppContent = isPublicPage || (!isUserLoading && user);
-  const showLoader = !isPublicPage && !isAuthPage && !isLaunchPage && !isUserLoading && !user;
+  const showLoader = !isPublicPage && !isUserLoading && !user;
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');
