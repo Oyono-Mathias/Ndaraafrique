@@ -22,8 +22,7 @@ import {
   getDoc,
   setDoc
 } from 'firebase/firestore';
-import { Player, Youtube, Vimeo, DefaultUi, DefaultControls } from '@vime/react';
-import '@vime/core/themes/default.css';
+import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, ArrowLeft, Book, CheckCircle, Award, FileText } from 'lucide-react';
@@ -34,6 +33,8 @@ import { CourseSidebar } from './_components/CourseSidebar';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
+
+const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 // This is the inner component that uses Suspense features
 function CoursePlayerPageContent() {
@@ -187,15 +188,15 @@ function CoursePlayerPageContent() {
                   {isEbook && course?.ebookUrl ? (
                       <PdfViewerClient fileUrl={course.ebookUrl} />
                   ) : activeLecture?.videoUrl ? (
-                      <Player>
-                        {(activeLecture.videoUrl.includes('youtube') || activeLecture.videoUrl.includes('youtu.be')) ? (
-                           <Youtube videoId={activeLecture.videoUrl.split('v=')[1] || activeLecture.videoUrl.split('/').pop() || ''} />
-                        ) : activeLecture.videoUrl.includes('vimeo') ? (
-                          <Vimeo videoId={activeLecture.videoUrl.split('/').pop() || ''} />
-                        ) : null}
-                        <DefaultUi />
-                        <DefaultControls hideOnMouseLeave activeDuration={2000} />
-                      </Player>
+                    <div className="w-full h-full">
+                       <ReactPlayer
+                           url={activeLecture.videoUrl}
+                           width="100%"
+                           height="100%"
+                           controls={true}
+                           playing={false}
+                       />
+                    </div>
                   ) : (
                     <div className="h-full flex items-center justify-center text-slate-400">
                         Sélectionnez une leçon pour commencer.

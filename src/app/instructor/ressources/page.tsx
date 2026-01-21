@@ -3,8 +3,7 @@
 
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import {
@@ -17,17 +16,16 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Folder } from 'lucide-react';
-import { Link } from 'next-intl/navigation';
+import { Link, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
-import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
 
 export default function ResourcesDashboardPage() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
-    const { t } = useTranslation();
+    const t = useTranslations();
 
     const coursesQuery = useMemoFirebase(
         () => currentUser?.uid

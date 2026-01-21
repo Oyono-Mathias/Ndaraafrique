@@ -3,8 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase/hooks';
-import { useMemoFirebase } from '@/firebase/hooks';
+import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
