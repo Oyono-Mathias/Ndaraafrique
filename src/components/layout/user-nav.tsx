@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -79,11 +78,11 @@ export function UserNav() {
               <UserIcon className="mr-2 h-4 w-4" />
               <span>Mon Compte</span>
             </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => router.push('/historique-paiements')} className="cursor-pointer dark:focus:bg-slate-700">
+             <DropdownMenuItem onClick={() => router.push('/student/paiements')} className="cursor-pointer dark:focus:bg-slate-700">
               <CreditCard className="mr-2 h-4 w-4" />
               <span>Paiements</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/questions-reponses')} className="cursor-pointer dark:focus:bg-slate-700">
+            <DropdownMenuItem onClick={() => router.push('/student/support')} className="cursor-pointer dark:focus:bg-slate-700">
               <LifeBuoy className="mr-2 h-4 w-4" />
               <span>Support</span>
             </DropdownMenuItem>
