@@ -2,8 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
-import { useRouter } from 'next-intl/navigation';
+import { usePathname, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -104,10 +103,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password');
 
   const pathSegments = pathname.split('/').filter(Boolean);
-  // This will be true for `/` and `/en` or `/fr` at the root
-  const isRootPath = pathSegments.length <= 1;
+  // Check if it's the root or just a locale
+  const isRootOrLocalePath = pathSegments.length <= 1;
   
-  const isPublicPage = isRootPath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
+  const isPublicPage = isRootOrLocalePath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
   
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
   const showAppContent = isPublicPage || (!isUserLoading && user);
@@ -178,7 +177,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
             <div className="flex flex-col">
               <AnnouncementBanner />
-              {!isAdminArea && !isRootPath && (
+              {!isAdminArea && !isRootOrLocalePath && (
                 <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
                   <div className="md:hidden">
                       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>

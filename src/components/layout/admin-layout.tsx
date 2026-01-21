@@ -2,7 +2,7 @@
 'use client';
 
 import { useRole } from "@/context/RoleContext";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next-intl/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
@@ -54,10 +54,6 @@ export default function AdminLayout({
   }, [db]);
 
   useEffect(() => {
-    if (!isUserLoading && !hasPermission('admin:access')) {
-      router.push('/student/dashboard');
-    }
-     // Automatically switch to admin role if the user has the permission but is in another role context
     if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
       switchRole('admin');
     }
