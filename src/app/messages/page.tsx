@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -13,11 +14,10 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import Link from 'next/link';
+import { Link, usePathname, useRouter } from 'next-intl/navigation';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MessageSquareDashed, Search, Plus, UserX, Shield, Briefcase } from 'lucide-react';
-import { usePathname, useRouter } from 'next/navigation';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {

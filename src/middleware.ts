@@ -9,7 +9,6 @@ export default createMiddleware({
 });
  
 export const config = {
-  // Skip all paths that should not be internationalized. This example skips
-  // the '/api' folder and all files with an extension (e.g. favicon.ico)
-  matcher: ['/((?!api|_next|.*\\..*).*)']
+  // Match only internationalized pathnames
+  matcher: ['/', '/(fr|en)/:path*']
 };
