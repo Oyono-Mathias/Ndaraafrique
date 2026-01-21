@@ -31,11 +31,13 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const pathname = usePathname();
   const { currentUser } = useRole();
   const { toast } = useToast();
-  const isActive = (pathname.startsWith(href) && href !== '/dashboard') || (pathname === href && href === '/dashboard');
   
+  // Adjusted isActive logic
+  const isActive = pathname === href || (href !== '/student/dashboard' && pathname.startsWith(href));
+
   const isAllowedPath = (path: string) => {
-    const alwaysAllowed = ['/dashboard', '/account', '/messages'];
-    if (alwaysAllowed.includes(path)) return true;
+    const alwaysAllowed = ['/student/dashboard', '/account', '/student/messages'];
+    if (alwaysAllowed.some(p => path.startsWith(p))) return true;
     return currentUser?.isInstructorApproved;
   };
 
@@ -84,7 +86,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: "Mon Travail",
       items: [
-        { href: '/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
+        { href: '/student/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
         { href: '/instructor/courses', icon: BookOpen, label: 'Mes Cours' },
         { href: '/instructor/devoirs', icon: ClipboardCheck, label: 'Devoirs' },
         { href: '/instructor/quiz', icon: FileQuestion, label: 'Quiz' },
@@ -95,16 +97,16 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
       label: "Finances & Communauté",
       items: [
         { href: '/instructor/students', icon: Users, label: 'Mes Étudiants' },
-        { href: '/mes-revenus', icon: DollarSign, label: 'Mes Revenus' },
-        { href: '/certificats-instructor', icon: Award, label: 'Certificats Décernés' },
+        { href: '/instructor/revenus', icon: DollarSign, label: 'Mes Revenus' },
+        { href: '/instructor/certificats', icon: Award, label: 'Certificats Décernés' },
       ],
     },
     {
       label: "Communication",
       items: [
-        { href: '/messages', icon: MessagesSquare, label: 'Messagerie' },
-        { href: '/questions-reponses', icon: MessagesSquare, label: 'Q&R' },
-        { href: '/avis', icon: Star, label: 'Avis' },
+        { href: '/student/messages', icon: MessagesSquare, label: 'Messagerie' },
+        { href: '/instructor/questions-reponses', icon: MessagesSquare, label: 'Q&R' },
+        { href: '/instructor/avis', icon: Star, label: 'Avis' },
       ],
     },
   ];

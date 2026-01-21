@@ -11,7 +11,7 @@ import { HowItWorks } from '@/components/landing/HowItWorks';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Stats } from '@/components/landing/Stats';
-import { logTrackingEvent } from '@/app/actions/trackingActions';
+import { logTrackingEvent } from '@/actions/trackingActions';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { Course, NdaraUser, Settings } from '@/lib/types';
 import { getFirestore, collection, query, where, orderBy, getDocs, doc, getDoc, limit } from 'firebase/firestore';
