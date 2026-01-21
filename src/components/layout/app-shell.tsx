@@ -102,8 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const isAuthPage = pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password');
 
-  const pathSegments = pathname.split('/').filter(Boolean);
-  const isRootPath = pathSegments.length <= 1 && (pathSegments[0] === 'en' || pathSegments[0] === 'fr' || !pathSegments.length);
+  const isRootPath = pathname === '/';
   
   const isPublicPage = isRootPath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
   
