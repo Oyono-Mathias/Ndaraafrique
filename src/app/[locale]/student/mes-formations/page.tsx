@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';

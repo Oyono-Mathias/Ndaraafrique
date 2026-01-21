@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -7,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription }
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, UserCheck, Landmark, HelpCircle, ArrowRight, AlertTriangle } from 'lucide-react';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { useMemo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';

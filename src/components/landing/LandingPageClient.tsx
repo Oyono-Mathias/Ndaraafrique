@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { Award, ShieldCheck, Wallet, ArrowRight, Lock, Users, Briefcase, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';

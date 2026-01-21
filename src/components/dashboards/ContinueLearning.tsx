@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useMemo } from 'react';
@@ -8,7 +9,7 @@ import { collection, query, where, getFirestore, orderBy, limit } from 'firebase
 import type { CourseProgress, Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BookOpen, Play } from 'lucide-react';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Progress } from '../ui/progress';
 import { Button } from '../ui/button';

@@ -1,6 +1,7 @@
+
 'use client';
 
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Facebook, Linkedin } from 'lucide-react';
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';
@@ -46,7 +47,7 @@ export function Footer() {
                     <a href="#" aria-label="LinkedIn" className="text-gray-400 hover:text-white cursor-pointer transition"><Linkedin className="h-5 w-5"/></a>
                     <a href="#" aria-label="WhatsApp" className="text-gray-400 hover:text-white cursor-pointer transition"><WhatsAppIcon className="h-5 w-5"/></a>
                 </div>
-                <p className="text-gray-500 text-xs text-center sm:text-right">© {new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
+                <p className="text-gray-500 text-xs text-center sm:text-right">© ${new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
             </div>
         </div>
     </footer>

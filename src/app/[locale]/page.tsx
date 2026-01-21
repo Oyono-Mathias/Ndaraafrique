@@ -1,8 +1,9 @@
+
 'use client';
 
 import React from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { LandingPageClient } from '@/components/landing/LandingPageClient';
