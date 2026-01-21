@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRouter, useSearchParams } from 'next-intl/navigation';
@@ -20,7 +19,7 @@ function ErrorPageContent() {
                 Nous n'avons pas pu traiter votre paiement. Aucuns frais n'ont été appliqués. Veuillez réessayer ou contacter le support si le problème persiste.
             </p>
             <div className="flex gap-4 mt-6">
-                <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                <Button variant="outline" onClick={() => router.push('/student/dashboard')}>
                     Retour à l'accueil
                 </Button>
                 {courseId && (

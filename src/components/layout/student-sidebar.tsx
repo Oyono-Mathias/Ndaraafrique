@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { Link, useRouter } from "next-intl/navigation";
 import { usePathname } from "next/navigation";
@@ -23,6 +22,7 @@ import {
   Briefcase,
   Bell,
   Lock,
+  LayoutDashboard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
@@ -37,7 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean }) => {
   const pathname = usePathname();
   const { toast } = useToast();
-  const isActive = (href === '/dashboard' && pathname === href) || (href !== '/dashboard' && pathname.startsWith(href));
+  const isActive = (href === '/student/dashboard' && pathname.includes('/dashboard')) || (href !== '/student/dashboard' && pathname.startsWith(href));
   
   const handleClick = (e: React.MouseEvent) => {
     if (disabled) {
@@ -99,24 +99,24 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: "Personnel",
       items: [
-        { href: "/dashboard", icon: Star, label: "Pour vous", id: 'sidebar-nav-dashboard' },
+        { href: "/student/dashboard", icon: LayoutDashboard, label: "Tableau de Bord", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/mes-formations", icon: Play, label: 'Mes Cours', id: 'sidebar-nav-mes-formations' },
-        { href: "/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
+        { href: "/student/mes-formations", icon: Play, label: 'Mes Cours', id: 'sidebar-nav-mes-formations' },
+        { href: "/student/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
     {
       label: "Suivi",
       items: [
-        { href: "/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
-        { href: "/liste-de-souhaits", icon: Heart, label: 'Liste de souhaits', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/mes-devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-mes-devoirs' },
+        { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
+        { href: "/student/liste-de-souhaits", icon: Heart, label: 'Liste de souhaits', id: 'sidebar-nav-liste-de-souhaits' },
+        { href: "/student/mes-devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-mes-devoirs' },
       ],
     },
     {
       label: "Communauté",
       items: [
-        { href: "/annuaire", icon: Users, label: 'Annuaire', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
+        { href: "/student/annuaire", icon: Users, label: 'Annuaire', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
         { href: "/messages", icon: MessageSquare, label: 'Messagerie', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
       ]
     },
@@ -176,7 +176,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       <OnboardingGuide />
       <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
         <header className="p-4 border-b border-white/10">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/student/dashboard" className="flex items-center gap-2">
               <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
               <span className="font-bold text-lg text-white">Ndara Afrique</span>
           </Link>

@@ -1,3 +1,3 @@
-// This page has been moved to /src/app/student/liste-de-souhaits/page.tsx
+// This file is deprecated and has been moved to /src/app/student/dashboard/page.tsx
 // You can safely delete this file.
 export default function DeprecatedPage() { return null; }

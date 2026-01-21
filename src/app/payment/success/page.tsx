@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -78,7 +77,7 @@ function SuccessPageContent() {
                         {courseId ? (
                             <Link href={`/courses/${courseId}`}>Commencer ma formation</Link>
                         ) : (
-                             <Link href="/dashboard">Aller au tableau de bord</Link>
+                             <Link href="/student/dashboard">Aller au tableau de bord</Link>
                         )}
                     </Button>
                 </CardContent>

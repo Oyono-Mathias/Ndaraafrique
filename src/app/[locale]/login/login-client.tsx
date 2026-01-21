@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
@@ -72,8 +73,10 @@ export default function LoginClient() {
     if (!isUserLoading && user) {
       if (role === 'admin') {
         router.push('/admin');
+      } else if (role === 'instructor') {
+        router.push('/instructor/courses');
       } else {
-        router.push('/dashboard');
+        router.push('/student/dashboard');
       }
     }
   }, [user, isUserLoading, role, router]);
@@ -103,7 +106,7 @@ export default function LoginClient() {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
-    let targetRoute = '/dashboard';
+    let targetRoute = '/student/dashboard';
 
     if (!userDocSnap.exists()) {
         const finalUserData: Partial<NdaraUser> = {
@@ -127,6 +130,8 @@ export default function LoginClient() {
         const existingData = userDocSnap.data() as NdaraUser;
         if (existingData.role === 'admin') {
             targetRoute = '/admin';
+        } else if (existingData.role === 'instructor') {
+          targetRoute = '/instructor/courses';
         }
         await setDoc(userDocRef, { lastLogin: serverTimestamp() }, { merge: true });
     }

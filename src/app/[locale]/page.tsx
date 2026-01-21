@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -15,8 +16,10 @@ export default function LandingPage() {
     if (!isUserLoading && user) {
       if (role === 'admin') {
         router.push('/admin');
+      } else if (role === 'instructor') {
+        router.push('/instructor/courses');
       } else {
-        router.push('/dashboard');
+        router.push('/student/dashboard');
       }
     }
   }, [isUserLoading, user, role, router]);

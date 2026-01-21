@@ -73,7 +73,7 @@ export default function LoginClient() {
       if (role === 'admin') {
         router.push('/admin');
       } else {
-        router.push('/dashboard');
+        router.push('/student/dashboard');
       }
     }
   }, [user, isUserLoading, role, router]);
@@ -103,7 +103,7 @@ export default function LoginClient() {
     const userDocRef = doc(db, "users", firebaseUser.uid);
     const userDocSnap = await getDoc(userDocRef);
 
-    let targetRoute = '/dashboard';
+    let targetRoute = '/student/dashboard';
 
     if (!userDocSnap.exists()) {
         const finalUserData: Partial<NdaraUser> = {
