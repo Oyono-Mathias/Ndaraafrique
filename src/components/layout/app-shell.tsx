@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -101,11 +102,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
   const isAuthPage = pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password');
-  const isLaunchPage = pathname.includes('/launch');
 
   const pathSegments = pathname.split('/').filter(Boolean);
-  const isRootPath = pathSegments.length === 1 && (pathSegments[0] === 'en' || pathSegments[0] === 'fr');
-  
+  // This will be true for `/` and `/en` or `/fr` at the root
+  const isRootPath = pathSegments.length <= 1;
+
   const isPublicPage = isRootPath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
   
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
@@ -135,7 +136,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [showLoader, router]);
 
-  if (isAuthPage || isLaunchPage) {
+  if (isAuthPage) {
     return <>{children}</>;
   }
 
