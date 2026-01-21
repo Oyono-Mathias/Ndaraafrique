@@ -166,6 +166,11 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     switchRole('admin');
     router.push('/admin');
   }
+
+  const handleSwitchToInstructor = () => {
+    switchRole('instructor');
+    router.push('/instructor/courses');
+  };
   
   const profileProgress = useMemo(() => {
       let progress = 0;
@@ -218,7 +223,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
         <footer className="p-4 mt-auto border-t border-white/10 space-y-2">
            <UserNav />
           {isInstructor ? (
-              <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={() => switchRole('instructor')}>
+              <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={handleSwitchToInstructor}>
                   <LogIn className="mr-2 h-4 w-4" />
                   Passer en mode Instructeur
               </Button>

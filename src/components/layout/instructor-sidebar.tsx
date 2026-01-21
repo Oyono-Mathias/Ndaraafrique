@@ -113,7 +113,13 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-  }
+    router.push('/admin');
+  };
+
+  const handleSwitchToStudent = () => {
+    switchRole('student');
+    router.push('/student/dashboard');
+  };
 
   return (
     <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
@@ -145,7 +151,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         <Button
           variant="outline"
           className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white"
-          onClick={() => switchRole('student')}
+          onClick={handleSwitchToStudent}
         >
           <LogIn className="mr-2 h-4 w-4" />
           Passer en mode Étudiant
