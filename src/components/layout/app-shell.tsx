@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -72,39 +72,54 @@ function AnnouncementBanner() {
     );
 }
 
+const PUBLIC_STATIC_PATHS = [
+  '/',
+  '/about',
+  '/cgu',
+  '/mentions-legales',
+  '/abonnements',
+  '/search',
+];
 
-const PUBLIC_PATHS = [
-    '/about',
-    '/cgu',
-    '/mentions-legales',
-    '/verify',
-    '/courses',
-    '/instructor',
-    '/abonnements',
-    '/search'
+const INSTRUCTOR_PRIVATE_ROUTES = [
+  'avis', 'certificats', 'courses', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'revenus', 'students'
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const pathname = usePathname();
   const router = useRouter();
-  const [siteSettings, setSiteSettings] = useState({ 
-      siteName: 'Ndara Afrique', 
-      logoUrl: '/icon.svg', 
+  const [siteSettings, setSiteSettings] = useState({
+      siteName: 'Ndara Afrique',
+      logoUrl: '/icon.svg',
       maintenanceMode: false,
       allowInstructorSignup: true,
       announcementMessage: ''
     });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
-  const isLaunchPage = pathname.startsWith('/launch');
 
-  const isRootPath = pathname === '/';
-  const isPublicSubPage = PUBLIC_PATHS.some(p => pathname.startsWith(p));
-  
-  const isPublicPage = isRootPath || isPublicSubPage;
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
+
+  const isPublicPage = useMemo(() => {
+    if (PUBLIC_STATIC_PATHS.includes(pathname)) {
+        return true;
+    }
+
+    const pathSegments = pathname.split('/').filter(Boolean);
+    if (pathSegments.length === 2) {
+        // Handle /verify/[id]
+        if (pathSegments[0] === 'verify') {
+            return true;
+        }
+        // Handle /instructor/[id] but not /instructor/courses, etc.
+        if (pathSegments[0] === 'instructor' && !INSTRUCTOR_PRIVATE_ROUTES.includes(pathSegments[1])) {
+            return true;
+        }
+    }
+    
+    return false;
+  }, [pathname]);
   
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
   const showAppContent = isPublicPage || (!isUserLoading && user);
@@ -126,31 +141,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
     return () => unsubscribe();
   }, [db]);
-  
+
   useEffect(() => {
     if (showLoader) {
       router.push('/login');
     }
   }, [showLoader, router]);
 
-  if (isAuthPage || isLaunchPage) {
+  if (isAuthPage) {
     return <>{children}</>;
   }
 
   const handleSidebarLinkClick = () => {
       setIsSheetOpen(false);
   };
-  
+
   const sidebarProps = {
     siteName: siteSettings.siteName,
     logoUrl: siteSettings.logoUrl,
     onLinkClick: handleSidebarLinkClick,
   };
-  
+
   const isFullScreenPage = pathname.startsWith('/courses/');
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
 
   const isAdminArea = pathname.startsWith('/admin');
+  const isRootPath = pathname === '/';
 
   return (
       <>
