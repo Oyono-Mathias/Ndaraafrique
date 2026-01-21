@@ -1,0 +1,35 @@
+{
+  "Auth": {
+    "loginButton": "Se connecter",
+    "registerButton": "S'inscrire",
+    "emailLabel": "Adresse e-mail",
+    "passwordLabel": "Mot de passe",
+    "fullNameLabel": "Nom complet",
+    "password_forgot": "Mot de passe oublié ?",
+    "create_account": "Créer un compte",
+    "i_agree_to": "J'accepte les",
+    "and": "et la",
+    "terms_of_use": "Conditions d'Utilisation",
+    "privacy_policy": "Politique de Confidentialité"
+  },
+  "Nav": {
+    "account": "Mon Compte",
+    "courses": "Mes Formations"
+  },
+  "all": "Tous",
+  "in_progress": "En cours",
+  "completed": "Terminés",
+  "browseCourses": "Parcourir les cours",
+  "coming_soon_title": "L'Avenir de la Formation en Afrique est",
+  "coming_soon_subtitle": "en Construction",
+  "coming_soon_desc": "Nous préparons une révolution dans l'e-learning panafricain. Soyez le premier à être informé de notre lancement et bénéficiez d'offres exclusives.",
+  "countdown_days": "Jours",
+  "countdown_hours": "Heures",
+  "countdown_minutes": "Minutes",
+  "countdown_seconds": "Secondes",
+  "email_placeholder": "Entrez votre email...",
+  "notify_me_btn": "Me notifier",
+  "waitlist_success_title": "Merci !",
+  "waitlist_success_desc": "Vous êtes bien inscrit sur notre liste d'attente.",
+  "error_title": "Erreur"
+}
