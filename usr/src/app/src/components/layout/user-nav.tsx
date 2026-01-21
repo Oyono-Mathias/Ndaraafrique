@@ -1,3 +1,4 @@
+
 'use client';
 
 import {
@@ -28,7 +29,6 @@ export function UserNav() {
 
     const handleLogout = async () => {
         await secureSignOut();
-        router.push('/');
     }
 
     if (isUserLoading || !currentUser) {

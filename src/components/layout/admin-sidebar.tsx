@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname } from "next-intl/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import {
@@ -37,7 +37,7 @@ import { UserNav } from "./user-nav";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { href: string, icon: React.ElementType, label: string, count?: number, onClick: () => void }) => {
   const pathname = usePathname();
-  const isActive = (href === '/admin' && pathname === '/admin') || (href !== '/admin' && pathname.startsWith(href) && href.split('/').length > 2);
+  const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
 
 
   return (

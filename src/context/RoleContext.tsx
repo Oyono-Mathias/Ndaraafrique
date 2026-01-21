@@ -189,10 +189,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
+      if (newRole === 'student') {
+        router.push('/student/dashboard');
+      } else if (newRole === 'instructor') {
+        router.push('/instructor/courses');
+      } else if (newRole === 'admin') {
+        router.push('/admin');
+      }
     } else {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
-  }, [availableRoles]);
+  }, [availableRoles, router]);
   
   const value = useMemo(() => ({
     role,
