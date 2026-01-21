@@ -4,7 +4,7 @@
 import { useRole } from '@/context/RoleContext';
 import { StudentDashboard } from '@/components/dashboards/student-dashboard';
 import { InstructorDashboard } from '@/components/dashboards/instructor-dashboard';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';

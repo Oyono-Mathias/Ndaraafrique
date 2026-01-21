@@ -1,10 +1,9 @@
 
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { useParams, usePathname } from 'next/navigation';
+import { useParams, usePathname } from 'next-intl/navigation';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import { getFirestore, doc, updateDoc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -180,5 +179,3 @@ export default function CourseEditLayout({
         </div>
     );
 }
-
-    

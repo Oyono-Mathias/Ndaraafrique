@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next-intl/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, collection, query, orderBy, addDoc, serverTimestamp, writeBatch, getFirestore, updateDoc } from 'firebase/firestore';
@@ -202,4 +202,3 @@ export default function QuestionDetailPage() {
         </div>
     );
 }
-

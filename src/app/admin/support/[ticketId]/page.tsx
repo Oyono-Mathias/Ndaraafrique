@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { 
   collection, 

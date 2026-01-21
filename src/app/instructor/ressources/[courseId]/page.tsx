@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, Link } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useCollection, useMemoFirebase } from '@/firebase';
 import {
@@ -41,8 +41,8 @@ import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { Resource } from '@/lib/types';
+import { useIsMobile } from '@/firebase';
+import type { Resource } from '@/lib/types';
 
 
 const resourceSchema = z.object({
@@ -260,7 +260,7 @@ export default function ResourcesPage() {
                                         <TableCell className="hidden sm:table-cell">{resource.type === 'link' ? 'Lien' : 'Fichier'}</TableCell>
                                         <TableCell className="hidden sm:table-cell">{resource.createdAt ? format(resource.createdAt.toDate(), 'dd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-destructive hover:bg-destructive/10">
+                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteResource(resource.id)} className="text-red-500 hover:text-red-400">
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
                                         </TableCell>
@@ -284,5 +284,3 @@ export default function ResourcesPage() {
         </div>
     )
 }
-
-    

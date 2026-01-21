@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import {

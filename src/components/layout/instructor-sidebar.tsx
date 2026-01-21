@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next-intl/navigation";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
 import {

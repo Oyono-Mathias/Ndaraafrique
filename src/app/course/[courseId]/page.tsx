@@ -2,12 +2,11 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, Link } from 'next-intl/navigation';
 import { useDoc, useMemoFirebase, useCollection, useUser } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, getFirestore, collection, serverTimestamp, query, where, getDocs, setDoc, updateDoc, addDoc, orderBy, DocumentData, QuerySnapshot, getDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -574,8 +573,7 @@ export default function CourseDetailsPage() {
                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
                 alt={course.title}
                 fill
-                objectFit="cover"
-                className="opacity-80"
+                className="object-cover opacity-80"
              />
              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex items-center justify-center">
                 <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>
@@ -689,7 +687,7 @@ export default function CourseDetailsPage() {
                                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/800/450`}
                                 alt={course.title}
                                 fill
-                                objectFit="cover"
+                                className="object-cover"
                             />
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                <Button variant="ghost" className="bg-white/20 backdrop-blur-sm text-white hover:bg-white/30" onClick={() => handlePreviewClick({ id: 'preview', title: 'Aperçu', videoUrl: course.previewVideoUrl || '', isFreePreview: true})}>

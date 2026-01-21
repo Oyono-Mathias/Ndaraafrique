@@ -1,6 +1,8 @@
+
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter, Link } from 'next-intl/navigation';
 import { useDoc, useMemoFirebase } from '@/firebase';
 import { doc, collection, query, where, getFirestore, getDocs } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -15,7 +17,6 @@ import { fr } from 'date-fns/locale';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
 
 const getRoleBadge = (role: NdaraUser['role']) => {
     switch (role) {

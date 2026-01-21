@@ -1,10 +1,11 @@
+
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next-intl/navigation';
 import { Suspense } from 'react';
 import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'next-intl/navigation';
 
 function ErrorPageContent() {
     const router = useRouter();

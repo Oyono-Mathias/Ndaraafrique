@@ -10,7 +10,7 @@ import {
     orderBy, 
     getDocs,
 } from 'firebase/firestore';
-import Link from 'next/link';
+import { Link, useRouter } from 'next-intl/navigation';
 import Image from 'next/image';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,6 @@ import type { Course, NdaraUser } from '@/lib/types';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useRole } from '@/context/RoleContext';
 import { toast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (

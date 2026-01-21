@@ -17,13 +17,17 @@ import {
 } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertCircle, Folder } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'next-intl/navigation';
 import { Badge } from '@/components/ui/badge';
 import type { Course } from '@/lib/types';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 export default function ResourcesDashboardPage() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
+    const { t } = useTranslation();
 
     const coursesQuery = useMemoFirebase(
         () => currentUser?.uid

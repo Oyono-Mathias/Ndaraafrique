@@ -22,7 +22,7 @@ import { BellRing, Bell, CheckCircle, Gift, ShieldAlert } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import type { Notification } from '@/lib/types';
 
 const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
