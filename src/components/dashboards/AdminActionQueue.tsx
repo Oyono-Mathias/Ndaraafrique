@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';

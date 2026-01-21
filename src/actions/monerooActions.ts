@@ -1,4 +1,3 @@
-
 'use server';
 
 import { adminDb } from '@/firebase/admin';
@@ -49,6 +48,11 @@ class Moneroo {
 export async function verifyMonerooTransaction(transactionId: string): Promise<{ success: boolean; data?: any; error?: string }> {
     const publicKey = process.env.NEXT_PUBLIC_MONEROO_PUBLIC_KEY;
     const secretKey = process.env.MONEROO_SECRET_KEY;
+
+    if (!adminDb) {
+        console.error("CRITICAL: Firebase Admin SDK not initialized. Payment verification cannot proceed.");
+        return { success: false, error: 'Server configuration error. Contact support.' };
+    }
 
     if (!secretKey || secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
         console.error("CRITICAL: Moneroo secret key is not configured. Payment verification cannot proceed.");

@@ -1,17 +1,15 @@
-
 'use client';
 
 import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { UserNav } from './user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter, Link } from 'next-intl/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import React, { useEffect, useState } from 'react';
 import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, limit, orderBy, Timestamp, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
-import { Link } from 'next-intl/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';

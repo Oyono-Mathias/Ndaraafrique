@@ -1,8 +1,8 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePathname, useRouter } from 'next-intl/navigation';
+import { usePathname } from 'next-intl/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';

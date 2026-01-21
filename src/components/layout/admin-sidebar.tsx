@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Link, useRouter, usePathname } from "next-intl/navigation";
