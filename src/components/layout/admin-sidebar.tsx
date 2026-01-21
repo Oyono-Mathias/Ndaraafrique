@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import {
@@ -84,7 +83,7 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/logs", icon: History, label: "Journal d'Audit" },
     { href: "/admin/assistant", icon: Sparkles, label: "Assistant IA" },
     { href: "/admin/carousel", icon: GalleryHorizontal, label: "Carrousel" },
-    { href: "/messages", icon: MessageSquare, label: "Messagerie" },
+    { href: "/admin/messages", icon: MessageSquare, label: "Messagerie" },
     { href: "/admin/faq", icon: MessageCircleQuestion, label: "FAQ" },
     { href: "/admin/settings", icon: Settings, label: "Paramètres" },
     { href: "/admin/roles", icon: Shield, label: "Rôles & Permissions" },
