@@ -103,10 +103,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password');
 
   const pathSegments = pathname.split('/').filter(Boolean);
-  // Check if it's the root or just a locale
-  const isRootOrLocalePath = pathSegments.length <= 1;
+  const isRootPath = pathSegments.length <= 1 && (pathSegments[0] === 'en' || pathSegments[0] === 'fr' || !pathSegments.length);
   
-  const isPublicPage = isRootOrLocalePath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
+  const isPublicPage = isRootPath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
   
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
   const showAppContent = isPublicPage || (!isUserLoading && user);
@@ -177,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             )}
             <div className="flex flex-col">
               <AnnouncementBanner />
-              {!isAdminArea && !isRootOrLocalePath && (
+              {!isAdminArea && !isRootPath && (
                 <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
                   <div className="md:hidden">
                       <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
