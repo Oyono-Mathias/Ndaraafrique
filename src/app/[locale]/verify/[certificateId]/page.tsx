@@ -1,6 +1,7 @@
 'use client';
 
-import { useParams, Link } from 'next-intl/navigation';
+import { useParams } from 'next/navigation';
+import Link from 'next/link';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import { doc, getFirestore } from 'firebase/firestore';

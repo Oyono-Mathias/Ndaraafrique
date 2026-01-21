@@ -1,11 +1,12 @@
 'use client';
 
-import { useParams } from 'next-intl/navigation';
+import { useParams } from 'next/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, collection, query, where, getFirestore, getDocs, getCountFromServer, addDoc, serverTimestamp, limit, setDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import Image from 'next/image';
-import { Link, useRouter } from 'next-intl/navigation';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
