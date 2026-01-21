@@ -165,7 +165,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const handleSwitchToAdmin = () => {
     switchRole('admin');
     router.push('/admin');
-  }
+  };
 
   const handleSwitchToInstructor = () => {
     switchRole('instructor');
