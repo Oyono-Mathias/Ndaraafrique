@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -118,14 +117,14 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       label: "Communauté",
       items: [
         { href: "/student/annuaire", icon: Users, label: 'Annuaire', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
-        { href: "/messages", icon: MessageSquare, label: 'Messagerie', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
+        { href: "/student/messages", icon: MessageSquare, label: 'Messagerie', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
       ]
     },
     {
       label: "Compte",
       items: [
         { href: "/account", icon: User, label: 'Mon Compte', id: 'sidebar-nav-account' },
-        { href: "/notifications", icon: Bell, label: 'Notifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
+        { href: "/student/notifications", icon: Bell, label: 'Notifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
       ],
     },
   ];
