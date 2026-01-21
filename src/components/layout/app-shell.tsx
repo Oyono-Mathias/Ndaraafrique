@@ -74,14 +74,11 @@ function AnnouncementBanner() {
 
 
 const PUBLIC_PATHS = [
-    '/', 
     '/about',
     '/cgu',
     '/mentions-legales',
-    '/paiements',
-    '/payment',
     '/verify',
-    '/course',
+    '/courses', 
     '/instructor',
     '/abonnements'
 ];
@@ -100,15 +97,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   
-  const isAuthPage = pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password');
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
+  const isLaunchPage = pathname.startsWith('/launch');
 
   const isRootPath = pathname === '/';
-  
-  const isPublicPage = isRootPath || PUBLIC_PATHS.some(p => p !== '/' && pathname.includes(p));
+  const isPublicSubPage = PUBLIC_PATHS.some(p => pathname.startsWith(p));
+  const isPublicPage = isRootPath || isPublicSubPage;
   
   const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
   const showAppContent = isPublicPage || (!isUserLoading && user);
-  const showLoader = !isPublicPage && !isUserLoading && !user;
+  const showLoader = !isPublicPage && !isAuthPage && !isLaunchPage && !isUserLoading && !user;
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');
@@ -133,7 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [showLoader, router]);
 
-  if (isAuthPage) {
+  if (isAuthPage || isLaunchPage) {
     return <>{children}</>;
   }
 
@@ -147,10 +145,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     onLinkClick: handleSidebarLinkClick,
   };
   
-  const isFullScreenPage = pathname.includes('/courses/');
+  const isFullScreenPage = pathname.startsWith('/courses/');
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
 
-  const isAdminArea = pathname.includes('/admin');
+  const isAdminArea = pathname.startsWith('/admin');
 
   return (
       <>
