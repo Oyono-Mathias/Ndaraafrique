@@ -57,7 +57,7 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
         batch.delete(userRef);
 
         // 3. Delete user's FCM tokens for better cleanup
-        const fcmTokensCollection = adminDb.collection('fcmTokens');
+        const fcmTokensCollection = adminDb.collectionGroup('fcmTokens');
         const userTokensRef = (await fcmTokensCollection.where('userId', '==', userId).get()).docs.map(d => d.ref);
         userTokensRef.forEach(ref => batch.delete(ref));
 
@@ -113,11 +113,27 @@ export async function importUsersAction({ users, adminId }: { users: { fullName:
                 email: user.email,
                 fullName: user.fullName,
                 username: user.email.split('@')[0],
+                phoneNumber: '',
+                bio: '',
                 role: 'student',
                 status: 'active',
-                createdAt: FieldValue.serverTimestamp(),
                 isInstructorApproved: false,
+                createdAt: FieldValue.serverTimestamp(),
+                lastLogin: FieldValue.serverTimestamp(),
+                isOnline: false,
+                lastSeen: FieldValue.serverTimestamp(),
+                profilePictureURL: `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.fullName || 'A')}`,
                 isProfileComplete: false,
+                preferredLanguage: 'fr',
+                socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
+                payoutInfo: {},
+                instructorNotificationPreferences: {},
+                pedagogicalPreferences: {},
+                notificationPreferences: {},
+                careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
+                permissions: {},
+                badges: [],
+                termsAcceptedAt: FieldValue.serverTimestamp(),
             });
 
             results.push({ email: user.email, status: 'success' });
