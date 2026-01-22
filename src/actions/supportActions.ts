@@ -220,3 +220,32 @@ export async function deleteCourse(
         return { success: false, error: "Une erreur est survenue lors de la suppression du cours." };
     }
 }
+
+export async function closeTicket({ ticketId, adminId, resolution }: { ticketId: string, adminId: string, resolution: string }): Promise<{ success: boolean; error?: string }> {
+    try {
+        const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
+
+        const batch = adminDb.batch();
+
+        batch.update(ticketRef, {
+            status: 'fermé',
+            updatedAt: FieldValue.serverTimestamp(),
+            resolution: resolution || 'Résolu par l\'administrateur.'
+        });
+
+        // Add a system message
+        const messageRef = ticketRef.collection('messages').doc();
+        batch.set(messageRef, {
+            senderId: 'SYSTEM',
+            text: `Ticket fermé par l'administrateur. Résolution : ${resolution}`,
+            createdAt: FieldValue.serverTimestamp(),
+        });
+
+        await batch.commit();
+        
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error closing ticket:", error);
+        return { success: false, error: "Une erreur est survenue lors de la fermeture du ticket." };
+    }
+}
