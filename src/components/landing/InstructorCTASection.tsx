@@ -24,7 +24,7 @@ export function InstructorCTASection({ onTrackClick }: { onTrackClick: () => voi
             onClick={onTrackClick}
           >
             <Link href="/devenir-instructeur">
-              En savoir plus
+              Devenir Formateur
               <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>

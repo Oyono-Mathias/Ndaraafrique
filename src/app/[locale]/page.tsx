@@ -100,12 +100,12 @@ function LandingPageContent() {
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
               <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400">
-                L'excellence numérique pour l'Afrique
+                Votre Avenir Numérique Commence Ici
               </h1>
             </div>
             <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
               <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
-                Accédez à des compétences de pointe avec les moyens de paiement que vous utilisez déjà. Simple, instantané et sécurisé.
+                Des compétences de pointe aux métiers de demain, accessibles en Afrique via Mobile Money.
               </p>
             </div>
             <div className="opacity-0 animate-fade-in-up mt-10 flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animationDelay: '0.6s' }}>
@@ -116,7 +116,7 @@ function LandingPageContent() {
                 onClick={() => handleTrackedClick('cta_click', { button: 'hero_start' })}
               >
                 <Link href="/login?tab=register">
-                  Commencer l’inscription
+                  Créer un compte gratuit
                   <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
@@ -152,7 +152,7 @@ function LandingPageContent() {
         
         {/* 6. Popular Courses (Shows Value) */}
         <CourseCarousel 
-            title="Formations populaires"
+            title="Les plus suivies ce mois-ci"
             courses={popularCourses}
             instructorsMap={instructorsMap}
             isLoading={isLoading}
@@ -160,7 +160,7 @@ function LandingPageContent() {
 
         {/* 7. Free Courses (Lowers Barrier to Entry) */}
          <CourseCarousel 
-            title="Commencez gratuitement"
+            title="Découvrez nos cours gratuits"
             courses={freeCourses}
             instructorsMap={instructorsMap}
             isLoading={isLoading}

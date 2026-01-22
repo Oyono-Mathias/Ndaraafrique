@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -8,6 +9,7 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next-intl/navigation';
 
 interface RoleContextType {
   role: UserRole;
@@ -35,6 +37,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
+  const router = useRouter();
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();
@@ -43,7 +46,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
     await signOut(auth);
-  }, [db]);
+    router.push('/');
+  }, [db, router]);
 
    useEffect(() => {
     const auth = getAuth();
@@ -211,12 +215,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 role: 'student',
                 status: 'active',
                 isInstructorApproved: false,
-                profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.displayName || 'A')}`,
-                isProfileComplete: false,
                 createdAt: serverTimestamp() as Timestamp,
                 lastLogin: serverTimestamp() as Timestamp,
                 isOnline: true,
                 lastSeen: serverTimestamp() as Timestamp,
+                profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.displayName || 'A')}`,
+                isProfileComplete: false,
                 phoneNumber: '',
                 bio: '',
                 socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -57,7 +58,7 @@ export function Navbar() {
           </Button>
           <Button asChild className="group">
             <Link href="/login?tab=register">
-              Commencer
+              S'inscrire
               <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Link>
           </Button>

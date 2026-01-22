@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -19,7 +20,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-slate-400 max-w-xs">
-              L'excellence par le savoir. Construisons l'Afrique de demain.
+              L'excellence par le savoir, pour l'Afrique de demain.
             </p>
           </div>
 

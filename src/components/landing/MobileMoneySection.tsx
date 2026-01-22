@@ -1,3 +1,4 @@
+
 'use client';
 
 import { cn } from "@/lib/utils";
@@ -25,10 +26,10 @@ export function MobileMoneySection({ onTrackClick }: { onTrackClick: (provider: 
   return (
     <section className="py-24 text-center">
       <h2 className="text-3xl md:text-4xl font-extrabold text-white">
-        Payez comme vous le souhaitez.
+        Payez simplement. Sans carte bancaire.
       </h2>
       <p className="mt-4 text-lg text-slate-400 max-w-xl mx-auto">
-        Aucune carte bancaire requise. Utilisez les services que vous connaissez et aimez déjà.
+        Utilisez votre compte Mobile Money pour un accès instantané, sécurisé et sans tracas à toutes nos formations.
       </p>
 
       <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">

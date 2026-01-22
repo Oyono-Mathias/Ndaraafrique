@@ -13,22 +13,22 @@ const steps = [
   {
     id: 'step1',
     icon: '1',
-    title: 'Choisissez votre formation',
-    description: 'Parcourez notre catalogue de cours conçus par des experts africains pour répondre aux besoins du marché local.',
+    title: '1. Explorez & Choisissez',
+    description: 'Trouvez la formation idéale parmi un catalogue de cours conçus par les meilleurs experts du continent.',
     imageId: 'browse-courses',
   },
   {
     id: 'step2',
     icon: '2',
-    title: 'Payez simplement',
-    description: 'Utilisez votre méthode de paiement mobile préférée (Orange Money, MTN, etc.) pour un accès instantané et sécurisé.',
+    title: '2. Payez avec votre mobile',
+    description: "Validez votre inscription en quelques secondes avec Orange Money, MTN MoMo ou Wave. C'est simple et 100% sécurisé.",
     imageId: 'mobile-payment',
   },
   {
     id: 'step3',
     icon: '3',
-    title: 'Obtenez votre certification',
-    description: 'Recevez un certificat reconnu à la fin de votre formation pour valider vos nouvelles compétences auprès des employeurs.',
+    title: '3. Apprenez & Réussissez',
+    description: 'Suivez les cours à votre rythme et obtenez une certification pour valoriser vos nouvelles compétences sur le marché du travail.',
     imageId: 'certificate',
   },
 ];
@@ -66,7 +66,7 @@ export function HowItWorks() {
           Apprendre n'a jamais été aussi simple
         </h2>
         <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-          En trois étapes simples, commencez votre parcours vers l'excellence.
+          En trois étapes claires, commencez votre parcours vers l'excellence et la réussite professionnelle.
         </p>
       </div>
 
@@ -83,17 +83,7 @@ export function HowItWorks() {
                   : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
               )}
             >
-              <div className="flex items-center gap-4">
-                <div
-                  className={cn(
-                    'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg transition-all',
-                    activeStep === step.id
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-slate-700 text-slate-300'
-                  )}
-                >
-                  {step.icon}
-                </div>
+              <div className="flex items-start gap-4">
                 <div>
                   <h3 className="font-bold text-white text-lg">{step.title}</h3>
                   <p className="text-sm text-slate-400 mt-1">{step.description}</p>

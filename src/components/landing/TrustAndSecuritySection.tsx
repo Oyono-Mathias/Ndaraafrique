@@ -51,17 +51,17 @@ export function TrustAndSecuritySection() {
             <FeatureCard
                 icon={ShieldCheck}
                 title="Transactions Vérifiées"
-                description="Chaque paiement est suivi et vérifié par nos systèmes pour garantir une traçabilité complète et prévenir les fraudes."
+                description="Chaque transaction est enregistrée et sécurisée pour une transparence totale et une prévention active de la fraude."
             />
             <FeatureCard
                 icon={Lock}
-                title="Données Protégées"
-                description="Nous utilisons des protocoles de chiffrement avancés pour sécuriser vos informations personnelles et financières."
+                title="Données 100% Protégées"
+                description="Vos informations personnelles sont chiffrées et protégées selon les standards de sécurité les plus stricts."
             />
             <FeatureCard
                 icon={CreditCard}
                 title="Paiements Simplifiés"
-                description="Intégrés avec les leaders du paiement mobile en Afrique pour une expérience fluide, rapide et sans accroc."
+                description="Payez en quelques secondes via les services que vous utilisez et auxquels vous faites confiance, sans friction."
             />
         </div>
       </div>
