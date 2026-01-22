@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from "next/link";
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname } from 'next-intl/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,6 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const { currentUser } = useRole();
   const { toast } = useToast();
   
-  // This logic is now simpler as `usePathname` from `next/navigation` does not include the locale
   const isActive = pathname === href || (href !== '/student/dashboard' && pathname.startsWith(href));
 
   const isAllowedPath = (path: string) => {

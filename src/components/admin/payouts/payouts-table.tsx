@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -17,7 +18,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { processPayout } from '@/actions/supportActions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 
 type PayoutStatus = 'en_attente' | 'valide' | 'rejete';
 

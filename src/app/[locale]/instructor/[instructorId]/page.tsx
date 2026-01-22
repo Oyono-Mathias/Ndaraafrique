@@ -2,7 +2,7 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, collection, query, where, getFirestore, getDocs, getCountFromServer, addDoc, serverTimestamp, limit, setDoc, writeBatch, updateDoc } from 'firebase/firestore';
