@@ -62,7 +62,7 @@ service cloud.firestore {
     
     // --- COLLECTION: USERS ---
     match /users/{userId} {
-      allow get: if isOwner(userId) || isAdmin();
+      allow get: if isSignedIn(); // Simplifié pour autoriser la lecture des profils
       allow list: if isAdmin();
       allow create: if isOwner(userId) 
                     && request.resource.data.role == 'student'
@@ -159,7 +159,7 @@ service cloud.firestore {
     
     // --- COLLECTION: RECOMMENDED_COURSES ---
     match /recommended_courses/{userId} {
-        allow get: if isOwner(userId) || isAdmin();
+        allow get: if request.auth.uid == userId || isAdmin();
         allow list: if isAdmin();
         allow write: if isAdmin();
     }
@@ -184,5 +184,3 @@ service cloud.firestore {
     }
   }
 }
-
-    
