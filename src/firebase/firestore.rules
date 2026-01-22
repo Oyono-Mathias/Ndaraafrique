@@ -156,6 +156,13 @@ service cloud.firestore {
         allow create: if isEnrolled(request.resource.data.courseId) && isOwner(request.resource.data.userId);
         allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }
+    
+    // --- COLLECTION: RECOMMENDED_COURSES ---
+    match /recommended_courses/{userId} {
+        allow get: if isOwner(userId) || isAdmin();
+        allow list: if isAdmin();
+        allow write: if isAdmin();
+    }
 
     // --- COLLECTIONS PUBLIQUES OU ADMIN-ONLY ---
     match /faqs/{faqId}                     { allow read, write: if isAdmin(); }
@@ -177,3 +184,5 @@ service cloud.firestore {
     }
   }
 }
+
+    
