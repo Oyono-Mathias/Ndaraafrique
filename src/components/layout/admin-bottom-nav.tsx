@@ -2,7 +2,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next-intl/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,

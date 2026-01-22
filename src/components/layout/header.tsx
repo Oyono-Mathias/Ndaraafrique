@@ -5,7 +5,7 @@ import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { UserNav } from './user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
