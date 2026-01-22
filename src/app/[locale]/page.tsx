@@ -23,7 +23,6 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { useDoc, useMemoFirebase } from '@/firebase';
 
-// --- Re-integrated Components from LandingPageClient.tsx ---
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => (
   <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700/80 transition-all duration-300 hover:border-primary/50 hover:scale-[1.02]">
@@ -410,7 +409,6 @@ function LandingPageContent() {
   );
 }
 
-// --- Main Page Component ---
 
 export default function LandingPage() {
   const { user, isUserLoading, role } = useRole();
@@ -438,5 +436,3 @@ export default function LandingPage() {
 
   return <LandingPageContent />;
 }
-
-    
