@@ -1,10 +1,9 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, getDoc, updateDoc, DocumentData } from 'firebase/firestore';
 import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
@@ -86,7 +85,51 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
-          const userData = userDoc.data() as Omit<NdaraUser, 'uid' | 'email' | 'availableRoles'>;
+          const userData = userDoc.data() as NdaraUser;
+
+          // --- LAZY MIGRATION: Ensure all fields exist for older documents ---
+          const defaultFields: Partial<NdaraUser> = {
+            phoneNumber: '',
+            bio: '',
+            socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
+            payoutInfo: {},
+            instructorNotificationPreferences: { newEnrollment: true, newMessage: true, newAssignmentSubmission: true, courseStatusUpdate: true, payoutUpdate: true },
+            pedagogicalPreferences: { aiAssistanceEnabled: true, aiInterventionLevel: 'medium' },
+            notificationPreferences: { newPayouts: true, newApplications: true, newSupportTickets: true, financialAnomalies: true },
+            careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
+            badges: [],
+            permissions: {},
+            status: 'active',
+            isInstructorApproved: false,
+          };
+          
+          const updatePayload: DocumentData = {};
+          let needsUpdate = false;
+
+          for (const key in defaultFields) {
+              if (userData[key as keyof NdaraUser] === undefined) {
+                  updatePayload[key] = defaultFields[key as keyof typeof defaultFields];
+                  needsUpdate = true;
+              }
+          }
+          
+          if (userData.isProfileComplete === undefined) {
+              updatePayload.isProfileComplete = !!(userData.username && userData.careerGoals?.interestDomain);
+              needsUpdate = true;
+          }
+          
+          if (needsUpdate) {
+            try {
+              await setDoc(userDocRef, updatePayload, { merge: true });
+              // The snapshot listener will automatically re-fire with the updated data.
+              // We return here to wait for the next snapshot, avoiding processing of partial data.
+              return; 
+            } catch (e) {
+                console.error(`Failed to migrate user document for ${user.uid}:`, e);
+                // If migration fails, we proceed with potentially partial data to not break the app.
+            }
+          }
+          // --- END MIGRATION ---
 
           if (userData.status === 'suspended') {
             await secureSignOut();
@@ -157,7 +200,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         } else {
             console.warn("User document not found in Firestore for UID:", user.uid);
             const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
-            const defaultUser: NdaraUser = {
+            
+            // This is where a new user doc is created (e.g., first Google sign-in)
+            // Ensure this object is ALWAYS complete.
+            const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
                 uid: user.uid,
                 email: user.email || '',
                 username: defaultUsername,
@@ -165,13 +211,27 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 role: 'student',
                 status: 'active',
                 isInstructorApproved: false,
-                availableRoles: ['student'],
-                profilePictureURL: user.photoURL || '',
+                profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.displayName || 'A')}`,
                 isProfileComplete: false,
+                createdAt: serverTimestamp() as Timestamp,
+                lastLogin: serverTimestamp() as Timestamp,
+                isOnline: true,
+                lastSeen: serverTimestamp() as Timestamp,
+                phoneNumber: '',
+                bio: '',
+                socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
+                payoutInfo: {},
+                instructorNotificationPreferences: { newEnrollment: true, newMessage: true, newAssignmentSubmission: true, courseStatusUpdate: true, payoutUpdate: true },
+                pedagogicalPreferences: { aiAssistanceEnabled: true, aiInterventionLevel: 'medium' },
+                notificationPreferences: { newPayouts: true, newApplications: true, newSupportTickets: true, financialAnomalies: true },
+                careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
+                badges: [],
+                permissions: {},
             };
-            setCurrentUser(defaultUser);
-            setAvailableRoles(['student']);
-            setRole('student');
+            
+            setDoc(userDocRef, newUserDoc);
+            // The snapshot listener will re-fire once the doc is created, so we don't need to do anything else here.
+            return;
         }
         setLoading(false);
     }, (error) => {
