@@ -5,6 +5,13 @@
       "collectionGroup": "users",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
         { "fieldPath": "role", "order": "ASCENDING" },
         { "fieldPath": "isInstructorApproved", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
