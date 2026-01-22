@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -57,8 +58,6 @@ export function HowItWorks() {
         imageHint: defaultImage?.imageHint || '',
     }
   });
-
-  const activeStepData = stepsWithImages.find(s => s.id === activeStep);
 
   return (
     <section className="py-24">
