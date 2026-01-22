@@ -1,10 +1,15 @@
 'use client';
 
+import { ModerationQueue } from '@/components/admin/moderation/ModerationQueue';
+
 export default function AdminModerationPage() {
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Modération du Contenu</h1>
-      <p className="text-muted-foreground">Cette section est en cours de construction.</p>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold text-white">Modération du Contenu</h1>
+        <p className="text-muted-foreground">Examinez et approuvez les nouveaux cours soumis par les instructeurs.</p>
+      </header>
+      <ModerationQueue />
     </div>
   );
 }
