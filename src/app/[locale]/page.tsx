@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
@@ -276,24 +277,47 @@ function LandingPageContent() {
       <Navbar />
 
       <main className="container mx-auto px-4 pt-10 pb-24 md:pb-16 space-y-24">
-        <section className="text-center pt-24 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white !leading-tight">
-            La plateforme de formation <span className="text-primary">conçue pour l'Afrique</span>
-          </h1>
-          <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
-            Développez des compétences d'avenir avec des cours d'experts. Payez simplement par Mobile Money et prenez votre carrière en main.
-          </p>
-          <div className="mt-10 hidden md:flex justify-center gap-4">
-            <Button
-              size="lg"
-              asChild
-              className="h-12 text-base shadow-cta"
-              onClick={() => handleTrackedClick('cta_click', { button: 'hero_start' })}
-            >
-              <Link href="/login?tab=register">
-                Commencer maintenant <ArrowRight className="w-5 h-5 ml-2" />
-              </Link>
-            </Button>
+        
+        <section className="text-center pt-24 md:pt-32">
+          <div className="container mx-auto px-4 max-w-4xl">
+            <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-white">
+                L'excellence numérique pour l'Afrique
+              </h1>
+            </div>
+            <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
+                Accédez à des compétences de pointe avec les moyens de paiement que vous utilisez déjà. Simple, instantané et sécurisé.
+              </p>
+            </div>
+            <div className="opacity-0 animate-fade-in-up mt-10 flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animationDelay: '0.6s' }}>
+              <Button
+                size="lg"
+                asChild
+                className="w-full sm:w-auto h-12 text-base shadow-cta group"
+                onClick={() => handleTrackedClick('cta_click', { button: 'hero_start' })}
+              >
+                <Link href="/login?tab=register">
+                  Commencer l’inscription
+                  <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+            </div>
+            
+            <div className="opacity-0 animate-fade-in-up mt-12" style={{ animationDelay: '0.8s' }}>
+              <p className="text-xs text-slate-500 mb-4">Payez en toute confiance avec nos partenaires</p>
+              <div className="flex justify-center items-center gap-6">
+                <div className="flex items-center justify-center h-10 w-24 rounded-md bg-mtn-yellow shadow-md">
+                  <span className="font-black text-lg text-black">MTN</span>
+                </div>
+                <div className="flex items-center justify-center h-10 w-24 rounded-md bg-orange-money shadow-md">
+                  <span className="font-black text-lg text-white">orange</span>
+                </div>
+                <div className="flex items-center justify-center h-10 w-24 rounded-md bg-wave-blue shadow-md">
+                  <span className="font-black text-xl text-white">wave</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
         
