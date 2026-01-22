@@ -109,22 +109,47 @@ export default function LoginClient() {
     let targetRoute = '/student/dashboard';
 
     if (!userDocSnap.exists()) {
+        const now = serverTimestamp();
         const finalUserData: Partial<NdaraUser> = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             fullName: firebaseUser.displayName || 'Utilisateur Ndara',
             username: firebaseUser.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + firebaseUser.uid.substring(0, 5),
+            phoneNumber: firebaseUser.phoneNumber || '',
+            bio: '',
             role: 'student',
+            status: 'active',
             isInstructorApproved: false,
-            createdAt: serverTimestamp() as any,
-            lastLogin: serverTimestamp() as any,
+            createdAt: now,
+            lastLogin: now,
+            isOnline: true,
+            lastSeen: now,
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-            preferredLanguage: locale as 'fr' | 'en',
             isProfileComplete: false,
+            preferredLanguage: locale as 'fr' | 'en',
+            socialLinks: {
+                website: '',
+                twitter: '',
+                linkedin: '',
+                youtube: '',
+            },
+            payoutInfo: {},
+            instructorNotificationPreferences: {},
+            pedagogicalPreferences: {},
+            notificationPreferences: {},
+            careerGoals: {
+                currentRole: '',
+                interestDomain: '',
+                mainGoal: '',
+            },
+            permissions: {},
+            badges: [],
         };
+
         if (acceptedTerms) {
-            finalUserData.termsAcceptedAt = serverTimestamp() as any;
+            finalUserData.termsAcceptedAt = now;
         }
+
         await setDoc(userDocRef, finalUserData, { merge: true });
     } else {
         const existingData = userDocSnap.data() as NdaraUser;
@@ -133,7 +158,7 @@ export default function LoginClient() {
         } else if (existingData.role === 'instructor') {
           targetRoute = '/instructor/courses';
         }
-        await setDoc(userDocRef, { lastLogin: serverTimestamp() }, { merge: true });
+        await setDoc(userDocRef, { lastLogin: serverTimestamp(), isOnline: true }, { merge: true });
     }
     
     toast({ title: "Connexion réussie !" });
