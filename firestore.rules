@@ -183,7 +183,8 @@ service cloud.firestore {
        RECOMMENDED_COURSES
     ====================== */
     match /recommended_courses/{userId} {
-      allow read: if isSignedIn();
+      allow get: if request.auth.uid == userId || isAdmin();
+      allow list: if isAdmin();
       allow write: if isAdmin();
     }
     
