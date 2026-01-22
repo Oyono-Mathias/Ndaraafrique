@@ -10,8 +10,8 @@ import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
 import { Navbar } from '@/components/layout/navbar';
 import { HowItWorks } from '@/components/landing/HowItWorks';
-import { Course, NdaraUser } from '@/lib/types';
-import { collection, getDocs, getFirestore, query, where } from 'firebase/firestore';
+import { Course, NdaraUser, Settings } from '@/lib/types';
+import { collection, getDocs, getFirestore, query, where, doc } from 'firebase/firestore';
 import { CourseCarousel } from '@/components/landing/CourseCarousel';
 import { TrustAndSecuritySection } from '@/components/landing/TrustAndSecuritySection';
 import { MobileMoneySection } from '@/components/landing/MobileMoneySection';
@@ -22,8 +22,6 @@ import { logTrackingEvent } from '@/actions/trackingActions';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { useDoc, useMemoFirebase } from '@/firebase';
-import { doc } from 'firebase/firestore';
-import type { Settings } from '@/lib/types';
 
 let sessionId = '';
 
@@ -96,6 +94,8 @@ function LandingPageContent() {
     <div className="bg-slate-950 text-white min-h-screen">
       <Navbar />
       <main className="container mx-auto px-4 pt-10 pb-24 md:pb-16 space-y-24">
+        
+        {/* 1. Hero Section */}
         <section className="text-center pt-24 md:pt-32">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
@@ -138,14 +138,19 @@ function LandingPageContent() {
           </div>
         </section>
 
+        {/* 2. Stats (Social Proof) */}
         <Stats />
         
+        {/* 3. How It Works (Reduces Friction) */}
         <HowItWorks />
 
+        {/* 4. Trust & Security (Builds Confidence) */}
         <TrustAndSecuritySection />
 
+        {/* 5. Mobile Money (Addresses Payment Concerns) */}
         <MobileMoneySection onTrackClick={(provider) => handleTrackedClick('payment_method_click', { provider })} />
         
+        {/* 6. Popular Courses (Shows Value) */}
         <CourseCarousel 
             title="Formations populaires"
             courses={popularCourses}
@@ -153,6 +158,7 @@ function LandingPageContent() {
             isLoading={isLoading}
         />
 
+        {/* 7. Free Courses (Lowers Barrier to Entry) */}
          <CourseCarousel 
             title="Commencez gratuitement"
             courses={freeCourses}
@@ -160,10 +166,13 @@ function LandingPageContent() {
             isLoading={isLoading}
         />
 
+        {/* 8. Testimonials (Human-centric Social Proof) */}
         <TestimonialsSection />
 
+        {/* 9. Instructor CTA (Secondary Conversion Goal) */}
         <InstructorCTASection onTrackClick={() => handleTrackedClick('cta_click', { button: 'instructor_cta' })} />
         
+        {/* 10. Final CTA */}
         <section className="relative py-24 my-24 text-center rounded-2xl overflow-hidden">
              <Image
                 src={finalCtaImageUrl}
