@@ -130,6 +130,10 @@ service cloud.firestore {
     /* ======================
        AUTRES COLLECTIONS
     ====================== */
+    
+    match /recommended_courses/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
 
     match /reviews/{id} {
       allow read: if true;
