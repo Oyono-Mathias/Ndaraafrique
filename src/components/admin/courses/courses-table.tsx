@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy, where, getDocs } from 'firebase/firestore';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -146,7 +146,7 @@ const CourseRow = ({ course, instructor }: { course: Course; instructor?: Partia
 
 export function CoursesTable() {
     const db = getFirestore();
-    const coursesQuery = useMemoFirebase(() => query(collection(db, 'courses'), orderBy('createdAt', 'desc')), [db]);
+    const coursesQuery = useMemo(() => query(collection(db, 'courses'), orderBy('createdAt', 'desc')), [db]);
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());

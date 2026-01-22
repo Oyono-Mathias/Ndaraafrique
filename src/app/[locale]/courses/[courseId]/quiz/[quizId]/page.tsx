@@ -14,7 +14,7 @@ import {
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useDoc, useCollection } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -40,7 +40,7 @@ export default function TakeQuizPage() {
   const [finalScore, setFinalScore] = useState<number | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
-  const quizRef = useMemoFirebase(() => doc(db, 'quizzes', quizId as string), [db, quizId]);
+  const quizRef = useMemo(() => doc(db, 'quizzes', quizId as string), [db, quizId]);
   const { data: quiz, isLoading: isQuizLoading } = useDoc<Quiz>(quizRef);
 
   useEffect(() => {

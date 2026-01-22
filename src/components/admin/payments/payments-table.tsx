@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy, getDocs, where, documentId } from 'firebase/firestore';
 import type { Payment, NdaraUser, Course } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { resolveSecurityItem } from '@/actions/securityActions';
@@ -108,7 +109,7 @@ export function PaymentsTable() {
     const [filter, setFilter] = useState<'all' | 'suspicious'>('all');
     const [searchTerm, setSearchTerm] = useState('');
 
-    const paymentsQuery = useMemoFirebase(() => {
+    const paymentsQuery = useMemo(() => {
         let q = query(collection(db, 'payments'), orderBy('date', 'desc'));
         if (filter === 'suspicious') {
             q = query(q, where('fraudReview.isSuspicious', '==', true), where('fraudReview.reviewed', '!=', true));

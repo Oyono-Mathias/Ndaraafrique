@@ -1,3 +1,4 @@
+
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -51,7 +52,6 @@ export {
   useFirestore,
   useFirebaseApp,
   useUser,
-  useMemoFirebase,
 } from './provider';
 export { useCollection } from './firestore/use-collection';
 export { useDoc } from './firestore/use-doc';

@@ -4,7 +4,6 @@
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next-intl/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { useMemoFirebase } from '@/firebase/provider';
 import { useRole } from '@/context/RoleContext';
 import {
   doc,
@@ -54,7 +53,7 @@ function CoursePlayerPageContent() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
-  const courseRef = useMemoFirebase(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
+  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
   const isEnrolled = useMemo(() => currentUser?.role === 'admin', [currentUser]);

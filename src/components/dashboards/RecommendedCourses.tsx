@@ -6,7 +6,6 @@ import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, getDocs, doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { useMemoFirebase } from '@/firebase/provider';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
@@ -33,7 +32,7 @@ export function RecommendedCourses() {
     const [isLoadingInstructors, setIsLoadingInstructors] = useState(true);
 
     // Cette condition est maintenant plus robuste et attend que le rôle soit confirmé.
-    const recommendationRef = useMemoFirebase(
+    const recommendationRef = useMemo(
         () => (loading || !currentUser || currentUser.role === 'admin') 
             ? null
             : doc(db, 'recommended_courses', currentUser.uid),

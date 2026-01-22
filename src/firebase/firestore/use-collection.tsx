@@ -26,23 +26,7 @@ export interface UseCollectionResult<T> {
   error: FirestoreError | Error | null; // Error object, or null.
 }
 
-/* Internal implementation of Query:
-  https://github.com/firebase/firebase-js-sdk/blob/c5f08a9bc5da0d2b0207802c972d53724ccef055/packages/firestore/src/lite-api/reference.ts#L143
-*/
-export interface InternalQuery extends Query<DocumentData> {
-  _query: {
-    path: {
-      canonicalString(): string;
-      toString(): string;
-    }
-  }
-}
-
 /**
- * DEPRECATED: This hook is deprecated and will be removed. Use the `useCollection`
- * hook from `react-firebase-hooks/firestore` instead for better state management
- * and to avoid common pitfalls with Firestore permissions.
- *
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
  * 
@@ -90,10 +74,18 @@ export function useCollection<T = any>(
       },
       (error: FirestoreError) => {
         // This logic extracts the path from either a ref or a query
-        const path: string =
-          memoizedTargetRefOrQuery.type === 'collection'
-            ? (memoizedTargetRefOrQuery as CollectionReference).path
-            : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
+        let path = "unknown/path";
+        if (memoizedTargetRefOrQuery) {
+            if ('path' in memoizedTargetRefOrQuery && typeof (memoizedTargetRefOrQuery as any).path === 'string') {
+                // This handles CollectionReference, which is safe.
+                path = (memoizedTargetRefOrQuery as CollectionReference).path;
+            } else {
+                // For complex queries, there's no public API to get the path.
+                // We log a warning instead of trying to access internal properties which can be unstable.
+                console.warn("Could not determine path for a complex Firestore query. Error reporting will be less specific.");
+                path = "unknown/path (complex query)";
+            }
+        }
 
         const contextualError = new FirestorePermissionError({
           operation: 'list',
@@ -111,8 +103,6 @@ export function useCollection<T = any>(
 
     return () => unsubscribe();
   }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
-  if(memoizedTargetRefOrQuery && !memoizedTargetRefOrQuery.__memo) {
-    throw new Error(memoizedTargetRefOrQuery + ' was not properly memoized using useMemoFirebase');
-  }
+
   return { data, isLoading, error };
 }

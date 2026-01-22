@@ -4,7 +4,6 @@
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, getFirestore, orderBy, limit } from 'firebase/firestore';
 import type { CourseProgress, Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -39,7 +38,7 @@ export function ContinueLearning() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
 
-    const progressQuery = useMemoFirebase(
+    const progressQuery = useMemo(
         () => currentUser?.uid
             ? query(
                 collection(db, 'course_progress'),

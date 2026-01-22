@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,7 +27,7 @@ export default function MyLearningPage() {
   const [dataLoading, setDataLoading] = useState(true);
 
   // 1. Get student's enrollments
-  const enrollmentsQuery = useMemoFirebase(
+  const enrollmentsQuery = useMemo(
     () => currentUser?.uid
       ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid))
       : null,

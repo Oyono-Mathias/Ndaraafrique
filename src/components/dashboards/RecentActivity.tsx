@@ -4,7 +4,6 @@
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, getFirestore, orderBy, limit } from 'firebase/firestore';
 import type { UserActivity } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -35,7 +34,7 @@ export function RecentActivity() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
 
-    const activityQuery = useMemoFirebase(
+    const activityQuery = useMemo(
         () => currentUser?.uid
             ? query(
                 collection(db, 'users', currentUser.uid, 'activity'),

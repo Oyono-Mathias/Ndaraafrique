@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -31,10 +32,10 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const { currentUser } = useRole();
   const { toast } = useToast();
   
-  const isActive = pathname === href || (href !== '/student/dashboard' && pathname.startsWith(href));
+  const isActive = pathname.startsWith(href);
 
   const isAllowedPath = (path: string) => {
-    const alwaysAllowed = ['/student/dashboard', '/account', '/student/messages'];
+    const alwaysAllowed = ['/instructor/courses', '/account', '/student/messages'];
     if (alwaysAllowed.some(p => path.startsWith(p))) return true;
     return currentUser?.isInstructorApproved;
   };
@@ -84,7 +85,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: "Mon Travail",
       items: [
-        { href: '/student/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
+        { href: '/instructor/courses', icon: LayoutDashboard, label: 'Tableau de Bord' },
         { href: '/instructor/courses', icon: BookOpen, label: 'Mes Cours' },
         { href: '/instructor/devoirs', icon: ClipboardCheck, label: 'Devoirs' },
         { href: '/instructor/quiz', icon: FileQuestion, label: 'Quiz' },

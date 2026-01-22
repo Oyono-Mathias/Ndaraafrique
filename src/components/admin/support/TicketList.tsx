@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useState, useMemo } from 'react';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,7 @@ export function TicketList() {
     const router = useRouter();
     const [statusFilter, setStatusFilter] = useState<TicketStatus>('ouvert');
 
-    const ticketsQuery = useMemoFirebase(
+    const ticketsQuery = useMemo(
         () => query(collection(db, 'support_tickets'), where('status', '==', statusFilter), orderBy('updatedAt', 'desc')),
         [db, statusFilter]
     );

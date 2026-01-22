@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { Input } from '@/components/ui/input';
@@ -41,7 +42,7 @@ import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserStatus, deleteUserAccount, updateUserRole } from '@/actions/userActions';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { startChat } from '@/lib/chat';
 import {
   AlertDialog,
@@ -240,7 +241,7 @@ const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
 
 export function UsersTable() {
     const db = getFirestore();
-    const usersQuery = useMemoFirebase(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
+    const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
     const [searchTerm, setSearchTerm] = useState('');

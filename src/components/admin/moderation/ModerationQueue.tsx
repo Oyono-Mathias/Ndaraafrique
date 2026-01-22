@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy, getDocs, doc } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -20,7 +21,7 @@ export function ModerationQueue() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
-  const coursesQuery = useMemoFirebase(
+  const coursesQuery = useMemo(
     () => query(collection(db, 'courses'), where('status', '==', 'Pending Review'), orderBy('createdAt', 'desc')),
     [db]
   );

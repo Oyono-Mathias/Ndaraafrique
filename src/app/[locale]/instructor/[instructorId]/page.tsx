@@ -3,7 +3,7 @@
 
 import { useParams } from 'next/navigation';
 import { useRouter } from 'next-intl/navigation';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useDoc, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import { doc, collection, query, where, getFirestore, getDocs, getCountFromServer, addDoc, serverTimestamp, limit, setDoc, writeBatch, updateDoc } from 'firebase/firestore';
 import Image from 'next/image';
@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Star, Globe, Twitter, Linkedin, Youtube, MessageCircle, Edit, ShieldAlert, Users, BookOpen, Share2, Calendar } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
@@ -82,10 +82,10 @@ export default function InstructorProfilePage() {
     const [stats, setStats] = useState({ studentCount: 0, reviewCount: 0 });
     const [statsLoading, setStatsLoading] = useState(true);
 
-    const instructorRef = useMemoFirebase(() => doc(db, 'users', instructorId as string), [db, instructorId]);
+    const instructorRef = useMemo(() => doc(db, 'users', instructorId as string), [db, instructorId]);
     const { data: instructor, isLoading: instructorLoading } = useDoc(instructorRef);
 
-    const coursesQuery = useMemoFirebase(() => 
+    const coursesQuery = useMemo(() => 
         query(collection(db, 'courses'), where('instructorId', '==', instructorId), where('status', '==', 'Published')),
         [db, instructorId]
     );

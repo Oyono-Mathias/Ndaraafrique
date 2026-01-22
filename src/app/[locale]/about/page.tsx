@@ -6,7 +6,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ChevronsRight } from 'lucide-react';
 import Link from 'next/link';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase';
+import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -51,7 +52,7 @@ const TeamMember = ({ name, role, imageUrl, bio }: { name: string, role: string,
 
 export default function AboutPage() {
   const db = getFirestore();
-  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings, isLoading } = useDoc(settingsRef);
 
   const content = settings?.content?.aboutPage;

@@ -4,7 +4,7 @@
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useDoc } from '@/firebase/firestore/use-doc';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BadgeCheck, ShieldAlert } from 'lucide-react';
@@ -20,19 +20,19 @@ function VerificationPageContent() {
   const db = getFirestore();
 
   // 1. Fetch enrollment document which acts as the certificate
-  const enrollmentRef = useMemoFirebase(() => certificateId ? doc(db, 'enrollments', certificateId) : null, [db, certificateId]);
+  const enrollmentRef = useMemo(() => certificateId ? doc(db, 'enrollments', certificateId) : null, [db, certificateId]);
   const { data: enrollment, isLoading: enrollmentLoading, error: enrollmentError } = useDoc<Enrollment>(enrollmentRef);
 
   // 2. Fetch course details based on enrollment
-  const courseRef = useMemoFirebase(() => enrollment?.courseId ? doc(db, 'courses', enrollment.courseId) : null, [db, enrollment]);
+  const courseRef = useMemo(() => enrollment?.courseId ? doc(db, 'courses', enrollment.courseId) : null, [db, enrollment]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
   // 3. Fetch student details based on enrollment
-  const studentRef = useMemoFirebase(() => enrollment?.studentId ? doc(db, 'users', enrollment.studentId) : null, [db, enrollment]);
+  const studentRef = useMemo(() => enrollment?.studentId ? doc(db, 'users', enrollment.studentId) : null, [db, enrollment]);
   const { data: student, isLoading: studentLoading } = useDoc<NdaraUser>(studentRef);
   
   // 4. Fetch instructor details based on course
-  const instructorRef = useMemoFirebase(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [db, course]);
+  const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [db, course]);
   const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
 
   const isLoading = enrollmentLoading || courseLoading || studentLoading || instructorLoading;

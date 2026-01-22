@@ -1,8 +1,8 @@
 
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useDoc, useCollection, useMemoFirebase } from '@/firebase';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { useDoc, useCollection } from '@/firebase';
 import { getFirestore, doc, collection, query, orderBy, Timestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { addAdminReplyToTicket, closeTicket, refundAndRevokeAccess } from '@/actions/supportActions';
@@ -51,16 +51,16 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
     const [isSending, setIsSending] = useState(false);
     const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-    const ticketRef = useMemoFirebase(() => doc(db, 'support_tickets', ticketId), [db, ticketId]);
+    const ticketRef = useMemo(() => doc(db, 'support_tickets', ticketId), [db, ticketId]);
     const { data: ticket, isLoading: ticketLoading } = useDoc<SupportTicket>(ticketRef);
 
-    const messagesQuery = useMemoFirebase(() => query(collection(db, `support_tickets/${ticketId}/messages`), orderBy('createdAt', 'asc')), [db, ticketId]);
+    const messagesQuery = useMemo(() => query(collection(db, `support_tickets/${ticketId}/messages`), orderBy('createdAt', 'asc')), [db, ticketId]);
     const { data: messages, isLoading: messagesLoading } = useCollection<Message>(messagesQuery);
     
-    const userRef = useMemoFirebase(() => ticket ? doc(db, 'users', ticket.userId) : null, [ticket, db]);
+    const userRef = useMemo(() => ticket ? doc(db, 'users', ticket.userId) : null, [ticket, db]);
     const { data: user, isLoading: userLoading } = useDoc<NdaraUser>(userRef);
     
-    const courseRef = useMemoFirebase(() => ticket ? doc(db, 'courses', ticket.courseId) : null, [ticket, db]);
+    const courseRef = useMemo(() => ticket ? doc(db, 'courses', ticket.courseId) : null, [ticket, db]);
     const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
     useEffect(() => {

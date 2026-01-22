@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy, getDocs, where, documentId } from 'firebase/firestore';
 import type { Payout, NdaraUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -132,7 +132,7 @@ export function PayoutsTable() {
     const db = getFirestore();
     const [filter, setFilter] = useState<PayoutStatus>('en_attente');
 
-    const payoutsQuery = useMemoFirebase(() => {
+    const payoutsQuery = useMemo(() => {
         let q = query(collection(db, 'payouts'), where('status', '==', filter), orderBy('date', 'desc'));
         return q;
     }, [db, filter]);

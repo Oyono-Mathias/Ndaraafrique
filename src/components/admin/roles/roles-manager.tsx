@@ -1,7 +1,8 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import type { Role } from '@/lib/types';
 import { useRole } from '@/context/RoleContext';
@@ -22,7 +23,7 @@ export function RolesManager() {
     const { toast } = useToast();
     const { currentUser } = useRole();
 
-    const rolesQuery = useMemoFirebase(() => query(collection(db, 'roles'), orderBy('name')), [db]);
+    const rolesQuery = useMemo(() => query(collection(db, 'roles'), orderBy('name')), [db]);
     const { data: roles, isLoading: rolesLoading } = useCollection<Role>(rolesQuery);
 
     const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);

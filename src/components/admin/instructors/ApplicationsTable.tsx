@@ -1,7 +1,8 @@
+
 'use client';
 
-import { useState } from 'react';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useState, useMemo } from 'react';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -19,7 +20,7 @@ export function ApplicationsTable() {
   const [selectedApplication, setSelectedApplication] = useState<NdaraUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const applicationsQuery = useMemoFirebase(
+  const applicationsQuery = useMemo(
     () => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false), orderBy('createdAt', 'desc')),
     [db]
   );

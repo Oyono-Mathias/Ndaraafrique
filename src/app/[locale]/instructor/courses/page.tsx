@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRole } from '@/context/RoleContext';
-import { useCollection, useMemoFirebase } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, getCountFromServer, deleteDoc, doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,7 +107,7 @@ export default function InstructorCoursesPage() {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
 
-  const coursesQuery = useMemoFirebase(
+  const coursesQuery = useMemo(
     () => currentUser?.uid
       ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid))
       : null,

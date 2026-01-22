@@ -2,7 +2,7 @@
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
+import { useMemo } from 'react';
 import { collection, query, where, getFirestore } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -70,16 +70,16 @@ export function AdminQuickActions() {
     const { currentUser } = useRole();
 
     const { data: pendingCourses, isLoading: loadingCourses } = useCollection(
-        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null, [db, currentUser])
+        useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null, [db, currentUser])
     );
     const { data: pendingPayouts, isLoading: loadingPayouts } = useCollection(
-        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null, [db, currentUser])
+        useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null, [db, currentUser])
     );
      const { data: pendingInstructors, isLoading: loadingInstructors } = useCollection(
-        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null, [db, currentUser])
+        useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null, [db, currentUser])
     );
     const { data: suspendedUsers, isLoading: loadingSuspended } = useCollection(
-        useMemoFirebase(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('status', '==', 'suspended')) : null, [db, currentUser])
+        useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'users'), where('status', '==', 'suspended')) : null, [db, currentUser])
     );
     
     const isLoading = loadingCourses || loadingPayouts || loadingInstructors || loadingSuspended;
