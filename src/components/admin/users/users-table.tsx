@@ -10,23 +10,37 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, PlusCircle, Search, User, UserX } from 'lucide-react';
+import { MoreHorizontal, PlusCircle, Search, User, UserX, Trash2, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserStatus } from '@/actions/userActions';
+import { updateUserStatus, deleteUserAccount } from '@/actions/userActions';
+import { useRouter } from 'next-intl/navigation';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 
-const UserRow = ({ user }: { user: NdaraUser }) => {
-    const { currentUser: adminUser } = useRole();
+const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
+    const { currentUser: adminUser, user: adminAuthUser } = useRole();
     const { toast } = useToast();
+    const router = useRouter();
+    const [isAlertOpen, setIsAlertOpen] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const handleStatusUpdate = async (status: 'active' | 'suspended') => {
         if (!adminUser) return;
-        const result = await updateUserStatus({ userId: user.uid, status, adminId: adminUser.uid });
+        const result = await updateUserStatus({ userId: targetUser.uid, status, adminId: adminUser.uid });
         if (result.success) {
             toast({ title: 'Statut mis à jour' });
         } else {
@@ -34,47 +48,109 @@ const UserRow = ({ user }: { user: NdaraUser }) => {
         }
     }
 
+    const handleDeleteUser = async () => {
+        if (!adminAuthUser) {
+            toast({ variant: 'destructive', title: 'Erreur', description: 'Action non autorisée.' });
+            return;
+        }
+        setIsDeleting(true);
+        try {
+            const idToken = await adminAuthUser.getIdToken(true);
+            const result = await deleteUserAccount({ userId: targetUser.uid, idToken });
+            if (result.success) {
+                toast({ title: 'Utilisateur supprimé', description: 'Le compte a été supprimé avec succès.' });
+                setIsAlertOpen(false);
+            } else {
+                toast({ variant: 'destructive', title: 'Erreur de suppression', description: result.error });
+            }
+        } catch(e: any) {
+            toast({ variant: 'destructive', title: 'Erreur', description: e.message });
+        } finally {
+            setIsDeleting(false);
+        }
+    }
+    
+    const handleViewProfile = () => {
+        if (targetUser.role === 'instructor') {
+            router.push(`/instructor/${targetUser.uid}`);
+        }
+    }
+
+    // An admin cannot delete themselves or another admin.
+    const canDelete = adminUser?.uid !== targetUser.uid && targetUser.role !== 'admin';
+
     return (
         <TableRow>
             <TableCell>
                 <div className="flex items-center gap-3">
                     <Avatar>
-                        <AvatarImage src={user.profilePictureURL} />
-                        <AvatarFallback>{user.fullName?.charAt(0)}</AvatarFallback>
+                        <AvatarImage src={targetUser.profilePictureURL} />
+                        <AvatarFallback>{targetUser.fullName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="font-medium">{user.fullName}</div>
+                    <div className="font-medium">{targetUser.fullName}</div>
                 </div>
             </TableCell>
-            <TableCell>{user.email}</TableCell>
+            <TableCell>{targetUser.email}</TableCell>
             <TableCell>
-                <Badge variant={user.role === 'admin' ? 'destructive' : user.role === 'instructor' ? 'secondary' : 'default'}>{user.role}</Badge>
+                <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'}>{targetUser.role}</Badge>
             </TableCell>
             <TableCell>
-                 <Badge variant={user.status === 'active' ? 'success' : 'warning'}>{user.status}</Badge>
+                 <Badge variant={targetUser.status === 'active' ? 'success' : 'warning'}>{targetUser.status}</Badge>
             </TableCell>
-            <TableCell>{user.createdAt ? format(user.createdAt.toDate(), "d MMM yyyy", { locale: fr }) : 'N/A'}</TableCell>
+            <TableCell>{targetUser.createdAt ? format(targetUser.createdAt.toDate(), "d MMM yyyy", { locale: fr }) : 'N/A'}</TableCell>
             <TableCell>
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                            <span className="sr-only">Ouvrir menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Voir le profil</DropdownMenuItem>
-                        {user.status === 'active' ? (
-                            <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="text-destructive">
-                                <UserX className="mr-2 h-4 w-4" /> Suspendre
+                <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Ouvrir menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem onClick={handleViewProfile} disabled={targetUser.role !== 'instructor'}>
+                                Voir le profil public
                             </DropdownMenuItem>
-                        ) : (
-                             <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="text-green-500">
-                                <User className="mr-2 h-4 w-4" /> Réactiver
-                            </DropdownMenuItem>
-                        )}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+                            <DropdownMenuSeparator />
+                            {targetUser.status === 'active' ? (
+                                <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="text-amber-500 focus:bg-amber-500/10 focus:text-amber-500">
+                                    <UserX className="mr-2 h-4 w-4" /> Suspendre
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="text-green-500 focus:bg-green-500/10 focus:text-green-500">
+                                    <User className="mr-2 h-4 w-4" /> Réactiver
+                                </DropdownMenuItem>
+                            )}
+                            {canDelete && (
+                                <>
+                                <DropdownMenuSeparator />
+                                <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Supprimer
+                                    </DropdownMenuItem>
+                                </AlertDialogTrigger>
+                                </>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Cette action est irréversible et supprimera définitivement le compte de <b className="text-white">{targetUser.fullName}</b> ainsi que toutes ses données.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                            <AlertDialogCancel>Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
+                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                Oui, supprimer
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             </TableCell>
         </TableRow>
     )
