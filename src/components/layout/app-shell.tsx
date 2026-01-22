@@ -2,7 +2,8 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -72,19 +73,6 @@ function AnnouncementBanner() {
     );
 }
 
-const PUBLIC_STATIC_PATHS = [
-  '/',
-  '/about',
-  '/cgu',
-  '/mentions-legales',
-  '/abonnements',
-  '/search',
-];
-
-const INSTRUCTOR_PRIVATE_ROUTES = [
-  'avis', 'certificats', 'courses', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'revenus', 'students'
-];
-
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const pathname = usePathname();
@@ -98,32 +86,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password');
-
-  const isPublicPage = useMemo(() => {
-    if (PUBLIC_STATIC_PATHS.includes(pathname)) {
-        return true;
-    }
-
-    const pathSegments = pathname.split('/').filter(Boolean);
-    if (pathSegments.length === 2) {
-        // Handle /verify/[id]
-        if (pathSegments[0] === 'verify') {
-            return true;
-        }
-        // Handle /instructor/[id] but not /instructor/courses, etc.
-        if (pathSegments[0] === 'instructor' && !INSTRUCTOR_PRIVATE_ROUTES.includes(pathSegments[1])) {
-            return true;
-        }
-    }
-    
-    return false;
-  }, [pathname]);
-  
-  const showMaintenance = !isUserLoading && siteSettings.maintenanceMode && currentUser?.role !== 'admin';
-  const showAppContent = isPublicPage || (!isUserLoading && user);
-  const showLoader = !isPublicPage && !isUserLoading && !user;
 
   useEffect(() => {
     const settingsRef = doc(db, 'settings', 'global');
@@ -142,84 +104,105 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
+  const isAuthPage = useMemo(() => pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password'), [pathname]);
+
+  const isPublicPage = useMemo(() => {
+    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
+    if (staticPublicPaths.includes(pathname)) return true;
+
+    if (pathname.startsWith('/verify/')) return true;
+
+    if (pathname.startsWith('/instructor/')) {
+        const segments = pathname.split('/');
+        if (segments.length === 3) {
+            const privateInstructorRoutes = ['avis', 'certificats', 'courses', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'revenus', 'students'];
+            if (!privateInstructorRoutes.includes(segments[2])) {
+                return true;
+            }
+        }
+    }
+    return false;
+  }, [pathname]);
+
   useEffect(() => {
-    if (showLoader) {
+    if (!isUserLoading && !user && !isPublicPage && !isAuthPage) {
       router.push('/login');
     }
-  }, [showLoader, router]);
+  }, [isUserLoading, user, isPublicPage, isAuthPage, router]);
 
-  if (isAuthPage) {
-    return <>{children}</>;
+  if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
+    return <MaintenancePage />;
   }
 
-  const handleSidebarLinkClick = () => {
-      setIsSheetOpen(false);
-  };
+  if (isAuthPage) {
+    if(isUserLoading) return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+    return <>{children}</>;
+  }
+  
+  if (isUserLoading && !isPublicPage) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const sidebarProps = {
-    siteName: siteSettings.siteName,
-    logoUrl: siteSettings.logoUrl,
-    onLinkClick: handleSidebarLinkClick,
-  };
-
+  if (!user && !isPublicPage) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+  
+  const handleSidebarLinkClick = () => setIsSheetOpen(false);
+  const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
   const isFullScreenPage = pathname.startsWith('/courses/');
-  const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
-
   const isAdminArea = pathname.startsWith('/admin');
   const isRootPath = pathname === '/';
+  const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
 
   return (
-      <>
-        <SplashScreen />
-
-        <div className={cn({ 'hidden': !showMaintenance })}>
-            <MaintenancePage />
-        </div>
-
-        <div className={cn("flex h-screen w-full items-center justify-center", { 'hidden': !showLoader })}>
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-        
-        <div className={cn({ 'hidden': !showAppContent || showMaintenance })}>
-          <div className={cn("min-h-screen w-full bg-slate-900 text-white", !isAdminArea && (isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]"))}>
-            {!isAdminArea && (
-              <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
-                <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
-                <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
-                <div className={cn({ 'hidden': role !== 'admin' })}><AdminSidebar {...sidebarProps} /></div>
-              </aside>
-            )}
-            <div className="flex flex-col">
-              <AnnouncementBanner />
-              {!isAdminArea && !isRootPath && (
-                <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
-                  <div className="md:hidden">
-                      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                          <SheetTrigger asChild>
-                              <Button variant="outline" size="icon" className="shrink-0 bg-transparent border-slate-700">
-                                  <PanelLeft className="h-5 w-5" />
-                                  <span className="sr-only">Ouvrir le menu</span>
-                              </Button>
-                          </SheetTrigger>
-                          <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
-                              <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
-                              <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
-                              <div className={cn({ 'hidden': role !== 'admin' })}><AdminSidebar {...sidebarProps} /></div>
-                          </SheetContent>
-                      </Sheet>
-                  </div>
-                  <div className="w-full flex justify-end">
-                      <Header />
-                  </div>
-                </header>
+    <>
+      <SplashScreen />
+      <div className={cn("min-h-screen w-full bg-slate-900 text-white", !isAdminArea && (isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]"))}>
+        {!isAdminArea && !isRootPath && (
+          <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
+            <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
+            <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
+          </aside>
+        )}
+        <div className="flex flex-col">
+          <AnnouncementBanner />
+          {(!isAdminArea && !isRootPath) && (
+            <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
+              {(!isFullScreenPage && user) && (
+                 <div className="md:hidden">
+                  <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                      <SheetTrigger asChild>
+                          <Button variant="outline" size="icon" className="shrink-0 bg-transparent border-slate-700">
+                              <PanelLeft className="h-5 w-5" />
+                              <span className="sr-only">Ouvrir le menu</span>
+                          </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
+                          <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
+                          <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
+                      </SheetContent>
+                  </Sheet>
+                </div>
               )}
-              
-              <main className={mainContentPadding}>
-                  {children}
-              </main>
-            </div>
-          </div>
+              <div className="w-full flex justify-end">
+                  <Header />
+              </div>
+            </header>
+          )}
+          
+          <main className={mainContentPadding}>
+              {children}
+          </main>
         </div>
-      </>
+      </div>
+    </>
   );
 }

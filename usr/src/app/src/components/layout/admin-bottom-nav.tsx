@@ -22,22 +22,17 @@ const navItems = [
 
 const NavItem = ({ href, icon: Icon, label }: typeof navItems[0]) => {
   const pathname = usePathname();
-  const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href) && href.split('/').length > 2);
-  
-  // Specific check for dashboard to avoid it being active on all /admin/* routes
-  const isDashboardActive = pathname === '/admin' && href === '/admin';
-
-  const finalIsActive = href === '/admin' ? isDashboardActive : isActive;
+  const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href));
 
   return (
     <Link href={href} className="flex flex-col items-center justify-center gap-1 flex-1 p-1 h-full">
       <Icon className={cn(
         'w-6 h-6 transition-colors',
-        finalIsActive ? 'text-primary' : 'text-slate-400'
+        isActive ? 'text-primary' : 'text-slate-400'
       )} />
       <span className={cn(
         'text-[10px] font-medium transition-colors',
-        finalIsActive ? 'text-primary' : 'text-slate-400'
+        isActive ? 'text-primary' : 'text-slate-400'
       )}>
         {label}
       </span>

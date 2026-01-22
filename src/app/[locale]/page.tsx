@@ -93,37 +93,33 @@ function LandingPageContent() {
   return (
     <div className="bg-slate-950 text-white min-h-screen">
       <Navbar />
-      <main className="container mx-auto px-4 pt-10 pb-24 md:pb-16 space-y-24">
+      <main className="container mx-auto px-4 pt-10 pb-24 md:pb-16 space-y-24 md:space-y-32">
         
         {/* 1. Hero Section */}
         <section className="text-center pt-24 md:pt-32">
           <div className="container mx-auto px-4 max-w-4xl">
-            <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-              <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400">
-                Votre Avenir Numérique Commence Ici
-              </h1>
-            </div>
-            <div className="opacity-0 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-              <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
-                Des compétences de pointe aux métiers de demain, accessibles en Afrique via Mobile Money.
-              </p>
-            </div>
-            <div className="opacity-0 animate-fade-in-up mt-10 flex flex-col sm:flex-row items-center justify-center gap-4" style={{ animationDelay: '0.6s' }}>
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-white via-slate-200 to-slate-400">
+              Votre Avenir Numérique Commence Ici
+            </h1>
+            <p className="text-base md:text-lg text-slate-400 mt-6 max-w-2xl mx-auto">
+              Des compétences de pointe aux métiers de demain, accessibles en Afrique via Mobile Money.
+            </p>
+            <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Button
                 size="lg"
                 asChild
-                className="w-full sm:w-auto h-12 text-base shadow-cta group"
+                className="w-full sm:w-auto h-14 text-base shadow-cta group"
                 onClick={() => handleTrackedClick('cta_click', { button: 'hero_start' })}
               >
                 <Link href="/login?tab=register">
-                  Créer un compte gratuit
+                  Commencer ma formation
                   <ArrowRight className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
             </div>
-            <div className="opacity-0 animate-fade-in-up mt-12" style={{ animationDelay: '0.8s' }}>
+            <div className="mt-12">
               <p className="text-xs text-slate-500 mb-4">Payez en toute confiance avec nos partenaires</p>
-              <div className="flex justify-center items-center gap-6">
+              <div className="flex justify-center items-center gap-4 sm:gap-6">
                 <div className="flex items-center justify-center h-10 w-24 rounded-md bg-mtn-yellow shadow-md">
                   <span className="font-black text-lg text-black">MTN</span>
                 </div>
@@ -146,11 +142,8 @@ function LandingPageContent() {
 
         {/* 4. Trust & Security (Builds Confidence) */}
         <TrustAndSecuritySection />
-
-        {/* 5. Mobile Money (Addresses Payment Concerns) */}
-        <MobileMoneySection onTrackClick={(provider) => handleTrackedClick('payment_method_click', { provider })} />
         
-        {/* 6. Popular Courses (Shows Value) */}
+        {/* 5. Popular Courses (Shows Value) */}
         <CourseCarousel 
             title="Les plus suivies ce mois-ci"
             courses={popularCourses}
@@ -158,6 +151,9 @@ function LandingPageContent() {
             isLoading={isLoading}
         />
 
+        {/* 6. Mobile Money (Addresses Payment Concerns) */}
+        <MobileMoneySection onTrackClick={(provider) => handleTrackedClick('payment_method_click', { provider })} />
+        
         {/* 7. Free Courses (Lowers Barrier to Entry) */}
          <CourseCarousel 
             title="Découvrez nos cours gratuits"
@@ -173,16 +169,17 @@ function LandingPageContent() {
         <InstructorCTASection onTrackClick={() => handleTrackedClick('cta_click', { button: 'instructor_cta' })} />
         
         {/* 10. Final CTA */}
-        <section className="relative py-24 my-24 text-center rounded-2xl overflow-hidden">
+        <section className="relative py-16 md:py-24 my-16 md:my-24 text-center rounded-2xl overflow-hidden">
              <Image
                 src={finalCtaImageUrl}
                 alt="Étudiants africains apprenant ensemble"
                 fill
                 className="object-cover"
                 data-ai-hint="students learning"
+                loading="lazy"
             />
             <div className="absolute inset-0 bg-slate-900/70"></div>
-            <div className="relative z-10">
+            <div className="relative z-10 p-4">
                 <h2 className="text-3xl md:text-4xl font-extrabold text-white">
                     Prêt à transformer votre avenir ?
                 </h2>

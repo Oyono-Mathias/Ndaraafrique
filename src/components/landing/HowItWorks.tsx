@@ -60,7 +60,7 @@ export function HowItWorks() {
   });
 
   return (
-    <section className="py-24">
+    <section className="py-16 md:py-24">
       <div className="text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-extrabold text-white">
           Apprendre n'a jamais été aussi simple
@@ -70,8 +70,29 @@ export function HowItWorks() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-        <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="relative h-80 lg:h-[450px] w-full lg:order-last">
+            {stepsWithImages.map(step => {
+                return (
+                    <div key={step.id} className={cn(
+                        "absolute inset-0 transition-opacity duration-500 ease-in-out",
+                        activeStep === step.id ? 'opacity-100' : 'opacity-0'
+                    )}>
+                        {step.imageUrl && (
+                            <Image
+                                src={step.imageUrl}
+                                alt={step.title}
+                                fill
+                                className="object-cover rounded-2xl shadow-2xl"
+                                data-ai-hint={step.imageHint}
+                                loading="lazy"
+                            />
+                        )}
+                    </div>
+                )
+            })}
+        </div>
+        <div className="space-y-4 lg:order-first">
           {steps.map(step => (
             <button
               key={step.id}
@@ -91,27 +112,6 @@ export function HowItWorks() {
               </div>
             </button>
           ))}
-        </div>
-
-        <div className="relative h-80 lg:h-[450px] w-full">
-            {stepsWithImages.map(step => {
-                return (
-                    <div key={step.id} className={cn(
-                        "absolute inset-0 transition-opacity duration-500 ease-in-out",
-                        activeStep === step.id ? 'opacity-100' : 'opacity-0'
-                    )}>
-                        {step.imageUrl && (
-                            <Image
-                                src={step.imageUrl}
-                                alt={step.title}
-                                fill
-                                className="object-cover rounded-2xl shadow-2xl"
-                                data-ai-hint={step.imageHint}
-                            />
-                        )}
-                    </div>
-                )
-            })}
         </div>
       </div>
     </section>

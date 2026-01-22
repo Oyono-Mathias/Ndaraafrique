@@ -164,7 +164,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-  }
+  };
   
   const profileProgress = useMemo(() => {
       let progress = 0;

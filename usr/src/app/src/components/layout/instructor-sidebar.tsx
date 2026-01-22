@@ -32,7 +32,6 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const { currentUser } = useRole();
   const { toast } = useToast();
   
-  // Adjusted isActive logic
   const isActive = pathname === href || (href !== '/student/dashboard' && pathname.startsWith(href));
 
   const isAllowedPath = (path: string) => {
@@ -113,7 +112,11 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-  }
+  };
+
+  const handleSwitchToStudent = () => {
+    switchRole('student');
+  };
 
   return (
     <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
@@ -145,7 +148,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
         <Button
           variant="outline"
           className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white"
-          onClick={() => switchRole('student')}
+          onClick={handleSwitchToStudent}
         >
           <LogIn className="mr-2 h-4 w-4" />
           Passer en mode Étudiant

@@ -33,7 +33,7 @@ export function TrustAndSecuritySection() {
   const imageUrl = landingPageContent?.securitySection_imageUrl || PlaceHolderImages.find(img => img.id === 'payment-security')?.imageUrl || '';
 
   return (
-    <section className="py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <section className="py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
       <div className="relative h-80 lg:h-96 w-full order-last lg:order-first">
         <Image
           src={imageUrl}
@@ -41,6 +41,7 @@ export function TrustAndSecuritySection() {
           fill
           className="object-cover rounded-2xl shadow-2xl shadow-slate-900"
           data-ai-hint="digital security"
+          loading="lazy"
         />
       </div>
       <div className="space-y-8">

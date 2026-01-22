@@ -24,7 +24,7 @@ const PaymentCard = ({ method, onTrackClick }: { method: typeof paymentMethods[0
 
 export function MobileMoneySection({ onTrackClick }: { onTrackClick: (provider: string) => void }) {
   return (
-    <section className="py-24 text-center">
+    <section className="py-16 md:py-24 text-center">
       <h2 className="text-3xl md:text-4xl font-extrabold text-white">
         Payez simplement. Sans carte bancaire.
       </h2>

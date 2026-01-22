@@ -23,7 +23,9 @@ const navItems = [
 const NavItem = ({ href, icon: Icon, label }: typeof navItems[0]) => {
   const pathname = usePathname();
   
-  const isActive = href === '/admin' ? pathname === href : pathname.startsWith(href);
+  const isDashboardActive = pathname === href;
+  const isOtherActive = href !== '/admin' && pathname.startsWith(href);
+  const isActive = isDashboardActive || isOtherActive;
 
   return (
     <Link href={href} className="flex flex-col items-center justify-center gap-1 flex-1 p-1 h-full">

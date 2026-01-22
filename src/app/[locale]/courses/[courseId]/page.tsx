@@ -2,8 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
-import { useParams, useSearchParams } from 'next/navigation';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next-intl/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import { useRole } from '@/context/RoleContext';
@@ -147,7 +146,7 @@ function CoursePlayerPageContent() {
   
   if (isLoading || courseLoading) {
       return (
-        <div className="flex h-dvh bg-black">
+        <div className="flex h-screen bg-black">
           <Skeleton className="w-80 h-full bg-slate-800" />
           <div className="flex-1 p-4">
             <Skeleton className="w-full aspect-video bg-slate-800" />
@@ -168,7 +167,7 @@ function CoursePlayerPageContent() {
         onDownload={() => alert('Download certificate')}
         onShare={() => alert('Share certificate')}
       />
-       <div className="flex flex-col h-dvh bg-black">
+       <div className="flex flex-col h-screen bg-black">
         {currentUser?.role === 'admin' && (
             <div className="bg-amber-400 text-black text-center text-sm font-bold p-1">
               Mode Administrateur
@@ -224,7 +223,7 @@ function CoursePlayerPageContent() {
 
 export default function CoursePlayerPage() {
     return (
-        <Suspense fallback={<div className="flex h-dvh items-center justify-center bg-black"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
+        <Suspense fallback={<div className="flex h-screen items-center justify-center bg-black"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>}>
             <CoursePlayerPageContent />
         </Suspense>
     )

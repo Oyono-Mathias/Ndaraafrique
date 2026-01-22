@@ -62,6 +62,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         const userRef = doc(db, 'users', user.uid);
         await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
         window.addEventListener('beforeunload', handleBeforeUnload);
+      } else {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
       }
     });
 
@@ -125,15 +127,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (needsUpdate) {
             try {
               await setDoc(userDocRef, updatePayload, { merge: true });
-              // The snapshot listener will automatically re-fire with the updated data.
-              // We return here to wait for the next snapshot, avoiding processing of partial data.
               return; 
             } catch (e) {
                 console.error(`Failed to migrate user document for ${user.uid}:`, e);
-                // If migration fails, we proceed with potentially partial data to not break the app.
             }
           }
-          // --- END MIGRATION ---
 
           if (userData.status === 'suspended') {
             await secureSignOut();
@@ -205,8 +203,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             console.warn("User document not found in Firestore for UID:", user.uid);
             const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
             
-            // This is where a new user doc is created (e.g., first Google sign-in)
-            // Ensure this object is ALWAYS complete.
             const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
                 uid: user.uid,
                 email: user.email || '',
@@ -234,7 +230,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             };
             
             setDoc(userDocRef, newUserDoc);
-            // The snapshot listener will re-fire once the doc is created, so we don't need to do anything else here.
             return;
         }
         setLoading(false);
@@ -250,10 +245,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
+      if(newRole === 'admin') router.push('/admin');
+      else if(newRole === 'instructor') router.push('/instructor/courses');
+      else router.push('/student/dashboard');
     } else {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
-  }, [availableRoles]);
+  }, [availableRoles, router]);
   
   const value = useMemo(() => ({
     role,

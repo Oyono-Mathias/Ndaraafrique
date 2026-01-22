@@ -32,7 +32,7 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const { currentUser } = useRole();
   const { toast } = useToast();
   
-  // Adjusted isActive logic
+  // This logic is now simpler as `usePathname` from `next/navigation` does not include the locale
   const isActive = pathname === href || (href !== '/student/dashboard' && pathname.startsWith(href));
 
   const isAllowedPath = (path: string) => {
