@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useMemoFirebase } from '@/firebase/provider';
 import { useRole } from '@/context/RoleContext';

@@ -89,11 +89,21 @@ export default {
           '0%': { opacity: '0', transform: 'translateY(20px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        'logoPulse': {
+          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
+          '50%': { transform: 'scale(1.1)', opacity: '0.9' },
+        },
+        'logoSheen': {
+          '0%, 10%': { transform: 'translateX(-150%) skewX(-20deg)' },
+          '80%, 100%': { transform: 'translateX(150%) skewX(-20deg)' },
+        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+        'logoPulse': 'logoPulse 2.5s ease-in-out infinite',
+        'logoSheen': 'logoSheen 2.5s ease-in-out infinite',
       },
     },
   },
