@@ -5,63 +5,81 @@
 
 @layer base {
   :root {
-    --background: 220 20% 7%;
-    --foreground: 210 20% 98%;
-
-    --card: 220 20% 11%;
-    --card-foreground: 210 20% 98%;
-    
-    --popover: 220 20% 5%;
-    --popover-foreground: 210 20% 98%;
-    
-    --primary: 205 90% 50%;
+    /* Fintech Light Theme */
+    --background: 220 17% 97%;
+    --foreground: 222 47% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+    --primary: 242 78% 58%;
     --primary-foreground: 210 20% 98%;
-    
-    --secondary: 215 15% 20%;
+    --secondary: 239 85% 66%;
     --secondary-foreground: 210 20% 98%;
-    
-    --muted: 215 15% 25%;
-    --muted-foreground: 215 20% 65%;
-    
-    --accent: 150 80% 45%;
+    --muted: 220 13% 91%;
+    --muted-foreground: 215 9% 47%;
+    --accent: 160 80% 45%;
     --accent-foreground: 210 20% 98%;
-    
-    --destructive: 0 70% 55%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 210 20% 98%;
-    
-    --success: 150 80% 45%;
-    --warning: 38 92% 50%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 242 78% 58%;
+    --radius: 12px;
 
-    --border: 215 15% 20%;
-    --input: 215 15% 20%;
-    
-    --ring: 205 90% 55%;
-    
-    --radius: 0.75rem;
+    /* Custom Design Tokens */
+    --font-base: 'Inter', sans-serif;
+    --font-heading: 'Inter', sans-serif;
+    --font-size-base: 16px;
+    --font-size-sm: 14px;
+    --font-size-lg: 18px;
+    --font-weight-regular: 400;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+    --radius-sm: 6px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 24px;
+    --shadow-light: 0 1px 3px rgba(0,0,0,0.06);
+    --shadow-medium: 0 4px 6px rgba(0,0,0,0.1);
+    --shadow-heavy: 0 10px 15px rgba(0,0,0,0.15);
+    --transition-fast: 0.15s ease-in-out;
+    --transition-medium: 0.3s ease-in-out;
+    --transition-slow: 0.5s ease-in-out;
   }
 
   .dark {
+    /* Fintech Dark Theme */
     --background: 220 20% 7%;
     --foreground: 210 20% 98%;
     --card: 220 20% 11%;
     --card-foreground: 210 20% 98%;
     --popover: 220 20% 5%;
     --popover-foreground: 210 20% 98%;
-    --primary: 205 90% 50%;
+    --primary: 242 78% 58%;
     --primary-foreground: 210 20% 98%;
-    --secondary: 215 15% 20%;
+    --secondary: 239 85% 66%;
     --secondary-foreground: 210 20% 98%;
     --muted: 215 15% 25%;
     --muted-foreground: 215 20% 65%;
-    --accent: 150 80% 45%;
+    --accent: 160 80% 45%;
     --accent-foreground: 210 20% 98%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 210 20% 98%;
-    --success: 150 80% 45%;
-    --warning: 38 92% 50%;
     --border: 215 15% 20%;
     --input: 215 15% 20%;
-    --ring: 205 90% 55%;
+    --ring: 242 78% 58%;
+    --radius: 12px;
+
+    /* Custom tokens for dark mode */
+    --shadow-light: 0 1px 3px rgba(0,0,0,0.3);
+    --shadow-medium: 0 4px 8px rgba(0,0,0,0.4);
+    --shadow-heavy: 0 10px 20px rgba(0,0,0,0.4);
   }
 }
 
