@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -15,7 +16,7 @@ export default function ListeSouhaitsPage() {
           <div className="flex flex-col items-center gap-4 p-8">
             <Heart className="h-16 w-16 text-slate-600" />
             <h3 className="text-xl font-semibold text-slate-300">Bientôt disponible</h3>
-            <p className="max-w-sm">Cette section est en cours de construction. Vous pourrez bientôt sauvegarder des cours et les retrouver ici.</p>
+            <p className="max-w-sm">Sauvegardez les cours que vous souhaitez suivre plus tard.</p>
           </div>
         </CardContent>
       </Card>
