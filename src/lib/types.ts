@@ -376,6 +376,25 @@ export interface QuizAttempt {
     submittedAt: Timestamp;
 }
 
+export interface AssignmentSubmission {
+    id: string;
+    instructorId: string;
+    studentId: string;
+    studentName: string;
+    studentAvatarUrl?: string;
+    courseId: string;
+    courseTitle: string;
+    assignmentId: string;
+    assignmentTitle: string;
+    submissionUrl?: string;
+    submissionContent?: string;
+    status: 'submitted' | 'graded';
+    grade?: number;
+    feedback?: string;
+    submittedAt: Timestamp;
+    gradedAt?: Timestamp;
+}
+
 export interface Resource {
     id: string;
     courseId: string;
