@@ -1,4 +1,3 @@
-
 import type { Timestamp } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -200,14 +199,6 @@ export interface Review {
     rating: number;
     comment: string;
     createdAt: Timestamp;
-}
-
-export interface Message {
-  id: string;
-  senderId: string;
-  text: string;
-  createdAt: Timestamp;
-  status: 'sent' | 'delivered' | 'read';
 }
 
 export interface SupportTicket {
@@ -457,4 +448,12 @@ export interface Chat {
     updatedAt: Timestamp;
     lastSenderId?: string;
     unreadBy?: string[];
+}
+
+export interface Message {
+  id: string;
+  senderId: string;
+  text: string;
+  createdAt: Timestamp;
+  status: 'sent' | 'delivered' | 'read';
 }

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -267,7 +266,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   return (
     <div className="flex flex-col h-full chat-background dark:bg-[#0b141a]">
        <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-[#202c33] backdrop-blur-sm sticky top-0 z-10 dark:border-slate-700/80">
-            <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => router.push('/messages')}>
+            <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => router.push('/student/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
             <Avatar className="h-10 w-10">
