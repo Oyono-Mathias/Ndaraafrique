@@ -46,7 +46,7 @@ export default function MyLearningPage() {
 
     const fetchCourseDetails = async () => {
       setDataLoading(true);
-      const courseIds = enrollments.map(e => e.courseId);
+      const courseIds = enrollments.map(e => e.courseId).filter(Boolean);
       const instructorIds = enrollments.map((e: any) => e.instructorId).filter(Boolean);
       
       const coursesMap = new Map<string, Course>();
@@ -70,7 +70,7 @@ export default function MyLearningPage() {
           const instructor = instructorsMap.get((enrollment as any).instructorId);
           return {
               ...(course as Course),
-              progress: enrollment.progress,
+              progress: enrollment.progress || 0,
               instructor: instructor || null,
           };
       }).filter(c => c.id); // Filter out any cases where course details were not found
@@ -84,14 +84,10 @@ export default function MyLearningPage() {
   }, [enrollments, enrollmentsLoading, db]);
 
   const { inProgressCourses, completedCourses } = useMemo(() => {
-    const inProgress = courses.filter(c => c.progress >= 0 && c.progress < 100);
+    const inProgress = courses.filter(c => c.progress < 100);
     const completed = courses.filter(c => c.progress === 100);
     return { inProgressCourses: inProgress, completedCourses: completed };
   }, [courses]);
-
-  const coursesToDisplay = useMemo(() => {
-    return [...inProgressCourses, ...courses.filter(c => c.progress === 0), ...completedCourses];
-  }, [inProgressCourses, courses, completedCourses]);
 
   const isLoading = isUserLoading || dataLoading;
 
@@ -111,7 +107,7 @@ export default function MyLearningPage() {
 
         <div className="mt-6">
             <TabsContent value="all">
-                <CourseGrid courses={coursesToDisplay} isLoading={isLoading} />
+                <CourseGrid courses={courses} isLoading={isLoading} />
             </TabsContent>
             <TabsContent value="in-progress">
                 <CourseGrid courses={inProgressCourses} isLoading={isLoading} emptyMessage="Vous n'avez aucun cours en cours." />
@@ -143,7 +139,7 @@ const CourseGrid = ({ courses, isLoading, emptyMessage = "Vous n'Ãªtes inscrit Ã
                 <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-300">{emptyMessage}</h3>
                 <Button asChild variant="link" className="mt-2">
-                    <Link href="/student/dashboard">{t('browseCourses')}</Link>
+                    <Link href="/search">{t('browseCourses')}</Link>
                 </Button>
             </div>
         );
