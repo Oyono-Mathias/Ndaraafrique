@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -11,7 +10,7 @@ import { Bot, Send, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useCollection, useMemoFirebase } from "@/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore, limit, startAfter, QueryDocumentSnapshot, DocumentData, getDocs } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore, limit, startAfter, QueryDocumentSnapshot, DocumentData, getDocs, doc } from "firebase/firestore";
 import { errorEmitter } from "@/firebase/error-emitter";
 import { FirestorePermissionError } from "@/firebase/errors";
 
