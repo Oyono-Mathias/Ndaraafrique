@@ -27,21 +27,18 @@ export function AssignmentsClient() {
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Fetch instructor's courses for the filter dropdown
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Fetch all submissions for the instructor from the 'devoirs' collection
   const submissionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'devoirs'), where('instructorId', '==', currentUser.uid), orderBy('submittedAt', 'desc')) : null,
     [db, currentUser]
   );
   const { data: allSubmissions, isLoading: submissionsLoading } = useCollection<AssignmentSubmission>(submissionsQuery);
 
-  // 3. Filter submissions client-side
   const filteredSubmissions = useMemo(() => {
     if (!allSubmissions) return [];
     return allSubmissions.filter(sub => {
@@ -58,7 +55,7 @@ export function AssignmentsClient() {
   
   const getStatusVariant = (status: AssignmentSubmission['status']) => {
     switch (status) {
-        case 'submitted': return 'secondary';
+        case 'submitted': return 'info';
         case 'graded': return 'success';
         default: return 'default';
     }
@@ -74,18 +71,18 @@ export function AssignmentsClient() {
     <>
       <GradingModal submission={selectedSubmission} isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
       
-      <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+      <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Select value={courseFilter} onValueChange={setCourseFilter}>
-              <SelectTrigger className="w-full sm:w-[250px] h-11 text-base dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[250px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les cours</SelectItem>
                 {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11 text-base dark:bg-slate-800"><SelectValue placeholder="Filtrer par statut..." /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[180px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par statut..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="submitted">Soumis</SelectItem>
@@ -94,10 +91,10 @@ export function AssignmentsClient() {
             </Select>
           </div>
           
-          <div className="border rounded-lg dark:border-slate-700">
+          <div className="border rounded-lg border-slate-200 dark:border-slate-700">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-slate-100 dark:border-slate-700">
                   <TableHead>Étudiant</TableHead>
                   <TableHead>Cours</TableHead>
                   <TableHead>Soumission</TableHead>
@@ -113,17 +110,23 @@ export function AssignmentsClient() {
                   ))
                 ) : filteredSubmissions.length > 0 ? (
                   filteredSubmissions.map(sub => (
-                    <TableRow key={sub.id} className="hover:bg-slate-800/50">
+                    <TableRow key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-slate-100 dark:border-slate-800">
                       <TableCell>
                         <div className="flex items-center gap-2">
                            <Avatar className="h-7 w-7"><AvatarImage src={sub.studentAvatarUrl}/><AvatarFallback>{sub.studentName.charAt(0)}</AvatarFallback></Avatar>
-                           <span className="font-medium text-white">{sub.studentName}</span>
+                           <span className="font-medium text-slate-800 dark:text-white">{sub.studentName}</span>
                         </div>
                       </TableCell>
-                      <TableCell className="text-muted-foreground">{sub.courseTitle}</TableCell>
-                      <TableCell className="text-muted-foreground">{formatDistanceToNow(sub.submittedAt.toDate(), { locale: fr, addSuffix: true })}</TableCell>
-                      <TableCell><Badge variant={getStatusVariant(sub.status)} className="capitalize">{getStatusLabel(sub.status)}</Badge></TableCell>
-                      <TableCell className={cn("font-semibold", sub.grade !== undefined && sub.grade >= 10 ? 'text-green-400' : 'text-amber-400')}>
+                      <TableCell className="text-slate-500 dark:text-muted-foreground">{sub.courseTitle}</TableCell>
+                      <TableCell className="text-slate-500 dark:text-muted-foreground">{formatDistanceToNow(sub.submittedAt.toDate(), { locale: fr, addSuffix: true })}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusVariant(sub.status)} className={cn(
+                            "capitalize",
+                            sub.status === 'submitted' && "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
+                            sub.status === 'graded' && "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
+                        )}>{getStatusLabel(sub.status)}</Badge>
+                      </TableCell>
+                      <TableCell className={cn("font-semibold", sub.grade !== undefined && sub.grade >= 10 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400')}>
                         {sub.grade !== undefined ? `${sub.grade}/20` : 'N/A'}
                       </TableCell>
                       <TableCell className="text-right">
@@ -135,7 +138,7 @@ export function AssignmentsClient() {
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow><TableCell colSpan={6} className="h-48 text-center text-muted-foreground">
+                  <TableRow><TableCell colSpan={6} className="h-48 text-center text-slate-500 dark:text-muted-foreground">
                      <div className="flex flex-col items-center gap-2">
                         <Frown className="h-8 w-8" />
                         <p>Aucun devoir ne correspond à vos filtres.</p>

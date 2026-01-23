@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -61,9 +62,9 @@ export function ResourcesClient() {
             <div className="flex justify-end mb-4">
                 <Button onClick={() => setIsModalOpen(true)}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter une ressource</Button>
             </div>
-            <div className="border rounded-lg dark:border-slate-700">
+            <div className="border rounded-lg bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
                 <Table>
-                    <TableHeader><TableRow><TableHead>Titre</TableHead><TableHead>Type</TableHead><TableHead>Cours</TableHead><TableHead>Ajoutée le</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+                    <TableHeader><TableRow className="border-slate-100 dark:border-slate-700"><TableHead>Titre</TableHead><TableHead>Type</TableHead><TableHead>Cours</TableHead><TableHead>Ajoutée le</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
                     <TableBody>
                         {isLoading ? (
                              [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full"/></TableCell></TableRow>)
@@ -71,11 +72,11 @@ export function ResourcesClient() {
                             resources.map(res => {
                                 const Icon = typeIcons[res.type] || Folder;
                                 return (
-                                <TableRow key={res.id}>
-                                    <TableCell className="font-medium text-white">{res.title}</TableCell>
+                                <TableRow key={res.id} className="border-slate-100 dark:border-slate-800">
+                                    <TableCell className="font-medium text-slate-800 dark:text-white">{res.title}</TableCell>
                                     <TableCell><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-muted-foreground"/><span className="capitalize">{res.type}</span></div></TableCell>
-                                    <TableCell>{coursesMap.get(res.courseId) || 'Cours inconnu'}</TableCell>
-                                    <TableCell>{res.createdAt ? formatDistanceToNow(res.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}</TableCell>
+                                    <TableCell className="text-slate-500 dark:text-muted-foreground">{coursesMap.get(res.courseId) || 'Cours inconnu'}</TableCell>
+                                    <TableCell className="text-slate-500 dark:text-muted-foreground">{res.createdAt ? formatDistanceToNow(res.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}</TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
@@ -88,7 +89,7 @@ export function ResourcesClient() {
                                 </TableRow>
                             )})
                         ) : (
-                            <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
+                            <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-500 dark:text-muted-foreground">
                                 <div className="flex flex-col items-center gap-2"><Frown className="h-8 w-8" /><p>Aucune ressource partagée pour le moment.</p></div>
                             </TableCell></TableRow>
                         )}

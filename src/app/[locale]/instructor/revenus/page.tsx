@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -97,7 +98,7 @@ export default function RevenusPage() {
                 .reduce((sum, p) => sum + p.amount, 0);
 
             setStats(prev => ({ ...prev, availableBalance: prev.totalRevenue - totalPayouts }));
-            setIsLoading(false); // Consider loading finished when payouts are also loaded.
+            setIsLoading(false);
         });
         
         return () => {
@@ -135,10 +136,10 @@ export default function RevenusPage() {
     };
 
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
         <header>
-            <h1 className="text-3xl font-bold text-white">Mes Revenus</h1>
-            <p className="text-muted-foreground">Suivez vos gains et gérez vos paiements.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Mes Revenus</h1>
+            <p className="text-slate-500 dark:text-muted-foreground">Suivez vos gains et gérez vos paiements.</p>
         </header>
 
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
@@ -150,15 +151,15 @@ export default function RevenusPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
                 <SectionHeader title="Évolution des revenus" className="mb-4" />
-                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+                <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
                     <CardContent className="pt-6">
-                         {isLoading ? <Skeleton className="h-80 w-full bg-slate-700" /> : chartData.length > 0 ? (
+                         {isLoading ? <Skeleton className="h-80 w-full bg-slate-200 dark:bg-slate-700" /> : chartData.length > 0 ? (
                             <ChartContainer config={chartConfig} className="h-80 w-full">
                                 <BarChart data={chartData}>
-                                    <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
-                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400 text-xs" />
-                                    <YAxis tickFormatter={(v) => `${Number(v) / 1000}k`} className="dark:fill-slate-400 text-xs"/>
-                                    <Tooltip content={<ChartTooltipContent indicator="dot" className="dark:bg-slate-900" formatter={(v) => `${(v as number).toLocaleString('fr-FR')} XOF`} />} />
+                                    <CartesianGrid vertical={false} className="stroke-slate-200 dark:stroke-slate-700"/>
+                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="fill-slate-500 dark:fill-slate-400 text-xs" />
+                                    <YAxis tickFormatter={(v) => `${Number(v) / 1000}k`} className="fill-slate-500 dark:fill-slate-400 text-xs"/>
+                                    <Tooltip content={<ChartTooltipContent indicator="dot" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" formatter={(v) => `${(v as number).toLocaleString('fr-FR')} XOF`} />} />
                                     <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
                                 </BarChart>
                             </ChartContainer>
@@ -169,12 +170,12 @@ export default function RevenusPage() {
             
             <div className="lg:col-span-1">
                  <SectionHeader title="Demande de retrait" className="mb-4" />
-                 <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+                 <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
                     <CardHeader><CardTitle className="text-base">Nouveau retrait</CardTitle><CardDescription>Le solde disponible peut être viré sur votre compte.</CardDescription></CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <p className="text-sm text-muted-foreground">Solde actuel</p>
-                            {isLoading ? <Skeleton className="h-8 w-32 mt-1" /> : <p className="text-2xl font-bold text-white">{stats.availableBalance.toLocaleString('fr-FR')} XOF</p>}
+                            <p className="text-sm text-slate-500 dark:text-muted-foreground">Solde actuel</p>
+                            {isLoading ? <Skeleton className="h-8 w-32 mt-1 bg-slate-200 dark:bg-slate-700" /> : <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.availableBalance.toLocaleString('fr-FR')} XOF</p>}
                         </div>
                         <div className="space-y-2">
                             <label className="text-sm font-medium">Montant</label>
@@ -185,7 +186,7 @@ export default function RevenusPage() {
                         </Button>
                     </CardContent>
                     <CardFooter>
-                        <p className="text-xs text-muted-foreground flex gap-2"><Info className="h-4 w-4 shrink-0"/>Les retraits sont traités sous 72h.</p>
+                        <p className="text-xs text-slate-500 dark:text-muted-foreground flex gap-2"><Info className="h-4 w-4 shrink-0"/>Les retraits sont traités sous 72h.</p>
                     </CardFooter>
                  </Card>
             </div>
@@ -193,22 +194,22 @@ export default function RevenusPage() {
 
          <div>
              <SectionHeader title="Historique des transactions" className="mb-4" />
-             <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+             <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
                 <CardContent className="p-0">
                     <Table>
-                        <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Détails</TableHead><TableHead className="text-right">Montant</TableHead></TableRow></TableHeader>
+                        <TableHeader><TableRow className="border-slate-100 dark:border-slate-700"><TableHead>Date</TableHead><TableHead>Détails</TableHead><TableHead className="text-right">Montant</TableHead></TableRow></TableHeader>
                         <TableBody>
                             {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-6 w-full" /></TableCell></TableRow>)
                             : payments.length > 0 ? (
                                 payments.slice(0, 10).map(p => (
-                                    <TableRow key={p.id}>
-                                        <TableCell className="text-muted-foreground">{p.date ? format(p.date.toDate(), 'd MMM yyyy', {locale: fr}) : ''}</TableCell>
-                                        <TableCell className="font-medium text-white">{`Vente du cours "${p.courseTitle || p.courseId}"`}</TableCell>
-                                        <TableCell className="text-right text-green-400 font-semibold">+ {p.amount.toLocaleString('fr-FR')} XOF</TableCell>
+                                    <TableRow key={p.id} className="border-slate-100 dark:border-slate-800">
+                                        <TableCell className="text-slate-500 dark:text-muted-foreground">{p.date ? format(p.date.toDate(), 'd MMM yyyy', {locale: fr}) : ''}</TableCell>
+                                        <TableCell className="font-medium text-slate-800 dark:text-white">{`Vente du cours "${p.courseTitle || p.courseId}"`}</TableCell>
+                                        <TableCell className="text-right text-green-600 dark:text-green-400 font-semibold">+ {p.amount.toLocaleString('fr-FR')} XOF</TableCell>
                                     </TableRow>
                                 ))
                             ) : (
-                                <TableRow><TableCell colSpan={3} className="text-center h-24 text-muted-foreground">Aucune transaction.</TableCell></TableRow>
+                                <TableRow><TableCell colSpan={3} className="text-center h-24 text-slate-500 dark:text-muted-foreground">Aucune transaction.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>

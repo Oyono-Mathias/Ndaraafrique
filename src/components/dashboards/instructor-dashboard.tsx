@@ -3,7 +3,6 @@
 
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
@@ -11,6 +10,7 @@ import { Skeleton } from '../ui/skeleton';
 import { Users, Star, BookOpen, DollarSign, TrendingUp, Book, AlertCircle } from 'lucide-react';
 import type { Course, Review, Enrollment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { format, startOfMonth } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { StatCard } from '@/components/dashboard/StatCard';
@@ -51,7 +51,6 @@ export function InstructorDashboard() {
             const instructorId = instructor.uid;
 
             try {
-                // 1. Fetch Courses
                 const coursesQuery = query(collection(db, 'courses'), where('instructorId', '==', instructorId));
                 const coursesSnapshot = await getDocs(coursesQuery);
                 const courseList = coursesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -71,7 +70,6 @@ export function InstructorDashboard() {
                     courseIdChunks.push(courseIds.slice(i, i + 30));
                 }
 
-                // 2. Fetch Reviews, Enrollments, and Payments in parallel
                 const reviewPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'reviews'), where('courseId', 'in', chunk))));
                 const enrollmentPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'enrollments'), where('courseId', 'in', chunk))));
                 const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
@@ -83,7 +81,6 @@ export function InstructorDashboard() {
                     paymentPromise
                 ]);
 
-                // 3. Process data
                 const allReviews = reviewSnapshots.flatMap(snap => snap.docs.map(doc => doc.data() as Review));
                 const totalRating = allReviews.reduce((acc, r) => acc + r.rating, 0);
                 
@@ -112,7 +109,6 @@ export function InstructorDashboard() {
                     .map(([month, revenue]) => ({ month, revenue }))
                     .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
 
-                // 4. Set all states at once
                 setStats({
                     totalStudents: uniqueStudents.size,
                     totalReviews: allReviews.length,
@@ -124,7 +120,7 @@ export function InstructorDashboard() {
 
             } catch (err: any) {
                 console.error("Error fetching instructor dashboard data:", err);
-                setError("Une erreur est survenue lors du chargement de vos données. Un index Firestore est peut-être manquant.");
+                setError("Une erreur est survenue. Un index Firestore est peut-être manquant.");
             } finally {
                 setIsLoading(false);
             }
@@ -154,125 +150,89 @@ export function InstructorDashboard() {
 
     if (error) {
         return (
-            <div className="flex flex-col items-center justify-center h-[60vh] text-center p-4 bg-red-900/10 border border-red-700/50 rounded-lg">
+            <div className="flex flex-col items-center justify-center h-[60vh] text-center p-4 bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-700/50 rounded-lg">
                 <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
-                <h1 className="text-2xl font-bold text-white">Erreur de chargement</h1>
-                <p className="text-red-300 mt-2">{error}</p>
-                <p className="text-slate-400 mt-1 text-sm">Vérifiez les index Firestore ou contactez le support.</p>
+                <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Erreur de chargement</h1>
+                <p className="text-red-600 dark:text-red-300 mt-2">{error}</p>
+                <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Vérifiez les index Firestore ou contactez le support.</p>
             </div>
         )
     }
 
     return (
-        <div className="space-y-8 md:space-y-12">
-            <header>
-                <h1 className="text-3xl font-bold text-white">Tableau de bord</h1>
-                <p className="text-muted-foreground">Bienvenue, {instructor?.fullName?.split(' ')[0] || 'Instructeur'} !</p>
-            </header>
+      <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
+        <header>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Tableau de bord</h1>
+            <p className="text-slate-500 dark:text-muted-foreground">Bienvenue, {instructor?.fullName?.split(' ')[0] || 'Instructeur'} !</p>
+        </header>
 
-            <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-                <StatCard 
-                    title="Étudiants au total"
-                    value={stats.totalStudents.toLocaleString('fr-FR')} 
-                    icon={Users} 
-                    isLoading={isLoading} 
-                />
-                <StatCard 
-                    title="Note moyenne" 
-                    value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} 
-                    icon={Star} 
-                    isLoading={isLoading} 
-                    description={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"}
-                />
-                <StatCard 
-                    title="Cours publiés"
-                    value={stats.publishedCourses.toString()} 
-                    icon={BookOpen} 
-                    isLoading={isLoading}
-                />
-                <StatCard 
-                    title="Revenus (ce mois-ci)"
-                    value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
-                    icon={DollarSign} 
-                    isLoading={isLoading}
-                />
-            </section>
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <StatCard title="Étudiants au total" value={stats.totalStudents.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} />
+            <StatCard title="Note moyenne" value={stats.totalReviews > 0 ? stats.averageRating.toFixed(1) : "N/A"} icon={Star} isLoading={isLoading} description={stats.totalReviews > 0 ? `Basé sur ${stats.totalReviews} avis` : "En attente d'avis"} />
+            <StatCard title="Cours publiés" value={stats.publishedCourses.toString()} icon={BookOpen} isLoading={isLoading} />
+            <StatCard title="Revenus (ce mois-ci)" value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+        </section>
 
-            <section className="grid lg:grid-cols-5 gap-6">
-                <div className="lg:col-span-3">
-                    <SectionHeader title="Évolution des revenus" className="mb-4" />
-                    <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                        <CardContent className="pt-6">
-                            {isLoading ? <Skeleton className="h-72 w-full bg-slate-700" /> : revenueTrendData.length > 0 ? (
-                                <ChartContainer config={chartConfig} className="h-72 w-full">
-                                    <ResponsiveContainer>
-                                        <BarChart data={revenueTrendData}>
-                                            <CartesianGrid vertical={false} className="dark:stroke-slate-700"/>
-                                            <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="dark:fill-slate-400 text-xs" />
-                                            <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="dark:fill-slate-400 text-xs"/>
-                                            <Tooltip
-                                                cursor={false}
-                                                content={<ChartTooltipContent
-                                                    indicator="dot"
-                                                    className="dark:bg-slate-900 dark:border-slate-700"
-                                                    formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`}
-                                                />}
-                                            />
-                                            <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </ChartContainer>
-                            ) : (
-                                <EmptyState 
-                                    icon={TrendingUp}
-                                    title="Graphique Indisponible"
-                                    description="Les données sur vos revenus apparaîtront ici dès que vous réaliserez des ventes."
-                                />
-                            )}
-                        </CardContent>
-                    </Card>
-                </div>
-                <div className="lg:col-span-2">
-                     <SectionHeader title="Vos cours populaires" className="mb-4" />
-                      <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                        <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow className="dark:border-slate-700">
-                                        <TableHead className="dark:text-slate-400">Cours</TableHead>
-                                        <TableHead className="text-right dark:text-slate-400">Inscriptions</TableHead>
+        <section className="grid lg:grid-cols-5 gap-6">
+            <div className="lg:col-span-3">
+                <SectionHeader title="Évolution des revenus" className="mb-4" />
+                <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <CardContent className="pt-6">
+                        {isLoading ? <Skeleton className="h-72 w-full bg-slate-200 dark:bg-slate-700" /> : revenueTrendData.length > 0 ? (
+                            <ChartContainer config={chartConfig} className="h-72 w-full">
+                                <ResponsiveContainer>
+                                    <BarChart data={revenueTrendData}>
+                                        <CartesianGrid vertical={false} className="stroke-slate-200 dark:stroke-slate-700"/>
+                                        <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="fill-slate-500 dark:fill-slate-400 text-xs" />
+                                        <YAxis tickFormatter={(value) => `${Number(value) / 1000}k`} className="fill-slate-500 dark:fill-slate-400 text-xs"/>
+                                        <Tooltip cursor={false} content={<ChartTooltipContent indicator="dot" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" formatter={(value) => `${(value as number).toLocaleString('fr-FR')} XOF`} />} />
+                                        <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </ChartContainer>
+                        ) : (
+                            <EmptyState icon={TrendingUp} title="Graphique Indisponible" description="Les données sur vos revenus apparaîtront ici dès que vous réaliserez des ventes." />
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
+            <div className="lg:col-span-2">
+                 <SectionHeader title="Vos cours populaires" className="mb-4" />
+                  <Card className="bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700/80 shadow-sm">
+                    <CardContent className="p-0">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-slate-100 dark:border-slate-700">
+                                    <TableHead className="text-slate-500 dark:text-slate-400">Cours</TableHead>
+                                    <TableHead className="text-right text-slate-500 dark:text-slate-400">Inscriptions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {isLoading ? [...Array(5)].map((_, i) => (
+                                    <TableRow key={i} className="border-slate-100 dark:border-slate-700">
+                                        <TableCell><Skeleton className="h-5 w-full bg-slate-200 dark:bg-slate-700" /></TableCell>
+                                        <TableCell className="text-right"><Skeleton className="h-5 w-10 bg-slate-200 dark:bg-slate-700" /></TableCell>
                                     </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? [...Array(5)].map((_, i) => (
-                                        <TableRow key={i} className="dark:border-slate-700">
-                                            <TableCell><Skeleton className="h-5 w-full dark:bg-slate-700" /></TableCell>
-                                            <TableCell className="text-right"><Skeleton className="h-5 w-10 dark:bg-slate-700" /></TableCell>
-                                        </TableRow>
-                                    )) : topCourses.length > 0 ? (
-                                      topCourses.map(course => (
-                                        <TableRow key={course.id} className="dark:border-slate-700 dark:hover:bg-slate-700/50">
-                                            <TableCell className="font-medium truncate max-w-[200px] text-sm text-slate-200">{course.title}</TableCell>
-                                            <TableCell className="text-right font-bold text-base text-white">{course.enrollmentCount}</TableCell>
-                                        </TableRow>
-                                      ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={2}>
-                                                <EmptyState
-                                                    icon={Book}
-                                                    title="Aucun cours populaire"
-                                                    description="Vos cours les plus populaires apparaîtront ici."
-                                                />
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                      </Card>
-                </div>
-            </section>
-        </div>
+                                )) : topCourses.length > 0 ? (
+                                  topCourses.map(course => (
+                                    <TableRow key={course.id} className="border-slate-100 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                        <TableCell className="font-medium truncate max-w-[200px] text-sm text-slate-700 dark:text-slate-200">{course.title}</TableCell>
+                                        <TableCell className="text-right font-bold text-base text-slate-900 dark:text-white">{course.enrollmentCount}</TableCell>
+                                    </TableRow>
+                                  ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={2}>
+                                            <EmptyState icon={Book} title="Aucun cours populaire" description="Vos cours les plus populaires apparaîtront ici." />
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                  </Card>
+            </div>
+        </section>
+    </div>
     );
 }

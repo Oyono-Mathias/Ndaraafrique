@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -14,18 +15,22 @@ interface StatCardProps {
 }
 
 export const StatCard: React.FC<StatCardProps> = ({ title, value, icon: Icon, isLoading, description, accentColor }) => (
-  <Card className={cn("dark:bg-slate-800/50 dark:border-slate-700/80 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/10", accentColor)}>
+  <Card className={cn(
+    "dark:bg-slate-800/50 dark:border-slate-700/80 shadow-md transition-all duration-300 hover:-translate-y-1 hover:shadow-primary/10",
+    "bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm",
+    accentColor
+  )}>
     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-      <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
+      <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</CardTitle>
       <Icon className="h-4 w-4 text-slate-400" />
     </CardHeader>
     <CardContent>
       {isLoading ? (
-        <Skeleton className="h-8 w-3/4 bg-slate-700" />
+        <Skeleton className="h-8 w-3/4 bg-slate-200 dark:bg-slate-700" />
       ) : (
         <>
-          <div className="text-3xl font-bold text-white">{value}</div>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{value}</div>
+          {description && <p className="text-xs text-slate-500 dark:text-muted-foreground">{description}</p>}
         </>
       )}
     </CardContent>

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,7 +23,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Search, Users, MessageSquare, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Enriched type for the table
 interface EnrichedEnrollment extends Enrollment {
   student?: Partial<NdaraUser>;
   course?: Partial<Course>;
@@ -38,25 +38,21 @@ export function StudentsClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isContacting, setIsContacting] = useState<string | null>(null);
 
-  // 1. Fetch instructor's courses for the filter
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Fetch all enrollments for the instructor
   const enrollmentsQuery = useMemo(
     () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  // 3. State for enriched data
   const [enrichedEnrollments, setEnrichedEnrollments] = useState<EnrichedEnrollment[]>([]);
   const [relatedDataLoading, setRelatedDataLoading] = useState(true);
 
-  // 4. Effect to fetch related student/course data and enrich enrollments
   useEffect(() => {
     if (!enrollments) {
         setRelatedDataLoading(false);
@@ -103,7 +99,6 @@ export function StudentsClient() {
     enrichData();
   }, [enrollments, db]);
 
-  // 5. Client-side filtering
   const filteredData = useMemo(() => {
     return enrichedEnrollments.filter(item => {
         const courseMatch = courseFilter === 'all' || item.courseId === courseFilter;
@@ -132,20 +127,20 @@ export function StudentsClient() {
   const isLoading = isUserLoading || coursesLoading || enrollmentsLoading || relatedDataLoading;
 
   return (
-    <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+    <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
       <CardContent className="p-4 space-y-4">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="relative flex-1">
-             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
              <Input
                 placeholder="Rechercher par nom..."
-                className="pl-10 h-11 text-base dark:bg-slate-800"
+                className="pl-10 h-11 text-base bg-white dark:bg-slate-800"
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
               />
           </div>
           <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoading}>
-            <SelectTrigger className="w-full sm:w-[250px] h-11 text-base dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-[250px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tous les cours</SelectItem>
               {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
@@ -153,10 +148,10 @@ export function StudentsClient() {
           </Select>
         </div>
 
-        <div className="border rounded-lg dark:border-slate-700">
+        <div className="border rounded-lg border-slate-200 dark:border-slate-700">
             <Table>
               <TableHeader>
-                <TableRow>
+                <TableRow className="border-slate-100 dark:border-slate-700">
                   <TableHead>Étudiant</TableHead>
                   <TableHead>Cours</TableHead>
                   <TableHead>Date d'inscription</TableHead>
@@ -171,19 +166,19 @@ export function StudentsClient() {
                   ))
                 ) : filteredData.length > 0 ? (
                   filteredData.map(item => (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className="border-slate-100 dark:border-slate-800">
                       <TableCell>
                          <div className="flex items-center gap-2">
                            <Avatar className="h-8 w-8"><AvatarImage src={item.student?.profilePictureURL}/><AvatarFallback>{item.student?.fullName?.charAt(0)}</AvatarFallback></Avatar>
-                           <span className="font-medium text-white">{item.student?.fullName || 'N/A'}</span>
+                           <span className="font-medium text-slate-800 dark:text-white">{item.student?.fullName || 'N/A'}</span>
                         </div>
                       </TableCell>
-                       <TableCell className="text-muted-foreground">{item.course?.title || 'N/A'}</TableCell>
-                       <TableCell className="text-muted-foreground">{item.enrollmentDate ? format(item.enrollmentDate.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                       <TableCell className="text-slate-500 dark:text-muted-foreground">{item.course?.title || 'N/A'}</TableCell>
+                       <TableCell className="text-slate-500 dark:text-muted-foreground">{item.enrollmentDate ? format(item.enrollmentDate.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
                        <TableCell>
                         <div className="flex items-center gap-2">
                            <Progress value={item.progress} className="w-24 h-2" />
-                           <span className="text-sm font-semibold">{item.progress}%</span>
+                           <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{item.progress}%</span>
                         </div>
                        </TableCell>
                        <TableCell className="text-right">
@@ -195,7 +190,7 @@ export function StudentsClient() {
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow><TableCell colSpan={5} className="h-48 text-center text-muted-foreground">
+                  <TableRow><TableCell colSpan={5} className="h-48 text-center text-slate-500 dark:text-muted-foreground">
                      <div className="flex flex-col items-center gap-2">
                         <Users className="h-8 w-8" />
                         <p className="font-semibold">Aucun étudiant inscrit pour le moment</p>

@@ -13,12 +13,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Search, Users, BookOpen, Trash2, Edit } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
-// New Card Component with Fintech design
 function InstructorCourseCard({ course, studentCount, onDelete }: { course: Course, studentCount: number, onDelete: (courseId: string) => void }) {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const { toast } = useToast();
 
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -87,7 +85,6 @@ function InstructorCourseCard({ course, studentCount, onDelete }: { course: Cour
   );
 }
 
-
 export default function InstructorCoursesPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
@@ -110,7 +107,6 @@ export default function InstructorCoursesPage() {
         const courseIds = courses.map(c => c.id);
         const counts: Record<string, number> = {};
 
-        // Firestore 'in' query has a limit of 30 items
         for (let i = 0; i < courseIds.length; i += 30) {
             const chunk = courseIds.slice(i, i + 30);
             if(chunk.length > 0) {
@@ -128,7 +124,6 @@ export default function InstructorCoursesPage() {
     fetchEnrollments();
   }, [courses, db]);
 
-
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
     return courses.filter(course =>
@@ -139,7 +134,6 @@ export default function InstructorCoursesPage() {
   const handleDeleteCourse = async (courseId: string) => {
     try {
         await deleteDoc(doc(db, 'courses', courseId));
-        // A cloud function would be needed for cascading deletes in production.
         toast({
             title: "Cours supprimé",
             description: "Le cours a été retiré de la plateforme.",
@@ -212,7 +206,7 @@ export default function InstructorCoursesPage() {
         </div>
       )}
       
-      <Button asChild className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90 md:hidden">
+      <Button asChild className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90 md:hidden z-20">
         <Link href="/instructor/courses/create">
           <PlusCircle className="h-8 w-8" />
           <span className="sr-only">Créer un nouveau cours</span>

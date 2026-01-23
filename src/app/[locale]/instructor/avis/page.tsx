@@ -16,7 +16,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Star, Frown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Star Rating Component
 const StarRating = ({ rating }: { rating: number }) => (
   <div className="flex items-center gap-0.5">
     {[...Array(5)].map((_, i) => (
@@ -24,22 +23,20 @@ const StarRating = ({ rating }: { rating: number }) => (
         key={i}
         className={cn(
           "w-4 h-4",
-          i < rating ? "text-amber-400 fill-amber-400" : "text-slate-600"
+          i < rating ? "text-amber-400 fill-amber-400" : "text-slate-300 dark:text-slate-600"
         )}
       />
     ))}
   </div>
 );
 
-// Enriched Review Type for UI
 interface EnrichedReview extends Review {
   student?: Partial<NdaraUser>;
   course?: Partial<Course>;
 }
 
-// Review Card Component
 const ReviewCard = ({ review }: { review: EnrichedReview }) => (
-  <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+  <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
     <CardHeader>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -48,25 +45,24 @@ const ReviewCard = ({ review }: { review: EnrichedReview }) => (
             <AvatarFallback>{review.student?.fullName?.charAt(0)}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-semibold text-white">{review.student?.fullName || 'Anonyme'}</p>
-            <p className="text-xs text-muted-foreground">{review.course?.title || 'Cours inconnu'}</p>
+            <p className="font-semibold text-slate-800 dark:text-white">{review.student?.fullName || 'Anonyme'}</p>
+            <p className="text-xs text-slate-500 dark:text-muted-foreground">{review.course?.title || 'Cours inconnu'}</p>
           </div>
         </div>
         <StarRating rating={review.rating} />
       </div>
     </CardHeader>
     <CardContent>
-      <p className="text-sm text-slate-300 italic">"{review.comment}"</p>
+      <p className="text-sm text-slate-600 dark:text-slate-300 italic">"{review.comment}"</p>
     </CardContent>
     <CardFooter>
-      <p className="text-xs text-muted-foreground">
+      <p className="text-xs text-slate-400 dark:text-muted-foreground">
         {review.createdAt ? formatDistanceToNow(review.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
       </p>
     </CardFooter>
   </Card>
 );
 
-// Main Page Component
 export default function AvisPage() {
   const db = getFirestore();
   const { currentUser, isUserLoading } = useRole();
@@ -74,25 +70,21 @@ export default function AvisPage() {
   const [courseFilter, setCourseFilter] = useState('all');
   const [ratingFilter, setRatingFilter] = useState('all');
   
-  // 1. Fetch instructor's courses for the filter
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Fetch all reviews for the instructor
   const reviewsQuery = useMemo(
     () => currentUser ? query(collection(db, 'reviews'), where('instructorId', '==', currentUser.uid), orderBy('createdAt', 'desc')) : null,
     [db, currentUser]
   );
   const { data: reviews, isLoading: reviewsLoading } = useCollection<Review>(reviewsQuery);
   
-  // 3. State for enriched data
   const [enrichedReviews, setEnrichedReviews] = useState<EnrichedReview[]>([]);
   const [relatedDataLoading, setRelatedDataLoading] = useState(true);
 
-  // 4. Effect to fetch related student data and enrich reviews
   useEffect(() => {
     if (!reviews) {
         setRelatedDataLoading(false);
@@ -141,7 +133,6 @@ export default function AvisPage() {
     enrichData();
   }, [reviews, db]);
   
-  // 5. Client-side filtering
   const filteredData = useMemo(() => {
     return enrichedReviews.filter(item => {
         const courseMatch = courseFilter === 'all' || item.courseId === courseFilter;
@@ -153,24 +144,24 @@ export default function AvisPage() {
   const isLoading = isUserLoading || coursesLoading || reviewsLoading || relatedDataLoading;
   
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
       <header>
-        <h1 className="text-3xl font-bold text-white">Avis des étudiants</h1>
-        <p className="text-muted-foreground">Consultez les notes et commentaires laissés sur vos formations.</p>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Avis des étudiants</h1>
+        <p className="text-slate-500 dark:text-muted-foreground">Consultez les notes et commentaires laissés sur vos formations.</p>
       </header>
 
-      <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+      <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
         <CardContent className="p-4 space-y-4">
           <div className="flex flex-col sm:flex-row gap-4">
             <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoading}>
-              <SelectTrigger className="w-full sm:w-[250px] h-11 text-base dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[250px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les cours</SelectItem>
                 {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={ratingFilter} onValueChange={setRatingFilter} disabled={isLoading}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11 text-base dark:bg-slate-800"><SelectValue placeholder="Filtrer par note..." /></SelectTrigger>
+              <SelectTrigger className="w-full sm:w-[180px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par note..." /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Toutes les notes</SelectItem>
                 <SelectItem value="5">5 étoiles</SelectItem>
@@ -184,17 +175,17 @@ export default function AvisPage() {
           
            {isLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
-                  {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-lg" />)}
+                  {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-lg bg-slate-200 dark:bg-slate-800" />)}
                 </div>
             ) : filteredData.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                     {filteredData.map(review => <ReviewCard key={review.id} review={review} />)}
                 </div>
             ) : (
-                <div className="text-center py-20 border-2 border-dashed border-slate-700 rounded-xl mt-4">
-                    <Frown className="mx-auto h-12 w-12 text-slate-500" />
-                    <h3 className="mt-4 text-lg font-semibold text-slate-300">Aucun avis disponible pour le moment</h3>
-                    <p className="mt-1 text-sm text-muted-foreground">Les avis de vos étudiants apparaîtront ici.</p>
+                <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-4">
+                    <Frown className="mx-auto h-12 w-12 text-slate-400" />
+                    <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Aucun avis disponible pour le moment</h3>
+                    <p className="mt-1 text-sm text-slate-500 dark:text-muted-foreground">Les avis de vos étudiants apparaîtront ici.</p>
                 </div>
             )}
           

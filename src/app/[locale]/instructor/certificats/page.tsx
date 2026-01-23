@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection, useDoc } from '@/firebase';
+import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, doc, getDocs } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +21,6 @@ interface EnrichedCertificate extends Enrollment {
   instructor?: Partial<NdaraUser>;
 }
 
-// Helper function to fetch data in chunks and return a map
 async function fetchDataMap(db: any, collectionName: string, fieldName: string | null, ids: string[]) {
     const dataMap = new Map();
     if (ids.length === 0) return dataMap;
@@ -30,7 +29,7 @@ async function fetchDataMap(db: any, collectionName: string, fieldName: string |
         const chunk = ids.slice(i, i + 30);
         if (chunk.length === 0) continue;
         
-        const key = fieldName || '__name__'; // Use document ID if fieldName is null
+        const key = fieldName || '__name__';
         const q = query(collection(db, collectionName), where(key, 'in', chunk));
         const snapshot = await getDocs(q);
         snapshot.forEach(doc => dataMap.set(doc.id, doc.data()));
@@ -38,14 +37,12 @@ async function fetchDataMap(db: any, collectionName: string, fieldName: string |
     return dataMap;
 }
 
-
 export default function InstructorCertificatesPage() {
   const db = getFirestore();
   const { currentUser } = useRole();
   const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Fetch completed enrollments for the instructor
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid
       ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100))
@@ -54,11 +51,9 @@ export default function InstructorCertificatesPage() {
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
-  // 2. State for enriched data
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 3. Effect to fetch related data
   useEffect(() => {
     if (!enrollments) {
         setDataLoading(false);
@@ -97,7 +92,7 @@ export default function InstructorCertificatesPage() {
   const isLoading = enrollmentsLoading || dataLoading;
 
   return (
-    <>
+    <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
       {selectedCertificate && (
         <CertificateModal
           isOpen={isModalOpen}
@@ -109,46 +104,44 @@ export default function InstructorCertificatesPage() {
           certificateId={selectedCertificate.id}
         />
       )}
-      <div className="space-y-8">
-        <header>
-          <h1 className="text-3xl font-bold text-white">Certificats Décernés</h1>
-          <p className="text-muted-foreground">Consultez les certificats obtenus par vos étudiants.</p>
-        </header>
+      <header>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Certificats Décernés</h1>
+        <p className="text-slate-500 dark:text-muted-foreground">Consultez les certificats obtenus par vos étudiants.</p>
+      </header>
 
-        <div className="border rounded-lg dark:border-slate-700">
-          <Table>
-            <TableHeader><TableRow><TableHead>Étudiant</TableHead><TableHead>Cours</TableHead><TableHead>Date d'obtention</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
-            <TableBody>
-              {isLoading ? (
-                [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full"/></TableCell></TableRow>)
-              ) : enrichedData.length > 0 ? (
-                enrichedData.map(cert => (
-                  <TableRow key={cert.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8"><AvatarImage src={cert.student?.profilePictureURL} /><AvatarFallback>{cert.student?.fullName?.charAt(0)}</AvatarFallback></Avatar>
-                        <span className="font-medium text-white">{cert.student?.fullName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{cert.course?.title}</TableCell>
-                    <TableCell>{cert.lastAccessedAt ? format(cert.lastAccessedAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}><Eye className="mr-2 h-4 w-4"/>Voir</Button>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow><TableCell colSpan={4} className="h-24 text-center">
-                    <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Frown className="h-8 w-8" />
-                        <p>Aucun certificat n'a encore été décerné pour vos cours.</p>
-                      </div>
-                </TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
+      <div className="border rounded-lg bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
+        <Table>
+          <TableHeader><TableRow className="border-slate-100 dark:border-slate-700"><TableHead>Étudiant</TableHead><TableHead>Cours</TableHead><TableHead>Date d'obtention</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {isLoading ? (
+              [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full"/></TableCell></TableRow>)
+            ) : enrichedData.length > 0 ? (
+              enrichedData.map(cert => (
+                <TableRow key={cert.id} className="border-slate-100 dark:border-slate-800">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8"><AvatarImage src={cert.student?.profilePictureURL} /><AvatarFallback>{cert.student?.fullName?.charAt(0)}</AvatarFallback></Avatar>
+                      <span className="font-medium text-slate-800 dark:text-white">{cert.student?.fullName}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-slate-500 dark:text-muted-foreground">{cert.course?.title}</TableCell>
+                  <TableCell className="text-slate-500 dark:text-muted-foreground">{cert.lastAccessedAt ? format(cert.lastAccessedAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                  <TableCell className="text-right">
+                    <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}><Eye className="mr-2 h-4 w-4"/>Voir</Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow><TableCell colSpan={4} className="h-24 text-center">
+                  <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-muted-foreground">
+                      <Frown className="h-8 w-8" />
+                      <p>Aucun certificat n'a encore été décerné pour vos cours.</p>
+                    </div>
+              </TableCell></TableRow>
+            )}
+          </TableBody>
+        </Table>
       </div>
-    </>
+    </div>
   );
 }

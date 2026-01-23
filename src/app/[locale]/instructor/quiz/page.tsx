@@ -31,7 +31,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-// We'll augment the Quiz type for our UI
 interface QuizWithCourse extends Quiz {
   courseTitle: string;
 }
@@ -47,18 +46,18 @@ const QuizCard = ({ quiz }: { quiz: QuizWithCourse }) => {
   }
 
   return (
-    <Card className="dark:bg-slate-800/50 dark:border-slate-700/80 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 flex flex-col">
+    <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1 flex flex-col">
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-white line-clamp-2">{quiz.title}</CardTitle>
-        <CardDescription>{quiz.courseTitle}</CardDescription>
+        <CardTitle className="text-base font-semibold text-slate-800 dark:text-white line-clamp-2">{quiz.title}</CardTitle>
+        <CardDescription className="text-slate-500 dark:text-slate-400">{quiz.courseTitle}</CardDescription>
       </CardHeader>
       <CardContent className="flex-grow">
-        <div className="flex justify-between text-sm text-slate-400">
+        <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
           <span>{quiz.questionsCount || 0} questions</span>
           <span>{format(quiz.createdAt.toDate(), "d MMM yyyy", { locale: fr })}</span>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end p-2 border-t dark:border-slate-700/50">
+      <CardFooter className="flex justify-end p-2 border-t border-slate-100 dark:border-slate-700/50">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -181,11 +180,11 @@ export default function QuizPage() {
   return (
     <>
     <CreateQuizDialog isOpen={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} courses={courses} />
-    <div className="space-y-8">
+    <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
       <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-            <h1 className="text-3xl font-bold text-white">Quiz</h1>
-            <p className="text-slate-400">Évaluez les connaissances de vos étudiants.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Quiz</h1>
+            <p className="text-slate-500 dark:text-slate-400">Évaluez les connaissances de vos étudiants.</p>
         </div>
          <Button onClick={() => setIsCreateDialogOpen(true)} className="h-11 shadow-lg shadow-primary/20">
             <PlusCircle className="mr-2 h-5 w-5" />
@@ -194,18 +193,18 @@ export default function QuizPage() {
       </header>
       
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-800" />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />)}
         </div>
       ) : quizzes.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {quizzes.map(quiz => <QuizCard key={quiz.id} quiz={quiz} />)}
         </div>
       ) : (
-        <div className="text-center py-20 border-2 border-dashed border-slate-700 rounded-xl mt-10 flex flex-col items-center">
-            <Frown className="mx-auto h-16 w-16 text-slate-500" />
-            <h3 className="mt-4 text-xl font-semibold text-slate-300">Aucun quiz créé pour le moment</h3>
-            <p className="mt-2 text-sm text-slate-400 max-w-sm">Commencez par créer votre premier quiz pour évaluer vos étudiants.</p>
+        <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-10 flex flex-col items-center">
+            <Frown className="mx-auto h-16 w-16 text-slate-400" />
+            <h3 className="mt-4 text-xl font-semibold text-slate-700 dark:text-slate-300">Aucun quiz créé pour le moment</h3>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm">Commencez par créer votre premier quiz pour évaluer vos étudiants.</p>
             <Button onClick={() => setIsCreateDialogOpen(true)} className="mt-6">
                 <PlusCircle className="mr-2 h-4 w-4" />
                 Créer votre premier quiz
@@ -216,5 +215,3 @@ export default function QuizPage() {
     </>
   );
 }
-
-    
