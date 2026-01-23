@@ -111,7 +111,7 @@ const HeaderNotificationButton = () => {
   
   if (isMobile) {
     return (
-      <Button variant="ghost" size="icon" onClick={() => router.push('/notifications')} className="relative text-foreground">
+      <Button variant="ghost" size="icon" onClick={() => router.push('/student/notifications')} className="relative text-foreground">
         <Bell className="h-5 w-5" />
         {hasUnread && (
           <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -155,7 +155,7 @@ const HeaderNotificationButton = () => {
             </CardContent>
              <CardFooter className="border-t border-slate-700 p-2">
                 <Button variant="link" size="sm" asChild className="w-full">
-                    <Link href="/notifications">Voir toutes les notifications</Link>
+                    <Link href="/student/notifications">Voir toutes les notifications</Link>
                 </Button>
             </CardFooter>
           </Card>

@@ -1,7 +1,5 @@
-
 'use client';
 
-import { Link } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Frown } from 'lucide-react';
 import Image from 'next/image';
@@ -20,7 +18,7 @@ export default function NotFound() {
         Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
       </p>
       <Button asChild className="mt-8">
-        <Link href="/">Retour à l'accueil</Link>
+        <a href="/">Retour à l'accueil</a>
       </Button>
     </div>
   );

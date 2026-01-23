@@ -3,12 +3,12 @@
 import { Suspense } from 'react';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatRoom } from '@/components/chat/ChatRoom';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next-intl/navigation';
 import { MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
-import { Link } from 'next-intl';
+import { Link } from 'next-intl/navigation';
 
 function MessagesPageContent() {
     const searchParams = useSearchParams();

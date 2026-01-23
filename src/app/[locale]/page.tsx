@@ -2,9 +2,8 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link } from 'next-intl';
+import { Link, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
-import { useRouter } from 'next/navigation';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
