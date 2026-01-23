@@ -1,6 +1,7 @@
 'use client';
 
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { ClipboardCheck } from 'lucide-react';
 
 export default function MesDevoirsPage() {
@@ -15,7 +16,10 @@ export default function MesDevoirsPage() {
           <div className="flex flex-col items-center gap-4 p-8">
             <ClipboardCheck className="h-16 w-16 text-slate-600" />
             <h3 className="text-xl font-semibold text-slate-300">Bientôt disponible</h3>
-            <p className="max-w-sm">Cette section est en cours de construction. Vous pourrez bientôt soumettre vos devoirs et consulter vos notes ici.</p>
+            <p className="max-w-sm">Vous pourrez ici soumettre vos devoirs et consulter vos notes.</p>
+            <Button disabled className="mt-4">
+                Bientôt disponible
+            </Button>
           </div>
         </CardContent>
       </Card>
