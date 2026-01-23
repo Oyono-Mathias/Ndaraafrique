@@ -115,9 +115,12 @@ export interface Section {
 export interface Assignment {
   id: string;
   title: string;
-  description?: string;
+  description: string;
   courseId: string;
+  sectionId: string;
   correctionGuide?: string;
+  attachments?: { name: string; url: string }[];
+  dueDate?: Timestamp;
   createdAt: Timestamp;
 }
 
@@ -368,11 +371,18 @@ export interface AdminAuditLog {
   details: string;
 }
 
+export interface QuestionOption {
+  text: string;
+  isCorrect: boolean;
+}
+
 export interface Question {
   id: string;
   text: string;
-  options: string[];
-  correctOptionIndex: number;
+  type: 'multiple-choice';
+  options: QuestionOption[];
+  order: number;
+  createdAt: Timestamp;
 }
 
 export interface Quiz {

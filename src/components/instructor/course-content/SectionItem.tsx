@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { Droppable, Draggable } from '@hello-pangea/dnd';
+import { Droppable, Draggable, DragDropContext, OnDragEndResponder } from '@hello-pangea/dnd';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import { reorderLectures } from '@/actions/lectureActions';
-import type { Section, Lecture } from '@/lib/types';
+import type { Section, Lecture, Quiz, Assignment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -16,9 +16,12 @@ import { GripVertical, PlusCircle, Pencil, Trash2 } from 'lucide-react';
 import { LectureItem } from './LectureItem';
 import { SectionForm } from './forms/SectionForm';
 import { LectureFormModal } from './forms/LectureForm';
+import { QuizFormModal } from './forms/QuizFormModal';
+import { AssignmentFormModal } from './forms/AssignmentFormModal';
 import { deleteSection } from '@/actions/sectionActions';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-
+import { QuizItem } from './QuizItem';
+import { AssignmentItem } from './AssignmentItem';
 
 export function SectionItem({ courseId, section, dragHandleProps }: { courseId: string; section: Section; dragHandleProps: any }) {
   const db = getFirestore();
@@ -26,14 +29,20 @@ export function SectionItem({ courseId, section, dragHandleProps }: { courseId: 
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
   const [isLectureModalOpen, setIsLectureModalOpen] = useState(false);
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [isAssignmentModalOpen, setIsAssignmentModalOpen] = useState(false);
 
-  const lecturesQuery = useMemo(
-    () => query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('order', 'asc')),
-    [db, courseId, section.id]
-  );
+  const lecturesQuery = useMemo(() => query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('order', 'asc')), [db, courseId, section.id]);
   const { data: lectures, isLoading: lecturesLoading } = useCollection<Lecture>(lecturesQuery);
 
-  const onDragEnd = (result: any) => {
+  const quizzesQuery = useMemo(() => query(collection(db, 'courses', courseId, 'sections', section.id, 'quizzes'), orderBy('createdAt', 'asc')), [db, courseId, section.id]);
+  const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
+
+  const assignmentsQuery = useMemo(() => query(collection(db, 'courses', courseId, 'sections', section.id, 'assignments'), orderBy('createdAt', 'asc')), [db, courseId, section.id]);
+  const { data: assignments, isLoading: assignmentsLoading } = useCollection<Assignment>(assignmentsQuery);
+
+
+  const onDragEnd: OnDragEndResponder = (result) => {
     const { destination, source, type } = result;
     if (!destination || !lectures || type !== 'LECTURE') return;
 
@@ -58,14 +67,14 @@ export function SectionItem({ courseId, section, dragHandleProps }: { courseId: 
     });
   }
 
+  const isLoading = lecturesLoading || quizzesLoading || assignmentsLoading;
+
   return (
     <>
-      <LectureFormModal
-        isOpen={isLectureModalOpen}
-        onOpenChange={setIsLectureModalOpen}
-        courseId={courseId}
-        sectionId={section.id}
-      />
+      <LectureFormModal isOpen={isLectureModalOpen} onOpenChange={setIsLectureModalOpen} courseId={courseId} sectionId={section.id} />
+      <QuizFormModal isOpen={isQuizModalOpen} onOpenChange={setIsQuizModalOpen} courseId={courseId} sectionId={section.id} />
+      <AssignmentFormModal isOpen={isAssignmentModalOpen} onOpenChange={setIsAssignmentModalOpen} courseId={courseId} sectionId={section.id} />
+
       <Card className="dark:bg-slate-800/50 dark:border-slate-700">
         <CardHeader className="flex flex-row items-center justify-between p-3 border-b dark:border-slate-700">
           <div className="flex items-center gap-2">
@@ -92,42 +101,48 @@ export function SectionItem({ courseId, section, dragHandleProps }: { courseId: 
           </div>
         </CardHeader>
         <CardContent className="p-4 space-y-3">
-          {lecturesLoading ? (
+          {isLoading ? (
             <Skeleton className="h-20 w-full" />
           ) : (
-            <Droppable droppableId={section.id} type="LECTURE">
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={`space-y-2 transition-colors ${snapshot.isDraggingOver ? 'bg-slate-800 rounded-md' : ''}`}
-                >
-                    {lectures?.map((lecture, index) => (
-                         <Draggable key={lecture.id} draggableId={lecture.id} index={index}>
-                            {(provided) => (
-                                <div
-                                    ref={provided.innerRef}
-                                    {...provided.draggableProps}
-                                    {...provided.dragHandleProps}
-                                >
-                                    <LectureItem courseId={courseId} sectionId={section.id} lecture={lecture} />
-                                </div>
-                            )}
-                        </Draggable>
-                    ))}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
+            <DragDropContext onDragEnd={onDragEnd}>
+              <Droppable droppableId={section.id} type="LECTURE">
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`space-y-2 transition-colors ${snapshot.isDraggingOver ? 'bg-slate-800 rounded-md p-1' : ''}`}
+                  >
+                      {lectures?.map((lecture, index) => (
+                           <Draggable key={lecture.id} draggableId={lecture.id} index={index}>
+                              {(provided) => (
+                                  <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
+                                      <LectureItem courseId={courseId} sectionId={section.id} lecture={lecture} />
+                                  </div>
+                              )}
+                          </Draggable>
+                      ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           )}
 
-          <Button variant="outline" className="w-full" onClick={() => setIsLectureModalOpen(true)}>
-            <PlusCircle className="h-4 w-4 mr-2" />
-            Ajouter une leçon
-          </Button>
+           <div className="space-y-2">
+            {quizzes?.map(quiz => <QuizItem key={quiz.id} courseId={courseId} sectionId={section.id} quiz={quiz} />)}
+            {assignments?.map(assignment => <AssignmentItem key={assignment.id} courseId={courseId} sectionId={section.id} assignment={assignment} />)}
+           </div>
+
            <div className="flex gap-2 pt-2 border-t border-dashed border-slate-700">
-                <Button variant="secondary" className="flex-1 opacity-50 cursor-not-allowed">Ajouter un Quiz</Button>
-                <Button variant="secondary" className="flex-1 opacity-50 cursor-not-allowed">Ajouter un Devoir</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setIsLectureModalOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-2" /> Leçon
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setIsQuizModalOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-2" /> Quiz
+                </Button>
+                <Button variant="outline" className="flex-1" onClick={() => setIsAssignmentModalOpen(true)}>
+                    <PlusCircle className="h-4 w-4 mr-2" /> Devoir
+                </Button>
             </div>
         </CardContent>
       </Card>
@@ -135,3 +150,4 @@ export function SectionItem({ courseId, section, dragHandleProps }: { courseId: 
   );
 }
 
+    
