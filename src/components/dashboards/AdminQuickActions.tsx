@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useCollection } from '@/firebase/firestore/use-collection';
@@ -8,7 +7,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/componen
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ShieldAlert, UserCheck, Landmark, Settings, Users, ArrowRight } from 'lucide-react';
-import { Link } from 'next-intl';
+import { Link } from 'next-intl/navigation';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
