@@ -1,7 +1,8 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next-intl/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -103,48 +104,45 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const isAuthPage = useMemo(() => pathname.startsWith('/login') || pathname.startsWith('/register') || pathname.startsWith('/forgot-password'), [pathname]);
+  const isAuthPage = useMemo(() => pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password'), [pathname]);
 
   const isPublicPage = useMemo(() => {
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
-    if (staticPublicPaths.includes(pathname)) return true;
-
-    if (pathname.startsWith('/verify/')) return true;
-
-    if (pathname.startsWith('/instructor/')) {
-        const segments = pathname.split('/');
-        if (segments.length === 2 && segments[1]) {
-            // This handles `/instructor/[id]` which is a public profile
-            // It filters out sub-routes like `/instructor/courses` which would have length 3
-            return true;
-        }
+    if (staticPublicPaths.some(p => pathname.endsWith(p))) return true;
+    if (pathname.includes('/verify/')) return true;
+    
+    // Check for public instructor profile `/instructor/[id]` but not private sub-routes
+    const instructorPathRegex = /^\/[a-z]{2}\/instructor\/[^/]+$/;
+    if(instructorPathRegex.test(pathname)) {
+        return true;
     }
+
     return false;
   }, [pathname]);
 
   useEffect(() => {
     if (isUserLoading) return;
-
-    const isAdminPage = pathname.startsWith('/admin');
-    const isInstructorPage = pathname.startsWith('/instructor');
-    const isStudentPage = pathname.startsWith('/student');
+    
+    const isAdminArea = pathname.includes('/admin');
+    const isInstructorArea = pathname.includes('/instructor');
+    const isStudentArea = pathname.includes('/student');
 
     if (!user) {
-        if (!isPublicPage && !isAuthPage) {
-            router.push('/login');
-        }
-        return;
+      if (!isPublicPage && !isAuthPage) {
+        router.push('/login');
+      }
+      return;
     }
 
-    if (role === 'admin' && !isAdminPage) {
-        router.push('/admin');
-    } else if (role === 'instructor' && !isInstructorPage && !isStudentPage && !isAdminPage) {
-        if (!isPublicPage && !isAuthPage) {
-            router.push('/instructor/dashboard');
-        }
-    } else if (role === 'student' && (isInstructorPage || isAdminPage)) {
-        router.push('/student/dashboard');
+    // Role-based redirection logic
+    if (role === 'admin' && !isAdminArea) {
+      router.push('/admin');
+    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage) {
+      router.push('/instructor/dashboard');
+    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublicPage) {
+       router.push('/student/dashboard');
     }
+
   }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
 
 
@@ -162,26 +160,31 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
-  const isFullScreenPage = pathname.startsWith('/courses/');
-  const isAdminArea = pathname.startsWith('/admin');
-  const isRootPath = pathname === '/';
+  const isFullScreenPage = pathname.includes('/courses/');
+  const isAdminArea = pathname.includes('/admin');
+  const isRootPath = pathname === '/' || pathname === '/fr' || pathname === '/en';
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
 
   return (
     <>
       <SplashScreen />
-      <div className={cn("min-h-screen w-full bg-slate-900 text-white", !isAdminArea && (isFullScreenPage ? "block" : "md:grid md:grid-cols-[280px_1fr]"))}>
-        {!isAdminArea && !isRootPath && !isAuthPage && user && (
-          <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage ? "md:hidden" : "md:block")}>
-            <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
-            <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
+      <div className={cn("min-h-screen w-full bg-slate-900 text-white", isAdminArea ? "admin-grid-layout" : !isFullScreenPage && "md:grid md:grid-cols-[280px_1fr]")}>
+        {!isRootPath && !isAuthPage && user && (
+          <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage || isAdminArea ? "md:hidden" : "md:block")}>
+             {role === 'admin' ? (
+              <AdminSidebar {...sidebarProps} />
+            ) : role === 'instructor' ? (
+              <InstructorSidebar {...sidebarProps} />
+            ) : (
+              <StudentSidebar {...sidebarProps} />
+            )}
           </aside>
         )}
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 min-h-screen">
           <AnnouncementBanner />
-          {(!isAdminArea && !isRootPath && !isAuthPage && user) && (
+          {!isRootPath && !isAuthPage && user && (
             <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
-              {(!isFullScreenPage && user) && (
+              {(!isFullScreenPage || isAdminArea) && user && (
                  <div className="md:hidden">
                   <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                       <SheetTrigger asChild>
@@ -191,8 +194,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                           </Button>
                       </SheetTrigger>
                       <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[300px] bg-[#111827] border-r-0">
-                          <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
-                          <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
+                          {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
                       </SheetContent>
                   </Sheet>
                 </div>
