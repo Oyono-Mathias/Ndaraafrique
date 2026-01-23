@@ -12,6 +12,8 @@ import { CourseCard } from '@/components/cards/CourseCard';
 import { Sparkles, Search } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
+import { SectionHeader } from '../dashboard/SectionHeader';
+import { EmptyState } from '../dashboard/EmptyState';
 
 interface RecommendedCourseItem {
   courseId: string;
@@ -83,8 +85,8 @@ export function RecommendedCourses() {
     if (finalIsLoading) {
          return (
              <section>
-                <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
-                <div className="flex space-x-6">
+                <SectionHeader title="Recommandés pour vous" />
+                <div className="flex space-x-6 mt-4">
                     {[...Array(3)].map((_, i) => (
                         <div key={i} className="w-[280px] shrink-0">
                            <Skeleton className="h-80 rounded-2xl bg-slate-800" />
@@ -98,11 +100,13 @@ export function RecommendedCourses() {
     if (recommendedCourses.length === 0) {
         return (
             <section>
-                <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
-                <div className="text-center p-8 bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl">
-                    <Sparkles className="mx-auto h-12 w-12 text-primary/80 mb-4" />
-                    <h3 className="font-bold text-lg text-white">Affinez vos recommandations</h3>
-                    <p className="text-sm text-slate-400 mt-2 max-w-md mx-auto">Plus vous suivez de cours, meilleures seront vos recommandations ! En attendant, pourquoi ne pas explorer notre catalogue ?</p>
+                <SectionHeader title="Recommandés pour vous" />
+                <div className="text-center p-8 mt-4 bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl">
+                    <EmptyState
+                      icon={Sparkles}
+                      title="Affinez vos recommandations"
+                      description="Plus vous suivez de cours, meilleures seront vos recommandations ! En attendant, pourquoi ne pas explorer notre catalogue ?"
+                    />
                     <Button asChild className="mt-6">
                         <Link href="/search">
                             <Search className="h-4 w-4 mr-2" />
@@ -127,8 +131,8 @@ export function RecommendedCourses() {
 
     return (
         <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">Recommandés pour vous</h2>
-            <Carousel opts={{ align: "start", loop: false }} className="w-full">
+            <SectionHeader title="Recommandés pour vous" />
+            <Carousel opts={{ align: "start", loop: false }} className="w-full mt-4">
                 <CarouselContent className="-ml-6">
                     {coursesForCard.map(course => (
                         <CarouselItem key={course.id} className="pl-6 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">

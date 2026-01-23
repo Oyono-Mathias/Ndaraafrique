@@ -56,7 +56,7 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
         </div>
 
         <div className="p-4 flex flex-col flex-grow">
-          <h3 className="font-bold text-lg text-slate-100 line-clamp-2 leading-tight">{course.title}</h3>
+          <h3 className="font-bold text-lg text-slate-100 line-clamp-2 leading-tight h-[56px]">{course.title}</h3>
           
           {instructor?.fullName && (
              <div className="flex items-center gap-2 mt-3">

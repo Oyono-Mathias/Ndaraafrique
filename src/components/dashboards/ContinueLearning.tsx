@@ -8,6 +8,7 @@ import { collection, query, where, getFirestore, orderBy, limit } from 'firebase
 import type { CourseProgress, Course } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '../cards/CourseCard';
+import { SectionHeader } from '../dashboard/SectionHeader';
 
 export function ContinueLearning() {
     const { currentUser, isUserLoading } = useRole();
@@ -33,8 +34,8 @@ export function ContinueLearning() {
     if (isLoading) {
         return (
              <section>
-                <h2 className="text-2xl font-bold mb-4 text-white">Reprendre l'apprentissage</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <SectionHeader title="Reprendre l'apprentissage" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                     {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
                 </div>
             </section>
@@ -59,8 +60,8 @@ export function ContinueLearning() {
 
     return (
         <section>
-            <h2 className="text-2xl font-bold mb-4 text-white">Reprendre l'apprentissage</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <SectionHeader title="Reprendre l'apprentissage" />
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
                 {coursesForCard.map(course => (
                     <CourseCard
                         key={course.id}
