@@ -140,6 +140,7 @@ export interface Course {
     price: number;
     originalPrice?: number;
     status: 'Draft' | 'Published' | 'Pending Review';
+    thumbnailUrl?: string;
     imageUrl?: string;
     createdAt?: Timestamp;
     updatedAt?: Timestamp;
