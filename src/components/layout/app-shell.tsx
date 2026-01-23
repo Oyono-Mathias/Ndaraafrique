@@ -184,7 +184,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                               <span className="sr-only">Ouvrir le menu</span>
                           </Button>
                       </SheetTrigger>
-                      <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
+                      <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[300px] bg-[#111827] border-r-0">
                           <div className={cn({ 'hidden': role !== 'student' })}><StudentSidebar {...sidebarProps} /></div>
                           <div className={cn({ 'hidden': role !== 'instructor' })}><InstructorSidebar {...sidebarProps} /></div>
                       </SheetContent>
@@ -197,7 +197,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
           
-          <main className={cn(mainContentPadding, 'min-h-screen')}>
+          <main className={mainContentPadding}>
               {children}
           </main>
         </div>
@@ -205,3 +205,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
+    

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Frown } from 'lucide-react';
 import Image from 'next/image';
+import { Link } from 'next-intl/navigation';
 
 export default function NotFound() {
   return (
@@ -18,7 +19,7 @@ export default function NotFound() {
         Désolé, la page que vous recherchez n'existe pas ou a été déplacée.
       </p>
       <Button asChild className="mt-8">
-        <a href="/">Retour à l'accueil</a>
+        <Link href="/">Retour à l'accueil</Link>
       </Button>
     </div>
   );
