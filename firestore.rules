@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -139,13 +140,13 @@ service cloud.firestore {
     match /payments/{paymentId} {
       allow get: if isOwner(resource.data.userId) || isOwner(resource.data.instructorId) || isAdmin();
       allow list: if isInstructor() || isAdmin(); // Instructor/Admin must filter in their query
-      allow create: if isOwner(request.resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId) || isAdmin(); // Admin can create for manual entries
       allow update: if isAdmin();
     }
     
     // --- PAYOUTS (to instructor) ---
     match /payouts/{payoutId} {
-      allow read, create: if isOwner(resource.data.instructorId) || isAdmin();
+      allow read, create: if isOwner(request.resource.data.instructorId) || isAdmin();
       allow list, update, delete: if isAdmin();
     }
 

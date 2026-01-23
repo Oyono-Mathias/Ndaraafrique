@@ -106,7 +106,7 @@ export default function RevenusPage() {
             unsubscribePayouts();
         };
 
-    }, [instructor?.uid, isUserLoading, db]);
+    }, [instructor?.uid, isUserLoading, db, stats.totalRevenue]);
 
     const handleRequestPayout = async () => {
         const amount = parseFloat(payoutAmount);
@@ -163,7 +163,7 @@ export default function RevenusPage() {
                                     <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
                                 </BarChart>
                             </ChartContainer>
-                        ) : <EmptyState icon={TrendingUp} title="Aucune donnée de revenus" description="Les graphiques apparaîtront après vos premières ventes."/>}
+                        ) : <EmptyState icon={TrendingUp} title="Graphique Indisponible" description="Les données sur vos revenus apparaîtront ici dès que vous réaliserez des ventes."/>}
                     </CardContent>
                 </Card>
             </div>

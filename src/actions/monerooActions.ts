@@ -1,3 +1,4 @@
+
 'use server';
 
 import { adminDb } from '@/firebase/admin';
@@ -65,56 +66,79 @@ export async function verifyMonerooTransaction(transactionId: string): Promise<{
         
         if (response?.status === 'success' && response.data?.status === 'successful') {
             
-            // --- AI FRAUD DETECTION (ASYNC) ---
             const userId = response.data.metadata?.userId;
             const courseId = response.data.metadata?.courseId;
 
-            if (userId && courseId) {
-                const [userDoc, courseDoc, paymentHistory] = await Promise.all([
-                    adminDb.collection('users').doc(userId).get(),
-                    adminDb.collection('courses').doc(courseId).get(),
-                    adminDb.collection('payments').where('userId', '==', userId).limit(1).get()
-                ]);
-
-                if (userDoc.exists) {
-                    const userData = userDoc.data()!;
-                    const accountAgeInSeconds = Math.floor((Timestamp.now().seconds - (userData.createdAt as Timestamp).seconds));
-                    
-                    const fraudCheckPayload: DetectFraudInput = {
-                        transactionId: response.data.id,
-                        amount: response.data.amount,
-                        courseTitle: courseDoc.data()?.title || 'Cours inconnu',
-                        user: {
-                            id: userId,
-                            accountAgeInSeconds: accountAgeInSeconds,
-                            isFirstTransaction: paymentHistory.empty,
-                            emailDomain: userData.email.split('@')[1] || '',
-                        }
-                    };
-
-                    // Call the AI flow and update the document regardless of the outcome.
-                    detectFraud(fraudCheckPayload).then(async (fraudResult) => {
-                        await adminDb.collection('payments').doc(response.data.id).set({
-                            fraudReview: {
-                                isSuspicious: fraudResult.isSuspicious,
-                                riskScore: fraudResult.riskScore,
-                                reason: fraudResult.reason,
-                                checkedAt: Timestamp.now(),
-                                reviewed: false
-                            }
-                        }, { merge: true });
-
-                        if (fraudResult.isSuspicious) {
-                             await sendAdminNotification({
-                                title: `⚠️ Alerte Fraude (Score: ${fraudResult.riskScore})`,
-                                body: `Transaction suspecte de ${formatCurrency(response.data.amount)} par ${userData.email}. Raison: ${fraudResult.reason}`,
-                                link: `/admin/payments?search=${response.data.id}`,
-                                type: 'financialAnomalies'
-                            });
-                        }
-                    }).catch(e => console.error("AI Fraud Detection Flow failed:", e));
-                }
+            if (!userId || !courseId) {
+                console.error("Moneroo transaction is missing userId or courseId in metadata.", response.data.metadata);
+                return { success: false, error: 'Transaction metadata is incomplete.' };
             }
+
+            const [userDoc, courseDoc, paymentHistory] = await Promise.all([
+                adminDb.collection('users').doc(userId).get(),
+                adminDb.collection('courses').doc(courseId).get(),
+                adminDb.collection('payments').where('userId', '==', userId).limit(1).get()
+            ]);
+
+            if (!userDoc.exists || !courseDoc.exists) {
+                console.error(`User (ID: ${userId}) or Course (ID: ${courseId}) not found for transaction ${transactionId}.`);
+                return { success: false, error: 'User or course not found.' };
+            }
+
+            const userData = userDoc.data()!;
+            const courseData = courseDoc.data()!;
+            
+            // --- CREATE PAYMENT DOCUMENT ---
+            const paymentRef = adminDb.collection('payments').doc(response.data.id);
+            const paymentPayload = {
+                userId: userId,
+                instructorId: courseData.instructorId,
+                courseId: courseId,
+                courseTitle: courseData.title,
+                amount: response.data.amount,
+                currency: response.data.currency_code,
+                date: Timestamp.now(),
+                status: 'Completed',
+            };
+            
+            await paymentRef.set(paymentPayload);
+            // --- END PAYMENT DOCUMENT CREATION ---
+
+
+            // --- AI FRAUD DETECTION (ASYNC) ---
+            const accountAgeInSeconds = Math.floor((Timestamp.now().seconds - (userData.createdAt as Timestamp).seconds));
+            const fraudCheckPayload: DetectFraudInput = {
+                transactionId: response.data.id,
+                amount: response.data.amount,
+                courseTitle: courseData.title || 'Cours inconnu',
+                user: {
+                    id: userId,
+                    accountAgeInSeconds: accountAgeInSeconds,
+                    isFirstTransaction: paymentHistory.empty,
+                    emailDomain: userData.email.split('@')[1] || '',
+                }
+            };
+            
+            detectFraud(fraudCheckPayload).then(async (fraudResult) => {
+                await paymentRef.set({
+                    fraudReview: {
+                        isSuspicious: fraudResult.isSuspicious,
+                        riskScore: fraudResult.riskScore,
+                        reason: fraudResult.reason,
+                        checkedAt: Timestamp.now(),
+                        reviewed: false
+                    }
+                }, { merge: true });
+
+                if (fraudResult.isSuspicious) {
+                     await sendAdminNotification({
+                        title: `⚠️ Alerte Fraude (Score: ${fraudResult.riskScore})`,
+                        body: `Transaction suspecte de ${formatCurrency(response.data.amount)} par ${userData.email}. Raison: ${fraudResult.reason}`,
+                        link: `/admin/payments?search=${response.data.id}`,
+                        type: 'financialAnomalies'
+                    });
+                }
+            }).catch(e => console.error("AI Fraud Detection Flow failed:", e));
             // --- END AI FRAUD DETECTION ---
 
             return { success: true, data: response.data };

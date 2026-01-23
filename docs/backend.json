@@ -906,6 +906,9 @@
         "courseId": {
           "type": "string"
         },
+        "courseTitle": {
+          "type": "string"
+        },
         "amount": {
           "type": "number"
         },
@@ -1190,6 +1193,10 @@
     "/payments/{paymentId}": {
       "schema": { "$ref": "#/entities/Payment" },
       "description": "Records a payment transaction."
+    },
+    "/payouts/{payoutId}": {
+      "schema": { "$ref": "#/entities/Payout" },
+      "description": "Records an instructor's payout request."
     },
     "roles/{roleId}": {
         "schema": { "$ref": "#/entities/Role" }

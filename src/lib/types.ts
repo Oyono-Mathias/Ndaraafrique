@@ -319,18 +319,29 @@ export interface Payment {
   userId: string;
   instructorId: string;
   courseId: string;
+  courseTitle?: string;
   amount: number;
   currency: string;
-  date: any; // Firestore Timestamp
+  date: Timestamp;
   status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
   fraudReview?: {
     isSuspicious: boolean;
     riskScore: number;
     reason: string;
-    checkedAt: any;
+    checkedAt: Timestamp;
     reviewed?: boolean;
   }
 }
+
+export interface Payout {
+  id: string;
+  instructorId: string;
+  amount: number;
+  method: 'Mobile Money' | 'Virement';
+  status: 'en_attente' | 'valide' | 'rejete';
+  date: Timestamp;
+}
+
 
 export interface SecurityLog {
   id: string;
