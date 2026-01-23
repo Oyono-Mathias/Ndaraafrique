@@ -38,7 +38,6 @@ const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 // This is the inner component that uses Suspense features
 function CoursePlayerPageContent() {
   const params = useParams();
-  const searchParams = useSearchParams();
   const courseId = params.courseId as string;
   const router = useRouter();
   const { user, currentUser } = useRole();
@@ -101,7 +100,7 @@ function CoursePlayerPageContent() {
   }
 
   const handleLessonComplete = useCallback(async () => {
-    if (!user || !activeLecture || !course || !progressRef) return;
+    if (!user || !activeLecture || !course || !progressRef || totalLectures === 0) return;
 
     const completedLessons = courseProgress?.completedLessons || [];
 
@@ -143,7 +142,9 @@ function CoursePlayerPageContent() {
     }
   }, [user, activeLecture, courseId, totalLectures, db, course, progressRef, courseProgress, toast]);
   
-  if (isLoading || courseLoading || progressLoading) {
+  const isPageLoading = isLoading || courseLoading || progressLoading;
+  
+  if (isPageLoading) {
       return (
         <div className="flex h-screen bg-black">
           <Skeleton className="w-80 h-full bg-slate-800" />
