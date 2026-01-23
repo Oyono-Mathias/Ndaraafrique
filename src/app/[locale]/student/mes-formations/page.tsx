@@ -92,20 +92,26 @@ export default function MyLearningPage() {
   const isLoading = isUserLoading || dataLoading;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold dark:text-white">{t('Nav.courses')}</h1>
         <p className="text-muted-foreground dark:text-slate-400">Reprenez là où vous vous êtes arrêté.</p>
       </header>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 dark:bg-slate-800 dark:text-slate-300 dark:data-[state=active]:bg-background">
-          <TabsTrigger value="all">{t('all')}</TabsTrigger>
-          <TabsTrigger value="in-progress">{t('in_progress')}</TabsTrigger>
-          <TabsTrigger value="completed">{t('completed')}</TabsTrigger>
+        <TabsList className="bg-transparent p-0 inline-flex h-auto border-b border-slate-800 w-full justify-start gap-8">
+          <TabsTrigger value="all" className="bg-transparent p-0 pb-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary transition-all font-semibold text-base text-slate-400">
+            {t('all')}
+          </TabsTrigger>
+          <TabsTrigger value="in-progress" className="bg-transparent p-0 pb-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary transition-all font-semibold text-base text-slate-400">
+            {t('in_progress')}
+          </TabsTrigger>
+          <TabsTrigger value="completed" className="bg-transparent p-0 pb-3 rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary transition-all font-semibold text-base text-slate-400">
+            {t('completed')}
+          </TabsTrigger>
         </TabsList>
 
-        <div className="mt-6">
+        <div className="mt-8">
             <TabsContent value="all">
                 <CourseGrid courses={courses} isLoading={isLoading} />
             </TabsContent>

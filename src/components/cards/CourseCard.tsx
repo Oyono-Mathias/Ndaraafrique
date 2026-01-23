@@ -79,8 +79,8 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
                 </div>
               ) : (
                 <div>
-                    <Progress value={progress} className="h-2" indicatorClassName={progressColorClass} />
-                    <p className="text-xs text-right text-slate-400 mt-1">{progress}%</p>
+                    <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
+                    <p className="text-xs text-right text-slate-400 mt-1.5">{progress}%</p>
                 </div>
               )
             ) : (
