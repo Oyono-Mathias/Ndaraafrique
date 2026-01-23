@@ -364,6 +364,7 @@ export interface Quiz {
   description?: string;
   courseId: string;
   createdAt: Timestamp;
+  questionsCount?: number;
 }
 
 export interface QuizAttempt {
@@ -421,3 +422,5 @@ export interface Chat {
     lastSenderId?: string;
     unreadBy?: string[];
 }
+
+    
