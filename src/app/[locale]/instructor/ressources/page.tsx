@@ -1,13 +1,17 @@
-
 'use client';
-import { useTranslations } from 'next-intl';
+
+import { ResourcesClient } from '@/components/instructor/resources/ResourcesClient';
 
 export default function ResourcesPage() {
-  const t = useTranslations();
   return (
-    <div>
-      <h1 className="text-2xl font-bold">Gérer les ressources</h1>
-      <p className="text-muted-foreground">Cette section est en cours de construction.</p>
+    <div className="space-y-6">
+      <header>
+        <h1 className="text-3xl font-bold text-white">Ressources</h1>
+        <p className="text-muted-foreground">
+          Partagez des fichiers, des liens et d'autres ressources avec vos étudiants.
+        </p>
+      </header>
+      <ResourcesClient />
     </div>
   );
 }

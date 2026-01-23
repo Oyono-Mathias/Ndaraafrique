@@ -163,7 +163,7 @@ service cloud.firestore {
     }
 
     match /resources/{id} {
-      allow read: if true; // Permettre de voir les ressources disponibles
+      allow read: if isSignedIn();
       allow create: if isApprovedInstructor();
       allow update, delete: if isAdmin() || isCourseOwner(resource.data.courseId);
     }

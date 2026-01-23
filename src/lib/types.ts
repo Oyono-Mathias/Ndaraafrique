@@ -405,7 +405,7 @@ export interface Resource {
     courseId: string;
     instructorId: string;
     title: string;
-    type: 'link' | 'file';
+    type: 'pdf' | 'video' | 'image' | 'link' | 'file';
     url: string;
     createdAt: Timestamp;
 }
