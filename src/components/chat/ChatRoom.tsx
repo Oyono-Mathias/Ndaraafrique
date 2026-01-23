@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -12,8 +11,6 @@ import {
   writeBatch,
   serverTimestamp,
   getFirestore,
-  addDoc,
-  Timestamp,
   getDoc,
   arrayRemove,
   arrayUnion,
@@ -71,7 +68,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     audioRef.current?.play().catch(e => console.error("Failed to play sound", e));
   }, []);
   
-  // Update "last seen" time every minute
   useEffect(() => {
     const updateLastSeen = () => {
        if (otherParticipant?.lastSeen) {
@@ -83,7 +79,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => clearInterval(interval);
   }, [otherParticipant?.lastSeen]);
   
-  // Fetch chat doc and other participant details
   useEffect(() => {
     if (!chatId || !user) {
         setParticipantLoading(false);
@@ -99,12 +94,13 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
             if (otherId) {
                 const userRef = doc(db, 'users', otherId);
-                const userSnap = await getDoc(userRef);
-                if (userSnap.exists()) {
-                    setOtherParticipant(userSnap.data() as ParticipantDetails);
-                } else {
-                    setOtherParticipant(null);
-                }
+                onSnapshot(userRef, (userSnap) => {
+                    if (userSnap.exists()) {
+                        setOtherParticipant(userSnap.data() as ParticipantDetails);
+                    } else {
+                        setOtherParticipant(null);
+                    }
+                })
             } else {
                 setOtherParticipant(null);
             }
@@ -123,7 +119,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubscribe();
 }, [chatId, user, db, router]);
 
-  // Fetch messages
   useEffect(() => {
     if (!chatId) {
         setMessagesLoading(false);
@@ -133,21 +128,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
         const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-        
-        // Optimistic check to avoid re-adding local messages
-        const serverMessages = msgs.filter(m => !m.id.startsWith('temp-'));
-        
-        const latestServerMessageId = serverMessages[serverMessages.length - 1]?.id;
-        
-        setMessages(prev => {
-            const tempMessages = prev.filter(m => m.id.startsWith('temp-'));
-            if(latestServerMessageId === lastMessageRef.current) {
-                return [...serverMessages, ...tempMessages];
-            }
-            lastMessageRef.current = latestServerMessageId;
-            return serverMessages;
-        });
-
+        setMessages(msgs);
         setMessagesLoading(false);
     }, (error) => {
         console.error("Error fetching messages:", error);
@@ -156,7 +137,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubscribe();
   }, [chatId, db]);
 
-  // Auto-scroll logic
   useEffect(() => {
     setTimeout(() => {
         if (scrollAreaRef.current) {
@@ -178,20 +158,9 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     setNewMessage("");
     playSentSound();
     
-    const tempId = 'temp-' + Date.now();
-    const tempMessage = {
-        id: tempId,
-        text: textToSend,
-        senderId: user.uid,
-        createdAt: Timestamp.now(),
-        status: 'sent' as const
-    };
-    setMessages(prev => [...prev, tempMessage]);
-
     try {
         const batch = writeBatch(db);
-        const messagesRef = collection(db, `chats/${chatId}/messages`);
-        const newMsgRef = doc(messagesRef);
+        const newMsgRef = doc(collection(db, `chats/${chatId}/messages`));
         batch.set(newMsgRef, {
             senderId: user.uid,
             text: textToSend,
@@ -211,11 +180,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
     } catch(err) {
         console.error("Error sending message:", err);
-        setMessages(prev => prev.filter(m => m.id !== tempId));
         setNewMessage(textToSend);
         errorEmitter.emit('permission-error', new FirestorePermissionError({
             path: `chats/${chatId}/messages`,
-            operation: 'create'
+            operation: 'create',
+            requestResourceData: { text: textToSend }
         }));
     } finally {
         setIsSending(false);
@@ -308,14 +277,14 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                 {isMe && (
                                   <div className="flex items-center gap-1 justify-end mt-1">
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                                      {msg.createdAt ? new Date(msg.createdAt.toDate ? msg.createdAt.toDate() : msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                      {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                     <ReadReceipt status={msg.status} />
                                   </div>
                                 )}
                                 {!isMe && (
                                     <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
-                                      {msg.createdAt ? new Date(msg.createdAt.toDate ? msg.createdAt.toDate() : msg.createdAt).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                      {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                 )}
                             </div>

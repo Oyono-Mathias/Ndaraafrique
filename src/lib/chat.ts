@@ -6,12 +6,10 @@ import {
   where,
   getDocs,
   doc,
-  setDoc,
   serverTimestamp,
   writeBatch,
   getDoc,
   DocumentData,
-  Firestore,
 } from 'firebase/firestore';
 import type { NdaraUser } from '@/lib/types';
 
@@ -57,7 +55,6 @@ export async function startChat(
 
       const isAdminInitiated = currentUserData.role === 'admin';
 
-      // Allow chat if domains match OR if an admin is involved
       if (!isAdminInitiated && currentUserData.careerGoals?.interestDomain !== contactUserData.careerGoals?.interestDomain) {
          throw new Error("Vous ne pouvez discuter qu'avec les membres de votre filière.");
       }
@@ -83,7 +80,6 @@ export async function startChat(
     }
   } catch (error: any) {
     console.error("Error in startChat function: ", error);
-    // Re-throw a more user-friendly error
     if (error.message.includes('permission-denied') || error.message.includes('permission denied')) {
         throw new Error("Permission refusée. Vos règles de sécurité Firestore empêchent cette action.");
     }

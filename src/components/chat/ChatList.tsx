@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -9,12 +8,12 @@ import { Loader2, UserPlus } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import type { Chat, NdaraUser } from '@/lib/types';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next-intl/navigation';
+import { Skeleton } from '../ui/skeleton';
 
 interface EnrichedChat extends Chat {
   otherParticipant: Partial<NdaraUser>;
@@ -34,7 +33,7 @@ const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, i
         >
             <Avatar className="h-12 w-12 border-2 border-slate-600">
                 <AvatarImage src={chat.otherParticipant.profilePictureURL} />
-                <AvatarFallback>{chat.otherParticipant.fullName?.charAt(0)}</AvatarFallback>
+                <AvatarFallback>{chat.otherParticipant.fullName?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="flex-1 overflow-hidden">
                 <div className="flex justify-between items-center">
@@ -69,17 +68,29 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
           setDataLoading(chatsLoading);
           return;
         }
+        if (chatsLoading) return;
 
         const enrichChats = async () => {
             setDataLoading(true);
             const participantIds = chats.map(c => c.participants.find(p => p !== user?.uid)).filter(Boolean) as string[];
+            
+            if(participantIds.length === 0) {
+                setEnrichedChats([]);
+                setDataLoading(false);
+                return;
+            }
+
             const uniqueIds = [...new Set(participantIds)];
             
             const usersMap = new Map<string, NdaraUser>();
             if (uniqueIds.length > 0) {
-                const usersQuery = query(collection(db, 'users'), where('uid', 'in', uniqueIds));
-                const usersSnap = await getDocs(usersQuery);
-                usersSnap.forEach(doc => usersMap.set(doc.id, doc.data() as NdaraUser));
+                // Fetch users in chunks of 30
+                for (let i = 0; i < uniqueIds.length; i += 30) {
+                    const chunk = uniqueIds.slice(i, i+30);
+                    const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
+                    const usersSnap = await getDocs(usersQuery);
+                    usersSnap.forEach(doc => usersMap.set(doc.data().uid, doc.data() as NdaraUser));
+                }
             }
             
             const newEnrichedChats = chats.map(chat => {
@@ -110,7 +121,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
             <ScrollArea className="flex-1">
                 {isLoading ? (
                     <div className="p-4 space-y-4">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg" />)}
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg bg-slate-800" />)}
                     </div>
                 ) : enrichedChats.length > 0 ? (
                     enrichedChats.map(chat => (
@@ -122,7 +133,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                         />
                     ))
                 ) : (
-                    <div className="p-8 text-center text-slate-500">
+                    <div className="p-8 text-center text-slate-400 text-sm">
                         <p>Aucune conversation. Trouvez des membres dans l'annuaire pour commencer à discuter !</p>
                     </div>
                 )}
