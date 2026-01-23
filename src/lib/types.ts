@@ -97,18 +97,18 @@ export interface NdaraUser {
 export interface Lecture {
   id: string;
   title: string;
-  videoUrl?: string;
-  description?: string;
-  duration?: number;
+  order: number;
+  type: 'video' | 'text' | 'pdf';
+  contentUrl?: string; // For video & PDF
+  textContent?: string; // For text
+  duration?: number; // in minutes
   isFreePreview?: boolean;
-  order?: number;
 }
 
 export interface Section {
   id: string;
   title: string;
   order: number;
-  lectures?: Lecture[];
 }
 
 export interface Assignment {

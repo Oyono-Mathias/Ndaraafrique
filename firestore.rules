@@ -66,16 +66,16 @@ service cloud.firestore {
       allow list: if true; // For catalogue browsing
 
       allow create: if isApprovedInstructor() && request.resource.data.instructorId == request.auth.uid;
-      allow update, delete: if (isOwner(resource.data.instructorId) || isAdmin());
+      allow update, delete: if (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin());
 
       match /sections/{sectionId} {
         allow read: if true;
         allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
-      }
 
-      match /lectures/{lectureId} {
-        allow read: if true;
-        allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+         match /lectures/{lectureId} {
+            allow read: if true;
+            allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+        }
       }
       
       match /quizzes/{quizId} {
