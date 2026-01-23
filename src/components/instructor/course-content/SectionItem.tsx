@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useTransition } from 'react';
-import { Droppable, Draggable, DragDropContext, OnDragEndResponder } from '@hello-pangea/dnd';
+import { DragDropContext, Droppable, Draggable, OnDragEndResponder } from '@hello-pangea/dnd';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import { reorderLectures } from '@/actions/lectureActions';
@@ -149,5 +149,3 @@ export function SectionItem({ courseId, section, dragHandleProps }: { courseId: 
     </>
   );
 }
-
-    

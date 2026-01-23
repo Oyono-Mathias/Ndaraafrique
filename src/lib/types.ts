@@ -379,7 +379,6 @@ export interface QuestionOption {
 export interface Question {
   id: string;
   text: string;
-  type: 'multiple-choice';
   options: QuestionOption[];
   order: number;
   createdAt: Timestamp;
@@ -390,6 +389,7 @@ export interface Quiz {
   title: string;
   description?: string;
   courseId: string;
+  sectionId: string;
   createdAt: Timestamp;
   questionsCount?: number;
 }
@@ -449,5 +449,3 @@ export interface Chat {
     lastSenderId?: string;
     unreadBy?: string[];
 }
-
-    

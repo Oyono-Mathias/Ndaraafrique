@@ -3,6 +3,17 @@
 
 import { adminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+import { z } from 'zod';
+import { getStorage } from 'firebase-admin/storage';
+
+const assignmentSchema = z.object({
+  title: z.string().min(3, "Le titre est requis."),
+  description: z.string().optional(),
+  correctionGuide: z.string().optional(),
+  dueDate: z.date().optional(),
+  attachments: z.array(z.object({ name: z.string(), url: z.string().url() })).optional(),
+});
+
 
 interface GradeSubmissionParams {
   submissionId: string;
@@ -53,4 +64,51 @@ export async function gradeSubmissionAction({
     console.error('Error grading submission:', error);
     return { success: false, error: 'Une erreur est survenue lors de la notation.' };
   }
+}
+
+export async function createAssignment({ courseId, sectionId, formData }: { courseId: string; sectionId: string; formData: any }) {
+    const validatedFields = assignmentSchema.safeParse(formData);
+    if (!validatedFields.success) {
+      return { success: false, error: validatedFields.error.flatten().fieldErrors };
+    }
+    if (!adminDb) return { success: false, error: "Service indisponible" };
+    try {
+      const newAssignmentRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc();
+      await newAssignmentRef.set({
+        ...validatedFields.data,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+      return { success: true, assignmentId: newAssignmentRef.id };
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+}
+
+export async function updateAssignment({ courseId, sectionId, assignmentId, formData }: { courseId: string; sectionId: string; assignmentId: string; formData: any }) {
+    const validatedFields = assignmentSchema.safeParse(formData);
+    if (!validatedFields.success) {
+        return { success: false, error: validatedFields.error.flatten().fieldErrors };
+    }
+    if (!adminDb) return { success: false, error: "Service indisponible" };
+    try {
+        const assignmentRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc(assignmentId);
+        await assignmentRef.update({
+            ...validatedFields.data,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function deleteAssignment({ courseId, sectionId, assignmentId }: { courseId: string, sectionId: string, assignmentId: string }) {
+    if (!adminDb) return { success: false, error: "Service indisponible" };
+    try {
+        const assignmentRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc(assignmentId);
+        await assignmentRef.delete();
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }
