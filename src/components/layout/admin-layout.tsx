@@ -2,7 +2,7 @@
 'use client';
 
 import { useRole } from "@/context/RoleContext";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next-intl/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";

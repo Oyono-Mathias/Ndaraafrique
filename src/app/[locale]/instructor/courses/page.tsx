@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'next-intl';
+import { Link } from 'next-intl/navigation';
 import Image from 'next/image';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';

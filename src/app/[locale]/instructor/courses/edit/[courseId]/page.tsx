@@ -14,7 +14,7 @@ import { Loader2, ArrowLeft } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Link } from 'next-intl';
+import { Link } from 'next-intl/navigation';
 
 export default function EditCoursePage({ params }: { params: { courseId: string } }) {
   const { courseId } = params;

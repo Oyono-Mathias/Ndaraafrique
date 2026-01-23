@@ -22,14 +22,17 @@ interface EnrichedCertificate extends Enrollment {
   instructor?: Partial<NdaraUser>;
 }
 
+// Helper function to fetch data in chunks to avoid Firestore's 'in' query limitation.
 async function fetchDataMap(db: any, collectionName: string, fieldName: string | null, ids: string[]) {
     const dataMap = new Map();
     if (ids.length === 0) return dataMap;
 
+    // Firestore 'in' query supports up to 30 elements in the array since recent updates.
     for (let i = 0; i < ids.length; i += 30) {
         const chunk = ids.slice(i, i + 30);
         if (chunk.length === 0) continue;
         
+        // Use documentId() for querying by document ID.
         const key = fieldName || documentId();
         const q = query(collection(db, collectionName), where(key, 'in', chunk));
         const snapshot = await getDocs(q);

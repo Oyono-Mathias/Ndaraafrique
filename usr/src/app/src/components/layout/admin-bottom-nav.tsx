@@ -1,8 +1,7 @@
 
 'use client';
 
-import Link from 'next/link';
-import { usePathname } from 'next-intl/navigation';
+import { Link, usePathname } from 'next-intl/navigation';
 import {
   LayoutDashboard,
   Users,
@@ -22,7 +21,10 @@ const navItems = [
 
 const NavItem = ({ href, icon: Icon, label }: typeof navItems[0]) => {
   const pathname = usePathname();
-  const isActive = pathname === href || (href !== '/admin' && pathname.startsWith(href));
+  
+  const isDashboardActive = pathname === href;
+  const isOtherActive = href !== '/admin' && pathname.startsWith(href);
+  const isActive = isDashboardActive || isOtherActive;
 
   return (
     <Link href={href} className="flex flex-col items-center justify-center gap-1 flex-1 p-1 h-full">

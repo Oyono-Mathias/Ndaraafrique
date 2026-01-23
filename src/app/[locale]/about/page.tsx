@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { ChevronsRight } from 'lucide-react';
-import { Link } from 'next-intl';
+import { Link } from 'next-intl/navigation';
 import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';

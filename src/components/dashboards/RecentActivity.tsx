@@ -9,7 +9,7 @@ import type { UserActivity } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Award, BookOpen, Star, ClipboardCheck, History } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'next-intl/navigation';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';

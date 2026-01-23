@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Enrollment, NdaraUser, Course } from '@/lib/types';
-import { Link } from 'next-intl';
+import { Link } from 'next-intl/navigation';
 
 interface EnrichedCertificate extends Enrollment {
   student?: Partial<NdaraUser>;
