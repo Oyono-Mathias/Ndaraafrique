@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next-intl/navigation';
+import { useParams, useRouter } from 'next-intl/navigation';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import {
@@ -13,20 +13,15 @@ import {
   where,
   getDocs,
   orderBy,
-  limit,
-  startAfter,
-  QueryDocumentSnapshot,
-  updateDoc,
   serverTimestamp,
-  getDoc,
   setDoc
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Book, CheckCircle, Award, FileText } from 'lucide-react';
-import { CourseCompletionModal } from '@/components/modals/course-completion-modal';
-import type { Course, Section, Lecture } from '@/lib/types';
+import { Loader2, CheckCircle } from 'lucide-react';
+import { CertificateModal } from '@/components/modals/certificate-modal';
+import type { Course, Section, Lecture, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CourseSidebar } from './_components/CourseSidebar';
 import { Button } from '@/components/ui/button';
@@ -35,11 +30,9 @@ import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
-// This is the inner component that uses Suspense features
 function CoursePlayerPageContent() {
   const params = useParams();
   const courseId = params.courseId as string;
-  const router = useRouter();
   const { user, currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
@@ -49,22 +42,21 @@ function CoursePlayerPageContent() {
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   
   const [isCompleted, setIsCompleted] = useState(false);
-  const [showCompletionModal, setShowCompletionModal] = useState(false);
+  const [showCertificateModal, setShowCertificateModal] = useState(false);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
+  const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [course, db]);
+  const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
+
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const { data: courseProgress, isLoading: progressLoading } = useDoc(progressRef);
   
   const isEnrolled = useMemo(() => currentUser?.role === 'admin', [currentUser]);
-
-  // Derived state
   const isEbook = course?.contentType === 'ebook';
-
   const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch sections and lectures
   useEffect(() => {
     if (!courseId) return;
     const fetchCourseContent = async () => {
@@ -82,7 +74,6 @@ function CoursePlayerPageContent() {
       }
       setLecturesMap(lecturesData);
       
-      // Set initial active lecture
       if (fetchedSections.length > 0 && lecturesData.get(fetchedSections[0].id)?.length > 0) {
         setActiveLecture(lecturesData.get(fetchedSections[0].id)![0]);
       }
@@ -124,7 +115,7 @@ function CoursePlayerPageContent() {
 
       if (newProgress >= 100) {
         setIsCompleted(true);
-        setShowCompletionModal(true);
+        setShowCertificateModal(true);
         
         const activityRef = doc(collection(db, `users/${user.uid}/activity`));
         await setDoc(activityRef, {
@@ -142,7 +133,7 @@ function CoursePlayerPageContent() {
     }
   }, [user, activeLecture, courseId, totalLectures, db, course, progressRef, courseProgress, toast]);
   
-  const isPageLoading = isLoading || courseLoading || progressLoading;
+  const isPageLoading = isLoading || courseLoading || progressLoading || instructorLoading;
   
   if (isPageLoading) {
       return (
@@ -159,13 +150,14 @@ function CoursePlayerPageContent() {
 
   return (
     <>
-      <CourseCompletionModal
-        isOpen={showCompletionModal}
-        onClose={() => setShowCompletionModal(false)}
+      <CertificateModal
+        isOpen={showCertificateModal}
+        onClose={() => setShowCertificateModal(false)}
         courseName={course?.title || ''}
         studentName={currentUser?.fullName}
-        onDownload={() => alert('Download certificate')}
-        onShare={() => alert('Share certificate')}
+        instructorName={instructor?.fullName || ''}
+        completionDate={courseProgress?.updatedAt?.toDate() || new Date()}
+        certificateId={`${user?.uid}_${courseId}`}
       />
        <div className="flex flex-col h-screen bg-black">
         {currentUser?.role === 'admin' && (
