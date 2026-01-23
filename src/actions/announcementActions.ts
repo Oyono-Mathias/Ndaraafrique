@@ -56,8 +56,7 @@ export async function sendCourseAnnouncement({ courseId, instructorId, title, me
 
     studentIds.forEach(studentId => {
         notificationPromises.push(sendUserNotification(studentId, {
-            title: `📢 Annonce pour le cours : ${courseDoc.data()?.title}`,
-            body: title,
+            text: `Annonce pour le cours "${courseDoc.data()?.title}": ${title}`,
             link: `/courses/${courseId}`
         }));
     });

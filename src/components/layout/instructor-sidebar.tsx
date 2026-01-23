@@ -87,7 +87,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: "Mon Travail",
       items: [
-        { href: '/instructor/courses', icon: LayoutDashboard, label: 'Tableau de Bord' },
+        { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
         { href: '/instructor/courses', icon: BookOpen, label: 'Mes Cours' },
         { href: '/instructor/devoirs', icon: ClipboardCheck, label: 'Devoirs' },
         { href: '/instructor/quiz', icon: FileQuestion, label: 'Quiz' },

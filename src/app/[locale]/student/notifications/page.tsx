@@ -2,14 +2,14 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, writeBatch, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, writeBatch, doc, updateDoc } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Bell, Check, CheckCircle, ShieldAlert } from 'lucide-react';
@@ -46,13 +46,13 @@ export default function NotificationsPage() {
     await batch.commit();
   }
 
-  const handleNotificationClick = (notification: Notification) => {
-    if (notification.link) {
-        router.push(notification.link);
-    }
+  const handleNotificationClick = async (notification: Notification) => {
     if (!notification.read && currentUser) {
         const notifRef = doc(db, `users/${currentUser.uid}/notifications`, notification.id);
-        writeBatch(db).update(notifRef, { read: true }).commit();
+        await updateDoc(notifRef, { read: true });
+    }
+    if (notification.link) {
+        router.push(notification.link);
     }
   }
 
