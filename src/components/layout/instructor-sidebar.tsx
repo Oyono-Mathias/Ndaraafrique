@@ -1,7 +1,6 @@
-
 "use client";
 
-import { Link, useRouter, usePathname } from 'next-intl/navigation';
+import { Link, usePathname, useRouter } from 'next-intl/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";

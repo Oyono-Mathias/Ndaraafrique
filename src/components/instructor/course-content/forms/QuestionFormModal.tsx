@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useTransition } from 'react';
@@ -80,6 +79,8 @@ export function QuestionFormModal({ isOpen, onOpenChange, courseId, sectionId, q
             }
         });
     };
+    
+    const correctOptionIndex = fields.findIndex(f => f.isCorrect).toString();
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
@@ -90,7 +91,7 @@ export function QuestionFormModal({ isOpen, onOpenChange, courseId, sectionId, q
                         <FormField control={form.control} name="text" render={({ field }) => ( <FormItem><FormLabel>Texte de la question</FormLabel><FormControl><Textarea {...field} /></FormControl><FormMessage /></FormItem> )}/>
                         <div className="space-y-3">
                             <Label>Options de réponse</Label>
-                             <RadioGroup onValueChange={handleCorrectOptionChange} defaultValue={fields.findIndex(f => f.isCorrect).toString()}>
+                             <RadioGroup onValueChange={handleCorrectOptionChange} defaultValue={correctOptionIndex}>
                                 {fields.map((field, index) => (
                                     <div key={field.id} className="flex items-center gap-2">
                                         <FormControl>

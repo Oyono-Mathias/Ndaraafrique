@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Link } from 'next-intl/navigation';
@@ -60,7 +59,7 @@ export function CourseSidebar({
                                         >
                                             <CheckCircle className="h-4 w-4 shrink-0" />
                                             <span className="flex-1">{lecture.title}</span>
-                                            <span className="text-xs text-slate-500">{lecture.duration} min</span>
+                                            {lecture.duration && <span className="text-xs text-slate-500">{lecture.duration} min</span>}
                                         </button>
                                     </li>
                                 ))}

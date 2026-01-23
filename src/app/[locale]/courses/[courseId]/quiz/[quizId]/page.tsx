@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -26,7 +25,8 @@ import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
 export default function TakeQuizPage() {
-  const { courseId, quizId } = useParams();
+  const params = useParams();
+  const { courseId, quizId } = params;
   const router = useRouter();
   const { user } = useRole();
   const db = getFirestore();
@@ -73,7 +73,9 @@ export default function TakeQuizPage() {
     setIsSubmitting(true);
     let score = 0;
     questions.forEach(q => {
-      if (answers[q.id] === q.correctOptionIndex) {
+      // @ts-ignore
+      const correctIndex = q.options.findIndex(opt => opt.isCorrect);
+      if (answers[q.id] === correctIndex) {
         score++;
       }
     });
@@ -171,7 +173,7 @@ export default function TakeQuizPage() {
                     {currentQuestion?.options.map((option, index) => (
                       <div key={index} className="flex items-center space-x-3">
                         <RadioGroupItem value={index.toString()} id={`q${currentQuestionIndex}-o${index}`} />
-                        <label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base text-slate-200 cursor-pointer">{option}</label>
+                        <label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base text-slate-200 cursor-pointer">{option.text}</label>
                       </div>
                     ))}
                   </RadioGroup>
