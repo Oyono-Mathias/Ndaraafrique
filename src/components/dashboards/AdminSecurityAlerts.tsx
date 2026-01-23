@@ -7,7 +7,6 @@ import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, ShieldOff, CreditCard, User, ArrowRight, Ban, Check, Loader2 } from 'lucide-react';
-import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, SecurityLog } from '@/lib/types';
