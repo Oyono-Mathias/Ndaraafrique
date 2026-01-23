@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -114,11 +113,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (pathname.startsWith('/instructor/')) {
         const segments = pathname.split('/');
-        if (segments.length === 3) {
-            const privateInstructorRoutes = ['avis', 'certificats', 'courses', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'revenus', 'students'];
-            if (!privateInstructorRoutes.includes(segments[2])) {
-                return true;
-            }
+        if (segments.length === 2 && segments[1]) {
+            // This handles `/instructor/[id]` which is a public profile
+            // It filters out sub-routes like `/instructor/courses` which would have length 3
+            return true;
         }
     }
     return false;
@@ -140,7 +138,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (role === 'admin' && !isAdminPage) {
         router.push('/admin');
-    } else if (role === 'instructor' && !(isInstructorPage || isStudentPage || isAdminPage)) {
+    } else if (role === 'instructor' && !isInstructorPage && !isStudentPage && !isAdminPage) {
         if (!isPublicPage && !isAuthPage) {
             router.push('/instructor/dashboard');
         }

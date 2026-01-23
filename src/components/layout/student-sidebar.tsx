@@ -1,6 +1,7 @@
+
 "use client";
 
-import { Link, usePathname, useRouter } from "next-intl/navigation";
+import { Link, usePathname } from "next-intl/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -85,7 +86,6 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 
 
 export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
-  const router = useRouter();
   const { switchRole, availableRoles, user, currentUser } = useRole();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
@@ -162,12 +162,10 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-    router.push('/admin');
   };
 
   const handleSwitchToInstructor = () => {
     switchRole('instructor');
-    router.push('/instructor/courses');
   };
   
   const profileProgress = useMemo(() => {
