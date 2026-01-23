@@ -39,6 +39,12 @@ service cloud.firestore {
       return isSignedIn() 
         && exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
+    
+    function isCourseOwner(courseId) {
+      return isSignedIn() 
+        && exists(/databases/$(database)/documents/courses/$(courseId))
+        && request.auth.uid == get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId;
+    }
 
 
     /* ==================================
@@ -66,16 +72,37 @@ service cloud.firestore {
       allow list: if true; // For catalogue browsing
 
       allow create: if isApprovedInstructor() && request.resource.data.instructorId == request.auth.uid;
-      allow update, delete: if (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin());
+      allow update, delete: if isCourseOwner(courseId) || isAdmin();
 
       match /sections/{sectionId} {
         allow read: if true;
-        allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
+        allow write: if isCourseOwner(courseId) || isAdmin();
 
          match /lectures/{lectureId} {
             allow read: if true;
-            allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
-        }
+            allow write: if isCourseOwner(courseId) || isAdmin();
+         }
+         
+         match /quizzes/{quizId} {
+            allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+            allow write: if isCourseOwner(courseId) || isAdmin();
+
+            match /questions/{questionId} {
+                allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+                allow write: if isCourseOwner(courseId) || isAdmin();
+            }
+         }
+         
+         match /assignments/{assignmentId} {
+            allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+            allow write: if isCourseOwner(courseId) || isAdmin();
+         }
+         
+         match /announcements/{announcementId} {
+            allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
+            allow create: if isCourseOwner(courseId) || isAdmin();
+            allow update, delete: if isCourseOwner(courseId) || isAdmin();
+         }
       }
     }
     

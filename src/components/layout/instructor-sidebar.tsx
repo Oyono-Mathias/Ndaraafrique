@@ -22,6 +22,7 @@ import {
   LogIn,
   Shield,
   Briefcase,
+  Megaphone,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -104,6 +105,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: "Communication",
       items: [
+        { href: '/instructor/annonces', icon: Megaphone, label: 'Annonces' },
         { href: '/student/messages', icon: MessagesSquare, label: 'Messagerie' },
         { href: '/instructor/questions-reponses', icon: MessagesSquare, label: 'Q&R' },
         { href: '/instructor/avis', icon: Star, label: 'Avis' },

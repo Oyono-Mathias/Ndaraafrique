@@ -259,6 +259,15 @@ export interface Notification {
   type?: 'success' | 'info' | 'reminder' | 'alert';
 }
 
+export interface Announcement {
+  id: string;
+  courseId: string;
+  instructorId: string;
+  title: string;
+  message: string;
+  createdAt: Timestamp;
+}
+
 export interface UserActivity {
   id: string;
   userId: string;

@@ -1,6 +1,19 @@
 
 {
   "entities": {
+    "Announcement": {
+      "title": "Announcement",
+      "type": "object",
+      "description": "An announcement made by an instructor for a specific course.",
+      "properties": {
+        "courseId": { "type": "string" },
+        "instructorId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["courseId", "instructorId", "title", "message", "createdAt"]
+    },
     "AdminGrant": {
       "title": "Admin Course Grant",
       "type": "object",
@@ -1179,6 +1192,10 @@
     ]
   },
   "firestore": {
+    "courses/{courseId}/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Announcements for a specific course."
+    },
     "admin_grants/{grantId}": {
       "schema": { "$ref": "#/entities/AdminGrant" }
     },
