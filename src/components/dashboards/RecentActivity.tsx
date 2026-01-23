@@ -14,7 +14,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
-
 const ActivityIcon = ({ type }: { type: UserActivity['type'] }) => {
     switch (type) {
         case 'enrollment':

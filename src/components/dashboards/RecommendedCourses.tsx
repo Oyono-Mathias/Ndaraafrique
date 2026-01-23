@@ -26,17 +26,16 @@ interface UserRecommendations {
 }
 
 export function RecommendedCourses() {
-    const { currentUser, loading } = useRole(); // Utilise l'état de chargement combiné
+    const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
     const [isLoadingInstructors, setIsLoadingInstructors] = useState(true);
 
-    // Cette condition est maintenant plus robuste et attend que le rôle soit confirmé.
     const recommendationRef = useMemo(
-        () => (loading || !currentUser || currentUser.role === 'admin') 
+        () => (isUserLoading || !currentUser) 
             ? null
             : doc(db, 'recommended_courses', currentUser.uid),
-        [currentUser, loading, db]
+        [currentUser, isUserLoading, db]
     );
 
     const { data: recommendationDoc, isLoading: isRecsLoading } = useDoc<UserRecommendations>(recommendationRef);
@@ -47,7 +46,7 @@ export function RecommendedCourses() {
         if (recommendedCourses.length === 0) {
             setIsLoadingInstructors(false);
             return;
-        };
+        }
 
         const fetchInstructors = async () => {
             setIsLoadingInstructors(true);
@@ -63,8 +62,8 @@ export function RecommendedCourses() {
             if (idsToFetch.length > 0) {
                  const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
                  const userSnapshots = await getDocs(usersQuery);
-                 userSnapshots.forEach(doc => {
-                    const userData = doc.data() as NdaraUser;
+                 userSnapshots.forEach(docSnap => {
+                    const userData = docSnap.data() as NdaraUser;
                     newInstructors.set(userData.uid, { 
                         uid: userData.uid,
                         fullName: userData.fullName,
@@ -79,12 +78,7 @@ export function RecommendedCourses() {
         fetchInstructors();
     }, [recommendedCourses, db, instructorsMap]);
 
-    const finalIsLoading = loading || (recommendationRef !== null && (isRecsLoading || isLoadingInstructors));
-
-    // Sécurité supplémentaire : ne jamais rien rendre si c'est un admin.
-    if (currentUser?.role === 'admin') {
-        return null;
-    }
+    const finalIsLoading = isUserLoading || (recommendationRef !== null && (isRecsLoading || isLoadingInstructors));
 
     if (finalIsLoading) {
          return (

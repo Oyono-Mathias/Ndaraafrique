@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -112,7 +113,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
             }
         } else {
-            router.push('/messages');
+            router.push('/student/messages');
         }
         setParticipantLoading(false);
     }, (error) => {
