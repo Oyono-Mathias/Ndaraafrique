@@ -83,7 +83,7 @@ export default function NotificationsPage() {
                   key={notif.id}
                   onClick={() => handleNotificationClick(notif)}
                   className={cn(
-                    "w-full text-left p-4 rounded-lg flex items-start gap-4 transition-colors",
+                    "w-full text-left p-4 rounded-lg flex items-start gap-4 transition-all duration-200 hover:-translate-y-0.5",
                     notif.read ? "hover:bg-slate-800/50" : "bg-primary/10 hover:bg-primary/20 border border-primary/20"
                   )}
                 >

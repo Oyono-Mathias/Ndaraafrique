@@ -71,7 +71,7 @@ export function RecentActivity() {
                 ) : activities && activities.length > 0 ? (
                     <div className="space-y-2">
                         {activities.map(activity => (
-                            <Link key={activity.id} href={activity.link || '#'} className="block p-3 rounded-lg hover:bg-slate-800 transition-colors">
+                            <Link key={activity.id} href={activity.link || '#'} className="block p-3 rounded-lg hover:bg-slate-800 transition-colors animate-in fade-in-0 slide-in-from-top-2 duration-500">
                                 <div className="flex items-start gap-4">
                                     <div className="p-1 mt-1">
                                        <ActivityIcon type={activity.type} />

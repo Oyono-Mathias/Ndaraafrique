@@ -265,7 +265,10 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     return (
                         <div 
                             key={msg.id} 
-                            className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto")}
+                            className={cn(
+                                "flex items-end gap-2 max-w-[85%] animate-in fade-in-0 duration-300",
+                                isMe ? "ml-auto flex-row-reverse slide-in-from-right-4" : "mr-auto slide-in-from-left-4"
+                            )}
                         >
                             <div className={cn(
                                 "rounded-xl px-3 py-2 text-[15px] shadow-sm relative",
