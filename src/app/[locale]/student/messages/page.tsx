@@ -1,3 +1,4 @@
+
 'use client';
 import { Suspense } from 'react';
 import { ChatList } from '@/components/chat/ChatList';
@@ -37,11 +38,11 @@ function MessagesPageContent() {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 h-[calc(100vh_-_theme(spacing.16))] -m-6">
+        <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] lg:grid-cols-[380px_1fr] h-[calc(100vh_-_theme(spacing.16))] -m-6">
             <div className="col-span-1 border-r border-slate-800">
                 <ChatList selectedChatId={chatId} />
             </div>
-            <div className="md:col-span-2 lg:col-span-3">
+            <div className="col-span-1">
                 {chatId ? (
                     <ChatRoom chatId={chatId} />
                 ) : (

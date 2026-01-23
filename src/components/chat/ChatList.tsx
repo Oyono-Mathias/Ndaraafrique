@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -27,8 +28,8 @@ const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, i
         <button 
             onClick={() => router.push(`/student/messages?chatId=${chat.id}`)}
             className={cn(
-                "w-full text-left p-3 flex items-center gap-3 transition-colors",
-                isSelected ? "bg-slate-700" : "hover:bg-slate-800"
+                "w-full text-left p-3 flex items-center gap-3 transition-colors rounded-lg",
+                isSelected ? "bg-slate-700" : "hover:bg-slate-800/60"
             )}
         >
             <Avatar className="h-12 w-12 border-2 border-slate-600">
@@ -111,17 +112,18 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const isLoading = chatsLoading || dataLoading;
 
     return (
-        <div className="bg-[#111827] h-full flex flex-col">
+        <div className="bg-slate-900/70 h-full flex flex-col">
             <header className="p-4 border-b border-slate-800 flex-shrink-0">
-                 <Button className="w-full" onClick={() => router.push('/student/annuaire')}>
+                 <Button className="w-full" variant="outline" onClick={() => router.push('/student/annuaire')}>
                     <UserPlus className="mr-2 h-4 w-4"/>
                     Nouveau message
                 </Button>
             </header>
             <ScrollArea className="flex-1">
+                <div className="p-2">
                 {isLoading ? (
-                    <div className="p-4 space-y-4">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-lg bg-slate-800" />)}
+                    <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-[76px] w-full rounded-lg bg-slate-800" />)}
                     </div>
                 ) : enrichedChats.length > 0 ? (
                     enrichedChats.map(chat => (
@@ -137,6 +139,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                         <p>Aucune conversation. Trouvez des membres dans l'annuaire pour commencer à discuter !</p>
                     </div>
                 )}
+                </div>
             </ScrollArea>
         </div>
     );
