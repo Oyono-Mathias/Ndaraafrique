@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import Link from 'next/link';
+import { Link } from 'next-intl';
 import { useRole } from '@/context/RoleContext';
 import { collection, query, where, getFirestore, getDocs, doc } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';

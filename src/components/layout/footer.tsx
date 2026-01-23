@@ -1,7 +1,7 @@
 
 'use client';
 
-import Link from 'next/link';
+import { Link } from 'next-intl';
 import Image from 'next/image';
 import { Facebook, Linkedin } from 'lucide-react';
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';

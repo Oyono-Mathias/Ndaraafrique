@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase';
 import { doc, getFirestore } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
 
@@ -37,7 +37,7 @@ export function HowItWorks() {
   const [activeStep, setActiveStep] = useState(steps[0].id);
 
   const db = getFirestore();
-  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
 
   const landingPageContent = settings?.content?.landingPage;

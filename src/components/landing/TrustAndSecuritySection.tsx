@@ -2,11 +2,12 @@
 'use client';
 
 import { ShieldCheck, Lock, CreditCard } from 'lucide-react';
-import { useDoc, useMemoFirebase } from '@/firebase';
+import { useDoc } from '@/firebase';
 import { doc, getFirestore } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useMemo } from 'react';
 
 const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementType, title: string, description: string }) => {
     return (
@@ -26,7 +27,7 @@ const FeatureCard = ({ icon: Icon, title, description }: { icon: React.ElementTy
 
 export function TrustAndSecuritySection() {
   const db = getFirestore();
-  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
   const landingPageContent = settings?.content?.landingPage;
 

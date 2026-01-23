@@ -6,7 +6,7 @@ import { Button } from '../ui/button';
 import { UserNav } from './user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useRouter } from 'next-intl/navigation';
-import Link from 'next/link';
+import { Link } from 'next-intl';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import React, { useEffect, useState } from 'react';

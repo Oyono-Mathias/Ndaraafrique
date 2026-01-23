@@ -1,6 +1,7 @@
+
 "use client";
 
-import Link from "next/link";
+import { Link } from "next-intl";
 import { usePathname } from 'next-intl/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
@@ -29,7 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { useCollection } from '@/firebase';
-import { useMemoFirebase } from '@/firebase';
+import { useMemo } from 'react';
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";
 import { UserNav } from "./user-nav";
@@ -89,25 +90,25 @@ export function AdminSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: st
     { href: "/admin/roles", icon: Shield, label: "Rôles & Permissions" },
   ];
 
-  const pendingInstructorsQuery = useMemoFirebase(() => 
+  const pendingInstructorsQuery = useMemo(() => 
     currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null,
     [db, currentUser]
   );
   const { data: pendingInstructors } = useCollection(pendingInstructorsQuery);
 
-  const pendingCoursesQuery = useMemoFirebase(() =>
+  const pendingCoursesQuery = useMemo(() =>
     currentUser?.role === 'admin' ? query(collection(db, 'courses'), where('status', '==', 'Pending Review')) : null,
     [db, currentUser]
   );
   const { data: pendingCourses } = useCollection(pendingCoursesQuery);
 
-  const pendingPayoutsQuery = useMemoFirebase(() =>
+  const pendingPayoutsQuery = useMemo(() =>
     currentUser?.role === 'admin' ? query(collection(db, 'payouts'), where('status', '==', 'en_attente')) : null,
     [db, currentUser]
   );
   const { data: pendingPayouts } = useCollection(pendingPayoutsQuery);
   
-  const openTicketsQuery = useMemoFirebase(() =>
+  const openTicketsQuery = useMemo(() =>
     currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null,
     [db, currentUser]
   );

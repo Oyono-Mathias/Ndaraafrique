@@ -1,9 +1,7 @@
-
 'use client';
 
-import Link from 'next/link';
+import Link from 'next-intl/link';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { useMemoFirebase } from '@/firebase/provider';
 import { collection, query, where, getFirestore, getDocs, limit, orderBy, documentId } from 'firebase/firestore';
 import { Frown } from 'lucide-react';
 import { useMemo, useState, useEffect } from 'react';
@@ -12,12 +10,13 @@ import type { Course, NdaraUser } from '@/lib/types';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { CourseCard } from '../cards/CourseCard';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ContinueLearning } from './ContinueLearning';
 import { RecommendedCourses } from './RecommendedCourses';
 import { RecentActivity } from './RecentActivity';
 import { useRole } from '@/context/RoleContext';
+import { Button } from '../ui/button';
 
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
@@ -59,7 +58,7 @@ export function StudentDashboard() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
   // Fetch all published courses
-  const allCoursesQuery = useMemoFirebase(() => {
+  const allCoursesQuery = useMemo(() => {
     return query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc'));
   }, [db]);
   const { data: allCourses, isLoading: coursesLoading } = useCollection<Course>(allCoursesQuery);

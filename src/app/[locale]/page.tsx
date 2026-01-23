@@ -2,9 +2,9 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import Link from 'next/link';
+import { Link } from 'next-intl';
 import { useRole } from '@/context/RoleContext';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Footer } from '@/components/layout/footer';
@@ -31,7 +31,7 @@ function LandingPageContent() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
-  const settingsRef = useMemoFirebase(() => doc(db, 'settings', 'global'), [db]);
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
   const landingPageContent = settings?.content?.landingPage;
 
