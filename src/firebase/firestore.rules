@@ -106,14 +106,21 @@ service cloud.firestore {
         }
       }
     }
+    
+    match /questions/{questionId} {
+        allow read: if isSignedIn();
+        allow create: if isOwner(request.resource.data.studentId);
+        allow update: if isOwner(resource.data.instructorId) && request.resource.data.status == 'answered';
+    }
+
 
     /* ======================
        INSCRIPTIONS & PAIEMENTS
     ====================== */
 
     match /enrollments/{id} {
-      allow read: if isSignedIn(); 
-      allow create: if isSignedIn();
+      allow get: if true; // Allow public verification
+      allow list, create: if isSignedIn();
       allow update: if isAdmin() || isOwner(resource.data.studentId) || isOwner(resource.data.instructorId);
     }
 
@@ -156,7 +163,7 @@ service cloud.firestore {
     }
 
     match /resources/{id} {
-      allow read: if true; // Permettre de voir les ressources disponibles
+      allow read: if isSignedIn();
       allow create: if isApprovedInstructor();
       allow update, delete: if isAdmin() || isCourseOwner(resource.data.courseId);
     }

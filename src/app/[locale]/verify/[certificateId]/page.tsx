@@ -43,7 +43,7 @@ function VerificationPageContent() {
     return <VerificationSkeleton />;
   }
 
-  if (!enrollment || enrollmentError) {
+  if (!enrollment || enrollmentError || enrollment.progress < 100) {
     return (
       <div className="flex flex-col items-center justify-center text-center p-4">
         <ShieldAlert className="w-16 h-16 text-destructive mb-4" />
