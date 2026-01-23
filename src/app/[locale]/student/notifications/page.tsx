@@ -35,6 +35,8 @@ export default function NotificationsPage() {
   );
   const { data: notifications, isLoading } = useCollection<Notification>(notificationsQuery);
   
+  const hasUnread = useMemo(() => notifications?.some(n => !n.read), [notifications]);
+
   const handleMarkAllAsRead = async () => {
     if (!currentUser || !notifications) return;
     const unreadNotifs = notifications.filter(n => !n.read);
@@ -65,8 +67,8 @@ export default function NotificationsPage() {
 
       <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Vos notifications</CardTitle>
-          <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead}>
+          <CardTitle className="text-white">Vos notifications</CardTitle>
+          <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} disabled={!hasUnread}>
             <Check className="mr-2 h-4 w-4"/>
             Tout marquer comme lu
           </Button>
