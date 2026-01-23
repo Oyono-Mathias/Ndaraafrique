@@ -224,11 +224,15 @@ export interface CourseQuestion {
   courseId: string;
   studentId: string;
   instructorId: string;
-  title: string;
-  body: string;
+  questionText: string;
+  answerText?: string;
+  status: 'answered' | 'pending';
   createdAt: Timestamp;
-  status: 'answered' | 'unanswered';
-  answerCount: number;
+  answeredAt?: Timestamp;
+  // Denormalized data for easier display
+  courseTitle: string;
+  studentName: string;
+  studentAvatarUrl?: string;
 }
 
 export interface CourseAnswer {

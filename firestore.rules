@@ -106,6 +106,13 @@ service cloud.firestore {
         }
       }
     }
+    
+    match /questions/{questionId} {
+        allow read: if isSignedIn();
+        allow create: if isOwner(request.resource.data.studentId);
+        allow update: if isOwner(resource.data.instructorId) && request.resource.data.status == 'answered';
+    }
+
 
     /* ======================
        INSCRIPTIONS & PAIEMENTS
