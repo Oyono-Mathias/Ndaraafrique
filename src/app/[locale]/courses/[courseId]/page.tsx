@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next-intl/navigation';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { useDoc, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import {
   doc,
@@ -21,7 +21,7 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, CheckCircle } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
-import type { Course, Section, Lecture, NdaraUser } from '@/lib/types';
+import type { Course, Section, Lecture, NdaraUser, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CourseSidebar } from './_components/CourseSidebar';
 import { Button } from '@/components/ui/button';
@@ -52,6 +52,9 @@ function CoursePlayerPageContent() {
 
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const { data: courseProgress, isLoading: progressLoading } = useDoc(progressRef);
+  
+  const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
+  const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
   
   const isEnrolled = useMemo(() => currentUser?.role === 'admin', [currentUser]);
   const isEbook = course?.contentType === 'ebook';
@@ -133,7 +136,7 @@ function CoursePlayerPageContent() {
     }
   }, [user, activeLecture, courseId, totalLectures, db, course, progressRef, courseProgress, toast]);
   
-  const isPageLoading = isLoading || courseLoading || progressLoading || instructorLoading;
+  const isPageLoading = isLoading || courseLoading || progressLoading || instructorLoading || quizzesLoading;
   
   if (isPageLoading) {
       return (
@@ -171,6 +174,7 @@ function CoursePlayerPageContent() {
                 course={course}
                 sections={sections}
                 lecturesMap={lecturesMap}
+                quizzes={quizzes || []}
                 activeLecture={activeLecture}
                 onLessonClick={handleLessonClick}
               />

@@ -77,15 +77,19 @@ service cloud.firestore {
             allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
         }
       }
+    }
+    
+    match /quizzes/{quizId} {
+      allow read: if isStudentEnrolled(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId) || isOwner(get(/databases/$(database)/documents/quizzes/$(quizId)).data.instructorId) || isAdmin();
+      allow write: if isOwner(get(/databases/$(database)/documents/quizzes/$(quizId)).data.instructorId) || isAdmin();
+
+      match /questions/{questionId} {
+          allow read: if isStudentEnrolled(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId) || isOwner(get(/databases/$(database)/documents/quizzes/$(quizId)).data.instructorId) || isAdmin();
+      }
       
-      match /quizzes/{quizId} {
-        allow read: if isStudentEnrolled(courseId) || isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
-        allow write: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin();
-        
-        match /attempts/{attemptId} {
-          allow get: if isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isOwner(resource.data.userId);
-          allow create: if isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
-        }
+      match /attempts/{attemptId} {
+        allow get: if isOwner(get(/databases/$(database)/documents/quizzes/$(quizId)).data.instructorId) || isOwner(resource.data.userId);
+        allow create: if isStudentEnrolled(get(/databases/$(database)/documents/quizzes/$(quizId)).data.courseId) && isOwner(request.resource.data.userId);
       }
     }
 

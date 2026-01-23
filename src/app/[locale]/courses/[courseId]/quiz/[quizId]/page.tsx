@@ -38,7 +38,6 @@ export default function TakeQuizPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [finalScore, setFinalScore] = useState<number | null>(null);
-  const [showConfetti, setShowConfetti] = useState(false);
 
   const quizRef = useMemo(() => doc(db, 'quizzes', quizId as string), [db, quizId]);
   const { data: quiz, isLoading: isQuizLoading } = useDoc<Quiz>(quizRef);
