@@ -1,8 +1,7 @@
 
 "use client";
 
-import Link from "next/link";
-import { useRouter, usePathname } from "next-intl/navigation";
+import { Link, useRouter, usePathname } from 'next-intl/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -21,6 +20,7 @@ import {
   LogIn,
   Shield,
   Briefcase,
+  Megaphone,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
@@ -32,10 +32,10 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
   const { currentUser } = useRole();
   const { toast } = useToast();
   
-  const isActive = pathname === href || (href !== '/student/dashboard' && pathname.startsWith(href));
+  const isActive = pathname.startsWith(href);
 
   const isAllowedPath = (path: string) => {
-    const alwaysAllowed = ['/student/dashboard', '/account', '/student/messages'];
+    const alwaysAllowed = ['/instructor/courses', '/account', '/student/messages'];
     if (alwaysAllowed.some(p => path.startsWith(p))) return true;
     return currentUser?.isInstructorApproved;
   };
@@ -85,7 +85,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: "Mon Travail",
       items: [
-        { href: '/student/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
+        { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Tableau de Bord' },
         { href: '/instructor/courses', icon: BookOpen, label: 'Mes Cours' },
         { href: '/instructor/devoirs', icon: ClipboardCheck, label: 'Devoirs' },
         { href: '/instructor/quiz', icon: FileQuestion, label: 'Quiz' },
@@ -103,6 +103,7 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
     {
       label: "Communication",
       items: [
+        { href: '/instructor/annonces', icon: Megaphone, label: 'Annonces' },
         { href: '/student/messages', icon: MessagesSquare, label: 'Messagerie' },
         { href: '/instructor/questions-reponses', icon: MessagesSquare, label: 'Q&R' },
         { href: '/instructor/avis', icon: Star, label: 'Avis' },
@@ -112,10 +113,12 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
+    router.push('/admin');
   };
 
   const handleSwitchToStudent = () => {
     switchRole('student');
+    router.push('/student/dashboard');
   };
 
   return (
