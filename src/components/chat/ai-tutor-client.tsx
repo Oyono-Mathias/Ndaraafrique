@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -9,10 +10,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, Send, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
-import { useCollection, useMemoFirebase } from "@/firebase";
+import { useCollection } from "@/firebase";
 import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore, limit, startAfter, QueryDocumentSnapshot, DocumentData, getDocs, doc } from "firebase/firestore";
-import { errorEmitter } from "@/firebase/error-emitter";
-import { FirestorePermissionError } from "@/firebase/errors";
 
 interface AiTutorMessage {
   id: string;
@@ -91,7 +90,6 @@ export function AiTutorClient() {
 
 
   useEffect(() => {
-    // Only auto-scroll for new messages, not when loading more
     if (!isFetchingMore && scrollAreaRef.current) {
       const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (viewport) {
@@ -117,23 +115,23 @@ export function AiTutorClient() {
       const chatInput: MathiasTutorInput = { query: userMessageText };
       const result = await mathiasTutor(chatInput);
       
-      const aiMessagePayload = { sender: "ai" as const, text: result.response, timestamp: serverTimestamp() };
-      
       const batch = getFirestore().batch();
       const userMessageRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       batch.set(userMessageRef, { sender: "user", text: userMessageText, timestamp: serverTimestamp() });
       
       const aiMessageRef = doc(collection(db, `users/${user.uid}/chatHistory`));
-      batch.set(aiMessageRef, aiMessagePayload);
+      batch.set(aiMessageRef, { sender: "ai", text: result.response, timestamp: serverTimestamp() });
 
       await batch.commit();
-      
-      // Replace optimistic UI update with real data from the effect
+
+      const newAiMessage = { id: aiMessageRef.id, sender: "ai" as const, text: result.response, timestamp: new Date() };
+      setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id).concat([{ id: userMessageRef.id, sender: 'user', text: userMessageText, timestamp: new Date()}, newAiMessage]));
       
     } catch (error) {
       console.error("AI chat error:", error);
       const errorMessagePayload = { sender: "ai" as const, text: "Désolé, une erreur est survenue. Veuillez réessayer.", timestamp: serverTimestamp() };
-      await addDoc(collection(db, `users/${user.uid}/chatHistory`), errorMessagePayload);
+      const errorDocRef = await addDoc(collection(db, `users/${user.uid}/chatHistory`), errorMessagePayload);
+      setMessages(prev => prev.filter(m => m.id !== tempUserMessage.id).concat([{ id: errorDocRef.id, ...errorMessagePayload, timestamp: new Date()}]));
     } finally {
       setIsAiResponding(false);
     }

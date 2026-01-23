@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -45,13 +46,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [otherParticipant, setOtherParticipant] = useState<ParticipantDetails | null>(null);
   const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
-  const [newMessage, setNewMessage] = useState("");
   const [participantLoading, setParticipantLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const lastMessageRef = useRef<string | null>(null);
   
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
