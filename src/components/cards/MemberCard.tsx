@@ -1,4 +1,3 @@
-
 'use client';
 
 import type { NdaraUser } from '@/lib/types';
@@ -20,31 +19,30 @@ export function MemberCard({ member, onContact, isProcessing }: MemberCardProps)
 
   return (
     <div
-      className="text-center p-4 glassmorphism-card rounded-2xl transition-all duration-300 hover:shadow-primary/10 hover:scale-[1.03] flex flex-col justify-between"
+      className="text-center p-6 bg-slate-800/50 rounded-2xl border border-slate-700/80 transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1.5 flex flex-col justify-between"
       aria-labelledby={`member-name-${member.uid}`}
     >
       <div>
-        <Avatar className="mx-auto h-20 w-20 mb-3 border-2 border-primary/20">
-          <AvatarImage src={member.profilePictureURL} alt={`Avatar de ${member.username}`} />
-          <AvatarFallback className="text-2xl bg-slate-700 text-primary font-semibold">
-            {member.username?.charAt(0).toUpperCase() || '?'}
+        <Avatar className="mx-auto h-24 w-24 mb-4 border-4 border-slate-700">
+          <AvatarImage src={member.profilePictureURL} alt={`Avatar de ${member.fullName}`} />
+          <AvatarFallback className="text-3xl bg-slate-700 text-primary font-semibold">
+            {member.fullName?.charAt(0).toUpperCase() || '?'}
           </AvatarFallback>
         </Avatar>
-        <h3 id={`member-name-${member.uid}`} className="font-bold text-sm text-slate-100 truncate">
-          @{member.username}
+        <h3 id={`member-name-${member.uid}`} className="font-bold text-lg text-slate-100 truncate">
+          {member.fullName}
         </h3>
-        <p className="text-xs text-slate-400 mb-3 truncate" aria-label={`Domaine d'intérêt: ${member.careerGoals?.interestDomain}`}>
+        <p className="text-sm text-primary mb-4 truncate" aria-label={`Domaine d'intérêt: ${member.careerGoals?.interestDomain}`}>
           {member.careerGoals?.interestDomain || 'Apprenant'}
         </p>
       </div>
       <Button
-        size="sm"
         onClick={handleContactClick}
         disabled={isProcessing}
-        className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs h-9 w-full mt-2"
-        aria-label={`Contacter ${member.username}`}
+        className="w-full"
+        aria-label={`Contacter ${member.fullName}`}
       >
-        {isProcessing ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <MessageSquare className="mr-1.5 h-3.5 w-3.5" />}
+        {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MessageSquare className="mr-2 h-4 w-4" />}
         Contacter
       </Button>
     </div>

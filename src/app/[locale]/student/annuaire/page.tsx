@@ -1,19 +1,19 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter, Link } from 'next-intl/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import { startChat } from '@/lib/chat';
 import { useToast } from '@/hooks/use-toast';
 import type { NdaraUser } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Frown, UserSearch } from 'lucide-react';
+import { Search, UserSearch, AlertCircle } from 'lucide-react';
 import { MemberCard } from '@/components/cards/MemberCard';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function AnnuairePage() {
     const { currentUser, isUserLoading } = useRole();
@@ -42,13 +42,20 @@ export default function AnnuairePage() {
         if (!allMembers) return [];
         if (!debouncedSearchTerm) return allMembers;
         return allMembers.filter(member =>
-            member.username?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
             member.fullName?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
         );
     }, [allMembers, debouncedSearchTerm]);
 
     const handleContact = async (contactId: string) => {
         if (!currentUser) return;
+        if (!currentUser.isProfileComplete) {
+            toast({
+                variant: 'destructive',
+                title: "Profil Incomplet",
+                description: "Veuillez compléter votre profil pour contacter d'autres membres.",
+            });
+            return;
+        }
         setIsContacting(contactId);
         try {
             const chatId = await startChat(currentUser.uid, contactId);
@@ -65,39 +72,44 @@ export default function AnnuairePage() {
     };
 
     const isLoading = isUserLoading || membersLoading;
-    const domain = currentUser?.careerGoals?.interestDomain;
+    const isProfileIncomplete = !currentUser?.isProfileComplete;
 
     return (
         <div className="space-y-8">
             <header>
                 <h1 className="text-3xl font-bold text-white">Annuaire des Membres</h1>
-                {domain ? (
-                    <p className="text-muted-foreground">
-                        Connectez-vous avec d'autres apprenants de la filière <span className="font-semibold text-primary">{domain}</span>.
-                    </p>
-                ) : (
-                     <p className="text-amber-400">Complétez votre profil pour accéder à l'annuaire de votre filière.</p>
-                )}
+                <p className="text-muted-foreground">
+                    Connectez-vous avec d'autres apprenants partageant vos centres d'intérêt.
+                </p>
             </header>
 
-            {domain && (
-                <div className="relative max-w-sm">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-                    <Input
-                        placeholder="Rechercher un membre par nom..."
-                        className="h-12 pl-12 bg-slate-800 border-slate-700 text-base"
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                    />
-                </div>
+             {isProfileIncomplete && (
+                <Alert className="bg-amber-900/40 border-amber-500/30 text-amber-300">
+                    <AlertCircle className="h-4 w-4 !text-amber-300" />
+                    <AlertTitle className="font-bold text-white">Action requise</AlertTitle>
+                    <AlertDescription>
+                        Pour contacter d'autres membres et apparaître dans l'annuaire, veuillez <Link href="/account" className="font-bold underline hover:text-amber-200">compléter votre profil</Link>.
+                    </AlertDescription>
+                </Alert>
             )}
+
+            <div className="relative max-w-lg">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
+                <Input
+                    placeholder="Rechercher un membre par nom..."
+                    className="h-12 pl-12 bg-slate-800 border-slate-700 text-base rounded-full"
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    disabled={isProfileIncomplete}
+                />
+            </div>
             
             {isLoading ? (
-                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {[...Array(10)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-800" />)}
+                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-[288px] w-full rounded-2xl bg-slate-800" />)}
                  </div>
             ) : filteredMembers && filteredMembers.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                     {filteredMembers.map(member => (
                         <MemberCard 
                             key={member.uid} 
