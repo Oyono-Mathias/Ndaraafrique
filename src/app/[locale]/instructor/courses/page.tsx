@@ -6,72 +6,58 @@ import { Link } from 'next-intl';
 import Image from 'next/image';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, getCountFromServer, deleteDoc, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getCountFromServer, deleteDoc, doc, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PlusCircle, Search, Users, BookOpen, Trash2, Edit } from 'lucide-react';
-import type { Course } from '@/lib/types';
+import type { Course, Enrollment } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-
-function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId: string) => void }) {
-  const [enrollmentCount, setEnrollmentCount] = useState(0);
-  const [loadingCount, setLoadingCount] = useState(true);
+// New Card Component with Fintech design
+function InstructorCourseCard({ course, studentCount, onDelete }: { course: Course, studentCount: number, onDelete: (courseId: string) => void }) {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
-  const db = getFirestore();
-
-  useEffect(() => {
-    const getCount = async () => {
-      setLoadingCount(true);
-      const q = query(collection(db, 'enrollments'), where('courseId', '==', course.id));
-      const snapshot = await getCountFromServer(q);
-      setEnrollmentCount(snapshot.data().count);
-      setLoadingCount(false);
-    };
-    getCount();
-  }, [course.id, db]);
+  const { toast } = useToast();
 
   const handleDeleteClick = (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsAlertOpen(true);
+    e.preventDefault();
+    e.stopPropagation();
+    setIsAlertOpen(true);
   };
   
   const confirmDelete = (e: React.MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      onDelete(course.id);
-      setIsAlertOpen(false);
+    e.preventDefault();
+    e.stopPropagation();
+    onDelete(course.id);
+    setIsAlertOpen(false);
   }
 
   return (
     <>
-      <div className="bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/10 hover:-translate-y-1 flex flex-col">
+      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/80 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1.5 flex flex-col">
         <Link href={`/instructor/courses/edit/${course.id}`} className="block">
-            <Image
-              src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}
-              alt={course.title}
-              width={300}
-              height={170}
-              className="aspect-video object-cover w-full"
-            />
+            <div className="aspect-video relative">
+                <Image
+                  src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
+                  alt={course.title}
+                  fill
+                  className="object-cover"
+                />
+            </div>
         </Link>
-        <div className="p-4 flex flex-col flex-grow">
-          <h3 className="font-bold text-base text-slate-800 dark:text-slate-100 line-clamp-2 h-12">{course.title}</h3>
-          <div className="flex-grow"></div>
-          <div className="flex items-center justify-between mt-3 text-xs text-slate-500 dark:text-slate-400">
-            {loadingCount ? <Skeleton className="h-4 w-20" /> : (
-                <div className="flex items-center gap-1.5">
-                    <Users className="w-4 h-4" />
-                    <span>{`${enrollmentCount} étudiant(s)`}</span>
-                </div>
-            )}
-            <span className="font-semibold">{course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}</span>
+        <div className="p-5 flex flex-col flex-grow">
+          <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-100 line-clamp-2 h-14">{course.title}</h3>
+          
+          <div className="flex items-center justify-between mt-4 text-sm text-slate-500 dark:text-slate-400">
+            <div className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                <span>{`${studentCount} étudiant(s)`}</span>
+            </div>
+            <span className="font-bold text-base text-slate-800 dark:text-white">{course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}</span>
           </div>
         </div>
-        <div className="p-2 border-t border-slate-100 dark:border-slate-700/50 flex gap-1">
+        <div className="p-3 border-t border-slate-100 dark:border-slate-700/50 grid grid-cols-2 gap-2">
              <Button variant="ghost" size="sm" className="w-full justify-center text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-primary" asChild>
                 <Link href={`/instructor/courses/edit/${course.id}`}><Edit className="h-4 w-4 mr-2" /> Éditer</Link>
              </Button>
@@ -101,11 +87,13 @@ function CourseCard({ course, onDelete }: { course: Course, onDelete: (courseId:
   );
 }
 
+
 export default function InstructorCoursesPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
+  const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
 
   const coursesQuery = useMemo(
     () => currentUser?.uid
@@ -114,6 +102,32 @@ export default function InstructorCoursesPage() {
     [db, currentUser?.uid]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+
+  useEffect(() => {
+    if (!courses || courses.length === 0) return;
+
+    const fetchEnrollments = async () => {
+        const courseIds = courses.map(c => c.id);
+        const counts: Record<string, number> = {};
+
+        // Firestore 'in' query has a limit of 30 items
+        for (let i = 0; i < courseIds.length; i += 30) {
+            const chunk = courseIds.slice(i, i + 30);
+            if(chunk.length > 0) {
+                const q = query(collection(db, 'enrollments'), where('courseId', 'in', chunk));
+                const snapshot = await getDocs(q);
+                snapshot.forEach(doc => {
+                    const enrollment = doc.data() as Enrollment;
+                    counts[enrollment.courseId] = (counts[enrollment.courseId] || 0) + 1;
+                });
+            }
+        }
+        setEnrollmentCounts(counts);
+    };
+
+    fetchEnrollments();
+  }, [courses, db]);
+
 
   const filteredCourses = useMemo(() => {
     if (!courses) return [];
@@ -125,8 +139,7 @@ export default function InstructorCoursesPage() {
   const handleDeleteCourse = async (courseId: string) => {
     try {
         await deleteDoc(doc(db, 'courses', courseId));
-        // Note: Subcollections like sections, lectures, etc., are not deleted automatically.
-        // A cloud function would be needed for cascading deletes in a production app.
+        // A cloud function would be needed for cascading deletes in production.
         toast({
             title: "Cours supprimé",
             description: "Le cours a été retiré de la plateforme.",
@@ -144,25 +157,25 @@ export default function InstructorCoursesPage() {
   const isLoading = isUserLoading || coursesLoading;
 
   return (
-    <div className="p-4 md:p-6 space-y-6 dark:bg-[#0f172a] min-h-screen">
-      <header className="flex justify-between items-center">
+    <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
+      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
         <div>
-            <h1 className="text-3xl font-bold dark:text-white">Mes cours</h1>
-            <p className="text-slate-500 dark:text-slate-400">Gérez, modifiez et créez de nouvelles formations ici.</p>
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Mes Cours</h1>
+            <p className="text-slate-500 dark:text-slate-400">Gérez et développez vos formations.</p>
         </div>
-         <Button asChild className="hidden md:flex">
+         <Button asChild className="h-11 shadow-lg shadow-primary/20">
             <Link href="/instructor/courses/create">
-                <PlusCircle className="mr-2 h-4 w-4" />
+                <PlusCircle className="mr-2 h-5 w-5" />
                 Créer un nouveau cours
             </Link>
          </Button>
       </header>
 
-      <div className="relative max-w-sm">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+      <div className="relative max-w-md">
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
         <Input
-          placeholder="Rechercher un cours..."
-          className="pl-10 dark:bg-slate-800 border-slate-200 dark:border-slate-700 dark:text-white placeholder:text-slate-500 focus-visible:ring-primary"
+          placeholder="Rechercher un cours par titre..."
+          className="h-12 pl-12 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-base placeholder:text-slate-500 focus-visible:ring-primary/80"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -170,21 +183,32 @@ export default function InstructorCoursesPage() {
 
       {isLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-72 w-full rounded-xl bg-slate-100 dark:bg-slate-800" />
+          {[...Array(4)].map((_, i) => (
+            <Skeleton key={i} className="h-[350px] w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
           ))}
         </div>
       ) : filteredCourses.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredCourses.map(course => (
-            <CourseCard key={course.id} course={course} onDelete={handleDeleteCourse} />
+            <InstructorCourseCard 
+                key={course.id} 
+                course={course} 
+                studentCount={enrollmentCounts[course.id] || 0}
+                onDelete={handleDeleteCourse} 
+            />
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-8">
-          <BookOpen className="mx-auto h-12 w-12 text-slate-400" />
-          <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Aucun cours trouvé</h3>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Cliquez sur "Créer un nouveau cours" pour commencer.</p>
+        <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-10 flex flex-col items-center">
+          <BookOpen className="mx-auto h-16 w-16 text-slate-400" />
+          <h3 className="mt-4 text-xl font-semibold text-slate-700 dark:text-slate-300">Vous n’avez pas encore créé de cours</h3>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm">Commencez à partager votre savoir en créant votre première formation dès aujourd'hui.</p>
+           <Button asChild className="mt-6">
+            <Link href="/instructor/courses/create">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Créer votre premier cours
+            </Link>
+         </Button>
         </div>
       )}
       

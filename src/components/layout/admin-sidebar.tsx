@@ -1,8 +1,8 @@
 
 "use client";
 
-import { Link } from "next-intl";
-import { usePathname } from 'next-intl/navigation';
+import Link from "next/link";
+import { usePathname } from 'next/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import {
@@ -29,7 +29,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
-import { useCollection } from '@/firebase';
+import { useCollection } from '@/firebase/firestore/use-collection';
 import { useMemo } from 'react';
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "../ui/badge";

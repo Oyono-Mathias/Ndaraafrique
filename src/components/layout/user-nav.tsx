@@ -17,7 +17,7 @@ import {
     DropdownMenuTrigger,
   } from "@/components/ui/dropdown-menu"
   import { useRole } from "@/context/RoleContext"
-  import { useRouter } from 'next-intl/navigation';
+  import { useRouter } from 'next/navigation';
   import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
