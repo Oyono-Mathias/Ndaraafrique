@@ -9,7 +9,6 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 
 interface RoleContextType {
   role: UserRole;
@@ -37,7 +36,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
   const [loading, setLoading] = useState(true);
   const db = getFirestore();
-  const router = useRouter();
 
   const secureSignOut = useCallback(async () => {
     const auth = getAuth();
@@ -46,8 +44,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
     await signOut(auth);
-    router.push('/');
-  }, [db, router]);
+  }, [db]);
 
    useEffect(() => {
     const auth = getAuth();
@@ -245,13 +242,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
-      if(newRole === 'admin') router.push('/admin');
-      else if(newRole === 'instructor') router.push('/instructor/courses');
-      else router.push('/student/dashboard');
     } else {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
-  }, [availableRoles, router]);
+  }, [availableRoles]);
   
   const value = useMemo(() => ({
     role,

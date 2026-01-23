@@ -76,6 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const pathname = usePathname();
   const router = useRouter();
+
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
       logoUrl: '/icon.svg',
@@ -205,5 +206,3 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
-    

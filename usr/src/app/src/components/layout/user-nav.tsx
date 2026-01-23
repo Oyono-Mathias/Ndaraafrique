@@ -15,20 +15,27 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
+    DropdownMenuSub,
+    DropdownMenuSubTrigger,
+    DropdownMenuPortal,
+    DropdownMenuSubContent,
   } from "@/components/ui/dropdown-menu"
   import { useRole } from "@/context/RoleContext"
-  import { useRouter } from "next-intl/navigation";
-  import { LogOut, User as UserIcon, LifeBuoy, Settings, CreditCard, BadgeAlert } from 'lucide-react';
+  import { useRouter } from 'next-intl/navigation';
+  import { LogOut, User as UserIcon, LifeBuoy, CreditCard, BadgeAlert, Moon, Sun } from 'lucide-react';
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
+  import { useTheme } from "next-themes";
 
   
 export function UserNav() {
     const { currentUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
+    const { setTheme } = useTheme();
 
     const handleLogout = async () => {
         await secureSignOut();
+        // The redirect is now handled by the AppShell's useEffect
     }
 
     if (isUserLoading || !currentUser) {
@@ -87,6 +94,27 @@ export function UserNav() {
               <span>Support</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
+          <DropdownMenuSeparator className="dark:bg-slate-700"/>
+           <DropdownMenuSub>
+            <DropdownMenuSubTrigger className="cursor-pointer dark:focus:bg-slate-700">
+              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="ml-2">Thème</span>
+            </DropdownMenuSubTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuSubContent>
+                <DropdownMenuItem onClick={() => setTheme("light")}>
+                  Clair
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("dark")}>
+                  Sombre
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setTheme("system")}>
+                  Système
+                </DropdownMenuItem>
+              </DropdownMenuSubContent>
+            </DropdownMenuPortal>
+          </DropdownMenuSub>
           <DropdownMenuSeparator className="dark:bg-slate-700"/>
           <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 dark:focus:bg-red-500/10 dark:focus:text-red-400">
             <LogOut className="mr-2 h-4 w-4" />

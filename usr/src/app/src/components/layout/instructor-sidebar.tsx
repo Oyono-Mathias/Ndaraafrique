@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Link, useRouter, usePathname } from 'next-intl/navigation';
+import { Link, usePathname } from 'next-intl/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -77,7 +77,6 @@ const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon:
 };
 
 export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
-  const router = useRouter();
   const { switchRole, availableRoles } = useRole();
   const isAdmin = availableRoles.includes('admin');
 
@@ -113,12 +112,10 @@ export function InstructorSidebar({ siteName, logoUrl, onLinkClick }: { siteName
   
   const handleSwitchToAdmin = () => {
     switchRole('admin');
-    router.push('/admin');
   };
 
   const handleSwitchToStudent = () => {
     switchRole('student');
-    router.push('/student/dashboard');
   };
 
   return (
