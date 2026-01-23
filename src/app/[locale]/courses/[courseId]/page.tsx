@@ -48,13 +48,15 @@ function CoursePlayerPageContent() {
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
-  const [courseProgress, setCourseProgress] = useState<any>(null);
   
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCompletionModal, setShowCompletionModal] = useState(false);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+  
+  const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
+  const { data: courseProgress, isLoading: progressLoading } = useDoc(progressRef);
   
   const isEnrolled = useMemo(() => currentUser?.role === 'admin', [currentUser]);
 
@@ -75,7 +77,7 @@ function CoursePlayerPageContent() {
 
       const lecturesData = new Map<string, Lecture[]>();
       for (const section of fetchedSections) {
-        const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('title'));
+        const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('order'));
         const lecturesSnapshot = await getDocs(lecturesQuery);
         lecturesData.set(section.id, lecturesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture)));
       }
@@ -99,19 +101,13 @@ function CoursePlayerPageContent() {
   }
 
   const handleLessonComplete = useCallback(async () => {
-    if (!user || !activeLecture || !course) return;
+    if (!user || !activeLecture || !course || !progressRef) return;
 
-    const progressRef = doc(db, 'course_progress', `${user.uid}_${courseId}`);
-    const progressSnap = await getDoc(progressRef);
-    let completedLessons: string[] = [];
-    if(progressSnap.exists()){
-      completedLessons = progressSnap.data()?.completedLessons || [];
-    }
+    const completedLessons = courseProgress?.completedLessons || [];
 
     if (!completedLessons.includes(activeLecture.id)) {
-      completedLessons.push(activeLecture.id);
-      
-      const newProgress = Math.round((completedLessons.length / totalLectures) * 100);
+      const updatedCompletedLessons = [...completedLessons, activeLecture.id];
+      const newProgress = Math.round((updatedCompletedLessons.length / totalLectures) * 100);
 
       await setDoc(progressRef, {
         userId: user.uid,
@@ -119,13 +115,15 @@ function CoursePlayerPageContent() {
         courseTitle: course.title,
         courseCover: course.imageUrl || '',
         progressPercent: newProgress,
-        completedLessons: completedLessons,
+        completedLessons: updatedCompletedLessons,
         lastLessonId: activeLecture.id,
         lastLessonTitle: activeLecture.title,
         updatedAt: serverTimestamp(),
       }, { merge: true });
+      
+      toast({ title: "Progression sauvegardée !"})
 
-      if (newProgress === 100) {
+      if (newProgress >= 100) {
         setIsCompleted(true);
         setShowCompletionModal(true);
         
@@ -135,15 +133,17 @@ function CoursePlayerPageContent() {
             type: 'certificate',
             title: `Vous avez obtenu un certificat !`,
             description: `Félicitations pour avoir terminé le cours "${course.title}".`,
-            link: `/mes-certificats`,
+            link: `/student/mes-certificats`,
             read: false,
             createdAt: serverTimestamp()
         });
       }
+    } else {
+        toast({ title: "Leçon déjà terminée."})
     }
-  }, [user, activeLecture, courseId, totalLectures, db, course]);
+  }, [user, activeLecture, courseId, totalLectures, db, course, progressRef, courseProgress, toast]);
   
-  if (isLoading || courseLoading) {
+  if (isLoading || courseLoading || progressLoading) {
       return (
         <div className="flex h-screen bg-black">
           <Skeleton className="w-80 h-full bg-slate-800" />
@@ -186,16 +186,22 @@ function CoursePlayerPageContent() {
                 <div className="flex-1 relative">
                   {isEbook && course?.ebookUrl ? (
                       <PdfViewerClient fileUrl={course.ebookUrl} />
-                  ) : activeLecture?.videoUrl ? (
+                  ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
                     <div className="absolute inset-0">
                        <ReactPlayer
-                           url={activeLecture.videoUrl}
+                           url={activeLecture.contentUrl}
                            width="100%"
                            height="100%"
                            controls={true}
                            playing={false}
                        />
                     </div>
+                  ) : activeLecture?.type === 'pdf' && activeLecture.contentUrl ? (
+                     <PdfViewerClient fileUrl={activeLecture.contentUrl} />
+                  ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
+                      <div className="p-8 text-slate-300 prose prose-invert max-w-none">
+                         <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
+                      </div>
                   ) : (
                     <div className="h-full flex items-center justify-center text-slate-400">
                         Sélectionnez une leçon pour commencer.

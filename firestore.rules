@@ -130,6 +130,12 @@ service cloud.firestore {
       allow create: if isOwner(request.resource.data.userId);
       allow update, delete: if isOwner(resource.data.userId) || isAdmin();
     }
+    
+    // --- COURSE PROGRESS ---
+    match /course_progress/{progressId} {
+        // A user can read and write to their own progress document
+        allow read, write: if isOwner(get(/databases/$(database)/documents/course_progress/$(progressId)).data.userId);
+    }
 
 
     /* ==================================

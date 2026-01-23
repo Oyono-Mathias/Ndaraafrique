@@ -97,6 +97,7 @@ export interface NdaraUser {
 export interface Lecture {
   id: string;
   title: string;
+  description?: string;
   order: number;
   type: 'video' | 'text' | 'pdf';
   contentUrl?: string; // For video & PDF
@@ -164,6 +165,7 @@ export interface CourseProgress {
   courseId: string;
   courseTitle: string;
   courseCover?: string;
+  completedLessons: string[];
   lastLessonId: string;
   lastLessonTitle: string;
   progressPercent: number;

@@ -369,6 +369,10 @@
           "type": "string",
           "format": "uri"
         },
+        "completedLessons": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
         "lastLessonId": {
           "type": "string"
         },
@@ -1207,6 +1211,10 @@
     "recommended_courses/{userId}": {
       "schema": { "$ref": "#/entities/UserRecommendations" },
       "description": "Personalized course recommendations for a user."
+    },
+    "course_progress/{progressId}": {
+      "schema": { "$ref": "#/entities/CourseProgress" },
+      "description": "Tracks a student's progress in a course."
     },
     "tracking_events/{eventId}": {
       "schema": { "$ref": "#/entities/TrackingEvent" }
