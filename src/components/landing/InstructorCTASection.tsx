@@ -3,7 +3,7 @@
 
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
-import Link from 'next/link';
+import { Link } from 'next-intl/navigation';
 
 export function InstructorCTASection({ onTrackClick }: { onTrackClick: () => void }) {
   return (
