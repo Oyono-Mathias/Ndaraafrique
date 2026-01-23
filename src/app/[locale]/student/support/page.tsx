@@ -15,7 +15,7 @@ export default function StudentSupportPage() {
           <div className="flex flex-col items-center gap-4 p-8">
             <LifeBuoy className="h-16 w-16 text-slate-600" />
             <h3 className="text-xl font-semibold text-slate-300">Bientôt disponible</h3>
-            <p className="max-w-sm">Cette section est en cours de construction. Vous pourrez bientôt créer et suivre vos tickets de support ici.</p>
+            <p className="max-w-sm">Créez et suivez vos tickets de support.</p>
           </div>
         </CardContent>
       </Card>
