@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import { Link, useRouter } from 'next-intl/navigation';
+import { Link, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

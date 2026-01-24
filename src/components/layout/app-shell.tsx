@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next-intl/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -157,7 +157,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdminArea = pathname.startsWith('/admin');
   const isRootPath = pathname === '/';
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
+  const authPaths = ['/login', '/register', '/forgot-password', '/auth']; 
   const isAuthPage = authPaths.some(p => pathname.startsWith(p));
+
 
   return (
     <>

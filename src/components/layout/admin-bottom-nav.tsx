@@ -1,7 +1,8 @@
 
 'use client';
 
-import { Link, usePathname } from 'next-intl/navigation';
+import Link from "next/link";               // ✅ Link vient d'ici (sans accolades)
+import { usePathname } from "next/navigation"; // ✅ usePathname vient d'ici
 import {
   LayoutDashboard,
   Users,
