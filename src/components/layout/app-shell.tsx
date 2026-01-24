@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next-intl/navigation';
+import { useLocale } from 'next-intl';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -74,9 +75,9 @@ function AnnouncementBanner() {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser, switchRole } = useRole();
-  const pathname = usePathname();
   const router = useRouter();
-
+  const pathname = usePathname();
+  
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
       logoUrl: '/icon.svg',
@@ -109,16 +110,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
     
     const isAuth = authPaths.some(p => pathname === p);
-
     let isPublic = staticPublicPaths.some(p => pathname === p) || isAuth;
 
     if (!isPublic) {
         if (pathname.startsWith('/verify/')) isPublic = true;
         
-        // Check for public instructor profile `/instructor/[id]` but not private sub-routes
-        const instructorPathRegex = /^\/instructor\/[^/]+\/?$/;
+        const instructorPathRegex = /^\/instructor\/[^/]+$/;
         if (instructorPathRegex.test(pathname)) {
-            isPublic = true;
+            const privateSubRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
+            if (!privateSubRoutes.some(sub => pathname.endsWith(sub))) {
+                 isPublic = true;
+            }
         }
     }
     
@@ -126,45 +128,47 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (isUserLoading) return; // Wait until user auth state is known
 
-    // 1. Handle unauthenticated users
+    const targetPath = pathname;
+
+    // 1. If user is not logged in, redirect to login page if the page is not public
     if (!user) {
-      if (!isPublicPage) {
+      if (!isPublicPage && !isAuthPage) {
         router.push('/login');
       }
       return;
     }
 
-    // 2. Handle authenticated users
-    const isAdminArea = pathname.startsWith('/admin');
-    const isInstructorArea = pathname.startsWith('/instructor');
+    // 2. If user is logged in, handle role-based access
+    const isAdminArea = targetPath.startsWith('/admin');
+    const isInstructorArea = targetPath.startsWith('/instructor');
 
-    // Redirect admins from other areas to the admin dashboard
-    if (role === 'admin' && !isAdminArea && !isPublicPage) {
-        router.push('/admin');
-        return;
+    switch (role) {
+      case 'admin':
+        // An admin can go anywhere. No redirects needed.
+        break;
+      case 'instructor':
+        // An instructor should not access admin pages.
+        if (isAdminArea) {
+          router.push('/instructor/dashboard');
+        }
+        break;
+      case 'student':
+        // A student should not access admin or private instructor pages.
+        if (isAdminArea || (isInstructorArea && !isPublicPage)) {
+          router.push('/student/dashboard');
+        }
+        break;
     }
-    
-    // Redirect instructors from other areas to their dashboard
-    if (role === 'instructor' && !isInstructorArea && !isPublicPage) {
-        router.push('/instructor/dashboard');
-        return;
-    }
-    
-    // Redirect students from private admin/instructor areas
-    if (role === 'student' && (isAdminArea || (isInstructorArea && !isPublicPage))) {
-        router.push('/student/dashboard');
-        return;
-    }
+  }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
 
-  }, [user, role, isUserLoading, pathname, router, isPublicPage]);
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
 
-  if (isUserLoading && !isPublicPage) {
+  if (isUserLoading && !isPublicPage && !isAuthPage) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -228,5 +232,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
+    
 
     

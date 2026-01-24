@@ -9,6 +9,7 @@ import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next-intl/navigation';
 
 interface RoleContextType {
   role: UserRole;
@@ -31,6 +32,7 @@ const RoleContext = createContext<RoleContextType | undefined>(undefined);
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
+  const router = useRouter();
   const [currentUser, setCurrentUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
@@ -44,7 +46,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
     await signOut(auth);
-  }, [db]);
+    // After signing out, redirect to the login page.
+    router.push('/login');
+  }, [db, router]);
 
    useEffect(() => {
     const auth = getAuth();
@@ -241,10 +245,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
+       if (newRole === 'admin') router.push('/admin');
+       else if (newRole === 'instructor') router.push('/instructor/dashboard');
+       else router.push('/student/dashboard');
     } else {
       console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
-  }, [availableRoles]);
+  }, [availableRoles, router]);
   
   const value = useMemo(() => ({
     role,
@@ -276,3 +283,5 @@ export function useRole() {
   }
   return context;
 }
+
+    

@@ -2,17 +2,17 @@
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
-import { NextIntlClientProvider, useMessages } from 'next-intl';
+import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
  
-export default function LocaleLayout({
+export default async function LocaleLayout({
   children,
   params: {locale}
 }: {
   children: React.ReactNode;
   params: {locale: string};
 }) {
-  const messages = useMessages();
+  const messages = await getMessages();
   
   return (
     <FirebaseClientProvider>
@@ -26,5 +26,3 @@ export default function LocaleLayout({
     </FirebaseClientProvider>
   );
 }
-
-    
