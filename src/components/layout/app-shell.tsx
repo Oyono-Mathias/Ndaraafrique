@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -104,46 +104,56 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
+  const isAuthPage = useMemo(() => {
+    const authPaths = ['/login', '/register', '/forgot-password'];
+    return authPaths.some(p => pathname.startsWith(p));
+  }, [pathname]);
+
+  const isPublicPage = useMemo(() => {
+    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
+    if (staticPublicPaths.includes(pathname)) return true;
+    if (pathname.startsWith('/verify/')) return true;
+
+    // Matches /instructor/[id] but not sub-routes like /instructor/dashboard
+    const instructorPathRegex = /^\/instructor\/[^/]+$/;
+    if(instructorPathRegex.test(pathname)) {
+        return true;
+    }
+
+    return false;
+  }, [pathname]);
+
   useEffect(() => {
     if (isUserLoading) return;
-
-    // Define which paths are accessible without authentication
-    const publicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
-    const isPublicPath =
-      publicPaths.includes(pathname) ||
-      pathname.startsWith('/verify/') ||
-      /^\/instructor\/[^/]+$/.test(pathname); // Matches /instructor/[id], but not /instructor/dashboard
-
-    const authPaths = ['/login', '/register', '/forgot-password'];
-    const isAuthPath = authPaths.some(p => pathname.startsWith(p));
+    
+    const isAdminArea = pathname.startsWith('/admin');
+    const isInstructorArea = pathname.startsWith('/instructor');
+    const isStudentArea = pathname.startsWith('/student');
 
     if (!user) {
-      // If user is not logged in, and not on a public/auth page, redirect to login
-      if (!isPublicPath && !isAuthPath) {
+      if (!isPublicPage && !isAuthPage) {
         router.push('/login');
       }
       return;
     }
 
-    // If user is logged in, handle role-based area enforcement
-    const isAdminArea = pathname.startsWith('/admin');
-    const isStudentArea = pathname.startsWith('/student');
-    const isInstructorArea = pathname.startsWith('/instructor');
-
+    // Role-based redirection logic
     if (role === 'admin' && !isAdminArea) {
       router.push('/admin');
-    } else if (role === 'instructor' && (isAdminArea || isStudentArea)) {
+    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage) {
       router.push('/instructor/dashboard');
-    } else if (role === 'student' && (isAdminArea || (isInstructorArea && !isPublicPath))) {
-      router.push('/student/dashboard');
+    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublicPage) {
+       router.push('/student/dashboard');
     }
-  }, [user, role, isUserLoading, pathname, router]);
+
+  }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
+
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
 
-  if (isUserLoading && !pathname.startsWith('/login') && !pathname.startsWith('/register') && !pathname.startsWith('/forgot-password') && pathname !== '/') {
+  if (isUserLoading && !isPublicPage && !isAuthPage) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -157,8 +167,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAdminArea = pathname.startsWith('/admin');
   const isRootPath = pathname === '/';
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
-  const authPaths = ['/login', '/register', '/forgot-password', '/auth']; 
-  const isAuthPage = authPaths.some(p => pathname.startsWith(p));
 
 
   return (
