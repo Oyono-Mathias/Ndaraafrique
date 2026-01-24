@@ -6,7 +6,7 @@ import { collection, query, where, getFirestore, Timestamp } from 'firebase/fire
 import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ShieldAlert, UserCheck, Landmark, HelpCircle, ArrowRight, AlertTriangle } from 'lucide-react';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRole } from '@/context/RoleContext';

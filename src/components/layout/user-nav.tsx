@@ -21,7 +21,7 @@ import {
     DropdownMenuSubContent,
   } from "@/components/ui/dropdown-menu"
   import { useRole } from "@/context/RoleContext"
-  import { useRouter } from 'next-intl/navigation';
+  import { useRouter } from 'next/navigation';
   import { LogOut, User as UserIcon, LifeBuoy, CreditCard, BadgeAlert, Moon, Sun } from 'lucide-react';
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
