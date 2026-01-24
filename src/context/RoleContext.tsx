@@ -194,7 +194,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
           setRole(newRole);
-          localStorage.setItem('ndaraafrique-role', newRole);
 
         } else {
             console.warn("User document not found in Firestore for UID:", user.uid);

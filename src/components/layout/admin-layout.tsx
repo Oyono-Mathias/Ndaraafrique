@@ -2,7 +2,7 @@
 'use client';
 
 import { useRole } from "@/context/RoleContext";
-import { useRouter } from "next/navigation";
+import { useRouter } from "next-intl/navigation";
 import { useEffect, useState } from "react";
 import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
 import { AdminSidebar } from "@/components/layout/admin-sidebar";
@@ -34,7 +34,6 @@ export default function AdminLayout({
 }) {
   const { isUserLoading, role, switchRole } = useRole();
   const { hasPermission } = usePermissions();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg' });
   const db = getFirestore();
@@ -52,20 +51,25 @@ export default function AdminLayout({
     });
     return () => unsubscribe();
   }, [db]);
-
+  
   useEffect(() => {
+    // Automatically switch to admin role if the user has the permission but is in another role context
     if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
       switchRole('admin');
     }
-  }, [isUserLoading, hasPermission, role, switchRole, router]);
+  }, [isUserLoading, hasPermission, role, switchRole]);
 
 
-  if (isUserLoading || !hasPermission('admin:access')) {
+  if (isUserLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+  
+  if (!hasPermission('admin:access')) {
+    return <AdminAccessRequiredScreen />;
   }
   
   const handleSidebarLinkClick = () => {

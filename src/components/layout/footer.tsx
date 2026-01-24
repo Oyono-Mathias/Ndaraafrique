@@ -1,7 +1,7 @@
 
 'use client';
 
-import Link from 'next/link';
+import { Link } from 'next-intl/navigation';
 import Image from 'next/image';
 import { Facebook, Linkedin } from 'lucide-react';
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';
@@ -57,3 +57,5 @@ export function Footer() {
     </footer>
   );
 }
+
+    

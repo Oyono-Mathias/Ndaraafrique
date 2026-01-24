@@ -73,7 +73,7 @@ function AnnouncementBanner() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isUserLoading, user, currentUser } = useRole();
+  const { role, isUserLoading, user, currentUser, switchRole } = useRole();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -104,56 +104,67 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const isAuthPage = useMemo(() => {
+  const { isAuthPage, isPublicPage } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
-    return authPaths.some(p => pathname.startsWith(p));
-  }, [pathname]);
-
-  const isPublicPage = useMemo(() => {
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
-    if (staticPublicPaths.includes(pathname)) return true;
-    if (pathname.startsWith('/verify/')) return true;
+    
+    const isAuth = authPaths.some(p => pathname === p);
 
-    // Matches /instructor/[id] but not sub-routes like /instructor/dashboard
-    const instructorPathRegex = /^\/instructor\/[^/]+$/;
-    if(instructorPathRegex.test(pathname)) {
-        return true;
+    let isPublic = staticPublicPaths.some(p => pathname === p) || isAuth;
+
+    if (!isPublic) {
+        if (pathname.startsWith('/verify/')) isPublic = true;
+        
+        // Check for public instructor profile `/instructor/[id]` but not private sub-routes
+        const instructorPathRegex = /^\/instructor\/[^/]+\/?$/;
+        if (instructorPathRegex.test(pathname)) {
+            isPublic = true;
+        }
     }
-
-    return false;
+    
+    return { isAuthPage: isAuth, isPublicPage: isPublic };
   }, [pathname]);
 
   useEffect(() => {
     if (isUserLoading) return;
-    
-    const isAdminArea = pathname.startsWith('/admin');
-    const isInstructorArea = pathname.startsWith('/instructor');
-    const isStudentArea = pathname.startsWith('/student');
 
+    // 1. Handle unauthenticated users
     if (!user) {
-      if (!isPublicPage && !isAuthPage) {
+      if (!isPublicPage) {
         router.push('/login');
       }
       return;
     }
 
-    // Role-based redirection logic
-    if (role === 'admin' && !isAdminArea) {
-      router.push('/admin');
-    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage) {
-      router.push('/instructor/dashboard');
-    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublicPage) {
-       router.push('/student/dashboard');
+    // 2. Handle authenticated users
+    const isAdminArea = pathname.startsWith('/admin');
+    const isInstructorArea = pathname.startsWith('/instructor');
+
+    // Redirect admins from other areas to the admin dashboard
+    if (role === 'admin' && !isAdminArea && !isPublicPage) {
+        router.push('/admin');
+        return;
+    }
+    
+    // Redirect instructors from other areas to their dashboard
+    if (role === 'instructor' && !isInstructorArea && !isPublicPage) {
+        router.push('/instructor/dashboard');
+        return;
+    }
+    
+    // Redirect students from private admin/instructor areas
+    if (role === 'student' && (isAdminArea || (isInstructorArea && !isPublicPage))) {
+        router.push('/student/dashboard');
+        return;
     }
 
-  }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
-
+  }, [user, role, isUserLoading, pathname, router, isPublicPage]);
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
 
-  if (isUserLoading && !isPublicPage && !isAuthPage) {
+  if (isUserLoading && !isPublicPage) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -186,7 +197,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-col flex-1 min-h-screen">
           <AnnouncementBanner />
-          {(!isRootPath && !isAuthPage && user) && (
+          {!isRootPath && !isAuthPage && user && (
             <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
               {(!isFullScreenPage || isAdminArea) && user && (
                  <div className="md:hidden">
@@ -217,3 +228,5 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
+    

@@ -35,6 +35,7 @@ export function UserNav() {
 
     const handleLogout = async () => {
         await secureSignOut();
+        // The redirect is now handled by the AppShell's useEffect
     }
 
     if (isUserLoading || !currentUser) {
