@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -163,8 +164,8 @@ service cloud.firestore {
     
     // --- COURSE PROGRESS ---
     match /course_progress/{progressId} {
-        // A user can read and write to their own progress document
-        allow read, write: if isOwner(get(/databases/$(database)/documents/course_progress/$(progressId)).data.userId);
+        allow read: if request.auth.uid == resource.data.userId;
+        allow write: if request.auth.uid == request.resource.data.userId;
     }
 
 
