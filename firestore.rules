@@ -164,8 +164,12 @@ service cloud.firestore {
     
     // --- COURSE PROGRESS ---
     match /course_progress/{progressId} {
-        allow read: if request.auth.uid == resource.data.userId;
-        allow write: if request.auth.uid == request.resource.data.userId;
+        // A user can read/write their own progress. list() relies on client-side filtering.
+        allow get: if isOwner(resource.data.userId);
+        allow list: if isSignedIn();
+        allow create: if isOwner(request.resource.data.userId);
+        allow update: if isOwner(resource.data.userId);
+        allow delete: if isOwner(resource.data.userId);
     }
 
 
