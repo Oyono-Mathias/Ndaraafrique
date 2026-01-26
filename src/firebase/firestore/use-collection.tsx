@@ -79,10 +79,16 @@ export function useCollection<T = any>(
             if ('path' in memoizedTargetRefOrQuery && typeof (memoizedTargetRefOrQuery as any).path === 'string') {
                 // This handles CollectionReference, which is safe.
                 path = (memoizedTargetRefOrQuery as CollectionReference).path;
+            } else if ((memoizedTargetRefOrQuery as any)._query) {
+                // HACK: Attempt to access internal property for Query objects
+                try {
+                    path = (memoizedTargetRefOrQuery as any)._query.path.segments.join('/');
+                } catch (e) {
+                    console.warn("Could not determine path for a complex Firestore query from internal properties.");
+                    path = "unknown/path (complex query)";
+                }
             } else {
-                // For complex queries, there's no public API to get the path.
-                // We log a warning instead of trying to access internal properties which can be unstable.
-                console.warn("Could not determine path for a complex Firestore query. Error reporting will be less specific.");
+                console.warn("Could not determine path for a complex Firestore query.");
                 path = "unknown/path (complex query)";
             }
         }
