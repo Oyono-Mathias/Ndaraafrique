@@ -1,6 +1,9 @@
 
 'use client';
 
+import { query, collection, where } from "firebase/firestore";
+import { db } from "@/firebase/config"; // Vérifiez votre chemin d'import
+import { useAuth } from "@/context/AuthContext"; // Ou votre système d'auth
 import { useState, useEffect } from 'react';
 import {
   Query,
