@@ -27,7 +27,7 @@ interface RevenueDataPoint {
 }
 
 export default function RevenusPage() {
-    const { currentUser: instructor, isUserLoading } = useRole();
+    const { currentUser: instructor, isUserLoading, role } = useRole();
     const db = getFirestore();
     const { toast } = useToast();
 
@@ -44,7 +44,7 @@ export default function RevenusPage() {
     const [isSubmittingPayout, setIsSubmittingPayout] = useState(false);
 
     useEffect(() => {
-        if (!instructor?.uid || isUserLoading) {
+        if (!instructor?.uid || isUserLoading || role !== 'instructor') {
             if (!isUserLoading) setIsLoading(false);
             return;
         }
@@ -106,7 +106,7 @@ export default function RevenusPage() {
             unsubscribePayouts();
         };
 
-    }, [instructor?.uid, isUserLoading, db, stats.totalRevenue]);
+    }, [instructor?.uid, isUserLoading, db, stats.totalRevenue, role]);
 
     const handleRequestPayout = async () => {
         const amount = parseFloat(payoutAmount);
