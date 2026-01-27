@@ -53,13 +53,13 @@ export default function RevenusPage() {
 
         const paymentsQuery = query(
             collection(db, 'payments'), 
-              where('userId', '==', instructor.uid), // ✅ On met 'userId'
+            where('instructorId', '==', instructor.uid),
             where('status', '==', 'Completed')
         );
 
         const payoutsQuery = query(
             collection(db, 'payouts'),
-              where('userId', '==', instructor.uid)
+            where('instructorId', '==', instructor.uid)
         );
 
         const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
