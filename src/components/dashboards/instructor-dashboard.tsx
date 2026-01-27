@@ -18,8 +18,8 @@ import { SectionHeader } from '@/components/dashboard/SectionHeader';
 import { EmptyState } from '@/components/dashboard/EmptyState';
 
 interface RevenueDataPoint {
-    month: string;
-    revenue: number;
+  month: string;
+  revenue: number;
 }
 
 export function InstructorDashboard() {
@@ -72,7 +72,7 @@ export function InstructorDashboard() {
 
                 const reviewPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'reviews'), where('courseId', 'in', chunk))));
                 const enrollmentPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'enrollments'), where('courseId', 'in', chunk))));
-                const paymentsQuery = query(collection(db, 'payments'), where('userId', '==', instructorId));
+                const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
                 const paymentPromise = getDocs(paymentsQuery);
 
                 const [reviewSnapshots, enrollmentSnapshots, paymentSnapshot] = await Promise.all([
