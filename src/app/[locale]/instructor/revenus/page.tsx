@@ -99,6 +99,8 @@ export default function RevenusPage() {
                 .filter(p => p.status === 'valide' || p.status === 'en_attente')
                 .reduce((sum, p) => sum + p.amount, 0);
 
+            // This state update depends on totalRevenue, creating the loop.
+            // We need to calculate this based on the new totalRevenue.
             setStats(prev => ({ ...prev, availableBalance: prev.totalRevenue - totalPayouts }));
             setIsLoading(false);
         }, (error) => {

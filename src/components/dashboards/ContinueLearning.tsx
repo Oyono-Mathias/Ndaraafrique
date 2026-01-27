@@ -20,7 +20,7 @@ export function ContinueLearning() {
                 collection(db, 'course_progress'),
                 where('userId', '==', currentUser.uid),
                 orderBy('updatedAt', 'desc'),
-                limit(10) // Fetch more items to filter client-side
+                limit(10)
             )
             : null,
         [db, currentUser?.uid]
@@ -30,7 +30,6 @@ export function ContinueLearning() {
 
     const coursesInProgress = useMemo(() => {
         if (!recentProgress) return [];
-        // Filter for incomplete courses and take the top 3
         return recentProgress.filter(p => p.progressPercent < 100).slice(0, 3);
     }, [recentProgress]);
 
