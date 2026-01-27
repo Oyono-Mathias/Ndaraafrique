@@ -52,7 +52,7 @@ export default function RevenusPage() {
         setIsLoading(true);
 
         const paymentsQuery = query(
-            collection(db, 'payments'), 
+            collection(db, 'payments'),
             where('instructorId', '==', instructor.uid),
             where('status', '==', 'Completed')
         );
@@ -64,7 +64,7 @@ export default function RevenusPage() {
 
         const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
             const fetchedPayments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-            setPayments(fetchedPayments.sort((a, b) => b.date.toDate() - a.date.toDate()));
+            setPayments(fetchedPayments.sort((a, b) => (b.date as Timestamp).toDate().getTime() - (a.date as Timestamp).toDate().getTime()));
 
             const totalRev = fetchedPayments.reduce((sum, p) => sum + p.amount, 0);
             const now = new Date();
@@ -89,6 +89,8 @@ export default function RevenusPage() {
                     revenue: monthlyAggregates[monthKey]
                 }));
             setChartData(trendData);
+        }, (error) => {
+            console.error("Error fetching payments:", error);
         });
 
         const unsubscribePayouts = onSnapshot(payoutsQuery, (snapshot) => {
@@ -99,6 +101,9 @@ export default function RevenusPage() {
 
             setStats(prev => ({ ...prev, availableBalance: prev.totalRevenue - totalPayouts }));
             setIsLoading(false);
+        }, (error) => {
+            console.error("Error fetching payouts:", error);
+            setIsLoading(false);
         });
         
         return () => {
@@ -106,7 +111,7 @@ export default function RevenusPage() {
             unsubscribePayouts();
         };
 
-    }, [instructor?.uid, isUserLoading, db, stats.totalRevenue, role]);
+    }, [instructor?.uid, isUserLoading, db, role]);
 
     const handleRequestPayout = async () => {
         const amount = parseFloat(payoutAmount);
