@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useRole } from '@/context/RoleContext';
@@ -8,7 +7,7 @@ import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Toolti
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '../ui/skeleton';
 import { Users, Star, BookOpen, DollarSign, TrendingUp, Book, AlertCircle } from 'lucide-react';
-import type { Course, Review, Enrollment } from '@/lib/types';
+import type { Course, Review, Enrollment, Payment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { format, startOfMonth } from 'date-fns';
@@ -72,7 +71,9 @@ export function InstructorDashboard() {
 
                 const reviewPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'reviews'), where('courseId', 'in', chunk))));
                 const enrollmentPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'enrollments'), where('courseId', 'in', chunk))));
-                const paymentsQuery = query(collection(db, 'payments'), where('userId', '==', instructorId));
+                
+                // CORRECTED QUERY: Use 'instructorId' instead of 'userId'
+                const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
                 const paymentPromise = getDocs(paymentsQuery);
 
                 const [reviewSnapshots, enrollmentSnapshots, paymentSnapshot] = await Promise.all([
@@ -92,13 +93,13 @@ export function InstructorDashboard() {
                 const startOfCurrentMonth = startOfMonth(now);
                 
                 const monthlyRev = paymentSnapshot.docs
-                    .map(d => d.data())
+                    .map(d => d.data() as Payment)
                     .filter(p => p.date && p.status === 'Completed' && p.date.toDate() >= startOfCurrentMonth)
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
                 
                 const monthlyAggregates: Record<string, number> = {};
                 paymentSnapshot.docs.forEach(doc => {
-                    const payment = doc.data();
+                    const payment = doc.data() as Payment;
                     if (payment.date instanceof Timestamp && payment.status === 'Completed') {
                         const date = payment.date.toDate();
                         const monthKey = format(date, 'MMM yy', { locale: fr });
