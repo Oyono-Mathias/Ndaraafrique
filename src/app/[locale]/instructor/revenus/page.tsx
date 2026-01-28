@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { getFirestore, collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
@@ -31,18 +31,32 @@ export default function RevenusPage() {
     const db = getFirestore();
     const { toast } = useToast();
 
-    const [stats, setStats] = useState({
-        totalRevenue: 0,
-        monthlyRevenue: 0,
-        availableBalance: 0,
-    });
     const [payments, setPayments] = useState<Payment[]>([]);
+    const [payouts, setPayouts] = useState<Payout[]>([]);
     const [chartData, setChartData] = useState<RevenueDataPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     
     const [payoutAmount, setPayoutAmount] = useState('');
     const [isSubmittingPayout, setIsSubmittingPayout] = useState(false);
 
+    // Memoize statistics to prevent re-calculations on every render
+    const stats = useMemo(() => {
+        const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
+        const now = new Date();
+        const monthlyRevenue = payments
+            .filter(p => p.date && isSameMonth(p.date.toDate(), now))
+            .reduce((sum, p) => sum + p.amount, 0);
+
+        const totalPayouts = payouts
+            .filter(p => p.status === 'valide' || p.status === 'en_attente')
+            .reduce((sum, p) => sum + p.amount, 0);
+            
+        const availableBalance = totalRevenue - totalPayouts;
+
+        return { totalRevenue, monthlyRevenue, availableBalance };
+    }, [payments, payouts]);
+
+    // Effect for fetching data
     useEffect(() => {
         if (!instructor?.uid || isUserLoading || role !== 'instructor') {
             if (!isUserLoading) setIsLoading(false);
@@ -53,26 +67,18 @@ export default function RevenusPage() {
 
         const paymentsQuery = query(
             collection(db, 'payments'),
-              where('userId', '==', userId.uid),
+            where('instructorId', '==', instructor.uid),
             where('status', '==', 'Completed')
         );
 
         const payoutsQuery = query(
             collection(db, 'payouts'),
-            where('userId', '==', instructor.uid)
+            where('instructorId', '==', instructor.uid)
         );
 
         const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
             const fetchedPayments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
             setPayments(fetchedPayments.sort((a, b) => (b.date as Timestamp).toDate().getTime() - (a.date as Timestamp).toDate().getTime()));
-
-            const totalRev = fetchedPayments.reduce((sum, p) => sum + p.amount, 0);
-            const now = new Date();
-            const monthlyRev = fetchedPayments
-                .filter(p => p.date && isSameMonth(p.date.toDate(), now))
-                .reduce((sum, p) => sum + p.amount, 0);
-
-            setStats(prev => ({ ...prev, totalRevenue: totalRev, monthlyRevenue: monthlyRev }));
             
             const monthlyAggregates: Record<string, number> = {};
             fetchedPayments.forEach(p => {
@@ -89,23 +95,17 @@ export default function RevenusPage() {
                     revenue: monthlyAggregates[monthKey]
                 }));
             setChartData(trendData);
+            setIsLoading(false); // Set loading to false once payments are loaded
         }, (error) => {
             console.error("Error fetching payments:", error);
+            setIsLoading(false);
         });
 
         const unsubscribePayouts = onSnapshot(payoutsQuery, (snapshot) => {
             const fetchedPayouts = snapshot.docs.map(doc => doc.data() as Payout);
-            const totalPayouts = fetchedPayouts
-                .filter(p => p.status === 'valide' || p.status === 'en_attente')
-                .reduce((sum, p) => sum + p.amount, 0);
-
-            // This state update depends on totalRevenue, creating the loop.
-            // We need to calculate this based on the new totalRevenue.
-            setStats(prev => ({ ...prev, availableBalance: prev.totalRevenue - totalPayouts }));
-            setIsLoading(false);
+            setPayouts(fetchedPayouts);
         }, (error) => {
             console.error("Error fetching payouts:", error);
-            setIsLoading(false);
         });
         
         return () => {
