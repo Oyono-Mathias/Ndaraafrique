@@ -108,8 +108,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const authPaths = ['/login', '/register', '/forgot-password'];
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
     
-    const isAuth = authPaths.some(p => pathname === p);
-    let isPublic = staticPublicPaths.some(p => pathname === p) || isAuth;
+    const isAuth = authPaths.some(p => pathname.endsWith(p));
+    let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
 
     if (!isPublic) {
         if (pathname.startsWith('/verify/')) isPublic = true;
@@ -143,23 +143,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isAdminArea = targetPath.startsWith('/admin');
     const isInstructorArea = targetPath.startsWith('/instructor');
 
-    switch (role) {
-      case 'admin':
-        // An admin can go anywhere. No redirects needed.
-        break;
-      case 'instructor':
-        // An instructor should not access admin pages.
-        if (isAdminArea) {
-          router.push('/instructor/dashboard');
-        }
-        break;
-      case 'student':
-        // A student should not access admin or private instructor pages.
-        if (isAdminArea || (isInstructorArea && !isPublicPage)) {
-          router.push('/student/dashboard');
-        }
-        break;
+    if (role === 'admin' && !isAdminArea) {
+      router.push('/admin');
+    } else if (role === 'instructor' && isAdminArea) {
+      router.push('/instructor/dashboard');
+    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublicPage) {
+      router.push('/student/dashboard');
     }
+
   }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
 
 

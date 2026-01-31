@@ -1,7 +1,7 @@
 
 'use client';
 
-import Link from 'next/link'; // ✅ Sans accolades !
+import { Link } from 'next-intl/navigation';
 import Image from 'next/image';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
