@@ -205,8 +205,7 @@ export async function approveInstructorApplication({ userId, decision, message, 
 
         // Send notification to user
         await sendUserNotification(userId, {
-            title: `Votre candidature d'instructeur`,
-            body: message,
+            text: message,
             link: `/devenir-instructeur`
         });
 

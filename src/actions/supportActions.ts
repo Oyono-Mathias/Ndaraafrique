@@ -104,8 +104,7 @@ export async function moderateCourse(
         const instructorId = courseDoc.data()?.instructorId;
         if (instructorId) {
             await sendUserNotification(instructorId, {
-                title: `Votre cours a été ${decision === 'approve' ? 'approuvé' : 'rejeté'}`,
-                body: `Votre cours "${courseDoc.data()?.title}" vient d'être ${decision === 'approve' ? 'publié !' : 'examiné. Des modifications sont nécessaires.'}`,
+                text: `Votre cours "${courseDoc.data()?.title}" a été ${decision === 'approve' ? 'approuvé et publié' : 'rejeté. Des modifications sont nécessaires.'}.`,
                 link: `/instructor/courses/edit/${courseId}`
             });
         }
@@ -168,8 +167,7 @@ export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticke
         const studentId = ticketDoc.data()?.userId;
         if (studentId) {
             await sendUserNotification(studentId, {
-                title: 'Nouvelle réponse du support',
-                body: `Vous avez reçu une nouvelle réponse pour votre ticket: "${ticketDoc.data()?.subject}"`,
+                text: `Vous avez reçu une nouvelle réponse pour votre ticket: "${ticketDoc.data()?.subject}"`,
                 link: `/questions-reponses/${ticketId}`
             });
         }

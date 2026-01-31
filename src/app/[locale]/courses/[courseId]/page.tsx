@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useRouter } from 'next-intl/navigation';
 import { useDoc, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';

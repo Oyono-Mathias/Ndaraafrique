@@ -1,3 +1,4 @@
+
 'use server';
 
 import { adminDb } from '@/firebase/admin';
@@ -46,8 +47,7 @@ export async function answerQuestionAction({
     
     // Notify student about the answer
     await sendUserNotification(studentId, {
-      title: "Votre question a une réponse !",
-      body: `Un instructeur a répondu à votre question sur le cours "${questionDoc.data()?.courseTitle}".`,
+      text: `Un instructeur a répondu à votre question sur le cours "${questionDoc.data()?.courseTitle}".`,
       link: `/student/mes-questions`
     });
 
