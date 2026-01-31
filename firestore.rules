@@ -139,7 +139,12 @@ service cloud.firestore {
 
     // --- Règles pour 'payments' ---
     match /payments/{paymentId} {
-      allow read: if isAdmin() || request.auth.uid == resource.data.userId;
+      allow get: if isAdmin() || request.auth.uid == resource.data.userId;
+      allow list: if isAdmin() || 
+        (isSignedIn() && (
+          ('userId' in request.query.where && request.query.where.userId == request.auth.uid) ||
+          ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)
+        ));
       allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
       allow update, delete: if isAdmin();
     }
