@@ -1,7 +1,9 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useRouter } from 'next-intl/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import {
   getFirestore,

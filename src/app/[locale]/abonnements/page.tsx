@@ -10,17 +10,7 @@ import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useRouter } from 'next-intl/navigation';
 import { Skeleton } from '@/components/ui/skeleton';
-
-interface SubscriptionPlan {
-    id: string;
-    name: string;
-    description: string;
-    price: number;
-    billingCycle: 'monthly' | 'yearly';
-    features: string[];
-    isActive: boolean;
-    targetRole: 'student' | 'instructor';
-}
+import type { SubscriptionPlan } from '@/lib/types';
 
 const PlanCard = ({ plan, onChoose, isSubmitting }: { plan: SubscriptionPlan, onChoose: (planId: string) => void, isSubmitting: boolean }) => (
     <Card className={cn(

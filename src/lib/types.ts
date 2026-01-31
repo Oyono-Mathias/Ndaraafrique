@@ -1,5 +1,5 @@
 
-import type { Timestamp } from "firebase/firestore";
+import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
 
@@ -23,8 +23,8 @@ export interface FAQ {
   tags: string[];
   isActive: boolean;
   order: number;
-  createdAt: Timestamp;
-  updatedAt?: Timestamp;
+  createdAt: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue;
 }
 
 export interface NdaraUser {
@@ -84,11 +84,11 @@ export interface NdaraUser {
       hasEquipment?: boolean;
       submittedAt: Date;
   };
-  createdAt?: Timestamp;
-  lastLogin?: Timestamp;
+  createdAt?: Timestamp | FieldValue;
+  lastLogin?: Timestamp | FieldValue;
   isOnline?: boolean;
-  lastSeen?: Timestamp;
-  termsAcceptedAt?: Timestamp;
+  lastSeen?: Timestamp | FieldValue;
+  termsAcceptedAt?: Timestamp | FieldValue;
   isProfileComplete?: boolean;
   badges?: string[];
   permissions?: { [key: string]: boolean };
@@ -104,12 +104,15 @@ export interface Lecture {
   textContent?: string; // For text
   duration?: number; // in minutes
   isFreePreview?: boolean;
+  createdAt?: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue;
 }
 
 export interface Section {
   id: string;
   title: string;
   order: number;
+  createdAt?: Timestamp | FieldValue;
 }
 
 export interface Assignment {
@@ -120,15 +123,16 @@ export interface Assignment {
   sectionId: string;
   correctionGuide?: string;
   attachments?: { name: string; url: string }[];
-  dueDate?: Timestamp;
-  createdAt: Timestamp;
+  dueDate?: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue;
 }
 
 export interface Submission {
     id: string;
     userId: string;
     fileURL: string;
-    submittedAt: Timestamp;
+    submittedAt: Timestamp | FieldValue;
     grade?: number;
     feedback?: string;
     status: 'Envoyé' | 'Corrigé' | 'En retard';
@@ -146,9 +150,9 @@ export interface Course {
     status: 'Draft' | 'Published' | 'Pending Review';
     thumbnailUrl?: string;
     imageUrl?: string;
-    createdAt?: Timestamp;
-    updatedAt?: Timestamp;
-    publishedAt?: Timestamp;
+    createdAt?: Timestamp | FieldValue;
+    updatedAt?: Timestamp | FieldValue;
+    publishedAt?: Timestamp | FieldValue;
     currency?: string;
     learningObjectives?: string[];
     prerequisites?: string[];
@@ -160,6 +164,7 @@ export interface Course {
     language?: string;
     participantsCount?: number;
     previewVideoUrl?: string;
+    moderationFeedback?: string;
 }
 
 export interface CourseProgress {
@@ -173,7 +178,7 @@ export interface CourseProgress {
   lastLessonTitle: string;
   progressPercent: number;
   lastVideoTime?: number;
-  updatedAt: Timestamp;
+  updatedAt: Timestamp | FieldValue;
 }
 
 
@@ -182,13 +187,13 @@ export interface Enrollment {
     studentId: string;
     courseId: string;
     instructorId: string;
-    enrollmentDate: Timestamp;
+    enrollmentDate: Timestamp | FieldValue;
     progress: number;
     priceAtEnrollment: number; // Price when the user enrolled
     completedLessons?: string[];
     lastWatchedLesson?: string;
-    lastAccessedAt?: Timestamp;
-    expiresAt?: Timestamp;
+    lastAccessedAt?: Timestamp | FieldValue;
+    expiresAt?: Timestamp | FieldValue;
     enrollmentType?: 'paid' | 'admin_grant';
 }
 
@@ -199,7 +204,7 @@ export interface Review {
     instructorId: string; // Keep track of the instructor for easier querying
     rating: number;
     comment: string;
-    createdAt: Timestamp;
+    createdAt: Timestamp | FieldValue;
 }
 
 export interface SupportTicket {
@@ -211,8 +216,8 @@ export interface SupportTicket {
   lastMessage: string;
   status: 'ouvert' | 'fermé';
   category: 'Paiement' | 'Technique' | 'Pédagogique';
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
+  updatedAt: Timestamp | FieldValue;
   resolution?: string;
 }
 
@@ -224,8 +229,8 @@ export interface CourseQuestion {
   questionText: string;
   answerText?: string;
   status: 'answered' | 'pending';
-  createdAt: Timestamp;
-  answeredAt?: Timestamp;
+  createdAt: Timestamp | FieldValue;
+  answeredAt?: Timestamp | FieldValue;
   // Denormalized data for easier display
   courseTitle: string;
   studentName: string;
@@ -237,7 +242,7 @@ export interface CourseAnswer {
   questionId: string;
   userId: string; // ID of the user who answered (can be student or instructor)
   body: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
   isOfficial: boolean; // True if the answer is from the course instructor
 }
 
@@ -245,7 +250,7 @@ export interface CourseAnswer {
 export interface Notification {
   id: string;
   text: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
   read: boolean;
   link?: string;
   type?: 'success' | 'info' | 'reminder' | 'alert';
@@ -257,7 +262,7 @@ export interface Announcement {
   instructorId: string;
   title: string;
   message: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
 }
 
 export interface UserActivity {
@@ -269,7 +274,7 @@ export interface UserActivity {
   relatedId?: string;
   link: string;
   read: boolean;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
 }
 
 export interface Settings {
@@ -328,13 +333,15 @@ export interface Payment {
   courseTitle?: string;
   amount: number;
   currency: string;
-  date: Timestamp;
+  date: Timestamp | FieldValue;
   status: 'Completed' | 'Pending' | 'Failed' | 'Refunded';
+  refundedAt?: Timestamp | FieldValue;
+  refundTicketId?: string;
   fraudReview?: {
     isSuspicious: boolean;
     riskScore: number;
     reason: string;
-    checkedAt: Timestamp;
+    checkedAt: Timestamp | FieldValue;
     reviewed?: boolean;
   }
 }
@@ -345,7 +352,7 @@ export interface Payout {
   amount: number;
   method: 'Mobile Money' | 'Virement';
   status: 'en_attente' | 'valide' | 'rejete';
-  date: Timestamp;
+  date: Timestamp | FieldValue;
 }
 
 
@@ -356,7 +363,7 @@ export interface SecurityLog {
   eventType: 'suspicious_login' | 'failed_payment' | 'profile_change' | 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'alert_resolved';
   details: string; // Human-readable description
   ipAddress?: string;
-  timestamp: Timestamp;
+  timestamp: Timestamp | FieldValue;
   status?: 'open' | 'resolved';
 }
 
@@ -368,7 +375,7 @@ export interface AdminAuditLog {
     id: string;
     type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role' | 'settings' | 'enrollment';
   };
-  timestamp: Timestamp;
+  timestamp: Timestamp | FieldValue;
   details: string;
 }
 
@@ -382,7 +389,8 @@ export interface Question {
   text: string;
   options: QuestionOption[];
   order: number;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
+  updatedAt?: Timestamp | FieldValue;
 }
 
 export interface Quiz {
@@ -391,8 +399,9 @@ export interface Quiz {
   description?: string;
   courseId: string;
   sectionId: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
   questionsCount?: number;
+  updatedAt?: Timestamp | FieldValue;
 }
 
 export interface QuizAttempt {
@@ -402,7 +411,7 @@ export interface QuizAttempt {
     courseId: string;
     answers: Record<string, number>; // questionId: selectedOptionIndex
     score: number;
-    submittedAt: Timestamp;
+    submittedAt: Timestamp | FieldValue;
 }
 
 export interface AssignmentSubmission {
@@ -420,8 +429,8 @@ export interface AssignmentSubmission {
     status: 'submitted' | 'graded';
     grade?: number;
     feedback?: string;
-    submittedAt: Timestamp;
-    gradedAt?: Timestamp;
+    submittedAt: Timestamp | FieldValue;
+    gradedAt?: Timestamp | FieldValue;
 }
 
 export interface Resource {
@@ -431,7 +440,7 @@ export interface Resource {
     title: string;
     type: 'pdf' | 'video' | 'image' | 'link' | 'file';
     url: string;
-    createdAt: Timestamp;
+    createdAt: Timestamp | FieldValue;
 }
 
 export interface TrackingEvent {
@@ -439,6 +448,7 @@ export interface TrackingEvent {
   sessionId: string;
   pageUrl: string;
   metadata?: Record<string, any>;
+  timestamp: Timestamp | FieldValue;
 }
 
 export interface Chat {
@@ -446,7 +456,7 @@ export interface Chat {
     participants: string[];
     participantCategories: string[];
     lastMessage?: string;
-    updatedAt: Timestamp;
+    updatedAt: Timestamp | FieldValue;
     lastSenderId?: string;
     unreadBy?: string[];
 }
@@ -455,6 +465,28 @@ export interface Message {
   id: string;
   senderId: string;
   text: string;
-  createdAt: Timestamp;
+  createdAt: Timestamp | FieldValue;
   status: 'sent' | 'delivered' | 'read';
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  billingCycle: 'monthly' | 'yearly';
+  features: string[];
+  isActive: boolean;
+  targetRole: 'student' | 'instructor';
+}
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  planId: string;
+  status: 'active' | 'canceled' | 'past_due' | 'expired';
+  startDate: Timestamp | FieldValue;
+  endDate: Timestamp | FieldValue;
+  canceledAt?: Timestamp | FieldValue;
+  paymentTransactionId?: string;
 }

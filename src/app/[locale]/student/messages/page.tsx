@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatRoom } from '@/components/chat/ChatRoom';
-import { useSearchParams } from 'next-intl/navigation';
+import { useSearchParams } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';

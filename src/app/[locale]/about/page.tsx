@@ -10,6 +10,7 @@ import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import type { Settings } from '@/lib/types';
 
 const SangoQuote = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -53,7 +54,7 @@ const TeamMember = ({ name, role, imageUrl, bio }: { name: string, role: string,
 export default function AboutPage() {
   const db = getFirestore();
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
-  const { data: settings, isLoading } = useDoc(settingsRef);
+  const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
 
   const content = settings?.content?.aboutPage;
   
