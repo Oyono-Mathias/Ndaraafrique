@@ -137,12 +137,13 @@ service cloud.firestore {
     // --- Règles pour 'payments' ---
     match /payments/{paymentId} {
       allow get: if isAdmin() || isOwner(resource.data.userId) || isOwner(resource.data.instructorId);
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      
+      allow list: if isAdmin() || 
+                    (isSignedIn() && ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)) ||
+                    (isSignedIn() && ('userId' in request.query.where && request.query.where.userId == request.auth.uid));
+                    
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
-      allow list: if isAdmin() || (isSignedIn() && (
-        ('userId' in request.query.where && request.query.where.userId == request.auth.uid) ||
-        ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)
-      ));
     }
     
     // --- Règles pour 'payouts' ---
