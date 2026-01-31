@@ -2,6 +2,7 @@
 "use client";
 
 import { Link, usePathname } from 'next-intl/navigation';
+import { usePathname as useNextPathname } from 'next/navigation';
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,7 @@ import { UserNav } from "./user-nav";
 
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
-  const pathname = usePathname();
+  const pathname = useNextPathname();
   const { currentUser } = useRole();
   const { toast } = useToast();
   

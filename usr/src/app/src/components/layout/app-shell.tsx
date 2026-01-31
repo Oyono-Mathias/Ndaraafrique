@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next-intl/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -73,10 +73,10 @@ function AnnouncementBanner() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isUserLoading, user, currentUser } = useRole();
-  const pathname = usePathname();
+  const { role, isUserLoading, user, currentUser, switchRole } = useRole();
   const router = useRouter();
-
+  const pathname = usePathname();
+  
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
       logoUrl: '/icon.svg',
@@ -104,29 +104,34 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const isAuthPage = useMemo(() => pathname.includes('/login') || pathname.includes('/register') || pathname.includes('/forgot-password'), [pathname]);
-
-  const isPublicPage = useMemo(() => {
+  const { isAuthPage, isPublicPage } = useMemo(() => {
+    const authPaths = ['/login', '/register', '/forgot-password'];
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
-    if (staticPublicPaths.some(p => pathname.endsWith(p))) return true;
-    if (pathname.includes('/verify/')) return true;
     
-    // Check for public instructor profile `/instructor/[id]` but not private sub-routes
-    const instructorPathRegex = /^\/[a-z]{2}\/instructor\/[^/]+$/;
-    if(instructorPathRegex.test(pathname)) {
-        return true;
-    }
+    const isAuth = authPaths.some(p => pathname.endsWith(p));
+    let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
 
-    return false;
+    if (!isPublic) {
+        if (pathname.startsWith('/verify/')) isPublic = true;
+        
+        const instructorPathRegex = /^\/instructor\/[^/]+$/;
+        if (instructorPathRegex.test(pathname)) {
+            const privateSubRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
+            if (!privateSubRoutes.some(sub => pathname.endsWith(sub))) {
+                 isPublic = true;
+            }
+        }
+    }
+    
+    return { isAuthPage: isAuth, isPublicPage: isPublic };
   }, [pathname]);
 
   useEffect(() => {
-    if (isUserLoading) return;
-    
-    const isAdminArea = pathname.includes('/admin');
-    const isInstructorArea = pathname.includes('/instructor');
-    const isStudentArea = pathname.includes('/student');
+    if (isUserLoading) return; // Wait until user auth state is known
 
+    const targetPath = pathname;
+
+    // 1. If user is not logged in, redirect to login page if the page is not public
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
         router.push('/login');
@@ -134,13 +139,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Role-based redirection logic
+    // 2. If user is logged in, handle role-based access
+    const isAdminArea = targetPath.startsWith('/admin');
+    const isInstructorArea = targetPath.startsWith('/instructor');
+
     if (role === 'admin' && !isAdminArea) {
       router.push('/admin');
-    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage) {
+    } else if (role === 'instructor' && isAdminArea) {
       router.push('/instructor/dashboard');
     } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublicPage) {
-       router.push('/student/dashboard');
+      router.push('/student/dashboard');
     }
 
   }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
@@ -160,10 +168,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
-  const isFullScreenPage = pathname.includes('/courses/');
-  const isAdminArea = pathname.includes('/admin');
-  const isRootPath = pathname === '/' || pathname === '/fr' || pathname === '/en';
+  const isFullScreenPage = pathname.startsWith('/courses/');
+  const isAdminArea = pathname.startsWith('/admin');
+  const isRootPath = pathname === '/';
   const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
+
 
   return (
     <>
