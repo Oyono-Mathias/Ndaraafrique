@@ -66,8 +66,8 @@ export default function RevenusPage() {
         setIsLoading(true);
 
         const paymentsQuery = query(
-            collection(db, 'payments'),
-            where('instructorId', '==', instructor.uid),
+           collection(db, 'payments'),
+            where('userId', '==', instructor.uid), 
             where('status', '==', 'Completed')
         );
 
