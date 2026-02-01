@@ -84,7 +84,9 @@ const grantCourseAccessTool = ai.defineTool(
         }),
     },
     async (input, context) => {
-        const { adminId } = context.auth as { adminId: string };
+        // On utilise une petite astuce pour dire à TypeScript d'ignorer la structure du contexte ici
+const auth = context?.auth as any;
+const adminId = auth?.uid || auth?.adminId;
         if (!adminId) {
             return { success: false, error: "Admin ID is missing. Cannot perform this action." };
         }
