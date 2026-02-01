@@ -14,6 +14,7 @@ export async function updateGlobalSettings({
   settings,
   adminId
 }: UpdateSettingsParams): Promise<{ success: boolean; error?: string }> {
+  if (!adminDb) return { success:false, error: "Database not connected" };
   try {
     const batch = adminDb.batch();
     
