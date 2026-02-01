@@ -35,6 +35,7 @@ const getCourseCatalog = ai.defineTool(
         })),
     },
     async () => {
+        if (!adminDb) throw new Error("Database not connected");
         try {
             const coursesRef = adminDb.collection('courses');
             const snapshot = await coursesRef.where('status', '==', 'Published').get();
@@ -65,6 +66,7 @@ const searchFaq = ai.defineTool(
         }),
     },
     async ({ query }) => {
+        if (!adminDb) throw new Error("Database not connected");
        try {
             const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 2);
             if (keywords.length === 0) return { answer: undefined };
