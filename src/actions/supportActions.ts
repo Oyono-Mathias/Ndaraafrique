@@ -123,6 +123,7 @@ export async function processPayout(
     decision: 'valide' | 'rejete',
     adminId: string
 ): Promise<{ success: boolean; error?: string }> {
+    if (!adminDb) return { success: false, error: "Database not connected" };
     try {
         const payoutRef = adminDb.collection('payouts').doc(payoutId);
         await payoutRef.update({ status: decision });
@@ -144,6 +145,7 @@ export async function processPayout(
 
 
 export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticketId: string, adminId: string, text: string }) {
+    if (!adminDb) return { success: false, error: "Database not connected" };
     try {
         const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
         const ticketDoc = await ticketRef.get();
@@ -183,6 +185,7 @@ export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticke
 }
 
 export async function closeTicket({ ticketId, adminId, resolution }: { ticketId: string, adminId: string, resolution: string }): Promise<{ success: boolean; error?: string }> {
+    if (!adminDb) return { success: false, error: "Database not connected" };
     try {
         const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
 
