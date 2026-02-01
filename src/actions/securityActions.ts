@@ -13,10 +13,8 @@ interface ResolveSecurityItemParams {
 export async function resolveSecurityItem(params: ResolveSecurityItemParams): Promise<{ success: boolean; error?: string }> {
   const { itemId, itemType, adminId } = params;
 
-  if (!adminDb) {
-          throw new Error("Firebase Admin SDK non initialisé");
-              }
-  }
+  if (!adminDb) { throw new Error("Firebase Admin SDK non initialisé");
+}
   try {
     const batch = adminDb.batch();
     let targetRef;
