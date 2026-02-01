@@ -78,9 +78,13 @@ function CoursePlayerPageContent() {
       }
       setLecturesMap(lecturesData);
       
-      if (fetchedSections.length > 0 && lecturesData.get(fetchedSections[0].id)?.length > 0) {
-        setActiveLecture(lecturesData.get(fetchedSections[0].id)![0]);
-      }
+      // Utilisation du chaînage optionnel ?. et d'une valeur par défaut 0
+    const firstSectionId = fetchedSections[0]?.id;
+    const firstSectionLectures = firstSectionId ? lecturesData.get(firstSectionId) : null;
+
+    if (fetchedSections.length > 0 && (firstSectionLectures?.length ?? 0) > 0) {
+      setActiveLecture(firstSectionLectures![0]);
+    }
       setIsLoading(false);
     };
     fetchCourseContent();
