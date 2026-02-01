@@ -147,10 +147,10 @@ export const adminAssistantFlow = ai.defineFlow(
         outputSchema: AdminAssistantOutputSchema,
     },
     async (input) => {
-        const { output } = await adminAssistantPrompt(
-            { prompt: input.prompt },
-            { auth: { adminId: input.adminId } }
-        );
+      const { output } = await adminAssistantPrompt(
+        { prompt: input.prompt },
+        { auth: { adminId: input.adminId } } as any
+    );
         return output!;
     }
 );
