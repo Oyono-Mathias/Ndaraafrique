@@ -72,6 +72,7 @@ export async function moderateCourse(
     adminId: string, 
     feedback?: string
 ): Promise<{ success: boolean; error?: string }> {
+    if (!adminDb) return { success: false, error: "Database not connected" };
     try {
         const courseRef = adminDb.collection('courses').doc(courseId);
         const courseDoc = await courseRef.get();
