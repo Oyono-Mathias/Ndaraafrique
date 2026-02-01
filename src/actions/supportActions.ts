@@ -14,7 +14,7 @@ interface RefundAndRevokeParams {
 export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Promise<{ success: boolean; error?: string }> {
     const { userId, courseId, ticketId } = params;
     const batch = adminDb.batch();
-
+    if (!adminDb) return { success: false, error: "Database not connected" };
     try {
         // 1. Mark the payment as refunded
         const paymentQuery = adminDb.collection('payments')
