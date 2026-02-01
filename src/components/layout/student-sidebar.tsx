@@ -1,7 +1,7 @@
 
 "use client";
 
-import { Link } from "next-intl/navigation";
+import Link from 'next/link';
 import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";

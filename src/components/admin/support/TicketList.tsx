@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { SupportTicket } from '@/lib/types';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { MessageSquare, Frown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 

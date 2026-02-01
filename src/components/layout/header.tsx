@@ -5,7 +5,7 @@ import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '../ui/button';
 import { UserNav } from './user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import React, { useEffect, useState } from 'react';
@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import type { Notification } from '@/lib/types';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 
 
 const useUnreadNotifications = (userId?: string) => {

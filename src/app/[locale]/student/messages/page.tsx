@@ -8,7 +8,7 @@ import { MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '@/components/ui/button';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 
 function MessagesPageContent() {
     const searchParams = useSearchParams();

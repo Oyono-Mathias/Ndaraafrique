@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Frown } from 'lucide-react';
 import Image from 'next/image';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 
 export default function NotFound() {
   return (

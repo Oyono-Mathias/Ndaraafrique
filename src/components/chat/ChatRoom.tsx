@@ -27,7 +27,7 @@ import { errorEmitter } from '@/firebase';
 import { FirestorePermissionError } from '@/firebase/errors';
 import { Badge } from '../ui/badge';
 import type { NdaraUser, UserRole, Message } from '@/lib/types';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 

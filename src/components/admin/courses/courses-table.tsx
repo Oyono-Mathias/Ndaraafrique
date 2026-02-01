@@ -27,7 +27,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { updateCourseStatusByAdmin, deleteCourseByAdmin } from '@/actions/courseActions';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import Image from 'next/image';

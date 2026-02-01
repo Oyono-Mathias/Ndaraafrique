@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import type { Chat, NdaraUser } from '@/lib/types';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { Skeleton } from '../ui/skeleton';
 
 interface EnrichedChat extends Chat {

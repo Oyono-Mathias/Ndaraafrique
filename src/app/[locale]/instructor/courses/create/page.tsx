@@ -5,7 +5,7 @@ import { CourseForm } from '@/components/instructor/CourseForm';
 import { createCourseAction } from '@/actions/instructorActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function CreateCoursePage() {
   const { currentUser } = useRole();

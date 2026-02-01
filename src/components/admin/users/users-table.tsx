@@ -42,7 +42,7 @@ import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserStatus, deleteUserAccount, updateUserRole } from '@/actions/userActions';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { startChat } from '@/lib/chat';
 import {
   AlertDialog,

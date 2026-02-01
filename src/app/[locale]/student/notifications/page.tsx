@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy, writeBatch, doc, updateDoc } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';

@@ -1,6 +1,6 @@
 'use client';
 
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BookOpen, CheckCircle, FileQuestion } from 'lucide-react';
 import type { Course, Section, Lecture, Quiz } from '@/lib/types';

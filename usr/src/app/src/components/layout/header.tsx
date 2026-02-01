@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import type { Notification } from '@/lib/types';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 
 
 const useUnreadNotifications = (userId?: string) => {

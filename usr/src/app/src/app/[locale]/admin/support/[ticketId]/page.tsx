@@ -2,7 +2,7 @@
 'use client';
 
 import { TicketDetailsClient } from '@/components/admin/support/TicketDetailsClient';
-import { Link } from 'next-intl/navigation';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 

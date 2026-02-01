@@ -7,7 +7,7 @@ import { getFirestore, collection, query, where, getDocs, documentId } from 'fir
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { startChat } from '@/lib/chat';
-import { useRouter } from 'next-intl/navigation';
+import { useRouter } from 'next/navigation';
 import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
