@@ -36,6 +36,7 @@ export async function verifySubscriptionTransaction(transactionId: string): Prom
         console.error("CRITICAL: Moneroo secret key is not configured. Subscription verification cannot proceed.");
         return { success: false, error: 'Payment gateway not configured. Contact support.' };
     }
+    if (!adminDb) return { success: false, error: "Database not connected" };
 
     try {
         const moneroo = new Moneroo(secretKey);
