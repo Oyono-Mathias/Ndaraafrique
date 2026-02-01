@@ -13,8 +13,13 @@ export async function updateRolePermissions({
   permissions: { [key: string]: boolean },
   adminId: string
 }): Promise<{ success: boolean; error?: string }> {
-  try {
-    const batch = adminDb.batch();
+  try { if (!adminDb) {
+              throw new Error("Firebase Admin SDK non initialisé");
+                  }
+
+   const batch = adminDb.batch(); // Maintenant TypeScript sait que ce n'est pas null
+                      // ... suite du code
+
     
     // 1. Update the role document
     const roleRef = adminDb.collection('roles').doc(roleId);
