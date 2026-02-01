@@ -83,7 +83,7 @@ const grantCourseAccessTool = ai.defineTool(
             error: z.string().optional(),
         }),
     },
-    async (input, context) => {
+    async (input, context: any) => {
         // On utilise une petite astuce pour dire à TypeScript d'ignorer la structure du contexte ici
 const auth = context?.auth as any;
 const adminId = auth?.uid || auth?.adminId;
