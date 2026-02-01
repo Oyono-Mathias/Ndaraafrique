@@ -1,4 +1,3 @@
-
 'use server';
 
 import { adminDb } from '@/firebase/admin';
@@ -13,7 +12,9 @@ interface RefundAndRevokeParams {
 
 export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Promise<{ success: boolean; error?: string }> {
     const { userId, courseId, ticketId } = params;
-    if (!adminDb) { return { success: false, error: "Database not connected" };
+    
+    // ✅ CORRECTION ICI : J'ai retiré l'accolade ouvrante inutile
+    if (!adminDb) return { success: false, error: "Database not connected" };
     
     const batch = adminDb.batch();
     try {
