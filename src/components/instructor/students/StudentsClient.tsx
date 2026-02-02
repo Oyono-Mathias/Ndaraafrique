@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -174,7 +173,12 @@ export function StudentsClient() {
                         </div>
                       </TableCell>
                        <TableCell className="text-slate-500 dark:text-muted-foreground">{item.course?.title || 'N/A'}</TableCell>
-                       <TableCell className="text-slate-500 dark:text-muted-foreground">{item.enrollmentDate ? format(item.enrollmentDate.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                       <TableCell className="text-slate-500 dark:text-muted-foreground">
+                        {/* ✅ Correction robuste du .toDate() */}
+                        {item.enrollmentDate && typeof (item.enrollmentDate as any).toDate === 'function' 
+                          ? format((item.enrollmentDate as any).toDate(), 'd MMM yyyy', { locale: fr }) 
+                          : 'N/A'}
+                       </TableCell>
                        <TableCell>
                         <div className="flex items-center gap-2">
                            <Progress value={item.progress} className="w-24 h-2" />
@@ -182,7 +186,7 @@ export function StudentsClient() {
                         </div>
                        </TableCell>
                        <TableCell className="text-right">
-                         <Button variant="outline" size="sm" onClick={() => handleContact(item.studentId)} disabled={isContacting === item.studentId}>
+                         <Button variant="outline" size="sm" onClick={() => handleContact(item.studentId || '')} disabled={isContacting === item.studentId}>
                             {isContacting === item.studentId ? <Loader2 className="h-4 w-4 animate-spin"/> : <MessageSquare className="mr-2 h-4 w-4"/>}
                             Contacter
                          </Button>
