@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -70,8 +69,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   
   useEffect(() => {
     const updateLastSeen = () => {
-       if (otherParticipant?.lastSeen) {
-            setTimeSinceLastSeen(formatDistanceToNowStrict(otherParticipant.lastSeen.toDate(), { addSuffix: true, locale: fr }));
+       if (otherParticipant?.lastSeen && typeof (otherParticipant.lastSeen as any).toDate === 'function') {
+            setTimeSinceLastSeen(formatDistanceToNowStrict((otherParticipant.lastSeen as any).toDate(), { addSuffix: true, locale: fr }));
         }
     };
     updateLastSeen();
@@ -206,8 +205,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         student: {}
     };
     
-    const currentRole = roleInfo[role];
-    if (!currentRole.label) return null;
+    const currentRole = (roleInfo as any)[role];
+    if (!currentRole?.label) return null;
     
     const { label, icon: Icon, className } = currentRole;
 
@@ -280,14 +279,14 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                 {isMe && (
                                   <div className="flex items-center gap-1 justify-end mt-1">
                                     <span className="text-[10px] text-primary-foreground/70">
-                                      {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                      {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' ? new Date((msg.createdAt as any).toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                     <ReadReceipt status={msg.status} />
                                   </div>
                                 )}
                                 {!isMe && (
                                     <span className="text-[10px] text-slate-400 float-right mt-1 ml-2">
-                                      {msg.createdAt?.toDate ? new Date(msg.createdAt.toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                                      {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' ? new Date((msg.createdAt as any).toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                                     </span>
                                 )}
                             </div>
