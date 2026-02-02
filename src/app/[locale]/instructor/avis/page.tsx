@@ -28,12 +28,7 @@ const StarRating = ({ rating }: { rating: number }) => (
       />
     ))}
   </div>
-); {review.created
-
-interface EnrichedReview extends Review {
-  student?: Partial<NdaraUser>;
-  course?: Partial<Course>;
-}
+); {
 
 const ReviewCard = ({ review }: { review: EnrichedReview }) => (
   <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
