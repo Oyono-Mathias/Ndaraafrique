@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -15,6 +14,7 @@ import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserStatus } from '@/actions/userActions';
 import { resolveSecurityItem } from '@/actions/securityActions';
+import { Badge } from '@/components/ui/badge'; // Import vérifié
 
 type AlertType = 'suspicious_payment' | 'failed_payment' | 'suspicious_login';
 
@@ -131,7 +131,8 @@ export function AdminSecurityAlerts() {
                         id: p.id,
                         type: 'suspicious_payment',
                         message: `Paiement suspect de ${data.amount.toLocaleString('fr-FR')} XOF. Score: ${data.fraudReview?.riskScore}.`,
-                        date: (data.date as Timestamp).toDate(),
+                        // ✅ Correction robuste de .toDate()
+                        date: (data.date && typeof (data.date as any).toDate === 'function') ? (data.date as any).toDate() : new Date(),
                         link: `/admin/payments?search=${p.id}`,
                         userId: data.userId
                     });
@@ -143,7 +144,8 @@ export function AdminSecurityAlerts() {
                         id: l.id,
                         type: 'suspicious_login',
                         message: `Connexion suspecte détectée.`,
-                        date: data.timestamp.toDate(),
+                        // ✅ Correction robuste de .toDate()
+                        date: (data.timestamp && typeof (data.timestamp as any).toDate === 'function') ? (data.timestamp as any).toDate() : new Date(),
                         link: `/admin/users?search=${data.targetId}`,
                         userId: data.targetId,
                     });
