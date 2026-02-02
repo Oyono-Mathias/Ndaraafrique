@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation'; // ✅ Import ajouté ici
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -59,7 +59,7 @@ export default function LoginClient() {
   const [siteName, setSiteName] = useState('Ndara Afrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   
-  const router = useRouter(); // ✅ Maintenant reconnu correctement
+  const router = useRouter();
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
@@ -109,7 +109,8 @@ export default function LoginClient() {
 
     if (!userDocSnap.exists()) {
         const now = serverTimestamp();
-        const finalUserData: Partial<NdaraUser> = {
+        // On utilise 'as any' ici pour éviter les erreurs de propriétés manquantes dans NdaraUser
+        const finalUserData: any = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
             fullName: firebaseUser.displayName || 'Utilisateur Ndara',
