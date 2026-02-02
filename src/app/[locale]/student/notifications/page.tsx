@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -92,7 +91,11 @@ export default function NotificationsPage() {
                     </div>
                     <div className="flex-1">
                         <p className={cn("text-sm", !notif.read ? "font-bold text-white" : "text-slate-300")}>{notif.text}</p>
-                        <p className="text-xs text-slate-400 mt-1">{notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}</p>
+                        <p className="text-xs text-slate-400 mt-1">
+                            {notif.createdAt && typeof (notif.createdAt as any).toDate === 'function' 
+                                ? formatDistanceToNow((notif.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
+                                : ''}
+                        </p>
                     </div>
                     {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}
                 </button>
