@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -67,7 +66,11 @@ const PaymentRow = ({ payment, user, course }: { payment: Payment; user?: Partia
             </TableCell>
             <TableCell className="hidden md:table-cell">{course?.title || 'Cours inconnu'}</TableCell>
             <TableCell className="font-medium">{payment.amount.toLocaleString('fr-FR')} {payment.currency}</TableCell>
-            <TableCell className="hidden sm:table-cell">{payment.date ? format(payment.date.toDate(), 'd MMM yyyy, HH:mm', { locale: fr }) : ''}</TableCell>
+            <TableCell className="hidden sm:table-cell">
+                {payment.date && typeof (payment.date as any).toDate === 'function' 
+                    ? format((payment.date as any).toDate(), 'd MMM yyyy, HH:mm', { locale: fr }) 
+                    : ''}
+            </TableCell>
             <TableCell>
                 <div className="flex items-center gap-2">
                     <Badge variant={getStatusVariant(payment.status)}>{payment.status}</Badge>
