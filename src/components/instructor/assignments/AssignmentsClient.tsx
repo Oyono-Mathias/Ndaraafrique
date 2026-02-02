@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -118,9 +117,14 @@ export function AssignmentsClient() {
                         </div>
                       </TableCell>
                       <TableCell className="text-slate-500 dark:text-muted-foreground">{sub.courseTitle}</TableCell>
-                      <TableCell className="text-slate-500 dark:text-muted-foreground">{formatDistanceToNow(sub.submittedAt.toDate(), { locale: fr, addSuffix: true })}</TableCell>
+                      <TableCell className="text-slate-500 dark:text-muted-foreground">
+                        {/* ✅ Correction robuste du .toDate() */}
+                        {sub.submittedAt && typeof (sub.submittedAt as any).toDate === 'function' 
+                          ? formatDistanceToNow((sub.submittedAt as any).toDate(), { locale: fr, addSuffix: true }) 
+                          : 'Date inconnue'}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant={getStatusVariant(sub.status)} className={cn(
+                        <Badge variant={getStatusVariant(sub.status) as any} className={cn(
                             "capitalize",
                             sub.status === 'submitted' && "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
                             sub.status === 'graded' && "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
