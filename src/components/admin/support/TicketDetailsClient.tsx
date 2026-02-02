@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useRef, useMemo } from 'react';
@@ -115,7 +114,11 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
                                     <div className={cn("max-w-md rounded-lg p-3 text-sm", isAdminReply ? "bg-primary text-primary-foreground" : "bg-slate-700 text-slate-200")}>
                                         <p className="font-bold text-xs mb-1">{isAdminReply ? 'Support Ndara' : user?.fullName}</p>
                                         <p className="whitespace-pre-wrap">{msg.text}</p>
-                                        <p className="text-xs opacity-70 mt-2 text-right">{msg.createdAt ? format(msg.createdAt.toDate(), 'd MMM HH:mm', {locale: fr}) : ''}</p>
+                                        <p className="text-xs opacity-70 mt-2 text-right">
+                                            {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' 
+                                                ? format((msg.createdAt as any).toDate(), 'd MMM HH:mm', {locale: fr}) 
+                                                : ''}
+                                        </p>
                                     </div>
                                     {isAdminReply && <Avatar><AvatarFallback className="bg-primary/50"><Shield className="h-5 w-5"/></AvatarFallback></Avatar>}
                                 </div>
@@ -147,7 +150,7 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
                             <DetailRow icon={BookOpen} label="Cours concerné" value={course?.title} />
                             <Separator />
                             <DetailRow icon={Ticket} label="Catégorie" value={ticket?.category} />
-                            <DetailRow icon={Clock} label="Créé le" value={ticket?.createdAt ? format(ticket.createdAt.toDate(), 'PPP', {locale: fr}) : ''} />
+                            <DetailRow icon={Clock} label="Créé le" value={ticket?.createdAt && typeof (ticket.createdAt as any).toDate === 'function' ? format((ticket.createdAt as any).toDate(), 'PPP', {locale: fr}) : ''} />
                             <Badge variant={isTicketOpen ? 'destructive' : 'success'} className="capitalize">{ticket?.status}</Badge>
                             </>
                         )}
