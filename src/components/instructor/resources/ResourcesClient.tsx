@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -76,7 +75,12 @@ export function ResourcesClient() {
                                     <TableCell className="font-medium text-slate-800 dark:text-white">{res.title}</TableCell>
                                     <TableCell><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-muted-foreground"/><span className="capitalize">{res.type}</span></div></TableCell>
                                     <TableCell className="text-slate-500 dark:text-muted-foreground">{coursesMap.get(res.courseId) || 'Cours inconnu'}</TableCell>
-                                    <TableCell className="text-slate-500 dark:text-muted-foreground">{res.createdAt ? formatDistanceToNow(res.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}</TableCell>
+                                    <TableCell className="text-slate-500 dark:text-muted-foreground">
+                                        {/* ✅ Correction robuste du .toDate() pour le build production */}
+                                        {res.createdAt && typeof (res.createdAt as any).toDate === 'function' 
+                                            ? formatDistanceToNow((res.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
+                                            : ''}
+                                    </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4"/></Button></DropdownMenuTrigger>
