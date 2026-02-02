@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useParams } from 'next/navigation';
@@ -37,7 +36,10 @@ function VerificationPageContent() {
 
   const isLoading = enrollmentLoading || courseLoading || studentLoading || instructorLoading;
   
-  const completionDate = enrollment?.lastAccessedAt?.toDate();
+  // ✅ Correction robuste de l'appel .toDate() pour TypeScript
+  const completionDate = enrollment?.lastAccessedAt && typeof (enrollment.lastAccessedAt as any).toDate === 'function'
+    ? (enrollment.lastAccessedAt as any).toDate()
+    : null;
 
   if (isLoading) {
     return <VerificationSkeleton />;
