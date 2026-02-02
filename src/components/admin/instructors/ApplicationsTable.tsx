@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -32,8 +31,7 @@ export function ApplicationsTable() {
   };
   
   const handleActionComplete = () => {
-    // The real-time listener of useCollection will automatically update the list.
-    // No need to manually refetch.
+    // Le listener temps réel de useCollection mettra à jour la liste automatiquement.
   }
 
   return (
@@ -76,8 +74,8 @@ export function ApplicationsTable() {
                   </TableCell>
                   <TableCell>{app.email}</TableCell>
                   <TableCell>
-                    {app.createdAt
-                      ? formatDistanceToNow(app.createdAt.toDate(), { locale: fr, addSuffix: true })
+                    {app.createdAt && typeof (app.createdAt as any).toDate === 'function'
+                      ? formatDistanceToNow((app.createdAt as any).toDate(), { locale: fr, addSuffix: true })
                       : 'Date inconnue'}
                   </TableCell>
                   <TableCell>
