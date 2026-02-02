@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,7 +27,12 @@ const StarRating = ({ rating }: { rating: number }) => (
       />
     ))}
   </div>
-); {
+);
+
+interface EnrichedReview extends Review {
+  student?: Partial<NdaraUser>;
+  course?: Partial<Course>;
+}
 
 const ReviewCard = ({ review }: { review: EnrichedReview }) => (
   <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
@@ -52,9 +56,9 @@ const ReviewCard = ({ review }: { review: EnrichedReview }) => (
     </CardContent>
     <CardFooter>
       <p className="text-xs text-slate-400 dark:text-muted-foreground">
-      {review.createdAt && typeof (review.createdAt as any).toDate === 'function' 
-  ? formatDistanceToNow((review.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
-  : "À l'instant"}
+        {review.createdAt && typeof (review.createdAt as any).toDate === 'function' 
+          ? formatDistanceToNow((review.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
+          : "À l'instant"}
       </p>
     </CardFooter>
   </Card>
