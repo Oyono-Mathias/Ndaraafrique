@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -39,12 +38,17 @@ export default function RevenusPage() {
     const [payoutAmount, setPayoutAmount] = useState('');
     const [isSubmittingPayout, setIsSubmittingPayout] = useState(false);
 
-    // Memoize statistics to prevent re-calculations on every render
+    // Memoize statistics with robust toDate checks
     const stats = useMemo(() => {
         const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
         const now = new Date();
         const monthlyRevenue = payments
-            .filter(p => p.date && isSameMonth(p.date.toDate(), now))
+            .filter(p => {
+                const pDate = p.date && typeof (p.date as any).toDate === 'function' 
+                    ? (p.date as any).toDate() 
+                    : null;
+                return pDate && isSameMonth(pDate, now);
+            })
             .reduce((sum, p) => sum + p.amount, 0);
 
         const totalPayouts = payouts
@@ -78,12 +82,18 @@ export default function RevenusPage() {
 
         const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
             const fetchedPayments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-            setPayments(fetchedPayments.sort((a, b) => (b.date as Timestamp).toDate().getTime() - (a.date as Timestamp).toDate().getTime()));
+            
+            // Safe sorting for toDate
+            setPayments(fetchedPayments.sort((a, b) => {
+                const dateB = b.date && typeof (b.date as any).toDate === 'function' ? (b.date as any).toDate().getTime() : 0;
+                const dateA = a.date && typeof (a.date as any).toDate === 'function' ? (a.date as any).toDate().getTime() : 0;
+                return dateB - dateA;
+            }));
             
             const monthlyAggregates: Record<string, number> = {};
             fetchedPayments.forEach(p => {
-                if (p.date instanceof Timestamp) {
-                    const date = p.date.toDate();
+                if (p.date && typeof (p.date as any).toDate === 'function') {
+                    const date = (p.date as any).toDate();
                     const monthKey = format(date, 'yyyy-MM');
                     monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + p.amount;
                 }
@@ -95,7 +105,7 @@ export default function RevenusPage() {
                     revenue: monthlyAggregates[monthKey]
                 }));
             setChartData(trendData);
-            setIsLoading(false); // Set loading to false once payments are loaded
+            setIsLoading(false);
         }, (error) => {
             console.error("Error fetching payments:", error);
             setIsLoading(false);
@@ -210,7 +220,9 @@ export default function RevenusPage() {
                             : payments.length > 0 ? (
                                 payments.slice(0, 10).map(p => (
                                     <TableRow key={p.id} className="border-slate-100 dark:border-slate-800">
-                                        <TableCell className="text-slate-500 dark:text-muted-foreground">{p.date ? format(p.date.toDate(), 'd MMM yyyy', {locale: fr}) : ''}</TableCell>
+                                        <TableCell className="text-slate-500 dark:text-muted-foreground">
+                                            {p.date && typeof (p.date as any).toDate === 'function' ? format((p.date as any).toDate(), 'd MMM yyyy', {locale: fr}) : ''}
+                                        </TableCell>
                                         <TableCell className="font-medium text-slate-800 dark:text-white">{`Vente du cours "${p.courseTitle || p.courseId}"`}</TableCell>
                                         <TableCell className="text-right text-green-600 dark:text-green-400 font-semibold">+ {p.amount.toLocaleString('fr-FR')} XOF</TableCell>
                                     </TableRow>
