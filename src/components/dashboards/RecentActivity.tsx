@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -77,11 +76,14 @@ export function RecentActivity() {
                                        <ActivityIcon type={activity.type} />
                                     </div>
                                     <div>
-                                        <p className="text-sm font-semibold text-slate-200">{activity.title}</p>
-                                        {activity.description && <p className="text-xs text-slate-400">{activity.description}</p>}
-                                        <p className="text-xs text-slate-500 mt-1">
-                                            {activity.createdAt ? formatDistanceToNow(activity.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
-                                        </p>
+                                         <p className="text-sm font-semibold text-slate-200">{activity.title}</p>
+                                         {activity.description && <p className="text-xs text-slate-400">{activity.description}</p>}
+                                         <p className="text-xs text-slate-500 mt-1">
+                                             {/* ✅ Correction robuste du .toDate() */}
+                                             {activity.createdAt && typeof (activity.createdAt as any).toDate === 'function' 
+                                                ? formatDistanceToNow((activity.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
+                                                : ''}
+                                         </p>
                                     </div>
                                 </div>
                             </Link>
