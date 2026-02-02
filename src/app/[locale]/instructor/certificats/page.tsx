@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -74,7 +73,6 @@ export default function InstructorCertificatesPage() {
           ...enrollment,
           student: studentsMap.get(enrollment.studentId),
           course: coursesMap.get(enrollment.courseId),
-          // On force undefined si c'est null pour satisfaire TypeScript
           instructor: (currentUser as any) || undefined 
         }));
         
@@ -101,7 +99,11 @@ export default function InstructorCertificatesPage() {
           courseName={selectedCertificate.course?.title || ''}
           studentName={selectedCertificate.student?.fullName || 'Étudiant'}
           instructorName={selectedCertificate.instructor?.fullName || ''}
-          completionDate={selectedCertificate.lastAccessedAt?.toDate() || new Date()}
+          completionDate={
+            selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function'
+              ? (selectedCertificate.lastAccessedAt as any).toDate()
+              : new Date()
+          }
           certificateId={selectedCertificate.id}
         />
       )}
@@ -112,33 +114,55 @@ export default function InstructorCertificatesPage() {
 
       <div className="border rounded-lg bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 shadow-sm">
         <Table>
-          <TableHeader><TableRow className="border-slate-100 dark:border-slate-700"><TableHead>Étudiant</TableHead><TableHead>Cours</TableHead><TableHead>Date d'obtention</TableHead><TableHead className="text-right">Action</TableHead></TableRow></TableHeader>
+          <TableHeader>
+            <TableRow className="border-slate-100 dark:border-slate-700">
+              <TableHead>Étudiant</TableHead>
+              <TableHead>Cours</TableHead>
+              <TableHead>Date d'obtention</TableHead>
+              <TableHead className="text-right">Action</TableHead>
+            </TableRow>
+          </TableHeader>
           <TableBody>
             {isLoading ? (
-              [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full"/></TableCell></TableRow>)
+              [...Array(3)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={4}><Skeleton className="h-10 w-full"/></TableCell>
+                </TableRow>
+              ))
             ) : enrichedData.length > 0 ? (
               enrichedData.map(cert => (
                 <TableRow key={cert.id} className="border-slate-100 dark:border-slate-800">
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8"><AvatarImage src={cert.student?.profilePictureURL} /><AvatarFallback>{cert.student?.fullName?.charAt(0)}</AvatarFallback></Avatar>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={cert.student?.profilePictureURL} />
+                        <AvatarFallback>{cert.student?.fullName?.charAt(0)}</AvatarFallback>
+                      </Avatar>
                       <span className="font-medium text-slate-800 dark:text-white">{cert.student?.fullName}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-slate-500 dark:text-muted-foreground">{cert.course?.title}</TableCell>
-                  <TableCell className="text-slate-500 dark:text-muted-foreground">{cert.lastAccessedAt ? format(cert.lastAccessedAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                  <TableCell className="text-slate-500 dark:text-muted-foreground">
+                    {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
+                      ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
+                      : 'N/A'}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}><Eye className="mr-2 h-4 w-4"/>Voir</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}>
+                      <Eye className="mr-2 h-4 w-4"/>Voir
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
-              <TableRow><TableCell colSpan={4} className="h-24 text-center">
+              <TableRow>
+                <TableCell colSpan={4} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2 text-slate-500 dark:text-muted-foreground">
-                      <Frown className="h-8 w-8" />
-                      <p>Aucun certificat n'a encore été décerné pour vos cours.</p>
-                    </div>
-              </TableCell></TableRow>
+                    <Frown className="h-8 w-8" />
+                    <p>Aucun certificat n'a encore été décerné pour vos cours.</p>
+                  </div>
+                </TableCell>
+              </TableRow>
             )}
           </TableBody>
         </Table>
