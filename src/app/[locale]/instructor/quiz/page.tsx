@@ -54,7 +54,11 @@ const QuizCard = ({ quiz }: { quiz: QuizWithCourse }) => {
       <CardContent className="flex-grow">
         <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
           <span>{quiz.questionsCount || 0} questions</span>
-          <span>{format(quiz.createdAt.toDate(), "d MMM yyyy", { locale: fr })}</span>
+          <span>
+  {quiz.createdAt && typeof (quiz.createdAt as any).toDate === 'function' 
+    ? format((quiz.createdAt as any).toDate(), "d MMM yyyy", { locale: fr }) 
+    : "Date inconnue"}
+</span>
         </div>
       </CardContent>
       <CardFooter className="flex justify-end p-2 border-t border-slate-100 dark:border-slate-700/50">
