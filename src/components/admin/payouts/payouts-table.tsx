@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -62,9 +61,13 @@ const PayoutRow = ({ payout, instructor }: { payout: Payout; instructor?: Partia
             </TableCell>
             <TableCell className="font-medium">{payout.amount.toLocaleString('fr-FR')} XOF</TableCell>
             <TableCell>{payout.method}</TableCell>
-            <TableCell>{payout.date ? format(payout.date.toDate(), 'd MMM yyyy, HH:mm', { locale: fr }) : ''}</TableCell>
             <TableCell>
-                <Badge variant={getStatusVariant(payout.status)} className="capitalize">
+                {payout.date && typeof (payout.date as any).toDate === 'function' 
+                    ? format((payout.date as any).toDate(), 'd MMM yyyy, HH:mm', { locale: fr }) 
+                    : ''}
+            </TableCell>
+            <TableCell>
+                <Badge variant={getStatusVariant(payout.status as PayoutStatus)} className="capitalize">
                     {payout.status.replace('_', ' ')}
                 </Badge>
             </TableCell>
@@ -133,8 +136,7 @@ export function PayoutsTable() {
     const [filter, setFilter] = useState<PayoutStatus>('en_attente');
 
     const payoutsQuery = useMemo(() => {
-        let q = query(collection(db, 'payouts'), where('status', '==', filter), orderBy('date', 'desc'));
-        return q;
+        return query(collection(db, 'payouts'), where('status', '==', filter), orderBy('date', 'desc'));
     }, [db, filter]);
     
     const { data: payouts, isLoading: payoutsLoading } = useCollection<Payout>(payoutsQuery);
