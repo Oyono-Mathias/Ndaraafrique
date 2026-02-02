@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,7 +21,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from "@/components/ui/dialog"
+} from "@/Dialog/ui/dialog"
 
 import type { Course, Quiz } from '@/lib/types';
 import { format } from 'date-fns';
@@ -55,10 +54,10 @@ const QuizCard = ({ quiz }: { quiz: QuizWithCourse }) => {
         <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
           <span>{quiz.questionsCount || 0} questions</span>
           <span>
-  {quiz.createdAt && typeof (quiz.createdAt as any).toDate === 'function' 
-    ? format((quiz.createdAt as any).toDate(), "d MMM yyyy", { locale: fr }) 
-    : "Date inconnue"}
-</span>
+            {quiz.createdAt && typeof (quiz.createdAt as any).toDate === 'function' 
+              ? format((quiz.createdAt as any).toDate(), "d MMM yyyy", { locale: fr }) 
+              : "Date inconnue"}
+          </span>
         </div>
       </CardContent>
       <CardFooter className="flex justify-end p-2 border-t border-slate-100 dark:border-slate-700/50">
@@ -174,7 +173,17 @@ export default function QuizPage() {
           questionsCount: q.questionsCount || 0
       }));
 
-      setQuizzes(augmentedQuizzes.sort((a,b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0)));
+      // Logique de tri corrigée pour le build
+      setQuizzes(augmentedQuizzes.sort((a, b) => {
+        const dateB = b.createdAt && typeof (b.createdAt as any).toDate === 'function' 
+          ? (b.createdAt as any).toDate().getTime() 
+          : 0;
+        const dateA = a.createdAt && typeof (a.createdAt as any).toDate === 'function' 
+          ? (a.createdAt as any).toDate().getTime() 
+          : 0;
+        return dateB - dateA;
+      }));
+
       setIsLoading(false);
     };
 
