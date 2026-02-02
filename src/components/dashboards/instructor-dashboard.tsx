@@ -72,7 +72,6 @@ export function InstructorDashboard() {
                 const reviewPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'reviews'), where('courseId', 'in', chunk))));
                 const enrollmentPromises = courseIdChunks.map(chunk => getDocs(query(collection(db, 'enrollments'), where('courseId', 'in', chunk))));
                 
-                // CORRECTED QUERY: Use 'instructorId' instead of 'userId'
                 const paymentsQuery = query(collection(db, 'payments'), where('instructorId', '==', instructorId));
                 const paymentPromise = getDocs(paymentsQuery);
 
@@ -92,16 +91,21 @@ export function InstructorDashboard() {
                 const now = new Date();
                 const startOfCurrentMonth = startOfMonth(now);
                 
+                // ✅ Correction robuste du .toDate() dans le filter
                 const monthlyRev = paymentSnapshot.docs
                     .map(d => d.data() as Payment)
-                    .filter(p => p.date && p.status === 'Completed' && p.date.toDate() >= startOfCurrentMonth)
+                    .filter(p => {
+                        const pDate = (p.date && typeof (p.date as any).toDate === 'function') ? (p.date as any).toDate() : null;
+                        return pDate && p.status === 'Completed' && pDate >= startOfCurrentMonth;
+                    })
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
                 
                 const monthlyAggregates: Record<string, number> = {};
-                paymentSnapshot.docs.forEach(doc => {
-                    const payment = doc.data() as Payment;
-                    if (payment.date instanceof Timestamp && payment.status === 'Completed') {
-                        const date = payment.date.toDate();
+                paymentSnapshot.docs.forEach(docSnap => {
+                    const payment = docSnap.data() as Payment;
+                    // ✅ Correction robuste du .toDate() pour l'agrégation
+                    if (payment.date && typeof (payment.date as any).toDate === 'function' && payment.status === 'Completed') {
+                        const date = (payment.date as any).toDate();
                         const monthKey = format(date, 'MMM yy', { locale: fr });
                         monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
                     }
@@ -121,7 +125,7 @@ export function InstructorDashboard() {
 
             } catch (err: any) {
                 console.error("Error fetching instructor dashboard data:", err);
-                setError("Une erreur est survenue. Un index Firestore est peut-être manquant.");
+                setError("Une erreur est survenue lors de la récupération des statistiques.");
             } finally {
                 setIsLoading(false);
             }
@@ -155,7 +159,6 @@ export function InstructorDashboard() {
                 <AlertCircle className="w-16 h-16 text-red-500 mb-4" />
                 <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Erreur de chargement</h1>
                 <p className="text-red-600 dark:text-red-300 mt-2">{error}</p>
-                <p className="text-slate-500 dark:text-slate-400 mt-1 text-sm">Vérifiez les index Firestore ou contactez le support.</p>
             </div>
         )
     }
