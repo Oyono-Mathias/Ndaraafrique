@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -19,7 +18,12 @@ const AnnouncementCard = ({ announcement }: { announcement: Announcement }) => (
   <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
     <CardHeader>
       <CardTitle className="text-base">{announcement.title}</CardTitle>
-      <CardDescription>{format(announcement.createdAt.toDate(), 'd MMMM yyyy à HH:mm', { locale: fr })}</CardDescription>
+      <CardDescription>
+        {/* ✅ Correction robuste du .toDate() pour le build Vercel */}
+        {announcement.createdAt && typeof (announcement.createdAt as any).toDate === 'function' 
+          ? format((announcement.createdAt as any).toDate(), 'd MMMM yyyy à HH:mm', { locale: fr }) 
+          : 'Date indisponible'}
+      </CardDescription>
     </CardHeader>
     <CardContent>
       <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{announcement.message}</p>
