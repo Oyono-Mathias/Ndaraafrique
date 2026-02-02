@@ -70,14 +70,15 @@ export default function InstructorCertificatesPage() {
              fetchDataMap(db, 'courses', null, courseIds)
         ]);
         
-        const newEnrichedData = enrollments.map(e => ({
-            ...e,
-            student: studentsMap.get(e.studentId),
-            course: coursesMap.get(e.courseId),
-            instructor: currentUser,
+        const newEnrichedData = enrollments.map(enrollment => ({
+          ...enrollment,
+          student: studentsMap.get(enrollment.studentId),
+          course: coursesMap.get(enrollment.courseId),
+          // On force undefined si c'est null pour satisfaire TypeScript
+          instructor: (currentUser as any) || undefined 
         }));
-
-        setEnrichedData(newEnrichedData);
+        
+        setEnrichedData(newEnrichedData as EnrichedCertificate[]);
         setDataLoading(false);
     };
 
