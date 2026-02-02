@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -159,7 +158,11 @@ const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
             <TableCell>
                  <Badge variant={targetUser.status === 'active' ? 'success' : 'warning'}>{targetUser.status}</Badge>
             </TableCell>
-            <TableCell>{targetUser.createdAt ? format(targetUser.createdAt.toDate(), "d MMM yyyy", { locale: fr }) : 'N/A'}</TableCell>
+            <TableCell>
+                {targetUser.createdAt && typeof (targetUser.createdAt as any).toDate === 'function' 
+                    ? format((targetUser.createdAt as any).toDate(), "d MMM yyyy", { locale: fr }) 
+                    : 'N/A'}
+            </TableCell>
             <TableCell>
                 <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                     <DropdownMenu>
