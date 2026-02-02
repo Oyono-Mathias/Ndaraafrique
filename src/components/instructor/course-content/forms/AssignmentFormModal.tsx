@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -53,7 +52,10 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                 title: assignment.title || '',
                 description: assignment.description || '',
                 correctionGuide: assignment.correctionGuide || '',
-                dueDate: assignment.dueDate?.toDate(),
+                // ✅ Correction robuste de .toDate() pour le build Vercel
+                dueDate: (assignment.dueDate && typeof (assignment.dueDate as any).toDate === 'function') 
+                    ? (assignment.dueDate as any).toDate() 
+                    : undefined,
                 attachments: assignment.attachments || [],
             });
         } else {
