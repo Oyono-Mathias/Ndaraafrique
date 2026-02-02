@@ -21,7 +21,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from "@/Dialog/ui/dialog"
+} from "@/components/ui/dialog"
 
 import type { Course, Quiz } from '@/lib/types';
 import { format } from 'date-fns';
@@ -173,7 +173,6 @@ export default function QuizPage() {
           questionsCount: q.questionsCount || 0
       }));
 
-      // Logique de tri corrigée pour le build
       setQuizzes(augmentedQuizzes.sort((a, b) => {
         const dateB = b.createdAt && typeof (b.createdAt as any).toDate === 'function' 
           ? (b.createdAt as any).toDate().getTime() 
