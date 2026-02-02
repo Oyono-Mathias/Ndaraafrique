@@ -74,25 +74,32 @@ export function AdminActionQueue() {
     const allActions = useMemo(() => {
         const actions: ActionItem[] = [];
 
+        // ✅ Helper pour convertir les dates Firestore de manière sécurisée
+        const toDate = (ts: any) => (ts && typeof ts.toDate === 'function') ? ts.toDate() : new Date();
+
         pendingCourses?.forEach(item => actions.push({
             id: item.id, type: 'course', title: "Cours à modérer", description: item.title,
-            date: item.createdAt?.toDate() || new Date(), link: '/admin/moderation', icon: ShieldAlert
+            date: toDate(item.createdAt), link: '/admin/moderation', icon: ShieldAlert
         }));
+
         pendingInstructors?.forEach(item => actions.push({
-            id: item.id, type: 'instructor', title: "Nouvel instructeur", description: item.fullName,
-            date: item.createdAt?.toDate() || new Date(), link: '/admin/instructors', icon: UserCheck
+            id: item.uid, type: 'instructor', title: "Nouvel instructeur", description: item.fullName,
+            date: toDate(item.createdAt), link: '/admin/instructors', icon: UserCheck
         }));
+
         pendingPayouts?.forEach(item => actions.push({
             id: item.id, type: 'payout', title: "Demande de retrait", description: `${(item.amount || 0).toLocaleString('fr-FR')} XOF`,
-            date: (item.date as unknown as Timestamp)?.toDate() || new Date(), link: '/admin/payouts', icon: Landmark
+            date: toDate(item.date), link: '/admin/payouts', icon: Landmark
         }));
+
         openTickets?.forEach(item => actions.push({
             id: item.id, type: 'ticket', title: "Ticket de support", description: item.subject,
-            date: item.createdAt?.toDate() || new Date(), link: `/admin/support/${item.id}`, icon: HelpCircle
+            date: toDate(item.createdAt), link: `/admin/support/${item.id}`, icon: HelpCircle
         }));
+
         suspiciousPayments?.forEach(item => actions.push({
             id: item.id, type: 'payment', title: "Paiement suspect", description: `${(item.amount || 0).toLocaleString('fr-FR')} XOF`,
-            date: (item.date as unknown as Timestamp)?.toDate() || new Date(), link: `/admin/payments`, icon: AlertTriangle
+            date: toDate(item.date), link: `/admin/payments`, icon: AlertTriangle
         }));
 
         return actions.sort((a, b) => b.date.getTime() - a.date.getTime());
