@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -58,7 +57,7 @@ export function ModerationQueue() {
   };
   
   const handleActionComplete = () => {
-    // Real-time listener will update the list
+    // Le listener temps réel mettra à jour la liste automatiquement
   }
 
   return (
@@ -101,8 +100,8 @@ export function ModerationQueue() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    {course.createdAt
-                      ? formatDistanceToNow(course.createdAt.toDate(), { locale: fr, addSuffix: true })
+                    {course.createdAt && typeof (course.createdAt as any).toDate === 'function'
+                      ? formatDistanceToNow((course.createdAt as any).toDate(), { locale: fr, addSuffix: true })
                       : 'Date inconnue'}
                   </TableCell>
                   <TableCell>
