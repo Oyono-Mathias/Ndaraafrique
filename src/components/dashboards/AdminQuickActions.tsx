@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 
+// ✅ Définition stricte des types de variants pour Badge
+type BadgeVariant = 'default' | 'destructive' | 'secondary' | 'outline';
 
 interface QuickActionCardProps {
     title: string;
@@ -21,7 +23,7 @@ interface QuickActionCardProps {
     alerts?: {
         label: string;
         count: number;
-        variant?: 'default' | 'destructive' | 'secondary' | 'outline';
+        variant?: BadgeVariant;
     }[];
 }
 
@@ -83,14 +85,15 @@ export function AdminQuickActions() {
     
     const isLoading = loadingCourses || loadingPayouts || loadingInstructors || loadingSuspended;
 
-    const actions = [
+    // ✅ Cast explicite des objets pour respecter l'interface QuickActionCardProps
+    const actions: QuickActionCardProps[] = [
         {
             title: "Gestion des utilisateurs",
             link: "/admin/users",
             icon: Users,
             isLoading: isLoading,
             alerts: [
-                { label: 'Comptes suspendus', count: suspendedUsers?.length || 0, variant: 'destructive' }
+                { label: 'Comptes suspendus', count: suspendedUsers?.length || 0, variant: 'destructive' as BadgeVariant }
             ]
         },
         {
@@ -99,8 +102,8 @@ export function AdminQuickActions() {
             icon: ShieldAlert,
             isLoading: isLoading,
             alerts: [
-                { label: 'Cours à valider', count: pendingCourses?.length || 0 },
-                { label: 'Nouvelles candidatures', count: pendingInstructors?.length || 0, variant: 'secondary' }
+                { label: 'Cours à valider', count: pendingCourses?.length || 0, variant: 'destructive' as BadgeVariant },
+                { label: 'Nouvelles candidatures', count: pendingInstructors?.length || 0, variant: 'secondary' as BadgeVariant }
             ]
         },
          {
@@ -109,7 +112,7 @@ export function AdminQuickActions() {
             icon: Landmark,
             isLoading: isLoading,
             alerts: [
-                 { label: 'Retraits en attente', count: pendingPayouts?.length || 0 }
+                 { label: 'Retraits en attente', count: pendingPayouts?.length || 0, variant: 'destructive' as BadgeVariant }
             ]
         },
         {
