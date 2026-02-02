@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -11,7 +10,21 @@ import { Bot, Send, User, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useCollection } from "@/firebase";
-import { collection, addDoc, serverTimestamp, query, orderBy, getFirestore, limit, startAfter, QueryDocumentSnapshot, DocumentData, getDocs, doc } from "firebase/firestore";
+import { 
+    collection, 
+    addDoc, 
+    serverTimestamp, 
+    query, 
+    orderBy, 
+    getFirestore, 
+    limit, 
+    startAfter, 
+    QueryDocumentSnapshot, 
+    DocumentData, 
+    getDocs, 
+    doc,
+    writeBatch // ✅ Import ajouté
+} from "firebase/firestore";
 
 interface AiTutorMessage {
   id: string;
@@ -81,7 +94,12 @@ export function AiTutorClient() {
   }, [user]);
 
   const displayedMessages = useMemo(() => {
-    const sortedMessages = [...messages].sort((a, b) => (a.timestamp?.toDate ? a.timestamp.toDate() : a.timestamp) - (b.timestamp?.toDate ? b.timestamp.toDate() : b.timestamp));
+    const sortedMessages = [...messages].sort((a, b) => {
+        const timeA = a.timestamp && typeof (a.timestamp as any).toDate === 'function' ? (a.timestamp as any).toDate() : a.timestamp;
+        const timeB = b.timestamp && typeof (b.timestamp as any).toDate === 'function' ? (b.timestamp as any).toDate() : b.timestamp;
+        return timeA - timeB;
+    });
+    
     if (messages.length === 0 && !isHistoryLoading) {
         return [initialGreeting];
     }
@@ -115,7 +133,9 @@ export function AiTutorClient() {
       const chatInput: MathiasTutorInput = { query: userMessageText };
       const result = await mathiasTutor(chatInput);
       
-      const batch = getFirestore().batch();
+      // ✅ Correction de la syntaxe Batch pour Firebase v9+
+      const batch = writeBatch(db);
+      
       const userMessageRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       batch.set(userMessageRef, { sender: "user", text: userMessageText, timestamp: serverTimestamp() });
       
@@ -185,7 +205,7 @@ export function AiTutorClient() {
               >
                 <p className="whitespace-pre-wrap">{message.text}</p>
                  <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
-                    {message.timestamp ? new Date(message.timestamp.toDate ? message.timestamp.toDate() : message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    {message.timestamp ? new Date(message.timestamp.toDate ? (message.timestamp as any).toDate() : message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                 </span>
               </div>
             </div>
