@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -22,7 +21,11 @@ interface EnrichedChat extends Chat {
 
 const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, isSelected: boolean, unreadCount: number }) => {
     const router = useRouter();
-    const lastMessageDate = chat.updatedAt ? formatDistanceToNowStrict(chat.updatedAt.toDate(), { addSuffix: true, locale: fr }) : '';
+    
+    // ✅ Correction robuste de l'appel .toDate() pour TypeScript
+    const lastMessageDate = chat.updatedAt && typeof (chat.updatedAt as any).toDate === 'function' 
+        ? formatDistanceToNowStrict((chat.updatedAt as any).toDate(), { addSuffix: true, locale: fr }) 
+        : '';
 
     return (
         <button 
