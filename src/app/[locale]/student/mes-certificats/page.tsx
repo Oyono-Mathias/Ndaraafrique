@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -27,12 +26,10 @@ async function fetchDataMap(db: any, collectionName: string, fieldName: string |
     const dataMap = new Map();
     if (ids.length === 0) return dataMap;
 
-    // Firestore 'in' query supports up to 30 elements in the array since recent updates.
     for (let i = 0; i < ids.length; i += 30) {
         const chunk = ids.slice(i, i + 30);
         if (chunk.length === 0) continue;
         
-        // Use documentId() for querying by document ID.
         const key = fieldName || documentId();
         const q = query(collection(db, collectionName), where(key, 'in', chunk));
         const snapshot = await getDocs(q);
@@ -76,12 +73,12 @@ export default function MesCertificatsPage() {
         
         const newEnrichedData = enrollments.map(e => ({
             ...e,
-            student: currentUser,
-            course: coursesMap.get(e.courseId),
-            instructor: instructorsMap.get(e.instructorId),
+            student: (currentUser as any) || undefined,
+            course: coursesMap.get(e.courseId) || undefined,
+            instructor: instructorsMap.get(e.instructorId) || undefined,
         }));
 
-        setEnrichedData(newEnrichedData);
+        setEnrichedData(newEnrichedData as EnrichedCertificate[]);
         setDataLoading(false);
     };
 
@@ -104,7 +101,11 @@ export default function MesCertificatsPage() {
           courseName={selectedCertificate.course?.title || ''}
           studentName={selectedCertificate.student?.fullName || 'Étudiant'}
           instructorName={selectedCertificate.instructor?.fullName || ''}
-          completionDate={selectedCertificate.lastAccessedAt?.toDate() || new Date()}
+          completionDate={
+            selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function'
+                ? (selectedCertificate.lastAccessedAt as any).toDate()
+                : new Date()
+          }
           certificateId={selectedCertificate.id}
         />
       )}
@@ -125,20 +126,35 @@ export default function MesCertificatsPage() {
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full bg-slate-700"/></TableCell></TableRow>)
+              [...Array(3)].map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell colSpan={4}>
+                    <Skeleton className="h-10 w-full bg-slate-700"/>
+                  </TableCell>
+                </TableRow>
+              ))
             ) : enrichedData.length > 0 ? (
               enrichedData.map(cert => (
                 <TableRow key={cert.id} className="border-slate-800">
                   <TableCell className="font-medium text-white">{cert.course?.title}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8"><AvatarImage src={cert.instructor?.profilePictureURL} /><AvatarFallback>{cert.instructor?.fullName?.charAt(0)}</AvatarFallback></Avatar>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={cert.instructor?.profilePictureURL} />
+                        <AvatarFallback>{cert.instructor?.fullName?.charAt(0) || '?'}</AvatarFallback>
+                      </Avatar>
                       <span className="font-medium text-slate-300">{cert.instructor?.fullName}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{cert.lastAccessedAt ? format(cert.lastAccessedAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
+                      ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
+                      : 'N/A'}
+                  </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}><Eye className="mr-2 h-4 w-4"/>Voir</Button>
+                    <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}>
+                      <Eye className="mr-2 h-4 w-4"/>Voir
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))
