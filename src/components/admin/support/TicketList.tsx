@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -77,10 +76,12 @@ export function TicketList() {
                                         <Badge variant={getCategoryVariant(ticket.category)}>{ticket.category}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={getStatusVariant(ticket.status)} className="capitalize">{ticket.status}</Badge>
+                                        <Badge variant={getStatusVariant(ticket.status as TicketStatus)} className="capitalize">{ticket.status}</Badge>
                                     </TableCell>
                                     <TableCell>
-                                        {ticket.updatedAt ? formatDistanceToNow(ticket.updatedAt.toDate(), { locale: fr, addSuffix: true }) : 'N/A'}
+                                        {ticket.updatedAt && typeof (ticket.updatedAt as any).toDate === 'function' 
+                                            ? formatDistanceToNow((ticket.updatedAt as any).toDate(), { locale: fr, addSuffix: true }) 
+                                            : 'N/A'}
                                     </TableCell>
                                 </TableRow>
                             ))
