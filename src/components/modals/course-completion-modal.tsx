@@ -1,38 +1,35 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, doc, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Award, Eye, Frown } from 'lucide-react';
+import { Eye, Frown } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 import Link from 'next/link';
 
+// ✅ Interface corrigée pour accepter Partial et éviter les erreurs de type 'null'
 interface EnrichedCertificate extends Enrollment {
   student?: Partial<NdaraUser>;
   course?: Partial<Course>;
   instructor?: Partial<NdaraUser>;
 }
 
-// Helper function to fetch data in chunks to avoid Firestore's 'in' query limitation.
 async function fetchDataMap(db: any, collectionName: string, fieldName: string | null, ids: string[]) {
     const dataMap = new Map();
     if (ids.length === 0) return dataMap;
 
-    // Firestore 'in' query supports up to 30 elements in the array since recent updates.
     for (let i = 0; i < ids.length; i += 30) {
         const chunk = ids.slice(i, i + 30);
         if (chunk.length === 0) continue;
         
-        // Use documentId() for querying by document ID.
         const key = fieldName || documentId();
         const q = query(collection(db, collectionName), where(key, 'in', chunk));
         const snapshot = await getDocs(q);
@@ -74,9 +71,10 @@ export default function MesCertificatsPage() {
              fetchDataMap(db, 'users', 'uid', instructorIds)
         ]);
         
-        const newEnrichedData = enrollments.map(e => ({
+        const newEnrichedData: EnrichedCertificate[] = enrollments.map(e => ({
             ...e,
-            student: currentUser,
+            // ✅ On s'assure que student n'est jamais null pour correspondre à l'interface
+            student: currentUser || undefined, 
             course: coursesMap.get(e.courseId),
             instructor: instructorsMap.get(e.instructorId),
         }));
@@ -104,7 +102,10 @@ export default function MesCertificatsPage() {
           courseName={selectedCertificate.course?.title || ''}
           studentName={selectedCertificate.student?.fullName || 'Étudiant'}
           instructorName={selectedCertificate.instructor?.fullName || ''}
-          completionDate={selectedCertificate.lastAccessedAt?.toDate() || new Date()}
+          // ✅ Correction .toDate() sécurisée
+          completionDate={(selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function') 
+            ? (selectedCertificate.lastAccessedAt as any).toDate() 
+            : new Date()}
           certificateId={selectedCertificate.id}
         />
       )}
@@ -136,7 +137,12 @@ export default function MesCertificatsPage() {
                       <span className="font-medium text-slate-300">{cert.instructor?.fullName}</span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{cert.lastAccessedAt ? format(cert.lastAccessedAt.toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {/* ✅ Correction .toDate() sécurisée */}
+                    {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
+                        ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
+                        : 'N/A'}
+                  </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}><Eye className="mr-2 h-4 w-4"/>Voir</Button>
                   </TableCell>

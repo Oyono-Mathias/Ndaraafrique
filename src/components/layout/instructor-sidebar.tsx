@@ -1,8 +1,7 @@
-
 "use client";
 
 import Link from 'next/link';
-import { usePathname as useNextPathname } from 'next/navigation';
+import { usePathname } from 'next/navigation'; // ✅ Standard import
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -25,11 +24,11 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import { UserNav } from "./user-nav";
+import { UserNav } from "@/components/layout/user-nav";
 
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
-  const pathname = useNextPathname();
+  const pathname = usePathname();
   const { currentUser } = useRole();
   const { toast } = useToast();
   

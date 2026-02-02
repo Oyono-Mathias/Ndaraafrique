@@ -115,6 +115,7 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
                                         <p className="font-bold text-xs mb-1">{isAdminReply ? 'Support Ndara' : user?.fullName}</p>
                                         <p className="whitespace-pre-wrap">{msg.text}</p>
                                         <p className="text-xs opacity-70 mt-2 text-right">
+                                            {/* ✅ Correction robuste du .toDate() */}
                                             {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' 
                                                 ? format((msg.createdAt as any).toDate(), 'd MMM HH:mm', {locale: fr}) 
                                                 : ''}

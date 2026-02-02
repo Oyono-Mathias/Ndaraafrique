@@ -1,17 +1,13 @@
-
 'use client';
 
-import { query, collection, where } from "firebase/firestore";
-import { db } from "@/firebase/config"; // Vérifiez votre chemin d'import
-import { useAuth } from "@/context/AuthContext"; // Ou votre système d'auth
 import { useState, useEffect } from 'react';
 import {
-  Query,
   onSnapshot,
   DocumentData,
   FirestoreError,
   QuerySnapshot,
   CollectionReference,
+  Query,
 } from 'firebase/firestore';
 import { errorEmitter } from '../error-emitter';
 import { FirestorePermissionError } from '../errors';
@@ -32,18 +28,14 @@ export interface UseCollectionResult<T> {
 /**
  * React hook to subscribe to a Firestore collection or query in real-time.
  * Handles nullable references/queries.
- * 
- * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery or BAD THINGS WILL HAPPEN
- * use useMemo to memoize it per React guidence. Also make sure that it's dependencies are stable
- * references
- *  
- * @template T Optional type for document data. Defaults to any.
- * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} targetRefOrQuery -
+ * * IMPORTANT! YOU MUST MEMOIZE the inputted memoizedTargetRefOrQuery.
+ * * @template T Optional type for document data. Defaults to any.
+ * @param {CollectionReference<DocumentData> | Query<DocumentData> | null | undefined} memoizedTargetRefOrQuery -
  * The Firestore CollectionReference or Query. Waits if null/undefined.
  * @returns {UseCollectionResult<T>} Object with data, isLoading, error.
  */
 export function useCollection<T = any>(
-    memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean})  | null | undefined,
+    memoizedTargetRefOrQuery: ((CollectionReference<DocumentData> | Query<DocumentData>) & {__memo?: boolean}) | null | undefined,
 ): UseCollectionResult<T> {
   type ResultItemType = WithId<T>;
   type StateDataType = ResultItemType[] | null;
@@ -63,7 +55,6 @@ export function useCollection<T = any>(
     setIsLoading(true);
     setError(null);
 
-    // Directly use memoizedTargetRefOrQuery as it's assumed to be the final query
     const unsubscribe = onSnapshot(
       memoizedTargetRefOrQuery,
       (snapshot: QuerySnapshot<DocumentData>) => {
@@ -75,23 +66,18 @@ export function useCollection<T = any>(
         setError(null);
         setIsLoading(false);
       },
-      (error: FirestoreError) => {
-        // This logic extracts the path from either a ref or a query
+      (err: FirestoreError) => {
         let path = "unknown/path";
         if (memoizedTargetRefOrQuery) {
             if ('path' in memoizedTargetRefOrQuery && typeof (memoizedTargetRefOrQuery as any).path === 'string') {
-                // This handles CollectionReference, which is safe.
                 path = (memoizedTargetRefOrQuery as CollectionReference).path;
             } else if ((memoizedTargetRefOrQuery as any)._query) {
-                // HACK: Attempt to access internal property for Query objects
                 try {
                     path = (memoizedTargetRefOrQuery as any)._query.path.segments.join('/');
                 } catch (e) {
-                    console.warn("Could not determine path for a complex Firestore query from internal properties.");
                     path = "unknown/path (complex query)";
                 }
             } else {
-                console.warn("Could not determine path for a complex Firestore query.");
                 path = "unknown/path (complex query)";
             }
         }
@@ -99,11 +85,11 @@ export function useCollection<T = any>(
         const contextualError = new FirestorePermissionError({
           operation: 'list',
           path,
-        })
+        });
 
-        setError(contextualError)
-        setData(null)
-        setIsLoading(false)
+        setError(contextualError);
+        setData(null);
+        setIsLoading(false);
 
         // trigger global error propagation
         errorEmitter.emit('permission-error', contextualError);
@@ -111,7 +97,7 @@ export function useCollection<T = any>(
     );
 
     return () => unsubscribe();
-  }, [memoizedTargetRefOrQuery]); // Re-run if the target query/reference changes.
+  }, [memoizedTargetRefOrQuery]);
 
   return { data, isLoading, error };
 }

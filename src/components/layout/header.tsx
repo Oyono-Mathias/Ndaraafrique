@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
@@ -9,14 +8,13 @@ import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, limit, orderBy, Timestamp, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, writeBatch, doc, limit, orderBy, updateDoc } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import type { Notification } from '@/lib/types';
 import Link from 'next/link';
-
 
 const useUnreadNotifications = (userId?: string) => {
     const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -61,7 +59,6 @@ const useUnreadNotifications = (userId?: string) => {
     return { notifications, hasUnread, markAllAsRead };
 };
 
-
 const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     switch (type) {
         case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
@@ -81,7 +78,10 @@ const NotificationItem = ({ notif, onClick }: { notif: Notification, onClick: (n
             {notif.text}
           </p>
           <p className="text-xs text-muted-foreground">
-            {notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
+            {/* ✅ CORRECTION ICI : Vérification de la méthode toDate() */}
+            {notif.createdAt && typeof (notif.createdAt as any).toDate === 'function' 
+              ? formatDistanceToNow((notif.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
+              : ''}
           </p>
        </div>
        {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}

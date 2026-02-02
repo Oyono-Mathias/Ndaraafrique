@@ -1,9 +1,9 @@
-
 'use server';
 
 import { adminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { sendUserNotification } from './notificationActions';
+// ✅ Correction : Utilisation de l'alias absolu pour garantir que le fichier est trouvé
+import { sendUserNotification } from '@/actions/notificationActions';
 
 interface AnswerQuestionParams {
   questionId: string;
@@ -48,7 +48,8 @@ export async function answerQuestionAction({
     // Notify student about the answer
     await sendUserNotification(studentId, {
       text: `Un instructeur a répondu à votre question sur le cours "${questionDoc.data()?.courseTitle}".`,
-      link: `/student/mes-questions`
+      link: `/student/mes-questions`,
+      type: 'success' // ✅ Ajout du type pour correspondre à l'interface de notification
     });
 
     return { success: true };

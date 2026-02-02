@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -11,6 +10,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import React from 'react';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -20,15 +20,25 @@ const navItems = [
   { href: '/admin/support', icon: HelpCircle, label: 'Support' },
 ];
 
-const NavItem = ({ href, icon: Icon, label }: typeof navItems[0]) => {
+interface NavItemProps {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+}
+
+const NavItem = ({ href, icon: Icon, label }: NavItemProps) => {
   const pathname = usePathname();
   
+  // ✅ Logique de détection active robuste
   const isDashboardActive = pathname === href;
   const isOtherActive = href !== '/admin' && pathname.startsWith(href);
   const isActive = isDashboardActive || isOtherActive;
 
   return (
-    <Link href={href} className="flex flex-col items-center justify-center gap-1 flex-1 p-1 h-full">
+    <Link 
+      href={href} 
+      className="flex flex-col items-center justify-center gap-1 flex-1 p-1 h-full"
+    >
       <Icon className={cn(
         'w-6 h-6 transition-colors',
         isActive ? 'text-primary' : 'text-slate-400'

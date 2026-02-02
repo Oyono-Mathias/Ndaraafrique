@@ -1,19 +1,19 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { StudentSidebar } from './student-sidebar';
-import { InstructorSidebar } from './instructor-sidebar';
-import { AdminSidebar } from './admin-sidebar';
-import { Button } from '../ui/button';
+// ✅ Utilisation des alias absolus pour éviter les erreurs "Module not found"
+import { StudentSidebar } from '@/components/layout/student-sidebar';
+import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
+import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { Button } from '@/components/ui/button';
 import { Wrench, Loader2, PanelLeft, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
-import { SplashScreen } from '../splash-screen';
-import { Header } from './header';
+import { SplashScreen } from '@/components/splash-screen';
+import { Header } from '@/components/layout/header';
 
 function MaintenancePage() {
     return (
@@ -73,7 +73,7 @@ function AnnouncementBanner() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isUserLoading, user, currentUser, switchRole } = useRole();
+  const { role, isUserLoading, user, currentUser } = useRole();
   const router = useRouter();
   const pathname = usePathname();
   
