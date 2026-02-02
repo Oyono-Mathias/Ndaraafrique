@@ -1,9 +1,8 @@
-
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation'; // ✅ Import ajouté ici
 import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -60,7 +59,7 @@ export default function LoginClient() {
   const [siteName, setSiteName] = useState('Ndara Afrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   
-  const router = useRouter();
+  const router = useRouter(); // ✅ Maintenant reconnu correctement
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
@@ -195,7 +194,7 @@ export default function LoginClient() {
     setIsLoading(true);
     try {
       const result = await signInWithPopup(getAuth(), provider);
-      await handleAuthSuccess(result.user, true); // Assume Google sign-in implies term acceptance for simplicity here
+      await handleAuthSuccess(result.user, true); 
     } catch (err) {
       toast({ variant: 'destructive', title: "Erreur", description: "Erreur lors de la connexion avec Google." });
     } finally {
