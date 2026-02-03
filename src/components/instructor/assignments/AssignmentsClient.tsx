@@ -118,8 +118,7 @@ export function AssignmentsClient() {
                       </TableCell>
                       <TableCell className="text-slate-500 dark:text-muted-foreground">{sub.courseTitle}</TableCell>
                       <TableCell className="text-slate-500 dark:text-muted-foreground">
-                        {/* ✅ Correction robuste du .toDate() */}
-                        {sub.submittedAt && typeof (sub.submittedAt as any).toDate === 'function' 
+                        {(sub.submittedAt as any)?.toDate?.() 
                           ? formatDistanceToNow((sub.submittedAt as any).toDate(), { locale: fr, addSuffix: true }) 
                           : 'Date inconnue'}
                       </TableCell>

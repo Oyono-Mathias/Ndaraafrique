@@ -35,7 +35,7 @@ export function ResourcesClient() {
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
     const resourcesQuery = useMemo(() => currentUser ? query(collection(db, 'resources'), where('instructorId', '==', currentUser.uid), orderBy('createdAt', 'desc')) : null, [db, currentUser]);
-    const { data: resources, isLoading: resourcesLoading, error } = useCollection<Resource>(resourcesQuery);
+    const { data: resources, isLoading: resourcesLoading } = useCollection<Resource>(resourcesQuery);
     
     const coursesMap = useMemo(() => {
         const map = new Map<string, string>();
@@ -76,8 +76,7 @@ export function ResourcesClient() {
                                     <TableCell><div className="flex items-center gap-2"><Icon className="h-4 w-4 text-muted-foreground"/><span className="capitalize">{res.type}</span></div></TableCell>
                                     <TableCell className="text-slate-500 dark:text-muted-foreground">{coursesMap.get(res.courseId) || 'Cours inconnu'}</TableCell>
                                     <TableCell className="text-slate-500 dark:text-muted-foreground">
-                                        {/* ✅ Correction robuste du .toDate() pour le build production */}
-                                        {res.createdAt && typeof (res.createdAt as any).toDate === 'function' 
+                                        {(res.createdAt as any)?.toDate?.() 
                                             ? formatDistanceToNow((res.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
                                             : ''}
                                     </TableCell>

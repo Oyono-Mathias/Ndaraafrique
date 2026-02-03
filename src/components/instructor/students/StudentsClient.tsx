@@ -174,8 +174,7 @@ export function StudentsClient() {
                       </TableCell>
                        <TableCell className="text-slate-500 dark:text-muted-foreground">{item.course?.title || 'N/A'}</TableCell>
                        <TableCell className="text-slate-500 dark:text-muted-foreground">
-                        {/* ✅ Correction robuste du .toDate() */}
-                        {item.enrollmentDate && typeof (item.enrollmentDate as any).toDate === 'function' 
+                        {(item.enrollmentDate as any)?.toDate?.() 
                           ? format((item.enrollmentDate as any).toDate(), 'd MMM yyyy', { locale: fr }) 
                           : 'N/A'}
                        </TableCell>

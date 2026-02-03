@@ -19,8 +19,7 @@ const AnnouncementCard = ({ announcement }: { announcement: Announcement }) => (
     <CardHeader>
       <CardTitle className="text-base">{announcement.title}</CardTitle>
       <CardDescription>
-        {/* ✅ Correction robuste du .toDate() pour le build Vercel */}
-        {announcement.createdAt && typeof (announcement.createdAt as any).toDate === 'function' 
+        {(announcement.createdAt as any)?.toDate?.() 
           ? format((announcement.createdAt as any).toDate(), 'd MMMM yyyy à HH:mm', { locale: fr }) 
           : 'Date indisponible'}
       </CardDescription>

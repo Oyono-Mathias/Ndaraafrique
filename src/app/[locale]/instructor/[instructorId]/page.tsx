@@ -10,7 +10,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Star, Globe, Twitter, Linkedin, Youtube, Edit, Users, BookOpen, Share2, Calendar } from 'lucide-react';
-import type { Course } from '@/lib/types';
+import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
@@ -69,7 +69,7 @@ export default function InstructorProfilePage() {
     const [statsLoading, setStatsLoading] = useState(true);
 
     const instructorRef = useMemo(() => doc(db, 'users', instructorId as string), [db, instructorId]);
-    const { data: instructor, isLoading: instructorLoading } = useDoc(instructorRef);
+    const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
 
     const coursesQuery = useMemo(() => 
         query(collection(db, 'courses'), where('instructorId', '==', instructorId as string), where('status', '==', 'Published')),

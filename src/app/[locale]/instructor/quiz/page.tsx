@@ -12,7 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -21,7 +21,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogClose,
-} from "@/components/ui/dialog"
+} from "@/components/ui/dialog";
 
 import type { Course, Quiz } from '@/lib/types';
 import { format } from 'date-fns';
@@ -54,7 +54,7 @@ const QuizCard = ({ quiz }: { quiz: QuizWithCourse }) => {
         <div className="flex justify-between text-sm text-slate-500 dark:text-slate-400">
           <span>{quiz.questionsCount || 0} questions</span>
           <span>
-            {quiz.createdAt && typeof (quiz.createdAt as any).toDate === 'function' 
+            {(quiz.createdAt as any)?.toDate?.() 
               ? format((quiz.createdAt as any).toDate(), "d MMM yyyy", { locale: fr }) 
               : "Date inconnue"}
           </span>
@@ -168,18 +168,9 @@ export default function QuizPage() {
         });
       });
 
-      const augmentedQuizzes = allQuizzes.map(q => ({
-          ...q,
-          questionsCount: q.questionsCount || 0
-      }));
-
-      setQuizzes(augmentedQuizzes.sort((a, b) => {
-        const dateB = b.createdAt && typeof (b.createdAt as any).toDate === 'function' 
-          ? (b.createdAt as any).toDate().getTime() 
-          : 0;
-        const dateA = a.createdAt && typeof (a.createdAt as any).toDate === 'function' 
-          ? (a.createdAt as any).toDate().getTime() 
-          : 0;
+      setQuizzes(allQuizzes.sort((a, b) => {
+        const dateB = (b.createdAt as any)?.toDate?.()?.getTime() || 0;
+        const dateA = (a.createdAt as any)?.toDate?.()?.getTime() || 0;
         return dateB - dateA;
       }));
 

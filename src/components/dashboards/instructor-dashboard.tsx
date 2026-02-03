@@ -1,11 +1,11 @@
 'use client';
 
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, onSnapshot, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, getFirestore, Timestamp, getDocs } from 'firebase/firestore';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
 import { useEffect, useState, useMemo } from 'react';
-import { Skeleton } from '../ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Users, Star, BookOpen, DollarSign, TrendingUp, Book, AlertCircle } from 'lucide-react';
 import type { Course, Review, Enrollment, Payment } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -91,11 +91,10 @@ export function InstructorDashboard() {
                 const now = new Date();
                 const startOfCurrentMonth = startOfMonth(now);
                 
-                // ✅ Correction robuste du .toDate() dans le filter
                 const monthlyRev = paymentSnapshot.docs
                     .map(d => d.data() as Payment)
                     .filter(p => {
-                        const pDate = (p.date && typeof (p.date as any).toDate === 'function') ? (p.date as any).toDate() : null;
+                        const pDate = (p.date as any)?.toDate?.() || null;
                         return pDate && p.status === 'Completed' && pDate >= startOfCurrentMonth;
                     })
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -103,10 +102,9 @@ export function InstructorDashboard() {
                 const monthlyAggregates: Record<string, number> = {};
                 paymentSnapshot.docs.forEach(docSnap => {
                     const payment = docSnap.data() as Payment;
-                    // ✅ Correction robuste du .toDate() pour l'agrégation
-                    if (payment.date && typeof (payment.date as any).toDate === 'function' && payment.status === 'Completed') {
-                        const date = (payment.date as any).toDate();
-                        const monthKey = format(date, 'MMM yy', { locale: fr });
+                    const pDate = (payment.date as any)?.toDate?.() || null;
+                    if (pDate && payment.status === 'Completed') {
+                        const monthKey = format(pDate, 'MMM yy', { locale: fr });
                         monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
                     }
                 });

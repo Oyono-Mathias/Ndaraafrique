@@ -99,11 +99,7 @@ export default function InstructorCertificatesPage() {
           courseName={selectedCertificate.course?.title || ''}
           studentName={selectedCertificate.student?.fullName || 'Étudiant'}
           instructorName={selectedCertificate.instructor?.fullName || ''}
-          completionDate={
-            selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function'
-              ? (selectedCertificate.lastAccessedAt as any).toDate()
-              : new Date()
-          }
+          completionDate={(selectedCertificate.lastAccessedAt as any)?.toDate?.() || new Date()}
           certificateId={selectedCertificate.id}
         />
       )}
@@ -143,7 +139,7 @@ export default function InstructorCertificatesPage() {
                   </TableCell>
                   <TableCell className="text-slate-500 dark:text-muted-foreground">{cert.course?.title}</TableCell>
                   <TableCell className="text-slate-500 dark:text-muted-foreground">
-                    {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
+                    {(cert.lastAccessedAt as any)?.toDate?.() 
                       ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
                       : 'N/A'}
                   </TableCell>

@@ -56,7 +56,7 @@ const ReviewCard = ({ review }: { review: EnrichedReview }) => (
     </CardContent>
     <CardFooter>
       <p className="text-xs text-slate-400 dark:text-muted-foreground">
-        {review.createdAt && typeof (review.createdAt as any).toDate === 'function' 
+        {(review.createdAt as any)?.toDate?.() 
           ? formatDistanceToNow((review.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
           : "À l'instant"}
       </p>
