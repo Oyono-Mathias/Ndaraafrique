@@ -19,6 +19,7 @@ import { EmptyState } from '@/components/dashboard/EmptyState';
 interface RevenueDataPoint {
   month: string;
   revenue: number;
+  timestamp: number; // Added for robust sorting
 }
 
 export function InstructorDashboard() {
@@ -99,18 +100,28 @@ export function InstructorDashboard() {
                     })
                     .reduce((sum, p) => sum + (p.amount || 0), 0);
                 
-                const monthlyAggregates: Record<string, number> = {};
+                const monthlyAggregates: Record<string, { revenue: number, timestamp: number }> = {};
                 paymentSnapshot.docs.forEach(docSnap => {
                     const payment = docSnap.data() as Payment;
                     const pDate = (payment.date as any)?.toDate?.() || null;
                     if (pDate && payment.status === 'Completed') {
                         const monthKey = format(pDate, 'MMM yy', { locale: fr });
-                        monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + (payment.amount || 0);
+                        const monthStart = startOfMonth(pDate).getTime();
+                        
+                        if (!monthlyAggregates[monthKey]) {
+                            monthlyAggregates[monthKey] = { revenue: 0, timestamp: monthStart };
+                        }
+                        monthlyAggregates[monthKey].revenue += (payment.amount || 0);
                     }
                 });
+
                 const trendData = Object.entries(monthlyAggregates)
-                    .map(([month, revenue]) => ({ month, revenue }))
-                    .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime());
+                    .map(([month, data]) => ({ 
+                        month, 
+                        revenue: data.revenue, 
+                        timestamp: data.timestamp 
+                    }))
+                    .sort((a, b) => a.timestamp - b.timestamp);
 
                 setStats({
                     totalStudents: uniqueStudents.size,

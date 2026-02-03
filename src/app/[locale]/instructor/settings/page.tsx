@@ -114,13 +114,9 @@ export default function InstructorSettingsPage() {
       const fileName = `profile_${Date.now()}.webp`;
       const storageRef = ref(storage, `avatars/${currentUser.uid}/${fileName}`);
 
-      // Upload file
       const snapshot = await uploadBytes(storageRef, croppedImage);
-      
-      // Get URL
       const downloadURL = await getDownloadURL(snapshot.ref);
       
-      // Update Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), { 
         profilePictureURL: downloadURL 
       });
@@ -186,7 +182,7 @@ export default function InstructorSettingsPage() {
         onCropComplete={handleAvatarUpload}
         onClose={() => {
           setImageToCrop(null);
-          setIsUploading(false);
+          setIsUploading(false); // Assurer que le loader s'arrête si on ferme
         }}
       />
 
