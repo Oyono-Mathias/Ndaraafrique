@@ -26,10 +26,10 @@ import {
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
 import React, { useEffect, useState, useMemo } from "react";
-import { Badge } from "../ui/badge";
-import { Progress } from "../ui/progress";
-import { OnboardingGuide } from "../onboarding-guide";
-import { UserNav } from "./user-nav";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { OnboardingGuide } from "@/components/onboarding-guide";
+import { UserNav } from "@/components/layout/user-nav";
 import { useToast } from "@/hooks/use-toast";
 
 

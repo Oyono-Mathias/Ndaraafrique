@@ -23,7 +23,7 @@ import {
     DocumentData, 
     getDocs, 
     doc,
-    writeBatch // ✅ Import ajouté
+    writeBatch
 } from "firebase/firestore";
 
 interface AiTutorMessage {
@@ -95,8 +95,8 @@ export function AiTutorClient() {
 
   const displayedMessages = useMemo(() => {
     const sortedMessages = [...messages].sort((a, b) => {
-        const timeA = a.timestamp && typeof (a.timestamp as any).toDate === 'function' ? (a.timestamp as any).toDate() : a.timestamp;
-        const timeB = b.timestamp && typeof (b.timestamp as any).toDate === 'function' ? (b.timestamp as any).toDate() : b.timestamp;
+        const timeA = (a.timestamp as any)?.toDate?.() || a.timestamp;
+        const timeB = (b.timestamp as any)?.toDate?.() || b.timestamp;
         return timeA - timeB;
     });
     
@@ -133,7 +133,6 @@ export function AiTutorClient() {
       const chatInput: MathiasTutorInput = { query: userMessageText };
       const result = await mathiasTutor(chatInput);
       
-      // ✅ Correction de la syntaxe Batch pour Firebase v9+
       const batch = writeBatch(db);
       
       const userMessageRef = doc(collection(db, `users/${user.uid}/chatHistory`));
@@ -205,7 +204,7 @@ export function AiTutorClient() {
               >
                 <p className="whitespace-pre-wrap">{message.text}</p>
                  <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
-                    {message.timestamp ? new Date(message.timestamp.toDate ? (message.timestamp as any).toDate() : message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
+                    {message.timestamp ? new Date((message.timestamp as any)?.toDate?.() || message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                 </span>
               </div>
             </div>

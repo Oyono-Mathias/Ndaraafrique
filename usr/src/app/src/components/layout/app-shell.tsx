@@ -5,15 +5,15 @@ import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { StudentSidebar } from './student-sidebar';
-import { InstructorSidebar } from './instructor-sidebar';
-import { AdminSidebar } from './admin-sidebar';
-import { Button } from '../ui/button';
+import { StudentSidebar } from '@/components/layout/student-sidebar';
+import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
+import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { Button } from '@/components/ui/button';
 import { Wrench, Loader2, PanelLeft, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
-import { SplashScreen } from '../SplashScreen';
-import { Header } from './header';
+import { SplashScreen } from '@/components/SplashScreen';
+import { Header } from '@/components/layout/header';
 
 function MaintenancePage() {
     return (
