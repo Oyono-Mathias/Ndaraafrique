@@ -3,91 +3,51 @@
 
 import { useEffect, useState } from 'react';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { Users, Briefcase } from 'lucide-react';
+import { Users, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface StatData {
-  studentCount: number;
-  instructorCount: number;
-}
-
-const StatItem = ({ value, label, icon: Icon, isLoading }: { value: string, label: string, icon: React.ElementType, isLoading: boolean }) => (
-    <div className="text-center">
-        {isLoading ? (
-            <>
-                <Skeleton className="h-10 w-24 mx-auto mb-2 bg-slate-700" />
-                <Skeleton className="h-4 w-20 mx-auto bg-slate-700" />
-            </>
-        ) : (
-            <>
-                <p className="text-4xl font-extrabold text-white tracking-tighter">{value}</p>
-                <p className="text-sm text-slate-400 font-medium flex items-center justify-center gap-2">
-                    <Icon className="h-4 w-4" />
-                    {label}
-                </p>
-            </>
-        )}
-    </div>
-);
-
 export function Stats() {
-    const [stats, setStats] = useState<StatData>({ studentCount: 0, instructorCount: 0 });
+    const [stats, setStats] = useState({ studentCount: 0, courseCount: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const db = getFirestore();
 
     useEffect(() => {
         setIsLoading(true);
-
         const usersCollection = collection(db, 'users');
+        const coursesCollection = collection(db, 'courses');
         
         const studentQuery = query(usersCollection, where('role', '==', 'student'));
-        const instructorQuery = query(usersCollection, where('role', '==', 'instructor'));
+        const courseQuery = query(coursesCollection, where('status', '==', 'Published'));
 
         const unsubStudents = onSnapshot(studentQuery, (snapshot) => {
-            setStats(prevStats => ({ ...prevStats, studentCount: snapshot.size }));
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching student count:", error);
-            setIsLoading(false);
+            setStats(prev => ({ ...prev, studentCount: snapshot.size }));
         });
 
-        const unsubInstructors = onSnapshot(instructorQuery, (snapshot) => {
-            setStats(prevStats => ({ ...prevStats, instructorCount: snapshot.size }));
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching instructor count:", error);
+        const unsubCourses = onSnapshot(courseQuery, (snapshot) => {
+            setStats(prev => ({ ...prev, courseCount: snapshot.size }));
             setIsLoading(false);
         });
 
         return () => {
             unsubStudents();
-            unsubInstructors();
+            unsubCourses();
         };
     }, [db]);
 
-    const formatNumber = (num: number) => {
-        if (num >= 1000) {
-            return `${(num / 1000).toFixed(1).replace('.', ',')}k+`;
-        }
-        return num.toString();
-    }
+    const StatItem = ({ label, value, icon: Icon }: any) => (
+        <div className="flex-1 flex flex-col items-center p-4">
+            <Icon className="h-5 w-5 text-primary mb-2 opacity-80" />
+            <p className="text-2xl font-black text-white leading-none">
+                {isLoading ? "..." : value >= 1000 ? `${(value/1000).toFixed(1)}k+` : value}
+            </p>
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-2">{label}</p>
+        </div>
+    );
 
     return (
-        <section className="py-20 bg-slate-900/50 rounded-2xl border border-slate-800">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 items-center">
-                <StatItem 
-                    value={isLoading ? '...' : formatNumber(stats.studentCount)}
-                    label="Étudiants"
-                    icon={Users}
-                    isLoading={isLoading}
-                />
-                <StatItem 
-                    value={isLoading ? '...' : formatNumber(stats.instructorCount)}
-                    label="Formateurs Experts"
-                    icon={Briefcase}
-                    isLoading={isLoading}
-                />
-            </div>
-        </section>
-    )
+        <div className="flex items-center divide-x divide-slate-800 bg-slate-900/30 rounded-2xl border border-slate-800/50">
+            <StatItem label="Étudiants" value={stats.studentCount} icon={Users} />
+            <StatItem label="Formations" value={stats.courseCount} icon={BookOpen} />
+        </div>
+    );
 }

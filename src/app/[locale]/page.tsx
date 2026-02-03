@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -14,24 +15,20 @@ import {
   Search, 
   Sparkles, 
   CheckCircle2,
-  Loader2
+  Loader2,
+  Menu,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Footer } from '@/components/layout/footer';
+import { logTrackingEvent } from '@/actions/trackingActions';
 import type { Course, NdaraUser } from '@/lib/types';
-
-const FeatureCard = ({ icon: Icon, title, desc }: { icon: any, title: string, desc: string }) => (
-  <div className="p-8 bg-slate-900/50 border border-slate-800 rounded-2xl hover:border-primary/50 transition-all group">
-    <div className="h-12 w-12 bg-primary/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
-      <Icon className="h-6 w-6 text-primary" />
-    </div>
-    <h3 className="text-xl font-bold text-white mb-3">{title}</h3>
-    <p className="text-slate-400 text-sm leading-relaxed">{desc}</p>
-  </div>
-);
+import { MobileMoneySection } from '@/components/landing/MobileMoneySection';
+import { Stats } from '@/components/landing/Stats';
 
 export default function LandingPage() {
   const t = useTranslations();
@@ -41,7 +38,19 @@ export default function LandingPage() {
   const [popularCourses, setPopularCourses] = useState<Course[]>([]);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [sessionId] = useState(() => Math.random().toString(36).substring(7));
 
+  // --- ANALYTICS: Page View ---
+  useEffect(() => {
+    logTrackingEvent({
+      eventType: 'page_view',
+      sessionId,
+      pageUrl: window.location.href,
+      metadata: { device: 'mobile_optimized' }
+    });
+  }, [sessionId]);
+
+  // --- DATA: Real-time Courses ---
   useEffect(() => {
     const q = query(
       collection(db, "courses"),
@@ -70,158 +79,163 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
 
+  const handleCtaClick = (label: string) => {
+    logTrackingEvent({
+      eventType: 'cta_click',
+      sessionId,
+      pageUrl: window.location.href,
+      metadata: { label }
+    });
+  };
+
   const dashboardLink = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/30">
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/30 font-sans">
       
-      {/* --- NAVBAR --- */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
-        <div className="container mx-auto px-6 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
-            <Image src="/icon.svg" alt="Ndara Logo" width={32} height={32} className="group-hover:scale-110 transition-transform" />
-            <span className="text-xl font-bold tracking-tighter text-white">Ndara Afrique</span>
+      {/* --- MOBILE NAVBAR --- */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2">
+            <Image src="/icon.svg" alt="Ndara" width={28} height={28} priority />
+            <span className="text-lg font-bold tracking-tight text-white">Ndara Afrique</span>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             {isUserLoading ? (
               <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
             ) : user ? (
-              <Button asChild variant="outline" className="border-slate-700 hover:bg-slate-800">
-                <Link href={dashboardLink}>Mon Tableau de bord</Link>
+              <Button asChild size="sm" className="h-9 px-4 text-xs font-bold rounded-full">
+                <Link href={dashboardLink}>Mon Espace</Link>
               </Button>
             ) : (
-              <>
-                <Link href="/login" className="text-sm font-semibold text-slate-400 hover:text-white transition-colors hidden sm:block">
-                  Se connecter
-                </Link>
-                <Button asChild className="bg-primary hover:bg-primary/90 rounded-full px-6">
-                  <Link href="/login?tab=register">S'inscrire</Link>
-                </Button>
-              </>
+              <Button asChild size="sm" className="h-9 px-4 text-xs font-bold rounded-full bg-primary" onClick={() => handleCtaClick('navbar_signup')}>
+                <Link href="/login?tab=register">S'inscrire</Link>
+              </Button>
             )}
           </div>
         </div>
       </nav>
 
-      {/* --- HERO SECTION --- */}
-      <section className="relative pt-40 pb-20 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none opacity-30">
-          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-blue-600/20 blur-[120px] rounded-full"></div>
-          <div className="absolute bottom-0 right-[-10%] w-[50%] h-[50%] bg-purple-600/10 blur-[100px] rounded-full"></div>
-        </div>
-
-        <div className="container mx-auto px-6 relative z-10 text-center">
-          <Badge variant="secondary" className="mb-8 py-1.5 px-4 bg-slate-800 border-slate-700 text-primary-foreground rounded-full font-medium">
-            <Sparkles className="w-4 h-4 mr-2 text-yellow-400" />
-            L'excellence technologique au service de l'Afrique
+      {/* --- HERO SECTION: Optimized for Android Viewports --- */}
+      <section className="relative pt-28 pb-12 px-4 overflow-hidden">
+        <div className="text-center space-y-6 relative z-10">
+          <Badge variant="outline" className="py-1 px-3 bg-primary/5 border-primary/20 text-primary rounded-full text-[10px] font-bold uppercase tracking-wider">
+            🚀 L'Éducation de demain en Afrique
           </Badge>
           
-          <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-tight mb-8 tracking-tight max-w-4xl mx-auto">
-            Maîtrisez votre avenir avec <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">Ndara Afrique.</span>
+          <h1 className="text-3xl font-extrabold text-white leading-[1.2] tracking-tight">
+            Maîtrisez votre avenir <br/>
+            <span className="text-primary">avec Ndara Afrique</span>
           </h1>
           
-          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
-            Apprenez les métiers de demain avec des experts locaux et bénéficiez de l'aide du 
-            <span className="text-white font-bold"> Tuteur MATHIAS</span>, votre guide personnel 24h/24.
+          <p className="text-slate-400 text-base max-w-xs mx-auto leading-relaxed">
+            Apprenez avec des experts et profitez du <span className="text-white font-bold">Tuteur MATHIAS</span> disponible 24h/24.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button asChild size="lg" className="h-14 px-8 text-lg font-bold rounded-full bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 w-full sm:w-auto">
-              <Link href="/search">
-                Explorer les cours <Search className="ml-2 h-5 w-5" />
-              </Link>
+          <div className="flex flex-col gap-3 pt-4">
+            <Button asChild className="h-14 w-full text-base font-bold rounded-xl bg-primary shadow-lg shadow-primary/20" onClick={() => handleCtaClick('hero_explore')}>
+              <Link href="/search">Explorer les cours</Link>
             </Button>
             {!user && (
-              <Button asChild variant="outline" size="lg" className="h-14 px-8 text-lg font-bold border-slate-700 hover:bg-slate-800 rounded-full w-full sm:w-auto">
-                <Link href="/login?tab=register">Commencer gratuitement</Link>
+              <Button asChild variant="ghost" className="h-12 w-full text-slate-300" onClick={() => { handleCtaClick('hero_login'); logTrackingEvent({ eventType: 'cta_click', sessionId, pageUrl: '/', metadata: { action: 'start_signup' } }); }}>
+                <Link href="/login">Se connecter</Link>
               </Button>
             )}
           </div>
         </div>
       </section>
 
-      {/* --- FEATURES GRID --- */}
-      <section className="py-24 container mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <FeatureCard 
-            icon={BookOpen}
-            title="Contenu Expert"
-            desc="Des formations structurées conçues par des professionnels actifs sur le terrain africain."
-          />
-          <FeatureCard 
-            icon={Bot}
-            title="IA Tutorat 24/7"
-            desc="Ne restez jamais bloqué. MATHIAS répond à toutes vos questions en temps réel, jour et nuit."
-          />
-          <FeatureCard 
-            icon={Award}
-            title="Certification Réelle"
-            desc="Validez vos acquis par des quiz et obtenez des certificats reconnus pour booster votre carrière."
-          />
+      {/* --- TRUST & MOBILE MONEY: CRITICAL FOR CONVERSION --- */}
+      <section className="px-4 py-8">
+        <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-6 text-center space-y-6">
+          <div className="flex items-center justify-center gap-2 text-primary font-bold text-sm">
+            <ShieldCheck className="h-5 w-5" />
+            <span>Paiement 100% Sécurisé</span>
+          </div>
+          <p className="text-slate-400 text-sm">Inscrivez-vous instantanément via :</p>
+          <MobileMoneySection onTrackClick={(provider) => handleCtaClick(`mobile_money_${provider}`)} />
         </div>
       </section>
 
-      {/* --- POPULAR COURSES --- */}
-      <section className="py-24 bg-slate-900/30">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
-            <div>
-              <h2 className="text-3xl md:text-4xl font-bold text-white">Formations Populaires</h2>
-              <p className="text-slate-400 mt-2">Découvrez les compétences les plus demandées sur le continent.</p>
-            </div>
-            <Link href="/search" className="text-primary font-bold flex items-center gap-2 hover:underline group">
-              Voir tout le catalogue <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+      {/* --- STATS DYNAMIQUE --- */}
+      <section className="px-4 py-8">
+        <Stats />
+      </section>
+
+      {/* --- POPULAR COURSES: Horizontal Scroll for Touch --- */}
+      <section className="py-12 bg-slate-900/20">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-white">Formations Populaires</h2>
+            <Link href="/search" className="text-xs font-bold text-primary flex items-center gap-1">
+              Voir tout <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="flex gap-4 overflow-x-auto pb-6 snap-x no-scrollbar">
             {isLoadingCourses ? (
-              [...Array(3)].map((_, i) => <Skeleton key={i} className="h-96 w-full rounded-2xl bg-slate-800" />)
+              [...Array(3)].map((_, i) => (
+                <div key={i} className="min-w-[280px] h-80 snap-center">
+                  <Skeleton className="w-full h-full rounded-2xl bg-slate-800" />
+                </div>
+              ))
             ) : popularCourses.length > 0 ? (
               popularCourses.map(course => (
-                <CourseCard 
-                  key={course.id} 
-                  course={course} 
-                  instructor={instructorsMap.get(course.instructorId) || null} 
-                  variant="catalogue" 
-                />
+                <div key={course.id} className="min-w-[280px] snap-center">
+                  <CourseCard 
+                    course={course} 
+                    instructor={instructorsMap.get(course.instructorId) || null} 
+                    variant="catalogue" 
+                  />
+                </div>
               ))
             ) : (
-              <div className="col-span-full py-20 text-center border-2 border-dashed border-slate-800 rounded-2xl">
-                <p className="text-slate-500 text-lg">De nouveaux cours arrivent bientôt !</p>
+              <div className="w-full py-12 text-center border border-dashed border-slate-800 rounded-2xl">
+                <p className="text-slate-500 text-sm">Arrivée imminente de nouveaux cours.</p>
               </div>
             )}
           </div>
         </div>
       </section>
 
-      {/* --- MATHIAS CTA --- */}
-      <section className="py-24 container mx-auto px-6">
-        <div className="bg-gradient-to-br from-primary/20 to-blue-600/10 border border-primary/20 rounded-3xl p-12 md:p-20 relative overflow-hidden group">
-          <div className="absolute top-[-20%] right-[-10%] p-12 opacity-5 pointer-events-none group-hover:rotate-12 transition-transform duration-1000">
-            <Bot className="h-[400px] w-[400px] text-primary" />
-          </div>
+      {/* --- MATHIAS CTA: Mobile Optimized --- */}
+      <section className="px-4 py-12">
+        <div className="bg-gradient-to-br from-primary/20 to-blue-600/5 border border-primary/20 rounded-3xl p-8 relative overflow-hidden">
+          <Bot className="absolute -right-8 -top-8 h-32 w-32 text-primary opacity-10" />
           
-          <div className="max-w-2xl relative z-10">
-            <Badge className="mb-6 bg-primary text-primary-foreground uppercase tracking-widest text-[10px] font-bold">Innovation Pédagogique</Badge>
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-8">L'IA au service de votre réussite.</h2>
-            <ul className="space-y-4 mb-12">
+          <div className="relative z-10 space-y-6">
+            <Badge className="bg-primary/20 text-primary border-none text-[10px] font-bold">INNOVATION</Badge>
+            <h2 className="text-2xl font-bold text-white leading-tight">L'IA MATHIAS au service de votre réussite.</h2>
+            <ul className="space-y-3">
               {[
-                  "Explications claires et adaptées à votre niveau",
-                  "Analyse instantanée de vos erreurs aux quiz",
-                  "Un mentor disponible même à 3h du matin"
+                  "Réponses claires 24h/24",
+                  "Aide personnalisée aux quiz",
+                  "Mentorat à chaque étape"
               ].map((item, i) => (
-                <li key={i} className="flex items-center gap-3 text-slate-300">
-                    <CheckCircle2 className="text-primary h-5 w-5 flex-shrink-0" />
+                <li key={i} className="flex items-center gap-2 text-slate-300 text-sm">
+                    <CheckCircle2 className="text-primary h-4 w-4" />
                     <span>{item}</span>
                 </li>
               ))}
             </ul>
-            <Button asChild size="lg" className="h-14 px-8 font-bold rounded-full bg-white text-slate-950 hover:bg-slate-100 transition-colors">
-              <Link href="/login?tab=register">Démarrer avec Mathias</Link>
+            <Button asChild size="lg" className="h-14 w-full font-bold rounded-xl bg-white text-slate-950 hover:bg-slate-100" onClick={() => handleCtaClick('mathias_start')}>
+              <Link href="/login?tab=register">Essayer avec Mathias</Link>
             </Button>
           </div>
+        </div>
+      </section>
+
+      {/* --- ACCESSIBILITY BAR: For Android Users --- */}
+      <section className="px-4 pb-12">
+        <div className="flex items-center gap-4 p-4 bg-slate-900/30 rounded-xl border border-slate-800/50">
+            <div className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center">
+                <Smartphone className="h-5 w-5 text-slate-400" />
+            </div>
+            <div className="flex-1">
+                <p className="text-xs font-bold text-slate-300">Compatible tout smartphone</p>
+                <p className="text-[10px] text-slate-500">Optimisé pour les connexions bas débit en Afrique.</p>
+            </div>
         </div>
       </section>
 
