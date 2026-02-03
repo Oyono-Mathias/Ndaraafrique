@@ -4,58 +4,48 @@
 
 @layer base {
   :root {
-    /* Vintage Organic Palette */
-    --background: 34 33% 96%;      /* #F5F2ED (Paper/Cream) */
-    --foreground: 24 10% 10%;      /* #1A1918 (Dark Ink) */
-    --card: 34 33% 98%;            /* Lighter Paper */
-    --card-foreground: 24 10% 10%;
-    --popover: 34 33% 96%;
-    --popover-foreground: 24 10% 10%;
-    
-    --primary: 30 71% 47%;         /* #CC7722 (Ochre) */
-    --primary-foreground: 34 33% 98%;
-    
-    --secondary: 19 56% 40%;       /* #A0522D (Sienna) */
-    --secondary-foreground: 34 33% 98%;
-    
-    --muted: 75 10% 90%;
-    --muted-foreground: 24 5% 45%;
-    
-    --accent: 75 26% 48%;          /* #8A9A5B (Sage Green) */
-    --accent-foreground: 34 33% 98%;
-    
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 20% 98%;
-    
-    --border: 30 20% 85%;
-    --input: 30 20% 85%;
-    --ring: 30 71% 47%;
-    --radius: 16px;
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 221.2 83.2% 53.3%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221.2 83.2% 53.3%;
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 24 10% 10%;      /* Deep Ink */
-    --foreground: 34 33% 96%;      /* Paper text */
-    --card: 24 10% 12%;
-    --card-foreground: 34 33% 96%;
-    --popover: 24 10% 12%;
-    --popover-foreground: 34 33% 96%;
-    
-    --primary: 30 71% 47%;         /* Ochre remains vibrant */
-    --primary-foreground: 34 33% 96%;
-    
-    --secondary: 19 56% 40%;       /* Sienna */
-    --secondary-foreground: 34 33% 96%;
-    
-    --muted: 24 10% 20%;
-    --muted-foreground: 34 10% 70%;
-    
-    --accent: 75 26% 40%;          /* Deeper Sage */
-    --accent-foreground: 34 33% 96%;
-    
-    --border: 24 10% 20%;
-    --input: 24 10% 20%;
-    --ring: 30 71% 47%;
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 224.3 76.3% 48%;
   }
 }
 
@@ -65,23 +55,34 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    background-blend-mode: overlay;
-    opacity: 0.98;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-serif tracking-tight;
-  }
+}
 
-  .organic-card {
-    @apply bg-card border border-border/50 shadow-sm transition-all duration-300;
-    box-shadow: 0 4px 20px -2px rgba(160, 82, 45, 0.05);
-  }
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
 
-  .organic-card:hover {
-    @apply border-primary/30 -translate-y-1;
-    box-shadow: 0 10px 30px -5px rgba(204, 119, 34, 0.1);
-  }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-slate-700 rounded-full;
+}
+
+.chat-background {
+  background-image: url("https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2070&auto=format&fit=crop");
+  background-size: cover;
+  background-position: center;
+}
+
+@keyframes logoPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+  50% { transform: scale(1.05); filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.5)); }
+  100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0)); }
+}
+
+@keyframes logoSheen {
+  0% { transform: translateX(-100%) rotate(45deg); }
+  100% { transform: translateX(200%) rotate(45deg); }
 }

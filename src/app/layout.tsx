@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,21 +10,15 @@ const fontSans = Inter({
   variable: "--font-sans",
 });
 
-const fontSerif = Playfair_Display({
-  subsets: ["latin"],
-  variable: "--font-serif",
-});
-
 export const metadata: Metadata = {
   title: "Ndara Afrique - L'excellence par le savoir",
-  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Style Vintage & Organique.",
-  keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'vintage style'],
+  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux.",
 };
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#CC7722',
+  themeColor: '#3b82f6',
 };
 
 export default function RootLayout({
@@ -37,14 +31,13 @@ export default function RootLayout({
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable,
-          fontSerif.variable
+          fontSans.variable
         )}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="light"
-          enableSystem={false}
+          defaultTheme="dark"
+          enableSystem={true}
           disableTransitionOnChange
         >
           {children}

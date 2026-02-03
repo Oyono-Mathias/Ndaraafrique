@@ -16,9 +16,9 @@ interface CourseCardProps {
 }
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
-    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Star className="w-4 h-4 fill-primary/80 text-primary/80" />
-        <span className="font-bold text-foreground">{rating.toFixed(1)}</span>
+    <div className="flex items-center gap-1.5 text-sm text-slate-400">
+        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+        <span className="font-bold text-slate-200">{rating.toFixed(1)}</span>
         <span className="text-[10px] opacity-60">({reviewCount.toLocaleString()})</span>
     </div>
 );
@@ -29,57 +29,56 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
 
   return (
     <Link href={`/courses/${course.id}`} className="block group w-full h-full">
-      <div className="organic-card rounded-3xl overflow-hidden h-full flex flex-col group-hover:border-primary/20">
-        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+      <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300 hover:border-primary/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10">
+        <div className="relative aspect-video overflow-hidden bg-slate-800">
           <Image
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/450`}
             alt={course.title}
             fill
-            className="object-cover transition-transform duration-700 group-hover:scale-110 sepia-[0.2] contrast-[1.1]"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
           
           {(course.isPopular || course.price === 0) && (
-             <Badge className={cn("absolute top-4 left-4 font-bold border-none", course.price === 0 ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground")}>
+             <Badge className={cn("absolute top-3 left-3 font-bold border-none", course.price === 0 ? "bg-green-500 text-white" : "bg-primary text-white")}>
                 {course.price === 0 ? "GRATUIT" : "POPULAIRE"}
             </Badge>
           )}
         </div>
 
-        <div className="p-6 flex flex-col flex-grow bg-card">
-          <h3 className="font-serif text-2xl text-foreground line-clamp-2 leading-[1.2] mb-4 group-hover:text-primary transition-colors">{course.title}</h3>
+        <div className="p-5 flex flex-col flex-grow">
+          <h3 className="font-bold text-lg text-white line-clamp-2 leading-tight mb-4 group-hover:text-primary transition-colors">{course.title}</h3>
           
           {instructor?.fullName && (
-             <div className="flex items-center gap-3 mt-auto">
-                <Avatar className="h-8 w-8 border border-border">
+             <div className="flex items-center gap-2 mt-auto">
+                <Avatar className="h-6 w-6 border border-slate-700">
                     <AvatarImage src={instructor.profilePictureURL} />
-                    <AvatarFallback className="text-[10px] bg-muted">{instructor.fullName?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-slate-800">{instructor.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{instructor.fullName}</p>
+                <p className="text-xs font-medium text-slate-400">{instructor.fullName}</p>
             </div>
           )}
           
-          <div className="mt-6 pt-6 border-t border-border/40">
+          <div className="mt-4 pt-4 border-t border-slate-800">
             {isStudentView ? (
               progress === 100 ? (
-                <div className="flex items-center gap-2 text-accent font-bold">
-                  <Award className="h-5 w-5" />
-                  <span className="uppercase tracking-widest text-xs">Certifié !</span>
+                <div className="flex items-center gap-2 text-green-400 font-bold text-sm">
+                  <Award className="h-4 w-4" />
+                  <span>Certifié !</span>
                 </div>
               ) : (
                 <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-wider text-slate-500">
                         <span>Progression</span>
                         <span>{progress}%</span>
                     </div>
-                    <Progress value={progress} className="h-1.5 bg-muted" indicatorClassName="bg-primary" />
+                    <Progress value={progress} className="h-1 bg-slate-800" indicatorClassName="bg-primary" />
                 </div>
               )
             ) : (
               <div className="flex items-center justify-between">
-                <StarRating rating={4.8} reviewCount={856} />
-                <p className="font-serif text-2xl text-foreground">
+                <StarRating rating={4.8} reviewCount={124} />
+                <p className="font-bold text-lg text-white">
                   {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
                 </p>
               </div>
