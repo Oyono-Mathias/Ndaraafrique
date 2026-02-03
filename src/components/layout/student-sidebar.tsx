@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -23,6 +22,7 @@ import {
   Lock,
   LayoutDashboard,
   FileQuestion,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -109,6 +109,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: "Suivi",
       items: [
+        { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
         { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
         { href: "/student/liste-de-souhaits", icon: Heart, label: 'Liste de souhaits', id: 'sidebar-nav-liste-de-souhaits' },
         { href: "/student/mes-devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-mes-devoirs' },
