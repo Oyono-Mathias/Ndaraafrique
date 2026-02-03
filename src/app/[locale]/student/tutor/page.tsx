@@ -1,5 +1,6 @@
 'use client';
 
+// ✅ Cette ligne force Next.js à traiter la page comme dynamique
 export const dynamic = 'force-dynamic';
 
 import { AiTutorClient } from "@/components/chat/ai-tutor-client";
