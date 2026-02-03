@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -30,8 +31,7 @@ import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 function CoursePlayerPageContent() {
-  const params = useParams();
-  const courseId = params.courseId as string;
+  const { courseId } = useParams();
   const { user, currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
@@ -43,7 +43,7 @@ function CoursePlayerPageContent() {
   const [isCompleted, setIsCompleted] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
 
-  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
+  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
   const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [course, db]);
@@ -63,14 +63,14 @@ function CoursePlayerPageContent() {
     const fetchCourseContent = async () => {
       setIsLoading(true);
       try {
-        const sectionsQuery = query(collection(db, 'courses', courseId, 'sections'), orderBy('order'));
+        const sectionsQuery = query(collection(db, 'courses', courseId as string, 'sections'), orderBy('order'));
         const sectionsSnapshot = await getDocs(sectionsQuery);
         const fetchedSections = sectionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Section));
         setSections(fetchedSections);
 
         const lecturesData = new Map<string, Lecture[]>();
         for (const section of fetchedSections) {
-          const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('order'));
+          const lecturesQuery = query(collection(db, 'courses', courseId as string, 'sections', section.id, 'lectures'), orderBy('order'));
           const lecturesSnapshot = await getDocs(lecturesQuery);
           lecturesData.set(section.id, lecturesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture)));
         }
