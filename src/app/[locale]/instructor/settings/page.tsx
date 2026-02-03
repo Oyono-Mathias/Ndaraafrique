@@ -37,17 +37,19 @@ import {
   Bell, 
   Bot, 
   ShieldCheck,
-  Save
+  Save,
+  ArrowLeft
 } from 'lucide-react';
+import Link from 'next/link';
 import type { NdaraUser } from '@/lib/types';
 
 const settingsSchema = z.object({
   fullName: z.string().min(3, "Le nom doit contenir au moins 3 caractères."),
   specialty: z.string().min(2, "Veuillez indiquer votre spécialité."),
   bio: z.string().max(1000, "La biographie ne peut pas dépasser 1000 caractères."),
-  linkedin: z.string().url().or(z.literal('')).optional(),
-  twitter: z.string().url().or(z.literal('')).optional(),
-  website: z.string().url().or(z.literal('')).optional(),
+  linkedin: z.string().url("URL LinkedIn invalide").or(z.literal('')).optional(),
+  twitter: z.string().url("URL Twitter/X invalide").or(z.literal('')).optional(),
+  website: z.string().url("URL de site web invalide").or(z.literal('')).optional(),
   // Préférences
   notifyEnrollment: z.boolean(),
   notifyMessages: z.boolean(),
@@ -66,7 +68,7 @@ export default function InstructorSettingsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
-  // Utilisation de useDoc pour le temps réel comme demandé
+  // Utilisation de useDoc pour le temps réel
   const userRef = useMemo(() => currentUser ? doc(db, 'users', currentUser.uid) : null, [db, currentUser]);
   const { data: userData, isLoading: userDataLoading } = useDoc<NdaraUser>(userRef);
 
@@ -86,12 +88,12 @@ export default function InstructorSettingsPage() {
     },
   });
 
-  // Synchronisation du formulaire avec les données Firestore
+  // Synchronisation du formulaire avec les données Firestore en temps réel
   useEffect(() => {
     if (userData) {
       form.reset({
         fullName: userData.fullName || '',
-        specialty: userData.careerGoals?.currentRole || userData.instructorApplication?.specialty || '',
+        specialty: userData.careerGoals?.currentRole || '',
         bio: userData.bio || '',
         linkedin: userData.socialLinks?.linkedin || '',
         twitter: userData.socialLinks?.twitter || '',
@@ -141,8 +143,9 @@ export default function InstructorSettingsPage() {
         'instructorNotificationPreferences.newAssignmentSubmission': values.notifyAssignments,
         'pedagogicalPreferences.aiAssistanceEnabled': values.aiAssistance,
       });
-      toast({ title: "Paramètres enregistrés" });
+      toast({ title: "Paramètres enregistrés avec succès" });
     } catch (error) {
+      console.error("Save error:", error);
       toast({ variant: 'destructive', title: 'Erreur', description: "Une erreur est survenue lors de la sauvegarde." });
     } finally {
       setIsSaving(false);
@@ -151,7 +154,7 @@ export default function InstructorSettingsPage() {
 
   if (userDataLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-screen items-center justify-center bg-slate-900">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -165,34 +168,42 @@ export default function InstructorSettingsPage() {
         onClose={() => setImageToCrop(null)}
       />
 
-      <header>
-        <h1 className="text-3xl font-bold text-white">Paramètres Formateur</h1>
-        <p className="text-slate-400">Gérez votre profil public et vos préférences de plateforme.</p>
+      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+        <div>
+            <h1 className="text-3xl font-bold text-white">Paramètres Formateur</h1>
+            <p className="text-slate-400">Gérez votre identité professionnelle et vos outils pédagogiques.</p>
+        </div>
+        <Button variant="outline" asChild className="bg-slate-800 border-slate-700">
+            <Link href="/instructor/dashboard">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour au tableau de bord
+            </Link>
+        </Button>
       </header>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           
           {/* --- SECTION 1: PROFIL PROFESSIONNEL --- */}
-          <Card className="bg-slate-800/50 border-slate-700/80">
+          <Card className="bg-slate-800/50 border-slate-700/80 shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <User className="h-5 w-5 text-primary" />
-                Profil Professionnel
+                Profil Public
               </CardTitle>
-              <CardDescription>Ces informations sont visibles par vos étudiants.</CardDescription>
+              <CardDescription>Ces informations aident les étudiants à mieux vous connaître.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               
               <div className="flex flex-col sm:flex-row items-center gap-6 pb-6 border-b border-slate-700/50">
                 <div className="relative group">
-                  <Avatar className="h-24 w-24 border-4 border-slate-700 shadow-xl">
-                    <AvatarImage src={userData?.profilePictureURL} />
-                    <AvatarFallback className="text-3xl bg-slate-700 text-white">{userData?.fullName?.charAt(0)}</AvatarFallback>
+                  <Avatar className="h-28 w-24 border-4 border-slate-700 shadow-xl rounded-2xl">
+                    <AvatarImage src={userData?.profilePictureURL} className="object-cover" />
+                    <AvatarFallback className="text-3xl bg-slate-700 text-white rounded-2xl">{userData?.fullName?.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <label 
                     htmlFor="avatar-input" 
-                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-full cursor-pointer"
+                    className="absolute inset-0 flex items-center justify-center bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl cursor-pointer"
                   >
                     <Camera className="h-6 w-6 text-white" />
                     <input 
@@ -205,14 +216,14 @@ export default function InstructorSettingsPage() {
                     />
                   </label>
                   {isUploading && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-2xl">
                       <Loader2 className="h-6 w-6 animate-spin text-white" />
                     </div>
                   )}
                 </div>
                 <div className="space-y-1 text-center sm:text-left">
                   <h3 className="font-bold text-lg text-white">Photo de profil</h3>
-                  <p className="text-sm text-slate-400 text-balance">Recommandé : Image carrée, min. 400x400px.</p>
+                  <p className="text-sm text-slate-400">Cliquez sur l'image pour la modifier.</p>
                 </div>
               </div>
 
@@ -223,7 +234,7 @@ export default function InstructorSettingsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Nom Complet</FormLabel>
-                      <FormControl><Input {...field} className="bg-slate-900 border-slate-700" /></FormControl>
+                      <FormControl><Input {...field} className="bg-slate-900 border-slate-700 h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -234,7 +245,7 @@ export default function InstructorSettingsPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Spécialité / Titre</FormLabel>
-                      <FormControl><Input placeholder="Ex: Expert en Développement Web" {...field} className="bg-slate-900 border-slate-700" /></FormControl>
+                      <FormControl><Input placeholder="Ex: Senior Developer, Expert Marketing..." {...field} className="bg-slate-900 border-slate-700 h-11" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -246,16 +257,16 @@ export default function InstructorSettingsPage() {
                 name="bio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Biographie professionnelle</FormLabel>
+                    <FormLabel>Ma Biographie</FormLabel>
                     <FormControl>
                       <Textarea 
                         rows={6} 
-                        placeholder="Présentez votre parcours et votre expertise..." 
+                        placeholder="Présentez votre expertise et votre passion pour l'enseignement..." 
                         {...field} 
-                        className="bg-slate-900 border-slate-700 resize-none"
+                        className="bg-slate-900 border-slate-700 resize-none text-base"
                       />
                     </FormControl>
-                    <FormDescription>Dites aux étudiants pourquoi ils devraient suivre vos cours.</FormDescription>
+                    <FormDescription>Un profil détaillé inspire plus confiance aux apprenants.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -264,13 +275,13 @@ export default function InstructorSettingsPage() {
           </Card>
 
           {/* --- SECTION 2: RÉSEAUX SOCIAUX --- */}
-          <Card className="bg-slate-800/50 border-slate-700/80">
+          <Card className="bg-slate-800/50 border-slate-700/80 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
                 <Globe className="h-5 w-5 text-primary" />
-                Liens & Réseaux
+                Présence en ligne
               </CardTitle>
-              <CardDescription>Aidez les étudiants à vous retrouver ailleurs.</CardDescription>
+              <CardDescription>Liez vos comptes pour augmenter votre visibilité.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FormField
@@ -279,8 +290,8 @@ export default function InstructorSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center gap-3">
-                      <Linkedin className="h-5 w-5 text-slate-400 shrink-0" />
-                      <FormControl><Input placeholder="https://linkedin.com/in/nom" {...field} className="bg-slate-900 border-slate-700" /></FormControl>
+                      <div className="p-2 bg-slate-900 rounded-lg border border-slate-700"><Linkedin className="h-5 w-5 text-[#0077b5]" /></div>
+                      <FormControl><Input placeholder="Lien vers votre profil LinkedIn" {...field} className="bg-slate-900 border-slate-700 h-11" /></FormControl>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -292,8 +303,8 @@ export default function InstructorSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center gap-3">
-                      <Twitter className="h-5 w-5 text-slate-400 shrink-0" />
-                      <FormControl><Input placeholder="https://twitter.com/nom" {...field} className="bg-slate-900 border-slate-700" /></FormControl>
+                      <div className="p-2 bg-slate-900 rounded-lg border border-slate-700"><Twitter className="h-5 w-5 text-white" /></div>
+                      <FormControl><Input placeholder="Lien vers votre profil Twitter / X" {...field} className="bg-slate-900 border-slate-700 h-11" /></FormControl>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -305,8 +316,8 @@ export default function InstructorSettingsPage() {
                 render={({ field }) => (
                   <FormItem>
                     <div className="flex items-center gap-3">
-                      <Globe className="h-5 w-5 text-slate-400 shrink-0" />
-                      <FormControl><Input placeholder="https://votresite.com" {...field} className="bg-slate-900 border-slate-700" /></FormControl>
+                      <div className="p-2 bg-slate-900 rounded-lg border border-slate-700"><Globe className="h-5 w-5 text-emerald-400" /></div>
+                      <FormControl><Input placeholder="Votre site web ou portfolio" {...field} className="bg-slate-900 border-slate-700 h-11" /></FormControl>
                     </div>
                     <FormMessage />
                   </FormItem>
@@ -315,13 +326,13 @@ export default function InstructorSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* --- SECTION 3: PRÉFÉRENCES & NOTIFICATIONS --- */}
+          {/* --- SECTION 3: PRÉFÉRENCES & IA --- */}
           <div className="grid md:grid-cols-2 gap-6">
-            <Card className="bg-slate-800/50 border-slate-700/80">
+            <Card className="bg-slate-800/50 border-slate-700/80 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white text-lg">
                   <Bell className="h-5 w-5 text-primary" />
-                  Notifications
+                  Alertes & Notifications
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -329,8 +340,8 @@ export default function InstructorSettingsPage() {
                   control={form.control}
                   name="notifyEnrollment"
                   render={({ field }) => (
-                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-lg">
-                      <Label className="cursor-pointer">Nouvelles inscriptions</Label>
+                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-xl bg-slate-900/30">
+                      <Label className="cursor-pointer font-medium">Inscriptions aux cours</Label>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </div>
                   )}
@@ -339,8 +350,8 @@ export default function InstructorSettingsPage() {
                   control={form.control}
                   name="notifyMessages"
                   render={({ field }) => (
-                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-lg">
-                      <Label className="cursor-pointer">Nouveaux messages</Label>
+                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-xl bg-slate-900/30">
+                      <Label className="cursor-pointer font-medium">Messages des étudiants</Label>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </div>
                   )}
@@ -349,8 +360,8 @@ export default function InstructorSettingsPage() {
                   control={form.control}
                   name="notifyAssignments"
                   render={({ field }) => (
-                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-lg">
-                      <Label className="cursor-pointer">Soumissions de devoirs</Label>
+                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-xl bg-slate-900/30">
+                      <Label className="cursor-pointer font-medium">Soumissions de devoirs</Label>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </div>
                   )}
@@ -358,11 +369,11 @@ export default function InstructorSettingsPage() {
               </CardContent>
             </Card>
 
-            <Card className="bg-slate-800/50 border-slate-700/80 border-primary/20">
+            <Card className="bg-slate-800/50 border-slate-700/80 border-primary/30 shadow-lg">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-white text-lg">
                   <Bot className="h-5 w-5 text-primary" />
-                  Assistance IA (Mathias)
+                  Copilote MATHIAS (IA)
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -370,37 +381,36 @@ export default function InstructorSettingsPage() {
                   control={form.control}
                   name="aiAssistance"
                   render={({ field }) => (
-                    <div className="flex items-center justify-between p-3 border border-slate-700 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border border-primary/20 rounded-xl bg-primary/5">
                       <div>
-                        <Label className="cursor-pointer">Aide à la correction</Label>
-                        <p className="text-xs text-slate-500">Active les suggestions de notes basées sur vos guides.</p>
+                        <Label className="cursor-pointer font-bold text-primary">Aide à la correction</Label>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Suggérer des notes et feedbacks basés sur vos guides.</p>
                       </div>
                       <Switch checked={field.value} onCheckedChange={field.onChange} />
                     </div>
                   )}
                 />
-                <div className="p-3 bg-primary/5 border border-primary/10 rounded-lg">
-                  <div className="flex items-center gap-2 text-primary font-semibold text-sm mb-1">
-                    <ShieldCheck className="h-4 w-4" />
-                    Éthique IA
+                <div className="p-4 bg-slate-900/50 border border-slate-700 rounded-xl flex gap-3">
+                  <ShieldCheck className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-bold text-xs text-white uppercase tracking-wider">Sécurité IA</p>
+                    <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
+                      L'assistant Mathias traite vos données localement au niveau de la session pour vous aider, mais vous gardez le contrôle total sur chaque décision finale.
+                    </p>
                   </div>
-                  <p className="text-[11px] text-slate-400">MATHIAS analyse les travaux mais la décision finale de notation vous appartient toujours.</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <div className="flex justify-end gap-4 sticky bottom-6 z-20">
+          <div className="flex justify-end gap-4 sticky bottom-6 z-20 pt-4">
             <Button 
-              type="button" 
-              variant="outline" 
-              className="bg-slate-900 border-slate-700"
-              onClick={() => window.location.reload()}
+              type="submit" 
+              size="lg" 
+              disabled={isSaving} 
+              className="h-12 px-10 shadow-2xl shadow-primary/30 text-base font-bold"
             >
-              Réinitialiser
-            </Button>
-            <Button type="submit" size="lg" disabled={isSaving} className="shadow-lg shadow-primary/20">
-              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
               Enregistrer les modifications
             </Button>
           </div>
