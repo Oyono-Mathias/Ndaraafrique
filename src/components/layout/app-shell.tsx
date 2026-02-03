@@ -17,10 +17,10 @@ import { Header } from '@/components/layout/header';
 
 function MaintenancePage() {
     return (
-        <div className="flex flex-col items-center justify-center h-screen bg-background text-center p-4">
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-950 text-center p-4">
             <Wrench className="h-16 w-16 text-primary mb-4" />
-            <h1 className="text-3xl font-bold text-foreground">Site en maintenance</h1>
-            <p className="text-muted-foreground mt-2">Nous effectuons des mises à jour. Le site sera de retour très prochainement.</p>
+            <h1 className="text-3xl font-bold text-white">Site en maintenance</h1>
+            <p className="text-slate-400 mt-2">Nous effectuons des mises à jour. Le site sera de retour très prochainement.</p>
         </div>
     );
 }
@@ -153,7 +153,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   if (isUserLoading && !isPublicPage && !isAuthPage) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -168,7 +168,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SplashScreen />
-      <div className={cn("min-h-screen w-full bg-slate-900 text-white", isAdminArea ? "admin-grid-layout" : !isFullScreenPage && "md:grid md:grid-cols-[280px_1fr]")}>
+      <div className={cn("min-h-screen w-full bg-slate-950 text-white", isAdminArea ? "admin-grid-layout" : (!isFullScreenPage && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]")}>
         {!isRootPath && !isAuthPage && user && (
           <aside className={cn("hidden h-screen sticky top-0", (isFullScreenPage || isAdminArea) ? "md:hidden" : "md:block")}>
              {role === 'admin' ? (
@@ -205,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
           
-          <main className={cn("p-6", isFullScreenPage && "!p-0")}>
+          <main className={cn("p-6", (isFullScreenPage || isRootPath) && "!p-0")}>
               {children}
           </main>
         </div>
