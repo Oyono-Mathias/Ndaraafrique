@@ -1,10 +1,10 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation'; // ✅ Correction import
-import Link from 'next/link'; // ✅ Correction import
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useDoc, useCollection } from '@/firebase';
-import { doc, collection, query, where, getFirestore, getDocs, getCountFromServer } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
+import { doc, collection, query, where, getFirestore, getDocs, getCountFromServer } from 'firebase/firestore';
 import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -18,7 +18,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-// Composants internes inchangés...
 const StatCard = ({ value, label }: { value: string, label: string }) => (
     <div className="text-center">
         <p className="text-3xl font-bold">{value}</p>
@@ -60,8 +59,7 @@ const SocialLink = ({ href, icon: Icon, label }: { href?: string, icon: React.El
 }
 
 export default function InstructorProfilePage() {
-    const params = useParams(); // ✅ Correction utilisation params
-    const instructorId = params.instructorId as string;
+    const { instructorId } = useParams();
     const router = useRouter();
     const db = getFirestore();
     const { currentUser } = useRole();
@@ -70,11 +68,11 @@ export default function InstructorProfilePage() {
     const [stats, setStats] = useState({ studentCount: 0, reviewCount: 0 });
     const [statsLoading, setStatsLoading] = useState(true);
 
-    const instructorRef = useMemo(() => doc(db, 'users', instructorId), [db, instructorId]);
+    const instructorRef = useMemo(() => doc(db, 'users', instructorId as string), [db, instructorId]);
     const { data: instructor, isLoading: instructorLoading } = useDoc(instructorRef);
 
     const coursesQuery = useMemo(() => 
-        query(collection(db, 'courses'), where('instructorId', '==', instructorId), where('status', '==', 'Published')),
+        query(collection(db, 'courses'), where('instructorId', '==', instructorId as string), where('status', '==', 'Published')),
         [db, instructorId]
     );
     const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
@@ -153,6 +151,7 @@ export default function InstructorProfilePage() {
     if (!instructor) return <div className="text-white text-center py-20">Instructeur non trouvé.</div>;
     
     const socialLinks = instructor.socialLinks || {};
+    const createdAtDate = (instructor.createdAt as any)?.toDate?.();
 
     return (
         <div className="bg-gray-900 text-white min-h-screen">
@@ -180,11 +179,10 @@ export default function InstructorProfilePage() {
                         </div>
                         <p className="text-xl text-primary mt-1">{instructor.careerGoals?.currentRole || 'Instructeur'}</p>
                         <div className="flex items-center justify-center sm:justify-start gap-4 text-xs text-slate-400 mt-2">
-                             {/* ✅ Correction .toDate() sécurisée */}
-                             {instructor.createdAt && typeof (instructor.createdAt as any).toDate === 'function' && (
+                             {createdAtDate && (
                                 <div className="flex items-center gap-1.5">
                                     <Calendar className="h-3 w-3" />
-                                    <span>Membre depuis {format((instructor.createdAt as any).toDate(), 'MMMM yyyy', { locale: fr })}</span>
+                                    <span>Membre depuis {format(createdAtDate, 'MMMM yyyy', { locale: fr })}</span>
                                 </div>
                              )}
                         </div>
