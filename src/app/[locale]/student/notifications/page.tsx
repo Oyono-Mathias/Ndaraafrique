@@ -11,7 +11,7 @@ import { fr } from 'date-fns/locale';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Bell, Check, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Bell, Check, CheckCircle, ShieldAlert, Info, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Notification } from '@/lib/types';
 
@@ -19,9 +19,16 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     switch (type) {
         case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
         case 'alert': return <ShieldAlert className="h-5 w-5 text-red-500" />;
-        default: return <Bell className="h-5 w-5 text-blue-500" />;
+        case 'reminder': return <ClockIcon className="h-5 w-5 text-amber-500" />;
+        default: return <Info className="h-5 w-5 text-blue-500" />;
     }
 }
+
+const ClockIcon = ({ className }: { className?: string }) => (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+    </svg>
+);
 
 export default function NotificationsPage() {
   const db = getFirestore();
@@ -58,52 +65,84 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
-      <header>
-        <h1 className="text-3xl font-bold text-white">Notifications</h1>
-        <p className="text-muted-foreground">Toutes vos alertes et mises à jour importantes.</p>
-      </header>
-
-      <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-white">Vos notifications</CardTitle>
-          <Button variant="ghost" size="sm" onClick={handleMarkAllAsRead} disabled={!hasUnread}>
+    <div className="space-y-8 max-w-4xl mx-auto pb-12">
+      <header className="flex flex-col sm:flex-row justify-between sm:items-end gap-4">
+        <div>
+            <h1 className="text-3xl font-bold text-white">Centre de Notifications</h1>
+            <p className="text-slate-400 mt-1">Restez informé de vos progrès et des messages de vos tuteurs.</p>
+        </div>
+        <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleMarkAllAsRead} 
+            disabled={!hasUnread}
+            className="bg-slate-800 border-slate-700 hover:bg-slate-700"
+        >
             <Check className="mr-2 h-4 w-4"/>
             Tout marquer comme lu
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
+        </Button>
+      </header>
+
+      <Card className="bg-slate-900/40 border-slate-800 shadow-2xl overflow-hidden">
+        <CardContent className="p-0">
+          <div className="divide-y divide-slate-800">
             {isLoading ? (
-              [...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full" />)
-            ) : notifications && notifications.length > 0 ? (
-              notifications.map(notif => (
-                <button
-                  key={notif.id}
-                  onClick={() => handleNotificationClick(notif)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-lg flex items-start gap-4 transition-all duration-200 hover:-translate-y-0.5",
-                    notif.read ? "hover:bg-slate-800/50" : "bg-primary/10 hover:bg-primary/20 border border-primary/20"
-                  )}
-                >
-                    <div className="p-1 mt-1">
-                        <NotificationIcon type={notif.type} />
-                    </div>
-                    <div className="flex-1">
-                        <p className={cn("text-sm", !notif.read ? "font-bold text-white" : "text-slate-300")}>{notif.text}</p>
-                        <p className="text-xs text-slate-400 mt-1">
-                            {notif.createdAt && typeof (notif.createdAt as any).toDate === 'function' 
-                                ? formatDistanceToNow((notif.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
-                                : ''}
-                        </p>
-                    </div>
-                    {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}
-                </button>
+              [...Array(5)].map((_, i) => (
+                  <div key={i} className="p-6 flex items-start gap-4">
+                      <Skeleton className="h-10 w-10 rounded-full bg-slate-800" />
+                      <div className="flex-1 space-y-2">
+                          <Skeleton className="h-4 w-3/4 bg-slate-800" />
+                          <Skeleton className="h-3 w-1/4 bg-slate-800" />
+                      </div>
+                  </div>
               ))
+            ) : notifications && notifications.length > 0 ? (
+              notifications.map(notif => {
+                // ✅ Sécurisation de la date Firestore
+                const notifDate = (notif.createdAt as any)?.toDate?.() || new Date();
+                
+                return (
+                    <button
+                    key={notif.id}
+                    onClick={() => handleNotificationClick(notif)}
+                    className={cn(
+                        "w-full text-left p-6 flex items-start gap-4 transition-all duration-200 group relative",
+                        notif.read ? "bg-transparent opacity-70" : "bg-primary/5 hover:bg-primary/10"
+                    )}
+                    >
+                        <div className={cn(
+                            "p-3 rounded-xl border transition-colors",
+                            notif.read ? "bg-slate-800 border-slate-700" : "bg-primary/20 border-primary/30"
+                        )}>
+                            <NotificationIcon type={notif.type} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                            <p className={cn(
+                                "text-[15px] leading-relaxed",
+                                !notif.read ? "font-bold text-white" : "text-slate-300"
+                            )}>
+                                {notif.text}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-2 flex items-center gap-2">
+                                <ClockIcon className="h-3 w-3" />
+                                {formatDistanceToNow(notifDate, { locale: fr, addSuffix: true })}
+                            </p>
+                        </div>
+                        {!notif.read && (
+                            <div className="absolute right-6 top-1/2 -translate-y-1/2">
+                                <div className="h-2.5 w-2.5 rounded-full bg-primary shadow-[0_0_10px_rgba(79,70,229,0.5)]"></div>
+                            </div>
+                        )}
+                    </button>
+                )
+              })
             ) : (
-                <div className="text-center py-20 text-muted-foreground">
-                    <Bell className="mx-auto h-12 w-12 mb-4"/>
-                    <p>Vous n'avez aucune notification pour le moment.</p>
+                <div className="text-center py-24 text-slate-500 flex flex-col items-center">
+                    <div className="p-4 bg-slate-800/50 rounded-full mb-4">
+                        <Bell className="h-12 w-12 text-slate-600"/>
+                    </div>
+                    <h3 className="text-lg font-semibold text-slate-300">Aucune notification</h3>
+                    <p className="max-w-xs mt-1">Vous n'avez pas encore de messages. Vos alertes apparaîtront ici.</p>
                 </div>
             )}
           </div>

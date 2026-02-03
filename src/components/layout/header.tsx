@@ -1,6 +1,6 @@
 'use client';
 
-import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
+import { Bell, Search, CheckCircle, ShieldAlert, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserNav } from '@/components/layout/user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -63,26 +63,31 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
     switch (type) {
         case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />;
         case 'alert': return <ShieldAlert className="h-5 w-5 text-red-500" />;
-        default: return <Bell className="h-5 w-5 text-blue-500" />;
+        default: return <Info className="h-5 w-5 text-blue-500" />;
     }
 }
 
 const NotificationItem = ({ notif, onClick }: { notif: Notification, onClick: (notif: Notification) => void }) => {
-  const notifDate = (notif.createdAt as any)?.toDate?.();
+  // ✅ Sécurisation de la date Firestore
+  const notifDate = (notif.createdAt as any)?.toDate?.() || new Date();
+  
   const content = (
-    <div className="flex items-start gap-4 p-3 rounded-lg transition-colors hover:bg-muted/50 cursor-pointer">
-      <div className="p-1 mt-1">
+    <div className="flex items-start gap-4 p-3 rounded-lg transition-colors hover:bg-slate-800/50 cursor-pointer group">
+      <div className={cn(
+          "p-2 rounded-lg border",
+          notif.read ? "bg-slate-900 border-slate-800" : "bg-primary/10 border-primary/20"
+      )}>
           <NotificationIcon type={notif.type} />
       </div>
-       <div className="flex-1">
-          <p className={cn("text-sm", !notif.read && "font-semibold")}>
+       <div className="flex-1 min-w-0">
+          <p className={cn("text-xs leading-snug", !notif.read ? "font-bold text-white" : "text-slate-400")}>
             {notif.text}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {notifDate ? formatDistanceToNow(notifDate, { locale: fr, addSuffix: true }) : ''}
+          <p className="text-[10px] text-slate-500 mt-1">
+            {formatDistanceToNow(notifDate, { locale: fr, addSuffix: true })}
           </p>
        </div>
-       {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}
+       {!notif.read && <div className="h-2 w-2 rounded-full bg-primary self-center shrink-0"></div>}
     </div>
   );
 
@@ -109,7 +114,7 @@ const HeaderNotificationButton = () => {
   
   if (isMobile) {
     return (
-      <Button variant="ghost" size="icon" onClick={() => router.push('/student/notifications')} className="relative text-foreground">
+      <Button variant="ghost" size="icon" onClick={() => router.push('/student/notifications')} className="relative text-white">
         <Bell className="h-5 w-5" />
         {hasUnread && (
           <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -125,7 +130,7 @@ const HeaderNotificationButton = () => {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative text-foreground">
+        <Button variant="ghost" size="icon" className="relative text-white hover:bg-slate-800">
           <Bell className="h-5 w-5" />
           {hasUnread && (
             <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
@@ -136,24 +141,27 @@ const HeaderNotificationButton = () => {
           <span className="sr-only">Notifications</span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-          <Card className="border-0 dark:bg-slate-800 dark:border-slate-700">
-            <CardHeader className="flex flex-row items-center justify-between pb-2 border-b dark:border-slate-700">
-                <CardTitle className="text-base font-semibold text-white">Notifications</CardTitle>
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="dark:text-slate-300 dark:hover:bg-slate-700">Marquer comme lu</Button>
+      <PopoverContent className="w-85 p-0" align="end">
+          <Card className="border-0 dark:bg-slate-900 dark:border-slate-800 shadow-2xl">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-slate-800">
+                <CardTitle className="text-sm font-bold text-white">Notifications</CardTitle>
+                <Button variant="ghost" size="sm" onClick={markAllAsRead} disabled={!hasUnread} className="h-7 text-[10px] uppercase tracking-wider font-bold dark:text-slate-400 dark:hover:bg-slate-800">Tout lire</Button>
             </CardHeader>
-            <CardContent className="p-2 max-h-96 overflow-y-auto">
+            <CardContent className="p-2 max-h-[400px] overflow-y-auto custom-scrollbar">
               {notifications.length > 0 ? (
                 <div className="space-y-1">
                   {notifications.map(n => <NotificationItem key={n.id} notif={n} onClick={handleNotificationClick} />)}
                 </div>
               ) : (
-                <p className="text-sm text-center text-muted-foreground py-8">Aucune notification.</p>
+                <div className="flex flex-col items-center justify-center py-10 text-slate-500">
+                    <Bell className="h-8 w-8 mb-2 opacity-20"/>
+                    <p className="text-xs">Aucune notification pour le moment.</p>
+                </div>
               )}
             </CardContent>
-             <CardFooter className="border-t border-slate-700 p-2">
-                <Button variant="link" size="sm" asChild className="w-full">
-                    <Link href="/student/notifications">Voir toutes les notifications</Link>
+             <CardFooter className="border-t border-slate-800 p-2">
+                <Button variant="ghost" size="sm" asChild className="w-full text-xs font-bold text-primary hover:text-primary hover:bg-primary/5">
+                    <Link href="/student/notifications">Voir tout l'historique</Link>
                 </Button>
             </CardFooter>
           </Card>
@@ -165,8 +173,8 @@ const HeaderNotificationButton = () => {
 export function Header() {
     const router = useRouter();
     return (
-        <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" onClick={() => router.push('/search')} className="text-foreground">
+        <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => router.push('/search')} className="text-white hover:bg-slate-800">
                 <Search className="h-5 w-5" />
             </Button>
             <HeaderNotificationButton />
