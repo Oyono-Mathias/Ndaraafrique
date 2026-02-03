@@ -30,9 +30,11 @@ export function StudentDashboard() {
     const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
     const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
 
+    // Écoute des inscriptions
     const unsubEnrollments = onSnapshot(enrollmentsQuery, async (enrollSnap) => {
         const enrollments = enrollSnap.docs.map(d => ({ id: d.id, ...d.data() } as Enrollment));
         
+        // Écoute des progrès (imbriquée pour avoir les deux sources)
         const unsubProgress = onSnapshot(progressQuery, async (progressSnap) => {
             const progressDocs = progressSnap.docs.map(d => d.data() as CourseProgress);
             const startedCourseIds = new Set(progressDocs.map(p => p.courseId));
@@ -47,12 +49,13 @@ export function StudentDashboard() {
                 avgProgress: avg
             });
 
+            // Identification des cours achetés mais non commencés
             const unstartedEnrollments = enrollments.filter(e => !startedCourseIds.has(e.courseId));
             
             if (unstartedEnrollments.length > 0) {
                 const unstartedCourseIds = unstartedEnrollments.map(e => e.courseId);
                 const coursesRef = collection(db, 'courses');
-                // Firestore limit for 'in' is 30
+                // Firestore limite 'in' à 30 IDs
                 const qCourses = query(coursesRef, where(documentId(), 'in', unstartedCourseIds.slice(0, 30)));
                 const coursesSnap = await getDocs(qCourses);
                 const fetchedCourses = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Course));
@@ -85,7 +88,7 @@ export function StudentDashboard() {
 
   return (
     <div className="bg-slate-900 -m-6 p-6 min-h-screen space-y-12">
-        <header>
+        <header className="animate-in fade-in slide-in-from-top-4 duration-500">
             <h1 className="text-3xl font-bold text-white mb-2">Bonjour, {currentUser?.fullName?.split(' ')[0]} 👋</h1>
             <p className="text-slate-400">Heureux de vous revoir ! Voici un aperçu de votre progression.</p>
         </header>
