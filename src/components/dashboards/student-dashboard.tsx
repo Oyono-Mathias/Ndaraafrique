@@ -3,54 +3,89 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, collection, query, where, getDocs, getCountFromServer } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, getDocs, doc, documentId } from 'firebase/firestore';
 import { ContinueLearning } from './ContinueLearning';
 import { RecommendedCourses } from './RecommendedCourses';
 import { RecentActivity } from './RecentActivity';
 import { DynamicCarousel } from '../ui/DynamicCarousel';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BookOpen, Trophy, TrendingUp } from 'lucide-react';
-import type { CourseProgress } from '@/lib/types';
+import { BookOpen, Trophy, TrendingUp, Sparkles } from 'lucide-react';
+import type { CourseProgress, Enrollment, Course, NdaraUser } from '@/lib/types';
+import { SectionHeader } from '../dashboard/SectionHeader';
+import { CourseCard } from '../cards/CourseCard';
+import { Skeleton } from '../ui/skeleton';
 
 export function StudentDashboard() {
-  const { currentUser } = useRole();
+  const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
   const [stats, setStats] = useState({ totalCourses: 0, completed: 0, avgProgress: 0 });
+  const [newCourses, setNewEnrollments] = useState<Course[]>([]);
+  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    const fetchStats = async () => {
-      setIsLoading(true);
-      try {
-        const enrollmentsRef = collection(db, 'enrollments');
-        const qEnrollments = query(enrollmentsRef, where('studentId', '==', currentUser.uid));
-        const enrollmentsSnap = await getCountFromServer(qEnrollments);
+    setIsLoading(true);
 
-        const progressRef = collection(db, 'course_progress');
-        const qProgress = query(progressRef, where('userId', '==', currentUser.uid));
-        const progressSnap = await getDocs(qProgress);
-        
-        const progressDocs = progressSnap.docs.map(d => d.data() as CourseProgress);
-        const completed = progressDocs.filter(p => p.progressPercent === 100).length;
-        
-        const totalProgress = progressDocs.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0);
-        const avg = progressDocs.length > 0 ? Math.round(totalProgress / progressDocs.length) : 0;
+    // 1. Listen for enrollments and progress simultaneously
+    const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
+    const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
 
-        setStats({
-          totalCourses: enrollmentsSnap.data().count,
-          completed,
-          avgProgress: avg
+    const unsubEnrollments = onSnapshot(enrollmentsQuery, async (enrollSnap) => {
+        const enrollments = enrollSnap.docs.map(d => ({ id: d.id, ...d.data() } as Enrollment));
+        
+        // Listen for progress to diff unstarted courses
+        const unsubProgress = onSnapshot(progressQuery, async (progressSnap) => {
+            const progressDocs = progressSnap.docs.map(d => d.data() as CourseProgress);
+            const startedCourseIds = new Set(progressDocs.map(p => p.courseId));
+            
+            // Stats calculation
+            const completed = progressDocs.filter(p => p.progressPercent === 100).length;
+            const totalProgress = progressDocs.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0);
+            const avg = progressDocs.length > 0 ? Math.round(totalProgress / progressDocs.length) : 0;
+
+            setStats({
+                totalCourses: enrollments.length,
+                completed,
+                avgProgress: avg
+            });
+
+            // "Nouveaux cours" logic: enrolled but not started (no progress doc)
+            const unstartedEnrollments = enrollments.filter(e => !startedCourseIds.has(e.courseId));
+            
+            if (unstartedEnrollments.length > 0) {
+                const unstartedCourseIds = unstartedEnrollments.map(e => e.courseId);
+                const coursesRef = collection(db, 'courses');
+                const qCourses = query(coursesRef, where(documentId(), 'in', unstartedCourseIds.slice(0, 30)));
+                const coursesSnap = await getDocs(qCourses);
+                const courses = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Course));
+                setNewEnrollments(courses);
+
+                // Fetch instructors for these courses
+                const instructorIds = [...new Set(courses.map(c => c.instructorId))];
+                if (instructorIds.length > 0) {
+                    const usersRef = collection(db, 'users');
+                    const qInstructors = query(usersRef, where('uid', 'in', instructorIds.slice(0, 30)));
+                    const instructorsSnap = await getDocs(qInstructors);
+                    const newInstructors = new Map<string, Partial<NdaraUser>>();
+                    instructorsSnap.forEach(d => {
+                        const data = d.data();
+                        newInstructors.set(data.uid, { fullName: data.fullName, profilePictureURL: data.profilePictureURL });
+                    });
+                    setInstructorsMap(newInstructors);
+                }
+            } else {
+                setNewEnrollments([]);
+            }
+            
+            setIsLoading(false);
         });
-      } catch (error) {
-        console.error("Error fetching student stats:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
 
-    fetchStats();
+        return () => unsubProgress();
+    });
+
+    return () => unsubEnrollments();
   }, [currentUser?.uid, db]);
 
   return (
@@ -86,6 +121,25 @@ export function StudentDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
             <div className="lg:col-span-2 space-y-12">
                 <ContinueLearning />
+                
+                {newCourses.length > 0 && (
+                    <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                        <SectionHeader title="Nouveaux cours" className="mb-4">
+                            <Sparkles className="h-5 w-5 text-amber-400" />
+                        </SectionHeader>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {newCourses.map(course => (
+                                <CourseCard 
+                                    key={course.id} 
+                                    course={course} 
+                                    instructor={instructorsMap.get(course.instructorId) || null} 
+                                    variant="catalogue" 
+                                />
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {currentUser?.role !== 'admin' && <RecommendedCourses />}
             </div>
             <div className="lg:col-span-1">
