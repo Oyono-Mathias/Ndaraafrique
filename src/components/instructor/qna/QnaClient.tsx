@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -12,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Reply, Frown } from 'lucide-react';
+import { Reply, Frown, Clock } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ReplyModal } from './ReplyModal';
@@ -89,15 +88,25 @@ export function QnaClient() {
             </div>
           ) : filteredQuestions.length > 0 ? (
             <Accordion type="single" collapsible className="w-full space-y-3 pt-4">
-                {filteredQuestions.map(q => (
+                {filteredQuestions.map(q => {
+                    // ✅ Sécurisation de la date Firestore
+                    const questionDate = (q.createdAt as any)?.toDate?.();
+                    
+                    return (
                      <AccordionItem key={q.id} value={q.id} className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-800/50 shadow-sm">
-                        <AccordionTrigger className="p-4 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-800/50 [&[data-state=open]>svg.chevron]:text-primary">
+                        <AccordionTrigger className="p-4 hover:no-underline hover:bg-slate-50 dark:hover:bg-slate-800/50">
                             <div className="flex-1 text-left space-y-1">
                                 <p className="font-semibold text-slate-800 dark:text-white">{q.questionText}</p>
                                 <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-muted-foreground">
-                                    <span>{q.courseTitle}</span>
+                                    <span className="font-medium text-primary">{q.courseTitle}</span>
                                     <span>•</span>
                                     <span>{q.studentName}</span>
+                                    {questionDate && (
+                                        <span className="flex items-center gap-1">
+                                            <Clock className="h-3 w-3" />
+                                            {formatDistanceToNow(questionDate, { locale: fr, addSuffix: true })}
+                                        </span>
+                                    )}
                                 </div>
                             </div>
                             <Badge variant={getStatusVariant(q.status)} className={cn("ml-4 capitalize", q.status === 'pending' ? 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300' : 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300')}>{q.status === 'pending' ? 'En attente' : 'Répondu'}</Badge>
@@ -115,7 +124,7 @@ export function QnaClient() {
                             </Button>
                         </AccordionContent>
                     </AccordionItem>
-                ))}
+                )})}
             </Accordion>
           ) : (
             <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-4">

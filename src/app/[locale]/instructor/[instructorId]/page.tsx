@@ -9,38 +9,31 @@ import Image from 'next/image';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Star, Globe, Twitter, Linkedin, Youtube, Edit, Users, BookOpen, Share2, Calendar } from 'lucide-react';
+import { Star, Globe, Twitter, Linkedin, Youtube, Edit, Users, Share2, Calendar } from 'lucide-react';
 import type { Course, NdaraUser } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { useEffect, useState, useMemo } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const StatCard = ({ value, label }: { value: string, label: string }) => (
-    <div className="text-center">
-        <p className="text-3xl font-bold">{value}</p>
-        <p className="text-sm text-gray-400">{label}</p>
-    </div>
-);
-
 const CourseCard = ({ course }: { course: Course }) => {
     return (
         <Link href={`/courses/${course.id}`} className="block group">
-            <div className="bg-gray-800 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/10">
-                <Image 
-                    src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}
-                    alt={course.title}
-                    width={300}
-                    height={170}
-                    className="aspect-video object-cover w-full"
-                />
+            <div className="bg-slate-800 rounded-lg overflow-hidden transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:shadow-primary/10 border border-slate-700">
+                <div className="relative aspect-video">
+                    <Image 
+                        src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/170`}
+                        alt={course.title}
+                        fill
+                        className="object-cover"
+                    />
+                </div>
                 <div className="p-4">
-                    <h3 className="font-bold truncate text-base group-hover:text-primary transition-colors">{course.title}</h3>
-                    <p className="text-sm text-gray-400 mt-1">Catégorie: {course.category}</p>
+                    <h3 className="font-bold truncate text-base group-hover:text-primary transition-colors text-white">{course.title}</h3>
+                    <p className="text-sm text-slate-400 mt-1">Catégorie: {course.category}</p>
                     <div className="flex items-baseline gap-2 mt-2">
-                        <p className="font-bold text-lg">{(course.price || 0).toLocaleString('fr-FR')} FCFA</p>
+                        <p className="font-bold text-lg text-white">{(course.price || 0).toLocaleString('fr-FR')} FCFA</p>
                     </div>
                 </div>
             </div>
@@ -51,7 +44,7 @@ const CourseCard = ({ course }: { course: Course }) => {
 const SocialLink = ({ href, icon: Icon, label }: { href?: string, icon: React.ElementType, label: string }) => {
     if (!href) return null;
     return (
-        <Link href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 hover:bg-gray-800 rounded-lg transition-colors text-gray-300 hover:text-white">
+        <Link href={href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-4 p-3 hover:bg-slate-800 rounded-lg transition-colors text-slate-300 hover:text-white">
             <Icon className="w-5 h-5" />
             <span>{label}</span>
         </Link>
@@ -134,13 +127,13 @@ export default function InstructorProfilePage() {
 
     if (isLoading) {
         return (
-            <div className="bg-gray-900 text-white min-h-screen p-12">
+            <div className="bg-slate-900 text-white min-h-screen p-12">
                 <div className="max-w-6xl mx-auto">
                     <div className="flex items-center gap-6 mb-10">
-                        <Skeleton className="h-32 w-32 rounded-full" />
+                        <Skeleton className="h-32 w-32 rounded-full bg-slate-800" />
                         <div className="space-y-3">
-                            <Skeleton className="h-8 w-64" />
-                            <Skeleton className="h-5 w-48" />
+                            <Skeleton className="h-8 w-64 bg-slate-800" />
+                            <Skeleton className="h-5 w-48 bg-slate-800" />
                         </div>
                     </div>
                 </div>
@@ -151,15 +144,16 @@ export default function InstructorProfilePage() {
     if (!instructor) return <div className="text-white text-center py-20">Instructeur non trouvé.</div>;
     
     const socialLinks = instructor.socialLinks || {};
+    // ✅ Sécurisation de la date Firestore
     const createdAtDate = (instructor.createdAt as any)?.toDate?.();
 
     return (
-        <div className="bg-gray-900 text-white min-h-screen">
+        <div className="bg-slate-900 text-white min-h-screen">
             <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-12">
                 <header className="flex flex-col sm:flex-row items-center gap-6 mb-12">
-                    <Avatar className="w-32 h-32 border-4 border-gray-700">
+                    <Avatar className="w-32 h-32 border-4 border-slate-700">
                         <AvatarImage src={instructor.profilePictureURL} />
-                        <AvatarFallback className="text-5xl bg-gray-800">{instructor.fullName?.charAt(0) || '?'}</AvatarFallback>
+                        <AvatarFallback className="text-5xl bg-slate-800">{instructor.fullName?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
                     <div className="text-center sm:text-left flex-grow">
                         <div className="flex items-center justify-center sm:justify-start gap-2">
@@ -177,7 +171,7 @@ export default function InstructorProfilePage() {
                                 </TooltipProvider>
                             )}
                         </div>
-                        <p className="text-xl text-primary mt-1">{instructor.careerGoals?.currentRole || 'Instructeur'}</p>
+                        <p className="text-xl text-primary mt-1 font-semibold">{instructor.careerGoals?.currentRole || 'Instructeur Ndara'}</p>
                         <div className="flex items-center justify-center sm:justify-start gap-4 text-xs text-slate-400 mt-2">
                              {createdAtDate && (
                                 <div className="flex items-center gap-1.5">
@@ -203,7 +197,7 @@ export default function InstructorProfilePage() {
                     <div className="md:col-span-2 space-y-12">
                          <section>
                             <h2 className="text-2xl font-bold mb-4 border-l-4 border-primary pl-3">À propos</h2>
-                            <p className="text-gray-300 leading-relaxed">{instructor.bio || "Aucune description disponible."}</p>
+                            <p className="text-slate-300 leading-relaxed whitespace-pre-wrap">{instructor.bio || "Aucune description disponible."}</p>
                         </section>
 
                         <section>
@@ -212,31 +206,31 @@ export default function InstructorProfilePage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                     {courses.map(course => <CourseCard key={course.id} course={course} />)}
                                 </div>
-                            ) : <p className="text-gray-400">Aucun cours publié.</p>}
+                            ) : <p className="text-slate-400">Aucun cours publié.</p>}
                         </section>
                     </div>
 
                     <aside className="space-y-8">
-                        <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
+                        <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
                              <h3 className="text-xl font-bold mb-4">Statistiques</h3>
                              <div className="grid grid-cols-2 gap-4 text-center">
                                  <div className="space-y-1">
                                     <Users className="h-6 w-6 mx-auto text-primary"/>
                                     <p className="text-2xl font-bold">{stats.studentCount}</p>
-                                    <p className="text-xs text-gray-400">Étudiants</p>
+                                    <p className="text-xs text-slate-400 uppercase tracking-tighter">Étudiants</p>
                                  </div>
                                   <div className="space-y-1">
                                     <Star className="h-6 w-6 mx-auto text-primary"/>
                                     <p className="text-2xl font-bold">{stats.reviewCount}</p>
-                                    <p className="text-xs text-gray-400">Avis</p>
+                                    <p className="text-xs text-slate-400 uppercase tracking-tighter">Avis</p>
                                  </div>
                              </div>
                         </div>
 
-                         <div className="bg-gray-800/50 p-6 rounded-2xl border border-gray-700">
+                         <div className="bg-slate-800/50 p-6 rounded-2xl border border-slate-700">
                              <h3 className="text-xl font-bold mb-4">Réseaux</h3>
                              <ul className="space-y-2">
-                                <SocialLink href={socialLinks.website} icon={Globe} label="Website" />
+                                <SocialLink href={socialLinks.website} icon={Globe} label="Site Web" />
                                 <SocialLink href={socialLinks.twitter} icon={Twitter} label="Twitter" />
                                 <SocialLink href={socialLinks.linkedin} icon={Linkedin} label="LinkedIn" />
                                 <SocialLink href={socialLinks.youtube} icon={Youtube} label="Youtube" />
