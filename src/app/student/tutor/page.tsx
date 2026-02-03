@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { AiTutorClient } from "@/components/chat/ai-tutor-client";
 import { Card, CardContent } from "@/components/ui/card";
 
