@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, getFirestore, orderBy, limit } from 'firebase/firestore';
+import { collection, query, getFirestore, orderBy, limit } from 'firebase/firestore';
 import type { UserActivity } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -11,7 +11,6 @@ import { Award, BookOpen, Star, ClipboardCheck, History } from 'lucide-react';
 import Link from 'next/link';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
 
 const ActivityIcon = ({ type }: { type: UserActivity['type'] }) => {
     switch (type) {
@@ -79,8 +78,8 @@ export function RecentActivity() {
                                          <p className="text-sm font-semibold text-slate-200">{activity.title}</p>
                                          {activity.description && <p className="text-xs text-slate-400">{activity.description}</p>}
                                          <p className="text-xs text-slate-500 mt-1">
-                                             {/* ✅ Correction robuste du .toDate() */}
-                                             {activity.createdAt && typeof (activity.createdAt as any).toDate === 'function' 
+                                             {/* ✅ Sécurisation de la date Firestore */}
+                                             {(activity.createdAt as any)?.toDate?.() 
                                                 ? formatDistanceToNow((activity.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
                                                 : ''}
                                          </p>

@@ -1,20 +1,19 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { collection, query, where, getFirestore, orderBy, limit, Timestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, getFirestore, orderBy, limit, getDocs } from 'firebase/firestore';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { AlertTriangle, ShieldOff, CreditCard, User, ArrowRight, Ban, Check, Loader2 } from 'lucide-react';
+import { AlertTriangle, ShieldOff, CreditCard, Ban, Check, Loader2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, SecurityLog } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserStatus } from '@/actions/userActions';
 import { resolveSecurityItem } from '@/actions/securityActions';
-import { Badge } from '@/components/ui/badge'; // Import vérifié
+import { Badge } from '@/components/ui/badge';
 
 type AlertType = 'suspicious_payment' | 'failed_payment' | 'suspicious_login';
 
@@ -131,8 +130,8 @@ export function AdminSecurityAlerts() {
                         id: p.id,
                         type: 'suspicious_payment',
                         message: `Paiement suspect de ${data.amount.toLocaleString('fr-FR')} XOF. Score: ${data.fraudReview?.riskScore}.`,
-                        // ✅ Correction robuste de .toDate()
-                        date: (data.date && typeof (data.date as any).toDate === 'function') ? (data.date as any).toDate() : new Date(),
+                        // ✅ Sécurisation de la date Firestore
+                        date: (data.date as any)?.toDate?.() || new Date(),
                         link: `/admin/payments?search=${p.id}`,
                         userId: data.userId
                     });
@@ -144,8 +143,8 @@ export function AdminSecurityAlerts() {
                         id: l.id,
                         type: 'suspicious_login',
                         message: `Connexion suspecte détectée.`,
-                        // ✅ Correction robuste de .toDate()
-                        date: (data.timestamp && typeof (data.timestamp as any).toDate === 'function') ? (data.timestamp as any).toDate() : new Date(),
+                        // ✅ Sécurisation de la date Firestore
+                        date: (data.timestamp as any)?.toDate?.() || new Date(),
                         link: `/admin/users?search=${data.targetId}`,
                         userId: data.targetId,
                     });

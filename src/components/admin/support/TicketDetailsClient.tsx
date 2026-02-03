@@ -2,18 +2,18 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useDoc, useCollection } from '@/firebase';
-import { getFirestore, doc, collection, query, orderBy, Timestamp } from 'firebase/firestore';
+import { getFirestore, doc, collection, query, orderBy } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { addAdminReplyToTicket, closeTicket, refundAndRevokeAccess } from '@/actions/supportActions';
 import type { SupportTicket, Message, NdaraUser, Course } from '@/lib/types';
 
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Send, Shield, Briefcase, User, Ticket, BookOpen, Clock, AlertTriangle } from 'lucide-react';
+import { Loader2, Send, Shield, User, Ticket, BookOpen, Clock, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+
+// ✅ Correction sécurisée des dates Firestore
+const formatFirestoreDate = (date: any, formatStr: string) => {
+  const d = (date as any)?.toDate?.();
+  if (!d) return '';
+  return format(d, formatStr, { locale: fr });
+};
 
 const DetailRow = ({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: string | undefined }) => (
     value ? (
@@ -115,10 +122,7 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
                                         <p className="font-bold text-xs mb-1">{isAdminReply ? 'Support Ndara' : user?.fullName}</p>
                                         <p className="whitespace-pre-wrap">{msg.text}</p>
                                         <p className="text-xs opacity-70 mt-2 text-right">
-                                            {/* ✅ Correction robuste du .toDate() */}
-                                            {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' 
-                                                ? format((msg.createdAt as any).toDate(), 'd MMM HH:mm', {locale: fr}) 
-                                                : ''}
+                                            {formatFirestoreDate(msg.createdAt, 'd MMM HH:mm')}
                                         </p>
                                     </div>
                                     {isAdminReply && <Avatar><AvatarFallback className="bg-primary/50"><Shield className="h-5 w-5"/></AvatarFallback></Avatar>}
@@ -141,22 +145,22 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
 
             <div className="lg:col-span-1">
                  <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                     <CardHeader>
+                    <CardHeader>
                         <CardTitle className="text-lg">Détails du Ticket</CardTitle>
-                     </CardHeader>
-                     <CardContent className="space-y-4">
+                    </CardHeader>
+                    <CardContent className="space-y-4">
                         {isLoading ? <Skeleton className="h-40 w-full" /> : (
                             <>
                             <DetailRow icon={User} label="Utilisateur" value={user?.fullName} />
                             <DetailRow icon={BookOpen} label="Cours concerné" value={course?.title} />
                             <Separator />
                             <DetailRow icon={Ticket} label="Catégorie" value={ticket?.category} />
-                            <DetailRow icon={Clock} label="Créé le" value={ticket?.createdAt && typeof (ticket.createdAt as any).toDate === 'function' ? format((ticket.createdAt as any).toDate(), 'PPP', {locale: fr}) : ''} />
+                            <DetailRow icon={Clock} label="Créé le" value={formatFirestoreDate(ticket?.createdAt, 'PPP')} />
                             <Badge variant={isTicketOpen ? 'destructive' : 'success'} className="capitalize">{ticket?.status}</Badge>
                             </>
                         )}
-                     </CardContent>
-                     {isTicketOpen && (
+                    </CardContent>
+                    {isTicketOpen && (
                          <CardFooter className="flex-col gap-2">
                              <AlertDialog>
                                 <AlertDialogTrigger asChild><Button variant="outline" className="w-full">Fermer le ticket</Button></AlertDialogTrigger>
@@ -175,7 +179,7 @@ export function TicketDetailsClient({ ticketId }: { ticketId: string }) {
                                 </AlertDialog>
                               )}
                          </CardFooter>
-                     )}
+                    )}
                  </Card>
             </div>
         </div>

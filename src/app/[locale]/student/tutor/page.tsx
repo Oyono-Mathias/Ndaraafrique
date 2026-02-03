@@ -1,19 +1,18 @@
 'use client';
 
-// ✅ Cette ligne force Next.js à traiter la page comme dynamique
-export const dynamic = 'force-dynamic';
+import dynamic from 'next/dynamic';
+import { Loader2 } from 'lucide-react';
 
-import { AiTutorClient } from "@/components/chat/ai-tutor-client";
-import { Card, CardContent } from "@/components/ui/card";
+// ✅ On importe le composant de manière dynamique et on désactive le SSR (Server Side Rendering)
+const TutorClient = dynamic(() => import('./TutorClient'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex h-screen items-center justify-center bg-slate-900">
+      <Loader2 className="h-8 w-8 animate-spin text-primary" />
+    </div>
+  )
+});
 
 export default function TutorPage() {
-  return (
-    <div className="h-[calc(100vh_-_theme(spacing.16))] -m-6">
-      <Card className="h-full w-full border-0 rounded-none shadow-none">
-        <CardContent className="p-0 h-full">
-            <AiTutorClient />
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <TutorClient />;
 }

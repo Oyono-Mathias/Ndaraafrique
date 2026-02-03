@@ -15,7 +15,6 @@ import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 import Link from 'next/link';
 
-// ✅ Interface corrigée pour accepter Partial et éviter les erreurs de type 'null'
 interface EnrichedCertificate extends Enrollment {
   student?: Partial<NdaraUser>;
   course?: Partial<Course>;
@@ -73,7 +72,6 @@ export default function MesCertificatsPage() {
         
         const newEnrichedData: EnrichedCertificate[] = enrollments.map(e => ({
             ...e,
-            // ✅ On s'assure que student n'est jamais null pour correspondre à l'interface
             student: currentUser || undefined, 
             course: coursesMap.get(e.courseId),
             instructor: instructorsMap.get(e.instructorId),
@@ -102,10 +100,8 @@ export default function MesCertificatsPage() {
           courseName={selectedCertificate.course?.title || ''}
           studentName={selectedCertificate.student?.fullName || 'Étudiant'}
           instructorName={selectedCertificate.instructor?.fullName || ''}
-          // ✅ Correction .toDate() sécurisée
-          completionDate={(selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function') 
-            ? (selectedCertificate.lastAccessedAt as any).toDate() 
-            : new Date()}
+          // ✅ Sécurisation de la date Firestore
+          completionDate={(selectedCertificate.lastAccessedAt as any)?.toDate?.() || new Date()}
           certificateId={selectedCertificate.id}
         />
       )}
@@ -138,8 +134,8 @@ export default function MesCertificatsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {/* ✅ Correction .toDate() sécurisée */}
-                    {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
+                    {/* ✅ Sécurisation de la date Firestore */}
+                    {(cert.lastAccessedAt as any)?.toDate?.() 
                         ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
                         : 'N/A'}
                   </TableCell>
