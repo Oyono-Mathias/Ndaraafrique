@@ -14,7 +14,20 @@
   },
   "Nav": {
     "account": "Mon Compte",
-    "courses": "Mes Formations"
+    "courses": "Mes Formations",
+    "dashboard": "Tableau de bord"
+  },
+  "Landing": {
+    "hero_title": "Ndara Afrique : L'excellence par le savoir",
+    "hero_subtitle": "Apprenez avec des experts africains et bénéficiez de l'aide 24h/24 du Tuteur MATHIAS, votre coach IA personnalisé.",
+    "cta_start": "Commencer gratuitement",
+    "course_count": "{count} formations disponibles",
+    "feature_1_title": "Apprentissage temps réel",
+    "feature_1_desc": "Suivez vos cours n'importe où, n'importe quand, avec un suivi de progression instantané.",
+    "feature_2_title": "Quiz interactifs",
+    "feature_2_desc": "Testez vos connaissances après chaque chapitre et obtenez vos certificats de réussite.",
+    "feature_3_title": "Tuteur IA 24h/24",
+    "feature_3_desc": "MATHIAS répond à toutes vos questions sur les cours pour vous garantir une compréhension totale."
   },
   "all": "Tous",
   "in_progress": "En cours",

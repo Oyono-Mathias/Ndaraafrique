@@ -14,22 +14,23 @@
   },
   "Nav": {
     "account": "Account",
-    "courses": "My Courses"
+    "courses": "My Courses",
+    "dashboard": "Dashboard"
+  },
+  "Landing": {
+    "hero_title": "Ndara Africa: Excellence through knowledge",
+    "hero_subtitle": "Learn with African experts and get 24/7 help from MATHIAS Tutor, your personalized AI coach.",
+    "cta_start": "Start for free",
+    "course_count": "{count} available courses",
+    "feature_1_title": "Real-time learning",
+    "feature_1_desc": "Follow your courses anywhere, anytime, with instant progress tracking.",
+    "feature_2_title": "Interactive Quizzes",
+    "feature_2_desc": "Test your knowledge after each chapter and get your completion certificates.",
+    "feature_3_title": "24/7 AI Tutor",
+    "feature_3_desc": "MATHIAS answers all your course-related questions to ensure total understanding."
   },
   "all": "All",
   "in_progress": "In Progress",
   "completed": "Completed",
-  "browseCourses": "Browse Courses",
-  "coming_soon_title": "The Future of Education in Africa is",
-  "coming_soon_subtitle": "Under Construction",
-  "coming_soon_desc": "We are preparing a revolution in pan-African e-learning. Be the first to be notified of our launch and receive exclusive offers.",
-  "countdown_days": "Days",
-  "countdown_hours": "Hours",
-  "countdown_minutes": "Minutes",
-  "countdown_seconds": "Seconds",
-  "email_placeholder": "Enter your email...",
-  "notify_me_btn": "Notify Me",
-  "waitlist_success_title": "Thank you!",
-  "waitlist_success_desc": "You have been successfully added to our waitlist.",
-  "error_title": "Error"
+  "browseCourses": "Browse Courses"
 }
