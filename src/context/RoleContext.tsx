@@ -4,8 +4,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, Timestamp, setDoc, serverTimestamp, getDoc, updateDoc, DocumentData } from 'firebase/firestore';
-import { User, onIdTokenChanged, signOut } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc, updateDoc, DocumentData } from 'firebase/firestore';
+import { onIdTokenChanged, signOut } from 'firebase/auth';
 import { getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -20,9 +20,7 @@ interface RoleContextType {
   secureSignOut: () => Promise<void>;
   loading: boolean;
   currentUser: NdaraUser | null;
-  ndaraUser: any;
-  formaAfriqueUser: any;
-  user: User | null;
+  user: any;
   isUserLoading: boolean;
   setCurrentUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
 }
@@ -46,7 +44,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
     await signOut(auth);
-    // After signing out, redirect to the login page.
     router.push('/login');
   }, [db, router]);
 
@@ -94,7 +91,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
 
-          // --- LAZY MIGRATION: Ensure all fields exist for older documents ---
           const defaultFields: Partial<NdaraUser> = {
             phoneNumber: '',
             bio: '',
@@ -139,7 +135,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             toast({
                 variant: 'destructive',
                 title: 'Compte suspendu',
-                description: 'Votre compte a été suspendu. Veuillez contacter le support pour plus d\'informations.',
+                description: 'Votre compte a été suspendu.',
                 duration: Infinity,
             });
             setLoading(false);
@@ -177,44 +173,32 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               email: user.email || '',
               username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
               fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
-              availableRoles: roles,
               profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
               permissions: finalPermissions,
-          };
+          } as any;
           
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
-          
-          let newRole: UserRole;
-          
-          if (lastRole && roles.includes(lastRole)) {
-            newRole = lastRole;
-          } else {
-            newRole = userData.role;
-          }
-
+          const newRole = (lastRole && roles.includes(lastRole)) ? lastRole : userData.role;
           setRole(newRole);
 
         } else {
-            console.warn("User document not found in Firestore for UID:", user.uid);
-            const defaultUsername = user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5);
-            
-            const newUserDoc: Omit<NdaraUser, 'availableRoles'> = {
+            const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
-                username: defaultUsername,
+                username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
                 fullName: user.displayName || 'Utilisateur Ndara',
                 role: 'student',
                 status: 'active',
                 isInstructorApproved: false,
-                createdAt: serverTimestamp() as Timestamp,
-                lastLogin: serverTimestamp() as Timestamp,
+                createdAt: serverTimestamp(),
+                lastLogin: serverTimestamp(),
                 isOnline: true,
-                lastSeen: serverTimestamp() as Timestamp,
+                lastSeen: serverTimestamp(),
                 profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.displayName || 'A')}`,
                 isProfileComplete: false,
                 phoneNumber: '',
@@ -228,7 +212,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 badges: [],
                 permissions: {},
             };
-            
             setDoc(userDocRef, newUserDoc);
             return;
         }
@@ -248,8 +231,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
        if (newRole === 'admin') router.push('/admin');
        else if (newRole === 'instructor') router.push('/instructor/dashboard');
        else router.push('/student/dashboard');
-    } else {
-      console.warn(`Role switch to "${newRole}" denied. Not an available role.`);
     }
   }, [availableRoles, router]);
   
@@ -265,12 +246,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     user,
     isUserLoading,
     setCurrentUser,
-    ndaraUser: currentUser,
-    formaAfriqueUser: currentUser,
   }), [role, availableRoles, switchRole, secureSignOut, isUserLoading, loading, currentUser, user]);
 
   return (
-    <RoleContext.Provider value={value}>
+    <RoleContext.Provider value={value as any}>
       {children}
     </RoleContext.Provider>
   );

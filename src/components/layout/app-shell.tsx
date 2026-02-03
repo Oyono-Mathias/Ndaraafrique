@@ -1,10 +1,10 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-// ✅ Utilisation des alias absolus pour éviter les erreurs "Module not found"
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Wrench, Loader2, PanelLeft, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
-import { SplashScreen } from '@/components/splash-screen';
+import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 
 function MaintenancePage() {
@@ -51,9 +51,7 @@ function AnnouncementBanner() {
         sessionStorage.setItem('ndara-announcement-dismissed', announcement);
     };
 
-    if (!isVisible || !announcement) {
-        return null;
-    }
+    if (!isVisible || !announcement) return null;
 
     const [mainMessage, ...translations] = announcement.split('Sango:');
     const sangoLingala = translations.length > 0 ? `Sango: ${translations.join('Sango:')}` : '';
@@ -75,7 +73,7 @@ function AnnouncementBanner() {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
@@ -113,7 +111,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (!isPublic) {
         if (pathname.startsWith('/verify/')) isPublic = true;
-        
         const instructorPathRegex = /^\/instructor\/[^/]+$/;
         if (instructorPathRegex.test(pathname)) {
             const privateSubRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
@@ -127,11 +124,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait until user auth state is known
+    if (isUserLoading) return;
 
-    const targetPath = pathname;
-
-    // 1. If user is not logged in, redirect to login page if the page is not public
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
         router.push('/login');
@@ -139,9 +133,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2. If user is logged in, handle role-based access
-    const isAdminArea = targetPath.startsWith('/admin');
-    const isInstructorArea = targetPath.startsWith('/instructor');
+    const isAdminArea = pathname.startsWith('/admin');
+    const isInstructorArea = pathname.startsWith('/instructor');
 
     if (role === 'admin' && !isAdminArea) {
       router.push('/admin');
@@ -171,15 +164,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isAdminArea = pathname.startsWith('/admin');
   const isRootPath = pathname === '/';
-  const mainContentPadding = cn("p-6", isFullScreenPage && "!p-0");
-
 
   return (
     <>
       <SplashScreen />
       <div className={cn("min-h-screen w-full bg-slate-900 text-white", isAdminArea ? "admin-grid-layout" : !isFullScreenPage && "md:grid md:grid-cols-[280px_1fr]")}>
         {!isRootPath && !isAuthPage && user && (
-          <aside className={cn("hidden h-screen sticky top-0", isFullScreenPage || isAdminArea ? "md:hidden" : "md:block")}>
+          <aside className={cn("hidden h-screen sticky top-0", (isFullScreenPage || isAdminArea) ? "md:hidden" : "md:block")}>
              {role === 'admin' ? (
               <AdminSidebar {...sidebarProps} />
             ) : role === 'instructor' ? (
@@ -214,7 +205,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
           
-          <main className={mainContentPadding}>
+          <main className={cn("p-6", isFullScreenPage && "!p-0")}>
               {children}
           </main>
         </div>

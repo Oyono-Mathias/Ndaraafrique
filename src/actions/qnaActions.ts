@@ -3,7 +3,7 @@
 
 import { adminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { sendUserNotification } from './notificationActions';
+import { sendUserNotification } from '@/actions/notificationActions';
 
 interface AnswerQuestionParams {
   questionId: string;
@@ -30,7 +30,6 @@ export async function answerQuestionAction({
       return { success: false, error: 'Question introuvable.' };
     }
     
-    // Authorization check: ensure the user modifying is the designated instructor
     if (questionDoc.data()?.instructorId !== instructorId) {
       return { success: false, error: 'Permission refusée. Vous n\'êtes pas l\'instructeur de ce cours.' };
     }
@@ -45,10 +44,10 @@ export async function answerQuestionAction({
 
     await batch.commit();
     
-    // Notify student about the answer
     await sendUserNotification(studentId, {
       text: `Un instructeur a répondu à votre question sur le cours "${questionDoc.data()?.courseTitle}".`,
-      link: `/student/mes-questions`
+      link: `/student/mes-questions`,
+      type: 'success'
     });
 
     return { success: true };

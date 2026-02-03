@@ -1,6 +1,8 @@
+
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { 
   collection, 
@@ -11,22 +13,18 @@ import {
   writeBatch,
   serverTimestamp,
   getFirestore,
-  getDoc,
   arrayRemove,
   arrayUnion,
   updateDoc
 } from 'firebase/firestore';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { ScrollArea } from '../ui/scroll-area';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Send, Shield, ArrowLeft, Video, Phone, Check, CheckCheck, Briefcase } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { errorEmitter } from '@/firebase';
-import { FirestorePermissionError } from '@/firebase/errors';
-import { Badge } from '../ui/badge';
+import { Badge } from '@/components/ui/badge';
 import type { NdaraUser, UserRole, Message } from '@/lib/types';
-import { useRouter } from 'next/navigation';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -50,27 +48,15 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [messagesLoading, setMessagesLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  
   const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
   const isLoading = participantLoading || messagesLoading;
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-        audioRef.current = new Audio('/sounds/message-sent.mp3');
-        audioRef.current.volume = 0.5;
-    }
-  }, []);
-  
-  const playSentSound = useCallback(() => {
-    audioRef.current?.play().catch(e => console.error("Failed to play sound", e));
-  }, []);
-  
-  useEffect(() => {
     const updateLastSeen = () => {
-       if (otherParticipant?.lastSeen && typeof (otherParticipant.lastSeen as any).toDate === 'function') {
-            setTimeSinceLastSeen(formatDistanceToNowStrict((otherParticipant.lastSeen as any).toDate(), { addSuffix: true, locale: fr }));
+       const date = (otherParticipant?.lastSeen as any)?.toDate?.();
+       if (date) {
+            setTimeSinceLastSeen(formatDistanceToNowStrict(date, { addSuffix: true, locale: fr }));
         }
     };
     updateLastSeen();
@@ -82,10 +68,10 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     if (!chatId || !user) {
         setParticipantLoading(false);
         return;
-    };
+    }
     setParticipantLoading(true);
     const chatRef = doc(db, 'chats', chatId);
-    const unsubscribe = onSnapshot(chatRef, async (docSnap) => {
+    const unsubscribe = onSnapshot(chatRef, (docSnap) => {
         if (docSnap.exists()) {
             const chatData = docSnap.data();
             const otherId = chatData.participants.find((p: string) => p !== user.uid);
@@ -96,55 +82,35 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 onSnapshot(userRef, (userSnap) => {
                     if (userSnap.exists()) {
                         setOtherParticipant(userSnap.data() as ParticipantDetails);
-                    } else {
-                        setOtherParticipant(null);
                     }
                 })
-            } else {
-                setOtherParticipant(null);
             }
 
             if (chatData.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
             }
-        } else {
-            router.push('/student/messages');
         }
-        setParticipantLoading(false);
-    }, (error) => {
-        console.error("Error fetching participant:", error);
         setParticipantLoading(false);
     });
     return () => unsubscribe();
 }, [chatId, user, db, router]);
 
   useEffect(() => {
-    if (!chatId) {
-        setMessagesLoading(false);
-        return;
-    }
-    setMessagesLoading(true);
+    if (!chatId) return;
     const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
     const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
         const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
         setMessages(msgs);
-        setMessagesLoading(false);
-    }, (error) => {
-        console.error("Error fetching messages:", error);
         setMessagesLoading(false);
     });
     return () => unsubscribe();
   }, [chatId, db]);
 
   useEffect(() => {
-    setTimeout(() => {
-        if (scrollAreaRef.current) {
-            const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-            if (viewport) {
-                viewport.scrollTop = viewport.scrollHeight;
-            }
-        }
-    }, 100);
+    if (scrollAreaRef.current) {
+        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+        if (viewport) viewport.scrollTop = viewport.scrollHeight;
+    }
   }, [messages]);
 
 
@@ -155,7 +121,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     setIsSending(true);
     const textToSend = newMessage.trim();
     setNewMessage("");
-    playSentSound();
     
     try {
         const batch = writeBatch(db);
@@ -176,54 +141,13 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         });
         
         await batch.commit();
-
     } catch(err) {
         console.error("Error sending message:", err);
-        setNewMessage(textToSend);
-        errorEmitter.emit('permission-error', new FirestorePermissionError({
-            path: `chats/${chatId}/messages`,
-            operation: 'create',
-            requestResourceData: { text: textToSend }
-        }));
     } finally {
         setIsSending(false);
     }
   };
   
-  const RoleBadge = ({ role }: { role: UserRole | undefined }) => {
-    if (!role || role === 'student') return null;
-
-    const roleInfo = {
-        admin: {
-            label: 'Admin', icon: Shield,
-            className: 'bg-destructive/10 text-destructive border-destructive/30',
-        },
-        instructor: {
-            label: 'Formateur', icon: Briefcase,
-            className: 'bg-primary/10 text-primary border-primary/30',
-        },
-        student: {}
-    };
-    
-    const currentRole = (roleInfo as any)[role];
-    if (!currentRole?.label) return null;
-    
-    const { label, icon: Icon, className } = currentRole;
-
-    return (
-        <Badge className={cn('ml-2 capitalize text-xs font-semibold', className)}>
-            <Icon className="h-3 w-3 mr-1"/>
-            {label}
-        </Badge>
-    );
-  };
-
-  const ReadReceipt = ({ status }: { status: Message['status'] }) => {
-    if (status === 'read') return <CheckCheck className="h-4 w-4 text-blue-500" />;
-    if (status === 'delivered') return <CheckCheck className="h-4 w-4 text-slate-400" />;
-    return <Check className="h-4 w-4 text-slate-400" />;
-  };
-
   if (isLoading) {
     return (
         <div className="flex h-full w-full items-center justify-center bg-slate-900">
@@ -233,8 +157,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   }
 
   return (
-    <div className="flex flex-col h-full chat-background bg-slate-900">
-       <header className="flex items-center p-3 border-b bg-slate-800/80 backdrop-blur-sm sticky top-0 z-10 border-slate-700">
+    <div className="flex flex-col h-full bg-slate-900">
+       <header className="flex items-center p-3 border-b bg-slate-800/80 backdrop-blur-sm border-slate-700">
             <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => router.push('/student/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
@@ -243,17 +167,12 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 <AvatarFallback>{otherParticipant?.username?.charAt(0) || '?'}</AvatarFallback>
             </Avatar>
             <div className="ml-3 flex-1">
-                <h2 className="font-bold text-base flex items-center text-slate-100">
+                <h2 className="font-bold text-base text-slate-100">
                     {otherParticipant?.username || "Utilisateur"}
-                    <RoleBadge role={otherParticipant?.role} />
                 </h2>
                  <p className="text-xs text-slate-400">
                     {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">En ligne</span> : (timeSinceLastSeen ? `Vu ${timeSinceLastSeen}` : `Hors ligne`)}
                 </p>
-            </div>
-            <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon"><Video className="h-5 w-5 text-slate-400" /></Button>
-                <Button variant="ghost" size="icon"><Phone className="h-5 w-5 text-slate-400" /></Button>
             </div>
         </header>
 
@@ -262,33 +181,12 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
                     return (
-                        <div 
-                            key={msg.id} 
-                            className={cn(
-                                "flex items-end gap-2 max-w-[85%] animate-in fade-in-0 duration-300",
-                                isMe ? "ml-auto flex-row-reverse slide-in-from-right-4" : "mr-auto slide-in-from-left-4"
-                            )}
-                        >
-                            <div className={cn(
-                                "rounded-xl px-3 py-2 text-[15px] shadow-sm relative",
-                                isMe 
-                                    ? "chat-bubble-sent bg-primary text-primary-foreground" 
-                                    : "chat-bubble-received bg-slate-700 text-slate-100"
-                            )}>
+                        <div key={msg.id} className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto")}>
+                            <div className={cn("rounded-xl px-3 py-2 text-[15px] shadow-sm relative", isMe ? "bg-primary text-primary-foreground" : "bg-slate-700 text-slate-100")}>
                                 <p className="whitespace-pre-wrap">{msg.text}</p>
-                                {isMe && (
-                                  <div className="flex items-center gap-1 justify-end mt-1">
-                                    <span className="text-[10px] text-primary-foreground/70">
-                                      {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' ? new Date((msg.createdAt as any).toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                                    </span>
-                                    <ReadReceipt status={msg.status} />
-                                  </div>
-                                )}
-                                {!isMe && (
-                                    <span className="text-[10px] text-slate-400 float-right mt-1 ml-2">
-                                      {msg.createdAt && typeof (msg.createdAt as any).toDate === 'function' ? new Date((msg.createdAt as any).toDate()).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
-                                    </span>
-                                )}
+                                <span className="text-[10px] opacity-70 float-right mt-1 ml-2">
+                                    {(msg.createdAt as any)?.toDate?.()?.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                             </div>
                         </div>
                     );
@@ -302,12 +200,10 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
                     placeholder="Écrire un message..."
-                    disabled={isSending}
-                    className="flex-1 h-12 rounded-full bg-slate-700 border-slate-600 focus-visible:ring-primary text-base"
+                    className="flex-1 h-12 rounded-full bg-slate-700 border-slate-600 text-base"
                 />
-                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
+                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending} className="shrink-0 h-12 w-12 rounded-full">
                     {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
-                    <span className="sr-only">Envoyer</span>
                 </Button>
             </form>
         </div>
