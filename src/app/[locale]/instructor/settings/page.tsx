@@ -114,13 +114,13 @@ export default function InstructorSettingsPage() {
       const fileName = `profile_${Date.now()}.webp`;
       const storageRef = ref(storage, `avatars/${currentUser.uid}/${fileName}`);
 
-      console.log("Démarrage de l'upload vers Firebase Storage...");
+      // Upload file
       const snapshot = await uploadBytes(storageRef, croppedImage);
       
-      console.log("Récupération de l'URL de téléchargement...");
+      // Get URL
       const downloadURL = await getDownloadURL(snapshot.ref);
       
-      console.log("Mise à jour du document utilisateur dans Firestore...");
+      // Update Firestore
       await updateDoc(doc(db, 'users', currentUser.uid), { 
         profilePictureURL: downloadURL 
       });
@@ -130,14 +130,13 @@ export default function InstructorSettingsPage() {
         description: "Votre nouvel avatar a été enregistré avec succès." 
       });
     } catch (error: any) {
-      console.error("Erreur critique lors de l'upload de l'avatar :", error);
+      console.error("Erreur d'upload avatar :", error);
       toast({ 
         variant: 'destructive', 
         title: 'Échec de l\'upload', 
-        description: error.message || "Une erreur inconnue est survenue. Vérifiez votre connexion." 
+        description: error.message || "Une erreur est survenue lors de l'envoi de l'image." 
       });
     } finally {
-      // On s'assure que le loader s'arrête systématiquement
       setIsUploading(false);
     }
   };
@@ -161,7 +160,7 @@ export default function InstructorSettingsPage() {
       });
       toast({ title: "Paramètres enregistrés avec succès" });
     } catch (error: any) {
-      console.error("Erreur lors de la sauvegarde des paramètres :", error);
+      console.error("Erreur sauvegarde paramètres :", error);
       toast({ 
         variant: 'destructive', 
         title: 'Erreur', 
