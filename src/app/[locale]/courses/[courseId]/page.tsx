@@ -1,6 +1,12 @@
 
 'use client';
 
+/**
+ * @fileOverview Lecteur de cours haute performance.
+ * Gère la lecture vidéo, l'affichage PDF, le texte riche, 
+ * le tracking de progression et l'assistance IA Mathias.
+ */
+
 export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -16,12 +22,13 @@ import {
   getDocs,
   orderBy,
   serverTimestamp,
-  setDoc
+  setDoc,
+  arrayUnion
 } from 'firebase/firestore';
 import dynamic_next from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, Info } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -31,6 +38,18 @@ import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
 const ReactPlayer = dynamic_next(() => import('react-player/lazy'), { ssr: false });
+
+const VideoPlaceholder = () => (
+    <div className="flex flex-col items-center justify-center h-full p-8 text-center bg-slate-900/50">
+        <div className="p-6 bg-primary/10 rounded-full mb-6">
+            <Play className="h-16 w-16 text-primary animate-pulse" />
+        </div>
+        <h3 className="text-2xl font-bold text-white italic">"Bara ala, Tonga na ndara"</h3>
+        <p className="text-slate-400 max-w-sm mt-3 text-lg leading-relaxed">
+            Prêt à transformer vos ambitions en succès ? Sélectionnez une leçon à gauche pour commencer.
+        </p>
+    </div>
+);
 
 function CoursePlayerPageContent() {
   const { courseId } = useParams();
@@ -42,8 +61,8 @@ function CoursePlayerPageContent() {
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
-  
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [isLoadingContent, setIsLoadingContent] = useState(true);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -56,14 +75,11 @@ function CoursePlayerPageContent() {
   
   const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
   const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
-  
-  const isEbook = course?.contentType === 'ebook';
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     if (!courseId) return;
     const fetchCourseContent = async () => {
-      setIsLoading(true);
+      setIsLoadingContent(true);
       try {
         const sectionsQuery = query(collection(db, 'courses', courseId as string, 'sections'), orderBy('order'));
         const sectionsSnapshot = await getDocs(sectionsQuery);
@@ -78,24 +94,25 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        if (fetchedSections.length > 0) {
+        // Auto-select first lecture if none selected
+        if (fetchedSections.length > 0 && !activeLecture) {
           const firstSectionId = fetchedSections[0].id;
           const sectionLectures = lecturesData.get(firstSectionId);
-          if (sectionLectures && sectionLectures.length > 0 && !activeLecture) {
+          if (sectionLectures && sectionLectures.length > 0) {
             setActiveLecture(sectionLectures[0]);
           }
         }
       } catch (error) {
-        console.error("Error fetching content:", error);
+        console.error("Error fetching course content:", error);
       } finally {
-        setIsLoading(false);
+        setIsLoadingContent(false);
       }
     };
     fetchCourseContent();
   }, [courseId, db, activeLecture]);
   
-  const totalLectures = useMemo(() => {
-    return Array.from(lecturesMap.values()).flat().length;
+  const totalLecturesCount = useMemo(() => {
+    return Array.from(lecturesMap.values()).reduce((acc, current) => acc + current.length, 0);
   }, [lecturesMap]);
   
   const handleLessonClick = (lecture: Lecture) => {
@@ -103,13 +120,13 @@ function CoursePlayerPageContent() {
   }
 
   const handleLessonComplete = useCallback(async () => {
-    if (!user || !activeLecture || !course || !progressRef || totalLectures === 0) return;
+    if (!user || !activeLecture || !course || !progressRef || totalLecturesCount === 0) return;
 
     const completedLessons = (courseProgress as any)?.completedLessons || [];
 
     if (!completedLessons.includes(activeLecture.id)) {
       const updatedCompletedLessons = [...completedLessons, activeLecture.id];
-      const newProgress = Math.round((updatedCompletedLessons.length / totalLectures) * 100);
+      const newProgress = Math.round((updatedCompletedLessons.length / totalLecturesCount) * 100);
 
       await setDoc(progressRef, {
         userId: user.uid,
@@ -123,24 +140,23 @@ function CoursePlayerPageContent() {
         updatedAt: serverTimestamp(),
       }, { merge: true });
       
-      toast({ title: "Leçon terminée ! Progression mise à jour." });
+      toast({ title: "Leçon terminée !", description: "Votre progression a été mise à jour." });
 
       if (newProgress >= 100) {
         setShowCertificateModal(true);
       }
     } else {
-        toast({ title: "Leçon déjà marquée comme terminée." });
+        toast({ title: "Déjà terminée", description: "Vous avez déjà validé cette leçon." });
     }
-  }, [user, activeLecture, courseId, totalLectures, course, progressRef, courseProgress, toast]);
+  }, [user, activeLecture, courseId, totalLecturesCount, course, progressRef, courseProgress, toast]);
 
   const handleAskMathias = () => {
     if (!activeLecture || !course) return;
-    const query = `J'ai une question sur la leçon "${activeLecture.title}" du cours "${course.title}" : `;
     const context = `L'étudiant suit actuellement le cours "${course.title}". La leçon active est "${activeLecture.title}" (Type: ${activeLecture.type}).`;
-    router.push(`/student/tutor?query=${encodeURIComponent(query)}&context=${encodeURIComponent(context)}`);
+    router.push(`/student/tutor?lessonId=${activeLecture.id}&context=${encodeURIComponent(context)}`);
   };
   
-  const isPageLoading = isLoading || courseLoading || progressLoading || instructorLoading || quizzesLoading;
+  const isPageLoading = isLoadingContent || courseLoading || progressLoading || instructorLoading || quizzesLoading;
   
   if (isPageLoading) {
       return (
@@ -170,7 +186,8 @@ function CoursePlayerPageContent() {
       />
        <div className="flex flex-col h-screen bg-black">
         <div className="flex flex-1 overflow-hidden">
-            <aside className="w-80 flex-shrink-0 bg-[#121212] flex flex-col border-r border-slate-800">
+            {/* --- SIDEBAR ZONE --- */}
+            <aside className="w-80 flex-shrink-0 bg-[#121212] flex flex-col border-r border-slate-800 hidden md:flex">
               <CourseSidebar
                 course={course}
                 sections={sections}
@@ -181,59 +198,67 @@ function CoursePlayerPageContent() {
                 completedLessons={completedLessons}
               />
             </aside>
-            <main className="flex-1 flex flex-col bg-black min-h-0">
+
+            {/* --- PLAYER ZONE --- */}
+            <main className="flex-1 flex flex-col bg-black min-h-0 relative">
                 <div className="flex-1 relative overflow-y-auto">
-                  {isEbook && course?.ebookUrl ? (
+                  {course?.contentType === 'ebook' && course?.ebookUrl ? (
                       <PdfViewerClient fileUrl={course.ebookUrl} />
                   ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
-                    <div className="absolute inset-0">
+                    <div className="absolute inset-0 bg-slate-950">
                        <ReactPlayer
                            url={activeLecture.contentUrl}
                            width="100%"
                            height="100%"
                            controls={true}
-                           playing={false}
+                           playing={true}
+                           config={{ file: { attributes: { controlsList: 'nodownload' } } }}
                        />
                     </div>
                   ) : activeLecture?.type === 'pdf' && activeLecture.contentUrl ? (
                      <PdfViewerClient fileUrl={activeLecture.contentUrl} />
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
-                      <div className="p-8 text-slate-300 prose prose-invert max-w-none">
+                      <div className="p-8 md:p-12 text-slate-300 prose prose-invert max-w-4xl mx-auto">
                           <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
                       </div>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400 font-medium">
-                        Sélectionnez une leçon dans le menu pour commencer.
-                    </div>
+                    <VideoPlaceholder />
                   )}
                 </div>
-                 <div className="p-6 bg-[#121212] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <div className="flex-1">
-                        <h1 className="font-bold text-xl text-white">{activeLecture?.title || 'Bienvenue sur votre formation'}</h1>
-                        <p className="text-sm text-slate-400 mt-1 line-clamp-1">{course?.title}</p>
+
+                {/* --- CONTROLS ZONE --- */}
+                 <div className="p-6 bg-[#121212] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+                    <div className="flex-1 overflow-hidden">
+                        <h1 className="font-bold text-xl text-white truncate">{activeLecture?.title || 'Chargement du savoir...'}</h1>
+                        <div className="flex items-center gap-2 text-sm text-slate-400 mt-1">
+                            <Info className="h-3.5 w-3.5" />
+                            <span className="truncate">{course?.title}</span>
+                        </div>
                     </div>
                     
                     <div className="flex items-center gap-3 w-full sm:w-auto">
                         <Button 
                             variant="secondary" 
                             onClick={handleAskMathias}
-                            className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white border-slate-700"
+                            className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white border-slate-700 h-11"
                         >
-                            <Bot className="h-4 w-4 mr-2 text-primary" />
-                            Demander à Mathias
+                            <Bot className="h-5 w-5 mr-2 text-primary" />
+                            Aide de Mathias
                         </Button>
                         
-                        {!isEbook && activeLecture && (
+                        {activeLecture && (
                            <Button 
                                onClick={handleLessonComplete} 
                                disabled={completedLessons.includes(activeLecture.id)}
                                className={cn(
-                                   "flex-1 sm:flex-none",
-                                   completedLessons.includes(activeLecture.id) ? "bg-green-600/20 text-green-400" : "bg-primary hover:bg-primary/90"
+                                   "flex-1 sm:flex-none h-11 px-6 font-bold transition-all",
+                                   completedLessons.includes(activeLecture.id) 
+                                    ? "bg-green-600/20 text-green-400 border border-green-500/30 hover:bg-green-600/30" 
+                                    : "bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20"
                                )}
                            >
-                               <CheckCircle className="h-4 w-4 mr-2" />
-                               {completedLessons.includes(activeLecture.id) ? "Terminée" : "Marquer comme terminée"}
+                               <CheckCircle className="h-5 w-5 mr-2" />
+                               {completedLessons.includes(activeLecture.id) ? "Validée" : "Marquer comme terminé"}
                            </Button>
                         )}
                     </div>
