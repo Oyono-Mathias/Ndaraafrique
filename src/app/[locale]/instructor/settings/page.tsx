@@ -29,7 +29,6 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { 
   Loader2, 
   User, 
-  Briefcase, 
   Camera, 
   Linkedin, 
   Twitter, 
@@ -68,7 +67,6 @@ export default function InstructorSettingsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
 
-  // Utilisation de useDoc pour le temps réel
   const userRef = useMemo(() => currentUser ? doc(db, 'users', currentUser.uid) : null, [db, currentUser]);
   const { data: userData, isLoading: userDataLoading } = useDoc<NdaraUser>(userRef);
 
@@ -88,7 +86,6 @@ export default function InstructorSettingsPage() {
     },
   });
 
-  // Synchronisation du formulaire avec les données Firestore en temps réel
   useEffect(() => {
     if (userData) {
       form.reset({
@@ -108,20 +105,39 @@ export default function InstructorSettingsPage() {
 
   const handleAvatarUpload = async (croppedImage: File) => {
     if (!currentUser) return;
+    
     setImageToCrop(null);
     setIsUploading(true);
 
-    const storage = getStorage();
-    const storageRef = ref(storage, `avatars/${currentUser.uid}/profile_${Date.now()}.webp`);
-
     try {
+      const storage = getStorage();
+      const fileName = `profile_${Date.now()}.webp`;
+      const storageRef = ref(storage, `avatars/${currentUser.uid}/${fileName}`);
+
+      console.log("Démarrage de l'upload vers Firebase Storage...");
       const snapshot = await uploadBytes(storageRef, croppedImage);
+      
+      console.log("Récupération de l'URL de téléchargement...");
       const downloadURL = await getDownloadURL(snapshot.ref);
-      await updateDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL });
-      toast({ title: "Photo de profil mise à jour" });
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de téléverser l'image." });
+      
+      console.log("Mise à jour du document utilisateur dans Firestore...");
+      await updateDoc(doc(db, 'users', currentUser.uid), { 
+        profilePictureURL: downloadURL 
+      });
+
+      toast({ 
+        title: "Photo de profil mise à jour", 
+        description: "Votre nouvel avatar a été enregistré avec succès." 
+      });
+    } catch (error: any) {
+      console.error("Erreur critique lors de l'upload de l'avatar :", error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Échec de l\'upload', 
+        description: error.message || "Une erreur inconnue est survenue. Vérifiez votre connexion." 
+      });
     } finally {
+      // On s'assure que le loader s'arrête systématiquement
       setIsUploading(false);
     }
   };
@@ -144,9 +160,13 @@ export default function InstructorSettingsPage() {
         'pedagogicalPreferences.aiAssistanceEnabled': values.aiAssistance,
       });
       toast({ title: "Paramètres enregistrés avec succès" });
-    } catch (error) {
-      console.error("Save error:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: "Une erreur est survenue lors de la sauvegarde." });
+    } catch (error: any) {
+      console.error("Erreur lors de la sauvegarde des paramètres :", error);
+      toast({ 
+        variant: 'destructive', 
+        title: 'Erreur', 
+        description: "Impossible de sauvegarder vos modifications." 
+      });
     } finally {
       setIsSaving(false);
     }
@@ -165,7 +185,10 @@ export default function InstructorSettingsPage() {
       <ImageCropper 
         image={imageToCrop}
         onCropComplete={handleAvatarUpload}
-        onClose={() => setImageToCrop(null)}
+        onClose={() => {
+          setImageToCrop(null);
+          setIsUploading(false);
+        }}
       />
 
       <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -184,7 +207,6 @@ export default function InstructorSettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           
-          {/* --- SECTION 1: PROFIL PROFESSIONNEL --- */}
           <Card className="bg-slate-800/50 border-slate-700/80 shadow-xl">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
@@ -211,7 +233,12 @@ export default function InstructorSettingsPage() {
                       type="file" 
                       accept="image/*" 
                       className="hidden" 
-                      onChange={(e) => e.target.files?.[0] && setImageToCrop(URL.createObjectURL(e.target.files[0]))}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          setImageToCrop(URL.createObjectURL(file));
+                        }
+                      }}
                       disabled={isUploading}
                     />
                   </label>
@@ -274,7 +301,6 @@ export default function InstructorSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* --- SECTION 2: RÉSEAUX SOCIAUX --- */}
           <Card className="bg-slate-800/50 border-slate-700/80 shadow-lg">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-white">
@@ -326,7 +352,6 @@ export default function InstructorSettingsPage() {
             </CardContent>
           </Card>
 
-          {/* --- SECTION 3: PRÉFÉRENCES & IA --- */}
           <div className="grid md:grid-cols-2 gap-6">
             <Card className="bg-slate-800/50 border-slate-700/80 shadow-lg">
               <CardHeader>
@@ -407,7 +432,7 @@ export default function InstructorSettingsPage() {
             <Button 
               type="submit" 
               size="lg" 
-              disabled={isSaving} 
+              disabled={isSaving || isUploading} 
               className="h-12 px-10 shadow-2xl shadow-primary/30 text-base font-bold"
             >
               {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
