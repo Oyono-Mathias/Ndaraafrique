@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -28,19 +27,16 @@ export function StudentDashboard() {
 
     setIsLoading(true);
 
-    // 1. Listen for enrollments and progress simultaneously
     const enrollmentsQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
     const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
 
     const unsubEnrollments = onSnapshot(enrollmentsQuery, async (enrollSnap) => {
         const enrollments = enrollSnap.docs.map(d => ({ id: d.id, ...d.data() } as Enrollment));
         
-        // Listen for progress to diff unstarted courses
         const unsubProgress = onSnapshot(progressQuery, async (progressSnap) => {
             const progressDocs = progressSnap.docs.map(d => d.data() as CourseProgress);
             const startedCourseIds = new Set(progressDocs.map(p => p.courseId));
             
-            // Stats calculation
             const completed = progressDocs.filter(p => p.progressPercent === 100).length;
             const totalProgress = progressDocs.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0);
             const avg = progressDocs.length > 0 ? Math.round(totalProgress / progressDocs.length) : 0;
@@ -51,19 +47,18 @@ export function StudentDashboard() {
                 avgProgress: avg
             });
 
-            // "Nouveaux cours" logic: enrolled but not started (no progress doc)
             const unstartedEnrollments = enrollments.filter(e => !startedCourseIds.has(e.courseId));
             
             if (unstartedEnrollments.length > 0) {
                 const unstartedCourseIds = unstartedEnrollments.map(e => e.courseId);
                 const coursesRef = collection(db, 'courses');
+                // Firestore limit for 'in' is 30
                 const qCourses = query(coursesRef, where(documentId(), 'in', unstartedCourseIds.slice(0, 30)));
                 const coursesSnap = await getDocs(qCourses);
-                const courses = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Course));
-                setNewEnrollments(courses);
+                const fetchedCourses = coursesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Course));
+                setNewEnrollments(fetchedCourses);
 
-                // Fetch instructors for these courses
-                const instructorIds = [...new Set(courses.map(c => c.instructorId))];
+                const instructorIds = [...new Set(fetchedCourses.map(c => c.instructorId))];
                 if (instructorIds.length > 0) {
                     const usersRef = collection(db, 'users');
                     const qInstructors = query(usersRef, where('uid', 'in', instructorIds.slice(0, 30)));

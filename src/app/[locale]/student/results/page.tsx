@@ -70,7 +70,7 @@ export default function StudentResultsPage() {
                 {results.map((result) => {
                   const scoreValue = result.score || 0;
                   const isSuccess = scoreValue >= 70;
-                  // ✅ Sécurisation de la date Firestore
+                  // ✅ Sécurisation de la date Firestore pour le build Vercel
                   const submittedAt = (result.submittedAt as any)?.toDate?.() || new Date();
                   
                   return (

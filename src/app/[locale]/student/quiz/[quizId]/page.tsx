@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -54,7 +53,6 @@ export default function TakeQuizPage() {
     const fetchQuizData = async () => {
       setIsLoading(true);
       try {
-        // Recherche du quiz par son ID dans tout le groupe de collections 'quizzes'
         const quizQuery = query(collectionGroup(db, 'quizzes'), where('__name__', '==', quizId));
         const quizSnap = await getDocs(quizQuery);
 
@@ -68,8 +66,7 @@ export default function TakeQuizPage() {
         const quizData = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuiz(quizData);
 
-        // Récupération des questions dans la sous-collection du quiz trouvé
-        const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions'), where('text', '!=', ''))); // 'order' si existant
+        const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions')));
         const fetchedQuestions = questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question));
         setQuestions(fetchedQuestions.sort((a, b) => (a.order || 0) - (b.order || 0)));
 
@@ -113,7 +110,6 @@ export default function TakeQuizPage() {
     const result = { score: correctCount, total: questions.length, percentage };
 
     try {
-      // Enregistrement dans la collection quiz_submissions
       await addDoc(collection(db, 'quiz_submissions'), {
         quizId: quiz.id,
         quizTitle: quiz.title,
