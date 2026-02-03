@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -24,7 +23,8 @@ import { Loader2, CheckCircle } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { CourseSidebar } from '@/components/CourseSidebar';
+// 👇 CORRECTION ICI : On utilise l'alias global @/components
+import { CourseSidebar } from '@/components/CourseSidebar'; 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
@@ -78,7 +78,6 @@ function CoursePlayerPageContent() {
       }
       setLecturesMap(lecturesData);
       
-      // Utilisation du chaînage optionnel ?. et d'une valeur par défaut 0
     const firstSectionId = fetchedSections[0]?.id;
     const firstSectionLectures = firstSectionId ? lecturesData.get(firstSectionId) : null;
 
@@ -202,7 +201,7 @@ function CoursePlayerPageContent() {
                      <PdfViewerClient fileUrl={activeLecture.contentUrl} />
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
                       <div className="p-8 text-slate-300 prose prose-invert max-w-none">
-                         <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
+                          <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
                       </div>
                   ) : (
                     <div className="h-full flex items-center justify-center text-slate-400">
