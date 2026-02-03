@@ -1,30 +1,31 @@
-
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Playfair_Display } from "next/font/google";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeProvider } from "@/components/providers";
-
-export const metadata: Metadata = {
-  title: "Ndara Afrique - L'excellence par le savoir",
-  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Payez facilement par Mobile Money.",
-  keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'cours en français', 'udemy afrique'],
-  manifest: '/manifest.json',
-};
-
-export const viewport: Viewport = {
-  width: 'device-width',
-  initialScale: 1,
-  maximumScale: 1,
-  themeColor: '#4F46E5',
-};
 
 const fontSans = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
 });
 
+const fontSerif = Playfair_Display({
+  subsets: ["latin"],
+  variable: "--font-serif",
+});
+
+export const metadata: Metadata = {
+  title: "Ndara Afrique - L'excellence par le savoir",
+  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux. Style Vintage & Organique.",
+  keywords: ['formation en ligne', 'e-learning afrique', 'compétences numériques', 'vintage style'],
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#CC7722',
+};
 
 export default function RootLayout({
   children,
@@ -36,13 +37,14 @@ export default function RootLayout({
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
+          fontSans.variable,
+          fontSerif.variable
         )}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="light"
+          enableSystem={false}
           disableTransitionOnChange
         >
           {children}

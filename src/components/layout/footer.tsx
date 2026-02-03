@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -8,54 +7,55 @@ import { WhatsAppIcon } from '../icons/WhatsAppIcon';
 
 export function Footer() {
   return (
-    <footer className="mt-32 border-t border-slate-800 bg-background pt-16 pb-8">
-      <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 gap-12 text-center md:grid-cols-3 md:text-left">
-          {/* Col 1: Branding */}
-          <div className="flex flex-col items-center md:items-start">
-            <Link href="/" className="flex items-center gap-3 group mb-4">
-              <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
-              <span className="text-xl font-bold text-white transition-colors group-hover:text-primary">
+    <footer className="mt-32 border-t border-border/40 bg-muted/20 pt-20 pb-12">
+      <div className="container mx-auto px-6">
+        <div className="grid grid-cols-1 gap-16 md:grid-cols-4">
+          {/* Brand */}
+          <div className="md:col-span-2">
+            <Link href="/" className="flex items-center gap-3 group mb-6">
+              <div className="bg-primary p-1 rounded-lg">
+                <Image src="/icon.svg" alt="Ndara Logo" width={28} height={24} className="brightness-0 invert" />
+              </div>
+              <span className="text-2xl font-serif text-foreground">
                 Ndara Afrique
               </span>
             </Link>
-            <p className="text-sm text-slate-400 max-w-xs">
-              L'excellence par le savoir, pour l'Afrique de demain.
+            <p className="text-muted-foreground max-w-sm leading-relaxed text-lg italic">
+              "Le savoir est une richesse qui s'accroît quand on la partage."
             </p>
           </div>
 
-          {/* Col 2: Navigation */}
-          <div>
-            <h4 className="font-bold text-white mb-4 text-sm tracking-wider">Navigation</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link href="/search" className="text-slate-400 transition-colors hover:text-primary">Explorer les cours</Link></li>
-              <li><Link href="/abonnements" className="text-slate-400 transition-colors hover:text-primary">Tarifs</Link></li>
-              <li><Link href="/about" className="text-slate-400 transition-colors hover:text-primary">À propos de nous</Link></li>
+          {/* Links */}
+          <div className="space-y-6">
+            <h4 className="font-serif text-xl text-foreground">Navigation</h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li><Link href="/search" className="text-muted-foreground hover:text-primary transition-colors">Explorer les cours</Link></li>
+              <li><Link href="/abonnements" className="text-muted-foreground hover:text-primary transition-colors">Nos Tarifs</Link></li>
+              <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">À propos</Link></li>
             </ul>
           </div>
 
-          {/* Col 3: Légal */}
-          <div>
-            <h4 className="font-bold text-white mb-4 text-sm tracking-wider">Légal</h4>
-            <ul className="space-y-3 text-sm">
-              <li><Link href="/cgu" className="text-slate-400 transition-colors hover:text-primary">Conditions d'Utilisation</Link></li>
-              <li><Link href="/mentions-legales" className="text-slate-400 transition-colors hover:text-primary">Politique de Confidentialité</Link></li>
-              <li><a href="mailto:support@ndara-afrique.com" className="text-slate-400 transition-colors hover:text-primary">Nous contacter</a></li>
+          <div className="space-y-6">
+            <h4 className="font-serif text-xl text-foreground">Légal</h4>
+            <ul className="space-y-4 text-sm font-medium">
+              <li><Link href="/cgu" className="text-muted-foreground hover:text-primary transition-colors">Conditions d'Utilisation</Link></li>
+              <li><Link href="/mentions-legales" className="text-muted-foreground hover:text-primary transition-colors">Confidentialité</Link></li>
+              <li><a href="mailto:contact@ndara-afrique.com" className="text-muted-foreground hover:text-primary transition-colors">Contact</a></li>
             </ul>
           </div>
         </div>
 
-        <div className="mt-16 pt-8 border-t border-slate-800 flex flex-col-reverse items-center justify-between gap-6 sm:flex-row">
-          <p className="text-xs text-slate-500">© {new Date().getFullYear()} Ndara Afrique. Tous droits réservés.</p>
-          <div className="flex gap-4">
-            <a href="#" aria-label="Facebook" className="text-slate-400 transition-colors hover:text-white"><Facebook className="h-5 w-5"/></a>
-            <a href="#" aria-label="LinkedIn" className="text-slate-400 transition-colors hover:text-white"><Linkedin className="h-5 w-5"/></a>
-            <a href="#" aria-label="WhatsApp" className="text-slate-400 transition-colors hover:text-white"><WhatsAppIcon className="h-5 w-5"/></a>
+        <div className="mt-20 pt-8 border-t border-border/40 flex flex-col-reverse items-center justify-between gap-8 sm:flex-row">
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground/60">
+            © {new Date().getFullYear()} Ndara Afrique. Fait avec passion pour le continent.
+          </p>
+          <div className="flex gap-6">
+            <a href="#" className="text-muted-foreground hover:text-primary transition-all hover:scale-110"><Facebook className="h-5 w-5"/></a>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-all hover:scale-110"><Linkedin className="h-5 w-5"/></a>
+            <a href="#" className="text-muted-foreground hover:text-primary transition-all hover:scale-110"><WhatsAppIcon className="h-5 w-5"/></a>
           </div>
         </div>
       </div>
     </footer>
   );
 }
-
-    

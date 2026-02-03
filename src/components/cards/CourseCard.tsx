@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -7,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Play, Award } from 'lucide-react';
+import { Star, Award } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface CourseCardProps {
@@ -17,10 +16,10 @@ interface CourseCardProps {
 }
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
-    <div className="flex items-center gap-1.5 text-sm text-slate-400">
-        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-        <span className="font-bold text-slate-200">{rating.toFixed(1)}</span>
-        <span className="text-xs">({reviewCount.toLocaleString()})</span>
+    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Star className="w-4 h-4 fill-primary/80 text-primary/80" />
+        <span className="font-bold text-foreground">{rating.toFixed(1)}</span>
+        <span className="text-[10px] opacity-60">({reviewCount.toLocaleString()})</span>
     </div>
 );
 
@@ -28,65 +27,59 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
   const progress = course.progress ?? 0;
   const isStudentView = variant === 'student';
 
-  const progressColorClass = cn({
-    "bg-red-500": progress < 40,
-    "bg-amber-500": progress >= 40 && progress < 80,
-    "bg-green-500": progress >= 80,
-  });
-
   return (
     <Link href={`/courses/${course.id}`} className="block group w-full h-full">
-      <div className="bg-slate-800/50 rounded-2xl border border-slate-700/80 overflow-hidden h-full flex flex-col transition-all duration-300 hover:border-primary/50 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-1">
-        <div className="relative aspect-video overflow-hidden">
+      <div className="organic-card rounded-3xl overflow-hidden h-full flex flex-col group-hover:border-primary/20">
+        <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           <Image
-            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
+            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/450`}
             alt={course.title}
             fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            className="object-cover transition-transform duration-700 group-hover:scale-110 sepia-[0.2] contrast-[1.1]"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent" />
           
           {(course.isPopular || course.price === 0) && (
-             <Badge variant={course.price === 0 ? "success" : "default"} className={cn("absolute top-3 left-3", course.price === 0 ? "bg-green-500/20 text-green-300 border-green-400/30" : "bg-primary/20 text-primary-foreground border-primary/30")}>
-                {course.price === 0 ? "Gratuit" : "Populaire"}
+             <Badge className={cn("absolute top-4 left-4 font-bold border-none", course.price === 0 ? "bg-accent text-accent-foreground" : "bg-primary text-primary-foreground")}>
+                {course.price === 0 ? "GRATUIT" : "POPULAIRE"}
             </Badge>
           )}
-
         </div>
 
-        <div className="p-4 flex flex-col flex-grow">
-          <h3 className="font-bold text-lg text-slate-100 line-clamp-2 leading-tight h-[56px]">{course.title}</h3>
+        <div className="p-6 flex flex-col flex-grow bg-card">
+          <h3 className="font-serif text-2xl text-foreground line-clamp-2 leading-[1.2] mb-4 group-hover:text-primary transition-colors">{course.title}</h3>
           
           {instructor?.fullName && (
-             <div className="flex items-center gap-2 mt-3">
-                <Avatar className="h-7 w-7 border border-slate-700">
+             <div className="flex items-center gap-3 mt-auto">
+                <Avatar className="h-8 w-8 border border-border">
                     <AvatarImage src={instructor.profilePictureURL} />
-                    <AvatarFallback className="text-xs bg-slate-700 text-slate-300">{instructor.fullName?.charAt(0)}</AvatarFallback>
+                    <AvatarFallback className="text-[10px] bg-muted">{instructor.fullName?.charAt(0)}</AvatarFallback>
                 </Avatar>
-                <p className="text-sm text-slate-400 truncate">{instructor.fullName}</p>
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest">{instructor.fullName}</p>
             </div>
           )}
           
-          <div className="flex-grow" />
-
-          <div className="mt-4">
+          <div className="mt-6 pt-6 border-t border-border/40">
             {isStudentView ? (
               progress === 100 ? (
-                <div className="flex items-center gap-2 text-green-400 font-semibold">
+                <div className="flex items-center gap-2 text-accent font-bold">
                   <Award className="h-5 w-5" />
-                  <span>Terminé !</span>
+                  <span className="uppercase tracking-widest text-xs">Certifié !</span>
                 </div>
               ) : (
-                <div>
-                    <Progress value={progress} className="h-1.5" indicatorClassName={progressColorClass} />
-                    <p className="text-xs text-right text-slate-400 mt-1.5">{progress}%</p>
+                <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                        <span>Progression</span>
+                        <span>{progress}%</span>
+                    </div>
+                    <Progress value={progress} className="h-1.5 bg-muted" indicatorClassName="bg-primary" />
                 </div>
               )
             ) : (
               <div className="flex items-center justify-between">
-                <StarRating rating={4.7} reviewCount={1234} />
-                <p className="font-extrabold text-xl text-white">
+                <StarRating rating={4.8} reviewCount={856} />
+                <p className="font-serif text-2xl text-foreground">
                   {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}
                 </p>
               </div>

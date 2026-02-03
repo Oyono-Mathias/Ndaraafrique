@@ -1,4 +1,3 @@
-
 import type {Config} from 'tailwindcss';
 import { fontFamily } from "tailwindcss/defaultTheme"
 
@@ -16,17 +15,9 @@ export default {
       },
     },
     extend: {
-      screens: {
-        'xs': '480px',
-        'sm': '640px',
-        'md': '768px',
-        'lg': '1024px',
-        'xl': '1280px',
-        '2xl': '1536px',
-        'tv': '1920px',
-      },
       fontFamily: {
         sans: ["var(--font-sans)", ...fontFamily.sans],
+        serif: ["var(--font-serif)", ...fontFamily.serif],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -62,20 +53,12 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        'mtn-yellow': '#ffcb05',
-        'orange-money': '#ff7900',
-        'wave-blue': '#41d7c8',
       },
       borderRadius: {
-        xl: "calc(var(--radius) + 8px)",
+        xl: "var(--radius)",
         lg: "var(--radius)",
         md: "calc(var(--radius) - 4px)",
         sm: "calc(var(--radius) - 8px)",
-      },
-      boxShadow: {
-        'card': '0 4px 14px 0 rgba(0, 0, 0, 0.05)',
-        'card-hover': '0 6px 20px 0 rgba(0, 0, 0, 0.07)',
-        'cta': '0 4px 25px 0 hsla(var(--primary) / 0.3)',
       },
       keyframes: {
         'accordion-down': {
@@ -86,20 +69,10 @@ export default {
           from: { height: 'var(--radix-accordion-content-height)' },
           to: { height: '0' },
         },
-        'logoPulse': {
-          '0%, 100%': { transform: 'scale(1)', opacity: '1' },
-          '50%': { transform: 'scale(1.1)', opacity: '0.9' },
-        },
-        'logoSheen': {
-          '0%, 10%': { transform: 'translateX(-150%) skewX(-20deg)' },
-          '80%, 100%': { transform: 'translateX(150%) skewX(-20deg)' },
-        }
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'logoPulse': 'logoPulse 2.5s ease-in-out infinite',
-        'logoSheen': 'logoSheen 2.5s ease-in-out infinite',
       },
     },
   },
