@@ -23,8 +23,7 @@ import {
   Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { useCollection } from '@/firebase'; // ✅ Ajusté selon votre structure @/firebase
+import { useCollection } from '@/firebase';
 import { useMemo } from 'react';
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";

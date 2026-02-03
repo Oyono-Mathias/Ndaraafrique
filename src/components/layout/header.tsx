@@ -1,9 +1,8 @@
-
 'use client';
 
 import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { UserNav } from './user-nav';
+import { UserNav } from '@/components/layout/user-nav';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -69,6 +68,7 @@ const NotificationIcon = ({ type }: { type: Notification['type'] }) => {
 }
 
 const NotificationItem = ({ notif, onClick }: { notif: Notification, onClick: (notif: Notification) => void }) => {
+  const notifDate = (notif.createdAt as any)?.toDate?.();
   const content = (
     <div className="flex items-start gap-4 p-3 rounded-lg transition-colors hover:bg-muted/50 cursor-pointer">
       <div className="p-1 mt-1">
@@ -79,9 +79,7 @@ const NotificationItem = ({ notif, onClick }: { notif: Notification, onClick: (n
             {notif.text}
           </p>
           <p className="text-xs text-muted-foreground">
-            {notif.createdAt && typeof (notif.createdAt as any).toDate === 'function' 
-              ? formatDistanceToNow((notif.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
-              : ''}
+            {notifDate ? formatDistanceToNow(notifDate, { locale: fr, addSuffix: true }) : ''}
           </p>
        </div>
        {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}

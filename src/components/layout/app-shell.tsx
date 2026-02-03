@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
