@@ -23,8 +23,10 @@ import { Loader2, CheckCircle } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
-// 👇 CORRECTION ICI : On utilise l'alias global @/components
+
+// ✅ CORRECTION MAJEURE : On pointe vers le dossier global components
 import { CourseSidebar } from '@/components/CourseSidebar'; 
+
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
