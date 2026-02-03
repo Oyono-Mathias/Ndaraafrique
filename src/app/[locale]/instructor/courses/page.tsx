@@ -1,217 +1,142 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
+/**
+ * @fileOverview Liste des cours du formateur optimisée Android.
+ * Focus sur le statut et l'engagement (étudiants inscrits).
+ */
+
+import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, getCountFromServer, deleteDoc, doc, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { PlusCircle, Search, Users, BookOpen, Trash2, Edit } from 'lucide-react';
+import { Plus, Search, Users, BookOpen, MoreVertical, Edit3, Trash2 } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
-import { useToast } from '@/hooks/use-toast';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import Image from 'next/image';
+import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
-function InstructorCourseCard({ course, studentCount, onDelete }: { course: Course, studentCount: number, onDelete: (courseId: string) => void }) {
-  const [isAlertOpen, setIsAlertOpen] = useState(false);
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsAlertOpen(true);
-  };
-  
-  const confirmDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onDelete(course.id);
-    setIsAlertOpen(false);
-  }
-
-  return (
-    <>
-      <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700/80 overflow-hidden transition-all duration-300 hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-1.5 flex flex-col">
-        <Link href={`/instructor/courses/edit/${course.id}`} className="block">
-            <div className="aspect-video relative">
-                <Image
-                  src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
-                  alt={course.title}
-                  fill
-                  className="object-cover"
-                />
-            </div>
-        </Link>
-        <div className="p-5 flex flex-col flex-grow">
-          <h3 className="font-semibold text-lg text-slate-800 dark:text-slate-100 line-clamp-2 h-14">{course.title}</h3>
-          
-          <div className="flex items-center justify-between mt-4 text-sm text-slate-500 dark:text-slate-400">
-            <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                <span>{`${studentCount} étudiant(s)`}</span>
-            </div>
-            <span className="font-bold text-base text-slate-800 dark:text-white">{course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'Gratuit'}</span>
-          </div>
-        </div>
-        <div className="p-3 border-t border-slate-100 dark:border-slate-700/50 grid grid-cols-2 gap-2">
-             <Button variant="ghost" size="sm" className="w-full justify-center text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-primary" asChild>
-                <Link href={`/instructor/courses/edit/${course.id}`}><Edit className="h-4 w-4 mr-2" /> Éditer</Link>
-             </Button>
-             <Button variant="ghost" size="sm" className="w-full justify-center text-slate-600 hover:text-destructive dark:text-slate-300 dark:hover:text-destructive" onClick={handleDeleteClick}>
-                 <Trash2 className="h-4 w-4 mr-2" /> Supprimer
-             </Button>
-        </div>
-      </div>
-      
-      <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
-          <AlertDialogContent>
-              <AlertDialogHeader>
-                  <AlertDialogTitle>Confirmer la suppression ?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                      La suppression du cours "{course.title}" est définitive et irréversible.
-                  </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                  <AlertDialogCancel>Annuler</AlertDialogCancel>
-                  <AlertDialogAction onClick={confirmDelete} className="bg-destructive hover:bg-destructive/90">
-                      Supprimer
-                  </AlertDialogAction>
-              </AlertDialogFooter>
-          </AlertDialogContent>
-      </AlertDialog>
-    </>
-  );
-}
-
-export default function InstructorCoursesPage() {
-  const { currentUser, isUserLoading } = useRole();
+export default function InstructorCoursesAndroid() {
+  const { currentUser } = useRole();
   const db = getFirestore();
-  const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [courses, setCourses] = useState<Course[]>([]);
   const [enrollmentCounts, setEnrollmentCounts] = useState<Record<string, number>>({});
-
-  const coursesQuery = useMemo(
-    () => currentUser?.uid
-      ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid))
-      : null,
-    [db, currentUser?.uid]
-  );
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    if (!courses || courses.length === 0) return;
+    if (!currentUser?.uid) return;
 
-    const fetchEnrollments = async () => {
-        const courseIds = courses.map(c => c.id);
-        const counts: Record<string, number> = {};
+    setIsLoading(true);
+    const q = query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid));
 
-        for (let i = 0; i < courseIds.length; i += 30) {
-            const chunk = courseIds.slice(i, i + 30);
-            if(chunk.length > 0) {
-                const q = query(collection(db, 'enrollments'), where('courseId', 'in', chunk));
-                const snapshot = await getDocs(q);
-                snapshot.forEach(doc => {
-                    const enrollment = doc.data() as Enrollment;
-                    counts[enrollment.courseId] = (counts[enrollment.courseId] || 0) + 1;
-                });
-            }
-        }
-        setEnrollmentCounts(counts);
-    };
+    const unsubscribe = onSnapshot(q, async (snap) => {
+      const courseData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+      setCourses(courseData);
+      
+      // On récupère aussi les comptages d'étudiants en arrière-plan
+      if (courseData.length > 0) {
+          const counts: Record<string, number> = {};
+          const enrollQuery = query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid));
+          const enrollSnap = await getDocs(enrollQuery);
+          enrollSnap.forEach(doc => {
+              const e = doc.data() as Enrollment;
+              counts[e.courseId] = (counts[e.courseId] || 0) + 1;
+          });
+          setEnrollmentCounts(counts);
+      }
+      setIsLoading(false);
+    });
 
-    fetchEnrollments();
-  }, [courses, db]);
+    return () => unsubscribe();
+  }, [currentUser?.uid, db]);
 
   const filteredCourses = useMemo(() => {
-    if (!courses) return [];
-    return courses.filter(course =>
-      course.title?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return courses.filter(c => c.title.toLowerCase().includes(searchTerm.toLowerCase()));
   }, [courses, searchTerm]);
-  
-  const handleDeleteCourse = async (courseId: string) => {
-    try {
-        await deleteDoc(doc(db, 'courses', courseId));
-        toast({
-            title: "Cours supprimé",
-            description: "Le cours a été retiré de la plateforme.",
-        });
-    } catch (error) {
-        console.error("Error deleting course:", error);
-        toast({
-            variant: "destructive",
-            title: "Erreur",
-            description: "Impossible de supprimer le cours.",
-        });
-    }
-  };
-
-  const isLoading = isUserLoading || coursesLoading;
 
   return (
-    <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
-      <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-        <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Mes Cours</h1>
-            <p className="text-slate-500 dark:text-slate-400">Gérez et développez vos formations.</p>
+    <div className="flex flex-col gap-6 p-4 pb-24 relative min-h-screen">
+      <header className="pt-2 space-y-4">
+        <h1 className="text-2xl font-black text-white">Mes Cours</h1>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Input 
+            placeholder="Rechercher un cours..." 
+            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-         <Button asChild className="h-11 shadow-lg shadow-primary/20">
-            <Link href="/instructor/courses/create">
-                <PlusCircle className="mr-2 h-5 w-5" />
-                Créer un nouveau cours
-            </Link>
-         </Button>
       </header>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-        <Input
-          placeholder="Rechercher un cours par titre..."
-          className="h-12 pl-12 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-base placeholder:text-slate-500 focus-visible:ring-primary/80"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
-
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {[...Array(4)].map((_, i) => (
-            <Skeleton key={i} className="h-[350px] w-full rounded-2xl bg-slate-200 dark:bg-slate-800" />
-          ))}
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-2xl bg-slate-900" />)}
         </div>
       ) : filteredCourses.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid gap-4">
           {filteredCourses.map(course => (
-            <InstructorCourseCard 
-                key={course.id} 
-                course={course} 
-                studentCount={enrollmentCounts[course.id] || 0}
-                onDelete={handleDeleteCourse} 
-            />
+            <CardCourse key={course.id} course={course} students={enrollmentCounts[course.id] || 0} />
           ))}
         </div>
       ) : (
-        <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl mt-10 flex flex-col items-center">
-          <BookOpen className="mx-auto h-16 w-16 text-slate-400" />
-          <h3 className="mt-4 text-xl font-semibold text-slate-700 dark:text-slate-300">Vous n’avez pas encore créé de cours</h3>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-sm">Commencez à partager votre savoir en créant votre première formation dès aujourd'hui.</p>
-           <Button asChild className="mt-6">
-            <Link href="/instructor/courses/create">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Créer votre premier cours
-            </Link>
-         </Button>
+        <div className="flex flex-col items-center justify-center py-20 text-center text-slate-500 bg-slate-900/20 rounded-3xl border border-dashed border-slate-800">
+          <BookOpen className="h-12 w-12 mb-4 opacity-20" />
+          <p className="text-sm font-medium">Vous n'avez pas encore créé de cours.</p>
+          <Button asChild className="mt-4 rounded-xl px-6">
+              <Link href="/instructor/courses/create">Créer mon premier cours</Link>
+          </Button>
         </div>
       )}
-      
-      <Button asChild className="fixed bottom-6 right-6 h-16 w-16 rounded-full shadow-lg bg-primary hover:bg-primary/90 md:hidden z-20">
+
+      {/* --- BOUTON FLOTTANT (FAB) ANDROID --- */}
+      <Button asChild className="fixed bottom-20 right-6 h-14 w-14 rounded-full shadow-2xl shadow-primary/40 bg-primary hover:bg-primary/90 z-50 transition-transform active:scale-95">
         <Link href="/instructor/courses/create">
-          <PlusCircle className="h-8 w-8" />
-          <span className="sr-only">Créer un nouveau cours</span>
+          <Plus className="h-8 w-8 text-white" />
+          <span className="sr-only">Nouveau cours</span>
         </Link>
       </Button>
     </div>
   );
+}
+
+function CardCourse({ course, students }: { course: Course, students: number }) {
+    const statusLabel = course.status === 'Published' ? 'Publié' : course.status === 'Pending Review' ? 'En revue' : 'Brouillon';
+    const statusColor = course.status === 'Published' ? 'bg-green-500/10 text-green-400' : course.status === 'Pending Review' ? 'bg-amber-500/10 text-amber-400' : 'bg-slate-500/10 text-slate-400';
+
+    return (
+        <Card className="bg-slate-900 border-slate-800 overflow-hidden">
+            <CardContent className="p-0 flex items-stretch h-36">
+                <div className="relative w-32 flex-shrink-0 bg-slate-800">
+                    <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/200/200`} alt={course.title} fill className="object-cover" />
+                </div>
+                <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
+                    <div>
+                        <Badge className={cn("text-[10px] uppercase font-bold px-2 py-0 border-none mb-2", statusColor)}>
+                            {statusLabel}
+                        </Badge>
+                        <h3 className="text-sm font-bold text-white line-clamp-2 leading-snug">{course.title}</h3>
+                    </div>
+                    <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center gap-1.5 text-slate-500">
+                            <Users className="h-3.5 w-3.5" />
+                            <span className="text-xs font-bold">{students} <span className="font-normal opacity-60">étudiants</span></span>
+                        </div>
+                        <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" asChild>
+                                <Link href={`/instructor/courses/edit/${course.id}`}><Edit3 className="h-4 w-4" /></Link>
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/10">
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+    );
 }

@@ -1,235 +1,167 @@
+
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+/**
+ * @fileOverview Gestion financière Formateur Android-First.
+ * Vision claire du solde et interface simplifiée pour les retraits.
+ */
+
+import { useState, useEffect, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer, Tooltip } from 'recharts';
+import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { format, startOfMonth, isSameMonth } from 'date-fns';
-import { fr } from 'date-fns/locale';
-import { useToast } from '@/hooks/use-toast';
-import { DollarSign, Wallet, Calendar, Loader2, TrendingUp, Info } from 'lucide-react';
-import type { Payment, Payout } from '@/lib/types';
+import { Wallet, DollarSign, TrendingUp, ArrowUpRight, History, Clock, CheckCircle2, XCircle } from 'lucide-react';
 import { requestPayout } from '@/actions/payoutActions';
-import { StatCard } from '@/components/dashboard/StatCard';
-import { SectionHeader } from '@/components/dashboard/SectionHeader';
-import { EmptyState } from '@/components/dashboard/EmptyState';
+import { useToast } from '@/hooks/use-toast';
+import type { Payment, Payout } from '@/lib/types';
+import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
-interface RevenueDataPoint {
-  month: string;
-  revenue: number;
-}
-
-export default function RevenusPage() {
-    const { currentUser: instructor, isUserLoading, role } = useRole();
+export default function InstructorRevenueAndroid() {
+    const { currentUser: instructor, isUserLoading } = useRole();
     const db = getFirestore();
     const { toast } = useToast();
 
     const [payments, setPayments] = useState<Payment[]>([]);
     const [payouts, setPayouts] = useState<Payout[]>([]);
-    const [chartData, setChartData] = useState<RevenueDataPoint[]>([]);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    
-    const [payoutAmount, setPayoutAmount] = useState('');
-    const [isSubmittingPayout, setIsSubmittingPayout] = useState(false);
-
-    const stats = useMemo(() => {
-        const totalRevenue = payments.reduce((sum, p) => sum + p.amount, 0);
-        const now = new Date();
-        const monthlyRevenue = payments
-            .filter(p => {
-                const pDate = (p.date as any)?.toDate?.() || null;
-                return pDate && isSameMonth(pDate, now);
-            })
-            .reduce((sum, p) => sum + p.amount, 0);
-
-        const totalPayouts = payouts
-            .filter(p => p.status === 'valide' || p.status === 'en_attente')
-            .reduce((sum, p) => sum + p.amount, 0);
-            
-        const availableBalance = totalRevenue - totalPayouts;
-
-        return { totalRevenue, monthlyRevenue, availableBalance };
-    }, [payments, payouts]);
 
     useEffect(() => {
-        if (!instructor?.uid || isUserLoading || role !== 'instructor') {
-            if (!isUserLoading) setIsLoading(false);
-            return;
-        }
-        
+        if (!instructor?.uid) return;
+
         setIsLoading(true);
+        const instructorId = instructor.uid;
 
-        const paymentsQuery = query(
-           collection(db, 'payments'),
-            where('userId', '==', instructor.uid), 
-            where('status', '==', 'Completed')
+        // Écoute des paiements réussis
+        const unsubPayments = onSnapshot(
+            query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'Completed')),
+            (snap) => {
+                setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
+            }
         );
 
-        const payoutsQuery = query(
-            collection(db, 'payouts'),
-            where('instructorId', '==', instructor.uid)
+        // Écoute des demandes de retrait
+        const unsubPayouts = onSnapshot(
+            query(collection(db, 'payouts'), where('instructorId', '==', instructorId)),
+            (snap) => {
+                setPayouts(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payout)).sort((a, b) => (b.date as any)?.toDate() - (a.date as any)?.toDate()));
+                setIsLoading(false);
+            }
         );
 
-        const unsubscribePayments = onSnapshot(paymentsQuery, (snapshot) => {
-            const fetchedPayments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment));
-            
-            setPayments(fetchedPayments.sort((a, b) => {
-                const dateB = (b.date as any)?.toDate?.()?.getTime() || 0;
-                const dateA = (a.date as any)?.toDate?.()?.getTime() || 0;
-                return dateB - dateA;
-            }));
-            
-            const monthlyAggregates: Record<string, number> = {};
-            fetchedPayments.forEach(p => {
-                const pDate = (p.date as any)?.toDate?.() || null;
-                if (pDate) {
-                    const monthKey = format(pDate, 'yyyy-MM');
-                    monthlyAggregates[monthKey] = (monthlyAggregates[monthKey] || 0) + p.amount;
-                }
-            });
-            const trendData = Object.keys(monthlyAggregates)
-                .sort()
-                .map(monthKey => ({
-                    month: format(new Date(monthKey + '-01'), 'MMM yy', { locale: fr }),
-                    revenue: monthlyAggregates[monthKey]
-                }));
-            setChartData(trendData);
-            setIsLoading(false);
-        }, (error) => {
-            console.error("Error fetching payments:", error);
-            setIsLoading(false);
-        });
-
-        const unsubscribePayouts = onSnapshot(payoutsQuery, (snapshot) => {
-            const fetchedPayouts = snapshot.docs.map(doc => doc.data() as Payout);
-            setPayouts(fetchedPayouts);
-        }, (error) => {
-            console.error("Error fetching payouts:", error);
-        });
-        
         return () => {
-            unsubscribePayments();
-            unsubscribePayouts();
+            unsubPayments();
+            unsubPayouts();
         };
+    }, [instructor?.uid, db]);
 
-    }, [instructor?.uid, isUserLoading, db, role]);
-
-    const handleRequestPayout = async () => {
-        const amount = parseFloat(payoutAmount);
-        if (!instructor || !amount || amount <= 0) {
-            toast({ variant: "destructive", title: "Montant invalide" });
-            return;
-        }
-        if (amount > stats.availableBalance) {
-            toast({ variant: "destructive", title: "Solde insuffisant" });
-            return;
-        }
+    const stats = useMemo(() => {
+        const totalEarned = payments.reduce((acc, p) => acc + p.amount, 0);
+        const totalWithdrawn = payouts
+            .filter(p => p.status === 'valide' || p.status === 'en_attente')
+            .reduce((acc, p) => acc + p.amount, 0);
         
-        setIsSubmittingPayout(true);
-        const result = await requestPayout({ instructorId: instructor.uid, amount });
+        return {
+            totalEarned,
+            balance: totalEarned - totalWithdrawn
+        };
+    }, [payments, payouts]);
+
+    const handlePayout = async () => {
+        if (stats.balance <= 5000) {
+            toast({ variant: 'destructive', title: "Seuil non atteint", description: "Le montant minimum pour un retrait est de 5 000 XOF." });
+            return;
+        }
+
+        setIsSubmitting(true);
+        const result = await requestPayout({ instructorId: instructor!.uid, amount: stats.balance });
         
         if (result.success) {
-            toast({ title: "Demande de retrait envoyée", description: "Votre demande sera traitée bientôt." });
-            setPayoutAmount('');
+            toast({ title: "Demande envoyée !", description: "Votre retrait sera traité sous 48h." });
         } else {
-            toast({ variant: "destructive", title: "Erreur", description: result.error });
+            toast({ variant: 'destructive', title: "Erreur", description: result.error });
         }
-        setIsSubmittingPayout(false);
-    };
-    
-    const chartConfig = {
-        revenue: { label: "Revenus", color: 'hsl(var(--primary))' },
+        setIsSubmitting(false);
     };
 
     return (
-      <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
-        <header>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Mes Revenus</h1>
-            <p className="text-slate-500 dark:text-muted-foreground">Suivez vos gains et gérez vos paiements.</p>
-        </header>
+        <div className="flex flex-col gap-8 p-4 pb-24">
+            <header className="pt-2">
+                <h1 className="text-2xl font-black text-white">Mes Revenus</h1>
+                <p className="text-slate-400 text-sm mt-1">Gérez vos gains en toute transparence.</p>
+            </header>
 
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            <StatCard title="Solde disponible" value={`${stats.availableBalance.toLocaleString('fr-FR')} XOF`} icon={Wallet} isLoading={isLoading} />
-            <StatCard title="Revenus (ce mois-ci)" value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} icon={Calendar} isLoading={isLoading} />
-            <StatCard title="Revenus totaux" value={`${stats.totalRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
-        </section>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-                <SectionHeader title="Évolution des revenus" className="mb-4" />
-                <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
-                    <CardContent className="pt-6">
-                         {isLoading ? <Skeleton className="h-80 w-full bg-slate-200 dark:bg-slate-700" /> : chartData.length > 0 ? (
-                            <ChartContainer config={chartConfig} className="h-80 w-full">
-                                <BarChart data={chartData}>
-                                    <CartesianGrid vertical={false} className="stroke-slate-200 dark:stroke-slate-700"/>
-                                    <XAxis dataKey="month" tickLine={false} tickMargin={10} axisLine={false} className="fill-slate-500 dark:fill-slate-400 text-xs" />
-                                    <YAxis tickFormatter={(v) => `${Number(v) / 1000}k`} className="fill-slate-500 dark:fill-slate-400 text-xs"/>
-                                    <Tooltip content={<ChartTooltipContent indicator="dot" className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700" formatter={(v) => `${(v as number).toLocaleString('fr-FR')} XOF`} />} />
-                                    <Bar dataKey="revenue" fill="hsl(var(--primary))" radius={4} />
-                                </BarChart>
-                            </ChartContainer>
-                        ) : <EmptyState icon={TrendingUp} title="Graphique Indisponible" description="Les données sur vos revenus apparaîtront ici dès que vous réaliserez des ventes."/>}
-                    </CardContent>
-                </Card>
-            </div>
-            
-            <div className="lg:col-span-1">
-                 <SectionHeader title="Demande de retrait" className="mb-4" />
-                 <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
-                    <CardHeader><CardTitle className="text-base">Nouveau retrait</CardTitle><CardDescription>Le solde disponible peut être viré sur votre compte.</CardDescription></CardHeader>
-                    <CardContent className="space-y-4">
-                        <div>
-                            <p className="text-sm text-slate-500 dark:text-muted-foreground">Solde actuel</p>
-                            {isLoading ? <Skeleton className="h-8 w-32 mt-1 bg-slate-200 dark:bg-slate-700" /> : <p className="text-2xl font-bold text-slate-900 dark:text-white">{stats.availableBalance.toLocaleString('fr-FR')} XOF</p>}
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Montant</label>
-                            <Input type="number" placeholder="Ex: 50000" value={payoutAmount} onChange={e => setPayoutAmount(e.target.value)} disabled={isSubmittingPayout || isLoading}/>
-                        </div>
-                        <Button onClick={handleRequestPayout} disabled={isSubmittingPayout || isLoading || !payoutAmount || stats.availableBalance <= 0} className="w-full">
-                             {isSubmittingPayout && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Demander le retrait
-                        </Button>
-                    </CardContent>
-                    <CardFooter>
-                        <p className="text-xs text-slate-500 dark:text-muted-foreground flex gap-2"><Info className="h-4 w-4 shrink-0"/>Les retraits sont traités sous 72h.</p>
-                    </CardFooter>
-                 </Card>
-            </div>
+            {/* --- SOLDE & RETRAIT --- */}
+            <section className="bg-gradient-to-br from-primary/20 to-blue-600/5 border border-primary/20 rounded-3xl p-6 relative overflow-hidden">
+                <Wallet className="absolute -right-4 -bottom-4 h-24 w-24 text-primary opacity-5" />
+                <p className="text-[10px] uppercase font-black text-primary tracking-widest mb-1">Solde disponible</p>
+                <div className="flex items-baseline gap-2">
+                    <h2 className="text-4xl font-black text-white">{isLoading ? "..." : stats.balance.toLocaleString('fr-FR')}</h2>
+                    <span className="text-sm font-bold text-slate-400 uppercase">XOF</span>
+                </div>
+                
+                <Button 
+                    onClick={handlePayout}
+                    disabled={isSubmitting || isLoading || stats.balance <= 0}
+                    className="w-full h-12 mt-6 rounded-2xl font-bold bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95"
+                >
+                    {isSubmitting ? "Traitement..." : "Demander un retrait"}
+                    <ArrowUpRight className="ml-2 h-4 w-4" />
+                </Button>
+            </section>
+
+            {/* --- HISTORIQUE DES RETRAITS --- */}
+            <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                        <History className="h-5 w-5 text-slate-500" />
+                        Historique
+                    </h3>
+                </div>
+
+                {isLoading ? (
+                    <div className="space-y-3">
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl bg-slate-900" />)}
+                    </div>
+                ) : payouts.length > 0 ? (
+                    <div className="grid gap-3">
+                        {payouts.map(payout => (
+                            <PayoutItem key={payout.id} payout={payout} />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
+                        <p className="text-sm text-slate-500">Aucun historique de retrait.</p>
+                    </div>
+                )}
+            </section>
         </div>
+    );
+}
 
-         <div>
-             <SectionHeader title="Historique des transactions" className="mb-4" />
-             <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
-                <CardContent className="p-0">
-                    <Table>
-                        <TableHeader><TableRow className="border-slate-100 dark:border-slate-700"><TableHead>Date</TableHead><TableHead>Détails</TableHead><TableHead className="text-right">Montant</TableHead></TableRow></TableHeader>
-                        <TableBody>
-                            {isLoading ? [...Array(3)].map((_, i) => <TableRow key={i}><TableCell colSpan={3}><Skeleton className="h-6 w-full" /></TableCell></TableRow>)
-                            : payments.length > 0 ? (
-                                payments.slice(0, 10).map(p => (
-                                    <TableRow key={p.id} className="border-slate-100 dark:border-slate-800">
-                                        <TableCell className="text-slate-500 dark:text-muted-foreground">
-                                            {(p.date as any)?.toDate?.() ? format((p.date as any).toDate(), 'd MMM yyyy', {locale: fr}) : ''}
-                                        </TableCell>
-                                        <TableCell className="font-medium text-slate-800 dark:text-white">{`Vente du cours "${p.courseTitle || p.courseId}"`}</TableCell>
-                                        <TableCell className="text-right text-green-600 dark:text-green-400 font-semibold">+ {p.amount.toLocaleString('fr-FR')} XOF</TableCell>
-                                    </TableRow>
-                                ))
-                            ) : (
-                                <TableRow><TableCell colSpan={3} className="text-center h-24 text-slate-500 dark:text-muted-foreground">Aucune transaction.</TableCell></TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-             </Card>
-         </div>
-      </div>
+function PayoutItem({ payout }: { payout: Payout }) {
+    const statusIcon = payout.status === 'valide' ? <CheckCircle2 className="h-4 w-4 text-green-500" /> : payout.status === 'rejete' ? <XCircle className="h-4 w-4 text-red-500" /> : <Clock className="h-4 w-4 text-amber-500" />;
+    const statusText = payout.status === 'valide' ? 'Payé' : payout.status === 'rejete' ? 'Refusé' : 'En attente';
+    const statusColor = payout.status === 'valide' ? 'text-green-500' : payout.status === 'rejete' ? 'text-red-500' : 'text-amber-500';
+
+    return (
+        <Card className="bg-slate-900 border-slate-800">
+            <CardContent className="p-4 flex items-center justify-between">
+                <div>
+                    <p className="text-sm font-bold text-white">{payout.amount.toLocaleString('fr-FR')} XOF</p>
+                    <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-tighter">
+                        {payout.date ? format((payout.date as any).toDate(), "d MMM yyyy", { locale: fr }) : ""}
+                    </p>
+                </div>
+                <div className={cn("flex items-center gap-1.5 text-xs font-bold", statusColor)}>
+                    {statusIcon}
+                    {statusText}
+                </div>
+            </CardContent>
+        </Card>
     );
 }
