@@ -1,12 +1,11 @@
-
 "use client";
 
-import { Link, usePathname } from "next-intl/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
 import {
-  Book,
   Award,
   Bot,
   ClipboardCheck,
@@ -16,7 +15,6 @@ import {
   Heart,
   LogIn,
   Shield,
-  Star,
   Search,
   Play,
   Briefcase,
@@ -26,7 +24,7 @@ import {
   FileQuestion,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { collection, query, where, onSnapshot, getFirestore, getDoc, doc } from "firebase/firestore";
+import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
 import React, { useEffect, useState, useMemo } from "react";
 import { Badge } from "../ui/badge";
 import { Progress } from "../ui/progress";

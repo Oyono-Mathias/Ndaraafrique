@@ -1,8 +1,8 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next-intl/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from './student-sidebar';
@@ -12,7 +12,7 @@ import { Button } from '../ui/button';
 import { Wrench, Loader2, PanelLeft, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
-import { SplashScreen } from '../splash-screen';
+import { SplashScreen } from '../SplashScreen';
 import { Header } from './header';
 
 function MaintenancePage() {
@@ -73,7 +73,7 @@ function AnnouncementBanner() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isUserLoading, user, currentUser, switchRole } = useRole();
+  const { role, isUserLoading, user, currentUser } = useRole();
   const router = useRouter();
   const pathname = usePathname();
   
@@ -127,11 +127,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   useEffect(() => {
-    if (isUserLoading) return; // Wait until user auth state is known
+    if (isUserLoading) return;
 
-    const targetPath = pathname;
-
-    // 1. If user is not logged in, redirect to login page if the page is not public
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
         router.push('/login');
@@ -139,9 +136,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // 2. If user is logged in, handle role-based access
-    const isAdminArea = targetPath.startsWith('/admin');
-    const isInstructorArea = targetPath.startsWith('/instructor');
+    const isAdminArea = pathname.startsWith('/admin');
+    const isInstructorArea = pathname.startsWith('/instructor');
 
     if (role === 'admin' && !isAdminArea) {
       router.push('/admin');

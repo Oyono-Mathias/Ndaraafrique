@@ -22,7 +22,6 @@ import { Loader2, CheckCircle } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
-// ✅ Correction de l'import pour utiliser l'alias global
 import { CourseSidebar } from '@/components/CourseSidebar'; 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -77,7 +76,6 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        // ✅ Correction de l'erreur TS2532 (Object is possibly undefined)
         if (fetchedSections.length > 0) {
           const firstSectionId = fetchedSections[0].id;
           const sectionLectures = lecturesData.get(firstSectionId);
@@ -146,14 +144,7 @@ function CoursePlayerPageContent() {
       );
   }
 
-  // ✅ Sécurisation de la date pour le certificat (TS2339)
-  const getCompletionDate = () => {
-    const updatedAt = (courseProgress as any)?.updatedAt;
-    if (updatedAt && typeof updatedAt.toDate === 'function') {
-      return updatedAt.toDate();
-    }
-    return new Date();
-  };
+  const completionDate = (courseProgress as any)?.updatedAt?.toDate?.() || new Date();
 
   return (
     <>
@@ -163,7 +154,7 @@ function CoursePlayerPageContent() {
         courseName={course?.title || ''}
         studentName={currentUser?.fullName || ''}
         instructorName={instructor?.fullName || ''}
-        completionDate={getCompletionDate()}
+        completionDate={completionDate}
         certificateId={`${user?.uid}_${courseId}`}
       />
        <div className="flex flex-col h-screen bg-black">
