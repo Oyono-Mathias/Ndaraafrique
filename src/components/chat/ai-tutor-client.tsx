@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -6,10 +7,9 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, User, Loader2 } from "lucide-react";
+import { Bot, Send, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
-import { useCollection } from "@/firebase";
 import { 
     collection, 
     addDoc, 
@@ -33,8 +33,12 @@ interface AiTutorMessage {
   timestamp: any;
 }
 
+interface AiTutorClientProps {
+    initialQuery?: string | null;
+    initialContext?: string | null;
+}
 
-export function AiTutorClient() {
+export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientProps) {
   const { user, isUserLoading } = useRole();
   const db = getFirestore();
   const [input, setInput] = useState("");
@@ -47,7 +51,12 @@ export function AiTutorClient() {
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
-  const initialGreeting = { id: 'initial-greeting', sender: "ai" as const, text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", timestamp: new Date() };
+  const initialGreeting = { 
+    id: 'initial-greeting', 
+    sender: "ai" as const, 
+    text: "Bonjour ! Je suis MATHIAS, votre tuteur IA. Comment puis-je vous aider aujourd'hui ?", 
+    timestamp: new Date() 
+  };
 
   const fetchMessages = useCallback(async (loadMore = false) => {
     if (!user) {
@@ -73,7 +82,9 @@ export function AiTutorClient() {
         const newMessages = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AiTutorMessage));
         
         setHasMore(newMessages.length === 25);
-        setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+        if (querySnapshot.docs.length > 0) {
+            setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
+        }
 
         if(loadMore) {
             setMessages(prev => [...prev, ...newMessages]);
@@ -90,8 +101,13 @@ export function AiTutorClient() {
   
   useEffect(() => {
     fetchMessages();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, fetchMessages]);
+
+  useEffect(() => {
+    if (initialQuery) {
+        setInput(initialQuery);
+    }
+  }, [initialQuery]);
 
   const displayedMessages = useMemo(() => {
     const sortedMessages = [...messages].sort((a, b) => {
@@ -116,8 +132,8 @@ export function AiTutorClient() {
     }
   }, [displayedMessages, isAiResponding, isFetchingMore]);
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendMessage = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!input.trim() || isAiResponding || !user) return;
 
     const userMessageText = input;
@@ -126,11 +142,13 @@ export function AiTutorClient() {
     const tempUserMessage = { id: 'temp-user-' + Date.now(), sender: "user" as const, text: userMessageText, timestamp: new Date() };
     setMessages(prev => [...prev, tempUserMessage]);
 
-
     setIsAiResponding(true);
 
     try {
-      const chatInput: MathiasTutorInput = { query: userMessageText };
+      const chatInput: MathiasTutorInput = { 
+        query: userMessageText,
+        courseContext: initialContext || undefined 
+      };
       const result = await mathiasTutor(chatInput);
       
       const batch = writeBatch(db);
@@ -162,13 +180,16 @@ export function AiTutorClient() {
     <div className="flex flex-col h-full chat-background dark:bg-[#0b141a]">
       <header className="flex items-center p-3 border-b bg-slate-100 dark:bg-[#202c33] sticky top-0 z-10 dark:border-slate-700/80">
         <div className="relative ai-avatar-container">
-          <Avatar className="h-10 w-10 ai-avatar z-10 relative">
+          <Avatar className="h-10 w-10 ai-avatar z-10 relative border-2 border-primary/20">
               <AvatarFallback className="bg-primary text-primary-foreground"><Bot className="h-6 w-6" /></AvatarFallback>
           </Avatar>
         </div>
         <div className="ml-3">
-          <h2 className="font-bold text-base text-slate-900 dark:text-slate-100">MATHIAS</h2>
-          <p className="text-xs text-green-500 font-semibold">En ligne</p>
+          <h2 className="font-bold text-base text-slate-900 dark:text-slate-100 uppercase tracking-wide">MATHIAS</h2>
+          <p className="text-xs text-green-500 font-semibold flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></span>
+            En ligne pour vous aider
+          </p>
         </div>
       </header>
 
@@ -176,13 +197,14 @@ export function AiTutorClient() {
         <div className="space-y-1 p-4 sm:p-6">
           {isLoading && (
             <div className="flex justify-center items-center h-full pt-10">
-              <Loader2 className="h-8 w-8 animate-spin" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
           )}
            {!isLoading && hasMore && (
               <div className="text-center mb-4">
-                  <Button variant="outline" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore}>
-                      {isFetchingMore ? <Loader2 className="h-4 w-4 animate-spin"/> : 'Charger les messages précédents'}
+                  <Button variant="outline" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore} className="rounded-full text-xs h-8">
+                      {isFetchingMore ? <Loader2 className="h-3 w-3 animate-spin mr-2"/> : null}
+                      Charger l'historique
                   </Button>
               </div>
             )}
@@ -196,14 +218,17 @@ export function AiTutorClient() {
             >
               <div
                 className={cn(
-                  "rounded-lg px-3 py-2 text-[14.5px] leading-snug shadow-sm relative",
+                  "rounded-2xl px-4 py-2.5 text-[14.5px] leading-relaxed shadow-sm relative mb-1",
                   message.sender === "user"
-                    ? "chat-bubble-sent bg-[#dcf8c6] dark:bg-[#075e54] text-slate-800 dark:text-slate-100"
-                    : "chat-bubble-received bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100"
+                    ? "bg-primary text-white rounded-br-none"
+                    : "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-none border border-slate-200 dark:border-slate-700"
                 )}
               >
                 <p className="whitespace-pre-wrap">{message.text}</p>
-                 <span className="text-[10px] text-slate-500 dark:text-slate-400 float-right mt-1 ml-2">
+                 <span className={cn(
+                     "text-[9px] opacity-60 float-right mt-1 ml-2",
+                     message.sender === "user" ? "text-white/80" : "text-slate-500"
+                 )}>
                     {message.timestamp ? new Date((message.timestamp as any)?.toDate?.() || message.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : ''}
                 </span>
               </div>
@@ -211,24 +236,24 @@ export function AiTutorClient() {
           ))}
           {isAiResponding && (
             <div className="flex items-end gap-2 max-w-[85%] mr-auto">
-              <div className="rounded-lg px-4 py-3 bg-white dark:bg-slate-700 flex items-center text-sm text-muted-foreground shadow-sm chat-bubble-received">
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                MATHIAS est en train d'écrire...
+              <div className="rounded-2xl px-4 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center text-sm text-muted-foreground shadow-sm rounded-bl-none">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin text-primary" />
+                MATHIAS réfléchit...
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
-      <div className="p-2 border-t bg-slate-100 dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
+      <div className="p-4 border-t bg-slate-100 dark:bg-[#202c33] border-slate-200 dark:border-slate-700/50">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-4xl mx-auto">
             <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isLoading ? "Chargement de l'historique..." : "Posez votre question à MATHIAS..."}
+            placeholder={isLoading ? "Initialisation..." : "Écrivez votre message ici..."}
             disabled={isLoading || isAiResponding}
-            className="flex-1 h-12 rounded-full bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base"
+            className="flex-1 h-12 rounded-xl bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600 focus-visible:ring-primary text-base shadow-inner"
             />
-            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="shrink-0 h-12 w-12 rounded-full bg-primary hover:bg-primary/90 shadow-md">
+            <Button type="submit" size="icon" disabled={isLoading || isAiResponding || !input.trim()} className="shrink-0 h-12 w-12 rounded-xl bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all active:scale-95">
                 {isAiResponding ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                 <span className="sr-only">Envoyer</span>
             </Button>

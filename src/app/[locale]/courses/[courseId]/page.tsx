@@ -1,8 +1,10 @@
+
 'use client';
+
+export const dynamic = 'force-dynamic';
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useSearchParams } from 'next/navigation';
 import { useDoc, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import {
@@ -16,38 +18,34 @@ import {
   serverTimestamp,
   setDoc
 } from 'firebase/firestore';
-import dynamic from 'next/dynamic';
+import dynamic_next from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, ArrowLeft } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
-
-// ✅ CORRECTION MAJEURE : On pointe vers le dossier global components
 import { CourseSidebar } from '@/components/CourseSidebar'; 
-
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
-const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
+const ReactPlayer = dynamic_next(() => import('react-player/lazy'), { ssr: false });
 
 function CoursePlayerPageContent() {
-  const params = useParams();
-  const courseId = params.courseId as string;
+  const { courseId } = useParams();
   const { user, currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
+  const router = useRouter();
 
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   
-  const [isCompleted, setIsCompleted] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
 
-  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
+  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
   const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [course, db]);
@@ -59,7 +57,6 @@ function CoursePlayerPageContent() {
   const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
   const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
   
-  const isEnrolled = useMemo(() => currentUser?.role === 'admin', [currentUser]);
   const isEbook = course?.contentType === 'ebook';
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,29 +64,35 @@ function CoursePlayerPageContent() {
     if (!courseId) return;
     const fetchCourseContent = async () => {
       setIsLoading(true);
-      const sectionsQuery = query(collection(db, 'courses', courseId, 'sections'), orderBy('order'));
-      const sectionsSnapshot = await getDocs(sectionsQuery);
-      const fetchedSections = sectionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Section));
-      setSections(fetchedSections);
+      try {
+        const sectionsQuery = query(collection(db, 'courses', courseId as string, 'sections'), orderBy('order'));
+        const sectionsSnapshot = await getDocs(sectionsQuery);
+        const fetchedSections = sectionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Section));
+        setSections(fetchedSections);
 
-      const lecturesData = new Map<string, Lecture[]>();
-      for (const section of fetchedSections) {
-        const lecturesQuery = query(collection(db, 'courses', courseId, 'sections', section.id, 'lectures'), orderBy('order'));
-        const lecturesSnapshot = await getDocs(lecturesQuery);
-        lecturesData.set(section.id, lecturesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture)));
+        const lecturesData = new Map<string, Lecture[]>();
+        for (const section of fetchedSections) {
+          const lecturesQuery = query(collection(db, 'courses', courseId as string, 'sections', section.id, 'lectures'), orderBy('order'));
+          const lecturesSnapshot = await getDocs(lecturesQuery);
+          lecturesData.set(section.id, lecturesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture)));
+        }
+        setLecturesMap(lecturesData);
+        
+        if (fetchedSections.length > 0) {
+          const firstSectionId = fetchedSections[0].id;
+          const sectionLectures = lecturesData.get(firstSectionId);
+          if (sectionLectures && sectionLectures.length > 0 && !activeLecture) {
+            setActiveLecture(sectionLectures[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching content:", error);
+      } finally {
+        setIsLoading(false);
       }
-      setLecturesMap(lecturesData);
-      
-    const firstSectionId = fetchedSections[0]?.id;
-    const firstSectionLectures = firstSectionId ? lecturesData.get(firstSectionId) : null;
-
-    if (fetchedSections.length > 0 && (firstSectionLectures?.length ?? 0) > 0) {
-      setActiveLecture(firstSectionLectures![0]);
-    }
-      setIsLoading(false);
     };
     fetchCourseContent();
-  }, [courseId, db]);
+  }, [courseId, db, activeLecture]);
   
   const totalLectures = useMemo(() => {
     return Array.from(lecturesMap.values()).flat().length;
@@ -102,7 +105,7 @@ function CoursePlayerPageContent() {
   const handleLessonComplete = useCallback(async () => {
     if (!user || !activeLecture || !course || !progressRef || totalLectures === 0) return;
 
-    const completedLessons = courseProgress?.completedLessons || [];
+    const completedLessons = (courseProgress as any)?.completedLessons || [];
 
     if (!completedLessons.includes(activeLecture.id)) {
       const updatedCompletedLessons = [...completedLessons, activeLecture.id];
@@ -120,27 +123,22 @@ function CoursePlayerPageContent() {
         updatedAt: serverTimestamp(),
       }, { merge: true });
       
-      toast({ title: "Progression sauvegardée !"})
+      toast({ title: "Leçon terminée ! Progression mise à jour." });
 
       if (newProgress >= 100) {
-        setIsCompleted(true);
         setShowCertificateModal(true);
-        
-        const activityRef = doc(collection(db, `users/${user.uid}/activity`));
-        await setDoc(activityRef, {
-            userId: user.uid,
-            type: 'certificate',
-            title: `Vous avez obtenu un certificat !`,
-            description: `Félicitations pour avoir terminé le cours "${course.title}".`,
-            link: `/student/mes-certificats`,
-            read: false,
-            createdAt: serverTimestamp()
-        });
       }
     } else {
-        toast({ title: "Leçon déjà terminée."})
+        toast({ title: "Leçon déjà marquée comme terminée." });
     }
-  }, [user, activeLecture, courseId, totalLectures, db, course, progressRef, courseProgress, toast]);
+  }, [user, activeLecture, courseId, totalLectures, course, progressRef, courseProgress, toast]);
+
+  const handleAskMathias = () => {
+    if (!activeLecture || !course) return;
+    const query = `J'ai une question sur la leçon "${activeLecture.title}" du cours "${course.title}" : `;
+    const context = `L'étudiant suit actuellement le cours "${course.title}". La leçon active est "${activeLecture.title}" (Type: ${activeLecture.type}).`;
+    router.push(`/student/tutor?query=${encodeURIComponent(query)}&context=${encodeURIComponent(context)}`);
+  };
   
   const isPageLoading = isLoading || courseLoading || progressLoading || instructorLoading || quizzesLoading;
   
@@ -151,11 +149,13 @@ function CoursePlayerPageContent() {
           <div className="flex-1 p-4">
             <Skeleton className="w-full aspect-video bg-slate-800" />
             <Skeleton className="h-8 w-1/2 mt-4 bg-slate-800" />
-            <Skeleton className="h-20 w-full mt-2 bg-slate-800" />
           </div>
         </div>
       );
   }
+
+  const completionDate = (courseProgress as any)?.updatedAt?.toDate?.() || new Date();
+  const completedLessons = (courseProgress as any)?.completedLessons || [];
 
   return (
     <>
@@ -163,19 +163,14 @@ function CoursePlayerPageContent() {
         isOpen={showCertificateModal}
         onClose={() => setShowCertificateModal(false)}
         courseName={course?.title || ''}
-        studentName={currentUser?.fullName}
+        studentName={currentUser?.fullName || ''}
         instructorName={instructor?.fullName || ''}
-        completionDate={courseProgress?.updatedAt?.toDate() || new Date()}
+        completionDate={completionDate}
         certificateId={`${user?.uid}_${courseId}`}
       />
        <div className="flex flex-col h-screen bg-black">
-        {currentUser?.role === 'admin' && (
-            <div className="bg-amber-400 text-black text-center text-sm font-bold p-1">
-              Mode Administrateur
-            </div>
-        )}
         <div className="flex flex-1 overflow-hidden">
-            <aside className="w-80 flex-shrink-0 bg-[#121212] flex flex-col">
+            <aside className="w-80 flex-shrink-0 bg-[#121212] flex flex-col border-r border-slate-800">
               <CourseSidebar
                 course={course}
                 sections={sections}
@@ -183,10 +178,11 @@ function CoursePlayerPageContent() {
                 quizzes={quizzes || []}
                 activeLecture={activeLecture}
                 onLessonClick={handleLessonClick}
+                completedLessons={completedLessons}
               />
             </aside>
             <main className="flex-1 flex flex-col bg-black min-h-0">
-                <div className="flex-1 relative">
+                <div className="flex-1 relative overflow-y-auto">
                   {isEbook && course?.ebookUrl ? (
                       <PdfViewerClient fileUrl={course.ebookUrl} />
                   ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
@@ -206,21 +202,41 @@ function CoursePlayerPageContent() {
                           <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
                       </div>
                   ) : (
-                    <div className="h-full flex items-center justify-center text-slate-400">
-                        Sélectionnez une leçon pour commencer.
+                    <div className="h-full flex items-center justify-center text-slate-400 font-medium">
+                        Sélectionnez une leçon dans le menu pour commencer.
                     </div>
                   )}
                 </div>
-                 <div className="p-4 bg-[#121212] border-t border-slate-800">
-                    <h1 className="font-bold text-xl text-white">{activeLecture?.title || 'Bienvenue'}</h1>
-                    <p className="text-sm text-slate-400 mt-1">{activeLecture?.description || 'Sélectionnez une leçon dans la barre latérale pour commencer votre apprentissage.'}</p>
+                 <div className="p-6 bg-[#121212] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div className="flex-1">
+                        <h1 className="font-bold text-xl text-white">{activeLecture?.title || 'Bienvenue sur votre formation'}</h1>
+                        <p className="text-sm text-slate-400 mt-1 line-clamp-1">{course?.title}</p>
+                    </div>
                     
-                    {!isEbook && activeLecture && (
-                       <Button onClick={handleLessonComplete} className="mt-4">
-                           <CheckCircle className="h-4 w-4 mr-2" />
-                           Marquer comme terminée
-                       </Button>
-                    )}
+                    <div className="flex items-center gap-3 w-full sm:w-auto">
+                        <Button 
+                            variant="secondary" 
+                            onClick={handleAskMathias}
+                            className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white border-slate-700"
+                        >
+                            <Bot className="h-4 w-4 mr-2 text-primary" />
+                            Demander à Mathias
+                        </Button>
+                        
+                        {!isEbook && activeLecture && (
+                           <Button 
+                               onClick={handleLessonComplete} 
+                               disabled={completedLessons.includes(activeLecture.id)}
+                               className={cn(
+                                   "flex-1 sm:flex-none",
+                                   completedLessons.includes(activeLecture.id) ? "bg-green-600/20 text-green-400" : "bg-primary hover:bg-primary/90"
+                               )}
+                           >
+                               <CheckCircle className="h-4 w-4 mr-2" />
+                               {completedLessons.includes(activeLecture.id) ? "Terminée" : "Marquer comme terminée"}
+                           </Button>
+                        )}
+                    </div>
                  </div>
             </main>
         </div>
@@ -236,5 +252,3 @@ export default function CoursePlayerPage() {
         </Suspense>
     )
 }
-
-
