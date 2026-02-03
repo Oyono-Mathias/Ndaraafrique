@@ -2,9 +2,9 @@
 'use client';
 
 import { Bell, Search, CheckCircle, ShieldAlert } from 'lucide-react';
-import { Button } from '../ui/button';
+import { Button } from '@/components/ui/button';
 import { UserNav } from './user-nav';
-import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useRouter } from 'next/navigation';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
@@ -13,7 +13,7 @@ import { collection, query, where, onSnapshot, getFirestore, writeBatch, doc, li
 import { cn } from '@/lib/utils';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import type { Notification } from '@/lib/types';
 import Link from 'next/link';
 
@@ -81,7 +81,9 @@ const NotificationItem = ({ notif, onClick }: { notif: Notification, onClick: (n
             {notif.text}
           </p>
           <p className="text-xs text-muted-foreground">
-            {notif.createdAt ? formatDistanceToNow(notif.createdAt.toDate(), { locale: fr, addSuffix: true }) : ''}
+            {notif.createdAt && typeof (notif.createdAt as any).toDate === 'function' 
+              ? formatDistanceToNow((notif.createdAt as any).toDate(), { locale: fr, addSuffix: true }) 
+              : ''}
           </p>
        </div>
        {!notif.read && <div className="h-2.5 w-2.5 rounded-full bg-primary self-center"></div>}
