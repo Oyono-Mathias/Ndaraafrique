@@ -92,27 +92,23 @@ export default function StudentAssignmentsPage() {
   }, [assignments, submissions]);
 
   return (
-    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
-      <header className="px-4 pt-8">
-        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
-            <ClipboardList className="h-5 w-5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Exercices</span>
-        </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-[#CC7722]">Devoirs</span></h1>
-        <p className="text-slate-500 text-sm mt-2 font-medium">Suivez vos travaux et progressez en temps réel.</p>
+    <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen">
+      <header className="px-4 pt-6 space-y-4">
+        <h1 className="text-2xl font-black text-white leading-tight">Mes Devoirs</h1>
+        <p className="text-slate-500 text-sm font-medium">Suivez vos travaux et progressez en temps réel.</p>
       </header>
 
       <Tabs defaultValue="todo" className="w-full">
-        <TabsList className="w-full bg-transparent border-b border-slate-800 rounded-none h-12 p-0 px-4 justify-start gap-8">
+        <TabsList className="w-full bg-transparent border-b border-slate-800 rounded-none h-12 p-0 px-4 justify-start gap-6">
           <TabsTrigger 
             value="todo" 
-            className="data-[state=active]:bg-transparent data-[state=active]:text-[#CC7722] border-b-2 border-transparent data-[state=active]:border-[#CC7722] rounded-none h-full px-0 font-black text-[10px] uppercase tracking-[0.2em] text-slate-500"
+            className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-slate-500"
           >
             À faire ({toDo.length})
           </TabsTrigger>
           <TabsTrigger 
             value="completed" 
-            className="data-[state=active]:bg-transparent data-[state=active]:text-[#CC7722] border-b-2 border-transparent data-[state=active]:border-[#CC7722] rounded-none h-full px-0 font-black text-[10px] uppercase tracking-[0.2em] text-slate-500"
+            className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-slate-500"
           >
             Terminés ({completed.length})
           </TabsTrigger>
@@ -151,15 +147,15 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
   const isOverdue = dueDate && isAfter(new Date(), dueDate) && !submission;
   
   return (
-    <Card className="bg-slate-900/50 border-slate-800 shadow-xl overflow-hidden group">
+    <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden group">
       <CardContent className="p-5">
         <div className="flex justify-between items-start gap-4 mb-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-[10px] font-black text-[#CC7722] uppercase tracking-widest">
+            <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest">
               <BookOpen className="h-3 w-3" />
               <span className="truncate max-w-[150px]">{assignment.courseTitle || 'Formation Ndara'}</span>
             </div>
-            <h3 className="text-lg font-bold text-white leading-tight group-hover:text-[#CC7722] transition-colors">
+            <h3 className="text-sm font-bold text-white line-clamp-2 leading-tight group-hover:text-primary transition-colors">
               {assignment.title}
             </h3>
           </div>
@@ -173,7 +169,7 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
               Retard
             </Badge>
           ) : (
-            <Badge className="bg-[#CC7722]/10 text-[#CC7722] border-none text-[9px] font-black uppercase">
+            <Badge variant="secondary" className="border-none text-[9px] font-black uppercase">
               Actif
             </Badge>
           )}
@@ -191,8 +187,8 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
         <Button 
           asChild 
           className={cn(
-            "w-full h-12 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all active:scale-95",
-            submission ? "bg-slate-800 text-slate-400" : "bg-[#CC7722] text-white shadow-lg shadow-[#CC7722]/20"
+            "w-full h-12 rounded-xl font-bold uppercase text-[10px] tracking-widest transition-all active:scale-95",
+            submission ? "bg-slate-800 text-slate-400" : "bg-primary text-white shadow-lg shadow-primary/20"
           )}
         >
           <Link href={submission ? `/student/devoirs/${assignment.id}` : `/student/courses/${assignment.courseId}`}>
@@ -207,15 +203,15 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50">
-      <div className="p-6 bg-[#CC7722]/10 rounded-full mb-6">
-        <Bot className="h-16 w-16 text-[#CC7722] opacity-80" />
+    <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
+      <div className="p-6 bg-slate-800/50 rounded-full mb-6">
+        <Bot className="h-16 w-16 text-slate-700" />
       </div>
       <h3 className="text-xl font-black text-white leading-tight">Aucun devoir <br/>en attente.</h3>
       <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto font-medium">
-        C'est le moment idéal pour poser une question à <span className="text-[#CC7722] font-bold">Mathias</span> sur vos leçons.
+        C'est le moment idéal pour poser une question à <span className="text-primary font-bold">Mathias</span> sur vos leçons.
       </p>
-      <Button asChild variant="outline" className="mt-8 border-slate-700 text-slate-300 rounded-xl h-12 px-8 font-black uppercase text-[10px] tracking-widest">
+      <Button asChild variant="outline" className="mt-8 border-slate-700 text-slate-300 rounded-xl h-12 px-8 font-bold uppercase text-[10px] tracking-widest">
         <Link href="/student/tutor">Interroger Mathias</Link>
       </Button>
     </div>
