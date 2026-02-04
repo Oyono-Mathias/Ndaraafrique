@@ -1,25 +1,29 @@
 {
   "name": "Ndara Afrique",
   "short_name": "Ndara",
-  "description": "L'excellence par le savoir - Formations d'experts en Afrique",
+  "description": "L'excellence par le savoir - Formations d'experts africains",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#020617",
   "theme_color": "#CC7722",
-  "orientation": "portrait",
-  "scope": "/",
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/logo.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
