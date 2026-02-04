@@ -30,7 +30,7 @@ export async function startChat(
   }
 
   const chatsRef = collection(db, 'chats');
-  // On trie les IDs pour avoir une clé unique entre deux personnes
+  // On trie les IDs pour avoir une clé unique entre deux personnes (1-on-1)
   const sortedParticipants = [currentUserId, contactId].sort();
 
   const q = query(chatsRef, where('participants', '==', sortedParticipants));
@@ -66,7 +66,7 @@ export async function startChat(
         updatedAt: serverTimestamp(),
         lastMessage: 'Conversation démarrée.',
         lastSenderId: currentUserId,
-        unreadBy: [contactId],
+        unreadBy: [contactId], // Le destinataire a un message non lu par défaut
       });
 
       await batch.commit();

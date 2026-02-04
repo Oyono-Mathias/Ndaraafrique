@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -176,7 +177,7 @@ service cloud.firestore {
     match /resources/{resourceId} {
       allow create: if isApprovedInstructor() && isCourseOwner(request.resource.data.courseId);
       allow read: if (isStudentEnrolled(resource.data.courseId)) || isCourseOwner(resource.data.courseId) || isAdmin();
-      allow update, delete: if isCourseOwner(resource.data.courseId) || isAdmin();
+      allow update, delete: if isCourseOwner(courseId) || isAdmin();
       allow list: if isSignedIn() && request.query.keys().hasAny(['courseId']);
     }
 
@@ -192,7 +193,7 @@ service cloud.firestore {
       allow read, update: if isSignedIn() && request.auth.uid in resource.data.participants;
       
       match /messages/{messageId} {
-        allow read, write: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        allow read, write: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
       }
     }
 
