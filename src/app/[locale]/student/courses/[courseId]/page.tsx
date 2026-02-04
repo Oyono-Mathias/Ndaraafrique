@@ -86,7 +86,7 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        // --- LOGIQUE D'AUTO-SÉLECTION ---
+        // --- LOGIQUE D'AUTO-SÉLECTION AMÉLIORÉE ---
         let startLecture: Lecture | null = null;
 
         // A. Priorité à l'URL (?lesson=ID)
@@ -105,11 +105,15 @@ function CoursePlayerPageContent() {
             }
         }
 
-        // C. Enfin, fallback sur la première leçon de la première section
+        // C. Enfin, fallback sur la toute première leçon de la toute première section
         if (!startLecture && fetchedSections.length > 0) {
-            const firstList = lecturesData.get(fetchedSections[0].id);
-            if (firstList && firstList.length > 0) {
-                startLecture = firstList[0];
+            // On parcourt les sections jusqu'à trouver la première qui a au moins une leçon
+            for (const section of fetchedSections) {
+                const sectionLectures = lecturesData.get(section.id);
+                if (sectionLectures && sectionLectures.length > 0) {
+                    startLecture = sectionLectures[0];
+                    break;
+                }
             }
         }
 
@@ -131,9 +135,6 @@ function CoursePlayerPageContent() {
   
   const handleLessonClick = (lecture: Lecture) => {
     setActiveLecture(lecture);
-    // Mise à jour de l'URL pour la consistance si besoin (optionnel)
-    // router.replace(`/student/courses/${courseId}?lesson=${lecture.id}`, { scroll: false });
-    
     if (window.innerWidth < 1024) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -187,7 +188,7 @@ function CoursePlayerPageContent() {
             <Skeleton className="w-full aspect-video bg-slate-900 rounded-2xl" />
             <Skeleton className="h-10 w-1/2 bg-slate-900" />
           </div>
-          <Skeleton className="w-full lg:w-85 h-full bg-slate-900" />
+          <Skeleton className="w-full lg:w-80 h-full bg-slate-900" />
         </div>
       );
   }
@@ -237,7 +238,9 @@ function CoursePlayerPageContent() {
                         </div>
                         <h3 className="text-2xl font-bold text-white italic">"Bara ala, Tonga na ndara"</h3>
                         <p className="text-slate-400 max-w-sm mt-3 text-lg">
-                            Sélectionnez une leçon dans le curriculum pour commencer votre apprentissage.
+                            {sections.length === 0 
+                              ? "Ce cours ne contient pas encore de leçons publiées." 
+                              : "Sélectionnez une leçon dans le curriculum pour commencer votre apprentissage."}
                         </p>
                     </div>
                   )}
@@ -245,7 +248,7 @@ function CoursePlayerPageContent() {
 
                  <div className="p-4 lg:p-6 bg-[#0f172a] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xl z-10">
                     <div className="flex-1 overflow-hidden">
-                        <h1 className="font-bold text-lg lg:text-xl text-white truncate">{activeLecture?.title || 'Démarrage du cours...'}</h1>
+                        <h1 className="font-bold text-lg lg:text-xl text-white truncate">{activeLecture?.title || 'Initialisation...'}</h1>
                         <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
                             <BookOpen className="h-3.5 w-3.5" />
                             <span className="truncate">{course?.title}</span>
@@ -281,7 +284,7 @@ function CoursePlayerPageContent() {
                  </div>
             </main>
 
-            <aside className="w-full lg:w-85 lg:flex-shrink-0 bg-[#111827] flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800 h-auto lg:h-full overflow-y-auto">
+            <aside className="w-full lg:w-80 lg:flex-shrink-0 bg-[#111827] flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800 h-auto lg:h-full overflow-y-auto">
               <CourseSidebar
                 course={course}
                 sections={sections}
