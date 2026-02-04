@@ -52,29 +52,24 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // Ici, on appellerait normalement une Server Action pour créer une session Moneroo
-      // via l'endpoint https://api.moneroo.io/v1/payments
-      
-      // Simulation de la préparation Moneroo
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Simulation de la préparation de la transaction Moneroo
+      // En production, on appellerait une Server Action pour générer l'URL de paiement via l'API Moneroo
+      await new Promise(resolve => setTimeout(resolve, 2500));
 
       toast({ 
-        title: "Redirection Moneroo", 
-        description: "Vous allez être redirigé vers la passerelle sécurisée." 
+        title: "Initialisation sécurisée", 
+        description: "Redirection vers la passerelle de paiement..." 
       });
 
-      // Simulation de redirection vers Moneroo (en prod, on utiliserait l'URL fournie par l'API)
-      // window.location.href = monerooCheckoutUrl;
-      
-      // Pour le prototype, on simule le succès après redirection
+      // Simulation de succès pour le prototype
       router.push(`/student/courses/${courseId}`);
 
     } catch (error) {
-      console.error("Moneroo Error:", error);
+      console.error("Moneroo Prep Error:", error);
       toast({ 
         variant: 'destructive', 
-        title: "Erreur de connexion", 
-        description: "Impossible de joindre la passerelle de paiement." 
+        title: "Erreur technique", 
+        description: "Impossible de joindre le service de paiement. Réessayez." 
       });
     } finally {
       setIsProcessing(false);
@@ -87,59 +82,63 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-[#CC7722]/30">
       
-      {/* --- HEADER FIXE --- */}
+      {/* --- HEADER COMPACT --- */}
       <header className="p-4 flex items-center gap-4 bg-slate-900/80 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-xl">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-white">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-base font-black uppercase tracking-tight text-white">Paiement Sécurisé</h1>
+        <h1 className="text-sm font-black uppercase tracking-[0.15em] text-white">Finaliser l'inscription</h1>
       </header>
 
       <div className="p-4 max-w-md mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         
         {/* --- TICKET DE CAISSE VINTAGE --- */}
         <section className="relative">
-          <div className="bg-[#fdf6e3] text-slate-900 p-6 rounded-t-sm shadow-xl relative overflow-hidden">
-            {/* Texture papier */}
-            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
+          <div className="bg-[#fdf6e3] text-slate-900 p-6 rounded-t-sm shadow-2xl relative overflow-hidden">
+            {/* Texture papier grainé */}
+            <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
             
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 border-b border-slate-300 pb-2">
-              Récapitulatif de commande
+            <div className="flex justify-center mb-6 opacity-20">
+                <Image src="/logo.png" alt="Logo Watermark" width={40} height={40} className="grayscale" />
+            </div>
+
+            <p className="text-[9px] font-black uppercase tracking-[0.25em] text-slate-500 mb-4 border-b border-slate-300 pb-2 text-center">
+              Recu Provisoire #ND-{Math.floor(Math.random() * 9000) + 1000}
             </p>
             
             <div className="space-y-4">
               <div className="flex justify-between items-start gap-4">
-                <h2 className="text-sm font-bold leading-snug flex-1">{course.title}</h2>
+                <h2 className="text-sm font-bold leading-snug flex-1 uppercase">{course.title}</h2>
                 <span className="text-xs font-mono font-bold">x1</span>
               </div>
               
-              <div className="border-t border-dashed border-slate-400 pt-4 flex justify-between items-baseline">
-                <span className="text-xs font-bold uppercase">Total à payer</span>
+              <div className="border-t-2 border-dashed border-slate-400 pt-4 flex justify-between items-baseline">
+                <span className="text-xs font-black uppercase tracking-tighter">Total Net</span>
                 <div className="text-right">
-                  <p className="text-3xl font-black font-mono tracking-tighter">
+                  <p className="text-4xl font-black font-mono tracking-tighter">
                     {(course.price || 0).toLocaleString('fr-FR')}
                   </p>
-                  <p className="text-[10px] font-bold uppercase opacity-60">Francs CFA (XOF)</p>
+                  <p className="text-[9px] font-black uppercase opacity-60 tracking-widest">Francs CFA (XOF)</p>
                 </div>
               </div>
             </div>
           </div>
-          {/* Bordure dentelée du bas */}
-          <div className="h-2 w-full bg-[radial-gradient(circle,transparent_4px,#fdf6e3_4px)] bg-[length:12px_8px] bg-repeat-x" />
+          {/* Bordure dentelée SVG pour le réalisme */}
+          <div className="h-3 w-full bg-[radial-gradient(circle,transparent_6px,#fdf6e3_6px)] bg-[length:16px_12px] bg-repeat-x" />
         </section>
 
-        {/* --- MÉTHODES DE PAIEMENT --- */}
+        {/* --- MÉTHODES DE PAIEMENT (GRID) --- */}
         <section className="space-y-4">
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">
-            Mode de règlement
+            Mode de règlement sécurisé
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => setSelectedMethod('momo')}
               className={cn(
-                "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95",
+                "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95 relative",
                 selectedMethod === 'momo' 
-                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-lg" 
+                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-xl" 
                   : "border-slate-800 bg-slate-900/40 opacity-60"
               )}
             >
@@ -151,65 +150,65 @@ export default function CheckoutPage() {
             <button
               onClick={() => setSelectedMethod('card')}
               className={cn(
-                "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95",
+                "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95 relative",
                 selectedMethod === 'card' 
-                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-lg" 
+                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-xl" 
                   : "border-slate-800 bg-slate-900/40 opacity-60"
               )}
             >
               <CreditCard className={cn("h-6 w-6", selectedMethod === 'card' ? "text-[#CC7722]" : "text-slate-500")} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Carte / Visa</span>
+              <span className="text-[10px] font-black uppercase tracking-widest">Carte Visa / MC</span>
               {selectedMethod === 'card' && <CheckCircle2 className="h-4 w-4 text-[#CC7722] absolute top-2 right-2" />}
             </button>
           </div>
         </section>
 
-        {/* --- LOGOS DE CONFIANCE --- */}
-        <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-4">
-          <div className="flex items-center justify-between opacity-50 grayscale contrast-125">
-            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/a/ad/MTN_Logo.svg" alt="MTN" fill className="object-contain" /></div>
-            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg" alt="Orange" fill className="object-contain" /></div>
-            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" fill className="object-contain" /></div>
-            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" fill className="object-contain" /></div>
+        {/* --- BLOC CONFIANCE MONEROO --- */}
+        <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
+          <div className="flex items-center justify-between opacity-40 grayscale contrast-150">
+            <div className="h-5 w-10 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/a/ad/MTN_Logo.svg" alt="MTN" fill className="object-contain" /></div>
+            <div className="h-5 w-10 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg" alt="Orange" fill className="object-contain" /></div>
+            <div className="h-5 w-10 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" fill className="object-contain" /></div>
+            <div className="h-5 w-10 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" fill className="object-contain" /></div>
           </div>
-          <div className="flex items-start gap-3">
-            <ShieldCheck className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
-              Paiement traité par <span className="text-slate-300 font-bold">Moneroo</span>. Vos coordonnées bancaires ou MoMo sont protégées par un cryptage SSL 256 bits.
+          <div className="flex items-start gap-4">
+            <ShieldCheck className="h-6 w-6 text-emerald-500 shrink-0" />
+            <p className="text-[10px] text-slate-500 leading-relaxed font-medium uppercase tracking-tighter">
+              Paiement crypté SSL par <span className="text-slate-300 font-black">Moneroo</span>. Vos fonds sont protégés. Ndara Afrique n'a jamais accès à vos codes secrets.
             </p>
           </div>
         </section>
 
-        {/* --- BOUTON DE SUPPORT WHATSAPP DISCRET --- */}
+        {/* --- SUPPORT WHATSAPP --- */}
         <a 
-          href="https://wa.me/23675000000" 
+          href="https://wa.me/23675000000?text=Bonjour, j'ai besoin d'aide pour mon paiement sur Ndara Afrique" 
           target="_blank" 
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold transition-transform active:scale-95"
+          className="flex items-center justify-center gap-3 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-400 text-xs font-black uppercase tracking-widest transition-transform active:scale-95"
         >
-          <MessageCircle className="h-4 w-4" />
-          Une question ? Aide au paiement WhatsApp
+          <MessageCircle className="h-5 w-5" />
+          Aide au paiement WhatsApp
         </a>
 
       </div>
 
-      {/* --- CTA FIXE (FOOTER) --- */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800 z-40 safe-area-pb">
+      {/* --- BOTTOM ACTION BAR --- */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800 z-40 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
         <div className="max-w-md mx-auto">
           <Button 
             onClick={handlePayment}
             disabled={isProcessing}
-            className="w-full h-16 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 text-white shadow-2xl shadow-[#CC7722]/20 font-black uppercase tracking-widest text-sm transition-all active:scale-[0.97]"
+            className="w-full h-16 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 text-white shadow-2xl shadow-[#CC7722]/20 font-black uppercase tracking-[0.1em] text-sm transition-all active:scale-[0.96]"
           >
             {isProcessing ? (
               <div className="flex items-center gap-3">
                 <Loader2 className="h-5 w-5 animate-spin" />
-                <span>Initialisation...</span>
+                <span>Traitement Moneroo...</span>
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Lock className="h-4 w-4 mr-1" />
-                Confirmer & Payer
+                Payer {(course.price || 0).toLocaleString('fr-FR')} XOF
                 <ChevronRight className="h-5 w-5 ml-1 opacity-50" />
               </div>
             )}
@@ -223,8 +222,8 @@ export default function CheckoutPage() {
 function CheckoutSkeleton() {
   return (
     <div className="min-h-screen bg-slate-950 p-4 space-y-8">
-      <Skeleton className="h-12 w-1/2 bg-slate-900 rounded-full" />
-      <Skeleton className="h-48 w-full bg-slate-900 rounded-2xl" />
+      <Skeleton className="h-14 w-full bg-slate-900 rounded-xl" />
+      <Skeleton className="h-56 w-full bg-slate-900 rounded-2xl" />
       <div className="grid grid-cols-2 gap-3">
         <Skeleton className="h-24 bg-slate-900 rounded-2xl" />
         <Skeleton className="h-24 bg-slate-900 rounded-2xl" />
