@@ -51,11 +51,12 @@ export function ContinueLearning() {
         return null;
     }
     
-    const coursesForCard: Course[] = coursesInProgress.map(item => ({
+    const coursesForCard: (Course & { lastLessonId?: string })[] = coursesInProgress.map(item => ({
         id: item.courseId,
         title: item.courseTitle,
         imageUrl: item.courseCover,
         progress: item.progressPercent,
+        lastLessonId: item.lastLessonId, // On passe l'ID de la leçon pour le lien direct
         description: '',
         category: '',
         price: 0,

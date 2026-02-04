@@ -5,10 +5,11 @@
  * @fileOverview Lecteur de cours haute performance pour les étudiants.
  * À gauche : Zone de lecture multimédia (vidéo, PDF, texte) et contrôles.
  * À droite : Curriculum (sections et leçons) avec état de complétion.
+ * Gère l'auto-sélection intelligente de la leçon.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useDoc, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import {
@@ -25,7 +26,7 @@ import {
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, Info, BookOpen, ChevronRight } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -39,6 +40,8 @@ const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 function CoursePlayerPageContent() {
   const { courseId } = useParams();
+  const searchParams = useSearchParams();
+  const lessonIdFromUrl = searchParams.get('lesson');
   const { user, currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
@@ -83,12 +86,35 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        // Sélection auto de la première leçon
-        if (fetchedSections.length > 0 && !activeLecture) {
-          const firstLectures = lecturesData.get(fetchedSections[0].id);
-          if (firstLectures && firstLectures.length > 0) {
-            setActiveLecture(firstLectures[0]);
-          }
+        // --- LOGIQUE D'AUTO-SÉLECTION ---
+        let startLecture: Lecture | null = null;
+
+        // A. Priorité à l'URL (?lesson=ID)
+        if (lessonIdFromUrl) {
+            for (const list of lecturesData.values()) {
+                const found = list.find(l => l.id === lessonIdFromUrl);
+                if (found) { startLecture = found; break; }
+            }
+        }
+
+        // B. Sinon, priorité à la dernière leçon consultée (Firestore)
+        if (!startLecture && courseProgress?.lastLessonId) {
+            for (const list of lecturesData.values()) {
+                const found = list.find(l => l.id === courseProgress.lastLessonId);
+                if (found) { startLecture = found; break; }
+            }
+        }
+
+        // C. Enfin, fallback sur la première leçon de la première section
+        if (!startLecture && fetchedSections.length > 0) {
+            const firstList = lecturesData.get(fetchedSections[0].id);
+            if (firstList && firstList.length > 0) {
+                startLecture = firstList[0];
+            }
+        }
+
+        if (startLecture) {
+            setActiveLecture(startLecture);
         }
       } catch (error) {
         console.error("Erreur curriculum:", error);
@@ -97,7 +123,7 @@ function CoursePlayerPageContent() {
       }
     };
     fetchCurriculum();
-  }, [courseId, db, activeLecture]);
+  }, [courseId, db, courseProgress?.lastLessonId, lessonIdFromUrl]);
   
   const totalLecturesCount = useMemo(() => {
     return Array.from(lecturesMap.values()).reduce((acc, current) => acc + current.length, 0);
@@ -105,7 +131,9 @@ function CoursePlayerPageContent() {
   
   const handleLessonClick = (lecture: Lecture) => {
     setActiveLecture(lecture);
-    // Sur mobile, on pourrait vouloir scroller vers le haut après clic
+    // Mise à jour de l'URL pour la consistance si besoin (optionnel)
+    // router.replace(`/student/courses/${courseId}?lesson=${lecture.id}`, { scroll: false });
+    
     if (window.innerWidth < 1024) {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -145,7 +173,6 @@ function CoursePlayerPageContent() {
     }
   }, [user, activeLecture, courseId, totalLecturesCount, course, progressRef, courseProgress, toast]);
 
-  // 5. Redirection vers Mathias avec contexte
   const handleAskMathias = () => {
     if (!activeLecture) return;
     router.push(`/student/tutor?context=${activeLecture.id}`);
@@ -181,7 +208,6 @@ function CoursePlayerPageContent() {
       />
        <div className="flex flex-col lg:flex-row h-screen bg-black overflow-hidden">
             
-            {/* --- ZONE GAUCHE : LECTEUR ET CONTRÔLES (Main Content) --- */}
             <main className="flex-1 flex flex-col bg-slate-950 min-h-0 relative overflow-y-auto lg:overflow-hidden">
                 <div className="flex-1 relative lg:overflow-y-auto">
                   {course?.contentType === 'ebook' && course?.ebookUrl ? (
@@ -217,7 +243,6 @@ function CoursePlayerPageContent() {
                   )}
                 </div>
 
-                {/* --- BARRE DE CONTRÔLES FIXE (Desktop) / RELATIVE (Mobile) --- */}
                  <div className="p-4 lg:p-6 bg-[#0f172a] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xl z-10">
                     <div className="flex-1 overflow-hidden">
                         <h1 className="font-bold text-lg lg:text-xl text-white truncate">{activeLecture?.title || 'Démarrage du cours...'}</h1>
@@ -256,12 +281,7 @@ function CoursePlayerPageContent() {
                  </div>
             </main>
 
-            {/* --- ZONE DROITE : CURRICULUM (SIDEBAR) --- */}
             <aside className="w-full lg:w-85 lg:flex-shrink-0 bg-[#111827] flex flex-col border-t lg:border-t-0 lg:border-l border-slate-800 h-auto lg:h-full overflow-y-auto">
-              <div className="lg:hidden p-4 border-b border-slate-800 flex items-center justify-between">
-                  <h3 className="font-bold text-white">Contenu de la formation</h3>
-                  <ChevronRight className="h-5 w-5 text-slate-500 rotate-90" />
-              </div>
               <CourseSidebar
                 course={course}
                 sections={sections}

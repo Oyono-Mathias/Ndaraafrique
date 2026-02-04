@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -10,7 +11,7 @@ import { Star, Award } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 
 interface CourseCardProps {
-  course: Course & { progress?: number };
+  course: Course & { progress?: number; lastLessonId?: string };
   instructor: Partial<NdaraUser> | null;
   variant?: 'catalogue' | 'student';
 }
@@ -26,9 +27,13 @@ const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: numb
 export function CourseCard({ course, instructor, variant = 'catalogue' }: CourseCardProps) {
   const progress = course.progress ?? 0;
   const isStudentView = variant === 'student';
+  
+  // Si c'est un cours suivi, on ajoute le paramètre de leçon pour la reprise intelligente
+  const lessonQuery = course.lastLessonId ? `?lesson=${course.lastLessonId}` : '';
+  const href = isStudentView ? `/student/courses/${course.id}${lessonQuery}` : `/courses/${course.id}`;
 
   return (
-    <Link href={`/courses/${course.id}`} className="block group w-full h-full">
+    <Link href={href} className="block group w-full h-full">
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300 hover:border-primary/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10">
         <div className="relative aspect-video overflow-hidden bg-slate-800">
           <Image
