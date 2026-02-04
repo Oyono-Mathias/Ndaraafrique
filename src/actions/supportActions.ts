@@ -10,10 +10,66 @@ interface RefundAndRevokeParams {
   ticketId: string;
 }
 
+export async function createSupportTicket({ 
+    userId, 
+    subject, 
+    message, 
+    category, 
+    courseId, 
+    instructorId 
+}: { 
+    userId: string; 
+    subject: string; 
+    message: string; 
+    category: 'Paiement' | 'Technique' | 'Pédagogique'; 
+    courseId?: string; 
+    instructorId?: string; 
+}) {
+  if (!adminDb) return { success: false, error: "Database not connected" };
+  try {
+    const ticketRef = adminDb.collection('support_tickets').doc();
+    const ticketData = {
+      userId,
+      subject,
+      category,
+      courseId: courseId || 'none',
+      instructorId: instructorId || 'none',
+      status: 'ouvert',
+      lastMessage: message,
+      createdAt: FieldValue.serverTimestamp(),
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+    
+    const batch = adminDb.batch();
+    batch.set(ticketRef, ticketData);
+    
+    const messageRef = ticketRef.collection('messages').doc();
+    batch.set(messageRef, {
+      senderId: userId,
+      text: message,
+      createdAt: FieldValue.serverTimestamp()
+    });
+
+    await batch.commit();
+
+    // Notify Admins
+    await sendAdminNotification({
+        title: 'Nouveau ticket de support',
+        body: `Sujet : ${subject} (${category})`,
+        link: `/admin/support/${ticketRef.id}`,
+        type: 'newSupportTickets'
+    });
+
+    return { success: true, ticketId: ticketRef.id };
+  } catch (error: any) {
+    console.error("Error creating support ticket:", error);
+    return { success: false, error: "Une erreur est survenue lors de la création du ticket." };
+  }
+}
+
 export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Promise<{ success: boolean; error?: string }> {
     const { userId, courseId, ticketId } = params;
     
-    // ✅ CORRECTION ICI : J'ai retiré l'accolade ouvrante inutile
     if (!adminDb) return { success: false, error: "Database not connected" };
     
     const batch = adminDb.batch();
@@ -173,7 +229,7 @@ export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticke
         if (studentId) {
             await sendUserNotification(studentId, {
                 text: `Vous avez reçu une nouvelle réponse pour votre ticket: "${ticketDoc.data()?.subject}"`,
-                link: `/questions-reponses/${ticketId}`
+                link: `/student/support`
             });
         }
 
