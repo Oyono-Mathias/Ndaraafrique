@@ -38,6 +38,7 @@ export interface NdaraUser {
   availableRoles: UserRole[];
   status?: 'active' | 'suspended';
   bio?: string;
+  preferredLanguage?: 'fr' | 'en';
   socialLinks?: {
       website?: string;
       twitter?: string;
