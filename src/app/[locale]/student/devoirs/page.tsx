@@ -4,17 +4,26 @@
 /**
  * @fileOverview Gestion des devoirs pour les étudiants (Android-First).
  * Liste filtrable des tâches à accomplir et historique des soumissions.
+ * Fonctionnement 100% temps réel via onSnapshot.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, collection, query, where, getDocs, collectionGroup, orderBy } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  collection, 
+  query, 
+  where, 
+  onSnapshot, 
+  collectionGroup, 
+  orderBy 
+} from 'firebase/firestore';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ClipboardCheck, Clock, AlertCircle, CheckCircle2, ChevronRight, Bot, BookOpen } from 'lucide-react';
+import { Clock, CheckCircle2, ChevronRight, Bot, BookOpen, ClipboardList } from 'lucide-react';
 import { format, isAfter } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -30,47 +39,49 @@ export default function StudentAssignmentsPage() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // 1. Récupérer les inscriptions pour savoir quels cours l'étudiant suit
-        const enrollQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
-        const enrollSnap = await getDocs(enrollQuery);
-        const enrolledCourseIds = enrollSnap.docs.map(d => d.data().courseId);
+    setIsLoading(true);
 
-        if (enrolledCourseIds.length === 0) {
-          setIsLoading(false);
-          return;
-        }
+    // 1. Écoute des inscriptions de l'étudiant
+    const enrollQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
+    
+    const unsubEnroll = onSnapshot(enrollQuery, (enrollSnap) => {
+      const enrolledCourseIds = enrollSnap.docs.map(d => d.data().courseId);
 
-        // 2. Récupérer tous les devoirs (via Collection Group pour simplifier le prototype)
-        const assignmentsQuery = query(collectionGroup(db, 'assignments'), orderBy('createdAt', 'desc'));
-        const assignmentsSnap = await getDocs(assignmentsQuery);
-        
-        // Filtrer les devoirs appartenant aux cours de l'étudiant
-        const filteredAssignments = assignmentsSnap.docs
+      if (enrolledCourseIds.length === 0) {
+        setAssignments([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Écoute de tous les devoirs (Collection Group)
+      const assignmentsQuery = query(collectionGroup(db, 'assignments'), orderBy('createdAt', 'desc'));
+      const unsubAssignments = onSnapshot(assignmentsQuery, (assignSnap) => {
+        const filtered = assignSnap.docs
           .map(doc => ({ id: doc.id, ...doc.data() }))
           .filter((a: any) => enrolledCourseIds.includes(a.courseId));
+        
+        setAssignments(filtered);
+      });
 
-        // 3. Récupérer les soumissions de l'étudiant
-        const submissionsQuery = query(collection(db, 'devoirs'), where('studentId', '==', currentUser.uid));
-        const submissionsSnap = await getDocs(submissionsQuery);
+      // 3. Écoute des soumissions de l'étudiant
+      const submissionsQuery = query(collection(db, 'devoirs'), where('studentId', '==', currentUser.uid));
+      const unsubSubmissions = onSnapshot(submissionsQuery, (subSnap) => {
         const subMap: Record<string, any> = {};
-        submissionsSnap.forEach(doc => {
+        subSnap.forEach(doc => {
           const data = doc.data();
           subMap[data.assignmentId] = data;
         });
-
-        setAssignments(filteredAssignments);
         setSubmissions(subMap);
-      } catch (error) {
-        console.error("Error fetching assignments:", error);
-      } finally {
         setIsLoading(false);
-      }
-    };
+      });
 
-    fetchData();
+      return () => {
+        unsubAssignments();
+        unsubSubmissions();
+      };
+    });
+
+    return () => unsubEnroll();
   }, [currentUser?.uid, db]);
 
   const { toDo, completed } = useMemo(() => {
@@ -81,10 +92,14 @@ export default function StudentAssignmentsPage() {
   }, [assignments, submissions]);
 
   return (
-    <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen bg-grainy">
+    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
       <header className="px-4 pt-8">
-        <h1 className="text-3xl font-black text-white">Mes Devoirs</h1>
-        <p className="text-slate-500 text-sm mt-1 font-medium italic">"Tonga na ndara" — Progressez par l'exercice.</p>
+        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
+            <ClipboardList className="h-5 w-5" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Exercices</span>
+        </div>
+        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-[#CC7722]">Devoirs</span></h1>
+        <p className="text-slate-500 text-sm mt-2 font-medium">Suivez vos travaux et progressez en temps réel.</p>
       </header>
 
       <Tabs defaultValue="todo" className="w-full">
@@ -121,7 +136,7 @@ export default function StudentAssignmentsPage() {
               completed.map(a => <AssignmentCard key={a.id} assignment={a} submission={submissions[a.id]} />)
             ) : (
               <div className="text-center py-20 text-slate-600 italic text-sm">
-                Vous n'avez pas encore terminé de devoirs.
+                Aucun devoir terminé pour l'instant.
               </div>
             )}
           </TabsContent>
@@ -155,11 +170,11 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
             </Badge>
           ) : isOverdue ? (
             <Badge className="bg-red-500/10 text-red-400 border-none text-[9px] font-black uppercase">
-              En retard
+              Retard
             </Badge>
           ) : (
             <Badge className="bg-[#CC7722]/10 text-[#CC7722] border-none text-[9px] font-black uppercase">
-              À faire
+              Actif
             </Badge>
           )}
         </div>
@@ -167,7 +182,7 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
         <div className="flex items-center gap-4 text-xs text-slate-500 font-medium">
           <div className="flex items-center gap-1.5">
             <Clock className="h-3.5 w-3.5" />
-            <span>Échéance : {dueDate ? format(dueDate, 'dd MMM yyyy', { locale: fr }) : 'Aucune'}</span>
+            <span>{dueDate ? format(dueDate, 'dd MMM yyyy', { locale: fr }) : 'Sans limite'}</span>
           </div>
         </div>
       </CardContent>
@@ -181,7 +196,7 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
           )}
         >
           <Link href={submission ? `/student/devoirs/${assignment.id}` : `/student/courses/${assignment.courseId}`}>
-            {submission ? "Voir ma soumission" : "Commencer le devoir"}
+            {submission ? "Consulter ma note" : "Ouvrir l'exercice"}
             <ChevronRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>
@@ -196,9 +211,9 @@ function EmptyState() {
       <div className="p-6 bg-[#CC7722]/10 rounded-full mb-6">
         <Bot className="h-16 w-16 text-[#CC7722] opacity-80" />
       </div>
-      <h3 className="text-xl font-black text-white leading-tight">Bravo ! Aucun devoir <br/>pour le moment.</h3>
+      <h3 className="text-xl font-black text-white leading-tight">Aucun devoir <br/>en attente.</h3>
       <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto font-medium">
-        Profitez de ce temps libre pour discuter avec <span className="text-[#CC7722] font-bold">Mathias</span> et approfondir vos cours.
+        C'est le moment idéal pour poser une question à <span className="text-[#CC7722] font-bold">Mathias</span> sur vos leçons.
       </p>
       <Button asChild variant="outline" className="mt-8 border-slate-700 text-slate-300 rounded-xl h-12 px-8 font-black uppercase text-[10px] tracking-widest">
         <Link href="/student/tutor">Interroger Mathias</Link>
