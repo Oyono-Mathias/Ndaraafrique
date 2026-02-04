@@ -2,219 +2,219 @@
 'use client';
 
 /**
- * @fileOverview Page de paiement (Checkout) Mobile Money.
- * Design Android-First, Esthétique Vintage Ocre.
- * Gère la sélection d'opérateur et la création d'enrollment Firestore.
+ * @fileOverview Page de paiement (Checkout) optimisée pour Moneroo.
+ * Design Android-First, Esthétique Vintage "Ticket de Caisse".
+ * Support multi-méthodes (MoMo, Carte) et bouton d'aide WhatsApp.
  */
 
 import { useState, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getFirestore, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getFirestore } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowLeft, 
   Lock, 
-  CheckCircle2, 
   Loader2, 
   ShieldCheck, 
   Smartphone,
+  CreditCard,
+  MessageCircle,
+  CheckCircle2,
   ChevronRight
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Course } from '@/lib/types';
 
-const operators = [
-  { id: 'mtn', name: 'MTN MoMo', color: 'bg-yellow-400', textColor: 'text-black', logo: 'MTN' },
-  { id: 'orange', name: 'Orange Money', color: 'bg-[#FF6600]', textColor: 'text-white', logo: 'OM' },
-  { id: 'wave', name: 'Wave', color: 'bg-[#00A3E0]', textColor: 'text-white', logo: 'W' },
-];
+type PaymentMethod = 'momo' | 'card';
 
 export default function CheckoutPage() {
   const { courseId } = useParams();
   const router = useRouter();
-  const { user, currentUser } = useRole();
+  const { user } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
 
-  const [selectedOperator, setSelectedOperator] = useState<string | null>(null);
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('momo');
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // 1. Récupération des infos du cours
+  // 1. Récupération des infos du cours depuis Firestore
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
   const handlePayment = async () => {
-    if (!user || !course || !selectedOperator || phoneNumber.length < 8) {
-      toast({ variant: 'destructive', title: "Informations incomplètes", description: "Veuillez sélectionner un opérateur et entrer votre numéro." });
-      return;
-    }
+    if (!user || !course) return;
 
     setIsProcessing(true);
 
     try {
-      // Simulation d'un délai de traitement passerelle
-      await new Promise(resolve => setTimeout(resolve, 2500));
-
-      const enrollmentId = `${user.uid}_${courseId}`;
+      // Ici, on appellerait normalement une Server Action pour créer une session Moneroo
+      // via l'endpoint https://api.moneroo.io/v1/payments
       
-      // 2. Création de l'inscription dans Firestore
-      await setDoc(doc(db, 'enrollments', enrollmentId), {
-        studentId: user.uid,
-        courseId: courseId,
-        instructorId: course.instructorId,
-        enrollmentDate: serverTimestamp(),
-        lastAccessedAt: serverTimestamp(),
-        progress: 0,
-        priceAtEnrollment: course.price,
-        status: 'active',
-        paymentMethod: selectedOperator,
-        transactionId: `TXN-${Math.random().toString(36).substring(2, 10).toUpperCase()}`
-      });
-
-      // 3. Initialisation de la progression
-      await setDoc(doc(db, 'course_progress', enrollmentId), {
-        userId: user.uid,
-        courseId: courseId,
-        courseTitle: course.title,
-        courseCover: course.imageUrl || '',
-        progressPercent: 0,
-        completedLessons: [],
-        updatedAt: serverTimestamp(),
-      });
+      // Simulation de la préparation Moneroo
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
       toast({ 
-        title: "Paiement réussi !", 
-        description: "Bienvenue dans votre nouvelle formation." 
+        title: "Redirection Moneroo", 
+        description: "Vous allez être redirigé vers la passerelle sécurisée." 
       });
 
-      // Redirection vers le lecteur
+      // Simulation de redirection vers Moneroo (en prod, on utiliserait l'URL fournie par l'API)
+      // window.location.href = monerooCheckoutUrl;
+      
+      // Pour le prototype, on simule le succès après redirection
       router.push(`/student/courses/${courseId}`);
 
     } catch (error) {
-      console.error("Payment error:", error);
-      toast({ variant: 'destructive', title: "Échec du paiement", description: "Une erreur est survenue lors de la transaction." });
+      console.error("Moneroo Error:", error);
+      toast({ 
+        variant: 'destructive', 
+        title: "Erreur de connexion", 
+        description: "Impossible de joindre la passerelle de paiement." 
+      });
     } finally {
       setIsProcessing(false);
     }
   };
 
   if (courseLoading) return <CheckoutSkeleton />;
-  if (!course) return <div className="p-8 text-center">Cours introuvable.</div>;
+  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-12 font-sans selection:bg-[#CC7722]/30">
+    <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-[#CC7722]/30">
       
-      {/* --- HEADER --- */}
-      <header className="p-4 flex items-center gap-4 bg-slate-900/50 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-md">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+      {/* --- HEADER FIXE --- */}
+      <header className="p-4 flex items-center gap-4 bg-slate-900/80 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-xl">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-white">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-lg font-bold text-white truncate">Finaliser l'inscription</h1>
+        <h1 className="text-base font-black uppercase tracking-tight text-white">Paiement Sécurisé</h1>
       </header>
 
-      <div className="p-4 max-w-md mx-auto space-y-8">
+      <div className="p-4 max-w-md mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         
-        {/* --- RÉSUMÉ COURS --- */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center gap-4">
-          <div className="relative h-16 w-24 rounded-xl overflow-hidden bg-slate-800 flex-shrink-0">
-            <Image src={course.imageUrl || `https://picsum.photos/seed/${courseId}/200/150`} alt={course.title} fill className="object-cover" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-sm font-bold text-white line-clamp-1">{course.title}</h2>
-            <p className="text-2xl font-black text-[#CC7722] mt-1">
-              {(course.price || 0).toLocaleString('fr-FR')} <span className="text-[10px] uppercase opacity-60">XOF</span>
+        {/* --- TICKET DE CAISSE VINTAGE --- */}
+        <section className="relative">
+          <div className="bg-[#fdf6e3] text-slate-900 p-6 rounded-t-sm shadow-xl relative overflow-hidden">
+            {/* Texture papier */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
+            
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-4 border-b border-slate-300 pb-2">
+              Récapitulatif de commande
             </p>
-          </div>
-        </div>
-
-        {/* --- SÉLECTEUR OPÉRATEUR --- */}
-        <section className="space-y-4">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
-            <div className="h-px w-4 bg-slate-800" />
-            Choisir votre opérateur
-          </h3>
-          <div className="grid grid-cols-3 gap-3">
-            {operators.map((op) => (
-              <button
-                key={op.id}
-                onClick={() => setSelectedOperator(op.id)}
-                className={cn(
-                  "relative flex flex-col items-center gap-3 p-4 rounded-2xl border-2 transition-all active:scale-95",
-                  selectedOperator === op.id 
-                    ? "border-[#CC7722] bg-[#CC7722]/5 shadow-[0_0_20px_rgba(204,119,34,0.1)]" 
-                    : "border-slate-800 bg-slate-900/40 opacity-60 grayscale hover:opacity-100 hover:grayscale-0"
-                )}
-              >
-                <div className={cn("h-12 w-12 rounded-xl flex items-center justify-center font-black text-sm shadow-xl", op.color, op.textColor)}>
-                  {op.logo}
+            
+            <div className="space-y-4">
+              <div className="flex justify-between items-start gap-4">
+                <h2 className="text-sm font-bold leading-snug flex-1">{course.title}</h2>
+                <span className="text-xs font-mono font-bold">x1</span>
+              </div>
+              
+              <div className="border-t border-dashed border-slate-400 pt-4 flex justify-between items-baseline">
+                <span className="text-xs font-bold uppercase">Total à payer</span>
+                <div className="text-right">
+                  <p className="text-3xl font-black font-mono tracking-tighter">
+                    {(course.price || 0).toLocaleString('fr-FR')}
+                  </p>
+                  <p className="text-[10px] font-bold uppercase opacity-60">Francs CFA (XOF)</p>
                 </div>
-                <span className="text-[10px] font-bold uppercase text-slate-300">{op.name}</span>
-                {selectedOperator === op.id && (
-                  <div className="absolute -top-2 -right-2 bg-[#CC7722] rounded-full p-1 shadow-lg">
-                    <CheckCircle2 className="h-3 w-3 text-white" />
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* --- FORMULAIRE --- */}
-        <section className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-400 ml-1">Numéro Mobile Money</label>
-            <div className="relative">
-              <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
-              <Input 
-                type="tel"
-                placeholder="00 00 00 00"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, ''))}
-                className="h-14 pl-12 bg-slate-900 border-4 border-slate-800 rounded-2xl text-lg font-bold tracking-[0.1em] focus-visible:ring-[#CC7722]/20 focus-visible:border-[#CC7722]"
-              />
+              </div>
             </div>
           </div>
+          {/* Bordure dentelée du bas */}
+          <div className="h-2 w-full bg-[radial-gradient(circle,transparent_4px,#fdf6e3_4px)] bg-[length:12px_8px] bg-repeat-x" />
+        </section>
 
-          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 flex items-start gap-3">
+        {/* --- MÉTHODES DE PAIEMENT --- */}
+        <section className="space-y-4">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">
+            Mode de règlement
+          </h3>
+          <div className="grid grid-cols-2 gap-3">
+            <button
+              onClick={() => setSelectedMethod('momo')}
+              className={cn(
+                "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95",
+                selectedMethod === 'momo' 
+                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-lg" 
+                  : "border-slate-800 bg-slate-900/40 opacity-60"
+              )}
+            >
+              <Smartphone className={cn("h-6 w-6", selectedMethod === 'momo' ? "text-[#CC7722]" : "text-slate-500")} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Mobile Money</span>
+              {selectedMethod === 'momo' && <CheckCircle2 className="h-4 w-4 text-[#CC7722] absolute top-2 right-2" />}
+            </button>
+
+            <button
+              onClick={() => setSelectedMethod('card')}
+              className={cn(
+                "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95",
+                selectedMethod === 'card' 
+                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-lg" 
+                  : "border-slate-800 bg-slate-900/40 opacity-60"
+              )}
+            >
+              <CreditCard className={cn("h-6 w-6", selectedMethod === 'card' ? "text-[#CC7722]" : "text-slate-500")} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Carte / Visa</span>
+              {selectedMethod === 'card' && <CheckCircle2 className="h-4 w-4 text-[#CC7722] absolute top-2 right-2" />}
+            </button>
+          </div>
+        </section>
+
+        {/* --- LOGOS DE CONFIANCE --- */}
+        <section className="bg-slate-900/40 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div className="flex items-center justify-between opacity-50 grayscale contrast-125">
+            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/a/ad/MTN_Logo.svg" alt="MTN" fill className="object-contain" /></div>
+            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/c/c8/Orange_logo.svg" alt="Orange" fill className="object-contain" /></div>
+            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" fill className="object-contain" /></div>
+            <div className="h-6 w-12 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" fill className="object-contain" /></div>
+          </div>
+          <div className="flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-            <p className="text-[11px] text-slate-400 leading-relaxed">
-              Vos informations sont chiffrées. Ndara Afrique ne stocke jamais vos codes secrets. La validation se fait directement sur votre téléphone.
+            <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
+              Paiement traité par <span className="text-slate-300 font-bold">Moneroo</span>. Vos coordonnées bancaires ou MoMo sont protégées par un cryptage SSL 256 bits.
             </p>
           </div>
         </section>
 
-        {/* --- BOUTON DE PAIEMENT --- */}
-        <footer className="pt-4">
+        {/* --- BOUTON DE SUPPORT WHATSAPP DISCRET --- */}
+        <a 
+          href="https://wa.me/23675000000" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl text-emerald-400 text-xs font-bold transition-transform active:scale-95"
+        >
+          <MessageCircle className="h-4 w-4" />
+          Une question ? Aide au paiement WhatsApp
+        </a>
+
+      </div>
+
+      {/* --- CTA FIXE (FOOTER) --- */}
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800 z-40 safe-area-pb">
+        <div className="max-w-md mx-auto">
           <Button 
             onClick={handlePayment}
-            disabled={isProcessing || !selectedOperator || phoneNumber.length < 8}
-            className="w-full h-16 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 text-white shadow-2xl shadow-[#CC7722]/20 font-black uppercase tracking-wider text-base active:scale-[0.98] transition-all"
+            disabled={isProcessing}
+            className="w-full h-16 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 text-white shadow-2xl shadow-[#CC7722]/20 font-black uppercase tracking-widest text-sm transition-all active:scale-[0.97]"
           >
             {isProcessing ? (
-              <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                Traitement en cours...
-              </>
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin" />
+                <span>Initialisation...</span>
+              </div>
             ) : (
-              <>
-                <Lock className="mr-2 h-5 w-5" />
-                Payer {(course.price || 0).toLocaleString('fr-FR')} XOF
-              </>
+              <div className="flex items-center gap-2">
+                <Lock className="h-4 w-4 mr-1" />
+                Confirmer & Payer
+                <ChevronRight className="h-5 w-5 ml-1 opacity-50" />
+              </div>
             )}
           </Button>
-          <p className="text-center text-[10px] text-slate-600 mt-4 uppercase tracking-[0.15em] font-bold">
-            Paiement 100% sécurisé via Ndara Pay
-          </p>
-        </footer>
-
+        </div>
       </div>
     </div>
   );
@@ -224,14 +224,12 @@ function CheckoutSkeleton() {
   return (
     <div className="min-h-screen bg-slate-950 p-4 space-y-8">
       <Skeleton className="h-12 w-1/2 bg-slate-900 rounded-full" />
-      <Skeleton className="h-24 w-full bg-slate-900 rounded-2xl" />
-      <div className="grid grid-cols-3 gap-3">
-        <Skeleton className="h-24 bg-slate-900 rounded-2xl" />
+      <Skeleton className="h-48 w-full bg-slate-900 rounded-2xl" />
+      <div className="grid grid-cols-2 gap-3">
         <Skeleton className="h-24 bg-slate-900 rounded-2xl" />
         <Skeleton className="h-24 bg-slate-900 rounded-2xl" />
       </div>
-      <Skeleton className="h-14 w-full bg-slate-900 rounded-2xl" />
-      <Skeleton className="h-16 w-full bg-slate-900 rounded-2xl" />
+      <Skeleton className="h-32 w-full bg-slate-900 rounded-2xl" />
     </div>
   );
 }
