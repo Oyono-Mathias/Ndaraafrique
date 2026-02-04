@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -23,10 +24,14 @@ const MathiasTutorOutputSchema = z.object({
 });
 export type MathiasTutorOutput = z.infer<typeof MathiasTutorOutputSchema>;
 
+/**
+ * Tool to fetch the course catalog from Firestore.
+ * Handles errors internally to prevent flow crashes.
+ */
 const getCourseCatalog = ai.defineTool(
     {
         name: 'getCourseCatalog',
-        description: 'Get the list of available courses on the Ndara Afrique platform, including their titles and prices.',
+        description: 'Obtient la liste des cours disponibles sur Ndara Afrique.',
         inputSchema: z.object({}),
         outputSchema: z.array(z.object({
             title: z.string(),
@@ -37,7 +42,8 @@ const getCourseCatalog = ai.defineTool(
         if (!adminDb) return [];
         try {
             const coursesRef = adminDb.collection('courses');
-            const snapshot = await coursesRef.where('status', '==', 'Published').get();
+            // Simple query to avoid index issues during prototype phase
+            const snapshot = await coursesRef.limit(10).get();
             if (snapshot.empty) return [];
             return snapshot.docs.map(doc => {
                 const data = doc.data();
@@ -47,21 +53,25 @@ const getCourseCatalog = ai.defineTool(
                 }
             });
         } catch (e) {
-            console.error("Error fetching course catalog:", e);
+            console.error("MATHIAS Tool Error (getCourseCatalog):", e);
             return [];
         }
     }
 );
 
+/**
+ * Tool to search the FAQ in Firestore.
+ * Handles errors and empty results gracefully.
+ */
 const searchFaq = ai.defineTool(
     {
         name: 'searchFaq',
-        description: 'Searches the FAQ for a given query to find a relevant answer.',
+        description: 'Recherche une réponse dans la FAQ de la plateforme.',
         inputSchema: z.object({
-            query: z.string().describe("The user's question to search for in the FAQ."),
+            query: z.string().describe("La question de l'utilisateur à chercher."),
         }),
         outputSchema: z.object({
-            answer: z.string().optional().describe("The answer found in the FAQ, if any."),
+            answer: z.string().optional().describe("La réponse trouvée dans la FAQ."),
         }),
     },
     async ({ query }) => {
@@ -71,7 +81,7 @@ const searchFaq = ai.defineTool(
             if (keywords.length === 0) return { answer: undefined };
             
             const faqsRef = adminDb.collection('faqs');
-            // Limitation Firestore array-contains-any à 10 éléments
+            // Try searching by tags
             const q = faqsRef.where('tags', 'array-contains-any', keywords.slice(0, 10));
             const snapshot = await q.get();
 
@@ -81,7 +91,7 @@ const searchFaq = ai.defineTool(
             }
             return { answer: undefined };
         } catch(e) {
-            console.error("Error searching FAQ:", e);
+            console.error("MATHIAS Tool Error (searchFaq):", e);
             return { answer: undefined };
         }
     }
@@ -96,23 +106,24 @@ const mathiasTutorPrompt = ai.definePrompt({
   input: {schema: MathiasTutorInputSchema},
   output: {schema: MathiasTutorOutputSchema},
   tools: [getCourseCatalog, searchFaq],
-  prompt: `You are MATHIAS, the wise and encouraging AI tutor for Ndara Afrique, a pan-african e-learning platform.
-  Your role is to guide students towards success with patience and local cultural relevance.
+  prompt: `Tu es MATHIAS, le tuteur IA sage, bienveillant et encourageant de Ndara Afrique.
+  Ton rôle est d'accompagner les étudiants vers la réussite avec patience.
   
-  **IMPORTANT RULES:**
-  1. Respond EXCLUSIVELY in French.
-  2. Always refer to yourself as MATHIAS.
-  3. Use the 'searchFaq' tool FIRST if the user asks a practical question about the platform (certificates, payments, etc.).
-  4. Use the 'getCourseCatalog' tool if the user asks about available courses or prices.
-  5. If no FAQ answer is found, answer based on your knowledge and the course context.
+  **RÈGLES D'OR :**
+  1. Réponds EXCLUSIVEMENT en Français.
+  2. Présente-toi toujours comme MATHIAS.
+  3. Utilise 'searchFaq' si l'étudiant pose une question pratique (certificats, paiements, etc.).
+  4. Utilise 'getCourseCatalog' si l'étudiant demande quels sont les cours disponibles ou leurs prix.
+  5. Si aucun outil ne donne de réponse, utilise tes connaissances générales pour aider l'étudiant de manière pédagogique.
+  6. Ton ton doit être chaleureux et culturellement adapté à l'Afrique francophone.
   
   {{#if courseContext}}
-  CONTEXTE DU COURS ACTUEL: {{{courseContext}}}
+  CONTEXTE DU COURS : {{{courseContext}}}
   {{/if}}
 
-  QUESTION DE L'ÉTUDIANT: {{{query}}}
+  QUESTION DE L'ÉTUDIANT : {{{query}}}
 
-  RÉPONSE DE MATHIAS (en Français):`,
+  RÉPONSE DE MATHIAS :`,
 });
 
 const mathiasTutorFlow = ai.defineFlow(
@@ -123,12 +134,20 @@ const mathiasTutorFlow = ai.defineFlow(
   },
   async input => {
     try {
+        // Check for API key presence
+        if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
+            console.error("MATHIAS Error: No API Key configured.");
+            return { response: "Désolé, je ne suis pas encore configuré pour vous répondre. Contactez l'administrateur." };
+        }
+
         const {output} = await mathiasTutorPrompt(input);
-        if (!output) throw new Error("L'IA n'a pas généré de réponse.");
+        if (!output || !output.response) {
+            throw new Error("L'IA n'a pas généré de contenu.");
+        }
         return output;
     } catch (error: any) {
-        console.error("Mathias Flow Error:", error);
-        return { response: "Désolé, je rencontre une petite difficulté technique pour vous répondre. Pouvez-vous reformuler votre question ?" };
+        console.error("Mathias Flow Execution Error:", error);
+        return { response: "Désolé, je rencontre une petite difficulté technique pour vous répondre à l'instant. Pouvez-vous reformuler ou réessayer dans quelques secondes ?" };
     }
   }
 );
