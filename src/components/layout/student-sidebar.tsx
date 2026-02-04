@@ -22,8 +22,8 @@ import {
   Bell,
   Lock,
   LayoutDashboard,
-  FileQuestion,
   Trophy,
+  FileQuestion,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -103,7 +103,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/student/dashboard", icon: LayoutDashboard, label: "Tableau de Bord", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/student/mes-formations", icon: Play, label: 'Mes Cours', id: 'sidebar-nav-mes-formations' },
+        { href: "/student/courses", icon: Play, label: 'Mes Cours', id: 'sidebar-nav-mes-formations' },
         { href: "/student/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
@@ -112,9 +112,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
         { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
-        { href: "/student/liste-de-souhaits", icon: Heart, label: 'Liste de souhaits', id: 'sidebar-nav-liste-de-souhaits' },
         { href: "/student/devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
-        { href: "/student/mes-questions", icon: FileQuestion, label: 'Mes Questions', id: 'sidebar-nav-mes-questions' },
       ],
     },
     {
