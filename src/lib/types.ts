@@ -1,4 +1,3 @@
-
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -191,11 +190,13 @@ export interface Enrollment {
     enrollmentDate: Timestamp | FieldValue;
     progress: number;
     priceAtEnrollment: number; // Price when the user enrolled
+    status?: 'pending' | 'active'; // Added status for webhook management
     completedLessons?: string[];
     lastWatchedLesson?: string;
     lastAccessedAt?: Timestamp | FieldValue;
     expiresAt?: Timestamp | FieldValue;
     enrollmentType?: 'paid' | 'admin_grant';
+    transactionId?: string;
 }
 
 export interface Review {
