@@ -1,20 +1,26 @@
 
 'use client';
 
+/**
+ * @fileOverview Liste des conversations (Android UX).
+ * Optimisée pour le scan rapide des messages non-lus.
+ */
+
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
-import { Loader2, UserPlus, MessageSquare } from 'lucide-react';
+import { MessageSquare, Search, UserPlus, MoreVertical } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { Chat, NdaraUser } from '@/lib/types';
 import { formatDistanceToNowStrict } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
-import { Skeleton } from '../ui/skeleton';
 
 interface EnrichedChat extends Chat {
   otherParticipant: Partial<NdaraUser>;
@@ -28,32 +34,35 @@ const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, i
         <button 
             onClick={() => router.push(`/student/messages?chatId=${chat.id}`)}
             className={cn(
-                "w-full text-left p-4 flex items-center gap-4 transition-all border-b border-slate-800/50",
-                isSelected ? "bg-[#CC7722]/10" : "hover:bg-slate-800/40"
+                "w-full text-left p-4 flex items-center gap-4 transition-all active:bg-slate-800/60 border-b border-white/5",
+                isSelected ? "bg-[#CC7722]/10" : "hover:bg-slate-900/40"
             )}
         >
             <div className="relative">
-                <Avatar className="h-14 w-14 border-2 border-slate-700 shadow-md">
+                <Avatar className="h-14 w-14 border border-white/10 shadow-xl">
                     <AvatarImage src={chat.otherParticipant.profilePictureURL} className="object-cover" />
-                    <AvatarFallback className="bg-slate-800 text-slate-400 font-bold">
+                    <AvatarFallback className="bg-slate-800 text-slate-500 font-black">
                         {chat.otherParticipant.fullName?.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
                 {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#CC7722] rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-black text-white">
+                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-[#CC7722] rounded-full border-2 border-slate-950 flex items-center justify-center text-[10px] font-black text-white animate-in zoom-in">
                         {unreadCount}
                     </span>
                 )}
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline mb-1">
-                    <p className="font-bold text-slate-100 truncate">{chat.otherParticipant.fullName}</p>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                    <p className="font-bold text-slate-100 truncate text-[15px]">{chat.otherParticipant.fullName}</p>
+                    <span className={cn(
+                        "text-[10px] font-black uppercase tracking-tighter",
+                        unreadCount > 0 ? "text-[#CC7722]" : "text-slate-500"
+                    )}>
                         {lastDate ? formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr }) : ''}
                     </span>
                 </div>
                 <p className={cn(
-                    "text-xs truncate",
+                    "text-sm truncate leading-snug",
                     unreadCount > 0 ? "text-slate-200 font-bold" : "text-slate-500 font-medium"
                 )}>
                     {chat.lastMessage}
@@ -69,6 +78,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const router = useRouter();
     const [enrichedChats, setEnrichedChats] = useState<EnrichedChat[]>([]);
     const [dataLoading, setDataLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
 
     const chatsQuery = useMemo(() =>
         user ? query(collection(db, 'chats'), where('participants', 'array-contains', user.uid), orderBy('updatedAt', 'desc')) : null,
@@ -103,7 +113,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                 const otherId = chat.participants.find(p => p !== user?.uid);
                 return {
                     ...chat,
-                    otherParticipant: usersMap.get(otherId || '') || { fullName: 'Ancien membre' }
+                    otherParticipant: usersMap.get(otherId || '') || { fullName: 'Ndara Afrique' }
                 };
             });
 
@@ -114,23 +124,49 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
         enrich();
     }, [chats, user, db, chatsLoading]);
 
+    const filteredChats = useMemo(() => {
+        return enrichedChats.filter(c => 
+            c.otherParticipant.fullName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [enrichedChats, searchTerm]);
+
     return (
         <div className="flex flex-col h-full bg-slate-950">
-            <header className="p-4 border-b border-slate-800 space-y-4">
-                <h1 className="text-xl font-black text-white uppercase tracking-widest">Discussions</h1>
-                <Button variant="outline" className="w-full h-12 rounded-xl border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-300" onClick={() => router.push('/student/annuaire')}>
-                    <UserPlus className="mr-2 h-4 w-4" />
-                    Nouvelle discussion
-                </Button>
+            {/* Header Android Style */}
+            <header className="px-4 pt-6 pb-4 space-y-4">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-2xl font-black text-white tracking-tight">Messages</h1>
+                    <Button variant="ghost" size="icon" className="rounded-full text-slate-400">
+                        <MoreVertical className="h-5 w-5" />
+                    </Button>
+                </div>
+                <div className="relative">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" />
+                    <Input 
+                        placeholder="Rechercher une discussion..." 
+                        className="h-11 pl-10 bg-slate-900 border-none rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-[#CC7722]/30"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </header>
+
             <ScrollArea className="flex-1">
                 {chatsLoading || dataLoading ? (
-                    <div className="p-4 space-y-4">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl bg-slate-900" />)}
+                    <div className="px-4 space-y-4">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 py-2">
+                                <Skeleton className="h-14 w-14 rounded-full bg-slate-900" />
+                                <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-1/3 bg-slate-900" />
+                                    <Skeleton className="h-3 w-3/4 bg-slate-900" />
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                ) : enrichedChats.length > 0 ? (
-                    <div>
-                        {enrichedChats.map(chat => (
+                ) : filteredChats.length > 0 ? (
+                    <div className="animate-in fade-in duration-500">
+                        {filteredChats.map(chat => (
                             <ChatListItem 
                                 key={chat.id} 
                                 chat={chat} 
@@ -140,12 +176,24 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                         ))}
                     </div>
                 ) : (
-                    <div className="flex flex-col items-center justify-center p-12 text-center opacity-30">
-                        <MessageSquare className="h-16 w-16 mb-4" />
-                        <p className="text-sm font-bold uppercase tracking-widest">Aucun message</p>
+                    <div className="flex flex-col items-center justify-center p-12 text-center opacity-20 h-full mt-20">
+                        <MessageSquare className="h-20 w-20 mb-6 text-slate-500" />
+                        <h2 className="text-xl font-black uppercase tracking-widest text-slate-400">Silence radio</h2>
+                        <p className="mt-2 text-sm max-w-[200px]">Démarrer une conversation en consultant l'annuaire.</p>
+                        <Button asChild variant="outline" className="mt-8 border-slate-800 text-slate-400 rounded-xl px-8" onClick={() => router.push('/student/annuaire')}>
+                            <span>Voir l'annuaire</span>
+                        </Button>
                     </div>
                 )}
             </ScrollArea>
+
+            {/* Android FAB for new message */}
+            <Button 
+                onClick={() => router.push('/student/annuaire')}
+                className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-2xl shadow-[#CC7722]/40 z-50 transition-transform active:scale-90 md:hidden"
+            >
+                <UserPlus className="h-6 w-6 text-white" />
+            </Button>
         </div>
     );
 }
