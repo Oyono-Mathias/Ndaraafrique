@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -31,7 +30,7 @@ export function CertificateModal({
     instructorName, 
     completionDate, 
     certificateId 
- Suk}: CertificateModalProps) {
+}: CertificateModalProps) {
   
   const verificationUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificateId}` : '';
 
