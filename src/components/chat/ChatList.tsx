@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
- * @fileOverview Liste des conversations (Android UX).
- * Optimisée pour le scan rapide des messages non-lus.
+ * @fileOverview Liste des conversations Ndara Afrique (Android-First).
+ * Gère le flux temps réel Firestore et l'enrichissement des profils.
+ * Logic : where("participants", "array-contains", uid) + orderBy("updatedAt", "desc")
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -80,17 +80,24 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const [dataLoading, setDataLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Requête principale filtrée par participant et triée par date
     const chatsQuery = useMemo(() =>
-        user ? query(collection(db, 'chats'), where('participants', 'array-contains', user.uid), orderBy('updatedAt', 'desc')) : null,
+        user ? query(
+            collection(db, 'chats'), 
+            where('participants', 'array-contains', user.uid), 
+            orderBy('updatedAt', 'desc')
+        ) : null,
         [db, user]
     );
     const { data: chats, isLoading: chatsLoading } = useCollection<Chat>(chatsQuery);
 
+    // Enrichissement des chats avec les profils des destinataires
     useEffect(() => {
         if (!chats || chatsLoading) return;
 
         const enrich = async () => {
             setDataLoading(true);
+            // On extrait les UIDs des autres participants
             const otherIds = chats.map(c => c.participants.find(p => p !== user?.uid)).filter(Boolean) as string[];
             
             if (otherIds.length === 0) {
@@ -102,6 +109,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
             const usersMap = new Map<string, NdaraUser>();
             const uniqueOtherIds = [...new Set(otherIds)];
 
+            // Récupération par lots de 30 (limite Firestore)
             for (let i = 0; i < uniqueOtherIds.length; i += 30) {
                 const chunk = uniqueOtherIds.slice(i, i + 30);
                 const q = query(collection(db, 'users'), where('uid', 'in', chunk));
@@ -113,7 +121,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                 const otherId = chat.participants.find(p => p !== user?.uid);
                 return {
                     ...chat,
-                    otherParticipant: usersMap.get(otherId || '') || { fullName: 'Ndara Afrique' }
+                    otherParticipant: usersMap.get(otherId || '') || { fullName: 'Utilisateur Ndara' }
                 };
             });
 
@@ -179,7 +187,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                     <div className="flex flex-col items-center justify-center p-12 text-center opacity-20 h-full mt-20">
                         <MessageSquare className="h-20 w-20 mb-6 text-slate-500" />
                         <h2 className="text-xl font-black uppercase tracking-widest text-slate-400">Silence radio</h2>
-                        <p className="mt-2 text-sm max-w-[200px]">Démarrer une conversation en consultant l'annuaire.</p>
+                        <p className="mt-2 text-sm max-w-[200px]">Démarrez une conversation en consultant l'annuaire.</p>
                         <Button asChild variant="outline" className="mt-8 border-slate-800 text-slate-400 rounded-xl px-8" onClick={() => router.push('/student/annuaire')}>
                             <span>Voir l'annuaire</span>
                         </Button>
