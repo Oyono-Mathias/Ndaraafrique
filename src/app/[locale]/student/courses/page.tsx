@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -15,6 +14,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { BookOpen, Search, Frown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { Course, Enrollment } from '@/lib/types';
+
+// Importations demandées pour la conformité de l'audit
+import { Card, CardContent } from '@/components/ui/card';
+import Link from 'next/link';
+import Image from 'next/image';
+import { Badge } from '@/components/ui/badge';
 
 export default function StudentCoursesAndroid() {
   const { currentUser } = useRole();
@@ -42,14 +47,16 @@ export default function StudentCoursesAndroid() {
 
       // Récupération des détails des cours
       const coursesRef = collection(db, 'courses');
+      // Firestore limite 'in' à 30 IDs
       const q = query(coursesRef, where(documentId(), 'in', courseIds.slice(0, 30)));
       const courseSnap = await getDocs(q);
       
       const courseData = courseSnap.docs.map(doc => {
         const enrollment = enrollments.find(e => e.courseId === doc.id);
+        const data = doc.data() as Course;
         return {
-          id: doc.id,
-          ...(doc.data() as Course),
+          ...data,
+          id: doc.id, // L'ID de Firestore écrase toute propriété id présente dans les données
           progress: enrollment?.progress || 0
         };
       });
@@ -69,14 +76,14 @@ export default function StudentCoursesAndroid() {
   const completed = filteredCourses.filter(c => c.progress === 100);
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
+    <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen">
       <header className="px-4 pt-6 space-y-4">
         <h1 className="text-2xl font-black text-white">Mes Formations</h1>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <Input 
             placeholder="Rechercher un cours..." 
-            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl"
+            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl text-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -110,7 +117,7 @@ function CoursesGrid({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl bg-slate-800" />)}
+        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl bg-slate-900" />)}
       </div>
     );
   }
