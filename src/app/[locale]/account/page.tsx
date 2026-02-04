@@ -21,9 +21,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2, Bell, KeyRound, MonitorPlay, Users, Linkedin, Twitter, Globe, Settings, UserCog, Bot } from 'lucide-react';
+import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2, Bell, KeyRound, MonitorPlay, Users, Linkedin, Twitter, Globe, Settings, UserCog, Bot, Briefcase } from 'lucide-react';
 import { ImageCropper } from '@/components/ui/ImageCropper';
 import { useDebounce } from '@/hooks/use-debounce';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,24 +40,37 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+const domains = [
+    "Développement Web",
+    "Intelligence Artificielle",
+    "Design UI/UX",
+    "Marketing Digital",
+    "Entrepreneuriat",
+    "Data Science",
+    "Cybersécurité",
+    "Bureautique",
+    "Autre"
+];
 
 // --- Validation Schema ---
 const accountFormSchema = (t: (key: string) => string) => z.object({
-  username: z.string().min(3, { message: "Le nom d'utilisateur doit contenir au moins 3 caractères." }).max(20, { message: "Le nom d'utilisateur ne peut pas dépasser 20 caractères." }).regex(/^[a-zA-Z0-9_]+$/, { message: "Caractères non autorisés." }),
+  username: z.string().min(3, { message: "Le nom d'utilisateur doit contenir au moins 3 caractères." }).max(20, { message: "Le nom d'utilisateur ne peut pas dépasser 20 caractères." }).regex(/^[a-zA-Z0-9_]+$/, { message: "Caractères non autorisés (lettres, chiffres et underscore uniquement)." }),
   fullName: z.string().min(3, { message: "Le nom doit contenir au moins 3 caractères." }),
   bio: z.string().max(500, "La biographie ne peut pas dépasser 500 caractères.").optional(),
   phoneNumber: z.string().optional(),
+  interestDomain: z.string().min(2, "Veuillez choisir votre domaine principal."),
   // Social Links
-  'socialLinks.linkedin': z.string().url().or(z.literal('')).optional(),
-  'socialLinks.twitter': z.string().url().or(z.literal('')).optional(),
-  'socialLinks.website': z.string().url().or(z.literal('')).optional(),
+  linkedin: z.string().url().or(z.literal('')).optional(),
+  twitter: z.string().url().or(z.literal('')).optional(),
+  website: z.string().url().or(z.literal('')).optional(),
   // Instructor Notifications
-  'instructorNotificationPreferences.newEnrollment': z.boolean().default(true),
-  'instructorNotificationPreferences.newMessage': z.boolean().default(true),
-  'instructorNotificationPreferences.newAssignmentSubmission': z.boolean().default(true),
+  notifyEnrollment: z.boolean().default(true),
+  notifyMessage: z.boolean().default(true),
+  notifyAssignment: z.boolean().default(true),
   // Pedagogical Preferences
-  'pedagogicalPreferences.aiAssistanceEnabled': z.boolean().default(true),
+  aiAssistanceEnabled: z.boolean().default(true),
 });
 
 type AccountFormValues = z.infer<ReturnType<typeof accountFormSchema>>;
@@ -65,13 +78,13 @@ type AccountFormValues = z.infer<ReturnType<typeof accountFormSchema>>;
 const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: React.ElementType, value: number | string, isLoading: boolean }) => {
     const Icon = icon;
     return (
-        <Card className="glassmorphism-card">
+        <Card className="bg-slate-900 border-slate-800">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-400">{title}</CardTitle>
-                <Icon className="h-4 w-4 text-slate-400" />
+                <CardTitle className="text-xs font-black uppercase tracking-widest text-slate-500">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-primary" />
             </CardHeader>
             <CardContent>
-                {isLoading ? <Skeleton className="h-8 w-1/2 bg-slate-700" /> : <div className="text-2xl font-bold text-white">{value}</div>}
+                {isLoading ? <Skeleton className="h-8 w-1/2 bg-slate-800" /> : <div className="text-2xl font-black text-white">{value}</div>}
             </CardContent>
         </Card>
     );
@@ -102,13 +115,14 @@ export default function AccountPage() {
         fullName: currentUser.fullName || '',
         bio: currentUser.bio || '',
         phoneNumber: currentUser.phoneNumber || '',
-        'socialLinks.linkedin': currentUser.socialLinks?.linkedin || '',
-        'socialLinks.twitter': currentUser.socialLinks?.twitter || '',
-        'socialLinks.website': currentUser.socialLinks?.website || '',
-        'instructorNotificationPreferences.newEnrollment': currentUser.instructorNotificationPreferences?.newEnrollment ?? true,
-        'instructorNotificationPreferences.newMessage': currentUser.instructorNotificationPreferences?.newMessage ?? true,
-        'instructorNotificationPreferences.newAssignmentSubmission': currentUser.instructorNotificationPreferences?.newAssignmentSubmission ?? true,
-        'pedagogicalPreferences.aiAssistanceEnabled': currentUser.pedagogicalPreferences?.aiAssistanceEnabled ?? true,
+        interestDomain: currentUser.careerGoals?.interestDomain || '',
+        linkedin: currentUser.socialLinks?.linkedin || '',
+        twitter: currentUser.socialLinks?.twitter || '',
+        website: currentUser.socialLinks?.website || '',
+        notifyEnrollment: currentUser.instructorNotificationPreferences?.newEnrollment ?? true,
+        notifyMessage: currentUser.instructorNotificationPreferences?.newMessage ?? true,
+        notifyAssignment: currentUser.instructorNotificationPreferences?.newAssignmentSubmission ?? true,
+        aiAssistanceEnabled: currentUser.pedagogicalPreferences?.aiAssistanceEnabled ?? true,
       });
       setImagePreview(currentUser.profilePictureURL || null);
     }
@@ -130,8 +144,6 @@ export default function AccountPage() {
             const coursesSnap = await getCountFromServer(qCourses);
             
             const qEnrollments = query(enrollmentsRef, where('instructorId', '==', user.uid));
-            // Note: Counting unique students would require more complex logic (e.g. cloud function)
-            // For now, we count total enrollments as a proxy for student reach.
             const enrollmentsSnap = await getCountFromServer(qEnrollments);
 
             setStats(prev => ({ ...prev, courses: coursesSnap.data().count, students: enrollmentsSnap.data().count }));
@@ -148,43 +160,50 @@ export default function AccountPage() {
     if (!currentUser) return;
     setIsSaving(true);
     
-    let finalImageURL = currentUser.profilePictureURL || '';
-    if (imageToCrop) {
-        // Upload logic...
-    }
-
     const auth = getAuth();
     const userDocRef = doc(db, 'users', currentUser.uid);
 
     try {
-        await updateDoc(userDocRef, {
+        // Logique de complétion de profil
+        const isComplete = !!(data.username && data.interestDomain);
+
+        const updatePayload: any = {
             username: data.username,
             fullName: data.fullName,
-            bio: data.bio,
-            phoneNumber: data.phoneNumber,
-            'socialLinks.linkedin': data['socialLinks.linkedin'],
-            'socialLinks.twitter': data['socialLinks.twitter'],
-            'socialLinks.website': data['socialLinks.website'],
-        });
+            bio: data.bio || '',
+            phoneNumber: data.phoneNumber || '',
+            'careerGoals.interestDomain': data.interestDomain,
+            isProfileComplete: isComplete,
+        };
+
+        // Les liens sociaux ne sont mis à jour que pour les formateurs/admins
+        if (role !== 'student') {
+            updatePayload['socialLinks.linkedin'] = data.linkedin || '';
+            updatePayload['socialLinks.twitter'] = data.twitter || '';
+            updatePayload['socialLinks.website'] = data.website || '';
+        }
+
+        await updateDoc(userDocRef, updatePayload);
         
         if (auth.currentUser && auth.currentUser.displayName !== data.fullName) {
           await updateProfile(auth.currentUser, { displayName: data.fullName });
         }
 
-        toast({ title: "Profil mis à jour" });
-    } catch (error) {
+        toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet !" : "Profil mis à jour." });
+    } catch (error: any) {
+      console.error("Save error:", error);
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil." });
     } finally {
       setIsSaving(false);
     }
   };
   
-  const handleSettingsUpdate = async (data: any) => {
+  const handleSettingsUpdate = async (updateData: any) => {
       if (!currentUser) return;
       setIsSaving(true);
       const userDocRef = doc(db, 'users', currentUser.uid);
       try {
-        await updateDoc(userDocRef, data);
+        await updateDoc(userDocRef, updateData);
         toast({ title: "Préférences sauvegardées" });
       } catch(e) {
          toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les préférences.' });
@@ -199,7 +218,7 @@ export default function AccountPage() {
     setIsUploading(true);
 
     const storage = getStorage();
-    const filePath = `avatars/${currentUser.uid}/profile.webp`;
+    const filePath = `avatars/${currentUser.uid}/profile_${Date.now()}.webp`;
     const storageRef = ref(storage, filePath);
 
     try {
@@ -233,26 +252,17 @@ export default function AccountPage() {
         const result = await deleteUserAccount({ userId: user.uid, idToken });
         
         if (!result.success) {
-            toast({
-              variant: "destructive",
-              title: "Erreur de suppression",
-              description: result.error || "Une erreur inconnue est survenue.",
-            });
+            toast({ variant: "destructive", title: "Erreur", description: result.error || "Une erreur est survenue." });
             setIsDeleting(false);
         }
-        // On success, the onAuthStateChanged listener in RoleContext will handle the redirect.
     } catch (error: any) {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: error.message || "Une erreur est survenue lors de la suppression.",
-        });
+        toast({ variant: "destructive", title: "Erreur", description: error.message });
         setIsDeleting(false);
     }
   };
   
   if (isUserLoading || !currentUser) {
-    return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
+    return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   }
 
   return (
@@ -262,124 +272,170 @@ export default function AccountPage() {
         onCropComplete={handleAvatarUpload}
         onClose={() => setImageToCrop(null)}
       />
-      <div className="space-y-8 max-w-5xl mx-auto">
+      <div className="space-y-8 max-w-4xl mx-auto pb-20">
         
-        <header className="text-center">
-            <h1 className="text-4xl font-bold text-white mb-2">{t('Nav.account')}</h1>
-            <p className="text-lg text-slate-400">Gérez les informations de votre compte et vos préférences.</p>
+        <header className="text-center pt-4">
+            <h1 className="text-3xl font-black text-white uppercase tracking-tight">Mon Compte</h1>
+            <p className="text-slate-500 text-sm mt-1">Gérez vos informations et votre visibilité sur Ndara.</p>
         </header>
 
         {role === 'instructor' && (
-             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                 <StatCard title="Cours Publiés" icon={MonitorPlay} value={stats.courses} isLoading={statsLoading} />
-                 <StatCard title="Total d'étudiants" icon={Users} value={stats.students.toLocaleString('fr-FR')} isLoading={statsLoading} />
-                 <StatCard title="Certificats délivrés" icon={Sparkles} value={stats.certificates} isLoading={statsLoading} />
+             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                 <StatCard title="Cours" icon={MonitorPlay} value={stats.courses} isLoading={statsLoading} />
+                 <StatCard title="Étudiants" icon={Users} value={stats.students} isLoading={statsLoading} />
+                 <StatCard title="Diplômes" icon={Sparkles} value={stats.certificates} isLoading={statsLoading} />
             </div>
         )}
 
         <Tabs defaultValue="profile" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 dark:bg-slate-800">
-                <TabsTrigger value="profile"><UserCog className="w-4 h-4 mr-2"/>Profil</TabsTrigger>
-                <TabsTrigger value="security"><KeyRound className="w-4 h-4 mr-2"/>Sécurité</TabsTrigger>
-                <TabsTrigger value="notifications"><Bell className="w-4 h-4 mr-2"/>Notifications</TabsTrigger>
-                <TabsTrigger value="settings"><Settings className="w-4 h-4 mr-2"/>Préférences</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-slate-900 border-slate-800 p-1 h-auto">
+                <TabsTrigger value="profile" className="py-2.5 text-xs uppercase font-black tracking-widest"><UserCog className="w-4 h-4 mr-2 hidden sm:block"/>Profil</TabsTrigger>
+                <TabsTrigger value="security" className="py-2.5 text-xs uppercase font-black tracking-widest"><KeyRound className="w-4 h-4 mr-2 hidden sm:block"/>Sécurité</TabsTrigger>
+                <TabsTrigger value="notifications" className="py-2.5 text-xs uppercase font-black tracking-widest"><Bell className="w-4 h-4 mr-2 hidden sm:block"/>Alertes</TabsTrigger>
+                <TabsTrigger value="settings" className="py-2.5 text-xs uppercase font-black tracking-widest"><Settings className="w-4 h-4 mr-2 hidden sm:block"/>Réglages</TabsTrigger>
             </TabsList>
             
             <Form {...form}>
-            <TabsContent value="profile" className="mt-6">
-                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
+            <TabsContent value="profile" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
+                <Card className="bg-slate-900 border-slate-800 shadow-2xl rounded-3xl overflow-hidden">
                 <form onSubmit={form.handleSubmit(onProfileSubmit)}>
-                    <CardHeader><CardTitle>Informations Personnelles</CardTitle></CardHeader>
-                    <CardContent className="space-y-6">
+                    <CardHeader className="border-b border-white/5">
+                        <CardTitle className="text-lg font-bold text-white">Informations Publiques</CardTitle>
+                        <CardDescription>Ces données sont visibles par la communauté Ndara.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-8 pt-6">
                          <FormField control={form.control} name="username" render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-slate-300">Photo de profil</FormLabel>
-                            <div className="flex items-center gap-4">
-                                <label htmlFor="avatar-upload" className="cursor-pointer">
-                                <Avatar className="h-20 w-20 border-4 border-slate-700 shadow-lg group relative">
-                                    <AvatarImage src={imagePreview || ''} />
-                                    <AvatarFallback className="text-3xl bg-slate-800 text-white">{currentUser.fullName?.charAt(0)}</AvatarFallback>
-                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"><Edit3 className="h-6 w-6 text-white"/></div>
-                                </Avatar>
+                            <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Photo de profil</FormLabel>
+                            <div className="flex items-center gap-6">
+                                <label htmlFor="avatar-upload" className="cursor-pointer group relative">
+                                    <Avatar className="h-24 w-24 border-4 border-slate-800 shadow-2xl transition-transform active:scale-95">
+                                        <AvatarImage src={imagePreview || ''} className="object-cover" />
+                                        <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full">
+                                            <CameraIcon className="h-6 w-6 text-white"/>
+                                        </div>
+                                    </Avatar>
                                 </label>
                                 <Input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setImageToCrop(URL.createObjectURL(e.target.files[0]))} disabled={isUploading}/>
-                                {isUploading && <Loader2 className="h-6 w-6 animate-spin text-white"/>}
+                                <div className="space-y-1">
+                                    <p className="text-sm font-bold text-white">Votre avatar</p>
+                                    <p className="text-xs text-slate-500">Format WebP ou PNG recommandé.</p>
+                                </div>
+                                {isUploading && <Loader2 className="h-6 w-6 animate-spin text-primary"/>}
                             </div>
                           </FormItem>
                         )} />
                         
                         <div className="grid md:grid-cols-2 gap-6">
-                            <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel>Nom Complet</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)}/>
-                            <FormItem><FormLabel>Adresse E-mail</FormLabel><Input value={currentUser.email} readOnly disabled className="text-slate-400 cursor-not-allowed" /></FormItem>
-                            <FormField control={form.control} name="username" render={({ field }) => (<FormItem><FormLabel>Nom d'utilisateur</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>)} />
-                            <Controller control={form.control} name="phoneNumber" render={({ field }) => (
-                                <FormItem><FormLabel>N° de téléphone</FormLabel><FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-10 w-full rounded-md border border-input dark:bg-background px-3 py-2 text-sm shadow-sm" /></FormControl><FormMessage/></FormItem>
-                            )}/>
-                        </div>
-                        <FormField control={form.control} name="bio" render={({ field }) => (<FormItem><FormLabel>Biographie</FormLabel><FormControl><Textarea {...field} rows={4} /></FormControl><FormMessage /></FormItem>)} />
-                        
-                        <div>
-                            <h4 className="font-semibold mb-4">Réseaux sociaux</h4>
-                            <div className="space-y-4">
-                                <FormField control={form.control} name="socialLinks.linkedin" render={({ field }) => (<FormItem><div className="flex items-center gap-2"><Linkedin className="h-5 w-5 text-slate-400"/><Input placeholder="URL de votre profil LinkedIn" {...field}/></div><FormMessage /></FormItem>)}/>
-                                <FormField control={form.control} name="socialLinks.twitter" render={({ field }) => (<FormItem><div className="flex items-center gap-2"><Twitter className="h-5 w-5 text-slate-400"/><Input placeholder="URL de votre profil Twitter/X" {...field}/></div><FormMessage /></FormItem>)}/>
-                                <FormField control={form.control} name="socialLinks.website" render={({ field }) => (<FormItem><div className="flex items-center gap-2"><Globe className="h-5 w-5 text-slate-400"/><Input placeholder="URL de votre site web" {...field}/></div><FormMessage /></FormItem>)}/>
-                            </div>
+                            <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Nom Complet</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>)}/>
+                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Adresse E-mail</FormLabel><Input value={currentUser.email} readOnly disabled className="h-12 bg-slate-900 border-slate-800 text-slate-600 rounded-xl cursor-not-allowed" /></FormItem>
+                            <FormField control={form.control} name="username" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Identifiant (@)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormDescription className="text-[10px]">Uniquement lettres, chiffres et tiret bas.</FormDescription><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="interestDomain" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Domaine visé</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger className="h-12 bg-slate-800/50 border-slate-700 rounded-xl">
+                                                <SelectValue placeholder="Choisir un domaine..." />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                            {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
                         </div>
 
+                        <Controller control={form.control} name="phoneNumber" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">N° de téléphone</FormLabel><FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-12 w-full rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-white focus-visible:ring-primary/30" /></FormControl><FormMessage/></FormItem>
+                        )}/>
+
+                        <FormField control={form.control} name="bio" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Ma Biographie</FormLabel><FormControl><Textarea {...field} rows={4} placeholder="Dites-en un peu plus sur votre parcours..." className="bg-slate-800/50 border-slate-700 rounded-xl resize-none" /></FormControl><FormMessage /></FormItem>)} />
+                        
+                        {/* --- LIENS SOCIAUX : RÉSERVÉS AUX FORMATEURS & ADMINS --- */}
+                        {role !== 'student' && (
+                            <div className="space-y-6 pt-6 border-t border-white/5">
+                                <h4 className="text-[10px] font-black uppercase text-primary tracking-[0.2em]">Réseaux Professionnels</h4>
+                                <div className="space-y-4">
+                                    <FormField control={form.control} name="linkedin" render={({ field }) => (<FormItem><div className="flex items-center gap-3 bg-slate-800/30 p-1 rounded-xl border border-slate-700"><div className="p-2 bg-blue-600/10 rounded-lg"><Linkedin className="h-5 w-5 text-blue-400"/></div><Input placeholder="URL LinkedIn" {...field} className="bg-transparent border-none focus-visible:ring-0 h-10"/></div><FormMessage /></FormItem>)}/>
+                                    <FormField control={form.control} name="twitter" render={({ field }) => (<FormItem><div className="flex items-center gap-3 bg-slate-800/30 p-1 rounded-xl border border-slate-700"><div className="p-2 bg-slate-700/50 rounded-lg"><Twitter className="h-5 w-5 text-white"/></div><Input placeholder="URL Twitter/X" {...field} className="bg-transparent border-none focus-visible:ring-0 h-10"/></div><FormMessage /></FormItem>)}/>
+                                    <FormField control={form.control} name="website" render={({ field }) => (<FormItem><div className="flex items-center gap-3 bg-slate-800/30 p-1 rounded-xl border border-slate-700"><div className="p-2 bg-emerald-600/10 rounded-lg"><Globe className="h-5 w-5 text-emerald-400"/></div><Input placeholder="Votre site web" {...field} className="bg-transparent border-none focus-visible:ring-0 h-10"/></div><FormMessage /></FormItem>)}/>
+                                </div>
+                            </div>
+                        )}
+
                     </CardContent>
-                    <CardFooter className="justify-end"><Button type="submit" disabled={isSaving}>{isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button></CardFooter>
+                    <CardFooter className="bg-slate-900/50 border-t border-white/5 px-6 py-6 flex justify-end">
+                        <Button type="submit" disabled={isSaving} className="h-12 px-10 rounded-xl font-black uppercase tracking-widest bg-primary hover:bg-primary/90 shadow-xl shadow-primary/20">
+                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
+                            Sauvegarder mon profil
+                        </Button>
+                    </CardFooter>
                  </form>
                 </Card>
             </TabsContent>
 
-            <TabsContent value="security" className="mt-6">
-                 <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                    <CardHeader><CardTitle>Sécurité du Compte</CardTitle></CardHeader>
+            <TabsContent value="security" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
+                 <Card className="bg-slate-900 border-slate-800 rounded-3xl">
+                    <CardHeader><CardTitle className="text-lg">Sécurité du Compte</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex items-center justify-between p-3 border rounded-lg">
-                           <p>Mot de passe</p>
-                           <Button variant="secondary" onClick={handlePasswordReset}>Modifier</Button>
+                        <div className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                           <div>
+                               <p className="text-sm font-bold text-white">Mot de passe</p>
+                               <p className="text-xs text-slate-500">Réinitialisez votre accès par e-mail.</p>
+                           </div>
+                           <Button variant="secondary" onClick={handlePasswordReset} className="rounded-xl font-bold">Réinitialiser</Button>
                         </div>
                     </CardContent>
                 </Card>
             </TabsContent>
             
-            <TabsContent value="notifications" className="mt-6">
-                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                    <CardHeader><CardTitle>Notifications Formateur</CardTitle></CardHeader>
-                    <CardContent className="space-y-2">
-                        <FormField control={form.control} name="instructorNotificationPreferences.newEnrollment" render={({ field }) => (
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <FormLabel>Nouvelle inscription à un cours</FormLabel>
-                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newEnrollment': val})}}/>
+            <TabsContent value="notifications" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl">
+                    <CardHeader>
+                        <CardTitle className="text-lg">Préférences d'Alerte</CardTitle>
+                        <CardDescription>Choisissez comment Ndara communique avec vous.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {role !== 'student' ? (
+                            <>
+                                <FormField control={form.control} name="notifyEnrollment" render={({ field }) => (
+                                    <div className="flex items-center justify-between p-4 border border-slate-800 rounded-2xl">
+                                        <FormLabel className="cursor-pointer font-bold">Nouvelle inscription</FormLabel>
+                                        <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newEnrollment': val})}}/>
+                                    </div>
+                                )}/>
+                                <FormField control={form.control} name="notifyMessage" render={({ field }) => (
+                                    <div className="flex items-center justify-between p-4 border border-slate-800 rounded-2xl">
+                                        <FormLabel className="cursor-pointer font-bold">Nouveau message</FormLabel>
+                                        <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newMessage': val})}}/>
+                                    </div>
+                                )}/>
+                            </>
+                        ) : (
+                            <div className="p-8 text-center opacity-40">
+                                <Bell className="h-12 w-12 mx-auto text-slate-600 mb-4" />
+                                <p className="text-sm">Les paramètres de notification détaillés arrivent bientôt pour les étudiants.</p>
                             </div>
-                        )}/>
-                        <FormField control={form.control} name="instructorNotificationPreferences.newMessage" render={({ field }) => (
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <FormLabel>Nouveau message d'un étudiant</FormLabel>
-                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newMessage': val})}}/>
-                            </div>
-                        )}/>
-                         <FormField control={form.control} name="instructorNotificationPreferences.newAssignmentSubmission" render={({ field }) => (
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <FormLabel>Nouveau devoir soumis</FormLabel>
-                                <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'instructorNotificationPreferences.newAssignmentSubmission': val})}}/>
-                            </div>
-                        )}/>
+                        )}
                     </CardContent>
                 </Card>
             </TabsContent>
             
-             <TabsContent value="settings" className="mt-6">
-                <Card className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                    <CardHeader><CardTitle>Préférences Pédagogiques</CardTitle></CardHeader>
-                    <CardContent className="space-y-2">
-                        <FormField control={form.control} name="pedagogicalPreferences.aiAssistanceEnabled" render={({ field }) => (
-                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                <div>
-                                    <FormLabel className="flex items-center gap-2"><Bot className="h-4 w-4"/>Activer l'assistance IA (MATHIAS)</FormLabel>
-                                    <p className="text-xs text-slate-400">Pour la correction des devoirs, la génération de contenu, etc.</p>
+             <TabsContent value="settings" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
+                    <CardHeader className="border-b border-white/5">
+                        <CardTitle className="text-lg">Outils & IA</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 pt-6">
+                        <FormField control={form.control} name="aiAssistanceEnabled" render={({ field }) => (
+                            <div className="flex items-center justify-between p-5 bg-primary/5 border border-primary/10 rounded-2xl">
+                                <div className="space-y-1">
+                                    <FormLabel className="flex items-center gap-2 font-black uppercase text-[10px] text-primary tracking-widest"><Bot className="h-4 w-4"/>Copilote MATHIAS</FormLabel>
+                                    <p className="text-xs text-slate-400">Activer les suggestions personnalisées et l'aide à l'apprentissage.</p>
                                 </div>
                                 <Switch checked={field.value} onCheckedChange={(val) => { field.onChange(val); handleSettingsUpdate({'pedagogicalPreferences.aiAssistanceEnabled': val})}}/>
                             </div>
@@ -390,27 +446,60 @@ export default function AccountPage() {
             </Form>
         </Tabs>
         
+        {/* --- ZONE DE DANGER --- */}
         <div className="mt-12">
-             <Card className="border-destructive/50">
-                <CardHeader>
-                    <CardTitle className="text-xl text-destructive/90">Zone de Danger</CardTitle>
-                </CardHeader>
-                <CardContent className="flex justify-between items-center">
-                    <p className="text-sm text-slate-400">La suppression de votre compte est une action définitive et irréversible.</p>
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button variant="destructive"><Trash2 className="mr-2 h-4 w-4" />Supprimer mon compte</Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader><AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle><AlertDialogDescription>Cette action est irréversible. Toutes vos données seront définitivement supprimées.</AlertDialogDescription></AlertDialogHeader>
-                            <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting}>{isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}Oui, supprimer</AlertDialogAction></AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
-                </CardContent>
+             <Card className="bg-red-500/5 border-red-500/20 rounded-3xl p-6 flex flex-col sm:flex-row justify-between items-center gap-6">
+                <div className="text-center sm:text-left">
+                    <h3 className="text-red-400 font-black uppercase text-xs tracking-widest flex items-center justify-center sm:justify-start gap-2">
+                        <AlertTriangle className="h-4 w-4" />
+                        Zone de Danger
+                    </h3>
+                    <p className="text-xs text-red-400/60 mt-1">La suppression est définitive et efface toutes vos progressions.</p>
+                </div>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="destructive" className="rounded-xl font-bold h-12 px-6">Supprimer mon compte</Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="bg-slate-900 border-slate-800 text-white rounded-3xl">
+                        <AlertDialogHeader>
+                            <AlertDialogTitle className="text-xl font-black uppercase">Supprimer tout ?</AlertDialogTitle>
+                            <AlertDialogDescription className="text-slate-400">
+                                Cette action est irréversible. Vos certificats, messages et accès aux cours seront perdus à jamais.
+                            </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter className="pt-4">
+                            <AlertDialogCancel className="bg-slate-800 border-slate-700 text-white rounded-xl">Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteAccount} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 rounded-xl font-bold">
+                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Confirmer la suppression
+                            </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
              </Card>
         </div>
 
       </div>
     </>
+  );
+}
+
+function CameraIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
   );
 }
