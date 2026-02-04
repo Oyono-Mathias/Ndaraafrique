@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import Image from 'next/image';
 import { useTranslations } from 'next-intl';
@@ -129,7 +129,7 @@ export default function AccountPage() {
   }, [currentUser, form]);
 
   useEffect(() => {
-    if (!user || isUserLoading || role !== 'instructor') {
+    if (!user || isUserLoading || currentUser?.role === 'student') {
       if(!isUserLoading) setStatsLoading(false);
       return;
     };
@@ -154,7 +154,7 @@ export default function AccountPage() {
         }
     };
     fetchInstructorStats();
-  }, [user, isUserLoading, db, role]);
+  }, [user, isUserLoading, db, currentUser?.role]);
 
   const onProfileSubmit = async (data: AccountFormValues) => {
     if (!currentUser) return;
@@ -164,7 +164,6 @@ export default function AccountPage() {
     const userDocRef = doc(db, 'users', currentUser.uid);
 
     try {
-        // Logique de complétion de profil
         const isComplete = !!(data.username && data.interestDomain);
 
         const updatePayload: any = {
@@ -177,22 +176,22 @@ export default function AccountPage() {
         };
 
         // Les liens sociaux ne sont mis à jour que pour les formateurs/admins
-        if (role !== 'student') {
+        if (currentUser.role !== 'student') {
             updatePayload['socialLinks.linkedin'] = data.linkedin || '';
             updatePayload['socialLinks.twitter'] = data.twitter || '';
             updatePayload['socialLinks.website'] = data.website || '';
         }
 
-        await updateDoc(userDocRef, updatePayload);
+        await setDoc(userDocRef, updatePayload, { merge: true });
         
         if (auth.currentUser && auth.currentUser.displayName !== data.fullName) {
           await updateProfile(auth.currentUser, { displayName: data.fullName });
         }
 
-        toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet !" : "Profil mis à jour." });
+        toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet ! Les fonctions communautaires sont activées." : "Profil mis à jour." });
     } catch (error: any) {
       console.error("Save error:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil." });
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil. Vérifiez votre connexion." });
     } finally {
       setIsSaving(false);
     }
@@ -203,7 +202,7 @@ export default function AccountPage() {
       setIsSaving(true);
       const userDocRef = doc(db, 'users', currentUser.uid);
       try {
-        await updateDoc(userDocRef, updateData);
+        await setDoc(userDocRef, updateData, { merge: true });
         toast({ title: "Préférences sauvegardées" });
       } catch(e) {
          toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les préférences.' });
@@ -224,7 +223,7 @@ export default function AccountPage() {
     try {
       const snapshot = await uploadBytes(storageRef, croppedImage);
       const downloadURL = await getDownloadURL(snapshot.ref);
-      await updateDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL });
+      await setDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL }, { merge: true });
       toast({ title: "Avatar mis à jour" });
       setImagePreview(downloadURL);
     } catch (error) {
@@ -279,7 +278,7 @@ export default function AccountPage() {
             <p className="text-slate-500 text-sm mt-1">Gérez vos informations et votre visibilité sur Ndara.</p>
         </header>
 
-        {role === 'instructor' && (
+        {currentUser.role !== 'student' && (
              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                  <StatCard title="Cours" icon={MonitorPlay} value={stats.courses} isLoading={statsLoading} />
                  <StatCard title="Étudiants" icon={Users} value={stats.students} isLoading={statsLoading} />
@@ -356,7 +355,7 @@ export default function AccountPage() {
                         <FormField control={form.control} name="bio" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Ma Biographie</FormLabel><FormControl><Textarea {...field} rows={4} placeholder="Dites-en un peu plus sur votre parcours..." className="bg-slate-800/50 border-slate-700 rounded-xl resize-none" /></FormControl><FormMessage /></FormItem>)} />
                         
                         {/* --- LIENS SOCIAUX : RÉSERVÉS AUX FORMATEURS & ADMINS --- */}
-                        {role !== 'student' && (
+                        {currentUser.role !== 'student' && (
                             <div className="space-y-6 pt-6 border-t border-white/5">
                                 <h4 className="text-[10px] font-black uppercase text-primary tracking-[0.2em]">Réseaux Professionnels</h4>
                                 <div className="space-y-4">
@@ -400,7 +399,7 @@ export default function AccountPage() {
                         <CardDescription>Choisissez comment Ndara communique avec vous.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        {role !== 'student' ? (
+                        {currentUser.role !== 'student' ? (
                             <>
                                 <FormField control={form.control} name="notifyEnrollment" render={({ field }) => (
                                     <div className="flex items-center justify-between p-4 border border-slate-800 rounded-2xl">
