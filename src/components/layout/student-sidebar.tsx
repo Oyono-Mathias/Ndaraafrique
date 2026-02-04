@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -112,7 +113,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
         { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
         { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
         { href: "/student/liste-de-souhaits", icon: Heart, label: 'Liste de souhaits', id: 'sidebar-nav-liste-de-souhaits' },
-        { href: "/student/mes-devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-mes-devoirs' },
+        { href: "/student/devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
         { href: "/student/mes-questions", icon: FileQuestion, label: 'Mes Questions', id: 'sidebar-nav-mes-questions' },
       ],
     },
