@@ -13,6 +13,7 @@ import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUserAccount } from '@/actions/userActions';
+import { useRouter } from 'next/navigation';
 
 import 'react-phone-number-input/style.css'
 import PhoneInput from 'react-phone-number-input/react-hook-form-input'
@@ -94,6 +95,7 @@ export default function AccountPage() {
   const { user, currentUser, role, isUserLoading } = useRole();
   const t = useTranslations();
   const { toast } = useToast();
+  const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -175,7 +177,6 @@ export default function AccountPage() {
             isProfileComplete: isComplete,
         };
 
-        // Les liens sociaux ne sont mis à jour que pour les formateurs/admins
         if (currentUser.role !== 'student') {
             updatePayload['socialLinks.linkedin'] = data.linkedin || '';
             updatePayload['socialLinks.twitter'] = data.twitter || '';
@@ -189,6 +190,9 @@ export default function AccountPage() {
         }
 
         toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet ! Les fonctions communautaires sont activées." : "Profil mis à jour." });
+        
+        // Forcer Next.js à revalider les données
+        router.refresh();
     } catch (error: any) {
       console.error("Save error:", error);
       toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil. Vérifiez votre connexion." });
@@ -204,6 +208,7 @@ export default function AccountPage() {
       try {
         await setDoc(userDocRef, updateData, { merge: true });
         toast({ title: "Préférences sauvegardées" });
+        router.refresh();
       } catch(e) {
          toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder les préférences.' });
       } finally {
@@ -226,6 +231,7 @@ export default function AccountPage() {
       await setDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL }, { merge: true });
       toast({ title: "Avatar mis à jour" });
       setImagePreview(downloadURL);
+      router.refresh();
     } catch (error) {
       toast({ variant: 'destructive', title: 'Erreur d\'upload', description: "Impossible de mettre à jour l'avatar." });
     } finally {

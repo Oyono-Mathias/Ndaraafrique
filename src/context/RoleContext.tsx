@@ -87,6 +87,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
+    // ✅ LISTENER TEMPS RÉEL (onSnapshot)
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
@@ -116,8 +117,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               }
           }
           
-          if (userData.isProfileComplete === undefined) {
-              updatePayload.isProfileComplete = !!(userData.username && userData.careerGoals?.interestDomain);
+          // Vérification de la complétion du profil basée sur les champs requis (username + interestDomain)
+          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain);
+          if (userData.isProfileComplete !== isComplete) {
+              updatePayload.isProfileComplete = isComplete;
               needsUpdate = true;
           }
           
@@ -126,7 +129,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               await setDoc(userDocRef, updatePayload, { merge: true });
               return; 
             } catch (e) {
-                console.error(`Failed to migrate user document for ${user.uid}:`, e);
+                console.error(`Failed to sync user document for ${user.uid}:`, e);
             }
           }
 
@@ -175,7 +178,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
               profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
-              isProfileComplete: !!(userData.username && userData.careerGoals?.interestDomain),
+              isProfileComplete: isComplete,
               permissions: finalPermissions,
           } as any;
           
