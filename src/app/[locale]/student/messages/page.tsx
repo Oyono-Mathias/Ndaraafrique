@@ -1,14 +1,18 @@
 
 'use client';
+
+/**
+ * @fileOverview Messagerie Privée Ndara Afrique.
+ * Supporte le mode liste sur mobile et le mode split sur desktop.
+ */
+
 import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { ChatList } from '@/components/chat/ChatList';
 import { ChatRoom } from '@/components/chat/ChatRoom';
-import { useSearchParams } from 'next/navigation';
-import { MessageSquare } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useRole } from '@/context/RoleContext';
-import { Button } from '@/components/ui/button';
-import Link from 'next/link';
+import { Loader2, MessageSquare } from 'lucide-react';
 
 function MessagesPageContent() {
     const searchParams = useSearchParams();
@@ -17,20 +21,11 @@ function MessagesPageContent() {
     const isMobile = useIsMobile();
 
     if (isUserLoading) {
-        return null;
-    }
-    
-    if (!currentUser?.isProfileComplete) {
-         return (
-             <div className="flex h-full flex-col items-center justify-center text-center text-slate-400 p-4">
-                <MessageSquare className="h-20 w-20 mb-4 text-slate-500" />
-                <h2 className="text-xl font-bold text-slate-200">Messagerie Privée</h2>
-                <p className="max-w-md mt-2">Pour accéder à la messagerie et contacter d'autres membres, veuillez d'abord compléter votre profil.</p>
-                <Button asChild className="mt-6">
-                    <Link href="/account">Compléter mon profil</Link>
-                </Button>
+        return (
+            <div className="h-full flex items-center justify-center bg-slate-950">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-         )
+        );
     }
 
     if (isMobile) {
@@ -38,28 +33,28 @@ function MessagesPageContent() {
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-[340px_1fr] lg:grid-cols-[380px_1fr] h-[calc(100vh_-_theme(spacing.16))] -m-6">
-            <div className="col-span-1 border-r border-slate-800">
+        <div className="grid grid-cols-[350px_1fr] h-[calc(100vh-64px)] -m-6 overflow-hidden">
+            <aside className="border-r border-slate-800">
                 <ChatList selectedChatId={chatId} />
-            </div>
-            <div className="col-span-1">
+            </aside>
+            <main className="bg-slate-950 flex flex-col">
                 {chatId ? (
                     <ChatRoom chatId={chatId} />
                 ) : (
-                    <div className="flex h-full flex-col items-center justify-center text-center text-slate-400 p-4">
-                        <MessageSquare className="h-20 w-20 mb-4 text-slate-500" />
-                        <h2 className="text-xl font-bold text-slate-200">Bienvenue dans votre messagerie</h2>
-                        <p>Sélectionnez une conversation pour commencer à discuter.</p>
+                    <div className="flex-1 flex flex-col items-center justify-center text-slate-700 opacity-20 p-12 text-center">
+                        <MessageSquare className="h-24 w-24 mb-6" />
+                        <h2 className="text-2xl font-black uppercase tracking-[0.3em]">Messagerie</h2>
+                        <p className="mt-2 text-sm">Sélectionnez une conversation pour démarrer.</p>
                     </div>
                 )}
-            </div>
+            </main>
         </div>
     );
 }
 
 export default function MessagesPage() {
     return (
-        <Suspense>
+        <Suspense fallback={<div className="h-full bg-slate-950" />}>
             <MessagesPageContent />
         </Suspense>
     );

@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
-import { Loader2, UserPlus } from 'lucide-react';
+import { Loader2, UserPlus, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -21,38 +22,46 @@ interface EnrichedChat extends Chat {
 
 const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, isSelected: boolean, unreadCount: number }) => {
     const router = useRouter();
-    
-    // ✅ Correction robuste de l'appel .toDate() pour TypeScript
-    const lastMessageDate = chat.updatedAt && typeof (chat.updatedAt as any).toDate === 'function' 
-        ? formatDistanceToNowStrict((chat.updatedAt as any).toDate(), { addSuffix: true, locale: fr }) 
-        : '';
+    const lastDate = (chat.updatedAt as any)?.toDate?.();
 
     return (
         <button 
             onClick={() => router.push(`/student/messages?chatId=${chat.id}`)}
             className={cn(
-                "w-full text-left p-3 flex items-center gap-3 transition-colors rounded-lg",
-                isSelected ? "bg-slate-700" : "hover:bg-slate-800/60"
+                "w-full text-left p-4 flex items-center gap-4 transition-all border-b border-slate-800/50",
+                isSelected ? "bg-[#CC7722]/10" : "hover:bg-slate-800/40"
             )}
         >
-            <Avatar className="h-12 w-12 border-2 border-slate-600">
-                <AvatarImage src={chat.otherParticipant.profilePictureURL} />
-                <AvatarFallback>{chat.otherParticipant.fullName?.charAt(0) || '?'}</AvatarFallback>
-            </Avatar>
-            <div className="flex-1 overflow-hidden">
-                <div className="flex justify-between items-center">
-                    <p className="font-bold text-white truncate">{chat.otherParticipant.fullName}</p>
-                    <p className="text-xs text-slate-400 flex-shrink-0">{lastMessageDate}</p>
+            <div className="relative">
+                <Avatar className="h-14 w-14 border-2 border-slate-700 shadow-md">
+                    <AvatarImage src={chat.otherParticipant.profilePictureURL} className="object-cover" />
+                    <AvatarFallback className="bg-slate-800 text-slate-400 font-bold">
+                        {chat.otherParticipant.fullName?.charAt(0)}
+                    </AvatarFallback>
+                </Avatar>
+                {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-[#CC7722] rounded-full border-2 border-slate-900 flex items-center justify-center text-[10px] font-black text-white">
+                        {unreadCount}
+                    </span>
+                )}
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex justify-between items-baseline mb-1">
+                    <p className="font-bold text-slate-100 truncate">{chat.otherParticipant.fullName}</p>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-tighter">
+                        {lastDate ? formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr }) : ''}
+                    </span>
                 </div>
-                <div className="flex justify-between items-start">
-                    <p className="text-sm text-slate-400 truncate pr-2">{chat.lastMessage}</p>
-                    {unreadCount > 0 && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">{unreadCount}</span>}
-                </div>
+                <p className={cn(
+                    "text-xs truncate",
+                    unreadCount > 0 ? "text-slate-200 font-bold" : "text-slate-500 font-medium"
+                )}>
+                    {chat.lastMessage}
+                </p>
             </div>
         </button>
     );
 };
-
 
 export function ChatList({ selectedChatId }: { selectedChatId: string | null }) {
     const { user } = useRole();
@@ -68,81 +77,74 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const { data: chats, isLoading: chatsLoading } = useCollection<Chat>(chatsQuery);
 
     useEffect(() => {
-        if (chats === null) {
-          setDataLoading(chatsLoading);
-          return;
-        }
-        if (chatsLoading) return;
+        if (!chats || chatsLoading) return;
 
-        const enrichChats = async () => {
+        const enrich = async () => {
             setDataLoading(true);
-            const participantIds = chats.map(c => c.participants.find(p => p !== user?.uid)).filter(Boolean) as string[];
+            const otherIds = chats.map(c => c.participants.find(p => p !== user?.uid)).filter(Boolean) as string[];
             
-            if(participantIds.length === 0) {
+            if (otherIds.length === 0) {
                 setEnrichedChats([]);
                 setDataLoading(false);
                 return;
             }
 
-            const uniqueIds = [...new Set(participantIds)];
-            
             const usersMap = new Map<string, NdaraUser>();
-            if (uniqueIds.length > 0) {
-                // Fetch users in chunks of 30
-                for (let i = 0; i < uniqueIds.length; i += 30) {
-                    const chunk = uniqueIds.slice(i, i+30);
-                    const usersQuery = query(collection(db, 'users'), where('uid', 'in', chunk));
-                    const usersSnap = await getDocs(usersQuery);
-                    usersSnap.forEach(doc => usersMap.set(doc.data().uid, doc.data() as NdaraUser));
-                }
+            const uniqueOtherIds = [...new Set(otherIds)];
+
+            for (let i = 0; i < uniqueOtherIds.length; i += 30) {
+                const chunk = uniqueOtherIds.slice(i, i + 30);
+                const q = query(collection(db, 'users'), where('uid', 'in', chunk));
+                const snap = await getDocs(q);
+                snap.forEach(d => usersMap.set(d.id, d.data() as NdaraUser));
             }
-            
-            const newEnrichedChats = chats.map(chat => {
+
+            const enriched = chats.map(chat => {
                 const otherId = chat.participants.find(p => p !== user?.uid);
                 return {
                     ...chat,
-                    otherParticipant: usersMap.get(otherId || '') || { fullName: 'Utilisateur Supprimé', uid: '' }
-                }
-            }).filter(c => c.otherParticipant.uid);
+                    otherParticipant: usersMap.get(otherId || '') || { fullName: 'Ancien membre' }
+                };
+            });
 
-            setEnrichedChats(newEnrichedChats);
+            setEnrichedChats(enriched);
             setDataLoading(false);
         };
 
-        enrichChats();
+        enrich();
     }, [chats, user, db, chatsLoading]);
-    
-    const isLoading = chatsLoading || dataLoading;
 
     return (
-        <div className="bg-slate-900/70 h-full flex flex-col">
-            <header className="p-4 border-b border-slate-800 flex-shrink-0">
-                 <Button className="w-full" variant="outline" onClick={() => router.push('/student/annuaire')}>
-                    <UserPlus className="mr-2 h-4 w-4"/>
-                    Nouveau message
+        <div className="flex flex-col h-full bg-slate-950">
+            <header className="p-4 border-b border-slate-800 space-y-4">
+                <h1 className="text-xl font-black text-white uppercase tracking-widest">Discussions</h1>
+                <Button variant="outline" className="w-full h-12 rounded-xl border-slate-800 bg-slate-900/50 hover:bg-slate-800 text-slate-300" onClick={() => router.push('/student/annuaire')}>
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Nouvelle discussion
                 </Button>
             </header>
             <ScrollArea className="flex-1">
-                <div className="p-2">
-                {isLoading ? (
-                    <div className="space-y-2">
-                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-[76px] w-full rounded-lg bg-slate-800" />)}
+                {chatsLoading || dataLoading ? (
+                    <div className="p-4 space-y-4">
+                        {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl bg-slate-900" />)}
                     </div>
                 ) : enrichedChats.length > 0 ? (
-                    enrichedChats.map(chat => (
-                        <ChatListItem 
-                            key={chat.id} 
-                            chat={chat} 
-                            isSelected={chat.id === selectedChatId}
-                            unreadCount={chat.unreadBy?.includes(user!.uid) ? 1 : 0}
-                        />
-                    ))
+                    <div>
+                        {enrichedChats.map(chat => (
+                            <ChatListItem 
+                                key={chat.id} 
+                                chat={chat} 
+                                isSelected={chat.id === selectedChatId}
+                                unreadCount={chat.unreadBy?.includes(user!.uid) ? 1 : 0}
+                            />
+                        ))}
+                    </div>
                 ) : (
-                    <div className="p-8 text-center text-slate-400 text-sm">
-                        <p>Aucune conversation. Trouvez des membres dans l'annuaire pour commencer à discuter !</p>
+                    <div className="flex flex-col items-center justify-center p-12 text-center opacity-30">
+                        <MessageSquare className="h-16 w-16 mb-4" />
+                        <p className="text-sm font-bold uppercase tracking-widest">Aucun message</p>
                     </div>
                 )}
-                </div>
             </ScrollArea>
         </div>
     );

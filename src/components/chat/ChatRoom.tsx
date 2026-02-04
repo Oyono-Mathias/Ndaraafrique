@@ -1,7 +1,12 @@
 
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+/**
+ * @fileOverview Salon de discussion Android-First & Vintage.
+ * Bulles contrastées, saisie fixe et temps réel Firestore.
+ */
+
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { 
@@ -21,20 +26,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, Shield, ArrowLeft, Video, Phone, Check, CheckCheck, Briefcase } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, MoreVertical, Smartphone } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import type { NdaraUser, UserRole, Message } from '@/lib/types';
-import { formatDistanceToNowStrict } from 'date-fns';
+import type { Message, NdaraUser } from '@/lib/types';
+import { format, isToday } from 'date-fns';
 import { fr } from 'date-fns/locale';
-
-interface ParticipantDetails {
-    username: string;
-    profilePictureURL?: string;
-    role: UserRole;
-    isOnline?: boolean;
-    lastSeen?: any;
-}
 
 export function ChatRoom({ chatId }: { chatId: string }) {
   const { user } = useRole();
@@ -42,167 +38,145 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [otherParticipant, setOtherParticipant] = useState<ParticipantDetails | null>(null);
-  const [otherParticipantId, setOtherParticipantId] = useState<string | null>(null);
-  const [participantLoading, setParticipantLoading] = useState(true);
-  const [messagesLoading, setMessagesLoading] = useState(true);
+  const [otherParticipant, setOtherParticipant] = useState<Partial<NdaraUser> | null>(null);
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const [timeSinceLastSeen, setTimeSinceLastSeen] = useState('');
 
-  const isLoading = participantLoading || messagesLoading;
+  // 1. Charger les infos de l'autre personne et marquer comme lu
+  useEffect(() => {
+    if (!chatId || !user) return;
 
-  useEffect(() => {
-    const updateLastSeen = () => {
-       const date = (otherParticipant?.lastSeen as any)?.toDate?.();
-       if (date) {
-            setTimeSinceLastSeen(formatDistanceToNowStrict(date, { addSuffix: true, locale: fr }));
-        }
-    };
-    updateLastSeen();
-    const interval = setInterval(updateLastSeen, 60000);
-    return () => clearInterval(interval);
-  }, [otherParticipant?.lastSeen]);
-  
-  useEffect(() => {
-    if (!chatId || !user) {
-        setParticipantLoading(false);
-        return;
-    }
-    setParticipantLoading(true);
     const chatRef = doc(db, 'chats', chatId);
-    const unsubscribe = onSnapshot(chatRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const chatData = docSnap.data();
-            const otherId = chatData.participants.find((p: string) => p !== user.uid);
-            setOtherParticipantId(otherId);
-
+    const unsubChat = onSnapshot(chatRef, (snap) => {
+        if (snap.exists()) {
+            const data = snap.data();
+            const otherId = data.participants.find((p: string) => p !== user.uid);
+            
             if (otherId) {
-                const userRef = doc(db, 'users', otherId);
-                onSnapshot(userRef, (userSnap) => {
-                    if (userSnap.exists()) {
-                        setOtherParticipant(userSnap.data() as ParticipantDetails);
-                    }
-                })
+                onSnapshot(doc(db, 'users', otherId), (uSnap) => {
+                    setOtherParticipant(uSnap.data() as NdaraUser);
+                });
             }
 
-            if (chatData.unreadBy?.includes(user.uid)) {
+            // Marquer comme lu
+            if (data.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
             }
         }
-        setParticipantLoading(false);
     });
-    return () => unsubscribe();
-}, [chatId, user, db, router]);
 
+    return () => unsubChat();
+  }, [chatId, user, db]);
+
+  // 2. Charger les messages en temps réel
   useEffect(() => {
     if (!chatId) return;
-    const messagesQuery = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
-    const unsubscribe = onSnapshot(messagesQuery, (querySnapshot) => {
-        const msgs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
-        setMessages(msgs);
-        setMessagesLoading(false);
+    const q = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
+    const unsubMsgs = onSnapshot(q, (snap) => {
+        setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Message)));
+        // Scroll to bottom
+        setTimeout(() => {
+            if (scrollAreaRef.current) {
+                const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+                if (viewport) viewport.scrollTop = viewport.scrollHeight;
+            }
+        }, 100);
     });
-    return () => unsubscribe();
+    return () => unsubMsgs();
   }, [chatId, db]);
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-        const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-        if (viewport) viewport.scrollTop = viewport.scrollHeight;
-    }
-  }, [messages]);
-
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || !user || isSending || !otherParticipantId) return;
+    if (!newMessage.trim() || !user || isSending) return;
     
     setIsSending(true);
-    const textToSend = newMessage.trim();
+    const text = newMessage.trim();
     setNewMessage("");
     
     try {
         const batch = writeBatch(db);
-        const newMsgRef = doc(collection(db, `chats/${chatId}/messages`));
-        batch.set(newMsgRef, {
+        const msgRef = doc(collection(db, `chats/${chatId}/messages`));
+        const chatRef = doc(db, 'chats', chatId);
+        const otherId = chatId.split('_').find(id => id !== user.uid); // Fallback logic
+
+        batch.set(msgRef, {
             senderId: user.uid,
-            text: textToSend,
+            text,
             createdAt: serverTimestamp(),
             status: 'sent',
         });
 
-        const chatRef = doc(db, 'chats', chatId);
         batch.update(chatRef, {
-            lastMessage: textToSend,
+            lastMessage: text,
             updatedAt: serverTimestamp(),
             lastSenderId: user.uid,
-            unreadBy: arrayUnion(otherParticipantId)
+            unreadBy: arrayUnion(otherParticipant?.uid || '')
         });
         
         await batch.commit();
-    } catch(err) {
-        console.error("Error sending message:", err);
+    } catch (err) {
+        console.error(err);
     } finally {
         setIsSending(false);
     }
   };
-  
-  if (isLoading) {
-    return (
-        <div className="flex h-full w-full items-center justify-center bg-slate-900">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-    );
-  }
 
   return (
-    <div className="flex flex-col h-full bg-slate-900">
-       <header className="flex items-center p-3 border-b bg-slate-800/80 backdrop-blur-sm border-slate-700">
-            <Button variant="ghost" size="icon" className="mr-2 md:hidden" onClick={() => router.push('/student/messages')}>
+    <div className="flex flex-col h-full bg-slate-950 relative overflow-hidden bg-grainy">
+       <header className="flex items-center p-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl sticky top-0 z-20">
+            <Button variant="ghost" size="icon" className="mr-3 text-slate-400" onClick={() => router.push('/student/messages')}>
                 <ArrowLeft className="h-5 w-5" />
             </Button>
-            <Avatar className="h-10 w-10">
-                <AvatarImage src={otherParticipant?.profilePictureURL} />
-                <AvatarFallback>{otherParticipant?.username?.charAt(0) || '?'}</AvatarFallback>
+            <Avatar className="h-10 w-10 border border-slate-700 shadow-lg">
+                <AvatarImage src={otherParticipant?.profilePictureURL} className="object-cover" />
+                <AvatarFallback>{otherParticipant?.fullName?.charAt(0)}</AvatarFallback>
             </Avatar>
-            <div className="ml-3 flex-1">
-                <h2 className="font-bold text-base text-slate-100">
-                    {otherParticipant?.username || "Utilisateur"}
-                </h2>
-                 <p className="text-xs text-slate-400">
-                    {otherParticipant?.isOnline ? <span className="text-green-500 font-semibold">En ligne</span> : (timeSinceLastSeen ? `Vu ${timeSinceLastSeen}` : `Hors ligne`)}
+            <div className="ml-3 flex-1 overflow-hidden">
+                <h2 className="font-bold text-sm text-white truncate">{otherParticipant?.fullName}</h2>
+                <p className="text-[9px] font-black text-[#CC7722] uppercase tracking-widest">
+                    {otherParticipant?.isOnline ? "En ligne" : "Membre Ndara"}
                 </p>
             </div>
+            <Button variant="ghost" size="icon" className="text-slate-600"><MoreVertical className="h-5 w-5" /></Button>
         </header>
 
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
-            <div className="p-4 sm:p-6 space-y-1">
-                {messages.map((msg) => {
+        <ScrollArea className="flex-1 px-4 py-6" ref={scrollAreaRef}>
+            <div className="space-y-4 max-w-2xl mx-auto">
+                {messages.map((msg, idx) => {
                     const isMe = msg.senderId === user?.uid;
+                    const date = (msg.createdAt as any)?.toDate?.();
+                    
                     return (
-                        <div key={msg.id} className={cn("flex items-end gap-2 max-w-[85%]", isMe ? "ml-auto flex-row-reverse" : "mr-auto")}>
-                            <div className={cn("rounded-xl px-3 py-2 text-[15px] shadow-sm relative", isMe ? "bg-primary text-primary-foreground" : "bg-slate-700 text-slate-100")}>
-                                <p className="whitespace-pre-wrap">{msg.text}</p>
-                                <span className="text-[10px] opacity-70 float-right mt-1 ml-2">
-                                    {(msg.createdAt as any)?.toDate?.()?.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
+                        <div key={msg.id} className={cn(
+                            "flex flex-col",
+                            isMe ? "items-end" : "items-start"
+                        )}>
+                            <div className={cn(
+                                "max-w-[85%] px-4 py-3 rounded-2xl text-[13px] leading-relaxed shadow-xl border-2",
+                                isMe 
+                                    ? "bg-[#CC7722] border-[#CC7722]/50 text-white rounded-tr-none" 
+                                    : "bg-slate-900 border-slate-800 text-slate-200 rounded-tl-none"
+                            )}>
+                                {msg.text}
                             </div>
+                            <span className="text-[8px] font-bold text-slate-600 mt-1 uppercase tracking-tighter">
+                                {date ? format(date, isToday(date) ? 'HH:mm' : 'dd MMM HH:mm', { locale: fr }) : '...'}
+                            </span>
                         </div>
                     );
                 })}
             </div>
         </ScrollArea>
 
-        <div className="p-2 border-t bg-slate-800/80 border-slate-700">
-            <form onSubmit={handleSend} className="flex items-center gap-2 max-w-4xl mx-auto">
+        <div className="p-4 bg-slate-950/90 backdrop-blur-2xl border-t border-slate-800 safe-area-pb">
+            <form onSubmit={handleSend} className="flex items-center gap-3 max-w-2xl mx-auto">
                 <Input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Écrire un message..."
-                    className="flex-1 h-12 rounded-full bg-slate-700 border-slate-600 text-base"
+                    placeholder="Écrire à votre Ndara..."
+                    className="flex-1 h-12 rounded-2xl bg-slate-900 border-slate-800 text-sm focus-visible:ring-[#CC7722]/30"
                 />
-                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending} className="shrink-0 h-12 w-12 rounded-full">
+                <Button type="submit" size="icon" disabled={!newMessage.trim() || isSending} className="h-12 w-12 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-lg shadow-[#CC7722]/20">
                     {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                 </Button>
             </form>

@@ -14,11 +14,10 @@ import {
 import type { NdaraUser } from '@/lib/types';
 
 /**
- * Starts a new chat between two users or returns the existing one.
- * Runs on the client side.
- * @param currentUserId - The UID of the user initiating the chat.
- * @param contactId - The UID of the user to chat with.
- * @returns The ID of the chat room.
+ * Démarre une nouvelle conversation ou retourne l'existante.
+ * @param currentUserId - UID de l'initiateur
+ * @param contactId - UID du destinataire
+ * @returns L'ID du salon de discussion
  */
 export async function startChat(
   currentUserId: string,
@@ -31,6 +30,7 @@ export async function startChat(
   }
 
   const chatsRef = collection(db, 'chats');
+  // On trie les IDs pour avoir une clé unique entre deux personnes
   const sortedParticipants = [currentUserId, contactId].sort();
 
   const q = query(chatsRef, where('participants', '==', sortedParticipants));
@@ -53,12 +53,6 @@ export async function startChat(
       const currentUserData = currentUserDoc.data() as NdaraUser;
       const contactUserData = contactUserDoc.data() as NdaraUser;
 
-      const isAdminInitiated = currentUserData.role === 'admin';
-
-      if (!isAdminInitiated && currentUserData.careerGoals?.interestDomain !== contactUserData.careerGoals?.interestDomain) {
-         throw new Error("Vous ne pouvez discuter qu'avec les membres de votre filière.");
-      }
-
       const newChatRef = doc(collection(db, 'chats'));
       const batch = writeBatch(db);
 
@@ -68,21 +62,18 @@ export async function startChat(
           currentUserData.careerGoals?.interestDomain || '',
           contactUserData.careerGoals?.interestDomain || '',
         ],
-        isAdminChat: isAdminInitiated,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         lastMessage: 'Conversation démarrée.',
-        unreadBy: [],
+        lastSenderId: currentUserId,
+        unreadBy: [contactId],
       });
 
       await batch.commit();
       return newChatRef.id;
     }
   } catch (error: any) {
-    console.error("Error in startChat function: ", error);
-    if (error.message.includes('permission-denied') || error.message.includes('permission denied')) {
-        throw new Error("Permission refusée. Vos règles de sécurité Firestore empêchent cette action.");
-    }
+    console.error("Error in startChat:", error);
     throw error;
   }
 }
