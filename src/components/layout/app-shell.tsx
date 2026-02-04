@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -14,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
+import { OfflineBar } from '@/components/OfflineBar';
 
 function MaintenancePage() {
     return (
@@ -104,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const { isAuthPage, isPublicPage } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
-    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search'];
+    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline'];
     
     const isAuth = authPaths.some(p => pathname.endsWith(p));
     let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
@@ -168,6 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <SplashScreen />
+      <OfflineBar />
       <div className={cn("min-h-screen w-full bg-slate-950 text-white", isAdminArea ? "admin-grid-layout" : (!isFullScreenPage && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]")}>
         {!isRootPath && !isAuthPage && user && (
           <aside className={cn("hidden h-screen sticky top-0", (isFullScreenPage || isAdminArea) ? "md:hidden" : "md:block")}>
