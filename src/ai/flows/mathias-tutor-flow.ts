@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -42,7 +41,6 @@ const getCourseCatalog = ai.defineTool(
         if (!adminDb) return [];
         try {
             const coursesRef = adminDb.collection('courses');
-            // Simple query to avoid index issues during prototype phase
             const snapshot = await coursesRef.limit(10).get();
             if (snapshot.empty) return [];
             return snapshot.docs.map(doc => {
@@ -61,7 +59,6 @@ const getCourseCatalog = ai.defineTool(
 
 /**
  * Tool to search the FAQ in Firestore.
- * Handles errors and empty results gracefully.
  */
 const searchFaq = ai.defineTool(
     {
@@ -81,7 +78,6 @@ const searchFaq = ai.defineTool(
             if (keywords.length === 0) return { answer: undefined };
             
             const faqsRef = adminDb.collection('faqs');
-            // Try searching by tags
             const q = faqsRef.where('tags', 'array-contains-any', keywords.slice(0, 10));
             const snapshot = await q.get();
 
@@ -134,7 +130,6 @@ const mathiasTutorFlow = ai.defineFlow(
   },
   async input => {
     try {
-        // Check for API key presence
         if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
             console.error("MATHIAS Error: No API Key configured.");
             return { response: "Désolé, je ne suis pas encore configuré pour vous répondre. Contactez l'administrateur." };

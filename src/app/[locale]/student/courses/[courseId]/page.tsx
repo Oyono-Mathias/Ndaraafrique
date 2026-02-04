@@ -4,7 +4,7 @@
  * @fileOverview Lecteur de cours haute performance pour les étudiants.
  * À gauche : Zone de lecture multimédia (vidéo, PDF, texte) et contrôles.
  * À droite : Curriculum (sections et leçons) avec état de complétion.
- * Gère l'auto-sélection intelligente de la leçon.
+ * Gère l'auto-sélection intelligente de la leçon pour un démarrage immédiat.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -25,7 +25,7 @@ import {
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, BookOpen } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -85,7 +85,7 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        // --- LOGIQUE D'AUTO-SÉLECTION FORCÉE ---
+        // --- LOGIQUE D'AUTO-SÉLECTION FORCÉE POUR LANCEMENT IMMÉDIAT ---
         let startLecture: Lecture | null = null;
 
         // A. Priorité à l'URL (?lesson=ID)

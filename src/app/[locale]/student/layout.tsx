@@ -1,4 +1,3 @@
-
 'use client';
 
 import { StudentBottomNav } from '@/components/layout/student-bottom-nav';
@@ -6,6 +5,7 @@ import { useRole } from '@/context/RoleContext';
 import { Loader2 } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 export default function StudentLayoutAndroid({ children }: { children: React.ReactNode }) {
   const { isUserLoading } = useRole();
@@ -39,5 +39,3 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
     </div>
   );
 }
-
-import { cn } from '@/lib/utils';

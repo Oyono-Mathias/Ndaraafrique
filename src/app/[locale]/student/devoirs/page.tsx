@@ -3,7 +3,7 @@
 /**
  * @fileOverview Gestion des devoirs pour les étudiants (Android-First).
  * Liste filtrable des tâches à accomplir et historique des soumissions.
- * Design harmonisé avec "Mes Formations" (Variables Primary).
+ * Design harmonisé avec "Mes Formations" (Couleur Primary Ndara).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, ChevronRight, Bot, BookOpen, Search, ClipboardList } from 'lucide-react';
+import { Clock, ChevronRight, Bot, BookOpen, Search } from 'lucide-react';
 import { format, isAfter } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -98,7 +98,6 @@ export default function StudentAssignmentsPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen">
-      {/* HEADER : Aligné sur Mes Formations */}
       <header className="px-4 pt-6 space-y-4">
         <h1 className="text-2xl font-black text-white">Mes Devoirs</h1>
         <div className="relative">
@@ -113,7 +112,6 @@ export default function StudentAssignmentsPage() {
       </header>
 
       <Tabs defaultValue="todo" className="w-full">
-        {/* Navigation : Aligné sur Mes Formations */}
         <TabsList className="w-full bg-transparent border-b border-slate-800 rounded-none h-12 p-0 px-4 justify-start gap-6">
           <TabsTrigger 
             value="todo" 
@@ -132,23 +130,29 @@ export default function StudentAssignmentsPage() {
         <div className="px-4 mt-6">
           <TabsContent value="todo" className="m-0 space-y-4">
             {isLoading ? (
-              <LoadingSkeleton />
+              <div className="space-y-4">
+                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />)}
+              </div>
             ) : toDo.length > 0 ? (
               toDo.map(a => <AssignmentCard key={a.id} assignment={a} />)
             ) : (
-              <EmptyState />
+              <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
+                <Bot className="h-16 w-16 text-slate-700 mb-6" />
+                <h3 className="text-xl font-black text-white leading-tight">Aucun devoir en attente.</h3>
+                <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto">Posez vos questions à Mathias si besoin !</p>
+              </div>
             )}
           </TabsContent>
 
           <TabsContent value="completed" className="m-0 space-y-4">
             {isLoading ? (
-              <LoadingSkeleton />
+              <div className="space-y-4">
+                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />)}
+              </div>
             ) : completed.length > 0 ? (
               completed.map(a => <AssignmentCard key={a.id} assignment={a} submission={submissions[a.id]} />)
             ) : (
-              <div className="text-center py-20 text-slate-600 italic text-sm">
-                Aucun devoir terminé pour l'instant.
-              </div>
+              <div className="text-center py-20 text-slate-600 italic text-sm">Aucun devoir terminé pour l'instant.</div>
             )}
           </TabsContent>
         </div>
@@ -176,17 +180,11 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
           </div>
           
           {submission ? (
-            <Badge className="bg-green-500/10 text-green-400 border-none text-[9px] font-black uppercase">
-              Rendu
-            </Badge>
+            <Badge className="bg-green-500/10 text-green-400 border-none text-[9px] font-black uppercase">Rendu</Badge>
           ) : isOverdue ? (
-            <Badge className="bg-red-500/10 text-red-400 border-none text-[9px] font-black uppercase">
-              Retard
-            </Badge>
+            <Badge className="bg-red-500/10 text-red-400 border-none text-[9px] font-black uppercase">Retard</Badge>
           ) : (
-            <Badge variant="secondary" className="border-none text-[9px] font-black uppercase">
-              Actif
-            </Badge>
+            <Badge variant="secondary" className="border-none text-[9px] font-black uppercase">Actif</Badge>
           )}
         </div>
 
@@ -213,32 +211,5 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
         </Button>
       </CardFooter>
     </Card>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
-      <div className="p-6 bg-slate-800/50 rounded-full mb-6">
-        <Bot className="h-16 w-16 text-slate-700" />
-      </div>
-      <h3 className="text-xl font-black text-white leading-tight">Aucun devoir <br/>en attente.</h3>
-      <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto font-medium">
-        C'est le moment idéal pour poser une question à <span className="text-primary font-bold">Mathias</span> sur vos leçons.
-      </p>
-      <Button asChild variant="outline" className="mt-8 border-slate-700 text-slate-300 rounded-xl h-12 px-8 font-bold uppercase text-[10px] tracking-widest">
-        <Link href="/student/tutor">Interroger Mathias</Link>
-      </Button>
-    </div>
-  );
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className="space-y-4">
-      {[...Array(2)].map((_, i) => (
-        <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />
-      ))}
-    </div>
   );
 }
