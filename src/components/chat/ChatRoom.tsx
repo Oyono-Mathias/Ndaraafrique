@@ -2,8 +2,8 @@
 'use client';
 
 /**
- * @fileOverview Salon de discussion immersif (Android WhatsApp Style).
- * Design sans distracteurs pour une concentration totale sur l'échange.
+ * @fileOverview Salon de discussion immersif (WhatsApp Android Style).
+ * Gère l'affichage des messages en temps réel, l'envoi atomique et le scroll automatique.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -26,7 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, CheckCheck } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, NdaraUser } from '@/lib/types';
 import { format } from 'date-fns';
@@ -42,7 +42,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // 1. Infos du correspondant et marquage comme lu
+  // 1. Récupération des infos du correspondant et gestion de l'état "lu"
   useEffect(() => {
     if (!chatId || !user) return;
 
@@ -52,12 +52,16 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             const data = snap.data();
             const otherId = data.participants.find((p: string) => p !== user.uid);
             
+            // Récupérer le profil de l'autre participant
             if (otherId) {
                 onSnapshot(doc(db, 'users', otherId), (uSnap) => {
-                    setOtherParticipant(uSnap.data() as NdaraUser);
+                    if (uSnap.exists()) {
+                        setOtherParticipant(uSnap.data() as NdaraUser);
+                    }
                 });
             }
 
+            // Marquer comme lu pour l'utilisateur actuel
             if (data.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
             }
@@ -67,35 +71,44 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubChat();
   }, [chatId, user, db]);
 
-  // 2. Écoute des messages
+  // 2. Écoute des messages en temps réel
   useEffect(() => {
     if (!chatId) return;
     const q = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
+    
     const unsubMsgs = onSnapshot(q, (snap) => {
-        setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as Message)));
+        const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
+        setMessages(msgs);
+        
+        // Auto-scroll vers le bas
         setTimeout(() => {
             if (scrollAreaRef.current) {
                 const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-                if (viewport) viewport.scrollTop = viewport.scrollHeight;
+                if (viewport) {
+                    viewport.scrollTop = viewport.scrollHeight;
+                }
             }
         }, 100);
     });
+    
     return () => unsubMsgs();
   }, [chatId, db]);
 
+  // 3. Envoi de message avec mise à jour des métadonnées du chat (Batch)
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user || isSending) return;
     
-    setIsSending(true);
     const text = newMessage.trim();
     setNewMessage("");
+    setIsSending(true);
     
     try {
         const batch = writeBatch(db);
         const msgRef = doc(collection(db, `chats/${chatId}/messages`));
         const chatRef = doc(db, 'chats', chatId);
 
+        // Création du message
         batch.set(msgRef, {
             senderId: user.uid,
             text,
@@ -103,6 +116,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             status: 'sent',
         });
 
+        // Mise à jour de l'aperçu dans la liste des chats
         batch.update(chatRef, {
             lastMessage: text,
             updatedAt: serverTimestamp(),
@@ -112,54 +126,79 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         
         await batch.commit();
     } catch (err) {
-        console.error(err);
+        console.error("Failed to send message:", err);
     } finally {
         setIsSending(false);
     }
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden bg-grainy">
-       {/* --- HEADER WHATSAPP STYLE --- */}
+    <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
+       {/* Fond grainé Vintage Ndara */}
+       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')] z-0" />
+
+       {/* --- HEADER WHATSAPP --- */}
        <header className="flex items-center p-2.5 border-b border-white/5 bg-[#111b21]/95 backdrop-blur-xl sticky top-0 z-30 shadow-2xl">
-            <Button variant="ghost" size="icon" className="mr-1 text-slate-400 h-10 w-10 rounded-full active:bg-white/10" onClick={() => router.push('/student/messages')}>
+            <Button 
+                variant="ghost" 
+                size="icon" 
+                className="mr-1 text-slate-400 h-10 w-10 rounded-full active:bg-white/10" 
+                onClick={() => router.push('/student/messages')}
+            >
                 <ArrowLeft className="h-6 w-6" />
             </Button>
+            
             <div className="flex items-center gap-3 flex-1 overflow-hidden">
               <Avatar className="h-10 w-10 border border-white/5 shadow-lg">
                   <AvatarImage src={otherParticipant?.profilePictureURL} className="object-cover" />
-                  <AvatarFallback className="bg-[#2a3942] text-slate-400 font-bold">{otherParticipant?.fullName?.charAt(0)}</AvatarFallback>
+                  <AvatarFallback className="bg-[#2a3942] text-slate-400 font-bold">
+                      {otherParticipant?.fullName?.charAt(0)}
+                  </AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
-                  <h2 className="font-bold text-sm text-white truncate leading-none">{otherParticipant?.fullName}</h2>
+                  <h2 className="font-bold text-sm text-white truncate leading-none">
+                      {otherParticipant?.fullName || 'Chargement...'}
+                  </h2>
                   <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-1">
                       {otherParticipant?.isOnline ? (
-                        <span className="flex items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>En ligne</span>
+                        <span className="flex items-center gap-1.5">
+                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            En ligne
+                        </span>
                       ) : (
-                        <span className="text-slate-500 tracking-tighter">Ndara Afrique</span>
+                        <span className="text-slate-500 tracking-tighter">Hors ligne</span>
                       )}
                   </p>
               </div>
             </div>
+
             <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full opacity-40 cursor-not-allowed"><Video className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full opacity-40 cursor-not-allowed"><Phone className="h-5 w-5" /></Button>
-                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full"><MoreVertical className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full opacity-40 cursor-not-allowed">
+                    <Video className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full opacity-40 cursor-not-allowed">
+                    <Phone className="h-5 w-5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full">
+                    <MoreVertical className="h-5 w-5" />
+                </Button>
             </div>
         </header>
 
-        {/* --- CONVERSATION ZONE --- */}
-        <ScrollArea className="flex-1" ref={scrollAreaRef}>
+        {/* --- ZONE DE MESSAGES --- */}
+        <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
             <div className="p-4 space-y-2 max-w-3xl mx-auto flex flex-col">
+                {/* Badge Sécurité */}
                 <div className="self-center my-4">
                     <span className="bg-[#182229] text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 py-1 rounded-md shadow-sm border border-white/5">
-                        Chiffrement de bout en bout
+                        Chiffrement Ndara Afrique
                     </span>
                 </div>
 
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
-                    const date = (msg.createdAt as any)?.toDate?.();
+                    // Fallback pour le timestamp avant synchronisation serveur
+                    const date = (msg.createdAt as any)?.toDate?.() || new Date();
                     
                     return (
                         <div key={msg.id} className={cn(
@@ -177,12 +216,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                   "text-[9px] mt-1.5 flex items-center justify-end gap-1 font-black uppercase tracking-tighter opacity-60",
                                   isMe ? "text-white" : "text-slate-500"
                                 )}>
-                                  {date ? format(date, 'HH:mm', { locale: fr }) : '...'}
-                                  {isMe && (
-                                      <svg viewBox="0 0 16 11" width="14" height="10" className="ml-1 text-blue-400" fill="currentColor">
-                                          <path d="M11.05 1.05l-6.5 6.5-2.5-2.5-1.05 1.05 3.55 3.55 7.55-7.55-1.05-1.05zM15.05 1.05l-6.5 6.5-1.05-1.05 6.5-6.5 1.05 1.05z"/>
-                                      </svg>
-                                  )}
+                                  {format(date, 'HH:mm', { locale: fr })}
+                                  {isMe && <CheckCheck className="h-3 w-3 ml-1 text-blue-400" />}
                                 </div>
                             </div>
                         </div>
@@ -191,8 +226,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        {/* --- INPUT BAR --- */}
-        <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb">
+        {/* --- BARRE DE SAISIE --- */}
+        <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb z-20">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-3xl mx-auto">
                 <div className="flex-1 bg-[#2a3942] rounded-full flex items-center px-4 h-12 shadow-inner group focus-within:ring-1 focus-within:ring-[#CC7722]/30 transition-all">
                   <Input
@@ -202,6 +237,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                       className="flex-1 bg-transparent border-none text-white placeholder:text-slate-500 text-[16px] p-0 h-full focus-visible:ring-0 shadow-none"
                   />
                 </div>
+                
                 <Button 
                   type="submit" 
                   size="icon" 
