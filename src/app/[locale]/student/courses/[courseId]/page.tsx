@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -86,7 +85,7 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        // --- LOGIQUE D'AUTO-SÉLECTION AMÉLIORÉE ---
+        // --- LOGIQUE D'AUTO-SÉLECTION FORCÉE ---
         let startLecture: Lecture | null = null;
 
         // A. Priorité à l'URL (?lesson=ID)
@@ -105,9 +104,8 @@ function CoursePlayerPageContent() {
             }
         }
 
-        // C. Enfin, fallback sur la toute première leçon de la toute première section
+        // C. Enfin, fallback sur la toute première leçon de la toute première section disponible
         if (!startLecture && fetchedSections.length > 0) {
-            // On parcourt les sections jusqu'à trouver la première qui a au moins une leçon
             for (const section of fetchedSections) {
                 const sectionLectures = lecturesData.get(section.id);
                 if (sectionLectures && sectionLectures.length > 0) {
@@ -238,9 +236,7 @@ function CoursePlayerPageContent() {
                         </div>
                         <h3 className="text-2xl font-bold text-white italic">"Bara ala, Tonga na ndara"</h3>
                         <p className="text-slate-400 max-w-sm mt-3 text-lg">
-                            {sections.length === 0 
-                              ? "Ce cours ne contient pas encore de leçons publiées." 
-                              : "Sélectionnez une leçon dans le curriculum pour commencer votre apprentissage."}
+                            Sélectionnez une leçon dans le curriculum pour commencer.
                         </p>
                     </div>
                   )}

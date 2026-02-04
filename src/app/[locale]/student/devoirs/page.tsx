@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Gestion des devoirs pour les étudiants (Android-First).
  * Liste filtrable des tâches à accomplir et historique des soumissions.
- * Fonctionnement 100% temps réel via onSnapshot.
+ * Design harmonisé avec "Mes Formations" (Variables Primary).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -19,11 +18,12 @@ import {
   orderBy 
 } from 'firebase/firestore';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Clock, CheckCircle2, ChevronRight, Bot, BookOpen, ClipboardList } from 'lucide-react';
+import { Clock, ChevronRight, Bot, BookOpen, Search, ClipboardList } from 'lucide-react';
 import { format, isAfter } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -35,13 +35,13 @@ export default function StudentAssignmentsPage() {
   const [assignments, setAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (!currentUser?.uid) return;
 
     setIsLoading(true);
 
-    // 1. Écoute des inscriptions de l'étudiant
     const enrollQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
     
     const unsubEnroll = onSnapshot(enrollQuery, (enrollSnap) => {
@@ -53,7 +53,6 @@ export default function StudentAssignmentsPage() {
         return;
       }
 
-      // 2. Écoute de tous les devoirs (Collection Group)
       const assignmentsQuery = query(collectionGroup(db, 'assignments'), orderBy('createdAt', 'desc'));
       const unsubAssignments = onSnapshot(assignmentsQuery, (assignSnap) => {
         const filtered = assignSnap.docs
@@ -63,7 +62,6 @@ export default function StudentAssignmentsPage() {
         setAssignments(filtered);
       });
 
-      // 3. Écoute des soumissions de l'étudiant
       const submissionsQuery = query(collection(db, 'devoirs'), where('studentId', '==', currentUser.uid));
       const unsubSubmissions = onSnapshot(submissionsQuery, (subSnap) => {
         const subMap: Record<string, any> = {};
@@ -84,21 +82,38 @@ export default function StudentAssignmentsPage() {
     return () => unsubEnroll();
   }, [currentUser?.uid, db]);
 
+  const filteredAssignments = useMemo(() => {
+    return assignments.filter(a => 
+      a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (a.courseTitle && a.courseTitle.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  }, [assignments, searchTerm]);
+
   const { toDo, completed } = useMemo(() => {
     return {
-      toDo: assignments.filter(a => !submissions[a.id]),
-      completed: assignments.filter(a => !!submissions[a.id])
+      toDo: filteredAssignments.filter(a => !submissions[a.id]),
+      completed: filteredAssignments.filter(a => !!submissions[a.id])
     };
-  }, [assignments, submissions]);
+  }, [filteredAssignments, submissions]);
 
   return (
     <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen">
+      {/* HEADER : Aligné sur Mes Formations */}
       <header className="px-4 pt-6 space-y-4">
-        <h1 className="text-2xl font-black text-white leading-tight">Mes Devoirs</h1>
-        <p className="text-slate-500 text-sm font-medium">Suivez vos travaux et progressez en temps réel.</p>
+        <h1 className="text-2xl font-black text-white">Mes Devoirs</h1>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Input 
+            placeholder="Rechercher un devoir..." 
+            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl text-white"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
       </header>
 
       <Tabs defaultValue="todo" className="w-full">
+        {/* Navigation : Aligné sur Mes Formations */}
         <TabsList className="w-full bg-transparent border-b border-slate-800 rounded-none h-12 p-0 px-4 justify-start gap-6">
           <TabsTrigger 
             value="todo" 
