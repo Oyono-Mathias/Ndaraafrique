@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Salon de discussion immersif (WhatsApp Android Style).
- * Gère l'affichage des messages en temps réel, l'envoi atomique et le scroll automatique.
- * Incorpore la logique de marquage comme "lu" (Product Engineer).
+ * @fileOverview Salon de discussion immersif (Style WhatsApp Android exact).
+ * Gère l'affichage des messages en temps réel et l'interface flottante.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -26,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, CheckCheck } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, CheckCheck, Paperclip, Smile, Camera, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, NdaraUser } from '@/lib/types';
 import { format } from 'date-fns';
@@ -42,7 +41,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // 1. Récupération des infos du correspondant et gestion de l'état "lu"
   useEffect(() => {
     if (!chatId || !user) return;
 
@@ -52,7 +50,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             const data = snap.data();
             const otherId = data.participants.find((p: string) => p !== user.uid);
             
-            // Récupérer le profil de l'autre participant si pas encore chargé
             if (otherId && (!otherParticipant || otherParticipant.uid !== otherId)) {
                 onSnapshot(doc(db, 'users', otherId), (uSnap) => {
                     if (uSnap.exists()) {
@@ -61,7 +58,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 });
             }
 
-            // LOGIQUE PRODUIT : Marquer comme lu pour l'utilisateur actuel
             if (data.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { 
                     unreadBy: arrayRemove(user.uid) 
@@ -73,7 +69,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubChat();
   }, [chatId, user, db, otherParticipant]);
 
-  // 2. Écoute des messages en temps réel
   useEffect(() => {
     if (!chatId) return;
     const q = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
@@ -82,7 +77,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
         setMessages(msgs);
         
-        // Auto-scroll vers le bas
         setTimeout(() => {
             if (scrollAreaRef.current) {
                 const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -96,7 +90,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubMsgs();
   }, [chatId, db]);
 
-  // 3. Envoi de message
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user || isSending) return;
@@ -134,22 +127,22 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-       {/* Fond doodle WhatsApp discret */}
-       <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0" />
+       {/* Fond doodle WhatsApp exact */}
+       <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
        {/* --- HEADER --- */}
-       <header className="flex items-center p-2.5 border-b border-white/5 bg-[#111b21]/95 backdrop-blur-xl sticky top-0 z-30 shadow-2xl">
+       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
             <Button 
                 variant="ghost" 
                 size="icon" 
-                className="mr-1 text-slate-400 h-10 w-10 rounded-full active:bg-white/10" 
+                className="mr-0 text-slate-300 h-10 w-8 rounded-full" 
                 onClick={() => router.push('/student/messages')}
             >
                 <ArrowLeft className="h-6 w-6" />
             </Button>
             
-            <div className="flex items-center gap-3 flex-1 overflow-hidden">
-              <Avatar className="h-10 w-10 border border-white/5 shadow-lg">
+            <div className="flex items-center gap-2 flex-1 overflow-hidden">
+              <Avatar className="h-9 w-9 border border-white/10">
                   <AvatarImage src={otherParticipant?.profilePictureURL} className="object-cover" />
                   <AvatarFallback className="bg-[#2a3942] text-slate-400 font-bold">
                       {otherParticipant?.fullName?.charAt(0)}
@@ -159,38 +152,25 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                   <h2 className="font-bold text-sm text-white truncate leading-none">
                       {otherParticipant?.fullName || 'Chargement...'}
                   </h2>
-                  <p className="text-[10px] font-black uppercase tracking-widest mt-1">
-                      {otherParticipant?.isOnline ? (
-                        <span className="flex items-center gap-1.5 text-emerald-500">
-                            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            En ligne
-                        </span>
-                      ) : (
-                        <span className="text-slate-500 tracking-tighter uppercase font-black">Hors ligne</span>
-                      )}
+                  <p className="text-[10px] text-emerald-500 font-medium mt-1">
+                      {otherParticipant?.isOnline ? 'en ligne' : ''}
                   </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full">
-                    <Video className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full">
-                    <Phone className="h-5 w-5" />
-                </Button>
-                <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full">
-                    <MoreVertical className="h-5 w-5" />
-                </Button>
+            <div className="flex items-center gap-0">
+                <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><Video className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><Phone className="h-5 w-5" /></Button>
+                <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><MoreVertical className="h-5 w-5" /></Button>
             </div>
         </header>
 
         {/* --- MESSAGES --- */}
         <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
-            <div className="p-4 space-y-2 max-w-3xl mx-auto flex flex-col">
+            <div className="p-4 space-y-2 flex flex-col min-h-full">
                 <div className="self-center my-4">
-                    <span className="bg-[#182229] text-[9px] font-black uppercase tracking-[0.2em] text-[#e9edef]/60 px-3 py-1.5 rounded-lg shadow-sm border border-white/5">
-                        🛡️ Chiffrement de bout en bout
+                    <span className="bg-[#182229] text-[11px] font-medium text-[#8696a0] px-3 py-1 rounded-lg shadow-sm">
+                        Aujourd'hui
                     </span>
                 </div>
 
@@ -200,22 +180,22 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                     
                     return (
                         <div key={msg.id} className={cn(
-                            "flex flex-col animate-in fade-in slide-in-from-bottom-1 duration-300",
+                            "flex flex-col mb-1",
                             isMe ? "items-end" : "items-start"
                         )}>
                             <div className={cn(
-                                "max-w-[85%] px-3 py-1.5 rounded-xl text-[15px] leading-relaxed shadow-md relative",
+                                "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
                                 isMe 
                                     ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
                                     : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
                             )}>
-                                {msg.text}
+                                <span className="pr-12">{msg.text}</span>
                                 <div className={cn(
-                                  "text-[9px] mt-1 flex items-center justify-end gap-1 font-black uppercase tracking-tighter opacity-60",
-                                  isMe ? "text-[#e9edef]/70" : "text-slate-400"
+                                  "absolute bottom-1 right-1.5 flex items-center gap-1",
+                                  isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
                                 )}>
-                                  {format(date, 'HH:mm', { locale: fr })}
-                                  {isMe && <CheckCheck className="h-3.5 w-3.5 ml-1 text-[#53bdeb]" />}
+                                  <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
+                                  {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
                                 </div>
                             </div>
                         </div>
@@ -224,30 +204,38 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        {/* --- INPUT --- */}
-        <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb z-20">
-            <form onSubmit={handleSend} className="flex items-center gap-2 max-w-3xl mx-auto">
-                <div className="flex-1 bg-[#2a3942] rounded-full flex items-center px-4 h-12 shadow-inner">
-                  <Input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Message"
-                      className="flex-1 bg-transparent border-none text-white placeholder:text-slate-500 text-[16px] p-0 h-full focus-visible:ring-0 shadow-none"
-                  />
+        {/* --- INPUT (BARRE DE SAISIE FLOTTANTE) --- */}
+        <div className="p-2 bg-transparent safe-area-pb z-20 flex items-end gap-2">
+            <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md">
+                <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Smile className="h-6 w-6" /></Button>
+                <form onSubmit={handleSend} className="flex-1 flex items-center">
+                    <Input
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        placeholder="Message"
+                        className="flex-1 bg-transparent border-none text-white placeholder:text-[#8696a0] text-[16px] h-10 focus-visible:ring-0 shadow-none px-1"
+                    />
+                </form>
+                <div className="flex items-center">
+                    <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Paperclip className="h-5 w-5 -rotate-45" /></Button>
+                    {!newMessage.trim() && <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Camera className="h-5 w-5" /></Button>}
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  size="icon" 
-                  disabled={!newMessage.trim() || isSending} 
-                  className={cn(
-                      "h-12 w-12 rounded-full shadow-2xl shrink-0 transition-all active:scale-90",
-                      newMessage.trim() ? "bg-[#00a884] hover:bg-[#00a884]/90" : "bg-slate-800 text-slate-500"
-                  )}
-                >
-                    {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5 text-white fill-white" />}
-                </Button>
-            </form>
+            </div>
+            
+            <Button 
+                onClick={handleSend}
+                disabled={isSending}
+                className={cn(
+                    "h-12 w-12 rounded-full shadow-lg shrink-0 flex items-center justify-center p-0 transition-all active:scale-90",
+                    "bg-[#00a884] hover:bg-[#00a884]/90"
+                )}
+            >
+                {newMessage.trim() ? (
+                    isSending ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Send className="h-5 w-5 text-white fill-white translate-x-0.5" />
+                ) : (
+                    <Mic className="h-5 w-5 text-white" />
+                )}
+            </Button>
         </div>
     </div>
   );

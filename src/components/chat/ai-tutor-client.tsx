@@ -6,7 +6,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck } from "lucide-react";
+import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
@@ -159,21 +159,18 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0b141a] relative overflow-hidden bg-grainy">
-      {/* Fond doodle WhatsApp discret */}
-      <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0" />
+    <div className="flex flex-col h-screen bg-[#0b141a] relative overflow-hidden">
+      {/* Fond doodle WhatsApp exact */}
+      <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
-      <header className="flex items-center p-3 border-b border-white/10 bg-[#111b21]/95 backdrop-blur-xl sticky top-0 z-30 shadow-md">
-        <Button variant="ghost" size="icon" className="mr-1 text-slate-400 h-10 w-10 rounded-full" onClick={() => router.push('/student/dashboard')}>
+      <header className="flex items-center p-3 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
+        <Button variant="ghost" size="icon" className="mr-1 text-slate-300 h-10 w-10 rounded-full" onClick={() => router.push('/student/dashboard')}>
             <ArrowLeft className="h-6 w-6" />
         </Button>
         <div className="relative flex items-center gap-3 flex-1">
-          <div className="relative">
-            <div className="absolute -inset-1 bg-[#CC7722] rounded-full blur opacity-20 animate-pulse"></div>
-            <Avatar className="h-10 w-10 border-2 border-[#CC7722]/50 z-10 relative">
-                <AvatarFallback className="bg-[#111b21] text-[#CC7722] font-black"><Bot className="h-6 w-6" /></AvatarFallback>
-            </Avatar>
-          </div>
+          <Avatar className="h-10 w-10 border-2 border-[#CC7722]/50">
+              <AvatarFallback className="bg-[#111b21] text-[#CC7722] font-black"><Bot className="h-6 w-6" /></AvatarFallback>
+          </Avatar>
           <div className="flex flex-col">
             <h2 className="font-black text-sm text-white leading-tight uppercase tracking-widest">MATHIAS</h2>
             <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 uppercase tracking-tighter mt-0.5">
@@ -182,18 +179,24 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full"><MoreVertical className="h-5 w-5" /></Button>
+        <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10 rounded-full"><MoreVertical className="h-5 w-5" /></Button>
       </header>
 
       <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
-        <div className="p-4 space-y-2 max-w-3xl mx-auto flex flex-col min-h-full">
+        <div className="p-4 space-y-2 flex flex-col min-h-full">
+          <div className="self-center my-4">
+              <span className="bg-[#182229] text-[11px] font-medium text-[#8696a0] px-3 py-1 rounded-lg shadow-sm">
+                  Aujourd'hui
+              </span>
+          </div>
+
           {(isUserLoading || isHistoryLoading) && (
             <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#CC7722]" /></div>
           )}
           
           {!isHistoryLoading && hasMore && (
             <div className="text-center py-4">
-                <Button variant="ghost" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore} className="text-[9px] uppercase font-black tracking-widest text-slate-500 bg-[#182229]/50 px-4 rounded-full border border-white/5">
+                <Button variant="ghost" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore} className="text-[10px] uppercase font-bold text-slate-500">
                     {isFetchingMore ? <Loader2 className="h-3 w-3 animate-spin mr-2"/> : <RefreshCw className="h-3 w-3 mr-2"/>}
                     Charger l'historique
                 </Button>
@@ -208,23 +211,23 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
               <div 
                 key={msg.id} 
                 className={cn(
-                  "flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300",
+                  "flex flex-col mb-1",
                   isMe ? "items-end" : "items-start"
                 )}
               >
                 <div className={cn(
-                    "max-w-[85%] px-3 py-1.5 rounded-xl text-[15px] leading-relaxed shadow-md relative",
+                    "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] shadow-sm relative min-w-[60px]",
                     isMe 
                       ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
                       : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
                 )}>
-                  <p className="whitespace-pre-wrap">{msg.text}</p>
+                  <p className="whitespace-pre-wrap pr-10">{msg.text}</p>
                   <div className={cn(
-                    "text-[9px] mt-1 flex items-center justify-end gap-1 font-black opacity-60",
-                    isMe ? "text-[#e9edef]/70" : "text-slate-400"
+                    "absolute bottom-1 right-1.5 flex items-center gap-1",
+                    isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
                   )}>
-                    {format(date, 'HH:mm', { locale: fr })}
-                    {isMe && <CheckCheck className="h-3.5 w-3.5 ml-1 text-[#53bdeb]" />}
+                    <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
+                    {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
                   </div>
                 </div>
               </div>
@@ -232,39 +235,49 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
           })}
 
           {isAiResponding && (
-            <div className="flex flex-col items-start">
-              <div className="px-4 py-2 bg-[#202c33] text-[#e9edef] text-[15px] rounded-xl rounded-tl-none flex items-center gap-3 shadow-md border border-white/5">
+            <div className="flex flex-col items-start mb-1">
+              <div className="px-3 py-2 bg-[#202c33] text-[#e9edef] text-[14.5px] rounded-lg rounded-tl-none flex items-center gap-3 shadow-sm border border-white/5">
                 <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-                <span className="italic opacity-70">En train d'écrire...</span>
+                <span className="italic opacity-70">réfléchit...</span>
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)] z-20">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
-            <div className="flex-1 bg-[#2a3942] rounded-full flex items-center px-4 h-12 shadow-inner">
-              <Input
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Message"
-                  disabled={isAiResponding}
-                  className="flex-1 bg-transparent border-none text-white placeholder:text-slate-500 text-[16px] p-0 h-full focus-visible:ring-0 shadow-none"
-              />
+      {/* --- INPUT (BARRE DE SAISIE FLOTTANTE) --- */}
+      <div className="p-2 bg-transparent safe-area-pb z-20 flex items-end gap-2">
+        <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md">
+            <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Smile className="h-6 w-6" /></Button>
+            <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
+                <Input
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Message"
+                    disabled={isAiResponding}
+                    className="flex-1 bg-transparent border-none text-white placeholder:text-[#8696a0] text-[16px] h-10 focus-visible:ring-0 shadow-none px-1"
+                />
+            </form>
+            <div className="flex items-center">
+                <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Paperclip className="h-5 w-5 -rotate-45" /></Button>
+                {!input.trim() && <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Camera className="h-5 w-5" /></Button>}
             </div>
-            <Button 
-              type="submit" 
-              size="icon" 
-              disabled={isAiResponding || !input.trim()} 
-              className={cn(
-                  "h-12 w-12 rounded-full shadow-2xl shrink-0 transition-all active:scale-90",
-                  input.trim() ? "bg-[#00a884] hover:bg-[#00a884]/90" : "bg-slate-800 text-slate-500"
-              )}
-            >
-                <Send className="h-5 w-5 text-white fill-white" />
-            </Button>
-        </form>
+        </div>
+        
+        <Button 
+          onClick={handleSendMessage}
+          disabled={isAiResponding} 
+          className={cn(
+              "h-12 w-12 rounded-full shadow-lg shrink-0 flex items-center justify-center p-0 transition-all active:scale-90",
+              "bg-[#00a884] hover:bg-[#00a884]/90"
+          )}
+        >
+            {input.trim() ? (
+                isAiResponding ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : <Send className="h-5 w-5 text-white fill-white translate-x-0.5" />
+            ) : (
+                <Mic className="h-5 w-5 text-white" />
+            )}
+        </Button>
       </div>
     </div>
   );
