@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -95,8 +96,8 @@ export default function CourseDetailPage() {
     if (isEnrolled) {
       router.push(`/student/courses/${courseId}`);
     } else {
-      // Redirection vers le tunnel de paiement (checkout)
-      router.push(`/paiements/checkout?courseId=${courseId}`);
+      // Redirection vers la nouvelle page de checkout mobile-first
+      router.push(`/student/checkout/${courseId}`);
     }
   };
 
