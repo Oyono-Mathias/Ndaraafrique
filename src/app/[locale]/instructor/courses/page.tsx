@@ -12,6 +12,7 @@ import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'fir
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/card';
 import { Plus, Search, Users, BookOpen, MoreVertical, Edit3, Trash2 } from 'lucide-react';
 import type { Course, Enrollment } from '@/lib/types';
 import Image from 'next/image';
