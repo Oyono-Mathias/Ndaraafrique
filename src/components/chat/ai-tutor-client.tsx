@@ -1,18 +1,18 @@
+
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { mathiasTutor } from "@/ai/flows/mathias-tutor-flow";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, RefreshCw, Smartphone, ChevronLeft } from "lucide-react";
+import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
+import { useRouter } from "next/navigation";
 import { 
     collection, 
-    addDoc, 
-    serverTimestamp, 
     query, 
     orderBy, 
     getFirestore, 
@@ -22,9 +22,10 @@ import {
     DocumentData, 
     getDocs, 
     doc,
-    writeBatch
+    writeBatch,
+    serverTimestamp
 } from "firebase/firestore";
-import { format, isToday } from 'date-fns';
+import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface AiTutorMessage {
@@ -42,6 +43,7 @@ interface AiTutorClientProps {
 export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientProps) {
   const { user, isUserLoading } = useRole();
   const db = getFirestore();
+  const router = useRouter();
   const [input, setInput] = useState("");
   const [isAiResponding, setIsAiResponding] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -158,29 +160,33 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden bg-grainy">
-      {/* --- WHATSAPP STYLE HEADER --- */}
+    <div className="flex flex-col h-screen bg-[#0b141a] relative overflow-hidden bg-grainy">
+      {/* --- WHATSAPP STYLE HEADER WITH BACK BUTTON --- */}
       <header className="flex items-center p-3 border-b border-white/10 bg-[#111b21] backdrop-blur-xl sticky top-0 z-30 shadow-md">
-        <div className="relative flex items-center gap-3">
+        <Button variant="ghost" size="icon" className="mr-1 text-slate-400 h-10 w-10 rounded-full" onClick={() => router.push('/student/dashboard')}>
+            <ArrowLeft className="h-6 w-6" />
+        </Button>
+        <div className="relative flex items-center gap-3 flex-1">
           <div className="relative">
             <div className="absolute -inset-1 bg-[#CC7722] rounded-full blur opacity-20 animate-pulse"></div>
             <Avatar className="h-10 w-10 border-2 border-[#CC7722]/50 z-10 relative">
-                <AvatarFallback className="bg-[#111b21] text-[#CC7722]"><Bot className="h-6 w-6" /></AvatarFallback>
+                <AvatarFallback className="bg-[#111b21] text-[#CC7722] font-black"><Bot className="h-6 w-6" /></AvatarFallback>
             </Avatar>
           </div>
           <div className="flex flex-col">
-            <h2 className="font-bold text-sm text-white leading-tight">MATHIAS</h2>
-            <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 uppercase tracking-widest mt-0.5">
+            <h2 className="font-black text-sm text-white leading-tight uppercase tracking-widest">MATHIAS</h2>
+            <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 uppercase tracking-tighter mt-0.5">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              En ligne
+              Tuteur Interactif
             </p>
           </div>
         </div>
+        <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full"><MoreVertical className="h-5 w-5" /></Button>
       </header>
 
       {/* --- CHAT AREA --- */}
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
-        <div className="p-4 space-y-4 max-w-3xl mx-auto flex flex-col">
+        <div className="p-4 space-y-4 max-w-3xl mx-auto flex flex-col min-h-full">
           {(isUserLoading || isHistoryLoading) && (
             <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#CC7722]" /></div>
           )}
@@ -189,7 +195,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
             <div className="text-center py-2">
                 <Button variant="ghost" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore} className="text-[10px] uppercase font-black tracking-widest text-slate-500 hover:text-slate-300">
                     {isFetchingMore ? <Loader2 className="h-3 w-3 animate-spin mr-2"/> : <RefreshCw className="h-3 w-3 mr-2"/>}
-                    Voir les messages plus anciens
+                    Charger les messages précédents
                 </Button>
             </div>
           )}
@@ -214,7 +220,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                 )}>
                   <p className="whitespace-pre-wrap">{msg.text}</p>
                   <div className={cn(
-                    "text-[9px] mt-1 flex items-center justify-end gap-1 opacity-60 font-medium",
+                    "text-[9px] mt-1 flex items-center justify-end gap-1 opacity-60 font-black",
                     isMe ? "text-white" : "text-slate-400"
                   )}>
                     {format(date, 'HH:mm', { locale: fr })}
@@ -226,32 +232,32 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
           {isAiResponding && (
             <div className="flex flex-col items-start animate-pulse">
-              <div className="px-4 py-3 bg-[#202c33] border border-white/5 text-slate-400 text-sm rounded-xl rounded-tl-none flex items-center gap-3 shadow-lg">
+              <div className="px-4 py-3 bg-[#202c33] border border-white/5 text-slate-400 text-xs font-black uppercase tracking-widest rounded-xl rounded-tl-none flex items-center gap-3 shadow-lg">
                 <Loader2 className="h-4 w-4 animate-spin text-[#CC7722]" />
-                Mathias écrit...
+                Mathias réfléchit...
               </div>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      {/* --- WHATSAPP STYLE INPUT --- */}
-      <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb">
+      {/* --- WHATSAPP STYLE INPUT BAR --- */}
+      <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
             <div className="flex-1 relative">
               <Input
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Posez une question à Mathias..."
+                  placeholder="Posez votre question à Mathias..."
                   disabled={isAiResponding}
-                  className="w-full h-11 rounded-full bg-[#2a3942] border-none text-white placeholder:text-slate-500 text-[14px] pl-5 pr-10 focus-visible:ring-0 shadow-inner"
+                  className="w-full h-12 rounded-full bg-[#2a3942] border-none text-white placeholder:text-slate-500 text-[14px] pl-5 pr-10 focus-visible:ring-0 shadow-inner"
               />
             </div>
             <Button 
               type="submit" 
               size="icon" 
               disabled={isAiResponding || !input.trim()} 
-              className="h-11 w-11 rounded-full bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-xl shrink-0 transition-transform active:scale-90"
+              className="h-12 w-12 rounded-full bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-2xl shrink-0 transition-transform active:scale-90"
             >
                 <Send className="h-5 w-5 text-white" />
             </Button>

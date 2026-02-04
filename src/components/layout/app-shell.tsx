@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -20,9 +20,11 @@ import { OfflineBar } from '@/components/OfflineBar';
 function MaintenancePage() {
     return (
         <div className="flex flex-col items-center justify-center h-screen bg-slate-950 text-center p-4">
-            <Wrench className="h-16 w-16 text-primary mb-4" />
-            <h1 className="text-3xl font-bold text-white">Site en maintenance</h1>
-            <p className="text-slate-400 mt-2">Nous effectuons des mises à jour. Le site sera de retour très prochainement.</p>
+            <div className="p-6 bg-slate-900 rounded-full mb-6">
+                <Wrench className="h-16 w-16 text-primary animate-pulse" />
+            </div>
+            <h1 className="text-3xl font-bold text-white uppercase tracking-tighter">Maintenance en cours</h1>
+            <p className="text-slate-400 mt-2 max-w-xs mx-auto">Nous peaufinons Ndara Afrique pour vous. Revenez dans quelques instants.</p>
         </div>
     );
 }
@@ -59,14 +61,14 @@ function AnnouncementBanner() {
     const sangoLingala = translations.length > 0 ? `Sango: ${translations.join('Sango:')}` : '';
 
     return (
-        <div className="bg-primary/90 text-primary-foreground p-3 flex items-center justify-center gap-4 text-sm font-medium relative">
-            <Megaphone className="h-5 w-5 hidden sm:block flex-shrink-0" />
-            <p className="text-center text-balance">
+        <div className="bg-primary text-primary-foreground p-2.5 flex items-center justify-center gap-4 text-[11px] font-black uppercase tracking-widest relative z-[60]">
+            <Megaphone className="h-4 w-4 hidden sm:block flex-shrink-0" />
+            <p className="text-center text-balance leading-tight">
                 {mainMessage.trim()}
-                {sangoLingala && <span className="hidden md:inline text-primary-foreground/80 ml-2 italic">{sangoLingala}</span>}
+                {sangoLingala && <span className="hidden md:inline opacity-70 ml-2 font-bold">{sangoLingala}</span>}
             </p>
-            <Button variant="ghost" size="icon" onClick={handleDismiss} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 hover:bg-black/20">
-                <X className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-6 w-6 hover:bg-black/20 shrink-0">
+                <X className="h-3 w-3" />
             </Button>
         </div>
     );
@@ -76,6 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, isUserLoading, user, currentUser } = useRole();
   const router = useRouter();
   const pathname = usePathname() || '';
+  const searchParams = useSearchParams();
   
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
@@ -104,12 +107,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const { isAuthPage, isPublicPage } = useMemo(() => {
+  const { isAuthPage, isPublicPage, isImmersiveChat } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline'];
     
     const isAuth = authPaths.some(p => pathname.endsWith(p));
     let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
+
+    // Détection des pages de chat immersives (style WhatsApp)
+    const isTutor = pathname.includes('/tutor');
+    const isChatActive = pathname.includes('/messages') && searchParams.get('chatId');
+    const isImmersive = isTutor || isChatActive;
 
     if (!isPublic) {
         if (pathname.startsWith('/verify/')) isPublic = true;
@@ -122,8 +130,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         }
     }
     
-    return { isAuthPage: isAuth, isPublicPage: isPublic };
-  }, [pathname]);
+    return { isAuthPage: isAuth, isPublicPage: isPublic, isImmersiveChat: !!isImmersive };
+  }, [pathname, searchParams]);
 
   useEffect(() => {
     if (isUserLoading) return;
@@ -163,17 +171,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
+  
+  // Pages où l'on cache totalement la navigation globale
   const isFullScreenPage = pathname.startsWith('/courses/');
   const isAdminArea = pathname.startsWith('/admin');
   const isRootPath = pathname === '/';
+  
+  const hideNavigation = isFullScreenPage || isImmersiveChat;
 
   return (
     <>
       <SplashScreen />
       <OfflineBar />
-      <div className={cn("min-h-screen w-full bg-slate-950 text-white", isAdminArea ? "admin-grid-layout" : (!isFullScreenPage && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]")}>
+      <div className={cn(
+        "min-h-screen w-full bg-slate-950 text-white", 
+        isAdminArea ? "admin-grid-layout" : (!hideNavigation && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
+      )}>
         {!isRootPath && !isAuthPage && user && (
-          <aside className={cn("hidden h-screen sticky top-0", (isFullScreenPage || isAdminArea) ? "md:hidden" : "md:block")}>
+          <aside className={cn("hidden h-screen sticky top-0", (hideNavigation || isAdminArea) ? "md:hidden" : "md:block")}>
              {role === 'admin' ? (
               <AdminSidebar {...sidebarProps} />
             ) : role === 'instructor' ? (
@@ -185,9 +200,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-col flex-1 min-h-screen">
           <AnnouncementBanner />
-          {!isRootPath && !isAuthPage && user && (
-            <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm", isFullScreenPage && "md:hidden")}>
-              {(!isFullScreenPage || isAdminArea) && user && (
+          {!isRootPath && !isAuthPage && user && !hideNavigation && (
+            <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm")}>
+              {!isFullScreenPage && !isAdminArea && user && (
                  <div className="md:hidden">
                   <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                       <SheetTrigger asChild>
@@ -208,7 +223,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
           
-          <main className={cn("p-6", (isFullScreenPage || isRootPath) && "!p-0")}>
+          <main className={cn("p-6", (hideNavigation || isRootPath) && "!p-0")}>
               {children}
           </main>
         </div>
