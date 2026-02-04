@@ -3,7 +3,7 @@
 /**
  * @fileOverview Liste des conversations Ndara Afrique (Android-First).
  * Gère le flux temps réel Firestore et l'enrichissement des profils.
- * Logic : where("participants", "array-contains", uid) + orderBy("updatedAt", "desc")
+ * Logic : Gestion des statuts de lecture via le tableau unreadBy (Product Engineer).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -26,7 +26,7 @@ interface EnrichedChat extends Chat {
   otherParticipant: Partial<NdaraUser>;
 }
 
-const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, isSelected: boolean, unreadCount: number }) => {
+const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSelected: boolean, isUnread: boolean }) => {
     const router = useRouter();
     const lastDate = (chat.updatedAt as any)?.toDate?.();
 
@@ -45,25 +45,28 @@ const ChatListItem = ({ chat, isSelected, unreadCount }: { chat: EnrichedChat, i
                         {chat.otherParticipant.fullName?.charAt(0)}
                     </AvatarFallback>
                 </Avatar>
-                {unreadCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-[#CC7722] rounded-full border-2 border-slate-950 flex items-center justify-center text-[10px] font-black text-white animate-in zoom-in">
-                        {unreadCount}
-                    </span>
+                {isUnread && (
+                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-[#CC7722] rounded-full border-2 border-slate-950 shadow-lg animate-in zoom-in" />
                 )}
             </div>
             <div className="flex-1 min-w-0">
                 <div className="flex justify-between items-baseline mb-1">
-                    <p className="font-bold text-slate-100 truncate text-[15px]">{chat.otherParticipant.fullName}</p>
+                    <p className={cn(
+                        "truncate text-[15px]",
+                        isUnread ? "font-black text-white" : "font-bold text-slate-300"
+                    )}>
+                        {chat.otherParticipant.fullName}
+                    </p>
                     <span className={cn(
                         "text-[10px] font-black uppercase tracking-tighter",
-                        unreadCount > 0 ? "text-[#CC7722]" : "text-slate-500"
+                        isUnread ? "text-[#CC7722]" : "text-slate-500"
                     )}>
                         {lastDate ? formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr }) : ''}
                     </span>
                 </div>
                 <p className={cn(
                     "text-sm truncate leading-snug",
-                    unreadCount > 0 ? "text-slate-200 font-bold" : "text-slate-500 font-medium"
+                    isUnread ? "text-slate-100 font-bold" : "text-slate-500 font-medium"
                 )}>
                     {chat.lastMessage}
                 </p>
@@ -80,7 +83,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const [dataLoading, setDataLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Requête principale filtrée par participant et triée par date
+    // Requête principale filtrée par participant
     const chatsQuery = useMemo(() =>
         user ? query(
             collection(db, 'chats'), 
@@ -91,13 +94,12 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     );
     const { data: chats, isLoading: chatsLoading } = useCollection<Chat>(chatsQuery);
 
-    // Enrichissement des chats avec les profils des destinataires
+    // Enrichissement des chats avec les profils
     useEffect(() => {
         if (!chats || chatsLoading) return;
 
         const enrich = async () => {
             setDataLoading(true);
-            // On extrait les UIDs des autres participants
             const otherIds = chats.map(c => c.participants.find(p => p !== user?.uid)).filter(Boolean) as string[];
             
             if (otherIds.length === 0) {
@@ -109,7 +111,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
             const usersMap = new Map<string, NdaraUser>();
             const uniqueOtherIds = [...new Set(otherIds)];
 
-            // Récupération par lots de 30 (limite Firestore)
             for (let i = 0; i < uniqueOtherIds.length; i += 30) {
                 const chunk = uniqueOtherIds.slice(i, i + 30);
                 const q = query(collection(db, 'users'), where('uid', 'in', chunk));
@@ -140,7 +141,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
 
     return (
         <div className="flex flex-col h-full bg-slate-950">
-            {/* Header Android Style */}
             <header className="px-4 pt-6 pb-4 space-y-4">
                 <div className="flex items-center justify-between">
                     <h1 className="text-2xl font-black text-white tracking-tight">Messages</h1>
@@ -179,7 +179,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                                 key={chat.id} 
                                 chat={chat} 
                                 isSelected={chat.id === selectedChatId}
-                                unreadCount={chat.unreadBy?.includes(user!.uid) ? 1 : 0}
+                                isUnread={chat.unreadBy?.includes(user!.uid) || false}
                             />
                         ))}
                     </div>
@@ -195,7 +195,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                 )}
             </ScrollArea>
 
-            {/* Android FAB for new message */}
             <Button 
                 onClick={() => router.push('/student/annuaire')}
                 className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-2xl shadow-[#CC7722]/40 z-50 transition-transform active:scale-90 md:hidden"

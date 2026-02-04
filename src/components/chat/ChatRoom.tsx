@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Salon de discussion immersif (WhatsApp Android Style).
  * Gère l'affichage des messages en temps réel, l'envoi atomique et le scroll automatique.
+ * Incorpore la logique de marquage comme "lu" (Product Engineer).
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -52,24 +52,27 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             const data = snap.data();
             const otherId = data.participants.find((p: string) => p !== user.uid);
             
-            // Récupérer le profil de l'autre participant
-            if (otherId) {
+            // Récupérer le profil de l'autre participant si pas encore chargé
+            if (otherId && (!otherParticipant || otherParticipant.uid !== otherId)) {
                 onSnapshot(doc(db, 'users', otherId), (uSnap) => {
                     if (uSnap.exists()) {
-                        setOtherParticipant(uSnap.data() as NdaraUser);
+                        setOtherParticipant({ uid: uSnap.id, ...uSnap.data() } as NdaraUser);
                     }
                 });
             }
 
-            // Marquer comme lu pour l'utilisateur actuel
+            // LOGIQUE PRODUIT : Marquer comme lu pour l'utilisateur actuel
+            // Si mon UID est dans unreadBy, je le retire car je suis dans la salle
             if (data.unreadBy?.includes(user.uid)) {
-                updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
+                updateDoc(chatRef, { 
+                    unreadBy: arrayRemove(user.uid) 
+                }).catch(err => console.error("Error marking as read:", err));
             }
         }
     });
 
     return () => unsubChat();
-  }, [chatId, user, db]);
+  }, [chatId, user, db, otherParticipant]);
 
   // 2. Écoute des messages en temps réel
   useEffect(() => {
@@ -94,7 +97,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubMsgs();
   }, [chatId, db]);
 
-  // 3. Envoi de message avec mise à jour des métadonnées du chat (Batch)
+  // 3. Envoi de message avec mise à jour des métadonnées (Badge non-lu pour l'autre)
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMessage.trim() || !user || isSending) return;
@@ -116,7 +119,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             status: 'sent',
         });
 
-        // Mise à jour de l'aperçu dans la liste des chats
+        // Mise à jour de l'aperçu et marquage comme non-lu pour le destinataire
         batch.update(chatRef, {
             lastMessage: text,
             updatedAt: serverTimestamp(),
@@ -134,10 +137,9 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-       {/* Fond grainé Vintage Ndara */}
        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')] z-0" />
 
-       {/* --- HEADER WHATSAPP --- */}
+       {/* --- HEADER --- */}
        <header className="flex items-center p-2.5 border-b border-white/5 bg-[#111b21]/95 backdrop-blur-xl sticky top-0 z-30 shadow-2xl">
             <Button 
                 variant="ghost" 
@@ -185,10 +187,9 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </header>
 
-        {/* --- ZONE DE MESSAGES --- */}
+        {/* --- MESSAGES --- */}
         <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
             <div className="p-4 space-y-2 max-w-3xl mx-auto flex flex-col">
-                {/* Badge Sécurité */}
                 <div className="self-center my-4">
                     <span className="bg-[#182229] text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 px-3 py-1 rounded-md shadow-sm border border-white/5">
                         Chiffrement Ndara Afrique
@@ -197,7 +198,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
-                    // Fallback pour le timestamp avant synchronisation serveur
                     const date = (msg.createdAt as any)?.toDate?.() || new Date();
                     
                     return (
@@ -213,7 +213,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                             )}>
                                 {msg.text}
                                 <div className={cn(
-                                  "text-[9px] mt-1.5 flex items-center justify-end gap-1 font-black uppercase tracking-tighter opacity-60",
+                                  "text-[9px] mt-1 flex items-center justify-end gap-1 font-black uppercase tracking-tighter opacity-60",
                                   isMe ? "text-white" : "text-slate-500"
                                 )}>
                                   {format(date, 'HH:mm', { locale: fr })}
@@ -226,7 +226,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        {/* --- BARRE DE SAISIE --- */}
+        {/* --- INPUT --- */}
         <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb z-20">
             <form onSubmit={handleSend} className="flex items-center gap-2 max-w-3xl mx-auto">
                 <div className="flex-1 bg-[#2a3942] rounded-full flex items-center px-4 h-12 shadow-inner group focus-within:ring-1 focus-within:ring-[#CC7722]/30 transition-all">

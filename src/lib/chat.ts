@@ -1,4 +1,3 @@
-
 import {
   getFirestore,
   collection,
@@ -66,7 +65,7 @@ export async function startChat(
         updatedAt: serverTimestamp(),
         lastMessage: 'Conversation démarrée.',
         lastSenderId: currentUserId,
-        unreadBy: [contactId], // Le destinataire a un message non lu par défaut
+        unreadBy: [contactId], // LOGIQUE PRODUIT : Le destinataire a une notification dès le début
       });
 
       await batch.commit();
