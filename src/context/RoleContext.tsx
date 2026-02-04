@@ -87,7 +87,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
-    // ✅ LISTENER TEMPS RÉEL (onSnapshot)
+    // LISTENER TEMPS RÉEL (onSnapshot)
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;

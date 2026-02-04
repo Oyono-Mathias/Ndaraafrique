@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -9,7 +9,6 @@ import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, setDoc } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import Image from 'next/image';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { deleteUserAccount } from '@/actions/userActions';
@@ -24,9 +23,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Edit3, User, BookOpen, Sparkles, AlertTriangle, CheckCircle, Lock, Trash2, Bell, KeyRound, MonitorPlay, Users, Linkedin, Twitter, Globe, Settings, UserCog, Bot, Briefcase } from 'lucide-react';
+import { Loader2, AlertTriangle, Bell, KeyRound, MonitorPlay, Users, Linkedin, Twitter, Globe, Settings, UserCog, Bot } from 'lucide-react';
 import { ImageCropper } from '@/components/ui/ImageCropper';
-import { useDebounce } from '@/hooks/use-debounce';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -183,7 +181,7 @@ export default function AccountPage() {
             updatePayload['socialLinks.website'] = data.website || '';
         }
 
-        await setDoc(userDocRef, updatePayload, { merge: true });
+        await updateDoc(userDocRef, updatePayload);
         
         if (auth.currentUser && auth.currentUser.displayName !== data.fullName) {
           await updateProfile(auth.currentUser, { displayName: data.fullName });
@@ -191,7 +189,6 @@ export default function AccountPage() {
 
         toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet ! Les fonctions communautaires sont activées." : "Profil mis à jour." });
         
-        // Forcer Next.js à revalider les données
         router.refresh();
     } catch (error: any) {
       console.error("Save error:", error);
@@ -206,7 +203,7 @@ export default function AccountPage() {
       setIsSaving(true);
       const userDocRef = doc(db, 'users', currentUser.uid);
       try {
-        await setDoc(userDocRef, updateData, { merge: true });
+        await updateDoc(userDocRef, updateData);
         toast({ title: "Préférences sauvegardées" });
         router.refresh();
       } catch(e) {
@@ -228,7 +225,7 @@ export default function AccountPage() {
     try {
       const snapshot = await uploadBytes(storageRef, croppedImage);
       const downloadURL = await getDownloadURL(snapshot.ref);
-      await setDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL }, { merge: true });
+      await updateDoc(doc(db, 'users', currentUser.uid), { profilePictureURL: downloadURL });
       toast({ title: "Avatar mis à jour" });
       setImagePreview(downloadURL);
       router.refresh();
@@ -288,7 +285,7 @@ export default function AccountPage() {
              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                  <StatCard title="Cours" icon={MonitorPlay} value={stats.courses} isLoading={statsLoading} />
                  <StatCard title="Étudiants" icon={Users} value={stats.students} isLoading={statsLoading} />
-                 <StatCard title="Diplômes" icon={Sparkles} value={stats.certificates} isLoading={statsLoading} />
+                 <StatCard title="Diplômes" icon={Bot} value={stats.certificates} isLoading={statsLoading} />
             </div>
         )}
 
