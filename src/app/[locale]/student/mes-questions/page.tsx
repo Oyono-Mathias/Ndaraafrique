@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -12,6 +11,7 @@ import { getFirestore, collection, query, where, orderBy, onSnapshot } from 'fir
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { MessageCircle, Clock, CheckCircle2, BookOpen, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
