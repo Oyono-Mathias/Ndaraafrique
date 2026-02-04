@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -40,10 +39,10 @@ export function Navbar() {
         scrolled ? 'bg-slate-900/80 backdrop-blur-sm border-b border-slate-800' : 'bg-transparent'
       )}
     >
-      <div className="container mx-auto flex h-20 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-3 group">
-          <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
-          <span className="text-xl font-bold text-white transition-colors group-hover:text-primary">
+          <Image src="/logo.png" alt="Ndara Afrique Logo" width={32} height={32} className="rounded-lg" />
+          <span className="text-xl font-bold text-white transition-colors group-hover:text-primary tracking-tighter">
             Ndara Afrique
           </span>
         </Link>
@@ -63,15 +62,15 @@ export function Navbar() {
 
         {/* Mobile Navigation & CTA */}
         <div className="flex items-center gap-2 md:hidden">
-            <Button asChild className="group">
+            <Button asChild className="group h-9 text-xs">
               <Link href="/login?tab=register">
                 S'inscrire
               </Link>
             </Button>
             <Sheet>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6 text-white"/>
+                <Button variant="ghost" size="icon" className="h-9 w-9">
+                  <Menu className="h-5 w-5 text-white"/>
                   <span className="sr-only">Ouvrir le menu</span>
                 </Button>
               </SheetTrigger>

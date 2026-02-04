@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -93,23 +92,23 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-primary/30 font-sans">
       
-      {/* --- MOBILE NAVBAR --- */}
+      {/* --- MOBILE NAVBAR COMPACTE --- */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-slate-800">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Image src="/icon.svg" alt="Ndara" width={28} height={28} priority />
-            <span className="text-lg font-bold tracking-tight text-white">Ndara Afrique</span>
+            <Image src="/logo.png" alt="Ndara Logo" width={32} height={32} priority className="rounded-lg shadow-sm" />
+            <span className="text-base font-black tracking-tighter text-white">Ndara Afrique</span>
           </Link>
           
           <div className="flex items-center gap-2">
             {isUserLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+              <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
             ) : user ? (
-              <Button asChild size="sm" className="h-9 px-4 text-xs font-bold rounded-full">
-                <Link href={dashboardLink}>Mon Espace</Link>
+              <Button asChild size="sm" className="h-8 px-3 text-[10px] font-bold rounded-full uppercase">
+                <Link href={dashboardLink}>Espace</Link>
               </Button>
             ) : (
-              <Button asChild size="sm" className="h-9 px-4 text-xs font-bold rounded-full bg-primary" onClick={() => handleCtaClick('navbar_signup')}>
+              <Button asChild size="sm" className="h-8 px-3 text-[10px] font-bold rounded-full bg-primary uppercase" onClick={() => handleCtaClick('navbar_signup')}>
                 <Link href="/login?tab=register">S'inscrire</Link>
               </Button>
             )}
@@ -118,7 +117,7 @@ export default function LandingPage() {
       </nav>
 
       {/* --- HERO SECTION: Optimized for Android Viewports --- */}
-      <section className="relative pt-28 pb-12 px-4 overflow-hidden">
+      <section className="relative pt-24 pb-12 px-4 overflow-hidden">
         <div className="text-center space-y-6 relative z-10">
           <Badge variant="outline" className="py-1 px-3 bg-primary/5 border-primary/20 text-primary rounded-full text-[10px] font-bold uppercase tracking-wider">
             🚀 L'Éducation de demain en Afrique
