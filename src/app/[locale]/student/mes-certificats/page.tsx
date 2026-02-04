@@ -1,19 +1,24 @@
+
 'use client';
+
+/**
+ * @fileOverview Liste des certificats de l'étudiant optimisée Android.
+ * Affiche uniquement les cours terminés à 100% avec un design Vintage.
+ */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, doc, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Award, Eye, Frown } from 'lucide-react';
+import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 import Link from 'next/link';
+import { Card, CardContent } from '@/components/ui/card';
 
 interface EnrichedCertificate extends Enrollment {
   student?: Partial<NdaraUser>;
@@ -21,7 +26,6 @@ interface EnrichedCertificate extends Enrollment {
   instructor?: Partial<NdaraUser>;
 }
 
-// Helper function to fetch data in chunks to avoid Firestore's 'in' query limitation.
 async function fetchDataMap(db: any, collectionName: string, fieldName: string | null, ids: string[]) {
     const dataMap = new Map();
     if (ids.length === 0) return dataMap;
@@ -44,6 +48,7 @@ export default function MesCertificatsPage() {
   const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // 1. On ne récupère que les enrollments à 100%
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid
       ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '==', 100))
@@ -93,7 +98,7 @@ export default function MesCertificatsPage() {
   const isLoading = enrollmentsLoading || dataLoading;
 
   return (
-    <div className="space-y-8">
+    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
       {selectedCertificate && (
         <CertificateModal
           isOpen={isModalOpen}
@@ -109,70 +114,89 @@ export default function MesCertificatsPage() {
           certificateId={selectedCertificate.id}
         />
       )}
-      <header>
-        <h1 className="text-3xl font-bold dark:text-white">Mes Certificats</h1>
-        <p className="text-muted-foreground dark:text-slate-400">Toutes les certifications que vous avez obtenues sur Ndara Afrique.</p>
+
+      <header className="px-4 pt-8">
+        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
+            <Trophy className="h-5 w-5" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Excellence</span>
+        </div>
+        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-[#CC7722]">Certificats</span></h1>
+        <p className="text-slate-500 text-sm mt-2">Le fruit de votre travail et de votre persévérance.</p>
       </header>
 
-      <div className="border rounded-lg bg-slate-800/50 border-slate-700/80">
-        <Table>
-          <TableHeader>
-            <TableRow className="border-slate-700">
-              <TableHead>Cours</TableHead>
-              <TableHead>Instructeur</TableHead>
-              <TableHead>Date d'obtention</TableHead>
-              <TableHead className="text-right">Action</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              [...Array(3)].map((_, i) => (
-                <TableRow key={i}>
-                  <TableCell colSpan={4}>
-                    <Skeleton className="h-10 w-full bg-slate-700"/>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : enrichedData.length > 0 ? (
-              enrichedData.map(cert => (
-                <TableRow key={cert.id} className="border-slate-800">
-                  <TableCell className="font-medium text-white">{cert.course?.title}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={cert.instructor?.profilePictureURL} />
-                        <AvatarFallback>{cert.instructor?.fullName?.charAt(0) || '?'}</AvatarFallback>
-                      </Avatar>
-                      <span className="font-medium text-slate-300">{cert.instructor?.fullName}</span>
+      <div className="px-4 space-y-4">
+        {isLoading ? (
+          <div className="grid gap-4">
+            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-3xl bg-slate-900" />)}
+          </div>
+        ) : enrichedData.length > 0 ? (
+          <div className="grid gap-6">
+            {enrichedData.map(cert => (
+              <Card key={cert.id} className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl group active:scale-[0.98] transition-all">
+                <CardContent className="p-0">
+                    <div className="p-6 space-y-4">
+                        <div className="flex justify-between items-start">
+                            <div className="p-3 bg-[#CC7722]/10 rounded-2xl">
+                                <Award className="h-8 w-8 text-[#CC7722]" />
+                            </div>
+                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
+                                ID: {cert.id.substring(0, 8)}
+                            </span>
+                        </div>
+                        
+                        <div className="space-y-1">
+                            <h3 className="text-xl font-bold text-white line-clamp-2 leading-tight group-hover:text-[#CC7722] transition-colors">
+                                {cert.course?.title}
+                            </h3>
+                            <p className="text-xs text-slate-500 font-medium italic">
+                                Obtenu le {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
+                                    ? format((cert.lastAccessedAt as any).toDate(), 'dd MMMM yyyy', { locale: fr }) 
+                                    : 'récemment'}
+                            </p>
+                        </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
-                      ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
-                      : 'N/A'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleViewCertificate(cert)}>
-                      <Eye className="mr-2 h-4 w-4"/>Voir
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={4} className="h-48 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
-                      <Frown className="h-12 w-12" />
-                      <p className="font-semibold">Aucun certificat obtenu pour le moment.</p>
-                      <Button asChild variant="link">
-                        <Link href="/student/mes-formations">Continuez vos cours pour en obtenir !</Link>
-                      </Button>
+                    
+                    <div className="p-4 bg-slate-900 flex gap-2 border-t border-slate-800">
+                        <Button 
+                            className="flex-1 bg-[#CC7722] hover:bg-[#CC7722]/90 text-white rounded-xl font-black uppercase text-[10px] tracking-widest h-12"
+                            onClick={() => handleViewCertificate(cert)}
+                        >
+                            <Eye className="mr-2 h-4 w-4" />
+                            Voir le diplôme
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="h-12 w-12 rounded-xl border-slate-800 bg-slate-900 text-slate-400"
+                            onClick={() => {
+                                const url = `${window.location.origin}/verify/${cert.id}`;
+                                window.open(`https://wa.me/?text=Je suis fier de vous partager mon nouveau certificat Ndara Afrique ! Vérifiez-le ici : ${url}`, '_blank');
+                            }}
+                        >
+                            <Share2 className="h-4 w-4" />
+                        </Button>
                     </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50">
+            <div className="p-6 bg-slate-800/50 rounded-full mb-6">
+              <Award className="h-16 w-16 text-slate-700" />
+            </div>
+            <h3 className="text-xl font-black text-white leading-tight">Votre premier diplôme <br/>vous attend.</h3>
+            <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
+              Terminez vos formations à <span className="text-white font-bold">100%</span> pour débloquer vos certificats officiels.
+            </p>
+            <Button asChild className="mt-8 bg-[#CC7722] hover:bg-[#CC7722]/90 text-white rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-[#CC7722]/20">
+              <Link href="/student/courses">
+                Reprendre les cours
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
