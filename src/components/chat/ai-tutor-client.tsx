@@ -1,4 +1,10 @@
+
 "use client";
+
+/**
+ * @fileOverview Client de chat pour le Tuteur MATHIAS.
+ * Design calqué sur WhatsApp Android (Identique à ChatRoom.tsx).
+ */
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { mathiasTutor } from "@/ai/flows/mathias-tutor-flow";
@@ -6,7 +12,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic } from "lucide-react";
+import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic, Phone, Video } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
@@ -159,27 +165,32 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
   };
 
   return (
-    <div className="flex flex-col h-screen bg-[#0b141a] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
       {/* Fond doodle WhatsApp exact */}
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
-      <header className="flex items-center p-3 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
-        <Button variant="ghost" size="icon" className="mr-1 text-slate-300 h-10 w-10 rounded-full" onClick={() => router.push('/student/dashboard')}>
+      {/* --- HEADER (Style WhatsApp) --- */}
+      <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
+        <Button variant="ghost" size="icon" className="mr-0 text-slate-300 h-10 w-8 rounded-full" onClick={() => router.push('/student/dashboard')}>
             <ArrowLeft className="h-6 w-6" />
         </Button>
-        <div className="relative flex items-center gap-3 flex-1">
-          <Avatar className="h-10 w-10 border-2 border-[#CC7722]/50">
-              <AvatarFallback className="bg-[#111b21] text-[#CC7722] font-black"><Bot className="h-6 w-6" /></AvatarFallback>
+        <div className="flex items-center gap-2 flex-1 overflow-hidden">
+          <Avatar className="h-9 w-9 border border-white/10">
+              <AvatarFallback className="bg-[#2a3942] text-[#CC7722] font-black"><Bot className="h-6 w-6" /></AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <h2 className="font-black text-sm text-white leading-tight uppercase tracking-widest">MATHIAS</h2>
-            <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 uppercase tracking-tighter mt-0.5">
+          <div className="flex flex-col overflow-hidden">
+            <h2 className="font-bold text-sm text-white truncate leading-none uppercase tracking-widest">MATHIAS</h2>
+            <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 uppercase tracking-tighter mt-1">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               Tuteur Interactif
             </p>
           </div>
         </div>
-        <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10 rounded-full"><MoreVertical className="h-5 w-5" /></Button>
+        <div className="flex items-center gap-0">
+            <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><Video className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><Phone className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><MoreVertical className="h-5 w-5" /></Button>
+        </div>
       </header>
 
       <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
@@ -216,7 +227,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                 )}
               >
                 <div className={cn(
-                    "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] shadow-sm relative min-w-[60px]",
+                    "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
                     isMe 
                       ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
                       : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
