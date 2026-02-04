@@ -87,51 +87,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
-    // LISTENER TEMPS RÉEL (onSnapshot)
+    // LISTENER TEMPS RÉEL (onSnapshot) - C'est ici que la magie opère
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
-
-          const defaultFields: Partial<NdaraUser> = {
-            phoneNumber: '',
-            bio: '',
-            socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
-            payoutInfo: {},
-            instructorNotificationPreferences: { newEnrollment: true, newMessage: true, newAssignmentSubmission: true, courseStatusUpdate: true, payoutUpdate: true },
-            pedagogicalPreferences: { aiAssistanceEnabled: true, aiInterventionLevel: 'medium' },
-            notificationPreferences: { newPayouts: true, newApplications: true, newSupportTickets: true, financialAnomalies: true },
-            careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
-            badges: [],
-            permissions: {},
-            status: 'active',
-            isInstructorApproved: false,
-          };
-          
-          const updatePayload: DocumentData = {};
-          let needsUpdate = false;
-
-          for (const key in defaultFields) {
-              if (userData[key as keyof NdaraUser] === undefined) {
-                  updatePayload[key] = defaultFields[key as keyof typeof defaultFields];
-                  needsUpdate = true;
-              }
-          }
-          
-          // Vérification de la complétion du profil basée sur les champs requis (username + interestDomain)
-          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain);
-          if (userData.isProfileComplete !== isComplete) {
-              updatePayload.isProfileComplete = isComplete;
-              needsUpdate = true;
-          }
-          
-          if (needsUpdate) {
-            try {
-              await setDoc(userDocRef, updatePayload, { merge: true });
-              return; 
-            } catch (e) {
-                console.error(`Failed to sync user document for ${user.uid}:`, e);
-            }
-          }
 
           if (userData.status === 'suspended') {
             await secureSignOut();
@@ -145,6 +104,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
+          // Calcul des rôles disponibles
           const roles: UserRole[] = ['student'];
           if (userData.role === 'instructor' || userData.role === 'admin') {
               roles.push('instructor');
@@ -153,6 +113,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('admin');
           }
 
+          // Définition des permissions (si rôle admin, toutes les permissions sont accordées)
           let finalPermissions: { [key: string]: boolean } = {};
           if (userData.role) {
             try {
@@ -170,30 +131,40 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               finalPermissions = { ...finalPermissions, ...userData.permissions };
           }
 
+          // Logique de complétion du profil (doit correspondre à la validation du formulaire)
+          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && userData.fullName);
+
+          // Construction de l'objet utilisateur résolu avec fallbacks en mémoire (pas d'écriture DB ici)
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
               email: user.email || '',
-              username: userData.username || user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
+              username: userData.username || 'user_' + user.uid.substring(0, 5),
               fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
-              profilePictureURL: user.photoURL || userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
+              profilePictureURL: userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: isComplete,
               permissions: finalPermissions,
+              careerGoals: {
+                  currentRole: userData.careerGoals?.currentRole || '',
+                  interestDomain: userData.careerGoals?.interestDomain || '',
+                  mainGoal: userData.careerGoals?.mainGoal || '',
+              }
           } as any;
           
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
           const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
-          const newRole = (lastRole && roles.includes(lastRole)) ? lastRole : userData.role;
+          const newRole = (lastRole && roles.includes(lastRole)) ? lastRole : (userData.role || 'student');
           setRole(newRole);
 
         } else {
+            // Création initiale si le document n'existe pas
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
-                username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + user.uid.substring(0,5),
+                username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + user.uid.substring(0, 5),
                 fullName: user.displayName || 'Utilisateur Ndara',
                 role: 'student',
                 status: 'active',
@@ -204,23 +175,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 lastSeen: serverTimestamp(),
                 profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.displayName || 'A')}`,
                 isProfileComplete: false,
-                phoneNumber: '',
-                bio: '',
-                socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
-                payoutInfo: {},
-                instructorNotificationPreferences: { newEnrollment: true, newMessage: true, newAssignmentSubmission: true, courseStatusUpdate: true, payoutUpdate: true },
-                pedagogicalPreferences: { aiAssistanceEnabled: true, aiInterventionLevel: 'medium' },
-                notificationPreferences: { newPayouts: true, newApplications: true, newSupportTickets: true, financialAnomalies: true },
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
-                badges: [],
-                permissions: {},
             };
-            setDoc(userDocRef, newUserDoc);
-            return;
+            await setDoc(userDocRef, newUserDoc);
         }
         setLoading(false);
     }, (error) => {
-        console.error("Error fetching user data:", error);
+        console.error("Error fetching user data in RoleContext:", error);
         setLoading(false);
     });
 

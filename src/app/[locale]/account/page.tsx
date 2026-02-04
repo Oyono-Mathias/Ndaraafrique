@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useTranslations } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
@@ -90,7 +90,7 @@ const StatCard = ({ title, icon, value, isLoading }: { title: string, icon: Reac
 };
 
 export default function AccountPage() {
-  const { user, currentUser, role, isUserLoading } = useRole();
+  const { user, currentUser, isUserLoading } = useRole();
   const t = useTranslations();
   const { toast } = useToast();
   const router = useRouter();
@@ -164,7 +164,8 @@ export default function AccountPage() {
     const userDocRef = doc(db, 'users', currentUser.uid);
 
     try {
-        const isComplete = !!(data.username && data.interestDomain);
+        // Logique de complétion strictement alignée sur le RoleContext
+        const isComplete = !!(data.username && data.interestDomain && data.fullName);
 
         const updatePayload: any = {
             username: data.username,
@@ -175,6 +176,7 @@ export default function AccountPage() {
             isProfileComplete: isComplete,
         };
 
+        // On ne sauvegarde les liens sociaux que si l'utilisateur n'est pas un simple étudiant
         if (currentUser.role !== 'student') {
             updatePayload['socialLinks.linkedin'] = data.linkedin || '';
             updatePayload['socialLinks.twitter'] = data.twitter || '';
@@ -187,8 +189,9 @@ export default function AccountPage() {
           await updateProfile(auth.currentUser, { displayName: data.fullName });
         }
 
-        toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet ! Les fonctions communautaires sont activées." : "Profil mis à jour." });
+        toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet ! Bienvenue dans la communauté." : "Modifications enregistrées." });
         
+        // Rafraîchissement forcé pour synchroniser le cache Next.js avec Firestore
         router.refresh();
     } catch (error: any) {
       console.error("Save error:", error);
@@ -332,10 +335,17 @@ export default function AccountPage() {
                         <div className="grid md:grid-cols-2 gap-6">
                             <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Nom Complet</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>)}/>
                             <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Adresse E-mail</FormLabel><Input value={currentUser.email} readOnly disabled className="h-12 bg-slate-900 border-slate-800 text-slate-600 rounded-xl cursor-not-allowed" /></FormItem>
-                            <FormField control={form.control} name="username" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Identifiant (@)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormDescription className="text-[10px]">Uniquement lettres, chiffres et tiret bas.</FormDescription><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="username" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Identifiant (@)</FormLabel>
+                                    <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                                    <FormDescription className="text-[10px]">Utilisé pour la messagerie et l'annuaire.</FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                            )} />
                             <FormField control={form.control} name="interestDomain" render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Domaine visé</FormLabel>
+                                    <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Domaine d'intérêt</FormLabel>
                                     <Select onValueChange={field.onChange} value={field.value}>
                                         <FormControl>
                                             <SelectTrigger className="h-12 bg-slate-800/50 border-slate-700 rounded-xl">
@@ -346,6 +356,7 @@ export default function AccountPage() {
                                             {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                                         </SelectContent>
                                     </Select>
+                                    <FormDescription className="text-[10px]">Indispensable pour débloquer la messagerie.</FormDescription>
                                     <FormMessage />
                                 </FormItem>
                             )} />
