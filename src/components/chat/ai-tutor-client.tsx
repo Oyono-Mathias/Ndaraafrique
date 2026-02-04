@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -161,7 +160,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   return (
     <div className="flex flex-col h-screen bg-[#0b141a] relative overflow-hidden bg-grainy">
-      {/* --- WHATSAPP STYLE HEADER WITH BACK BUTTON --- */}
       <header className="flex items-center p-3 border-b border-white/10 bg-[#111b21] backdrop-blur-xl sticky top-0 z-30 shadow-md">
         <Button variant="ghost" size="icon" className="mr-1 text-slate-400 h-10 w-10 rounded-full" onClick={() => router.push('/student/dashboard')}>
             <ArrowLeft className="h-6 w-6" />
@@ -184,7 +182,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
         <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10 rounded-full"><MoreVertical className="h-5 w-5" /></Button>
       </header>
 
-      {/* --- CHAT AREA --- */}
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="p-4 space-y-4 max-w-3xl mx-auto flex flex-col min-h-full">
           {(isUserLoading || isHistoryLoading) && (
@@ -241,7 +238,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
         </div>
       </ScrollArea>
 
-      {/* --- WHATSAPP STYLE INPUT BAR --- */}
       <div className="p-3 bg-[#111b21] border-t border-white/5 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <form onSubmit={handleSendMessage} className="flex items-center gap-2 max-w-3xl mx-auto">
             <div className="flex-1 relative">

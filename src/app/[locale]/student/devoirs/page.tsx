@@ -131,7 +131,7 @@ export default function StudentAssignmentsPage() {
           <TabsContent value="todo" className="m-0 space-y-4">
             {isLoading ? (
               <div className="space-y-4">
-                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />)}
+                {[...Array(2)].map((_, i) => <Skeleton className="h-48 w-full rounded-2xl bg-slate-900" />)}
               </div>
             ) : toDo.length > 0 ? (
               toDo.map(a => <AssignmentCard key={a.id} assignment={a} />)
@@ -147,7 +147,7 @@ export default function StudentAssignmentsPage() {
           <TabsContent value="completed" className="m-0 space-y-4">
             {isLoading ? (
               <div className="space-y-4">
-                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />)}
+                {[...Array(2)].map((_, i) => <Skeleton className="h-48 w-full rounded-2xl bg-slate-900" />)}
               </div>
             ) : completed.length > 0 ? (
               completed.map(a => <AssignmentCard key={a.id} assignment={a} submission={submissions[a.id]} />)

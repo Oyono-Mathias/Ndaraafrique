@@ -78,6 +78,7 @@ const searchFaq = ai.defineTool(
             if (keywords.length === 0) return { answer: undefined };
             
             const faqsRef = adminDb.collection('faqs');
+            // Simplified search for prototype robustness
             const q = faqsRef.where('tags', 'array-contains-any', keywords.slice(0, 10));
             const snapshot = await q.get();
 
