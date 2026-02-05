@@ -44,13 +44,15 @@ const LandingNav = () => {
         )}>
             <div className="container mx-auto px-4 flex justify-between items-center">
                 <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
-                    <Image 
-                        src="/icon.svg" 
-                        alt="Ndara Afrique Logo" 
-                        width={40} 
-                        height={40} 
-                        className="rounded-lg shadow-lg"
-                    />
+                    <div className="relative w-10 h-10 overflow-hidden rounded-lg shadow-lg bg-primary flex items-center justify-center">
+                        <Image 
+                            src="/icon.svg" 
+                            alt="Ndara Afrique Logo" 
+                            width={32} 
+                            height={32} 
+                            className="object-contain"
+                        />
+                    </div>
                     <span className="text-xl font-bold tracking-tighter text-white">Ndara Afrique</span>
                 </Link>
                 <div className="flex items-center gap-2">
