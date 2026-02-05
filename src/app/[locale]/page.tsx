@@ -334,6 +334,8 @@ export default function LandingPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const db = getFirestore();
 
+  const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+
   useEffect(() => {
     const q = query(
       collection(db, "courses"),
