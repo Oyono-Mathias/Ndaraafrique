@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -46,11 +47,11 @@ export default function StudentPaymentsPage() {
       
       {/* --- HEADER --- */}
       <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
-        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
+        <div className="flex items-center gap-2 text-primary mb-2">
             <CreditCard className="h-5 w-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Finances</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-[#CC7722]">Paiements</span></h1>
+        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-primary">Paiements</span></h1>
         <p className="text-slate-500 text-sm mt-2 font-medium">Retrouvez le détail de vos investissements dans votre savoir.</p>
       </header>
 
@@ -85,7 +86,6 @@ export default function StudentPaymentsPage() {
 }
 
 function PaymentItem({ payment }: { payment: Payment }) {
-  // ✅ Sécurisation de la date Firestore pour le build
   const paymentDate = (payment.date as any)?.toDate?.() || new Date();
   
   const statusConfig = {
@@ -127,7 +127,7 @@ function PaymentItem({ payment }: { payment: Payment }) {
             <p className="text-xl font-black text-white leading-none">
               {payment.amount.toLocaleString('fr-FR')}
             </p>
-            <p className="text-[9px] font-black text-[#CC7722] uppercase tracking-widest mt-1">
+            <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-1">
               {payment.currency || 'XOF'}
             </p>
           </div>
@@ -147,7 +147,7 @@ function EmptyState() {
       <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
         Commencez votre aventure en explorant notre catalogue de formations.
       </p>
-      <Button asChild className="mt-8 bg-[#CC7722] hover:bg-[#CC7722]/90 text-white rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-[#CC7722]/20">
+      <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-white rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
         <Link href="/search">
           Voir les cours
           <ArrowRight className="ml-2 h-4 w-4" />
