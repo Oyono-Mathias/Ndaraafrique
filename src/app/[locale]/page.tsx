@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, Play } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -15,9 +15,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
+import { useRole } from '@/context/RoleContext';
 
 const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);
+    const { user, role } = useRole();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -33,6 +35,8 @@ const LandingNav = () => {
         };
     }, [scrolled]);
 
+    const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+
     return (
         <nav className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
@@ -40,16 +44,22 @@ const LandingNav = () => {
         )}>
             <div className="container mx-auto px-4 flex justify-between items-center">
                 <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
-                    <Image src="/icon.svg" alt="Ndara Afrique Logo" width={32} height={32} />
+                    <Image 
+                        src="/icon.svg" 
+                        alt="Ndara Afrique Logo" 
+                        width={40} 
+                        height={40} 
+                        className="rounded-lg shadow-lg"
+                    />
                     <span className="text-xl font-bold tracking-tighter text-white">Ndara Afrique</span>
                 </Link>
                 <div className="flex items-center gap-2">
                     <Button variant="ghost" size="icon" className="text-white sm:hidden">
                         <Search className="h-5 w-5" />
                     </Button>
-                    <Link href="/login">
-                        <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9">
-                            Se connecter
+                    <Link href={user ? dashboardUrl : "/login"}>
+                        <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9 px-6 rounded-full text-xs font-bold uppercase tracking-widest">
+                            {user ? "Mon Espace" : "Se connecter"}
                         </Button>
                     </Link>
                 </div>
@@ -275,32 +285,52 @@ const TrustSection = () => {
     );
 };
 
-const FinalCTA = () => (
-    <section className="text-center py-20">
-        <h2 className="text-2xl md:text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
-        <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
-        <Button size="lg" asChild className="mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary animate-pulse">
-            <Link href="/login?tab=register">
-                Devenir Membre
-                <ChevronsRight className="ml-2 h-5 w-5" />
-            </Link>
-        </Button>
-    </section>
-);
+const FinalCTA = () => {
+    const { user, role } = useRole();
+    const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
-const MobileCTA = () => (
-    <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/80 backdrop-blur-sm border-t border-slate-700 z-40">
-        <Button size="lg" className="w-full h-12 text-base nd-cta-primary" asChild>
-            <Link href="/login?tab=register">Démarrer</Link>
-        </Button>
-    </div>
-);
+    return (
+        <section className="text-center py-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
+            <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
+            <Button size="lg" asChild className="mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary animate-pulse">
+                <Link href={user ? dashboardUrl : "/login?tab=register"}>
+                    {user ? "Tableau de bord" : "Devenir Membre"}
+                    <ChevronsRight className="ml-2 h-5 w-5" />
+                </Link>
+            </Button>
+        </section>
+    );
+};
+
+const MobileCTA = () => {
+    const { user, role } = useRole();
+    const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+
+    return (
+        <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/80 backdrop-blur-sm border-t border-slate-700 z-40">
+            <Button size="lg" className="w-full h-12 text-base nd-cta-primary" asChild>
+                <Link href={user ? dashboardUrl : "/login?tab=register"}>
+                    {user ? (
+                        <span className="flex items-center gap-2">
+                            <LayoutDashboard className="h-5 w-5" />
+                            TABLEAU DE BORD
+                        </span>
+                    ) : "DÉMARRER"}
+                </Link>
+            </Button>
+        </div>
+    );
+};
 
 export default function LandingPage() {
+  const { user, role } = useRole();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const db = getFirestore();
+
+  const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
   useEffect(() => {
     const q = query(
@@ -356,9 +386,9 @@ export default function LandingPage() {
             Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès.
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
-              <Link href="/login?tab=register">
+              <Link href={user ? dashboardUrl : "/login?tab=register"}>
                   <button className="nd-cta-primary h-12 text-base md:h-auto md:text-sm">
-                      Démarrer mon parcours
+                      {user ? "Accéder à mon tableau de bord" : "Démarrer mon parcours"}
                   </button>
               </Link>
               <EnrollmentCounter />
