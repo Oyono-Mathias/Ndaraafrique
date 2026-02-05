@@ -10,13 +10,14 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getFirestore, doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { updateGlobalSettings } from '@/actions/settingsActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -24,13 +25,10 @@ import { Switch } from '@/components/ui/switch';
 import { 
   Settings as SettingsIcon, 
   Globe, 
-  Palette, 
   ShieldCheck, 
-  Megaphone, 
   Loader2, 
   Save,
-  Percent,
-  Mail
+  Percent
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -223,7 +221,7 @@ export default function AdminSettingsPage() {
 
           <div className="flex justify-end pt-4 border-t border-slate-800">
             <Button type="submit" disabled={isSaving} size="lg" className="px-10 h-14 rounded-2xl shadow-xl shadow-primary/20">
-              {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
               Sauvegarder les réglages
             </Button>
           </div>
