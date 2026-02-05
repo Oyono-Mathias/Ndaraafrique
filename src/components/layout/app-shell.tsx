@@ -106,26 +106,41 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const { isAuthPage, isPublicPage, isImmersive } = useMemo(() => {
+  const { isAuthPage, isPublicPage, showNavigation } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline'];
     
     const isAuth = authPaths.some(p => pathname.endsWith(p));
     let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
 
-    // ✅ LOGIQUE PROFESSIONNELLE : Détection de l'immersion pour cacher aussi la barre latérale
-    const isImmersiveMode = (
-        pathname.includes('/courses/') || 
-        pathname.includes('/quiz/') || 
-        pathname.includes('/tutor') || 
-        (pathname.includes('/messages') && searchParams.get('chatId'))
-    );
-
     if (!isPublic) {
         if (pathname.startsWith('/verify/')) isPublic = true;
     }
+
+    // ✅ LOGIQUE DE NAVIGATION GLOBALE
+    const globalNavPaths = [
+      '/student/dashboard',
+      '/search',
+      '/student/courses',
+      '/student/notifications',
+      '/student/profile',
+      '/account',
+      '/student/devoirs',
+      '/student/results',
+      '/student/mes-certificats',
+      '/student/annuaire',
+      '/instructor/dashboard',
+      '/instructor/courses',
+      '/instructor/students',
+      '/instructor/revenus',
+      '/instructor/questions-reponses',
+      '/instructor/settings'
+    ];
+
+    const isMessageList = pathname.includes('/messages') && !searchParams.get('chatId');
+    const isGlobalPage = globalNavPaths.some(p => pathname === p) || isMessageList;
     
-    return { isAuthPage: isAuth, isPublicPage: isPublic, isImmersive: isImmersiveMode };
+    return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage };
   }, [pathname, searchParams]);
 
   useEffect(() => {
@@ -176,9 +191,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <OfflineBar />
       <div className={cn(
         "min-h-screen w-full bg-slate-950 text-white", 
-        isAdminArea ? "admin-grid-layout" : (!isImmersive && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
+        isAdminArea ? "admin-grid-layout" : (showNavigation && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
       )}>
-        {!isRootPath && !isAuthPage && user && !isImmersive && (
+        {!isRootPath && !isAuthPage && user && showNavigation && (
           <aside className={cn("hidden h-screen sticky top-0", isAdminArea ? "md:hidden" : "md:block")}>
              {role === 'admin' ? (
               <AdminSidebar {...sidebarProps} />
@@ -191,7 +206,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-col flex-1 min-h-screen">
           <AnnouncementBanner />
-          {!isRootPath && !isAuthPage && user && !isImmersive && (
+          {!isRootPath && !isAuthPage && user && showNavigation && (
             <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm")}>
               {!isAdminArea && user && (
                  <div className="md:hidden">
@@ -214,7 +229,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
           
-          <main className={cn("p-6", (isImmersive || isRootPath) && "!p-0")}>
+          <main className={cn("p-6", (!showNavigation || isRootPath) && "!p-0")}>
               {children}
           </main>
         </div>
