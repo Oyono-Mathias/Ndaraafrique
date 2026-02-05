@@ -12,12 +12,14 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
 
-  // Détection des pages immersives où l'on cache la barre de navigation basse
+  // ✅ LOGIQUE PROFESSIONNELLE : Détection des pages immersives
   const isImmersive = useMemo(() => {
-    const isTutor = pathname.includes('/tutor');
-    const isChatActive = pathname.includes('/messages') && searchParams.get('chatId');
-    const isCoursePlayer = pathname.includes('/courses/');
-    return isTutor || isChatActive || isCoursePlayer;
+    return (
+      pathname.includes('/courses/') || // Lecteur de cours
+      pathname.includes('/quiz/') ||    // Passage de quiz
+      pathname.includes('/tutor') ||    // Chat avec MATHIAS
+      (pathname.includes('/messages') && searchParams.get('chatId')) // Conversation active
+    );
   }, [pathname, searchParams]);
 
   if (isUserLoading) {

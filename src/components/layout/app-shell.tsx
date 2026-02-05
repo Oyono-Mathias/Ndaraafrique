@@ -106,30 +106,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const { isAuthPage, isPublicPage, isImmersiveChat } = useMemo(() => {
+  const { isAuthPage, isPublicPage, isImmersive } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline'];
     
     const isAuth = authPaths.some(p => pathname.endsWith(p));
     let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
 
-    // Détection des pages de chat immersives (style WhatsApp)
-    const isTutor = pathname.includes('/tutor');
-    const isChatActive = pathname.includes('/messages') && searchParams.get('chatId');
-    const isImmersive = isTutor || isChatActive;
+    // ✅ LOGIQUE PROFESSIONNELLE : Détection de l'immersion pour cacher aussi la barre latérale
+    const isImmersiveMode = (
+        pathname.includes('/courses/') || 
+        pathname.includes('/quiz/') || 
+        pathname.includes('/tutor') || 
+        (pathname.includes('/messages') && searchParams.get('chatId'))
+    );
 
     if (!isPublic) {
         if (pathname.startsWith('/verify/')) isPublic = true;
-        const instructorPathRegex = /^\/instructor\/[^/]+$/;
-        if (instructorPathRegex.test(pathname)) {
-            const privateSubRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
-            if (!privateSubRoutes.some(sub => pathname.endsWith(sub))) {
-                 isPublic = true;
-            }
-        }
     }
     
-    return { isAuthPage: isAuth, isPublicPage: isPublic, isImmersiveChat: !!isImmersive };
+    return { isAuthPage: isAuth, isPublicPage: isPublic, isImmersive: isImmersiveMode };
   }, [pathname, searchParams]);
 
   useEffect(() => {
@@ -171,23 +167,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
   
-  // Pages où l'on cache totalement la navigation globale
-  const isFullScreenPage = pathname.startsWith('/courses/');
   const isAdminArea = pathname.startsWith('/admin');
   const isRootPath = pathname === '/';
   
-  const hideNavigation = isFullScreenPage || isImmersiveChat;
-
   return (
     <>
       <SplashScreen />
       <OfflineBar />
       <div className={cn(
         "min-h-screen w-full bg-slate-950 text-white", 
-        isAdminArea ? "admin-grid-layout" : (!hideNavigation && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
+        isAdminArea ? "admin-grid-layout" : (!isImmersive && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
       )}>
-        {!isRootPath && !isAuthPage && user && (
-          <aside className={cn("hidden h-screen sticky top-0", (hideNavigation || isAdminArea) ? "md:hidden" : "md:block")}>
+        {!isRootPath && !isAuthPage && user && !isImmersive && (
+          <aside className={cn("hidden h-screen sticky top-0", isAdminArea ? "md:hidden" : "md:block")}>
              {role === 'admin' ? (
               <AdminSidebar {...sidebarProps} />
             ) : role === 'instructor' ? (
@@ -199,9 +191,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-col flex-1 min-h-screen">
           <AnnouncementBanner />
-          {!isRootPath && !isAuthPage && user && !hideNavigation && (
+          {!isRootPath && !isAuthPage && user && !isImmersive && (
             <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm")}>
-              {!isFullScreenPage && !isAdminArea && user && (
+              {!isAdminArea && user && (
                  <div className="md:hidden">
                   <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                       <SheetTrigger asChild>
@@ -222,7 +214,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </header>
           )}
           
-          <main className={cn("p-6", (hideNavigation || isRootPath) && "!p-0")}>
+          <main className={cn("p-6", (isImmersive || isRootPath) && "!p-0")}>
               {children}
           </main>
         </div>
