@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -58,11 +59,11 @@ const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }
                     <span className="text-xl font-bold tracking-tighter text-white">{siteName}</span>
                 </Link>
                 <div className="flex items-center gap-2">
-                    <Link href="/search">
-                        <Button variant="ghost" size="icon" className="text-white">
+                    <Button asChild variant="ghost" size="icon" className="text-white hover:bg-white/10">
+                        <Link href="/search">
                             <Search className="h-5 w-5" />
-                        </Button>
-                    </Link>
+                        </Link>
+                    </Button>
                     <Link href={user ? dashboardUrl : "/login"}>
                         <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9 px-6 rounded-full text-xs font-bold uppercase tracking-widest">
                             {user ? "Mon Espace" : "Se connecter"}
