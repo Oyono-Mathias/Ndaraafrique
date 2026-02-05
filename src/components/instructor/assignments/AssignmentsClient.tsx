@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Frown } from 'lucide-react';
+import { Edit, Frown, ClipboardCheck } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { GradingModal } from './GradingModal';
@@ -26,12 +26,14 @@ export function AssignmentsClient() {
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Récupérer les cours pour le filtre
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
+  // Récupérer toutes les soumissions de devoirs (collection 'devoirs')
   const submissionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'devoirs'), where('instructorId', '==', currentUser.uid), orderBy('submittedAt', 'desc')) : null,
     [db, currentUser]
@@ -53,16 +55,8 @@ export function AssignmentsClient() {
   };
   
   const getStatusVariant = (status: AssignmentSubmission['status']) => {
-    switch (status) {
-        case 'submitted': return 'info';
-        case 'graded': return 'success';
-        default: return 'default';
-    }
+    return status === 'submitted' ? 'warning' : 'success';
   };
-
-  const getStatusLabel = (status: AssignmentSubmission['status']) => {
-      return status === 'submitted' ? 'Soumis' : 'Noté';
-  }
 
   const isLoading = coursesLoading || submissionsLoading;
 
@@ -70,81 +64,108 @@ export function AssignmentsClient() {
     <>
       <GradingModal submission={selectedSubmission} isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
       
-      <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
-        <CardContent className="p-4 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <Select value={courseFilter} onValueChange={setCourseFilter}>
-              <SelectTrigger className="w-full sm:w-[250px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par cours..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les cours</SelectItem>
-                {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-full sm:w-[180px] h-11 text-base bg-white dark:bg-slate-800"><SelectValue placeholder="Filtrer par statut..." /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="submitted">Soumis</SelectItem>
-                <SelectItem value="graded">Noté</SelectItem>
-              </SelectContent>
-            </Select>
+      <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
+        <CardContent className="p-6 space-y-6">
+          {/* --- FILTRES --- */}
+          <div className="flex flex-col sm:flex-row gap-4 items-end">
+            <div className="space-y-1.5 w-full sm:w-[250px]">
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Formation</label>
+                <Select value={courseFilter} onValueChange={setCourseFilter}>
+                <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl">
+                    <SelectValue placeholder="Filtrer par cours..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Toutes mes formations</SelectItem>
+                    {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
+                </SelectContent>
+                </Select>
+            </div>
+            
+            <div className="space-y-1.5 w-full sm:w-[180px]">
+                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">État</label>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl">
+                    <SelectValue placeholder="Statut..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Tous les devoirs</SelectItem>
+                    <SelectItem value="submitted">À corriger</SelectItem>
+                    <SelectItem value="graded">Déjà notés</SelectItem>
+                </SelectContent>
+                </Select>
+            </div>
           </div>
           
-          <div className="border rounded-lg border-slate-200 dark:border-slate-700">
+          {/* --- TABLE --- */}
+          <div className="border rounded-2xl border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/30 dark:bg-black/20">
             <Table>
               <TableHeader>
-                <TableRow className="border-slate-100 dark:border-slate-700">
-                  <TableHead>Étudiant</TableHead>
-                  <TableHead>Cours</TableHead>
-                  <TableHead>Soumission</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Note</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/50">
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Apprenant</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest hidden md:table-cell">Cours</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Soumission</TableHead>
+                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">Note</TableHead>
+                  <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   [...Array(5)].map((_, i) => (
-                    <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-10 w-full" /></TableCell></TableRow>
+                    <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full bg-slate-200 dark:bg-slate-800" /></TableCell></TableRow>
                   ))
                 ) : filteredSubmissions.length > 0 ? (
                   filteredSubmissions.map(sub => (
-                    <TableRow key={sub.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 border-slate-100 dark:border-slate-800">
+                    <TableRow key={sub.id} className="hover:bg-slate-100/50 dark:hover:bg-slate-800/30 border-slate-200 dark:border-slate-800">
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                           <Avatar className="h-7 w-7"><AvatarImage src={sub.studentAvatarUrl}/><AvatarFallback>{sub.studentName.charAt(0)}</AvatarFallback></Avatar>
-                           <span className="font-medium text-slate-800 dark:text-white">{sub.studentName}</span>
+                        <div className="flex items-center gap-3">
+                           <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
+                               <AvatarImage src={sub.studentAvatarUrl}/>
+                               <AvatarFallback className="bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold">{sub.studentName.charAt(0)}</AvatarFallback>
+                           </Avatar>
+                           <div className="flex flex-col">
+                               <span className="font-bold text-sm text-slate-900 dark:text-white">{sub.studentName}</span>
+                               <span className="text-[10px] text-slate-500 md:hidden truncate max-w-[120px]">{sub.courseTitle}</span>
+                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-slate-500 dark:text-muted-foreground">{sub.courseTitle}</TableCell>
-                      <TableCell className="text-slate-500 dark:text-muted-foreground">
+                      <TableCell className="text-slate-500 dark:text-slate-400 text-xs hidden md:table-cell font-medium">
+                        {sub.courseTitle}
+                      </TableCell>
+                      <TableCell className="text-slate-500 dark:text-slate-500 text-xs">
                         {(sub.submittedAt as any)?.toDate?.() 
                           ? formatDistanceToNow((sub.submittedAt as any).toDate(), { locale: fr, addSuffix: true }) 
-                          : 'Date inconnue'}
+                          : 'Récemment'}
                       </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(sub.status) as any} className={cn(
-                            "capitalize",
-                            sub.status === 'submitted' && "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300",
-                            sub.status === 'graded' && "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300"
-                        )}>{getStatusLabel(sub.status)}</Badge>
-                      </TableCell>
-                      <TableCell className={cn("font-semibold", sub.grade !== undefined && sub.grade >= 10 ? 'text-green-600 dark:text-green-400' : 'text-amber-600 dark:text-amber-400')}>
-                        {sub.grade !== undefined ? `${sub.grade}/20` : 'N/A'}
+                      <TableCell className="text-center">
+                        {sub.status === 'graded' ? (
+                            <Badge className={cn(
+                                "font-black text-[10px] border-none",
+                                (sub.grade || 0) >= 10 ? "bg-green-500/10 text-green-500" : "bg-amber-500/10 text-amber-500"
+                            )}>
+                                {sub.grade}/20
+                            </Badge>
+                        ) : (
+                            <Badge variant="outline" className="text-[9px] font-black text-slate-400 border-slate-200 dark:border-slate-700">EN ATTENTE</Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="outline" size="sm" onClick={() => handleGradeClick(sub)}>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            onClick={() => handleGradeClick(sub)}
+                            className="h-9 px-4 rounded-xl font-bold text-primary hover:bg-primary/10"
+                        >
                           <Edit className="mr-2 h-3.5 w-3.5" />
-                          {sub.status === 'graded' ? 'Modifier' : 'Noter'}
+                          {sub.status === 'graded' ? 'Réviser' : 'Noter'}
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
-                  <TableRow><TableCell colSpan={6} className="h-48 text-center text-slate-500 dark:text-muted-foreground">
-                     <div className="flex flex-col items-center gap-2">
-                        <Frown className="h-8 w-8" />
-                        <p>Aucun devoir ne correspond à vos filtres.</p>
+                  <TableRow><TableCell colSpan={5} className="h-64 text-center">
+                     <div className="flex flex-col items-center justify-center gap-3 opacity-30">
+                        <ClipboardCheck className="h-16 w-16 text-slate-400" />
+                        <p className="font-black uppercase text-xs tracking-widest">Aucun devoir à traiter</p>
                       </div>
                   </TableCell></TableRow>
                 )}
