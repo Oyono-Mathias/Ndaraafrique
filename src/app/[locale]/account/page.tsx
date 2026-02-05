@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -101,7 +100,7 @@ export default function AccountPage() {
   const [statsLoading, setStatsLoading] = useState(true);
   const db = getFirestore();
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(currentUser?.profilePictureURL || null);
   
   const form = useForm<AccountFormValues>({
     resolver: zodResolver(accountFormSchema(t as any)),
@@ -164,7 +163,7 @@ export default function AccountPage() {
     const userDocRef = doc(db, 'users', currentUser.uid);
 
     try {
-        // Logique de complétion strictement alignée sur le RoleContext
+        // Logique de complétion
         const isComplete = !!(data.username && data.interestDomain && data.fullName);
 
         const updatePayload: any = {
@@ -191,11 +190,11 @@ export default function AccountPage() {
 
         toast({ title: "Profil mis à jour", description: isComplete ? "Votre profil est complet ! Bienvenue dans la communauté." : "Modifications enregistrées." });
         
-        // Rafraîchissement forcé pour synchroniser le cache Next.js avec Firestore
+        // Rafraîchissement forcé pour synchroniser Next.js
         router.refresh();
     } catch (error: any) {
       console.error("Save error:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil. Vérifiez votre connexion." });
+      toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de mettre à jour le profil." });
     } finally {
       setIsSaving(false);
     }

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -84,7 +84,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
-    // LISTENER TEMPS RÉEL : On lit les données, on n'écrit jamais ici pour éviter les boucles d'écrasement.
+    // LISTENER TEMPS RÉEL PUR : On lit les données, on n'écrit jamais ici pour éviter les boucles d'écrasement.
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
@@ -109,27 +109,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('admin');
           }
 
-          let finalPermissions: { [key: string]: boolean } = {};
-          if (userData.role) {
-            try {
-              const roleDocRef = doc(db, 'roles', userData.role);
-              const roleDocSnap = await getDoc(roleDocRef);
-              if (roleDocSnap.exists()) {
-                  finalPermissions = roleDocSnap.data().permissions || {};
-              }
-            } catch (e) {
-              console.error("Could not fetch role document:", e);
-            }
-          }
-
-          if (userData.permissions) {
-              finalPermissions = { ...finalPermissions, ...userData.permissions };
-          }
-
-          // Logique de complétion alignée sur le formulaire
+          // Logique de complétion alignée sur le formulaire (username, domaine, nom complet)
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && userData.fullName);
 
-          // Résolution de l'utilisateur avec fallbacks en mémoire
+          // Résolution de l'utilisateur avec fallbacks en mémoire (sans écriture Firestore)
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
@@ -139,7 +122,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               profilePictureURL: userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: isComplete,
-              permissions: finalPermissions,
               careerGoals: {
                   currentRole: userData.careerGoals?.currentRole || '',
                   interestDomain: userData.careerGoals?.interestDomain || '',
@@ -155,7 +137,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setRole(newRole);
 
         } else {
-            // Création initiale si le document n'existe pas
+            // Création initiale minimale si le document n'existe pas
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',

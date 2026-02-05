@@ -58,6 +58,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 });
             }
 
+            // Marquage comme lu
             if (data.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { 
                     unreadBy: arrayRemove(user.uid) 
