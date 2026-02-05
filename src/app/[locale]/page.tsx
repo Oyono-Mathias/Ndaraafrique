@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -16,6 +17,7 @@ import { CourseCard } from '@/components/cards/CourseCard';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
+import Autoplay from 'embla-carousel-autoplay';
 
 const LandingNav = () => {
     const [scrolled, setScrolled] = useState(false);
@@ -99,7 +101,7 @@ const EnrollmentCounter = () => {
     );
 };
 
-const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
+const CourseCarousel = ({ title, courses, instructorsMap, isLoading, autoplay = false }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean, autoplay?: boolean }) => {
     if (isLoading && courses.length === 0) {
         return (
             <section className="py-8">
@@ -115,10 +117,17 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     if (!courses || courses.length === 0) {
         return null;
     }
+
+    const plugins = autoplay ? [Autoplay({ delay: 5000, stopOnInteraction: false })] : [];
+
     return (
         <section className="py-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-6 text-foreground">{title}</h2>
-             <Carousel opts={{ align: "start", loop: false }} className="w-full">
+             <Carousel 
+                opts={{ align: "start", loop: autoplay }} 
+                plugins={plugins}
+                className="w-full"
+             >
                 <CarouselContent className="-ml-4">
                     {courses.map(course => (
                         <CarouselItem key={course.id} className="pl-4 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
@@ -407,6 +416,7 @@ export default function LandingPage() {
             courses={recentCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
+            autoplay={true}
           />
 
           {/* --- COURS PAR CATÉGORIE --- */}
