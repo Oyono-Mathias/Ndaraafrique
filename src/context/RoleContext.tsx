@@ -1,12 +1,10 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc, updateDoc, DocumentData } from 'firebase/firestore';
-import { onIdTokenChanged, signOut } from 'firebase/auth';
-import { getAuth } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc, updateDoc } from 'firebase/firestore';
+import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -47,7 +45,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   }, [db, router]);
 
-   useEffect(() => {
+  useEffect(() => {
     const auth = getAuth();
     const handleBeforeUnload = () => {
         if (auth.currentUser) {
@@ -71,7 +69,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     };
   }, [db]);
 
-
   useEffect(() => {
     if (isUserLoading) {
       setLoading(true);
@@ -87,7 +84,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
-    // LISTENER TEMPS RÉEL (onSnapshot) - C'est ici que la magie opère
+    // LISTENER TEMPS RÉEL : On lit les données, on n'écrit jamais ici pour éviter les boucles d'écrasement.
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
@@ -104,7 +101,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
-          // Calcul des rôles disponibles
           const roles: UserRole[] = ['student'];
           if (userData.role === 'instructor' || userData.role === 'admin') {
               roles.push('instructor');
@@ -113,7 +109,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('admin');
           }
 
-          // Définition des permissions (si rôle admin, toutes les permissions sont accordées)
           let finalPermissions: { [key: string]: boolean } = {};
           if (userData.role) {
             try {
@@ -131,10 +126,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               finalPermissions = { ...finalPermissions, ...userData.permissions };
           }
 
-          // Logique de complétion du profil (doit correspondre à la validation du formulaire)
+          // Logique de complétion alignée sur le formulaire
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && userData.fullName);
 
-          // Construction de l'objet utilisateur résolu avec fallbacks en mémoire (pas d'écriture DB ici)
+          // Résolution de l'utilisateur avec fallbacks en mémoire
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
@@ -181,7 +176,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         }
         setLoading(false);
     }, (error) => {
-        console.error("Error fetching user data in RoleContext:", error);
+        console.error("Error fetching user data:", error);
         setLoading(false);
     });
 
