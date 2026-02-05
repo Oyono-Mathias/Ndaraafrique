@@ -11,6 +11,7 @@ import { getFirestore, collection, query, where, onSnapshot } from 'firebase/fir
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Wallet, DollarSign, TrendingUp, ArrowUpRight, History, Clock, CheckCircle2, XCircle, BarChart3, Landmark } from 'lucide-react';
 import { requestPayout } from '@/actions/payoutActions';
 import { useToast } from '@/hooks/use-toast';
