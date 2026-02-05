@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer, doc } from 'firebase/firestore';
 import Link from 'next/link';
-import type { Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
 import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, LayoutDashboard, Zap } from 'lucide-react';
@@ -17,8 +17,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
 import Autoplay from 'embla-carousel-autoplay';
+import { useDoc } from '@/firebase';
 
-const LandingNav = () => {
+const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }) => {
     const [scrolled, setScrolled] = useState(false);
     const { user, role } = useRole();
 
@@ -47,14 +48,14 @@ const LandingNav = () => {
                 <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
                     <div className="relative w-10 h-10 overflow-hidden rounded-lg shadow-lg bg-primary/20 flex items-center justify-center border border-white/10">
                         <Image 
-                            src="/logo.png" 
-                            alt="Ndara Afrique Logo" 
+                            src={logoUrl} 
+                            alt={`${siteName} Logo`} 
                             width={40} 
                             height={40} 
                             className="object-contain"
                         />
                     </div>
-                    <span className="text-xl font-bold tracking-tighter text-white">Ndara Afrique</span>
+                    <span className="text-xl font-bold tracking-tighter text-white">{siteName}</span>
                 </Link>
                 <div className="flex items-center gap-2">
                     <Link href="/search">
@@ -297,27 +298,8 @@ const TrustSection = () => {
     );
 };
 
-const FinalCTA = () => {
-    const { user, role } = useRole();
-    const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-
-    return (
-        <section className="text-center py-20">
-            <h2 className="text-2xl md:text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
-            <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
-            <Button size="lg" asChild className="mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary animate-pulse">
-                <Link href={user ? dashboardUrl : "/login?tab=register"}>
-                    {user ? "Tableau de bord" : "Devenir Membre"}
-                    <ChevronsRight className="ml-2 h-5 w-5" />
-                </Link>
-            </Button>
-        </section>
-    );
-};
-
-const MobileCTA = () => {
-    const { user, role } = useRole();
-    const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+const MobileCTA = ({ dashboardUrl }: { dashboardUrl: string }) => {
+    const { user } = useRole();
 
     return (
         <div className="sm:hidden fixed bottom-0 left-0 right-0 p-3 bg-slate-900/80 backdrop-blur-sm border-t border-slate-700 z-40">
@@ -337,10 +319,13 @@ const MobileCTA = () => {
 
 export default function LandingPage() {
   const { user, role } = useRole();
+  const db = getFirestore();
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings } = useDoc<Settings>(settingsRef);
+
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
-  const db = getFirestore();
 
   const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
@@ -381,9 +366,12 @@ export default function LandingPage() {
       return cats.filter(Boolean);
   }, [courses]);
 
+  const siteName = settings?.general?.siteName || 'Ndara Afrique';
+  const logoUrl = settings?.general?.logoUrl || '/logo.png';
+
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
-      <LandingNav />
+      <LandingNav logoUrl={logoUrl} siteName={siteName} />
       <div className="container mx-auto px-4">
         
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
@@ -392,10 +380,10 @@ export default function LandingPage() {
             La plateforme N°1 pour les compétences du futur en Afrique
           </Badge>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            Apprenez. Construisez. Prospérez.
+            {settings?.general?.siteName ? `Bienvenue sur ${settings.general.siteName}` : 'Apprenez. Construisez. Prospérez.'}
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès.
+            {settings?.general?.siteName ? `Des formations de pointe conçues par des experts africains pour les talents africains sur ${settings.general.siteName}.` : "Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès."}
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
               <Link href={user ? dashboardUrl : "/login?tab=register"}>
@@ -433,11 +421,21 @@ export default function LandingPage() {
           <PaymentMethodsSection />
           
           <TrustSection />
-          <FinalCTA />
+          
+          <section className="text-center py-20">
+            <h2 className="text-2xl md:text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
+            <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
+            <Button size="lg" asChild className="mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary animate-pulse">
+                <Link href={user ? dashboardUrl : "/login?tab=register"}>
+                    {user ? "Tableau de bord" : "Devenir Membre"}
+                    <ChevronsRight className="ml-2 h-5 w-5" />
+                </Link>
+            </Button>
+          </section>
         </main>
       </div>
       <Footer />
-      <MobileCTA />
+      <MobileCTA dashboardUrl={dashboardUrl} />
     </div>
   );
 }
