@@ -25,7 +25,9 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
       '/student/devoirs',
       '/student/results',
       '/student/mes-certificats',
-      '/student/annuaire'
+      '/student/annuaire',
+      '/student/paiements',
+      '/student/liste-de-souhaits'
     ];
 
     // Cas particulier : La messagerie affiche la nav sur la LISTE, mais la cache dans un CHAT ACTIF
