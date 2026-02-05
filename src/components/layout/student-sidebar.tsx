@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -23,7 +22,7 @@ import {
   Lock,
   LayoutDashboard,
   Trophy,
-  FileQuestion,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -103,7 +102,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       items: [
         { href: "/student/dashboard", icon: LayoutDashboard, label: "Tableau de Bord", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/student/courses", icon: Play, label: 'Mes Cours', id: 'sidebar-nav-mes-formations' },
+        { href: "/student/courses", icon: Play, label: 'Mes Formations', id: 'sidebar-nav-mes-formations' },
         { href: "/student/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
@@ -113,6 +112,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
         { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
         { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
         { href: "/student/devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
+        { href: "/student/liste-de-souhaits", icon: Heart, label: 'Souhaits', id: 'sidebar-nav-wishlist' },
       ],
     },
     {
@@ -125,7 +125,8 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
     {
       label: "Compte",
       items: [
-        { href: "/account", icon: User, label: 'Mon Compte', id: 'sidebar-nav-account' },
+        { href: "/account", icon: User, label: 'Mon Profil', id: 'sidebar-nav-account' },
+        { href: "/student/paiements", icon: CreditCard, label: 'Mes Paiements', id: 'sidebar-nav-paiements' },
         { href: "/student/notifications", icon: Bell, label: 'Notifications', id: 'sidebar-nav-notifications', count: unreadNotifs },
       ],
     },
@@ -194,7 +195,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
         <header className="p-4 border-b border-white/10">
           <Link href="/student/dashboard" className="flex items-center gap-2" onClick={onLinkClick}>
-              <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
+              <Image src={logoUrl || "/logo.png"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
               <span className="font-bold text-lg text-white">Ndara Afrique</span>
           </Link>
         </header>

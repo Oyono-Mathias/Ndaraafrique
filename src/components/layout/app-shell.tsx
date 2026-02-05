@@ -81,7 +81,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
-      logoUrl: '/icon.svg',
+      logoUrl: '/logo.png',
       maintenanceMode: false,
       allowInstructorSignup: true,
       announcementMessage: ''
@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const settingsData = docSnap.data();
             setSiteSettings({
                 siteName: settingsData.general?.siteName || 'Ndara Afrique',
-                logoUrl: settingsData.general?.logoUrl || '/icon.svg',
+                logoUrl: settingsData.general?.logoUrl || '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
                 announcementMessage: settingsData.platform?.announcementMessage || ''
@@ -117,7 +117,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (pathname.startsWith('/verify/')) isPublic = true;
     }
 
-    // ✅ LOGIQUE DE NAVIGATION GLOBALE
+    // ✅ LOGIQUE DE NAVIGATION GLOBALE EXHAUSTIVE
     const globalNavPaths = [
       '/student/dashboard',
       '/search',
@@ -129,6 +129,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/student/results',
       '/student/mes-certificats',
       '/student/annuaire',
+      '/student/paiements',
+      '/student/liste-de-souhaits',
       '/instructor/dashboard',
       '/instructor/courses',
       '/instructor/students',
