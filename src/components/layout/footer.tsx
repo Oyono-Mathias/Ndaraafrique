@@ -13,10 +13,16 @@ export function Footer() {
           {/* Brand */}
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-3 group mb-6">
-              <div className="bg-primary p-1 rounded-lg">
-                <Image src="/icon.svg" alt="Ndara Logo" width={28} height={24} className="brightness-0 invert" />
+              <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-lg bg-primary/20 flex items-center justify-center border border-white/10">
+                <Image 
+                    src="/logo.png" 
+                    alt="Ndara Afrique Logo" 
+                    width={40} 
+                    height={40} 
+                    className="object-contain"
+                />
               </div>
-              <span className="text-2xl font-serif text-foreground">
+              <span className="text-2xl font-bold tracking-tighter text-white">
                 Ndara Afrique
               </span>
             </Link>
