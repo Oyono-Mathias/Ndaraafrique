@@ -11,11 +11,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Bot, Loader2, BookOpen } from 'lucide-react';
+import { Bot, Loader2, BookOpen, Sparkles } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 import { useToast } from '@/hooks/use-toast';
 import { gradeSubmissionAction } from '@/actions/assignmentActions';
+import { gradeAssignment } from '@/ai/flows/grade-assignment-flow';
 import type { AssignmentSubmission } from '@/lib/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
@@ -33,6 +34,7 @@ interface GradingModalProps {
 export function GradingModal({ submission, isOpen, onOpenChange }: GradingModalProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isAiLoading, setIsAiLoading] = useState(false);
 
   const form = useForm<z.infer<typeof gradingSchema>>({
     resolver: zodResolver(gradingSchema),
@@ -49,6 +51,25 @@ export function GradingModal({ submission, isOpen, onOpenChange }: GradingModalP
 
 
   if (!submission) return null;
+
+  const handleAiCorrection = async () => {
+    setIsAiLoading(true);
+    try {
+        const studentWork = submission.submissionContent || "Fichier joint : " + submission.submissionUrl;
+        const result = await gradeAssignment({
+            correctionGuide: "Vérifier la rigueur et la clarté du raisonnement.",
+            studentWork
+        });
+        
+        form.setValue('grade', parseInt(result.note.split('/')[0]));
+        form.setValue('feedback', `${result.points_forts}\n\nAméliorations : ${result.points_amelioration}\n\n${result.commentaire_fr}\n\n${result.commentaire_sg}`);
+        toast({ title: "Mathias a analysé le devoir !", description: "Note et feedback suggérés." });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Erreur IA", description: "Impossible d'analyser le travail." });
+    } finally {
+        setIsAiLoading(false);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof gradingSchema>) => {
     setIsSubmitting(true);
@@ -73,7 +94,7 @@ export function GradingModal({ submission, isOpen, onOpenChange }: GradingModalP
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] flex flex-col p-0 dark:bg-slate-900 dark:border-slate-800">
+      <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0 dark:bg-slate-900 dark:border-slate-800">
         <DialogHeader className="p-6 border-b dark:border-slate-800">
           <DialogTitle className="text-xl text-white">Correction du devoir</DialogTitle>
           <DialogDescription>{submission.assignmentTitle}</DialogDescription>
@@ -82,48 +103,69 @@ export function GradingModal({ submission, isOpen, onOpenChange }: GradingModalP
         <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6 p-6 overflow-y-auto">
           <div className="h-full flex flex-col">
             <h3 className="font-semibold mb-2 text-white">Travail de l'étudiant</h3>
-            <div className="flex-1 border rounded-lg bg-slate-900/50 dark:border-slate-700 overflow-hidden">
+            <div className="flex-1 border rounded-xl bg-slate-950/50 border-slate-800 overflow-hidden relative">
               {isPdf && submission.submissionUrl ? (
                 <PdfViewerClient fileUrl={submission.submissionUrl} />
               ) : submission.submissionUrl ? (
                 <div className="p-4 text-center text-muted-foreground flex flex-col items-center justify-center h-full">
-                  <p>Ce document n'est pas un PDF et ne peut être affiché directement.</p>
-                  <Button variant="link" asChild><a href={submission.submissionUrl} target="_blank" rel="noopener noreferrer">Télécharger / Ouvrir le fichier</a></Button>
+                  <p className="mb-4">Document externe</p>
+                  <Button variant="secondary" size="sm" asChild>
+                      <a href={submission.submissionUrl} target="_blank" rel="noopener noreferrer">Ouvrir le fichier</a>
+                  </Button>
                 </div>
               ) : (
-                 <div className="p-4 text-muted-foreground h-full">{submission.submissionContent}</div>
+                 <div className="p-6 text-slate-300 h-full whitespace-pre-wrap font-mono text-sm">{submission.submissionContent}</div>
               )}
             </div>
           </div>
           <div>
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-6">
               <Avatar><AvatarImage src={submission.studentAvatarUrl} /><AvatarFallback>{submission.studentName.charAt(0)}</AvatarFallback></Avatar>
               <div>
-                <p className="font-semibold text-white">{submission.studentName}</p>
-                <p className="text-sm text-muted-foreground flex items-center gap-2"><BookOpen className="h-3 w-3"/>{submission.courseTitle}</p>
+                <p className="font-bold text-white leading-none">{submission.studentName}</p>
+                <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1">
+                    <BookOpen className="h-3 w-3 text-primary"/>
+                    {submission.courseTitle}
+                </p>
               </div>
             </div>
             
-            <Separator className="dark:bg-slate-700"/>
+            <Separator className="dark:bg-slate-800"/>
             
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
-                <FormField control={form.control} name="grade" render={({ field }) => (
-                  <FormItem><FormLabel>Note / 20</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                )}/>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-6">
+                <div className="flex items-center gap-4 justify-between">
+                    <FormField control={form.control} name="grade" render={({ field }) => (
+                    <FormItem className="w-32">
+                        <FormLabel>Note / 20</FormLabel>
+                        <FormControl><Input type="number" {...field} className="h-12 text-lg font-bold text-primary" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}/>
+                    <Button 
+                        type="button" 
+                        onClick={handleAiCorrection} 
+                        disabled={isAiLoading}
+                        className="bg-primary/10 text-primary hover:bg-primary hover:text-white border border-primary/20 h-12 px-6"
+                    >
+                        {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Bot className="h-5 w-5 mr-2" />}
+                        Analyse Mathias IA
+                    </Button>
+                </div>
+
                 <FormField control={form.control} name="feedback" render={({ field }) => (
-                  <FormItem><FormLabel>Commentaire</FormLabel><FormControl><Textarea rows={6} {...field} /></FormControl><FormMessage /></FormItem>
+                  <FormItem>
+                    <FormLabel>Feedback pédagogique</FormLabel>
+                    <FormControl><Textarea rows={10} {...field} className="bg-slate-950/50 border-slate-800 resize-none" /></FormControl>
+                    <FormMessage />
+                  </FormItem>
                 )}/>
-                 <Card className="dark:bg-slate-800/50 dark:border-slate-700 opacity-60">
-                    <CardHeader className="p-4"><CardTitle className="flex items-center gap-2 text-primary text-base"><Bot/>Assistant IA Mathias</CardTitle></CardHeader>
-                    <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
-                       <p>L'aide à la correction et la suggestion de notes seront bientôt disponibles ici.</p>
-                    </CardContent>
-                </Card>
-                 <DialogFooter className="pt-4">
+
+                 <DialogFooter className="pt-4 border-t border-slate-800">
                     <DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose>
-                    <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer la note
+                    <Button type="submit" disabled={isSubmitting || isAiLoading} className="h-12 px-8 shadow-xl shadow-primary/20">
+                        {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>} 
+                        Publier la note
                     </Button>
                 </DialogFooter>
               </form>

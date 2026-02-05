@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useRole } from '@/context/RoleContext';
+import { assistCourseCreation } from '@/ai/flows/assist-course-creation';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +18,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Package } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import Image from 'next/image';
+import { useToast } from '@/hooks/use-toast';
 
 const CourseFormSchema = z.object({
   title: z.string().min(5, { message: "Le titre doit faire au moins 5 caractères." }),
@@ -43,7 +45,9 @@ const courseCategories = [
 
 export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
+  const [isAiLoading, setIsAiLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
   const { user } = useRole();
@@ -86,13 +90,33 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     );
   };
 
+  const handleMathiasHelp = async () => {
+    const title = form.getValues('title');
+    if (!title || title.length < 5) {
+        toast({ variant: 'destructive', title: "Titre trop court", description: "Donnez un titre plus explicite pour que Mathias puisse vous aider." });
+        return;
+    }
+
+    setIsAiLoading(true);
+    try {
+        const result = await assistCourseCreation({ courseTitle: title });
+        form.setValue('description', result.description);
+        form.setValue('category', result.category);
+        toast({ title: "Mathias a rédigé votre contenu !", description: "Vérifiez et ajustez si besoin." });
+    } catch (error) {
+        toast({ variant: 'destructive', title: "Erreur IA", description: "Mathias n'a pas pu répondre. Réessayez." });
+    } finally {
+        setIsAiLoading(false);
+    }
+  };
+
   const processSubmit = (data: CourseFormValues) => {
     startTransition(() => {
       onSubmit(data);
     });
   };
   
-  const title = mode === 'create' ? 'Créer un nouveau cours' : 'Modifier le cours';
+  const titleText = mode === 'create' ? 'Créer un nouveau cours' : 'Modifier le cours';
 
   return (
     <Form {...form}>
@@ -102,12 +126,30 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     <Button variant="outline" size="icon" asChild className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
                         <Link href="/instructor/courses"><ArrowLeft className="h-4 w-4" /></Link>
                     </Button>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{title}</h1>
+                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{titleText}</h1>
                 </header>
             )}
             
             <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
-                <CardHeader><CardTitle>Informations générales</CardTitle><CardDescription>Les détails essentiels qui décrivent votre cours.</CardDescription></CardHeader>
+                <CardHeader>
+                    <div className="flex justify-between items-start">
+                        <div>
+                            <CardTitle>Informations générales</CardTitle>
+                            <CardDescription>Les détails essentiels qui décrivent votre cours.</CardDescription>
+                        </div>
+                        <Button 
+                            type="button" 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={handleMathiasHelp} 
+                            disabled={isAiLoading}
+                            className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10"
+                        >
+                            {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Bot className="h-4 w-4 mr-2" />}
+                            Aide de Mathias
+                        </Button>
+                    </div>
+                </CardHeader>
                 <CardContent className="space-y-6">
                     <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Titre du cours</FormLabel><FormControl><Input placeholder="Ex: Introduction à React.js pour les débutants" {...field} /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description</FormLabel><FormControl><Textarea placeholder="Décrivez ce que les étudiants apprendront, les prérequis, etc." {...field} rows={6} /></FormControl><FormMessage /></FormItem> )}/>
@@ -124,7 +166,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                 <Card className="bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 shadow-sm">
                     <CardHeader><CardTitle>Catégorisation</CardTitle></CardHeader>
                     <CardContent>
-                        <FormField control={form.control} name="category" render={({ field }) => ( <FormItem><FormLabel>Catégorie</FormLabel><Select onValueChange={field.onChange} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                        <FormField control={form.control} name="category" render={({ field }) => ( <FormItem><FormLabel>Catégorie</FormLabel><Select onValueChange={field.onChange} value={field.value} defaultValue={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
                     </CardContent>
                 </Card>
             </div>
@@ -147,14 +189,14 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                                 </div>
                             </FormControl>
                             <Input type="file" accept="image/*" onChange={handleImageUpload} className="file:cursor-pointer" disabled={uploadProgress !== null}/>
-                            {uploadProgress !== null && <Progress value={uploadProgress} className="h-2"/>}
+                            {uploadProgress !== null && <Progress value={uploadProgress} className="h-2 mt-2"/>}
                             <FormMessage />
                        </FormItem>
                    )}/>
                 </CardContent>
             </Card>
 
-            <CardFooter className="flex justify-end gap-3 p-0">
+            <CardFooter className="flex justify-end gap-3 p-0 pb-10">
                 <Button type="button" variant="outline" onClick={() => router.back()}>Annuler</Button>
                 <Button type="submit" disabled={isPending}>
                     {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
