@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AnnouncementsClient } from '@/components/instructor/announcements/AnnouncementsClient';

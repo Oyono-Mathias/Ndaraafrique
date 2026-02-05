@@ -1,4 +1,3 @@
-
 'use client';
 
 import { QnaClient } from '@/components/instructor/qna/QnaClient';

@@ -1,4 +1,3 @@
-
 'use client';
 
 import { StudentsClient } from '@/components/instructor/students/StudentsClient';

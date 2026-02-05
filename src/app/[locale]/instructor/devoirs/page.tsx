@@ -1,4 +1,3 @@
-
 'use client';
 
 import { AssignmentsClient } from '@/components/instructor/assignments/AssignmentsClient';

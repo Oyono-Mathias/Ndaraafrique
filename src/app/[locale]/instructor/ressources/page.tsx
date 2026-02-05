@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ResourcesClient } from '@/components/instructor/resources/ResourcesClient';
