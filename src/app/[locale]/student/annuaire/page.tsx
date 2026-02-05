@@ -1,9 +1,7 @@
-
 'use client';
 
 /**
  * @fileOverview Annuaire communautaire Ndara Afrique.
- * Favorise la mise en relation par filière d'apprentissage.
  */
 
 import { useState, useMemo } from 'react';
@@ -30,7 +28,6 @@ export default function AnnuairePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isContacting, setIsContacting] = useState<string | null>(null);
 
-    // Requête principale : Membres du même domaine
     const membersQuery = useMemo(() => {
         return query(
             collection(db, 'users'),
@@ -73,11 +70,11 @@ export default function AnnuairePage() {
     return (
         <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
             <header className="px-4 pt-8 space-y-4">
-                <div className="flex items-center gap-2 text-[#CC7722]">
+                <div className="flex items-center gap-2 text-primary">
                     <Sparkles className="h-5 w-5" />
                     <span className="text-[10px] font-black uppercase tracking-widest">Communauté</span>
                 </div>
-                <h1 className="text-3xl font-black text-white leading-tight">Annuaire des <br/><span className="text-[#CC7722]">Ndara</span></h1>
+                <h1 className="text-3xl font-black text-white leading-tight">Annuaire des <br/><span className="text-primary">Ndara</span></h1>
                 
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-600" />
@@ -93,7 +90,7 @@ export default function AnnuairePage() {
             <div className="px-4 space-y-4">
                 {isLoading ? (
                     <div className="grid gap-4">
-                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-900" />)}
+                        {[...Array(4)].map((_, i) => <Skeleton className="h-24 w-full rounded-2xl bg-slate-900" />)}
                     </div>
                 ) : filteredMembers.length > 0 ? (
                     <div className="grid gap-4">
@@ -105,13 +102,13 @@ export default function AnnuairePage() {
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-white text-base truncate">{member.fullName}</h3>
-                                    <Badge className="bg-[#CC7722]/10 text-[#CC7722] border-none text-[9px] font-black uppercase mt-1">
+                                    <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase mt-1">
                                         {member.careerGoals?.interestDomain || 'Apprenant'}
                                     </Badge>
                                 </div>
                                 <Button 
                                     size="icon" 
-                                    className="h-12 w-12 rounded-2xl bg-slate-800 hover:bg-[#CC7722] text-slate-400 hover:text-white transition-all shadow-lg"
+                                    className="h-12 w-12 rounded-2xl bg-slate-800 hover:bg-primary text-slate-400 hover:text-primary-foreground transition-all shadow-lg"
                                     onClick={() => handleContact(member.uid)}
                                     disabled={isContacting === member.uid}
                                 >

@@ -3,7 +3,6 @@
 /**
  * @fileOverview Centre d'Aide Étudiant Ndara Afrique.
  * Supporte la création de tickets et le contact direct (WhatsApp/Email).
- * Design Android-First & Vintage.
  */
 
 import { useState, useMemo } from 'react';
@@ -58,11 +57,11 @@ export default function StudentSupportPage() {
       
       {/* --- HEADER --- */}
       <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
-        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
+        <div className="flex items-center gap-2 text-primary mb-2">
             <LifeBuoy className="h-5 w-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Assistance</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Centre d'<br/><span className="text-[#CC7722]">Aide</span></h1>
+        <h1 className="text-3xl font-black text-white leading-tight">Centre d'<br/><span className="text-primary">Aide</span></h1>
         <p className="text-slate-500 text-sm mt-2 font-medium">Une question ? L'équipe Ndara est là pour vous.</p>
       </header>
 
@@ -107,7 +106,7 @@ export default function StudentSupportPage() {
                 <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">Mes demandes</h2>
                 <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                     <DialogTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-8 text-[#CC7722] font-black uppercase text-[10px] tracking-widest">
+                        <Button variant="ghost" size="sm" className="h-8 text-primary font-black uppercase text-[10px] tracking-widest">
                             <Plus className="h-3 w-3 mr-1" /> Nouveau
                         </Button>
                     </DialogTrigger>
@@ -155,7 +154,7 @@ export default function StudentSupportPage() {
       {/* --- FAB CRÉATION TICKET --- */}
       <Button 
         onClick={() => setIsFormOpen(true)}
-        className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-2xl shadow-[#CC7722]/40 z-50 transition-transform active:scale-90 md:hidden"
+        className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 md:hidden"
       >
         <Plus className="h-6 w-6 text-white" />
         <span className="sr-only">Nouveau ticket</span>

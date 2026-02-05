@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Page de présentation détaillée d'un cours (Preview).
- * Android-First & Esthétique Vintage (Ocre #CC7722).
+ * Android-First.
  * Gère l'affichage dynamique des infos, du curriculum et la conversion Mobile Money.
  */
 
@@ -96,13 +95,12 @@ export default function CourseDetailPage() {
     if (isEnrolled) {
       router.push(`/student/courses/${courseId}`);
     } else {
-      // Redirection vers la nouvelle page de checkout mobile-first
       router.push(`/student/checkout/${courseId}`);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-[#CC7722]/30">
+    <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
       
       {/* --- BANNIÈRE VISUELLE --- */}
       <div className="relative aspect-video w-full bg-slate-900 overflow-hidden shadow-2xl">
@@ -129,7 +127,7 @@ export default function CourseDetailPage() {
         
         {/* Infos Titre & Catégorie */}
         <div className="space-y-4">
-          <Badge className="bg-[#CC7722] text-white hover:bg-[#CC7722] border-none font-black uppercase tracking-[0.1em] text-[10px] px-3 py-1 rounded-md">
+          <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none font-black uppercase tracking-[0.1em] text-[10px] px-3 py-1 rounded-md">
             {course.category}
           </Badge>
           <h1 className="text-3xl font-black text-white leading-[1.1] tracking-tight">
@@ -156,7 +154,7 @@ export default function CourseDetailPage() {
               <AvatarFallback className="bg-slate-800 text-slate-500">{instructor.fullName?.charAt(0)}</AvatarFallback>
             </Avatar>
             <div className="flex-1">
-              <p className="text-[10px] font-black text-[#CC7722] uppercase tracking-widest">Expert Formateur</p>
+              <p className="text-[10px] font-black text-primary uppercase tracking-widest">Expert Formateur</p>
               <p className="text-lg font-bold text-white">{instructor.fullName}</p>
               <p className="text-xs text-slate-500 line-clamp-1">{instructor.careerGoals?.currentRole || 'Spécialiste Ndara'}</p>
             </div>
@@ -167,7 +165,7 @@ export default function CourseDetailPage() {
         {/* Description */}
         <section className="space-y-3">
           <h2 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
-            <div className="h-1 w-6 bg-[#CC7722] rounded-full" />
+            <div className="h-1 w-6 bg-primary rounded-full" />
             Description
           </h2>
           <p className="text-slate-400 leading-relaxed text-sm">
@@ -179,7 +177,7 @@ export default function CourseDetailPage() {
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
-              <div className="h-1 w-6 bg-[#CC7722] rounded-full" />
+              <div className="h-1 w-6 bg-primary rounded-full" />
               Curriculum
             </h2>
             <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{sections.length} Chapitres</span>
@@ -189,7 +187,7 @@ export default function CourseDetailPage() {
             {sections.map((section, idx) => (
               <div key={section.id} className="p-4 bg-slate-900/40 rounded-xl border border-slate-800/50">
                 <h3 className="font-bold text-sm text-slate-200">
-                  <span className="text-[#CC7722] opacity-60 mr-2 font-mono">{String(idx + 1).padStart(2, '0')}</span> 
+                  <span className="text-primary opacity-60 mr-2 font-mono">{String(idx + 1).padStart(2, '0')}</span> 
                   {section.title}
                 </h3>
                 <ul className="mt-3 space-y-2">
@@ -228,7 +226,7 @@ export default function CourseDetailPage() {
               <p className="text-[9px] uppercase font-black text-slate-500 tracking-widest mb-0.5">Tarif unique</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-2xl font-black text-white">{(course.price || 0).toLocaleString('fr-FR')}</span>
-                <span className="text-[10px] font-black text-[#CC7722] uppercase">XOF</span>
+                <span className="text-[10px] font-black text-primary uppercase">XOF</span>
               </div>
             </div>
           )}
@@ -238,7 +236,7 @@ export default function CourseDetailPage() {
               "flex-1 h-14 rounded-xl text-sm font-black uppercase tracking-wider transition-all active:scale-95 shadow-xl",
               isEnrolled 
                 ? "bg-white text-slate-950 hover:bg-slate-100" 
-                : "bg-[#CC7722] text-white hover:bg-[#CC7722]/90 shadow-[#CC7722]/20"
+                : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20"
             )}
           >
             {isEnrolled ? "Reprendre le cours" : "S'inscrire (Mobile Money)"}

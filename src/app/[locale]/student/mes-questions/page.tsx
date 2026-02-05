@@ -49,18 +49,18 @@ export default function MesQuestionsPage() {
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
       <header className="px-4 pt-8">
-        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
+        <div className="flex items-center gap-2 text-primary mb-2">
             <MessageCircle className="h-5 w-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Interactions</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-[#CC7722]">Questions</span></h1>
+        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-primary">Questions</span></h1>
         <p className="text-slate-500 text-sm mt-2 font-medium">Suivez les réponses de vos tuteurs et formateurs.</p>
       </header>
 
       <div className="px-4 space-y-4">
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-3xl bg-slate-900" />)}
+            {[...Array(3)].map((_, i) => <Skeleton className="h-32 w-full rounded-3xl bg-slate-900" />)}
           </div>
         ) : questions.length > 0 ? (
           <div className="grid gap-4">
@@ -105,8 +105,8 @@ function QuestionItem({ question }: { question: CourseQuestion }) {
         </div>
 
         {isAnswered && (
-          <div className="p-4 bg-[#CC7722]/5 border-l-2 border-[#CC7722] rounded-r-xl">
-            <p className="text-[10px] font-black text-[#CC7722] uppercase tracking-widest mb-1">Réponse du formateur</p>
+          <div className="p-4 bg-primary/5 border-l-2 border-primary rounded-r-xl">
+            <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Réponse du formateur</p>
             <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
               {question.answerText}
             </p>
@@ -118,7 +118,7 @@ function QuestionItem({ question }: { question: CourseQuestion }) {
             <Clock className="h-3 w-3" />
             {format(date, 'dd MMM yyyy', { locale: fr })}
           </div>
-          <Button variant="ghost" size="sm" asChild className="h-7 text-[#CC7722] font-black uppercase text-[9px] tracking-widest p-0">
+          <Button variant="ghost" size="sm" asChild className="h-7 text-primary font-black uppercase text-[9px] tracking-widest p-0">
             <Link href={`/student/courses/${question.courseId}`}>
               Voir le cours <ChevronRight className="ml-1 h-3 w-3" />
             </Link>

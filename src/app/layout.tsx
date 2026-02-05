@@ -1,4 +1,3 @@
-
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
@@ -28,7 +27,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#CC7722',
+  themeColor: '#3b82f6', // ✅ Mise à jour de la couleur de thème pour correspondre au bleu primaire
 };
 
 export default function RootLayout({

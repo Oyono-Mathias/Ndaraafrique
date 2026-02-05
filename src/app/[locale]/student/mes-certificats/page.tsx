@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
- * Affiche uniquement les cours terminés à 100% avec un design Vintage.
+ * Affiche uniquement les cours terminés à 100%.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -116,11 +115,11 @@ export default function MesCertificatsPage() {
       )}
 
       <header className="px-4 pt-8">
-        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
+        <div className="flex items-center gap-2 text-primary mb-2">
             <Trophy className="h-5 w-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Excellence</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-[#CC7722]">Certificats</span></h1>
+        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-primary">Certificats</span></h1>
         <p className="text-slate-500 text-sm mt-2">Le fruit de votre travail et de votre persévérance.</p>
       </header>
 
@@ -136,8 +135,8 @@ export default function MesCertificatsPage() {
                 <CardContent className="p-0">
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-start">
-                            <div className="p-3 bg-[#CC7722]/10 rounded-2xl">
-                                <Award className="h-8 w-8 text-[#CC7722]" />
+                            <div className="p-3 bg-primary/10 rounded-2xl">
+                                <Award className="h-8 w-8 text-primary" />
                             </div>
                             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest bg-slate-800/50 px-3 py-1 rounded-full border border-slate-700">
                                 ID: {cert.id.substring(0, 8)}
@@ -145,7 +144,7 @@ export default function MesCertificatsPage() {
                         </div>
                         
                         <div className="space-y-1">
-                            <h3 className="text-xl font-bold text-white line-clamp-2 leading-tight group-hover:text-[#CC7722] transition-colors">
+                            <h3 className="text-xl font-bold text-white line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                                 {cert.course?.title}
                             </h3>
                             <p className="text-xs text-slate-500 font-medium italic">
@@ -158,7 +157,7 @@ export default function MesCertificatsPage() {
                     
                     <div className="p-4 bg-slate-900 flex gap-2 border-t border-slate-800">
                         <Button 
-                            className="flex-1 bg-[#CC7722] hover:bg-[#CC7722]/90 text-white rounded-xl font-black uppercase text-[10px] tracking-widest h-12"
+                            className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest h-12"
                             onClick={() => handleViewCertificate(cert)}
                         >
                             <Eye className="mr-2 h-4 w-4" />
@@ -189,7 +188,7 @@ export default function MesCertificatsPage() {
             <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
               Terminez vos formations à <span className="text-white font-bold">100%</span> pour débloquer vos certificats officiels.
             </p>
-            <Button asChild className="mt-8 bg-[#CC7722] hover:bg-[#CC7722]/90 text-white rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-[#CC7722]/20">
+            <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
               <Link href="/student/courses">
                 Reprendre les cours
                 <ArrowRight className="ml-2 h-4 w-4" />

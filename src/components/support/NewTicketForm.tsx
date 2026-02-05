@@ -138,7 +138,7 @@ export function NewTicketForm({ onSuccess }: { onSuccess: () => void }) {
         <Button 
           type="submit" 
           disabled={isSubmitting} 
-          className="w-full h-14 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-[0.97] transition-all mt-4"
+          className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl active:scale-[0.97] transition-all mt-4"
         >
           {isSubmitting ? (
             <Loader2 className="h-5 w-5 animate-spin" />

@@ -2,7 +2,6 @@
 
 /**
  * @fileOverview Client de chat pour le Tuteur MATHIAS.
- * Design calqué sur WhatsApp Android (Identique à ChatRoom.tsx).
  */
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -165,17 +164,16 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-      {/* Fond doodle WhatsApp exact */}
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
-      {/* --- HEADER (Style WhatsApp) --- */}
+      {/* --- HEADER --- */}
       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
         <Button variant="ghost" size="icon" className="mr-0 text-slate-300 h-10 w-8 rounded-full" onClick={() => router.push('/student/dashboard')}>
             <ArrowLeft className="h-6 w-6" />
         </Button>
         <div className="flex items-center gap-2 flex-1 overflow-hidden">
           <Avatar className="h-9 w-9 border border-white/10">
-              <AvatarFallback className="bg-[#2a3942] text-[#CC7722] font-black"><Bot className="h-6 w-6" /></AvatarFallback>
+              <AvatarFallback className="bg-[#2a3942] text-primary font-black"><Bot className="h-6 w-6" /></AvatarFallback>
           </Avatar>
           <div className="flex flex-col overflow-hidden">
             <h2 className="font-bold text-sm text-white truncate leading-none uppercase tracking-widest">MATHIAS</h2>
@@ -201,7 +199,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
           </div>
 
           {(isUserLoading || isHistoryLoading) && (
-            <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-[#CC7722]" /></div>
+            <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
           )}
           
           {!isHistoryLoading && hasMore && (
@@ -255,7 +253,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
         </div>
       </ScrollArea>
 
-      {/* --- INPUT (BARRE DE SAISIE FLOTTANTE) --- */}
       <div className="p-2 bg-transparent safe-area-pb z-20 flex items-end gap-2">
         <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md">
             <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Smile className="h-6 w-6" /></Button>

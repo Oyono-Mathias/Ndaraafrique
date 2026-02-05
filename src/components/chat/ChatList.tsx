@@ -2,8 +2,6 @@
 
 /**
  * @fileOverview Liste des conversations Ndara Afrique (Android-First).
- * Gère le flux temps réel Firestore et l'enrichissement des profils.
- * Logic : Gestion des statuts de lecture via le tableau unreadBy (Product Engineer).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -35,7 +33,7 @@ const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSe
             onClick={() => router.push(`/student/messages?chatId=${chat.id}`)}
             className={cn(
                 "w-full text-left p-4 flex items-center gap-4 transition-all active:bg-slate-800/60 border-b border-white/5",
-                isSelected ? "bg-[#CC7722]/10" : "hover:bg-slate-900/40"
+                isSelected ? "bg-primary/10" : "hover:bg-slate-900/40"
             )}
         >
             <div className="relative">
@@ -46,7 +44,7 @@ const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSe
                     </AvatarFallback>
                 </Avatar>
                 {isUnread && (
-                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-[#CC7722] rounded-full border-2 border-slate-950 shadow-lg animate-in zoom-in" />
+                    <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-primary rounded-full border-2 border-slate-950 shadow-lg animate-in zoom-in" />
                 )}
             </div>
             <div className="flex-1 min-w-0">
@@ -59,7 +57,7 @@ const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSe
                     </p>
                     <span className={cn(
                         "text-[10px] font-black uppercase tracking-tighter",
-                        isUnread ? "text-[#CC7722]" : "text-slate-500"
+                        isUnread ? "text-primary" : "text-slate-500"
                     )}>
                         {lastDate ? formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr }) : ''}
                     </span>
@@ -83,7 +81,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const [dataLoading, setDataLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    // Requête principale filtrée par participant
     const chatsQuery = useMemo(() =>
         user ? query(
             collection(db, 'chats'), 
@@ -94,7 +91,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     );
     const { data: chats, isLoading: chatsLoading } = useCollection<Chat>(chatsQuery);
 
-    // Enrichissement des chats avec les profils
     useEffect(() => {
         if (!chats || chatsLoading) return;
 
@@ -152,7 +148,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-600" />
                     <Input 
                         placeholder="Rechercher une discussion..." 
-                        className="h-11 pl-10 bg-slate-900 border-none rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-[#CC7722]/30"
+                        className="h-11 pl-10 bg-slate-900 border-none rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-primary/30"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -197,7 +193,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
 
             <Button 
                 onClick={() => router.push('/student/annuaire')}
-                className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-[#CC7722] hover:bg-[#CC7722]/90 shadow-2xl shadow-[#CC7722]/40 z-50 transition-transform active:scale-90 md:hidden"
+                className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 md:hidden"
             >
                 <UserPlus className="h-6 w-6 text-white" />
             </Button>

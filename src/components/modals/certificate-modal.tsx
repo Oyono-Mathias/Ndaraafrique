@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Modal de présentation du Certificat Ndara Afrique.
- * Style Vintage, Papier grainé, Sceau doré et signatures.
+ * Style Vintage, Papier grainé, Sceau et signatures.
  */
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -50,16 +50,15 @@ export function CertificateModal({
         </DialogHeader>
         
         {/* --- LE CERTIFICAT VINTAGE --- */}
-        <div className="relative aspect-[1.414/1] w-full bg-[#FDF6E3] text-slate-900 p-8 md:p-16 flex flex-col justify-between overflow-hidden shadow-2xl border-[16px] border-double border-[#CC7722]/30 m-auto select-none">
+        <div className="relative aspect-[1.414/1] w-full bg-[#FDF6E3] text-slate-900 p-8 md:p-16 flex flex-col justify-between overflow-hidden shadow-2xl border-[16px] border-double border-primary/30 m-auto select-none">
           
-          {/* Grain de papier vintage */}
           <div className="absolute inset-0 opacity-[0.07] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
           
           {/* Coins décoratifs */}
-          <div className="absolute top-4 left-4 w-12 h-12 border-t-4 border-l-4 border-[#CC7722]/40" />
-          <div className="absolute top-4 right-4 w-12 h-12 border-t-4 border-r-4 border-[#CC7722]/40" />
-          <div className="absolute bottom-4 left-4 w-12 h-12 border-b-4 border-l-4 border-[#CC7722]/40" />
-          <div className="absolute bottom-4 right-4 w-12 h-12 border-b-4 border-r-4 border-[#CC7722]/40" />
+          <div className="absolute top-4 left-4 w-12 h-12 border-t-4 border-l-4 border-primary/40" />
+          <div className="absolute top-4 right-4 w-12 h-12 border-t-4 border-r-4 border-primary/40" />
+          <div className="absolute bottom-4 left-4 w-12 h-12 border-b-4 border-l-4 border-primary/40" />
+          <div className="absolute bottom-4 right-4 w-12 h-12 border-b-4 border-r-4 border-primary/40" />
 
           {/* Header Certificat */}
           <div className="flex justify-between items-start z-10">
@@ -75,7 +74,7 @@ export function CertificateModal({
 
           {/* Corps du Certificat */}
           <div className="text-center z-10 flex-1 flex flex-col justify-center py-8">
-            <h1 className="text-xs md:text-sm uppercase tracking-[0.5em] text-[#CC7722] font-black mb-6">Certificat de Réussite</h1>
+            <h1 className="text-xs md:text-sm uppercase tracking-[0.5em] text-primary font-black mb-6">Certificat de Réussite</h1>
             <p className="text-sm italic font-serif text-slate-500 mb-6">Ce document officiel atteste que</p>
             
             <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-6 tracking-tighter" style={{ fontFamily: 'var(--font-serif)' }}>
@@ -97,13 +96,13 @@ export function CertificateModal({
                   <p className="text-[8px] font-black uppercase tracking-widest text-slate-400">Expert Formateur</p>
               </div>
 
-              {/* SCEAU DORÉ SVG */}
+              {/* SCEAU PRIMAIRE SVG */}
               <div className="relative group">
                   <svg width="100" height="100" viewBox="0 0 100 100" className="drop-shadow-xl animate-in zoom-in-50 duration-1000">
-                      <circle cx="50" cy="50" r="45" fill="#CC7722" fillOpacity="0.1" stroke="#CC7722" strokeWidth="1" strokeDasharray="2 2" />
-                      <path d="M50 5 L55 35 L85 35 L60 55 L70 85 L50 65 L30 85 L40 55 L15 35 L45 35 Z" fill="#CC7722" className="opacity-80" />
-                      <circle cx="50" cy="50" r="35" fill="none" stroke="#CC7722" strokeWidth="0.5" />
-                      <text x="50" y="52" fontSize="6" fontWeight="900" fill="#CC7722" textAnchor="middle" className="uppercase tracking-[0.2em]">Authentique</text>
+                      <circle cx="50" cy="50" r="45" fill="hsl(var(--primary))" fillOpacity="0.1" stroke="hsl(var(--primary))" strokeWidth="1" strokeDasharray="2 2" />
+                      <path d="M50 5 L55 35 L85 35 L60 55 L70 85 L50 65 L30 85 L40 55 L15 35 L45 35 Z" fill="hsl(var(--primary))" className="opacity-80" />
+                      <circle cx="50" cy="50" r="35" fill="none" stroke="hsl(var(--primary))" strokeWidth="0.5" />
+                      <text x="50" y="52" fontSize="6" fontWeight="900" fill="hsl(var(--primary))" textAnchor="middle" className="uppercase tracking-[0.2em]">Authentique</text>
                   </svg>
               </div>
 

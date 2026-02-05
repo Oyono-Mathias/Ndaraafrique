@@ -1,10 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Page de paiement (Checkout) optimisée pour Moneroo.
- * Design Android-First, Esthétique Vintage "Ticket de Caisse".
- * Support multi-méthodes (MoMo, Carte) et bouton d'aide WhatsApp.
+ * Design Android-First.
  */
 
 import { useState, useMemo } from 'react';
@@ -52,8 +50,6 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // Simulation de la préparation de la transaction Moneroo
-      // En production, on appellerait une Server Action pour générer l'URL de paiement via l'API Moneroo
       await new Promise(resolve => setTimeout(resolve, 2500));
 
       toast({ 
@@ -61,7 +57,6 @@ export default function CheckoutPage() {
         description: "Redirection vers la passerelle de paiement..." 
       });
 
-      // Simulation de succès pour le prototype
       router.push(`/student/courses/${courseId}`);
 
     } catch (error) {
@@ -80,7 +75,7 @@ export default function CheckoutPage() {
   if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-[#CC7722]/30">
+    <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
       
       {/* --- HEADER COMPACT --- */}
       <header className="p-4 flex items-center gap-4 bg-slate-900/80 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-xl">
@@ -95,7 +90,6 @@ export default function CheckoutPage() {
         {/* --- TICKET DE CAISSE VINTAGE --- */}
         <section className="relative">
           <div className="bg-[#fdf6e3] text-slate-900 p-6 rounded-t-sm shadow-2xl relative overflow-hidden">
-            {/* Texture papier grainé */}
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
             
             <div className="flex justify-center mb-6 opacity-20">
@@ -123,7 +117,6 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
-          {/* Bordure dentelée SVG pour le réalisme */}
           <div className="h-3 w-full bg-[radial-gradient(circle,transparent_6px,#fdf6e3_6px)] bg-[length:16px_12px] bg-repeat-x" />
         </section>
 
@@ -138,13 +131,13 @@ export default function CheckoutPage() {
               className={cn(
                 "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95 relative",
                 selectedMethod === 'momo' 
-                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-xl" 
+                  ? "border-primary bg-primary/5 shadow-xl" 
                   : "border-slate-800 bg-slate-900/40 opacity-60"
               )}
             >
-              <Smartphone className={cn("h-6 w-6", selectedMethod === 'momo' ? "text-[#CC7722]" : "text-slate-500")} />
+              <Smartphone className={cn("h-6 w-6", selectedMethod === 'momo' ? "text-primary" : "text-slate-500")} />
               <span className="text-[10px] font-black uppercase tracking-widest">Mobile Money</span>
-              {selectedMethod === 'momo' && <CheckCircle2 className="h-4 w-4 text-[#CC7722] absolute top-2 right-2" />}
+              {selectedMethod === 'momo' && <CheckCircle2 className="h-4 w-4 text-primary absolute top-2 right-2" />}
             </button>
 
             <button
@@ -152,13 +145,13 @@ export default function CheckoutPage() {
               className={cn(
                 "flex flex-col items-center gap-3 p-5 rounded-2xl border-2 transition-all active:scale-95 relative",
                 selectedMethod === 'card' 
-                  ? "border-[#CC7722] bg-[#CC7722]/5 shadow-xl" 
+                  ? "border-primary bg-primary/5 shadow-xl" 
                   : "border-slate-800 bg-slate-900/40 opacity-60"
               )}
             >
-              <CreditCard className={cn("h-6 w-6", selectedMethod === 'card' ? "text-[#CC7722]" : "text-slate-500")} />
+              <CreditCard className={cn("h-6 w-6", selectedMethod === 'card' ? "text-primary" : "text-slate-500")} />
               <span className="text-[10px] font-black uppercase tracking-widest">Carte Visa / MC</span>
-              {selectedMethod === 'card' && <CheckCircle2 className="h-4 w-4 text-[#CC7722] absolute top-2 right-2" />}
+              {selectedMethod === 'card' && <CheckCircle2 className="h-4 w-4 text-primary absolute top-2 right-2" />}
             </button>
           </div>
         </section>
@@ -198,7 +191,7 @@ export default function CheckoutPage() {
           <Button 
             onClick={handlePayment}
             disabled={isProcessing}
-            className="w-full h-16 rounded-2xl bg-[#CC7722] hover:bg-[#CC7722]/90 text-white shadow-2xl shadow-[#CC7722]/20 font-black uppercase tracking-[0.1em] text-sm transition-all active:scale-[0.96]"
+            className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground shadow-2xl shadow-primary/20 font-black uppercase tracking-[0.1em] text-sm transition-all active:scale-[0.96]"
           >
             {isProcessing ? (
               <div className="flex items-center gap-3">

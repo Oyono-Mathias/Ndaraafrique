@@ -1,9 +1,7 @@
-
 'use client';
 
 /**
  * @fileOverview Page Liste de Souhaits opérationnelle.
- * Affiche les cours sauvegardés par l'étudiant.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -27,7 +25,6 @@ export default function ListeSouhaitsPage() {
     if (!currentUser?.uid) return;
 
     setIsLoading(true);
-    // 1. Écouter la sous-collection wishlist
     const wishlistRef = collection(db, `users/${currentUser.uid}/wishlist`);
     
     const unsubscribe = onSnapshot(wishlistRef, async (snap) => {
@@ -38,15 +35,12 @@ export default function ListeSouhaitsPage() {
       }
 
       const courseIds = snap.docs.map(doc => doc.id);
-      
-      // 2. Récupérer les détails des cours associés
       const coursesQuery = query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30)));
       const coursesSnap = await getDocs(coursesQuery);
       const coursesData = coursesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
       
       setWishlistCourses(coursesData);
 
-      // 3. Récupérer les instructeurs
       if (coursesData.length > 0) {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
         const instructorsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
@@ -64,11 +58,11 @@ export default function ListeSouhaitsPage() {
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
       <header className="px-4 pt-8">
-        <div className="flex items-center gap-2 text-[#CC7722] mb-2">
-            <Heart className="h-5 w-5 fill-[#CC7722]" />
+        <div className="flex items-center gap-2 text-primary mb-2">
+            <Heart className="h-5 w-5 fill-primary" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Favoris</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Ma Liste de <br/><span className="text-[#CC7722]">Souhaits</span></h1>
+        <h1 className="text-3xl font-black text-white leading-tight">Ma Liste de <br/><span className="text-primary">Souhaits</span></h1>
         <p className="text-slate-500 text-sm mt-2 font-medium">Retrouvez les formations qui vous ont fait craquer.</p>
       </header>
 
@@ -94,10 +88,10 @@ export default function ListeSouhaitsPage() {
               <Heart className="h-16 w-16 text-slate-700" />
             </div>
             <h3 className="text-xl font-black text-white leading-tight">Votre liste est <br/>vide.</h3>
-            <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto font-medium">
+            <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
               Explorez le catalogue et cliquez sur le coeur pour sauvegarder un cours.
             </p>
-            <Button asChild className="mt-8 bg-[#CC7722] hover:bg-[#CC7722]/90 text-white rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-[#CC7722]/20">
+            <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
               <Link href="/search">
                 Découvrir des cours
                 <ArrowRight className="ml-2 h-4 w-4" />
