@@ -6,7 +6,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, LayoutDashboard } from 'lucide-react';
+import { Frown, Sparkles, UserPlus, BookCopy, Award, ShieldCheck, Lock, HelpingHand, Wallet, ChevronsRight, Search, LayoutDashboard, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -44,12 +44,12 @@ const LandingNav = () => {
         )}>
             <div className="container mx-auto px-4 flex justify-between items-center">
                 <Link href="/" className="flex items-center gap-3 group transition-transform hover:scale-105">
-                    <div className="relative w-10 h-10 overflow-hidden rounded-lg shadow-lg bg-primary flex items-center justify-center">
+                    <div className="relative w-10 h-10 overflow-hidden rounded-lg shadow-lg bg-primary/20 flex items-center justify-center border border-white/10">
                         <Image 
-                            src="/icon.svg" 
+                            src="/logo.png" 
                             alt="Ndara Afrique Logo" 
-                            width={32} 
-                            height={32} 
+                            width={40} 
+                            height={40} 
                             className="object-contain"
                         />
                     </div>
