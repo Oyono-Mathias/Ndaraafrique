@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { WifiOff, RefreshCw, ArrowLeft, ZapOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
+import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 
 export default function OfflinePage() {
