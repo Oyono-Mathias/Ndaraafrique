@@ -2,190 +2,243 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Formateur optimisé Android.
- * Fokus sur la productivité (devoirs à corriger) et la santé financière.
+ * @fileOverview Dashboard Formateur Android-First Vintage.
+ * Connecté à Firestore pour les revenus, les étudiants et les devoirs.
  */
 
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, onSnapshot, getDocs } from 'firebase/firestore';
+import { 
+  collection, 
+  query, 
+  where, 
+  getFirestore, 
+  onSnapshot, 
+  getCountFromServer,
+  orderBy,
+  limit
+} from 'firebase/firestore';
 import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Users, Star, BookOpen, DollarSign, Zap, ArrowRight, MessageSquare, ClipboardCheck } from 'lucide-react';
-import type { Course, Review, Enrollment, Payment, AssignmentSubmission } from '@/lib/types';
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { StatCard } from '@/components/dashboard/StatCard';
-import { SectionHeader } from '@/components/dashboard/SectionHeader';
+import { 
+  Users, 
+  DollarSign, 
+  ClipboardCheck, 
+  TrendingUp, 
+  BookOpen, 
+  ChevronRight,
+  Zap,
+  Clock
+} from 'lucide-react';
+import type { Payment, AssignmentSubmission, Course } from '@/lib/types';
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 export function InstructorDashboard() {
     const { currentUser: instructor, isUserLoading } = useRole();
     const db = getFirestore();
 
-    const [stats, setStats] = useState({ totalStudents: 0, avgRating: 0, monthlyRevenue: 0 });
+    const [stats, setStats] = useState({ totalRevenue: 0, studentCount: 0 });
     const [pendingSubmissions, setPendingSubmissions] = useState<AssignmentSubmission[]>([]);
+    const [coursePerformance, setCoursePerformance] = useState<{title: string, revenue: number}[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         if (!instructor?.uid) return;
 
         setIsLoading(true);
-        const instructorId = instructor.uid;
 
-        // 1. Écoute des inscriptions (Compteur étudiants)
-        const unsubEnroll = onSnapshot(
-            query(collection(db, 'enrollments'), where('instructorId', '==', instructorId)),
-            (snap) => {
-                const uniqueStudents = new Set(snap.docs.map(d => d.data().studentId)).size;
-                setStats(prev => ({ ...prev, totalStudents: uniqueStudents }));
-            }
-        );
-
-        // 2. Écoute des avis (Moyenne note)
-        const unsubReviews = onSnapshot(
-            query(collection(db, 'reviews'), where('instructorId', '==', instructorId)),
-            (snap) => {
-                if (snap.empty) return;
-                const total = snap.docs.reduce((acc, d) => acc + (d.data().rating || 0), 0);
-                setStats(prev => ({ ...prev, avgRating: total / snap.size }));
-            }
-        );
-
-        // 3. Écoute des revenus du mois
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0,0,0,0);
-
+        // 1. Revenus totaux (Collection payments)
         const unsubPayments = onSnapshot(
-            query(
-                collection(db, 'payments'), 
-                where('instructorId', '==', instructorId),
-                where('status', '==', 'Completed')
-            ),
+            query(collection(db, 'payments'), where('instructorId', '==', instructor.uid), where('status', '==', 'Completed')),
             (snap) => {
-                const total = snap.docs
-                    .map(d => d.data() as Payment)
-                    .filter(p => (p.date as any)?.toDate() >= startOfMonth)
-                    .reduce((acc, p) => acc + p.amount, 0);
-                setStats(prev => ({ ...prev, monthlyRevenue: total }));
+                const total = snap.docs.reduce((acc, d) => acc + (d.data().amount || 0), 0);
+                
+                // Calcul performance par cours
+                const performanceMap = new Map<string, number>();
+                snap.docs.forEach(d => {
+                    const data = d.data();
+                    const title = data.courseTitle || 'Formation';
+                    performanceMap.set(title, (performanceMap.get(title) || 0) + data.amount);
+                });
+                
+                const perfArray = Array.from(performanceMap.entries())
+                    .map(([title, revenue]) => ({ title, revenue }))
+                    .sort((a, b) => b.revenue - a.revenue);
+
+                setStats(prev => ({ ...prev, totalRevenue: total }));
+                setCoursePerformance(perfArray);
             }
         );
 
-        // 4. Écoute des devoirs en attente (Actions urgentes)
-        const unsubSubmissions = onSnapshot(
+        // 2. Nombre total d'étudiants (Collection users avec rôle student)
+        const fetchStudents = async () => {
+            const q = query(collection(db, 'users'), where('role', '==', 'student'));
+            const snap = await getCountFromServer(q);
+            setStats(prev => ({ ...prev, studentCount: snap.data().count }));
+        };
+        fetchStudents();
+
+        // 3. Devoirs en attente (Collection devoirs, status submitted)
+        const unsubDevoirs = onSnapshot(
             query(
                 collection(db, 'devoirs'), 
-                where('instructorId', '==', instructorId),
-                where('status', '==', 'submitted')
+                where('instructorId', '==', instructor.uid),
+                where('status', '==', 'submitted'),
+                orderBy('submittedAt', 'desc'),
+                limit(5)
             ),
             (snap) => {
-                setPendingSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AssignmentSubmission)).slice(0, 3));
+                setPendingSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AssignmentSubmission)));
                 setIsLoading(false);
             }
         );
 
         return () => {
-            unsubEnroll();
-            unsubReviews();
             unsubPayments();
-            unsubSubmissions();
+            unsubDevoirs();
         };
     }, [instructor?.uid, db]);
 
-    if (isUserLoading) {
-        return <div className="p-4 space-y-6"><Skeleton className="h-10 w-3/4 bg-slate-800" /><div className="grid grid-cols-2 gap-3"><Skeleton className="h-24 rounded-2xl bg-slate-800" /><Skeleton className="h-24 rounded-2xl bg-slate-800" /></div></div>;
+    if (isUserLoading || isLoading) {
+        return (
+            <div className="flex flex-col gap-6 p-4 bg-slate-950 min-h-screen">
+                <Skeleton className="h-10 w-3/4 bg-slate-900 rounded-xl" />
+                <div className="grid grid-cols-2 gap-3">
+                    <Skeleton className="h-32 rounded-3xl bg-slate-900" />
+                    <Skeleton className="h-32 rounded-3xl bg-slate-900" />
+                </div>
+                <Skeleton className="h-64 w-full rounded-3xl bg-slate-900" />
+            </div>
+        );
     }
 
     return (
-      <div className="flex flex-col gap-8 p-4 animate-in fade-in duration-500">
-        <header>
-            <h1 className="text-2xl font-black text-white">
-                Tableau de bord
-                <Zap className="inline-block ml-2 h-5 w-5 text-primary fill-primary" />
-            </h1>
-            <p className="text-slate-400 text-sm">Prêt à accompagner vos étudiants ?</p>
-        </header>
+        <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
+            
+            {/* --- HEADER --- */}
+            <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
+                <h1 className="text-3xl font-black text-white leading-tight">
+                    Espace <br/>
+                    <span className="text-primary">Formateur</span>
+                </h1>
+                <p className="text-slate-500 text-sm mt-2 font-medium">Gérez votre académie avec Ndara.</p>
+            </header>
 
-        {/* --- STATS RAPIDES --- */}
-        <section className="grid grid-cols-2 gap-3">
-            <StatCard 
-                title="Étudiants" 
-                value={stats.totalStudents.toString()} 
-                icon={Users} 
-                isLoading={isLoading}
-                accentColor="bg-blue-500/5 border-blue-500/20"
-            />
-            <StatCard 
-                title="Note" 
-                value={stats.avgRating > 0 ? stats.avgRating.toFixed(1) : "N/A"} 
-                icon={Star} 
-                isLoading={isLoading}
-                accentColor="bg-amber-500/5 border-amber-500/20"
-            />
-            <StatCard 
-                title="Revenus (Mois)" 
-                value={`${stats.monthlyRevenue.toLocaleString('fr-FR')} XOF`} 
-                icon={DollarSign} 
-                isLoading={isLoading}
-                accentColor="bg-green-500/5 border-green-500/20"
-            />
-            <StatCard 
-                title="Actions" 
-                value={pendingSubmissions.length.toString()} 
-                icon={ClipboardCheck} 
-                isLoading={isLoading}
-                accentColor="bg-red-500/5 border-red-500/20"
-            />
-        </section>
+            {/* --- CARTES STATS VINTAGE --- */}
+            <section className="px-4 grid grid-cols-2 gap-3">
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-[2rem] shadow-xl active:scale-95 transition-all">
+                    <div className="p-2 bg-primary/10 rounded-xl inline-block mb-3">
+                        <DollarSign className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Revenus Totaux</p>
+                    <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-black text-white">{stats.totalRevenue.toLocaleString('fr-FR')}</span>
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">XOF</span>
+                    </div>
+                </div>
 
-        {/* --- ACTIONS URGENTES --- */}
-        <section className="space-y-4">
-            <SectionHeader title="À corriger en priorité" />
-            {isLoading ? (
-                <Skeleton className="h-32 w-full rounded-2xl bg-slate-900" />
-            ) : pendingSubmissions.length > 0 ? (
+                <div className="bg-slate-900 border border-slate-800 p-5 rounded-[2rem] shadow-xl active:scale-95 transition-all">
+                    <div className="p-2 bg-blue-500/10 rounded-xl inline-block mb-3">
+                        <Users className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Inscriptions</p>
+                    <div className="flex items-baseline gap-1 mt-1">
+                        <span className="text-2xl font-black text-white">{stats.studentCount}</span>
+                        <span className="text-[10px] font-bold text-slate-600 uppercase">Ndara</span>
+                    </div>
+                </div>
+            </section>
+
+            {/* --- GESTION DES DEVOIRS --- */}
+            <section className="px-4 space-y-4">
+                <div className="flex items-center justify-between px-1">
+                    <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
+                        <ClipboardCheck className="h-4 w-4" />
+                        À corriger
+                    </h2>
+                    {pendingSubmissions.length > 0 && <Badge className="bg-primary text-white border-none">{pendingSubmissions.length}</Badge>}
+                </div>
+
+                {pendingSubmissions.length > 0 ? (
+                    <div className="grid gap-3">
+                        {pendingSubmissions.map(sub => (
+                            <Card key={sub.id} className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden active:scale-95 transition-all">
+                                <CardContent className="p-5 flex items-center justify-between">
+                                    <div className="flex-1 min-w-0 mr-4">
+                                        <p className="text-sm font-bold text-white truncate">{sub.studentName}</p>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Badge variant="outline" className="text-[8px] border-slate-700 text-slate-500 px-1.5 h-4 uppercase">Devoir</Badge>
+                                            <p className="text-[10px] text-slate-500 truncate">{sub.assignmentTitle}</p>
+                                        </div>
+                                    </div>
+                                    <Button size="sm" asChild className="rounded-xl h-10 px-4 font-bold bg-slate-800 hover:bg-primary text-slate-300 hover:text-white border-none">
+                                        <Link href="/instructor/devoirs">Noter</Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="py-12 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50">
+                        <Zap className="h-8 w-8 mx-auto text-slate-800 mb-3" />
+                        <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Tout est à jour !</p>
+                    </div>
+                )}
+            </section>
+
+            {/* --- PERFORMANCE DES COURS --- */}
+            <section className="px-4 space-y-4">
+                <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
+                    <TrendingUp className="h-4 w-4" />
+                    Top Performances
+                </h2>
+                
                 <div className="grid gap-3">
-                    {pendingSubmissions.map(sub => (
-                        <Card key={sub.id} className="bg-slate-900 border-slate-800">
-                            <CardContent className="p-4 flex items-center justify-between">
-                                <div className="flex-1 min-w-0 mr-4">
-                                    <p className="text-sm font-bold text-white truncate">{sub.studentName}</p>
-                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1 truncate">{sub.assignmentTitle}</p>
+                    {coursePerformance.slice(0, 3).map((course, idx) => (
+                        <div key={idx} className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+                            <div className="flex items-center gap-3 min-w-0">
+                                <div className="h-8 w-8 rounded-lg bg-slate-800 flex items-center justify-center shrink-0 font-black text-xs text-primary">
+                                    #{idx + 1}
                                 </div>
-                                <Button size="sm" asChild className="h-9 px-4 rounded-xl">
-                                    <Link href="/instructor/devoirs">Noter</Link>
-                                </Button>
-                            </CardContent>
-                        </Card>
+                                <span className="text-xs font-bold text-slate-300 truncate">{course.title}</span>
+                            </div>
+                            <span className="text-sm font-black text-white shrink-0 ml-4">
+                                {course.revenue.toLocaleString('fr-FR')} <span className="text-[9px] text-slate-600">XOF</span>
+                            </span>
+                        </div>
                     ))}
+                    {coursePerformance.length === 0 && (
+                        <p className="text-center py-4 text-[10px] text-slate-600 uppercase font-bold">Aucune donnée disponible</p>
+                    )}
                 </div>
-            ) : (
-                <div className="p-8 text-center bg-slate-900/30 rounded-2xl border border-dashed border-slate-800">
-                    <ClipboardCheck className="h-8 w-8 mx-auto text-slate-700 mb-2" />
-                    <p className="text-sm text-slate-500">Tous les devoirs sont notés. Beau travail !</p>
-                </div>
-            )}
-        </section>
+            </section>
 
-        {/* --- RACCOURCIS RAPIDES --- */}
-        <section className="grid gap-3">
-            <Button variant="outline" asChild className="h-14 justify-between bg-slate-900 border-slate-800 rounded-2xl group">
-                <span className="flex items-center gap-3">
-                    <BookOpen className="h-5 w-5 text-primary" />
-                    Mes Formations
-                </span>
-                <ArrowRight className="h-4 w-4 text-slate-600 group-hover:translate-x-1 transition-transform" />
-            </Button>
-            <Button variant="outline" asChild className="h-14 justify-between bg-slate-900 border-slate-800 rounded-2xl group">
-                <span className="flex items-center gap-3">
-                    <MessageSquare className="h-5 w-5 text-blue-400" />
-                    Questions Étudiants
-                </span>
-                <ArrowRight className="h-4 w-4 text-slate-600 group-hover:translate-x-1 transition-transform" />
-            </Button>
-        </section>
-      </div>
+            {/* --- NAVIGATION RAPIDE --- */}
+            <section className="px-4 grid grid-cols-1 gap-3">
+                <Button variant="outline" asChild className="h-16 justify-between bg-slate-900 border-slate-800 rounded-[1.5rem] group active:scale-95 transition-all">
+                    <span className="flex items-center gap-4">
+                        <div className="p-2 bg-primary/10 rounded-lg group-hover:bg-primary transition-colors">
+                            <BookOpen className="h-5 w-5 text-primary group-hover:text-white" />
+                        </div>
+                        <span className="font-bold text-slate-200">Gérer mes formations</span>
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-slate-700" />
+                </Button>
+
+                <Button variant="outline" asChild className="h-16 justify-between bg-slate-900 border-slate-800 rounded-[1.5rem] group active:scale-95 transition-all">
+                    <span className="flex items-center gap-4">
+                        <div className="p-2 bg-blue-500/10 rounded-lg group-hover:bg-blue-500 transition-colors">
+                            <Users className="h-5 w-5 text-blue-400 group-hover:text-white" />
+                        </div>
+                        <span className="font-bold text-slate-200">Annuaire des étudiants</span>
+                    </span>
+                    <ChevronRight className="h-5 w-5 text-slate-700" />
+                </Button>
+            </section>
+
+        </div>
     );
 }
