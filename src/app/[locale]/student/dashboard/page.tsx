@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -11,12 +10,15 @@ import { useRole } from '@/context/RoleContext';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
 import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
+import { NewCoursesExplore } from '@/components/dashboards/NewCoursesExplore';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BookOpen, Trophy, TrendingUp, Sparkles, Zap } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Sparkles, Zap, Search } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
 import type { CourseProgress, Enrollment } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
 
 export default function StudentDashboardAndroid() {
   const { currentUser, isUserLoading } = useRole();
@@ -95,6 +97,11 @@ export default function StudentDashboardAndroid() {
         <ContinueLearning />
       </div>
 
+      {/* --- NOUVELLES FORMATIONS --- */}
+      <div className="px-4">
+        <NewCoursesExplore />
+      </div>
+
       {/* --- RECOMMANDATIONS IA --- */}
       <div className="px-4">
         <RecommendedCourses />
@@ -104,6 +111,14 @@ export default function StudentDashboardAndroid() {
       <div className="px-4">
         <RecentActivity />
       </div>
+
+      {/* --- BOUTON DE RECHERCHE FLOTTANT --- */}
+      <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90">
+        <Link href="/search">
+          <Search className="h-6 w-6 text-white" />
+          <span className="sr-only">Explorer les cours</span>
+        </Link>
+      </Button>
     </div>
   );
 }

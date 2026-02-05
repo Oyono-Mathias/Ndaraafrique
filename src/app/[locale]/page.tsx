@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
@@ -56,9 +56,11 @@ const LandingNav = () => {
                     <span className="text-xl font-bold tracking-tighter text-white">Ndara Afrique</span>
                 </Link>
                 <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" className="text-white sm:hidden">
-                        <Search className="h-5 w-5" />
-                    </Button>
+                    <Link href="/search">
+                        <Button variant="ghost" size="icon" className="text-white">
+                            <Search className="h-5 w-5" />
+                        </Button>
+                    </Link>
                     <Link href={user ? dashboardUrl : "/login"}>
                         <Button variant="outline" className="hidden sm:flex nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9 px-6 rounded-full text-xs font-bold uppercase tracking-widest">
                             {user ? "Mon Espace" : "Se connecter"}
@@ -100,21 +102,21 @@ const EnrollmentCounter = () => {
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
         return (
-            <div className="w-full">
+            <section className="py-8">
                 <Skeleton className="h-8 w-1/3 mb-6 bg-slate-800" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
                     <Skeleton className="h-80 rounded-xl bg-slate-800 hidden sm:block"></Skeleton>
                     <Skeleton className="h-80 rounded-xl bg-slate-800 hidden lg:block"></Skeleton>
                 </div>
-            </div>
+            </section>
         );
     }
     if (!courses || courses.length === 0) {
         return null;
     }
     return (
-        <section>
+        <section className="py-8">
             <h2 className="text-2xl md:text-3xl font-bold mb-6 text-foreground">{title}</h2>
              <Carousel opts={{ align: "start", loop: false }} className="w-full">
                 <CarouselContent className="-ml-4">
@@ -332,14 +334,11 @@ export default function LandingPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const db = getFirestore();
 
-  const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-
   useEffect(() => {
     const q = query(
       collection(db, "courses"),
       where("status", "==", "Published"),
-      orderBy("createdAt", "desc"),
-      limit(12)
+      orderBy("createdAt", "desc")
     );
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -366,10 +365,11 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
   
-  const popularCourses = courses.filter(c => c.isPopular).slice(0, 8);
-  const freeCourses = courses.filter(c => c.price === 0).slice(0, 8);
-  const recentCourses = courses.slice(0,8);
-
+  const recentCourses = courses.slice(0, 12);
+  const categories = useMemo(() => {
+      const cats = [...new Set(courses.map(c => c.category))];
+      return cats.filter(Boolean);
+  }, [courses]);
 
   return (
     <div className="bg-background text-foreground min-h-screen font-sans">
@@ -401,25 +401,26 @@ export default function LandingPage() {
           <DynamicCarousel />
 
           <CourseCarousel
-            title="Les nouveautés à ne pas rater"
+            title="Les nouveautés du moment"
             courses={recentCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
           />
+
+          {/* --- COURS PAR CATÉGORIE --- */}
+          {categories.map(cat => (
+              <CourseCarousel
+                key={cat}
+                title={cat}
+                courses={courses.filter(c => c.category === cat).slice(0, 8)}
+                instructorsMap={instructorsMap}
+                isLoading={loading}
+              />
+          ))}
+
           <InteractiveSteps />
           <PaymentMethodsSection />
-          <CourseCarousel
-            title="Populaires ce mois-ci"
-            courses={popularCourses}
-            instructorsMap={instructorsMap}
-            isLoading={loading}
-          />
-          <CourseCarousel
-            title="Découvrir gratuitement"
-            courses={freeCourses}
-            instructorsMap={instructorsMap}
-            isLoading={loading}
-          />
+          
           <TrustSection />
           <FinalCTA />
         </main>
