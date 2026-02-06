@@ -28,8 +28,10 @@ export function StudentBottomNav() {
   const db = getFirestore();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ✅ Nettoyage de la locale pour la détection active
-  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
+  // ✅ Suppression robuste du préfixe de langue pour la détection du bouton actif
+  const cleanPath = useMemo(() => {
+    return pathname.replace(/^\/(en|fr)/, '') || '/';
+  }, [pathname]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -44,27 +46,29 @@ export function StudentBottomNav() {
   }, [user?.uid, db]);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800 flex items-stretch justify-around z-50 safe-area-pb">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#111827] border-t border-white/5 flex items-stretch justify-around z-50 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
       {navItems.map((item) => {
+        // Un bouton est actif s'il correspond exactement ou s'il est le parent de la route actuelle
         const isActive = cleanPath === item.href || (item.href !== '/student/dashboard' && cleanPath.startsWith(item.href));
+        
         return (
           <Link 
             key={item.href} 
             href={item.href}
-            className="flex flex-col items-center justify-center flex-1 gap-1 relative"
+            className="flex flex-col items-center justify-center flex-1 gap-1 relative transition-all active:scale-90"
           >
             <item.icon className={cn(
-              "h-6 w-6 transition-colors",
-              isActive ? "text-primary" : "text-slate-400"
+              "h-6 w-6 transition-colors duration-200",
+              isActive ? "text-primary" : "text-slate-500"
             )} />
             <span className={cn(
-              "text-[10px] font-bold transition-colors",
-              isActive ? "text-primary" : "text-slate-500"
+              "text-[10px] font-bold transition-colors duration-200 uppercase tracking-tighter",
+              isActive ? "text-primary" : "text-slate-600"
             )}>
               {item.label}
             </span>
             {item.showBadge && unreadCount > 0 && (
-              <span className="absolute top-2 right-1/4 h-2 w-2 bg-red-500 rounded-full ring-2 ring-slate-900 animate-pulse" />
+              <span className="absolute top-2.5 right-[30%] h-2 w-2 bg-red-500 rounded-full ring-2 ring-[#111827] animate-pulse" />
             )}
           </Link>
         );

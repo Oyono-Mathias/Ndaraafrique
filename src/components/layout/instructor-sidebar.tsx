@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRole } from "@/context/RoleContext";
+import { UserNav } from "@/components/layout/user-nav";
 
 interface SidebarProps {
   siteName?: string;
@@ -64,7 +65,6 @@ export function InstructorSidebar({
   logoUrl = "/logo.png", 
   onLinkClick 
 }: SidebarProps) {
-  const pathname = usePathname();
   const { currentUser, switchRole, availableRoles } = useRole();
   const isAdmin = availableRoles.includes('admin');
 
