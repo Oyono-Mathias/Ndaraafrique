@@ -7,13 +7,18 @@ export default createMiddleware({
   // Used when no locale matches
   defaultLocale: 'fr',
  
-  // The locale prefix is optional for the default locale
-  localePrefix: 'as-needed'
+  // Toujours ajouter le préfixe de langue pour éviter les ambiguïtés de routes
+  localePrefix: 'always'
 });
  
 export const config = {
-  // Match all pathnames except for
-  // - … if they start with `/api`, `/_next` or `/_vercel`
-  // - … the ones containing a dot (e.g. `favicon.ico`)
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)']
+  // Matcher standard pour next-intl
+  matcher: [
+    // Redirige la racine
+    '/', 
+    // Matcher toutes les routes localisées
+    '/(fr|en)/:path*',
+    // Matcher tout ce qui n'est pas une ressource statique ou API
+    '/((?!api|_next|_vercel|.*\\..*).*)'
+  ]
 };

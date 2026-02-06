@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -95,9 +94,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
+            const fetchedName = settingsData.general?.siteName || '';
             setSiteSettings({
-                // ✅ Forçage de Ndara Afrique si le champ est vide ou erroné en base
-                siteName: settingsData.general?.siteName || 'Ndara Afrique',
+                siteName: (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName,
                 logoUrl: settingsData.general?.logoUrl || '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
@@ -110,18 +109,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const { isAuthPage, isPublicPage, showNavigation } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
-    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline'];
+    // Pages accessibles sans connexion
+    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline', '/investir'];
     
-    const isAuth = authPaths.some(p => pathname.endsWith(p));
-    let isPublic = staticPublicPaths.some(p => pathname.endsWith(p)) || isAuth;
+    // Nettoyage précis du préfixe de langue pour la détection (ex: /fr/about -> /about)
+    const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+    
+    const isAuth = authPaths.some(p => cleanPath === p);
+    let isPublic = staticPublicPaths.includes(cleanPath) || isAuth;
 
+    // Routes dynamiques publiques
     if (!isPublic) {
-        if (pathname.startsWith('/verify/')) isPublic = true;
+        if (cleanPath.startsWith('/verify/')) isPublic = true;
     }
 
     const globalNavPaths = [
       '/student/dashboard',
-      '/search',
       '/student/courses',
       '/student/notifications',
       '/student/profile',
@@ -130,6 +133,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/student/results',
       '/student/mes-certificats',
       '/student/annuaire',
+      '/student/messages',
       '/student/paiements',
       '/student/liste-de-souhaits',
       '/instructor/dashboard',
@@ -140,8 +144,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/instructor/settings'
     ];
 
-    const isMessageList = pathname.includes('/messages') && !searchParams.get('chatId');
-    const isGlobalPage = globalNavPaths.some(p => pathname === p) || isMessageList;
+    const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
+    const isGlobalPage = globalNavPaths.includes(cleanPath) || isMessageList;
     
     return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage };
   }, [pathname, searchParams]);
@@ -156,10 +160,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const isAdminArea = pathname.startsWith('/admin');
-    const isInstructorArea = pathname.startsWith('/instructor');
+    // Gestion intelligente des redirections basées sur le rôle actif
+    const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+    const isAdminArea = cleanPath.startsWith('/admin');
+    const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    if (role === 'admin' && !isAdminArea) {
+    if (role === 'admin' && !isAdminArea && !isPublicPage) {
       router.push('/admin');
     } else if (role === 'instructor' && isAdminArea) {
       router.push('/instructor/dashboard');
@@ -185,8 +191,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
   
-  const isAdminArea = pathname.startsWith('/admin');
-  const isRootPath = pathname === '/';
+  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+  const isAdminArea = cleanPath.startsWith('/admin');
+  const isRootPath = cleanPath === '/';
   
   return (
     <>

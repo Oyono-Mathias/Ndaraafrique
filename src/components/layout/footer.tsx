@@ -15,7 +15,9 @@ export function Footer() {
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
 
-  const siteName = settings?.general?.siteName || 'Ndara Afrique';
+  // ✅ Correction Branding Forcée
+  const fetchedName = settings?.general?.siteName || '';
+  const siteName = (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName;
   const logoUrl = settings?.general?.logoUrl || '/logo.png';
 
   return (

@@ -1,5 +1,9 @@
-
 'use client';
+
+/**
+ * @fileOverview Landing Page Ndara Afrique.
+ * Sécurisation du branding pour éviter le flash de l'ancien nom.
+ */
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer, doc } from 'firebase/firestore';
@@ -14,7 +18,6 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
 import Autoplay from 'embla-carousel-autoplay';
@@ -160,7 +163,7 @@ const InteractiveSteps = () => {
             icon: Award,
             title: "Certification & Carrière",
             description: "Obtenez des certificats reconnus pour valider vos compétences et accédez à de nouvelles opportunités professionnelles.",
-            image: "https://images.unsplash.com/photo-1571260899-6d6f5a3a4a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHjaHxfHxzdWNjZXNzfGVufDB8fHx8MTcwODAyMzk4NHww&ixlib=rb-4.0.3&q=80&w=1080"
+            image: "https://images.unsplash.com/photo-1571260899-6d6f5a3a4a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdWNjZXNzfGVufDB8fHx8MTcwODAyMzk4NHww&ixlib=rb-4.0.3&q=80&w=1080"
         }
     ];
 
@@ -367,8 +370,9 @@ export default function LandingPage() {
       return cats.filter(Boolean);
   }, [courses]);
 
-  // ✅ Forçage de Ndara Afrique si absent
-  const siteName = settings?.general?.siteName || 'Ndara Afrique';
+  // ✅ Correction de Branding : On force Ndara Afrique si le nom en base est Forma ou vide
+  const fetchedName = settings?.general?.siteName || '';
+  const siteName = (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName;
   const logoUrl = settings?.general?.logoUrl || '/logo.png';
 
   return (

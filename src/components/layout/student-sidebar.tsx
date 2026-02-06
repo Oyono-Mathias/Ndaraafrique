@@ -96,6 +96,7 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/icon.sv
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
   
   const isProfileComplete = currentUser?.isProfileComplete || false;
+  
   const profileProgress = useMemo(() => {
       let progress = 0;
       if (currentUser?.username) progress += 50;
