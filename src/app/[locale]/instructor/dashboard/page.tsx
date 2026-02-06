@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Formateur Android-First Vintage.
+ * @fileOverview Dashboard Formateur Ndara Afrique (Android-First Vintage).
  * Interface de pilotage avec suivi des revenus, inscriptions et devoirs.
  */
 

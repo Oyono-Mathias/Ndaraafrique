@@ -32,7 +32,7 @@ interface SidebarProps {
 
 export function InstructorSidebar({ 
   siteName = "Ndara Afrique", 
-  logoUrl = "/logo.png", 
+  logoUrl = "/icon.svg", 
   onLinkClick 
 }: SidebarProps) {
   const pathname = usePathname();
@@ -75,7 +75,6 @@ export function InstructorSidebar({
   return (
     <div className="flex flex-col h-full bg-[#050a14] text-white border-r border-slate-800/50">
       
-      {/* HEADER SIDEBAR */}
       <div className="p-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
             <div className="h-10 w-10 relative bg-primary/20 border border-primary/30 rounded-xl flex items-center justify-center overflow-hidden">
@@ -88,7 +87,6 @@ export function InstructorSidebar({
         </Button>
       </div>
 
-      {/* BOUTON ACTION PRINCIPALE */}
       <div className="px-4 mb-6">
         <Button asChild className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] tracking-[0.15em] h-14 rounded-2xl shadow-2xl shadow-primary/30 active:scale-95 transition-all">
           <Link href="/instructor/courses/create" onClick={onLinkClick}>
@@ -98,7 +96,6 @@ export function InstructorSidebar({
         </Button>
       </div>
 
-      {/* MENU ITEMS */}
       <div className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pb-10">
         {groups.map((group, gIdx) => (
           <div key={gIdx} className="space-y-1">
@@ -130,7 +127,6 @@ export function InstructorSidebar({
         ))}
       </div>
 
-      {/* BASCULE DE MODE */}
       <div className="p-4 border-t border-slate-800/50">
           <Button 
             variant="outline" 

@@ -13,7 +13,6 @@ import {
   Users,
   User,
   Heart,
-  Shield,
   Search,
   Play,
   Briefcase,
@@ -85,7 +84,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 };
 
 
-export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
+export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/icon.svg", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const { switchRole, availableRoles, user, currentUser } = useRole();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
@@ -95,7 +94,6 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
   
-  // ✅ Correction build : Calcul du profileProgress AVANT le return
   const isProfileComplete = currentUser?.isProfileComplete || false;
   const profileProgress = useMemo(() => {
       let progress = 0;
