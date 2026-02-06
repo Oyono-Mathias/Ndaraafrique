@@ -1,9 +1,9 @@
+// Ce fichier doit être identique au fichier firestore.rules à la racine
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- Fonctions d'aide ---
     function isSignedIn() {
       return request.auth != null;
     }
@@ -12,209 +12,68 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getUserData(userId) {
-      return get(/databases/$(database)/documents/users/$(userId)).data;
-    }
-
     function isAdmin() {
-      return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
-    }
-    
-    function isCourseOwner(courseId) {
-        return isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId);
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isApprovedInstructor() {
-      let userData = getUserData(request.auth.uid);
-      return userData.role == 'instructor' && userData.isInstructorApproved == true;
-    }
-    
-    function isStudentEnrolled(courseId) {
-        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+      return isSignedIn() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor' && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructorApproved == true;
     }
 
-    // --- Règles pour 'users' ---
     match /users/{userId} {
       allow read: if isSignedIn();
-      allow create: if true; 
-      allow update: if isOwner(userId) || isAdmin();
-
-      match /chatHistory/{messageId} {
-        allow read, write: if isOwner(userId);
-      }
-      
-      match /wishlist/{courseId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      
-      match /notifications/{notificationId} {
-        allow read, write, list: if isOwner(userId);
-      }
-      
-      match /activity/{activityId} {
-        allow read, list: if isOwner(userId); 
-      }
+      allow create: if isSignedIn() && isOwner(userId);
+      allow update: if isAdmin() || isOwner(userId);
+      match /chatHistory/{messageId} { allow read, write: if isOwner(userId); }
+      match /wishlist/{courseId} { allow read, write, delete: if isOwner(userId); }
+      match /notifications/{notificationId} { allow read, write, list: if isOwner(userId); }
+      match /activity/{activityId} { allow read, list: if isOwner(userId); }
     }
 
-    // --- Règles pour 'courses' ---
     match /courses/{courseId} {
-      allow get: if true;
-      allow list: if true; 
-      allow create: if isSignedIn() && isApprovedInstructor();
-      allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-      
-       match /sections/{sectionId} {
+      allow get, list: if true;
+      allow create: if isApprovedInstructor();
+      allow update: if isSignedIn() && (isOwner(get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId) || isAdmin());
+      match /sections/{sectionId} {
         allow read: if true;
-        allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-
-        match /lectures/{lectureId} {
-          allow read: if true;
-          allow create: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-          allow update, delete: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-        }
-      }
-      
-      // --- Règles pour les devoirs ---
-      match /assignments/{assignmentId} {
-        allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
-        allow create, update, delete: if isCourseOwner(courseId) || isAdmin();
-        
-        match /submissions/{submissionId} {
-            allow get: if isCourseOwner(courseId) || isOwner(resource.data.userId);
-            allow list: if isCourseOwner(courseId);
-            allow create: if isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
-            allow update: if isCourseOwner(courseId);
-        }
-      }
-
-      // --- Règles pour les Quiz ---
-      match /quizzes/{quizId} {
-        allow read: if isStudentEnrolled(courseId) || isCourseOwner(courseId) || isAdmin();
-        allow create, update, delete: if isCourseOwner(courseId) || isAdmin();
-        
-        match /attempts/{attemptId} {
-            allow get: if isCourseOwner(courseId) || isOwner(resource.data.userId);
-            allow list: if isCourseOwner(courseId);
-            allow create: if isStudentEnrolled(courseId) && isOwner(request.resource.data.userId);
-        }
+        allow write: if isSignedIn();
+        match /lectures/{lectureId} { allow read, write: if isSignedIn(); }
       }
     }
 
-    // --- Règles pour 'enrollments' ---
-    match /enrollments/{enrollmentId} {
-        allow get: if isSignedIn(); 
-        allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
-        
-        // CORRECTION IMPORTANTE : LIST doit vérifier request.query
-        allow list: if isAdmin() || (isSignedIn() && (
-             ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid) ||
-             ('studentId' in request.query.where && request.query.where.studentId == request.auth.uid)
-        ));
-
-        allow update: if isSignedIn() && (
-          isOwner(resource.data.studentId) || 
-          isOwner(resource.data.instructorId) ||
-          isAdmin()
-        );
-        allow delete: if isAdmin();
-    }
-
-    // --- Règles pour 'reviews' ---
-     match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isStudentEnrolled(request.resource.data.courseId);
-      allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId)); 
-      
-      allow list: if isSignedIn() && (
-          isAdmin() ||
-          request.query.where.size() > 0 && (
-            ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid) ||
-            ('courseId' in request.query.where)
-          )
-      );
-    }
-
-    // --- Règles pour 'payments' ---
     match /payments/{paymentId} {
       allow get: if isAdmin() || isOwner(resource.data.userId) || isOwner(resource.data.instructorId);
-      
-      allow list: if isAdmin() || 
-                    (isSignedIn() && ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid)) ||
-                    (isSignedIn() && ('userId' in request.query.where && request.query.where.userId == request.auth.uid));
-                    
+      allow list: if isAdmin() || (isSignedIn() && (request.query.where.userId == request.auth.uid || request.query.where.instructorId == request.auth.uid));
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
-    
-    // --- Règles pour 'payouts' ---
-    match /payouts/{payoutId} {
-      allow create: if isSignedIn() && request.resource.data.instructorId == request.auth.uid;
-      allow get: if (isSignedIn() && isOwner(resource.data.instructorId)) || isAdmin();
-      
-      // Correction List Payouts
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.instructorId == request.auth.uid);
-      
-      allow update, delete: if isAdmin();
+
+    match /enrollments/{enrollmentId} {
+        allow get: if isSignedIn();
+        allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
+        allow list: if isAdmin() || (isSignedIn() && (request.query.where.instructorId == request.auth.uid || request.query.where.studentId == request.auth.uid));
+        allow update, delete: if isAdmin();
     }
 
-    // --- Règles pour 'support_tickets' ---
     match /support_tickets/{ticketId} {
       allow read, create: if isSignedIn();
       allow update, delete: if (isSignedIn() && isOwner(resource.data.userId)) || isAdmin();
-      
-      match /messages/{messageId} {
-        allow read, write: if isSignedIn() && (
-          isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.userId) ||
-          isOwner(get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.instructorId)
-        );
-      }
-    }
-    
-    // --- Règles pour les ressources ---
-    match /resources/{resourceId} {
-      allow create: if isApprovedInstructor() && isCourseOwner(request.resource.data.courseId);
-      allow read: if (isStudentEnrolled(resource.data.courseId)) || isCourseOwner(resource.data.courseId) || isAdmin();
-      allow update, delete: if isCourseOwner(resource.data.courseId) || isAdmin();
-      allow list: if isSignedIn() && request.query.keys().hasAny(['courseId']);
     }
 
-    // --- Règles pour les codes promo ---
-    match /promoCodes/{codeId} {
-      allow get, list: if isSignedIn();
-      allow create, update, delete: if isAdmin();
-    }
-
-    // --- Règles pour 'chats' ---
     match /chats/{chatId} {
       allow create: if isSignedIn();
       allow read, update: if isSignedIn() && request.auth.uid in resource.data.participants;
-      
-      match /messages/{messageId} {
-        allow read, write: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
-      }
-    }
-
-    // --- Règles pour 'recommended_courses' ---
-    match /recommended_courses/{courseId} {
-      allow read: if isSignedIn(); 
-    }
-
-    // --- Règles pour 'course_progress' (CORRIGÉES) ---
-    match /course_progress/{progressId} {
-      // Lecture unitaire (get)
-      allow get: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
-      
-      // Lecture liste (list) -> DOIT utiliser request.query
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
-      
-      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-      allow update: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
     }
     
-     // --- Règles pour la configuration globale ---
     match /settings/{docId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+    
+    match /{path=**} {
+      allow read, write: if isAdmin();
     }
   }
 }

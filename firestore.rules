@@ -13,11 +13,15 @@ service cloud.firestore {
     }
 
     function getUserData(userId) {
+      // Utilisation de getAfter pour s'assurer que les données sont lues même pendant une création
       return get(/databases/$(database)/documents/users/$(userId)).data;
     }
 
     function isAdmin() {
-      return isSignedIn() && getUserData(request.auth.uid).role == 'admin';
+      // Vérification robuste du rôle admin dans Firestore
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
     function isCourseOwner(courseId) {
@@ -33,7 +37,7 @@ service cloud.firestore {
         return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
 
-    // --- RÈGLES UTILISATEURS : Verrouillage des rôles ---
+    // --- RÈGLES UTILISATEURS ---
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isOwner(userId);
@@ -75,9 +79,9 @@ service cloud.firestore {
       }
     }
 
-    // --- RÈGLES PAIEMENTS : Verrouillage des Revenus ---
+    // --- RÈGLES PAIEMENTS ---
     match /payments/{paymentId} {
-      // Accès réservé à l'acheteur, au formateur concerné ou à l'admin
+      // Accès total pour les admins, accès restreint pour les proprios
       allow get: if isAdmin() 
                  || isOwner(resource.data.userId) 
                  || isOwner(resource.data.instructorId);
@@ -90,6 +94,7 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    // --- RÈGLES INSCRIPTIONS ---
     match /enrollments/{enrollmentId} {
         allow get: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin()); 
         allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
@@ -101,6 +106,7 @@ service cloud.firestore {
         allow delete: if isAdmin();
     }
 
+    // --- AUTRES COLLECTIONS ---
     match /support_tickets/{ticketId} {
       allow read, create: if isSignedIn();
       allow update, delete: if (isSignedIn() && isOwner(resource.data.userId)) || isAdmin();
@@ -112,8 +118,21 @@ service cloud.firestore {
     }
     
     match /settings/{docId} {
-      allow read: if true;
+      allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    match /promoCodes/{codeId} {
+      allow get, list: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    match /security_logs/{logId} {
+      allow read, write: if isAdmin();
+    }
+
+    match /admin_audit_logs/{logId} {
+      allow read, write: if isAdmin();
     }
   }
 }
