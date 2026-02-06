@@ -38,7 +38,6 @@ export async function updateUserProfileAction({
     }
 
     // 2. Filtrage des champs sensibles (Whitelisting)
-    // On empêche toute modification accidentelle ou malveillante du rôle via cette action
     const allowedFields = ['fullName', 'username', 'bio', 'phoneNumber', 'profilePictureURL', 'preferredLanguage', 'socialLinks', 'careerGoals', 'instructorNotificationPreferences', 'pedagogicalPreferences'];
     
     const filteredData: any = {};
@@ -48,7 +47,7 @@ export async function updateUserProfileAction({
         }
     }
 
-    // 3. Nettoyage simple des chaînes (Prévention XSS basique)
+    // 3. Nettoyage simple des chaînes
     if (filteredData.fullName) filteredData.fullName = filteredData.fullName.trim().substring(0, 100);
     if (filteredData.bio) filteredData.bio = filteredData.bio.trim().substring(0, 1000);
 
@@ -65,6 +64,64 @@ export async function updateUserProfileAction({
     } catch (error: any) {
         console.error("Error updating profile:", error);
         return { success: false, error: "Erreur lors de la mise à jour." };
+    }
+}
+
+/**
+ * Offre l'accès à un cours (Admin Grant)
+ */
+export async function grantCourseAccess({
+    studentId,
+    courseId,
+    adminId,
+    reason,
+    expirationInDays
+}: {
+    studentId: string;
+    courseId: string;
+    adminId: string;
+    reason: string;
+    expirationInDays?: number;
+}) {
+    if (!adminDb) return { success: false, error: "Service indisponible" };
+
+    try {
+        const batch = adminDb.batch();
+        const enrollmentId = `${studentId}_${courseId}`;
+        const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
+        
+        const courseDoc = await adminDb.collection('courses').doc(courseId).get();
+        if (!courseDoc.exists) return { success: false, error: "Cours introuvable" };
+        const courseData = courseDoc.data();
+
+        batch.set(enrollmentRef, {
+            studentId,
+            courseId,
+            instructorId: courseData?.instructorId || '',
+            enrollmentDate: FieldValue.serverTimestamp(),
+            lastAccessedAt: FieldValue.serverTimestamp(),
+            progress: 0,
+            status: 'active',
+            enrollmentType: 'admin_grant',
+            grantedBy: adminId,
+            grantReason: reason,
+            expiresAt: expirationInDays ? Timestamp.fromMillis(Date.now() + expirationInDays * 24 * 60 * 60 * 1000) : null
+        }, { merge: true });
+
+        const auditRef = adminDb.collection('admin_audit_logs').doc();
+        batch.set(auditRef, {
+            adminId,
+            eventType: 'course.grant',
+            target: { id: enrollmentId, type: 'enrollment' },
+            details: `Accès offert à ${studentId} pour le cours ${courseId}. Raison: ${reason}`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error granting course access:", error);
+        return { success: false, error: error.message };
     }
 }
 

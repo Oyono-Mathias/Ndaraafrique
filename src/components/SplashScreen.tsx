@@ -44,7 +44,8 @@ export function SplashScreen() {
           alt="Ndara Afrique Logo"
           width={150}
           height={150}
-          className="animate-[logoPulse_2.5s_ease-in-out_infinite]"
+          className="animate-pulse"
+          style={{ animationDuration: '2s' }}
           priority
         />
          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[logoSheen_2.5s_ease-in-out_infinite] mix-blend-soft-light"></div>
