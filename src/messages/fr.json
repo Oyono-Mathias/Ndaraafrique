@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Se connecter",
@@ -15,7 +16,8 @@
   "Nav": {
     "account": "Mon Compte",
     "courses": "Mes Formations",
-    "dashboard": "Tableau de bord"
+    "dashboard": "Tableau de bord",
+    "invest": "Investir sur Ndara"
   },
   "Landing": {
     "hero_title": "Ndara Afrique : L'excellence par le savoir",

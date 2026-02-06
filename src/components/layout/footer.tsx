@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -48,10 +49,12 @@ export function Footer() {
             <ul className="space-y-4 text-sm font-medium">
               <li><Link href="/search" className="text-muted-foreground hover:text-primary transition-colors">Explorer les cours</Link></li>
               <li><Link href="/abonnements" className="text-muted-foreground hover:text-primary transition-colors">Nos Tarifs</Link></li>
+              <li><Link href="/investir" className="text-primary font-bold hover:underline transition-colors">Investir sur Ndara</Link></li>
               <li><Link href="/about" className="text-muted-foreground hover:text-primary transition-colors">À propos</Link></li>
             </ul>
           </div>
 
+          {/* Legal */}
           <div className="space-y-6">
             <h4 className="font-serif text-xl text-foreground">Légal</h4>
             <ul className="space-y-4 text-sm font-medium">
