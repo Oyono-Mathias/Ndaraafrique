@@ -42,9 +42,18 @@ function initializeAdmin() {
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas configuré. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY.");
+    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas encore configuré. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY.");
   }
-  return admin.firestore();
+  const db = admin.firestore();
+  
+  // ✅ Crucial : Empêche Firestore de planter si une valeur est undefined
+  try {
+    db.settings({ ignoreUndefinedProperties: true });
+  } catch (e) {
+    // Les paramètres ne peuvent être définis qu'une fois, on ignore si déjà fait
+  }
+  
+  return db;
 }
 
 /**
@@ -53,7 +62,7 @@ export function getAdminDb() {
 export function getAdminAuth() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas configuré.");
+    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas encore configuré.");
   }
   return admin.auth();
 }

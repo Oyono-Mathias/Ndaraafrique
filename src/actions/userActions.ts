@@ -6,7 +6,6 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur sécurisées pour la gestion des utilisateurs.
- * Utilise getAdminDb() pour une résilience maximale contre les erreurs de config.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -56,6 +55,7 @@ export async function updateUserProfileAction({
 
         // 3. Nettoyage
         if (filteredData.fullName) filteredData.fullName = filteredData.fullName.trim().substring(0, 100);
+        if (filteredData.username) filteredData.username = filteredData.username.trim().toLowerCase();
         if (filteredData.bio) filteredData.bio = filteredData.bio.trim().substring(0, 1000);
 
         const userRef = db.collection('users').doc(userId);
@@ -68,12 +68,20 @@ export async function updateUserProfileAction({
         await userRef.update(filteredData);
         return { success: true };
     } catch (error: any) {
-        console.error("Error updating profile Action:", error.message);
+        console.error("Error updating profile Action:", error);
+        
+        // ✅ Renvoi de l'erreur réelle pour aider au débogage
+        let errorMessage = error.message || "Erreur inconnue";
+        
+        if (errorMessage.includes('ADMIN_SDK_CONFIG_ERROR')) {
+            errorMessage = "Le serveur n'est pas encore configuré (Clé FIREBASE_SERVICE_ACCOUNT_KEY manquante).";
+        } else if (errorMessage.includes('NOT_FOUND')) {
+            errorMessage = "Utilisateur introuvable dans la base de données.";
+        }
+
         return { 
             success: false, 
-            error: error.message.includes('ADMIN_SDK_CONFIG_ERROR') 
-                ? "Le serveur n'est pas encore configuré (Clé manquante)." 
-                : "Erreur lors de la mise à jour du profil." 
+            error: errorMessage 
         };
     }
 }
