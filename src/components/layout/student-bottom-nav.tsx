@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -11,7 +10,7 @@ import {
   Bell
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 
@@ -24,10 +23,13 @@ const navItems = [
 ];
 
 export function StudentBottomNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const { user } = useRole();
   const db = getFirestore();
   const [unreadCount, setUnreadCount] = useState(0);
+
+  // ✅ Nettoyage de la locale pour la détection active
+  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -44,7 +46,7 @@ export function StudentBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800 flex items-stretch justify-around z-50 safe-area-pb">
       {navItems.map((item) => {
-        const isActive = pathname === item.href || (item.href !== '/student/dashboard' && pathname?.startsWith(item.href));
+        const isActive = cleanPath === item.href || (item.href !== '/student/dashboard' && cleanPath.startsWith(item.href));
         return (
           <Link 
             key={item.href} 

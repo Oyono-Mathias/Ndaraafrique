@@ -10,6 +10,7 @@ import {
   User
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMemo } from 'react';
 
 const navItems = [
   { href: '/instructor/dashboard', icon: LayoutDashboard, label: 'Accueil' },
@@ -20,12 +21,13 @@ const navItems = [
 ];
 
 export function InstructorBottomNav() {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
+  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-slate-900 border-t border-slate-800 flex items-stretch justify-around z-50 safe-area-pb">
       {navItems.map((item) => {
-        const isActive = pathname === item.href || (item.href !== '/instructor/dashboard' && pathname?.startsWith(item.href));
+        const isActive = cleanPath === item.href || (item.href !== '/instructor/dashboard' && cleanPath.startsWith(item.href));
         return (
           <Link 
             key={item.href} 

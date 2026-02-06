@@ -10,7 +10,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
@@ -27,11 +27,11 @@ interface NavItemProps {
 }
 
 const NavItem = ({ href, icon: Icon, label }: NavItemProps) => {
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
+  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
   
-  // ✅ Logique de détection active robuste
-  const isDashboardActive = pathname === href;
-  const isOtherActive = href !== '/admin' && pathname.startsWith(href);
+  const isDashboardActive = cleanPath === href;
+  const isOtherActive = href !== '/admin' && cleanPath.startsWith(href);
   const isActive = isDashboardActive || isOtherActive;
 
   return (

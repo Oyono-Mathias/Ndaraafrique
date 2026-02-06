@@ -12,8 +12,9 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
 
-  // ✅ LOGIQUE PROFESSIONNELLE : La navigation ne s'affiche QUE sur les pages de navigation globale.
-  // Elle est masquée sur toutes les autres pages (Immersives).
+  // ✅ Correction : On nettoie le chemin du préfixe de langue pour la comparaison
+  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
+
   const showNavigation = useMemo(() => {
     const globalNavPaths = [
       '/student/dashboard',
@@ -26,18 +27,16 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
       '/student/results',
       '/student/mes-certificats',
       '/student/annuaire',
+      '/student/messages',
       '/student/paiements',
       '/student/liste-de-souhaits'
     ];
 
-    // Cas particulier : La messagerie affiche la nav sur la LISTE, mais la cache dans un CHAT ACTIF
-    const isMessageList = pathname.includes('/student/messages') && !searchParams.get('chatId');
-    
-    // Vérification si le chemin actuel est dans la liste autorisée
-    const isGlobalPage = globalNavPaths.some(p => pathname === p);
+    const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
+    const isGlobalPage = globalNavPaths.some(p => cleanPath === p);
 
     return isGlobalPage || isMessageList;
-  }, [pathname, searchParams]);
+  }, [cleanPath, searchParams]);
 
   if (isUserLoading) {
     return (
