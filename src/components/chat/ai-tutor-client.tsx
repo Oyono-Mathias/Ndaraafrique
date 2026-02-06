@@ -67,7 +67,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     sender: "ai", 
     text: "Bara ala ! Je suis MATHIAS, votre tuteur personnel. Je connais parfaitement nos formations et je suis là pour répondre à vos questions. Comment puis-je vous aider ?", 
     timestamp: new Date(),
-    error: false
+    error: false // ✅ Correction Build : Propriété explicite pour le type
   }), []);
 
   useEffect(() => {

@@ -22,7 +22,7 @@ import {
   Trophy,
   CreditCard,
   ArrowLeftRight,
-  Shield,
+  Shield, // ✅ Correction Build : Import manquant
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -97,6 +97,7 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/icon.sv
   
   const isProfileComplete = currentUser?.isProfileComplete || false;
   
+  // ✅ Correction Build : Définition de la variable avant le rendu
   const profileProgress = useMemo(() => {
       let progress = 0;
       if (currentUser?.username) progress += 50;

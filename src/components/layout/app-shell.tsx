@@ -95,6 +95,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             const fetchedName = settingsData.general?.siteName || '';
+            // ✅ Sécurité Branding
             setSiteSettings({
                 siteName: (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName,
                 logoUrl: settingsData.general?.logoUrl || '/logo.png',
@@ -109,16 +110,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const { isAuthPage, isPublicPage, showNavigation } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
-    // Pages accessibles sans connexion
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline', '/investir'];
     
-    // Nettoyage précis du préfixe de langue pour la détection (ex: /fr/about -> /about)
+    // ✅ Détection robuste ignorant le préfixe de langue
     const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
     
     const isAuth = authPaths.some(p => cleanPath === p);
     let isPublic = staticPublicPaths.includes(cleanPath) || isAuth;
 
-    // Routes dynamiques publiques
     if (!isPublic) {
         if (cleanPath.startsWith('/verify/')) isPublic = true;
     }
@@ -160,7 +159,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Gestion intelligente des redirections basées sur le rôle actif
     const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');

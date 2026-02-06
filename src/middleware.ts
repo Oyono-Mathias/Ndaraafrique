@@ -1,24 +1,22 @@
 import createMiddleware from 'next-intl/middleware';
  
 export default createMiddleware({
-  // A list of all locales that are supported
+  // Liste des locales supportées
   locales: ['en', 'fr'],
  
-  // Used when no locale matches
+  // Locale par défaut
   defaultLocale: 'fr',
  
-  // Toujours ajouter le préfixe de langue pour éviter les ambiguïtés de routes
+  // ✅ Correction 404 : Force le préfixe de langue pour que '/' redirige vers '/fr'
+  // Cela garantit que les pages dans [locale] sont toujours trouvées.
   localePrefix: 'always'
 });
  
 export const config = {
-  // Matcher standard pour next-intl
+  // Matcher amélioré pour inclure toutes les routes sauf fichiers statiques et API
   matcher: [
-    // Redirige la racine
     '/', 
-    // Matcher toutes les routes localisées
     '/(fr|en)/:path*',
-    // Matcher tout ce qui n'est pas une ressource statique ou API
     '/((?!api|_next|_vercel|.*\\..*).*)'
   ]
 };
