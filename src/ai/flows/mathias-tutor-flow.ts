@@ -133,7 +133,7 @@ const mathiasTutorFlow = ai.defineFlow(
     try {
         if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
             console.error("MATHIAS Error: No API Key configured.");
-            return { response: "Désolé, je ne suis pas encore configuré pour vous répondre. Contactez l'administrateur." };
+            return { response: "Bara ala ! Je rencontre une petite difficulté de configuration. Si ma sagesse vous manque, n'hésitez pas à ouvrir un ticket au support client ou à consulter notre FAQ. Je serai de retour très bientôt !" };
         }
 
         const {output} = await mathiasTutorPrompt(input);
@@ -143,7 +143,7 @@ const mathiasTutorFlow = ai.defineFlow(
         return output;
     } catch (error: any) {
         console.error("Mathias Flow Execution Error:", error);
-        return { response: "Désolé, je rencontre une petite difficulté technique pour vous répondre à l'instant. Pouvez-vous reformuler ou réessayer dans quelques secondes ?" };
+        return { response: "Oups ! J'ai eu un petit vertige technique en cherchant votre réponse. Vous pouvez réessayer dans quelques secondes. Si le problème persiste, notre équipe de support est là pour prendre le relais !" };
     }
   }
 );

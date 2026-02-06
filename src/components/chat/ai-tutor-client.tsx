@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic, Phone, Video } from "lucide-react";
+import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic, Phone, Video, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
@@ -32,12 +32,14 @@ import {
 } from "firebase/firestore";
 import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Link from 'next/link';
 
 interface AiTutorMessage {
   id: string;
   sender: 'user' | 'ai';
   text: string;
   timestamp: any;
+  error?: boolean;
 }
 
 interface AiTutorClientProps {
@@ -58,6 +60,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
   const [hasMore, setHasMore] = useState(true);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const initialGreeting = useMemo(() => ({ 
     id: 'initial-greeting', 
@@ -137,6 +140,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     const userText = input;
     setInput("");
     setIsAiResponding(true);
+    setHasError(false);
 
     try {
       const result = await mathiasTutor({ query: userText, courseContext: initialContext || undefined });
@@ -150,6 +154,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
       await batch.commit();
     } catch (error) {
       console.error("Tutor error:", error);
+      setHasError(true);
     } finally {
       setIsAiResponding(false);
     }
@@ -240,6 +245,24 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                 <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
                 <span className="italic opacity-70">réfléchit...</span>
               </div>
+            </div>
+          )}
+
+          {hasError && (
+            <div className="flex flex-col items-center gap-4 py-6 animate-in fade-in zoom-in duration-500">
+                <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-xl border border-red-500/20 max-w-[80%] text-center">
+                    <p className="text-sm">Oups ! Mathias a du mal à se connecter à sa source de savoir. Tu peux réessayer ou contacter notre équipe.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleSendMessage()} className="bg-transparent border-slate-700 text-slate-300 rounded-full h-9 px-4">
+                        <RefreshCw className="h-3 w-3 mr-2" /> Réessayer
+                    </Button>
+                    <Button variant="secondary" size="sm" asChild className="rounded-full h-9 px-4 bg-primary text-primary-foreground font-bold">
+                        <Link href="/student/support">
+                            <HelpCircle className="h-3 w-3 mr-2" /> Support
+                        </Link>
+                    </Button>
+                </div>
             </div>
           )}
         </div>
