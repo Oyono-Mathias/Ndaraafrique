@@ -18,7 +18,8 @@ import {
   Star,
   UserCircle,
   X,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Shield
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -36,7 +37,8 @@ export function InstructorSidebar({
   onLinkClick 
 }: SidebarProps) {
   const pathname = usePathname();
-  const { currentUser, switchRole } = useRole();
+  const { currentUser, switchRole, availableRoles } = useRole();
+  const isAdmin = availableRoles.includes('admin');
 
   const groups = [
     {
@@ -127,7 +129,7 @@ export function InstructorSidebar({
         ))}
       </div>
 
-      <div className="p-4 border-t border-slate-800/50">
+      <div className="p-4 border-t border-slate-800/50 space-y-2">
           <Button 
             variant="outline" 
             className="w-full justify-center bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-300 gap-2 font-bold"
@@ -136,6 +138,12 @@ export function InstructorSidebar({
               <ArrowLeftRight className="h-4 w-4 text-primary" />
               Mode Étudiant
           </Button>
+          {isAdmin && (
+              <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => switchRole('admin')}>
+                  <Shield className="h-4 w-4" />
+                  Panneau Admin
+              </Button>
+          )}
       </div>
     </div>
   );
