@@ -1,19 +1,27 @@
+
 'use client';
 
 import { StudentBottomNav } from '@/components/layout/student-bottom-nav';
 import { useRole } from '@/context/RoleContext';
 import { Loader2 } from 'lucide-react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useMemo } from 'react';
+import { useMemo, Suspense } from 'react';
 import { cn } from '@/lib/utils';
 
-export default function StudentLayoutAndroid({ children }: { children: React.ReactNode }) {
+/**
+ * @fileOverview Layout principal pour l'espace étudiant.
+ * Isole la logique dépendante des SearchParams pour éviter les erreurs de chargement (ChunkLoadError).
+ */
+
+function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   const { isUserLoading } = useRole();
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
 
-  // ✅ Correction : On nettoie le chemin du préfixe de langue pour la comparaison
-  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
+  // ✅ Correction robuste : On nettoie le chemin du préfixe de langue pour la comparaison
+  const cleanPath = useMemo(() => {
+    return pathname.replace(/^\/(en|fr)/, '') || '/';
+  }, [pathname]);
 
   const showNavigation = useMemo(() => {
     const globalNavPaths = [
@@ -32,6 +40,7 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
       '/student/liste-de-souhaits'
     ];
 
+    // Sur mobile, on ne montre la barre que si on n'est pas dans un chat précis
     const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
     const isGlobalPage = globalNavPaths.some(p => cleanPath === p);
 
@@ -55,5 +64,19 @@ export default function StudentLayoutAndroid({ children }: { children: React.Rea
       </main>
       {showNavigation && <StudentBottomNav />}
     </div>
+  );
+}
+
+export default function StudentLayoutAndroid({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={
+      <div className="flex h-screen w-full items-center justify-center bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    }>
+      <StudentLayoutContent>
+        {children}
+      </StudentLayoutContent>
+    </Suspense>
   );
 }
