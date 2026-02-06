@@ -25,7 +25,8 @@ if (!admin.apps.length) {
     }
 
     // Configuration globale indispensable pour éviter les plantages sur les champs vides
-    admin.firestore().settings({ 
+    const db = admin.firestore();
+    db.settings({ 
       ignoreUndefinedProperties: true,
       timestampsInSnapshots: true 
     });
@@ -41,9 +42,9 @@ export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
 
 // Helper pour récupérer la DB de manière sécurisée dans les actions
 export function getAdminDb() {
-    if (!admin.apps.length || !adminDb) {
-        // En mode développement, si les variables sont absentes, on renvoie une erreur claire
-        throw new Error("Le service de base de données Admin n'est pas initialisé. Vérifiez FIREBASE_SERVICE_ACCOUNT_KEY.");
+    const db = admin.apps.length > 0 ? admin.firestore() : null;
+    if (!db) {
+        throw new Error("La base de données Firebase Admin n'est pas initialisée. Vérifiez vos variables d'environnement (FIREBASE_SERVICE_ACCOUNT_KEY).");
     }
-    return adminDb;
+    return db;
 }

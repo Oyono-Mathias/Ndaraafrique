@@ -32,10 +32,6 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   
   try {
     const db = getAdminDb();
-    if (!db) {
-        return { success: false, message: "La base de données n'est pas connectée. Vérifiez vos clés Firebase Admin." };
-    }
-
     const newCourseRef = db.collection('courses').doc();
     
     // Nettoyage rigoureux des données pour Firestore
