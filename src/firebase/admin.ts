@@ -1,28 +1,30 @@
 
 import * as admin from 'firebase-admin';
 
-// Ensure the app is initialized only once
+/**
+ * @fileOverview Initialisation sécurisée du SDK Firebase Admin.
+ * Gère les cas où la clé de compte de service est fournie sous forme de chaîne JSON.
+ */
+
 if (!admin.apps.length) {
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
-    // Check if the service account key is a valid, non-empty string before parsing.
-    if (typeof serviceAccountKey === 'string' && serviceAccountKey.trim().length > 0) {
-      const serviceAccount = JSON.parse(serviceAccountKey);
+    if (serviceAccountKey) {
+      // Nettoyage de la clé (parfois des caractères d'échappement s'insèrent dans les env vars)
+      const serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
+      
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
+      console.log("Firebase Admin SDK initialisé avec succès.");
     } else {
-      // This is not a fatal error during build, but server actions will fail.
-      console.warn("Firebase Admin SDK not initialized: FIREBASE_SERVICE_ACCOUNT_KEY environment variable is not set or is empty. This is expected during client build, but server-side features will not work.");
+      console.warn("Firebase Admin SDK non initialisé : FIREBASE_SERVICE_ACCOUNT_KEY est manquante.");
     }
   } catch (error: any) {
-    // Catching parsing errors specifically.
-    console.error('Firebase Admin Initialization Error: Could not parse service account key. ' + error.message);
+    console.error('Erreur lors de l\'initialisation du SDK Admin Firebase :', error.message);
   }
 }
 
-// Defensive export: only export services if initialization was successful.
-// If not, export null and let runtime checks in server actions handle it.
 export const adminDb = admin.apps.length > 0 ? admin.firestore() : null;
 export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
