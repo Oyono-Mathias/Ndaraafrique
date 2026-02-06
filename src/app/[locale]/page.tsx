@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique.
- * Affiche le contenu dynamique, les catégories de cours et le bouton Tableau de Bord.
+ * Affiche le contenu dynamique, les catégories de cours et le bouton Tableau de Bord unique.
+ * Design épuré : pas de bouton flottant au défilement.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -421,20 +422,6 @@ export default function LandingPage() {
         </main>
       </div>
       <Footer />
-
-      {/* --- MOBILE FIXED CTA --- */}
-      <div className="sm:hidden fixed bottom-4 left-4 right-4 z-50">
-          <Button size="lg" className="w-full h-14 text-sm font-black uppercase tracking-widest nd-cta-primary shadow-2xl" asChild>
-              <Link href={user ? dashboardUrl : "/login?tab=register"}>
-                  {user ? (
-                      <>
-                        <LayoutDashboard className="w-5 h-5 mr-2" />
-                        Tableau de bord
-                      </>
-                  ) : "Démarrer"}
-              </Link>
-          </Button>
-      </div>
     </div>
   );
 }

@@ -14,9 +14,8 @@ export function Footer() {
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
 
-  // ✅ Correction Branding Forcée
-  const fetchedName = settings?.general?.siteName || '';
-  const siteName = (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName;
+  // ✅ Branding Ndara Afrique
+  const siteName = "Ndara Afrique";
   const logoUrl = '/logo.png';
 
   return (
@@ -28,7 +27,7 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-3 group mb-6">
               <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-lg bg-primary/20 flex items-center justify-center border border-white/10">
                 <Image 
-                    src="/logo.png" 
+                    src={logoUrl} 
                     alt={`${siteName} Logo`} 
                     width={40} 
                     height={40} 
