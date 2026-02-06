@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -12,6 +11,7 @@ import { getFirestore, collection, query, orderBy, limit } from 'firebase/firest
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { History, ShieldAlert, ShieldCheck, UserCog, Database, CreditCard, Lock, Info } from 'lucide-react';
 import { format } from 'date-fns';

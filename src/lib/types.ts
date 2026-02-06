@@ -26,6 +26,38 @@ export interface FAQ {
   updatedAt?: Timestamp | FieldValue;
 }
 
+export interface CarouselSlide {
+  id: string;
+  imageUrl: string;
+  link?: string;
+  order: number;
+  createdAt?: Timestamp | FieldValue;
+}
+
+export interface AdminGrant {
+  id: string;
+  studentId: string;
+  courseId: string;
+  grantedBy: string;
+  reason: string;
+  createdAt: Timestamp | FieldValue;
+  expiresAt?: Timestamp | FieldValue;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountPercentage: number;
+  isActive: boolean;
+  createdAt: Timestamp | FieldValue;
+  expiresAt?: Timestamp | FieldValue;
+}
+
+export interface FCMToken {
+  tokens: string[];
+  createdAt: Timestamp | FieldValue;
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
