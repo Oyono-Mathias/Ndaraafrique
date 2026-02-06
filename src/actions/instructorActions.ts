@@ -32,11 +32,15 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   
   try {
     const db = getAdminDb();
+    if (!db) {
+        return { success: false, message: "La base de données n'est pas connectée. Vérifiez vos clés Firebase Admin." };
+    }
+
     const newCourseRef = db.collection('courses').doc();
     
     // Nettoyage rigoureux des données pour Firestore
     const data = validatedFields.data;
-    const finalImageUrl = data.imageUrl && data.imageUrl.startsWith('http') ? data.imageUrl : null;
+    const finalImageUrl = (data.imageUrl && data.imageUrl.startsWith('http')) ? data.imageUrl : null;
 
     const newCoursePayload = {
       title: data.title,
@@ -57,14 +61,14 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     
     await newCourseRef.set(newCoursePayload);
     
-    console.log(`Course Created: ${newCourseRef.id} by ${instructorId}`);
+    console.log(`Course Created Successfully: ${newCourseRef.id} by ${instructorId}`);
     
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
     console.error("CREATE_COURSE_CRITICAL_ERROR:", error);
     return { 
       success: false, 
-      message: `Erreur serveur lors de l'enregistrement. Détails : ${error.message}` 
+      message: `Erreur serveur lors de l'enregistrement : ${error.message}. Vérifiez que les services Firebase (Firestore & Storage) sont activés.` 
     };
   }
 }
@@ -86,7 +90,7 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
         const courseRef = db.collection('courses').doc(courseId);
         
         const data = validatedFields.data;
-        const finalImageUrl = data.imageUrl && data.imageUrl.startsWith('http') ? data.imageUrl : null;
+        const finalImageUrl = (data.imageUrl && data.imageUrl.startsWith('http')) ? data.imageUrl : null;
 
         await courseRef.update({
             title: data.title,

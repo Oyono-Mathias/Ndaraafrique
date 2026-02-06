@@ -18,7 +18,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, AlertCircle } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -28,7 +28,7 @@ const CourseFormSchema = z.object({
   description: z.string().min(20, { message: "La description doit faire au moins 20 caractères." }),
   price: z.coerce.number().min(0, { message: "Le prix ne peut être négatif." }),
   category: z.string().min(3, { message: "La catégorie est requise." }),
-  imageUrl: z.string().url({ message: "URL de l'image invalide." }).optional(),
+  imageUrl: z.string().url({ message: "URL de l'image invalide." }).optional().or(z.literal('')),
 });
 
 type CourseFormValues = z.infer<typeof CourseFormSchema>;
@@ -59,7 +59,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
       description: initialData?.description || '',
       price: initialData?.price || 0,
       category: initialData?.category || '',
-      imageUrl: initialData?.imageUrl || undefined,
+      imageUrl: initialData?.imageUrl || '',
     },
   });
 
@@ -78,6 +78,11 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
       },
       (error) => {
         console.error("Upload failed:", error);
+        toast({ 
+            variant: 'destructive', 
+            title: "Échec du téléversement", 
+            description: "Vérifiez que le Storage est bien activé dans votre console Firebase." 
+        });
         setUploadProgress(null);
       },
       () => {
@@ -85,6 +90,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
           form.setValue('imageUrl', downloadURL);
           setImagePreview(downloadURL);
           setUploadProgress(null);
+          toast({ title: "Image prête !" });
         });
       }
     );
@@ -111,8 +117,8 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   };
 
   const processSubmit = (data: CourseFormValues) => {
-    startTransition(() => {
-      onSubmit(data);
+    startTransition(async () => {
+      await onSubmit(data);
     });
   };
   
@@ -120,7 +126,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
 
   return (
     <Form {...form}>
-        <form onSubmit={form.handleSubmit(processSubmit)} className="space-y-8 max-w-4xl mx-auto">
+        <form onSubmit={form.handleSubmit(processSubmit)} className="space-y-8 max-w-4xl mx-auto p-4">
             {mode === 'create' && (
                 <header className="flex items-center gap-4">
                     <Button variant="outline" size="icon" asChild className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
@@ -188,8 +194,15 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                                     )}
                                 </div>
                             </FormControl>
-                            <Input type="file" accept="image/*" onChange={handleImageUpload} className="file:cursor-pointer" disabled={uploadProgress !== null}/>
-                            {uploadProgress !== null && <Progress value={uploadProgress} className="h-2 mt-2"/>}
+                            <div className="flex flex-col gap-2">
+                                <Input type="file" accept="image/*" onChange={handleImageUpload} className="file:cursor-pointer" disabled={uploadProgress !== null}/>
+                                {uploadProgress !== null && (
+                                    <div className="space-y-1">
+                                        <Progress value={uploadProgress} className="h-2"/>
+                                        <p className="text-[10px] text-center text-slate-500 uppercase font-bold">Envoi en cours : {Math.round(uploadProgress)}%</p>
+                                    </div>
+                                )}
+                            </div>
                             <FormMessage />
                        </FormItem>
                    )}/>
@@ -197,10 +210,10 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
             </Card>
 
             <CardFooter className="flex justify-end gap-3 p-0 pb-10">
-                <Button type="button" variant="outline" onClick={() => router.back()}>Annuler</Button>
-                <Button type="submit" disabled={isPending}>
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {mode === 'create' ? "Créer et continuer" : "Enregistrer les modifications"}
+                <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending}>Annuler</Button>
+                <Button type="submit" disabled={isPending || uploadProgress !== null}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Sparkles className="mr-2 h-4 w-4" />}
+                    {mode === 'create' ? "Créer la formation" : "Enregistrer les modifications"}
                 </Button>
             </CardFooter>
         </form>
