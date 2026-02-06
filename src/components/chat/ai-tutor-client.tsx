@@ -62,11 +62,12 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [hasError, setHasError] = useState(false);
 
-  const initialGreeting = useMemo(() => ({ 
+  const initialGreeting = useMemo((): AiTutorMessage => ({ 
     id: 'initial-greeting', 
-    sender: "ai" as const, 
+    sender: "ai", 
     text: "Bara ala ! Je suis MATHIAS, votre tuteur personnel. Je connais parfaitement nos formations et je suis là pour répondre à vos questions. Comment puis-je vous aider ?", 
-    timestamp: new Date() 
+    timestamp: new Date(),
+    error: false
   }), []);
 
   useEffect(() => {
