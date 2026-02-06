@@ -1,0 +1,36 @@
+[debug] [2026-02-06T19:15:04.605Z] ----------------------------------------------------------------------
+[debug] [2026-02-06T19:15:04.610Z] Command:       /nix/store/ws50yvm6vzlzf7jzz6n7xh4szddrack1-nodejs-20.19.1/bin/node /home/user/.global_modules/bin/firebase login
+[debug] [2026-02-06T19:15:04.611Z] CLI Version:   15.5.1
+[debug] [2026-02-06T19:15:04.611Z] Platform:      linux
+[debug] [2026-02-06T19:15:04.611Z] Node Version:  v20.19.1
+[debug] [2026-02-06T19:15:04.612Z] Time:          Fri Feb 06 2026 19:15:04 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-02-06T19:15:04.612Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-02-06T19:15:04.617Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-02-06T19:15:05.663Z] No OAuth tokens found
+[debug] [2026-02-06T19:15:05.663Z] No OAuth tokens found
+[error] Failed to fetch Firebase Project from current Studio Workspace: Unable to refresh auth: not yet authenticated.
+[info] i  The Firebase CLI’s MCP server feature can optionally make use of Gemini in Firebase. Learn more about Gemini in Firebase and how it uses your data: https://firebase.google.com/docs/gemini-in-firebase#how-gemini-in-firebase-uses-your-data 
+[debug] [2026-02-06T19:15:05.926Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-02-06T19:15:05.927Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[info] 
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you. 
+[info] 
+[info] i  To change your preferences at any time, run `firebase logout` and `firebase login` again. 
+[debug] [2026-02-06T19:20:02.117Z] >>> [apiv2][query] POST https://auth.firebase.tools/attest [none]
+[debug] [2026-02-06T19:20:02.122Z] >>> [apiv2][body] POST https://auth.firebase.tools/attest {"session_id":"e824ca1f-3bdb-4185-a3e4-d5f9177da9b5"}
+[debug] [2026-02-06T19:20:02.413Z] <<< [apiv2][status] POST https://auth.firebase.tools/attest 200
+[debug] [2026-02-06T19:20:02.413Z] <<< [apiv2][body] POST https://auth.firebase.tools/attest {"token":"to0k0c_OCygNn6F6Lc9lR1327Hawq3jCnycpDlSqQrU"}
+[info] 
+[info] To sign in to the Firebase CLI:
+[info] 
+[info] 1. Take note of your session ID:
+[info] 
+[info]    E824C
+[info] 
+[info] 2. Visit the URL below on any device and follow the instructions to get your code:
+[info] 
+[info]    https://auth.firebase.tools/login?code_challenge=CwVHQ5cmEs_AS0cv2HBImvIhmVnBVUzxp4jn7Om71Nk&session=e824ca1f-3bdb-4185-a3e4-d5f9177da9b5&attest=to0k0c_OCygNn6F6Lc9lR1327Hawq3jCnycpDlSqQrU
+[info] 
+[info] 3. Paste or enter the authorization code below once you have it:
+[info] 

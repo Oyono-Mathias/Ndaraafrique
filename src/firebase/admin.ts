@@ -1,4 +1,3 @@
-
 import * as admin from 'firebase-admin';
 
 /**
@@ -11,6 +10,7 @@ if (!admin.apps.length) {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (serviceAccountKey) {
+      // Nettoyage de la clé pour gérer les sauts de ligne potentiels
       const serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
       
       admin.initializeApp({
@@ -28,7 +28,6 @@ if (!admin.apps.length) {
     const db = admin.firestore();
     db.settings({ 
       ignoreUndefinedProperties: true,
-      timestampsInSnapshots: true 
     });
 
   } catch (error: any) {
@@ -40,11 +39,23 @@ if (!admin.apps.length) {
 export const adminDb = admin.apps.length > 0 ? admin.firestore() : null;
 export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
 
-// Helper pour récupérer la DB de manière sécurisée dans les actions
+/**
+ * Helper pour récupérer la DB de manière sécurisée dans les actions.
+ * Lance une erreur explicite si le SDK n'est pas configuré.
+ */
 export function getAdminDb() {
-    const db = admin.apps.length > 0 ? admin.firestore() : null;
-    if (!db) {
-        throw new Error("ADMIN_SDK_NOT_INITIALIZED: Vérifiez que la variable d'environnement FIREBASE_SERVICE_ACCOUNT_KEY est bien configurée dans votre projet (Vercel ou Firebase Hosting).");
+    if (admin.apps.length === 0) {
+        // Tentative de ré-initialisation de secours au cas où
+        try {
+            const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+            if (key) {
+                admin.initializeApp({ credential: admin.credential.cert(JSON.parse(key.replace(/\\n/g, '\n'))) });
+                const db = admin.firestore();
+                db.settings({ ignoreUndefinedProperties: true });
+                return db;
+            }
+        } catch (e) {}
+        throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le compte de service Firebase n'est pas configuré sur le serveur.");
     }
-    return db;
+    return admin.firestore();
 }
