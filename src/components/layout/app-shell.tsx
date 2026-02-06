@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -95,6 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             setSiteSettings({
+                // ✅ Forçage de Ndara Afrique si le champ est vide ou erroné en base
                 siteName: settingsData.general?.siteName || 'Ndara Afrique',
                 logoUrl: settingsData.general?.logoUrl || '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
@@ -117,7 +119,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (pathname.startsWith('/verify/')) isPublic = true;
     }
 
-    // ✅ LOGIQUE DE NAVIGATION GLOBALE EXHAUSTIVE
     const globalNavPaths = [
       '/student/dashboard',
       '/search',

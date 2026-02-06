@@ -50,7 +50,8 @@ export function OnboardingGuide() {
   useEffect(() => {
     setIsClient(true);
     if (typeof window !== 'undefined' && user) {
-      const hasOnboarded = localStorage.getItem('Ndara Afrique-onboarded');
+      // ✅ Correction de la clé localStorage pour Ndara Afrique
+      const hasOnboarded = localStorage.getItem('ndara-afrique-onboarded');
       if (!hasOnboarded) {
         setShowWelcome(true);
       }
@@ -74,7 +75,7 @@ export function OnboardingGuide() {
   const finishTour = () => {
     setTourStep(null);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('Ndara Afrique-onboarded', 'true');
+      localStorage.setItem('ndara-afrique-onboarded', 'true');
     }
   };
 

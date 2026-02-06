@@ -160,7 +160,7 @@ const InteractiveSteps = () => {
             icon: Award,
             title: "Certification & Carrière",
             description: "Obtenez des certificats reconnus pour valider vos compétences et accédez à de nouvelles opportunités professionnelles.",
-            image: "https://images.unsplash.com/photo-1571260899-6d6f5a3a4a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxzdWNjZXNzfGVufDB8fHx8MTcwODAyMzk4NHww&ixlib=rb-4.0.3&q=80&w=1080"
+            image: "https://images.unsplash.com/photo-1571260899-6d6f5a3a4a7e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHjaHxfHxzdWNjZXNzfGVufDB8fHx8MTcwODAyMzk4NHww&ixlib=rb-4.0.3&q=80&w=1080"
         }
     ];
 
@@ -367,6 +367,7 @@ export default function LandingPage() {
       return cats.filter(Boolean);
   }, [courses]);
 
+  // ✅ Forçage de Ndara Afrique si absent
   const siteName = settings?.general?.siteName || 'Ndara Afrique';
   const logoUrl = settings?.general?.logoUrl || '/logo.png';
 
@@ -381,10 +382,10 @@ export default function LandingPage() {
             La plateforme N°1 pour les compétences du futur en Afrique
           </Badge>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-            {settings?.general?.siteName ? `Bienvenue sur ${settings.general.siteName}` : 'Apprenez. Construisez. Prospérez.'}
+            {siteName ? `Bienvenue sur ${siteName}` : 'Apprenez. Construisez. Prospérez.'}
           </h1>
           <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            {settings?.general?.siteName ? `Des formations de pointe conçues par des experts africains pour les talents africains sur ${settings.general.siteName}.` : "Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès."}
+            {siteName ? `Des formations de pointe conçues par des experts africains pour les talents africains sur ${siteName}.` : "Des formations de pointe conçues par des experts africains, pour les talents africains. Transformez vos ambitions en succès."}
           </p>
           <div className="animate-fade-in-up hidden sm:block" style={{ animationDelay: '0.3s' }}>
               <Link href={user ? dashboardUrl : "/login?tab=register"}>
