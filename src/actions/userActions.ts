@@ -1,24 +1,26 @@
 'use server';
 
-import { adminAuth, adminDb } from '@/firebase/admin';
+import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur sécurisées pour la gestion des utilisateurs.
- * Inclut la mise à jour de profil avec filtrage des champs et protection contre l'élévation de privilèges.
+ * Utilise getAdminDb() pour une résilience maximale contre les erreurs de config.
  */
 
-// Helper pour vérifier si le requérant est admin
 async function isRequesterAdmin(uid: string): Promise<boolean> {
-    if (!adminDb) return false;
-    const userDoc = await adminDb.collection('users').doc(uid).get();
-    return userDoc.exists && userDoc.data()?.role === 'admin';
+    try {
+        const db = getAdminDb();
+        const userDoc = await db.collection('users').doc(uid).get();
+        return userDoc.exists && userDoc.data()?.role === 'admin';
+    } catch {
+        return false;
+    }
 }
 
 /**
  * Met à jour le profil d'un utilisateur de manière sécurisée.
- * Filtre strictement les champs autorisés.
  */
 export async function updateUserProfileAction({
     userId,
@@ -29,30 +31,34 @@ export async function updateUserProfileAction({
     data: Partial<NdaraUser>;
     requesterId: string;
 }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-
-    // 1. Autorisation : Seul le propriétaire ou un admin peut modifier
-    const isAdmin = await isRequesterAdmin(requesterId);
-    if (userId !== requesterId && !isAdmin) {
-        return { success: false, error: "Permission refusée." };
-    }
-
-    // 2. Filtrage des champs sensibles (Whitelisting)
-    const allowedFields = ['fullName', 'username', 'bio', 'phoneNumber', 'profilePictureURL', 'preferredLanguage', 'socialLinks', 'careerGoals', 'instructorNotificationPreferences', 'pedagogicalPreferences'];
-    
-    const filteredData: any = {};
-    for (const key of allowedFields) {
-        if ((data as any)[key] !== undefined) {
-            filteredData[key] = (data as any)[key];
-        }
-    }
-
-    // 3. Nettoyage simple des chaînes
-    if (filteredData.fullName) filteredData.fullName = filteredData.fullName.trim().substring(0, 100);
-    if (filteredData.bio) filteredData.bio = filteredData.bio.trim().substring(0, 1000);
-
     try {
-        const userRef = adminDb.collection('users').doc(userId);
+        const db = getAdminDb();
+
+        // 1. Autorisation : Seul le propriétaire ou un admin peut modifier
+        const isAdmin = await isRequesterAdmin(requesterId);
+        if (userId !== requesterId && !isAdmin) {
+            return { success: false, error: "Permission refusée." };
+        }
+
+        // 2. Filtrage des champs autorisés
+        const allowedFields = [
+            'fullName', 'username', 'bio', 'phoneNumber', 
+            'profilePictureURL', 'preferredLanguage', 'socialLinks', 
+            'careerGoals', 'instructorNotificationPreferences', 'pedagogicalPreferences'
+        ];
+        
+        const filteredData: any = {};
+        for (const key of allowedFields) {
+            if ((data as any)[key] !== undefined) {
+                filteredData[key] = (data as any)[key];
+            }
+        }
+
+        // 3. Nettoyage
+        if (filteredData.fullName) filteredData.fullName = filteredData.fullName.trim().substring(0, 100);
+        if (filteredData.bio) filteredData.bio = filteredData.bio.trim().substring(0, 1000);
+
+        const userRef = db.collection('users').doc(userId);
         
         // Calcul automatique de la complétion du profil
         const isComplete = !!(filteredData.username && filteredData.careerGoals?.interestDomain && filteredData.fullName);
@@ -62,8 +68,13 @@ export async function updateUserProfileAction({
         await userRef.update(filteredData);
         return { success: true };
     } catch (error: any) {
-        console.error("Error updating profile:", error);
-        return { success: false, error: "Erreur lors de la mise à jour." };
+        console.error("Error updating profile Action:", error.message);
+        return { 
+            success: false, 
+            error: error.message.includes('ADMIN_SDK_CONFIG_ERROR') 
+                ? "Le serveur n'est pas encore configuré (Clé manquante)." 
+                : "Erreur lors de la mise à jour du profil." 
+        };
     }
 }
 
@@ -83,14 +94,13 @@ export async function grantCourseAccess({
     reason: string;
     expirationInDays?: number;
 }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-
     try {
-        const batch = adminDb.batch();
+        const db = getAdminDb();
+        const batch = db.batch();
         const enrollmentId = `${studentId}_${courseId}`;
-        const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
+        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
         
-        const courseDoc = await adminDb.collection('courses').doc(courseId).get();
+        const courseDoc = await db.collection('courses').doc(courseId).get();
         if (!courseDoc.exists) return { success: false, error: "Cours introuvable" };
         const courseData = courseDoc.data();
 
@@ -108,7 +118,7 @@ export async function grantCourseAccess({
             expiresAt: expirationInDays ? Timestamp.fromMillis(Date.now() + expirationInDays * 24 * 60 * 60 * 1000) : null
         }, { merge: true });
 
-        const auditRef = adminDb.collection('admin_audit_logs').doc();
+        const auditRef = db.collection('admin_audit_logs').doc();
         batch.set(auditRef, {
             adminId,
             eventType: 'course.grant',
@@ -120,15 +130,17 @@ export async function grantCourseAccess({
         await batch.commit();
         return { success: true };
     } catch (error: any) {
-        console.error("Error granting course access:", error);
+        console.error("Error granting course access Action:", error);
         return { success: false, error: error.message };
     }
 }
 
 export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
-    if (!adminAuth || !adminDb) return { success: false, error: "Service indisponible." };
     try {
-        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+        
+        const decodedToken = await auth.verifyIdToken(idToken);
         const requesterUid = decodedToken.uid;
         const isAdmin = await isRequesterAdmin(requesterUid);
 
@@ -136,12 +148,12 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
            return { success: false, error: "Permission refusée." };
         }
     
-        const batch = adminDb.batch();
-        await adminAuth.deleteUser(userId);
-        batch.delete(adminDb.collection('users').doc(userId));
+        const batch = db.batch();
+        await auth.deleteUser(userId);
+        batch.delete(db.collection('users').doc(userId));
 
         if (requesterUid !== userId) {
-            batch.set(adminDb.collection('admin_audit_logs').doc(), {
+            batch.set(db.collection('admin_audit_logs').doc(), {
                 adminId: requesterUid,
                 eventType: 'user.delete',
                 target: { id: userId, type: 'user' },
@@ -158,14 +170,14 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
 }
 
 export async function updateUserStatus({ userId, status, adminId }: { userId: string, status: 'active' | 'suspended', adminId: string }): Promise<{ success: boolean, error?: string }> {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-    if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
-
     try {
-        const userRef = adminDb.collection('users').doc(userId);
+        const db = getAdminDb();
+        if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
+
+        const userRef = db.collection('users').doc(userId);
         await userRef.update({ status });
         
-        await adminDb.collection('admin_audit_logs').add({
+        await db.collection('admin_audit_logs').add({
             adminId,
             eventType: 'user.status.update',
             target: { id: userId, type: 'user' },
@@ -180,14 +192,14 @@ export async function updateUserStatus({ userId, status, adminId }: { userId: st
 }
 
 export async function updateUserRole({ userId, role, adminId }: { userId: string, role: UserRole, adminId: string }): Promise<{ success: boolean, error?: string }> {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-    if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
-
     try {
-        const userRef = adminDb.collection('users').doc(userId);
+        const db = getAdminDb();
+        if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
+
+        const userRef = db.collection('users').doc(userId);
         await userRef.update({ role });
 
-        await adminDb.collection('admin_audit_logs').add({
+        await db.collection('admin_audit_logs').add({
             adminId,
             eventType: 'user.role.update',
             target: { id: userId, type: 'user' },
@@ -202,17 +214,17 @@ export async function updateUserRole({ userId, role, adminId }: { userId: string
 }
 
 export async function approveInstructorApplication({ userId, decision, message, adminId }: { userId: string, decision: 'accepted' | 'rejected', message: string, adminId: string }): Promise<{ success: boolean, error?: string }> {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-    if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
-
     try {
-        const userRef = adminDb.collection('users').doc(userId);
+        const db = getAdminDb();
+        if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
+
+        const userRef = db.collection('users').doc(userId);
         await userRef.update({ 
             isInstructorApproved: decision === 'accepted',
             role: decision === 'accepted' ? 'instructor' : 'student'
         });
 
-        await adminDb.collection('admin_audit_logs').add({
+        await db.collection('admin_audit_logs').add({
             adminId,
             eventType: 'instructor.application',
             target: { id: userId, type: 'user' },

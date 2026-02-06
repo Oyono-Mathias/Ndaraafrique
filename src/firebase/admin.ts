@@ -2,61 +2,62 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation sécurisée et robuste du SDK Firebase Admin.
- * Utilise un identifiant de projet explicite pour éviter l'erreur "Unable to detect Project Id".
+ * @fileOverview Initialisation robuste et "Lazy" du SDK Firebase Admin.
+ * Empêche les plantages au build et fournit un accès sécurisé à Firestore.
  */
 
 const projectId = firebaseConfig.projectId;
 
-if (!admin.apps.length) {
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+function initializeAdmin() {
+  if (admin.apps.length > 0) return admin.app();
 
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+
+  try {
     if (serviceAccountKey) {
-      // Nettoyage de la clé pour gérer les sauts de ligne potentiels
-      let serviceAccount;
-      try {
-        serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
-      } catch (parseError) {
-        console.error("CRITICAL: Erreur de parsing JSON pour FIREBASE_SERVICE_ACCOUNT_KEY.");
-        throw parseError;
-      }
+      // Nettoyage de la clé pour gérer les sauts de ligne
+      const cleanedKey = serviceAccountKey.trim();
+      const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
       
-      admin.initializeApp({
+      return admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
-        projectId: projectId // On force le Project ID même avec la clé
-      });
-      
-      console.log("Firebase Admin SDK : Initialisé avec succès via la clé JSON.");
-    } else {
-      // Tentative d'initialisation par défaut avec Project ID explicite
-      admin.initializeApp({
         projectId: projectId
       });
-      console.log(`Firebase Admin SDK : Initialisé via Project ID (${projectId}).`);
+    } else {
+      // Fallback pour les environnements avec credentials par défaut (ex: Google Cloud)
+      return admin.initializeApp({
+        projectId: projectId
+      });
     }
-
-    // Configuration globale indispensable pour Firestore
-    const db = admin.firestore();
-    db.settings({ 
-      ignoreUndefinedProperties: true,
-    });
-
   } catch (error: any) {
-    console.error('CRITICAL: Erreur d\'initialisation du SDK Admin Firebase :', error.message);
+    console.error('CRITICAL: Firebase Admin Initialization Failed:', error.message);
+    return null;
   }
 }
 
-// Exportation des instances
-export const adminDb = admin.apps.length > 0 ? admin.firestore() : null;
-export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
-
 /**
- * Helper pour récupérer la DB de manière sécurisée dans les actions.
+ * Récupère l'instance Firestore Admin de manière sécurisée.
+ * @throws Error si le SDK n'est pas configuré.
  */
 export function getAdminDb() {
-    if (admin.apps.length === 0) {
-        throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le serveur n'est pas configuré. Vérifiez la clé de compte de service.");
-    }
-    return admin.firestore();
+  const app = initializeAdmin();
+  if (!app) {
+    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas configuré. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY.");
+  }
+  return admin.firestore();
 }
+
+/**
+ * Récupère l'instance Auth Admin de manière sécurisée.
+ */
+export function getAdminAuth() {
+  const app = initializeAdmin();
+  if (!app) {
+    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas configuré.");
+  }
+  return admin.auth();
+}
+
+// Exportation des instances pour compatibilité ascendante (avec vérification de sécurité)
+export const adminDb = admin.apps.length > 0 ? admin.firestore() : null;
+export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
