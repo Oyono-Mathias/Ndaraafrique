@@ -10,8 +10,14 @@ if (!admin.apps.length) {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
     if (serviceAccountKey) {
-      // Nettoyage de la clé pour gérer les sauts de ligne potentiels
-      const serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
+      // Nettoyage de la clé pour gérer les sauts de ligne potentiels et les guillemets mal formés
+      let serviceAccount;
+      try {
+        serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
+      } catch (parseError) {
+        console.error("CRITICAL: Erreur de parsing JSON pour FIREBASE_SERVICE_ACCOUNT_KEY. Vérifiez le format de la variable d'environnement.");
+        throw parseError;
+      }
       
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
@@ -49,13 +55,14 @@ export function getAdminDb() {
         try {
             const key = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
             if (key) {
-                admin.initializeApp({ credential: admin.credential.cert(JSON.parse(key.replace(/\\n/g, '\n'))) });
+                const serviceAccount = JSON.parse(key.replace(/\\n/g, '\n'));
+                admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
                 const db = admin.firestore();
                 db.settings({ ignoreUndefinedProperties: true });
                 return db;
             }
         } catch (e) {}
-        throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le compte de service Firebase n'est pas configuré sur le serveur.");
+        throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le compte de service Firebase n'est pas configuré. Veuillez ajouter la variable d'environnement FIREBASE_SERVICE_ACCOUNT_KEY.");
     }
     return admin.firestore();
 }

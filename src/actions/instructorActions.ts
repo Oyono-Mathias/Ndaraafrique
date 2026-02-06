@@ -2,7 +2,6 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Course } from '@/lib/types';
 import { z } from 'zod';
 
 /**
@@ -63,11 +62,11 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     console.error("CREATE_COURSE_CRITICAL_ERROR:", error);
     
     // Message d'erreur pédagogique pour l'utilisateur
-    let userMessage = `Erreur serveur : ${error.message}`;
+    let userMessage = `Erreur lors de l'enregistrement : ${error.message}`;
     if (error.message.includes('ADMIN_SDK_NOT_INITIALIZED')) {
-        userMessage = "Le service de base de données n'est pas encore configuré sur le serveur. Veuillez contacter l'administrateur pour vérifier les variables d'environnement.";
+        userMessage = "Le serveur n'est pas encore prêt. Assurez-vous d'avoir configuré la variable FIREBASE_SERVICE_ACCOUNT_KEY.";
     } else if (error.message.includes('permission-denied')) {
-        userMessage = "Permissions Firestore insuffisantes pour le SDK Admin. Vérifiez les règles de sécurité.";
+        userMessage = "Accès refusé à la base de données. Vérifiez les permissions de votre compte de service.";
     }
 
     return { 
@@ -108,6 +107,6 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
         return { success: true };
     } catch (error: any) {
         console.error("UPDATE_COURSE_ERROR:", error);
-        return { success: false, message: 'Impossible de mettre à jour le cours.' };
+        return { success: false, message: `Erreur lors de la mise à jour : ${error.message}` };
     }
 }
