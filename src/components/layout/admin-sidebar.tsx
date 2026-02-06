@@ -21,6 +21,7 @@ import {
   GalleryHorizontal,
   History,
   Shield,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -28,6 +29,7 @@ import { useMemo } from 'react';
 import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { UserNav } from "@/components/layout/user-nav";
+import { Button } from "@/components/ui/button";
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
   href: string, 
@@ -68,7 +70,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
 
 export function AdminSidebar({ siteName = "Ndara Admin", logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const db = getFirestore();
-  const { currentUser } = useRole();
+  const { currentUser, switchRole } = useRole();
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -89,7 +91,6 @@ export function AdminSidebar({ siteName = "Ndara Admin", logoUrl, onLinkClick }:
     { href: "/admin/roles", icon: Shield, label: "Rôles & Permissions" },
   ];
 
-  // Requêtes avec vérification de rôle pour éviter les erreurs Firestore
   const pendingInstructorsQuery = useMemo(() => 
     currentUser?.role === 'admin' ? query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)) : null,
     [db, currentUser]
@@ -141,8 +142,28 @@ export function AdminSidebar({ siteName = "Ndara Admin", logoUrl, onLinkClick }:
           />
         ))}
       </nav>
-       <footer className="p-4 mt-auto border-t border-slate-700">
+       <footer className="p-4 mt-auto border-t border-slate-700 space-y-2">
             <UserNav />
+            <div className="grid grid-cols-2 gap-2">
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-xs font-bold gap-1.5"
+                    onClick={() => switchRole('student')}
+                >
+                    <ArrowLeftRight className="h-3.5 w-3.5 text-primary" />
+                    Étudiant
+                </Button>
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-xs font-bold gap-1.5"
+                    onClick={() => switchRole('instructor')}
+                >
+                    <ArrowLeftRight className="h-3.5 w-3.5 text-primary" />
+                    Formateur
+                </Button>
+            </div>
        </footer>
     </div>
   );

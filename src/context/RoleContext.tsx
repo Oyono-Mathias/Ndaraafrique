@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -41,6 +41,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         const userDocRef = doc(db, 'users', auth.currentUser.uid);
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
+    localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
     router.push('/login');
   }, [db, router]);
@@ -84,7 +85,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     const userDocRef = doc(db, 'users', user.uid);
 
-    // LISTENER TEMPS RÉEL PUR : On lit les données, on n'écrit jamais ici pour éviter les boucles d'écrasement.
     const unsubscribe = onSnapshot(userDocRef, async (userDoc) => {
         if (userDoc.exists()) {
           const userData = userDoc.data() as NdaraUser;
@@ -101,18 +101,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
+          // Calcul des rôles disponibles
           const roles: UserRole[] = ['student'];
-          if (userData.role === 'instructor' || userData.role === 'admin') {
+          if (userData.role === 'instructor' || userData.isInstructorApproved || userData.role === 'admin') {
               roles.push('instructor');
           }
-           if (userData.role === 'admin') {
+          if (userData.role === 'admin') {
               roles.push('admin');
           }
 
-          // Logique de complétion alignée sur le formulaire (username, domaine, nom complet)
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && userData.fullName);
 
-          // Résolution de l'utilisateur avec fallbacks en mémoire (sans écriture Firestore)
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
@@ -122,22 +121,20 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               profilePictureURL: userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: isComplete,
-              careerGoals: {
-                  currentRole: userData.careerGoals?.currentRole || '',
-                  interestDomain: userData.careerGoals?.interestDomain || '',
-                  mainGoal: userData.careerGoals?.mainGoal || '',
-              }
           } as any;
           
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          const lastRole = localStorage.getItem('ndaraafrique-role') as UserRole;
-          const newRole = (lastRole && roles.includes(lastRole)) ? lastRole : (userData.role || 'student');
-          setRole(newRole);
+          // Persistance du rôle actif
+          const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
+          if (savedRole && roles.includes(savedRole)) {
+              setRole(savedRole);
+          } else {
+              setRole(userData.role || 'student');
+          }
 
         } else {
-            // Création initiale minimale si le document n'existe pas
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
@@ -169,11 +166,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
-       if (newRole === 'admin') router.push('/admin');
-       else if (newRole === 'instructor') router.push('/instructor/dashboard');
-       else router.push('/student/dashboard');
+      
+      // Redirection immédiate selon le rôle
+      if (newRole === 'admin') router.push('/admin');
+      else if (newRole === 'instructor') router.push('/instructor/dashboard');
+      else router.push('/student/dashboard');
+      
+      toast({
+          title: `Mode ${newRole === 'instructor' ? 'Formateur' : newRole === 'admin' ? 'Administrateur' : 'Étudiant'} activé`,
+      });
     }
-  }, [availableRoles, router]);
+  }, [availableRoles, router, toast]);
   
   const value = useMemo(() => ({
     role,

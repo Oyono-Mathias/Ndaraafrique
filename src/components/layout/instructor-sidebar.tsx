@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -13,13 +12,13 @@ import {
   PlusCircle,
   BadgeEuro,
   ClipboardCheck,
-  FileQuestion,
   Folder,
   Award,
   Megaphone,
   Star,
   UserCircle,
-  X
+  X,
+  ArrowLeftRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,7 +36,7 @@ export function InstructorSidebar({
   onLinkClick 
 }: SidebarProps) {
   const pathname = usePathname();
-  const { currentUser } = useRole();
+  const { currentUser, switchRole } = useRole();
 
   const groups = [
     {
@@ -129,6 +128,18 @@ export function InstructorSidebar({
             })}
           </div>
         ))}
+      </div>
+
+      {/* BASCULE DE MODE */}
+      <div className="p-4 border-t border-slate-800/50">
+          <Button 
+            variant="outline" 
+            className="w-full justify-center bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-300 gap-2 font-bold"
+            onClick={() => switchRole('student')}
+          >
+              <ArrowLeftRight className="h-4 w-4 text-primary" />
+              Mode Étudiant
+          </Button>
       </div>
     </div>
   );

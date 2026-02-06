@@ -23,6 +23,7 @@ import {
   LayoutDashboard,
   Trophy,
   CreditCard,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -173,21 +174,6 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       unsubProgress();
     };
   }, [user, db]);
-  
-  const handleSwitchToAdmin = () => {
-    switchRole('admin');
-  };
-
-  const handleSwitchToInstructor = () => {
-    switchRole('instructor');
-  };
-  
-  const profileProgress = useMemo(() => {
-      let progress = 0;
-      if (currentUser?.username) progress += 50;
-      if (currentUser?.careerGoals?.interestDomain) progress += 50;
-      return progress;
-  }, [currentUser]);
 
   return (
     <>
@@ -195,7 +181,7 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
       <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
         <header className="p-4 border-b border-white/10">
           <Link href="/student/dashboard" className="flex items-center gap-2" onClick={onLinkClick}>
-              <Image src={logoUrl || "/logo.png"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
+              <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
               <span className="font-bold text-lg text-white">Ndara Afrique</span>
           </Link>
         </header>
@@ -243,9 +229,9 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
         <footer className="p-4 border-t border-white/10 space-y-2">
            <UserNav />
           {isInstructor ? (
-              <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" onClick={handleSwitchToInstructor}>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Mode Instructeur
+              <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold" onClick={() => switchRole('instructor')}>
+                  <ArrowLeftRight className="h-4 w-4 text-primary" />
+                  Mode Formateur
               </Button>
           ) : showInstructorSignup && (
               <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" asChild onClick={onLinkClick}>
@@ -256,9 +242,9 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
               </Button>
           )}
           {isAdmin && (
-              <Button variant="secondary" className="w-full justify-center" onClick={handleSwitchToAdmin}>
-                  <Shield className="mr-2 h-4 w-4" />
-                  Mode Admin
+              <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => switchRole('admin')}>
+                  <Shield className="h-4 w-4" />
+                  Panneau Admin
               </Button>
           )}
         </footer>
