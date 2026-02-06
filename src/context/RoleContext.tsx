@@ -51,7 +51,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
       }
     });
     return () => unsubscribe();
@@ -112,17 +112,16 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // GESTION DE LA PERSISTANCE DU MODE : Priorité au choix local s'il est valide
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
-              setRole(userData.role || 'student');
-              localStorage.setItem('ndaraafrique-role', userData.role || 'student');
+              const defaultRole = userData.role || 'student';
+              setRole(defaultRole as UserRole);
+              localStorage.setItem('ndaraafrique-role', defaultRole);
           }
 
         } else {
-            // Création automatique si le document n'existe pas
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
@@ -143,7 +142,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             setRole('student');
             localStorage.setItem('ndaraafrique-role', 'student');
         }
-        // ✅ On ne libère le chargement qu'une fois le rôle résolu
         setLoading(false);
     }, (error) => {
         console.error("Error fetching user data:", error);
@@ -183,7 +181,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   }), [role, availableRoles, switchRole, secureSignOut, isUserLoading, loading, currentUser, user]);
 
   return (
-    <RoleContext.Provider value={value as any}>
+    <RoleContext.Provider value={value}>
       {children}
     </RoleContext.Provider>
   );
