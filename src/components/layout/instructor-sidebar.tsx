@@ -107,7 +107,7 @@ export function InstructorSidebar({
                 </p>
             )}
             {group.items.map((item) => {
-              const active = pathname === item.href || (item.href !== '/instructor/dashboard' && pathname.startsWith(item.href));
+              const active = pathname.includes(item.href);
               return (
                 <Link
                   key={item.href}

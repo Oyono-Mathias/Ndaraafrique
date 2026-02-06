@@ -95,7 +95,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
             const fetchedName = settingsData.general?.siteName || '';
-            // ✅ Sécurité Branding
             setSiteSettings({
                 siteName: (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName,
                 logoUrl: '/logo.png',
@@ -108,18 +107,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsubscribe();
   }, [db]);
 
-  const { isAuthPage, isPublicPage, showNavigation } = useMemo(() => {
+  const { isAuthPage, isPublicPage, showNavigation, cleanPath } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
     const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline', '/investir'];
     
-    // ✅ Détection robuste ignorant le préfixe de langue
-    const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+    const localeCleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
     
-    const isAuth = authPaths.some(p => cleanPath === p);
-    let isPublic = staticPublicPaths.includes(cleanPath) || isAuth;
+    const isAuth = authPaths.some(p => localeCleanPath === p);
+    let isPublic = staticPublicPaths.includes(localeCleanPath) || isAuth;
 
     if (!isPublic) {
-        if (cleanPath.startsWith('/verify/')) isPublic = true;
+        if (localeCleanPath.startsWith('/verify/')) isPublic = true;
     }
 
     const globalNavPaths = [
@@ -143,10 +141,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/instructor/settings'
     ];
 
-    const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
-    const isGlobalPage = globalNavPaths.includes(cleanPath) || isMessageList;
+    const isMessageList = localeCleanPath === '/student/messages' && !searchParams.get('chatId');
+    const isGlobalPage = globalNavPaths.includes(localeCleanPath) || isMessageList;
     
-    return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage };
+    return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage, cleanPath: localeCleanPath };
   }, [pathname, searchParams]);
 
   useEffect(() => {
@@ -159,19 +157,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+    // ✅ LOGIQUE DE REDIRECTION BASÉE SUR LE RÔLE ACTIF (switchRole)
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
+    const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
 
-    if (role === 'admin' && !isAdminArea && !isPublicPage) {
+    if (role === 'admin' && !isAdminArea && !isPublicPage && !isAuthPage) {
       router.push('/admin');
-    } else if (role === 'instructor' && isAdminArea) {
+    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isAuthPage && !isStudentArea) {
       router.push('/instructor/dashboard');
-    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublicPage) {
+    } else if (role === 'student' && (isAdminArea || isInstructorArea)) {
       router.push('/student/dashboard');
     }
 
-  }, [user, role, isUserLoading, pathname, router, isPublicPage, isAuthPage]);
+  }, [user, role, isUserLoading, cleanPath, router, isPublicPage, isAuthPage]);
 
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
@@ -189,7 +188,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
   
-  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
   const isAdminArea = cleanPath.startsWith('/admin');
   const isRootPath = cleanPath === '/';
   
