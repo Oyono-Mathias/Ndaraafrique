@@ -5,7 +5,7 @@
  * Gère l'historique et l'interactivité en temps réel avec horodatage Firestore précis.
  */
 
-import { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { mathiasTutor } from "@/ai/flows/mathias-tutor-flow";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -48,7 +48,7 @@ interface AiTutorClientProps {
 }
 
 export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientProps) {
-  const { user, isUserLoading } = useRole();
+  const { user } = useRole();
   const db = getFirestore();
   const router = useRouter();
   const [input, setInput] = useState("");
@@ -69,7 +69,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     timestamp: new Date() 
   }), []);
 
-  // Écoute temps réel des derniers messages (20 derniers)
+  // Écoute temps réel des derniers messages
   useEffect(() => {
     if (!user) return;
 
@@ -84,7 +84,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
         }
         setIsHistoryLoading(false);
         
-        // Scroll automatique
         setTimeout(() => {
             if (scrollAreaRef.current) {
                 const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -251,7 +250,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
           {hasError && (
             <div className="flex flex-col items-center gap-4 py-6 animate-in fade-in zoom-in duration-500">
                 <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-xl border border-red-500/20 max-w-[80%] text-center">
-                    <p className="text-sm">Oups ! Mathias a du mal à se connecter à sa source de savoir. Tu peux réessayer ou contacter notre équipe.</p>
+                    <p className="text-sm">Oups ! Mathias a du mal à se connecter à sa source de savoir. Tu peux réessayer ou contacter notre équipe humaine.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleSendMessage()} className="bg-transparent border-slate-700 text-slate-300 rounded-full h-9 px-4">

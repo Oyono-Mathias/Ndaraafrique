@@ -143,7 +143,7 @@ const mathiasTutorFlow = ai.defineFlow(
         return output;
     } catch (error: any) {
         console.error("Mathias Flow Execution Error:", error);
-        return { response: "Oups ! J'ai eu un petit vertige technique en cherchant votre réponse. Vous pouvez réessayer dans quelques secondes. Si le problème persiste, notre équipe de support est là pour prendre le relais !" };
+        return { response: "Bara ala ! J'ai eu un petit vertige technique en cherchant votre réponse. Vous pouvez réessayer dans quelques secondes. Si le problème persiste, n'hésitez pas à ouvrir un ticket au support, mon équipe humaine prendra le relais !" };
     }
   }
 );
