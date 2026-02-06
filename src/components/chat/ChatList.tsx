@@ -2,11 +2,10 @@
 
 /**
  * @fileOverview Liste des conversations Ndara Afrique (Android-First).
- * Synchronisation en temps réel avec Firestore.
+ * Synchronisation en temps réel avec Firestore et horodatage dynamique.
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { MessageSquare, Search, UserPlus, MoreVertical } from 'lucide-react';
@@ -27,14 +26,18 @@ interface EnrichedChat extends Chat {
 
 const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSelected: boolean, isUnread: boolean }) => {
     const router = useRouter();
-    const lastDate = (chat.updatedAt as any)?.toDate?.() || new Date();
+    
+    // Extraction sécurisée de la date Firestore
+    const lastDate = useMemo(() => {
+        if (!chat.updatedAt) return new Date();
+        return (chat.updatedAt as any).toDate ? (chat.updatedAt as any).toDate() : new Date(chat.updatedAt as any);
+    }, [chat.updatedAt]);
 
     const displayTime = useMemo(() => {
-        if (!lastDate) return '';
         if (isToday(lastDate)) {
             return format(lastDate, 'HH:mm', { locale: fr });
         }
-        return formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr });
+        return format(lastDate, 'dd/MM/yy', { locale: fr });
     }, [lastDate]);
 
     return (
@@ -93,7 +96,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     useEffect(() => {
         if (!user) return;
 
-        // Écouter la liste des chats en temps réel
         const chatsQuery = query(
             collection(db, 'chats'), 
             where('participants', 'array-contains', user.uid), 
@@ -110,7 +112,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                 return;
             }
 
-            // Charger les profils des autres participants
             const usersMap = new Map<string, NdaraUser>();
             const uniqueOtherIds = [...new Set(otherIds)];
 
@@ -191,9 +192,6 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
                         <MessageSquare className="h-20 w-20 mb-6 text-slate-500" />
                         <h2 className="text-xl font-black uppercase tracking-widest text-slate-400">Silence radio</h2>
                         <p className="mt-2 text-sm max-w-[200px]">Démarrez une conversation en consultant l'annuaire.</p>
-                        <Button asChild variant="outline" className="mt-8 border-slate-800 text-slate-400 rounded-xl px-8" onClick={() => router.push('/student/annuaire')}>
-                            <span>Voir l'annuaire</span>
-                        </Button>
                     </div>
                 )}
             </ScrollArea>

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Client de chat pour le Tuteur MATHIAS.
- * Gère l'historique et l'interactivité en temps réel.
+ * Gère l'historique et l'interactivité en temps réel avec horodatage Firestore précis.
  */
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -27,9 +27,10 @@ import {
     getDocs, 
     doc,
     writeBatch,
-    serverTimestamp
+    serverTimestamp,
+    onSnapshot
 } from "firebase/firestore";
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 interface AiTutorMessage {
@@ -65,53 +66,59 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     timestamp: new Date() 
   }), []);
 
-  const fetchMessages = useCallback(async (loadMore = false) => {
-    if (!user) {
-        setIsHistoryLoading(false);
-        return;
-    }
+  // Écoute temps réel des derniers messages (20 derniers)
+  useEffect(() => {
+    if (!user) return;
 
-    if (loadMore) setIsFetchingMore(true);
-    else setIsHistoryLoading(true);
+    const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
+    const q = query(chatCollectionRef, orderBy("timestamp", "desc"), limit(20));
+
+    const unsubscribe = onSnapshot(q, (snap) => {
+        const newMessages = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AiTutorMessage));
+        setMessages(newMessages);
+        if (snap.docs.length > 0) {
+            setLastVisible(snap.docs[snap.docs.length - 1]);
+        }
+        setIsHistoryLoading(false);
+        
+        // Scroll automatique
+        setTimeout(() => {
+            if (scrollAreaRef.current) {
+                const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+                if (viewport) viewport.scrollTop = viewport.scrollHeight;
+            }
+        }, 100);
+    });
+
+    return () => unsubscribe();
+  }, [user, db]);
+
+  const loadMoreMessages = async () => {
+    if (!user || !lastVisible || isFetchingMore) return;
+    setIsFetchingMore(true);
     
     try {
         const chatCollectionRef = collection(db, `users/${user.uid}/chatHistory`);
-        let q = query(chatCollectionRef, orderBy("timestamp", "desc"), limit(20));
+        const q = query(chatCollectionRef, orderBy("timestamp", "desc"), startAfter(lastVisible), limit(20));
+        const snap = await getDocs(q);
         
-        if (loadMore && lastVisible) {
-            q = query(chatCollectionRef, orderBy("timestamp", "desc"), startAfter(lastVisible), limit(20));
+        const moreMessages = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as AiTutorMessage));
+        setHasMore(moreMessages.length === 20);
+        if (snap.docs.length > 0) {
+            setLastVisible(snap.docs[snap.docs.length - 1]);
+            setMessages(prev => [...prev, ...moreMessages]);
         }
-
-        const querySnapshot = await getDocs(q);
-        const newMessages = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AiTutorMessage));
-        
-        setHasMore(newMessages.length === 20);
-        if (querySnapshot.docs.length > 0) {
-            setLastVisible(querySnapshot.docs[querySnapshot.docs.length - 1]);
-        }
-
-        if(loadMore) setMessages(prev => [...prev, ...newMessages]);
-        else setMessages(newMessages);
-    } catch (error) {
-        console.error("Failed to fetch history:", error);
+    } catch (err) {
+        console.error("Load more error:", err);
     } finally {
-        setIsHistoryLoading(false);
         setIsFetchingMore(false);
     }
-  }, [user, db, lastVisible]);
-  
-  useEffect(() => {
-    fetchMessages();
-  }, [user, fetchMessages]);
-
-  useEffect(() => {
-    if (initialQuery) setInput(initialQuery);
-  }, [initialQuery]);
+  };
 
   const displayedMessages = useMemo(() => {
     const sorted = [...messages].sort((a, b) => {
-        const timeA = (a.timestamp as any)?.toDate?.()?.getTime() || new Date(a.timestamp).getTime();
-        const timeB = (b.timestamp as any)?.toDate?.()?.getTime() || new Date(b.timestamp).getTime();
+        const timeA = (a.timestamp as any)?.toDate ? (a.timestamp as any).toDate().getTime() : new Date(a.timestamp).getTime();
+        const timeB = (b.timestamp as any)?.toDate ? (b.timestamp as any).toDate().getTime() : new Date(b.timestamp).getTime();
         return timeA - timeB;
     });
     
@@ -119,15 +126,9 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     return sorted;
   }, [messages, isHistoryLoading, initialGreeting]);
 
-
   useEffect(() => {
-    if (!isFetchingMore && scrollAreaRef.current) {
-      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
-      if (viewport) {
-          viewport.scrollTop = viewport.scrollHeight;
-      }
-    }
-  }, [displayedMessages, isAiResponding, isFetchingMore]);
+    if (initialQuery) setInput(initialQuery);
+  }, [initialQuery]);
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -135,29 +136,20 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
     const userText = input;
     setInput("");
-    
-    const tempUserMsg = { id: 'temp-' + Date.now(), sender: "user" as const, text: userText, timestamp: new Date() };
-    setMessages(prev => [...prev, tempUserMsg]);
     setIsAiResponding(true);
 
     try {
       const result = await mathiasTutor({ query: userText, courseContext: initialContext || undefined });
       
       const batch = writeBatch(db);
-      const userRef = doc(collection(db, `users/${user.uid}/chatHistory`));
-      const aiRef = doc(collection(db, `users/${user.uid}/chatHistory`));
+      const userMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
+      const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       
-      batch.set(userRef, { sender: "user", text: userText, timestamp: serverTimestamp() });
-      batch.set(aiRef, { sender: "ai", text: result.response, timestamp: serverTimestamp() });
+      batch.set(userMsgRef, { sender: "user", text: userText, timestamp: serverTimestamp() });
+      batch.set(aiMsgRef, { sender: "ai", text: result.response, timestamp: serverTimestamp() });
       await batch.commit();
-
-      setMessages(prev => prev.filter(m => m.id !== tempUserMsg.id).concat([
-          { id: userRef.id, sender: 'user', text: userText, timestamp: new Date() },
-          { id: aiRef.id, sender: 'ai', text: result.response, timestamp: new Date() }
-      ]));
     } catch (error) {
-      console.error("Action error:", error);
-      setMessages(prev => [...prev, { id: 'err-'+Date.now(), sender: 'ai', text: "Oups, Mathias est un peu fatigué. Réessayez dans un instant !", timestamp: new Date() }]);
+      console.error("Tutor error:", error);
     } finally {
       setIsAiResponding(false);
     }
@@ -167,7 +159,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
       <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
-      {/* --- HEADER --- */}
       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
         <Button variant="ghost" size="icon" className="mr-0 text-slate-300 h-10 w-8 rounded-full" onClick={() => router.push('/student/dashboard')}>
             <ArrowLeft className="h-6 w-6" />
@@ -193,50 +184,50 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
       <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
         <div className="p-4 space-y-2 flex flex-col min-h-full">
-          <div className="self-center my-4">
-              <span className="bg-[#182229] text-[11px] font-medium text-[#8696a0] px-3 py-1 rounded-lg shadow-sm">
-                  Aujourd'hui
-              </span>
-          </div>
-
-          {(isUserLoading || isHistoryLoading) && (
-            <div className="flex justify-center py-10"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-          )}
-          
-          {!isHistoryLoading && hasMore && (
-            <div className="text-center py-4">
-                <Button variant="ghost" size="sm" onClick={() => fetchMessages(true)} disabled={isFetchingMore} className="text-[10px] uppercase font-bold text-slate-500">
+          {hasMore && messages.length >= 20 && (
+            <div className="text-center py-2">
+                <Button variant="ghost" size="sm" onClick={loadMoreMessages} disabled={isFetchingMore} className="text-[10px] uppercase font-bold text-slate-500">
                     {isFetchingMore ? <Loader2 className="h-3 w-3 animate-spin mr-2"/> : <RefreshCw className="h-3 w-3 mr-2"/>}
-                    Charger l'historique
+                    Anciens messages
                 </Button>
             </div>
           )}
 
-          {displayedMessages.map((msg) => {
+          {displayedMessages.map((msg, idx) => {
             const isMe = msg.sender === "user";
-            const date = msg.timestamp ? new Date((msg.timestamp as any)?.toDate?.() || msg.timestamp) : new Date();
+            const date = (msg.timestamp as any)?.toDate ? (msg.timestamp as any).toDate() : new Date(msg.timestamp);
             
+            const prevMsg = displayedMessages[idx - 1];
+            const prevDate = prevMsg ? ((prevMsg.timestamp as any)?.toDate ? (prevMsg.timestamp as any).toDate() : new Date(prevMsg.timestamp)) : null;
+            const showDateSeparator = !prevDate || !isSameDay(date, prevDate);
+
             return (
-              <div 
-                key={msg.id} 
-                className={cn(
+              <div key={msg.id} className="flex flex-col">
+                {showDateSeparator && (
+                    <div className="self-center my-4">
+                        <span className="bg-[#182229] text-[11px] font-medium text-[#8696a0] px-3 py-1 rounded-lg shadow-sm">
+                            {format(date, 'd MMMM yyyy', { locale: fr })}
+                        </span>
+                    </div>
+                )}
+                <div className={cn(
                   "flex flex-col mb-1",
                   isMe ? "items-end" : "items-start"
-                )}
-              >
-                <div className={cn(
-                    "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
-                    isMe 
-                      ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
-                      : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
                 )}>
-                  <p className="whitespace-pre-wrap pr-10">{msg.text}</p>
                   <div className={cn(
-                    "absolute bottom-1 right-1.5 flex items-center gap-1",
-                    isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
+                      "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
+                      isMe 
+                        ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
+                        : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
                   )}>
-                    <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
-                    {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
+                    <p className="whitespace-pre-wrap pr-10">{msg.text}</p>
+                    <div className={cn(
+                      "absolute bottom-1 right-1.5 flex items-center gap-1",
+                      isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
+                    )}>
+                      <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
+                      {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
+                    </div>
                   </div>
                 </div>
               </div>

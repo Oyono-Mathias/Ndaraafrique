@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Salon de discussion immersif (Style WhatsApp Android exact).
- * Gère l'affichage des messages en temps réel et l'interface flottante.
+ * Synchronisation en temps réel avec Firestore et horodatage précis par message.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -28,7 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, CheckCheck, Paperclip, Smile, Camera, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, NdaraUser } from '@/lib/types';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function ChatRoom({ chatId }: { chatId: string }) {
@@ -41,7 +41,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Écouter les métadonnées du chat et charger l'autre participant
   useEffect(() => {
     if (!chatId || !user) return;
 
@@ -59,7 +58,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 });
             }
 
-            // Marquer comme lu si nécessaire
             if (data.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { 
                     unreadBy: arrayRemove(user.uid) 
@@ -71,7 +69,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubChat();
   }, [chatId, user, db, otherParticipant]);
 
-  // Écouter les messages en temps réel
   useEffect(() => {
     if (!chatId) return;
     const q = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
@@ -80,7 +77,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
         setMessages(msgs);
         
-        // Scroll automatique vers le bas
         setTimeout(() => {
             if (scrollAreaRef.current) {
                 const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -135,7 +131,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
        <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
-       {/* --- HEADER --- */}
        <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
             <Button 
                 variant="ghost" 
@@ -170,38 +165,43 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </header>
 
-        {/* --- MESSAGES --- */}
         <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
             <div className="p-4 space-y-2 flex flex-col min-h-full">
-                <div className="self-center my-4">
-                    <span className="bg-[#182229] text-[11px] font-medium text-[#8696a0] px-3 py-1 rounded-lg shadow-sm">
-                        Aujourd'hui
-                    </span>
-                </div>
-
-                {messages.map((msg) => {
+                {messages.map((msg, idx) => {
                     const isMe = msg.senderId === user?.uid;
-                    // Gestion du timestamp null pendant l'envoi optimiste
-                    const date = (msg.createdAt as any)?.toDate?.() || new Date();
+                    const date = (msg.createdAt as any)?.toDate ? (msg.createdAt as any).toDate() : new Date();
                     
+                    const prevMsg = messages[idx - 1];
+                    const prevDate = prevMsg ? ((prevMsg.createdAt as any)?.toDate ? (prevMsg.createdAt as any).toDate() : new Date()) : null;
+                    const showDateSeparator = !prevDate || !isSameDay(date, prevDate);
+
                     return (
-                        <div key={msg.id} className={cn(
-                            "flex flex-col mb-1",
-                            isMe ? "items-end" : "items-start"
-                        )}>
+                        <div key={msg.id} className="flex flex-col">
+                            {showDateSeparator && (
+                                <div className="self-center my-4">
+                                    <span className="bg-[#182229] text-[11px] font-medium text-[#8696a0] px-3 py-1 rounded-lg shadow-sm">
+                                        {format(date, 'd MMMM yyyy', { locale: fr })}
+                                    </span>
+                                </div>
+                            )}
                             <div className={cn(
-                                "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
-                                isMe 
-                                    ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
-                                    : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
+                                "flex flex-col mb-1",
+                                isMe ? "items-end" : "items-start"
                             )}>
-                                <span className="pr-12 block whitespace-pre-wrap">{msg.text}</span>
                                 <div className={cn(
-                                  "absolute bottom-1 right-1.5 flex items-center gap-1",
-                                  isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
+                                    "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
+                                    isMe 
+                                        ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
+                                        : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
                                 )}>
-                                  <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
-                                  {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
+                                    <span className="pr-12 block whitespace-pre-wrap">{msg.text}</span>
+                                    <div className={cn(
+                                      "absolute bottom-1 right-1.5 flex items-center gap-1",
+                                      isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
+                                    )}>
+                                      <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
+                                      {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -210,7 +210,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        {/* --- INPUT (BARRE DE SAISIE) --- */}
         <div className="p-2 bg-transparent safe-area-pb z-20 flex items-end gap-2">
             <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md">
                 <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Smile className="h-6 w-6" /></Button>
