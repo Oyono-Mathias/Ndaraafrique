@@ -171,14 +171,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // ✅ GARDE-FOU STRICT PAR RÔLE ACTIF
+    // ✅ GARDE-FOU STRICT PAR RÔLE ACTIF (Vérification de la cohérence de l'URL)
     if (role === 'admin' && !isAdminArea && !isPublicPage) {
       router.push('/admin');
     } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {
-      // Si on est formateur et qu'on n'est ni en zone formateur, ni en zone publique, ni en zone étudiant choisie
       router.push('/instructor/dashboard');
     } else if (role === 'student' && (isAdminArea || isInstructorArea)) {
-      // Si on a basculé en mode étudiant, on ne doit pas être en zone admin/formateur
       router.push('/student/dashboard');
     }
 
@@ -189,12 +187,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <MaintenancePage />;
   }
 
+  // Écran de chargement unifié pendant la récupération du rôle réel
   if (loading && !isPublicPage && !isAuthPage) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Initialisation...</p>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Initialisation de Ndara...</p>
         </div>
       </div>
     );

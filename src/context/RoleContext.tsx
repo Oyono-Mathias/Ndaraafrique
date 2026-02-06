@@ -125,15 +125,16 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
+          // Gestion de la persistance du mode actif
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
-              // Si pas de préférence, on utilise le rôle défini en BDD
               setRole(userData.role || 'student');
           }
 
         } else {
+            // Création automatique du profil si inexistant
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
@@ -167,13 +168,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       
-      if (newRole === 'admin') router.push('/admin');
-      else if (newRole === 'instructor') router.push('/instructor/dashboard');
-      else router.push('/student/dashboard');
-      
+      // Notification visuelle
       toast({
           title: `Mode ${newRole === 'instructor' ? 'Formateur' : newRole === 'admin' ? 'Administrateur' : 'Étudiant'} activé`,
       });
+
+      // Redirection immédiate
+      if (newRole === 'admin') router.push('/admin');
+      else if (newRole === 'instructor') router.push('/instructor/dashboard');
+      else router.push('/student/dashboard');
     }
   }, [availableRoles, router, toast]);
   
