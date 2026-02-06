@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique.
- * Affiche le contenu dynamique, les catégories de cours et le bouton Tableau de Bord unique.
- * Design épuré : pas de bouton flottant au défilement.
+ * Affiche les formations groupées dynamiquement par catégories.
+ * Design épuré avec un bouton d'action unique dans le Hero.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -12,7 +12,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, Search, LayoutDashboard, ChevronsRight, BookCopy, UserPlus, Award, Wallet, ShieldCheck, Lock, HelpingHand } from 'lucide-react';
+import { Sparkles, Search, LayoutDashboard, ChevronsRight, BookCopy, UserPlus, Award, Wallet, ShieldCheck, Lock, HelpingHand, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -112,9 +112,9 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
             <section className="py-8">
                 <Skeleton className="h-8 w-1/3 mb-6 bg-slate-800" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <Skeleton className="h-80 rounded-xl bg-slate-800"></Skeleton>
-                    <Skeleton className="h-80 rounded-xl bg-slate-800 hidden sm:block"></Skeleton>
-                    <Skeleton className="h-80 rounded-xl bg-slate-800 hidden lg:block"></Skeleton>
+                    {[...Array(3)].map((_, i) => (
+                        <Skeleton key={i} className="h-80 rounded-xl bg-slate-800" />
+                    ))}
                 </div>
             </section>
         );
@@ -125,11 +125,14 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
 
     return (
         <section className="py-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-foreground">{title}</h2>
+            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-foreground flex items-center gap-3">
+                <div className="h-8 w-1 bg-primary rounded-full" />
+                {title}
+            </h2>
              <Carousel opts={{ align: "start", loop: false }} className="w-full">
                 <CarouselContent className="-ml-4">
                     {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-4 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        <CarouselItem key={course.id} className="pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
                         </CarouselItem>
                     ))}
@@ -164,8 +167,8 @@ const InteractiveSteps = () => {
 
     return (
         <section className="py-16">
-             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-foreground">Comment ça marche ?</h2>
-             <p className="text-muted-foreground text-center max-w-xl mx-auto mb-10">Un parcours simple en 3 étapes pour transformer votre carrière.</p>
+             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-white">Comment ça marche ?</h2>
+             <p className="text-slate-400 text-center max-w-xl mx-auto mb-10">Un parcours simple en 3 étapes pour transformer votre carrière.</p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                  <div className="space-y-4">
                     {steps.map((step, index) => {
@@ -220,7 +223,7 @@ const PaymentMethodsSection = () => {
 
     return (
         <section className="py-16">
-            <Card className="dark:bg-slate-800/30 dark:border-slate-700/80 overflow-hidden">
+            <Card className="bg-slate-900/40 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardContent className="p-6 md:p-10">
                     <div className="grid lg:grid-cols-2 gap-10 items-center">
                         <div className="text-center lg:text-left">
@@ -272,13 +275,13 @@ const TrustSection = () => {
 
     return (
         <section className="py-16">
-             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-foreground">Votre sérénité, notre priorité</h2>
-             <p className="text-muted-foreground text-center max-w-2xl mx-auto mb-12">
+             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-white">Votre sérénité, notre priorité</h2>
+             <p className="text-slate-400 text-center max-w-2xl mx-auto mb-12">
                 Nous intégrons les meilleures technologies pour garantir la sécurité et la traçabilité de chaque transaction.
              </p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {trustFeatures.map((feature, index) => (
-                    <Card key={index} className="bg-slate-900/50 border border-slate-800/80 text-center transition-all duration-300 hover:-translate-y-2 hover:border-primary/50">
+                    <Card key={index} className="bg-slate-900/50 border border-slate-800 text-center transition-all duration-300 hover:-translate-y-2 hover:border-primary/50">
                         <CardHeader className="items-center">
                             <div className="inline-block p-3 bg-primary/10 rounded-full mb-2">
                                 <feature.icon className="w-7 h-7 text-primary" />
@@ -298,9 +301,6 @@ const TrustSection = () => {
 export default function LandingPage() {
   const { user, role } = useRole();
   const db = getFirestore();
-  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
-  const { data: settings } = useDoc<Settings>(settingsRef);
-
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
@@ -325,7 +325,7 @@ export default function LandingPage() {
             const newInstructors = new Map<string, Partial<NdaraUser>>();
             userSnapshots.forEach(doc => {
                 const userData = doc.data();
-                newInstructors.set(userData.uid, { fullName: userData.fullName });
+                newInstructors.set(userData.uid, { fullName: userData.fullName, profilePictureURL: userData.profilePictureURL });
             });
             setInstructorsMap(newInstructors);
         }
@@ -338,38 +338,46 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
   
-  const fetchedName = settings?.general?.siteName || '';
-  const siteName = (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName;
+  const siteName = "Ndara Afrique";
   const logoUrl = '/logo.png';
 
-  const popularCourses = useMemo(() => courses.filter(c => c.isPopular).slice(0, 8), [courses]);
-  const freeCourses = useMemo(() => courses.filter(c => c.price === 0).slice(0, 8), [courses]);
-  const recentCourses = useMemo(() => courses.slice(0, 8), [courses]);
+  // --- LOGIQUE DE GROUPEMENT PAR CATÉGORIE ---
+  const coursesByCategory = useMemo(() => {
+    const groups: Record<string, Course[]> = {};
+    courses.forEach(course => {
+      const cat = course.category || "Autres formations";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(course);
+    });
+    return groups;
+  }, [courses]);
+
+  const recentCourses = useMemo(() => courses.slice(0, 10), [courses]);
 
   return (
-    <div className="bg-background text-foreground min-h-screen font-sans">
+    <div className="bg-slate-950 text-foreground min-h-screen font-sans">
       <LandingNav logoUrl={logoUrl} siteName={siteName} />
       
       <div className="container mx-auto px-4">
         
         {/* --- HERO SECTION --- */}
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
-          <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up">
+          <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up bg-primary/5">
             <Sparkles className="w-3 h-3 mr-2" />
             La plateforme N°1 pour les compétences du futur en Afrique
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight animate-fade-in-up">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight text-white animate-fade-in-up">
             Apprenez. Construisez. Prospérez.
           </h1>
-          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up">
+          <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up">
             Des formations de pointe conçues par des experts africains, pour les talents africains sur {siteName}. Transformez vos ambitions en succès.
           </p>
-          <div className="animate-fade-in-up">
+          <div className="animate-fade-in-up flex flex-col items-center">
               <Link href={user ? dashboardUrl : "/login?tab=register"}>
-                  <button className="nd-cta-primary h-12 text-base md:h-auto md:text-sm mx-auto">
+                  <button className="nd-cta-primary h-12 text-base md:h-14 md:text-sm px-10">
                       {user ? (
                           <>
-                            <LayoutDashboard className="w-5 h-5" />
+                            <LayoutDashboard className="w-5 h-5 mr-2" />
                             Accéder à mon tableau de bord
                           </>
                       ) : "Démarrer mon parcours"}
@@ -382,8 +390,9 @@ export default function LandingPage() {
         <main className="space-y-12 sm:space-y-16 pb-24">
           <DynamicCarousel />
 
+          {/* --- SECTION NOUVEAUTÉS --- */}
           <CourseCarousel
-            title="Les nouveautés à ne pas rater"
+            title="Dernières publications"
             courses={recentCourses}
             instructorsMap={instructorsMap}
             isLoading={loading}
@@ -393,26 +402,36 @@ export default function LandingPage() {
 
           <PaymentMethodsSection />
 
-          <CourseCarousel
-            title="Les plus populaires"
-            courses={popularCourses}
-            instructorsMap={instructorsMap}
-            isLoading={loading}
-          />
-
-          <CourseCarousel
-            title="Formations Gratuites"
-            courses={freeCourses}
-            instructorsMap={instructorsMap}
-            isLoading={loading}
-          />
+          {/* --- AFFICHAGE DE TOUTES LES CATÉGORIES DYNAMIQUEMENT --- */}
+          {loading ? (
+              <div className="space-y-12">
+                  {[...Array(2)].map((_, i) => (
+                      <div key={i} className="space-y-4">
+                          <Skeleton className="h-8 w-48 bg-slate-900" />
+                          <div className="flex gap-4"><Skeleton className="h-64 w-full bg-slate-900" /><Skeleton className="h-64 w-full bg-slate-900" /></div>
+                      </div>
+                  ))}
+              </div>
+          ) : (
+              Object.entries(coursesByCategory).map(([category, catCourses]) => (
+                <CourseCarousel
+                    key={category}
+                    title={category}
+                    courses={catCourses}
+                    instructorsMap={instructorsMap}
+                    isLoading={false}
+                />
+              ))
+          )}
 
           <TrustSection />
 
-          <section className="text-center py-20 bg-slate-900/30 rounded-[3rem] border border-white/5">
-            <h2 className="text-2xl md:text-3xl font-bold text-white">Prêt à transformer votre avenir ?</h2>
-            <p className="mt-2 text-slate-400">Rejoignez des milliers de talents qui construisent le futur de l'Afrique.</p>
-            <Button size="lg" asChild className="mt-8 h-12 text-base md:h-14 md:text-lg nd-cta-primary animate-pulse">
+          {/* --- FINAL CTA --- */}
+          <section className="text-center py-24 bg-slate-900/30 rounded-[3rem] border border-white/5 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+            <h2 className="text-3xl md:text-4xl font-black text-white relative z-10">Prêt à transformer votre avenir ?</h2>
+            <p className="mt-4 text-slate-400 max-w-xl mx-auto relative z-10">Rejoignez des milliers de talents qui construisent le futur de l'Afrique avec Ndara Afrique.</p>
+            <Button size="lg" asChild className="mt-10 h-14 px-12 rounded-2xl nd-cta-primary animate-pulse relative z-10">
                 <Link href={user ? dashboardUrl : "/login?tab=register"}>
                     {user ? "Accéder au Tableau de bord" : "Devenir Membre"}
                     <ChevronsRight className="ml-2 h-5 w-5" />
