@@ -1,14 +1,14 @@
 
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Course } from '@/lib/types';
 import { z } from 'zod';
 
 /**
  * @fileOverview Actions serveur pour les instructeurs.
- * Gère la création et la mise à jour des cours.
+ * Gère la création et la mise à jour des cours avec une gestion d'erreurs précise.
  */
 
 const CourseFormSchema = z.object({
@@ -26,39 +26,46 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     return {
       success: false,
       errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Champs manquants ou invalides.',
+      message: 'Certains champs sont invalides ou manquants.',
     };
   }
   
-  if (!adminDb) {
-      console.error("ADMIN_DB_NULL: La connexion à Firestore Admin a échoué.");
-      return { success: false, message: 'Le service de base de données est indisponible.' };
-  }
-
   try {
-    const newCourseRef = adminDb.collection('courses').doc();
+    const db = getAdminDb();
+    const newCourseRef = db.collection('courses').doc();
     
-    // Nettoyage de l'URL si vide
-    const imageUrl = validatedFields.data.imageUrl || null;
+    // Nettoyage rigoureux des données pour Firestore
+    const data = validatedFields.data;
+    const finalImageUrl = data.imageUrl && data.imageUrl.startsWith('http') ? data.imageUrl : null;
 
-    const newCourse = {
-      ...validatedFields.data,
-      imageUrl,
+    const newCoursePayload = {
+      title: data.title,
+      description: data.description,
+      price: data.price,
+      category: data.category,
+      imageUrl: finalImageUrl,
       id: newCourseRef.id,
-      courseId: newCourseRef.id, // Pour la compatibilité avec le schéma required
-      instructorId,
+      courseId: newCourseRef.id,
+      instructorId: instructorId,
       status: 'Draft',
       createdAt: FieldValue.serverTimestamp(),
       updatedAt: FieldValue.serverTimestamp(),
-      currency: 'XOF'
+      currency: 'XOF',
+      learningObjectives: [],
+      participantsCount: 0
     };
     
-    await newCourseRef.set(newCourse);
+    await newCourseRef.set(newCoursePayload);
+    
+    console.log(`Course Created: ${newCourseRef.id} by ${instructorId}`);
     
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
-    console.error("CREATE_COURSE_ERROR:", error.message);
-    return { success: false, message: 'Erreur technique lors de la création. Vérifiez les champs.' };
+    console.error("CREATE_COURSE_CRITICAL_ERROR:", error);
+    return { 
+      success: false, 
+      message: `Erreur serveur lors de l'enregistrement. Détails : ${error.message}` 
+    };
   }
 }
 
@@ -68,29 +75,31 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
 
     if (!validatedFields.success) {
         return {
-        success: false,
-        errors: validatedFields.error.flatten().fieldErrors,
-        message: 'Champs manquants ou invalides.',
+            success: false,
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Données invalides.',
         };
-    }
-
-    if (!adminDb) {
-        return { success: false, message: 'Le service de base de données est indisponible.' };
     }
 
     try {
-        const courseRef = adminDb.collection('courses').doc(courseId);
-        const dataToUpdate = {
-            ...validatedFields.data,
-            imageUrl: validatedFields.data.imageUrl || null,
-            updatedAt: FieldValue.serverTimestamp(),
-        };
+        const db = getAdminDb();
+        const courseRef = db.collection('courses').doc(courseId);
+        
+        const data = validatedFields.data;
+        const finalImageUrl = data.imageUrl && data.imageUrl.startsWith('http') ? data.imageUrl : null;
 
-        await courseRef.update(dataToUpdate);
+        await courseRef.update({
+            title: data.title,
+            description: data.description,
+            price: data.price,
+            category: data.category,
+            imageUrl: finalImageUrl,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
         
         return { success: true };
     } catch (error: any) {
-        console.error("UPDATE_COURSE_ERROR:", error.message);
-        return { success: false, message: 'Une erreur est survenue lors de la mise à jour.' };
+        console.error("UPDATE_COURSE_ERROR:", error);
+        return { success: false, message: 'Impossible de mettre à jour le cours.' };
     }
 }
