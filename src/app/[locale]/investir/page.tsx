@@ -1,14 +1,13 @@
-
 'use client';
 
 /**
  * @fileOverview Page dédiée aux investisseurs et partenaires de Ndara Afrique.
- * Présente la vision, l'impact et comment rejoindre l'aventure financièrement.
+ * Présente la vision, l'impact et la procédure pour rejoindre l'aventure.
  */
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Globe, Users, ShieldCheck, ArrowRight, Lightbulb, Target } from 'lucide-react';
+import { TrendingUp, Globe, Users, ShieldCheck, ArrowRight, Lightbulb, Target, MessageCircle, FileText, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -19,6 +18,18 @@ const ImpactStat = ({ icon: Icon, value, label }: { icon: React.ElementType, val
         </div>
         <p className="text-3xl font-black text-white">{value}</p>
         <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest mt-1">{label}</p>
+    </div>
+);
+
+const ProcedureStep = ({ number, title, description }: { number: string, title: string, description: string }) => (
+    <div className="flex gap-6 items-start">
+        <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shrink-0 font-black text-white shadow-lg shadow-primary/20">
+            {number}
+        </div>
+        <div>
+            <h3 className="font-bold text-white text-lg">{title}</h3>
+            <p className="text-slate-400 text-sm mt-1 leading-relaxed">{description}</p>
+        </div>
     </div>
 );
 
@@ -53,69 +64,83 @@ export default function InvestPage() {
                 <ImpactStat icon={ShieldCheck} value="100%" label="Impact Social" />
             </section>
 
-            {/* --- LA VISION --- */}
-            <section className="grid md:grid-cols-2 gap-12 items-center">
-                <div className="space-y-6">
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tight">Pourquoi <span className="text-primary">Investir ?</span></h2>
+            {/* --- LA PROCÉDURE --- */}
+            <section className="grid md:grid-cols-2 gap-12 items-start">
+                <div className="space-y-8">
+                    <h2 className="text-3xl font-black text-white uppercase tracking-tight">Comment <span className="text-primary">nous rejoindre ?</span></h2>
                     <p className="text-slate-400 leading-relaxed">
-                        Le marché de l'éducation en ligne en Afrique connaît une révolution sans précédent. Avec une population dont la moyenne d'âge est de 19 ans, le besoin de formations certifiantes et accessibles est immense.
+                        Nous suivons une procédure rigoureuse et transparente pour accueillir nos partenaires financiers et stratégiques. Voici les étapes clés :
                     </p>
-                    <div className="space-y-4">
-                        {[
-                            { title: "Scalabilité", text: "Infrastucture cloud robuste capable d'accueillir des millions d'utilisateurs." },
-                            { title: "Localisation", text: "Contenus adaptés aux réalités du marché et aux langues locales." },
-                            { title: "Monétisation", text: "Paiements fluides via Mobile Money (MTN, Orange, Wave)." }
-                        ].map((item, idx) => (
-                            <div key={idx} className="flex gap-4">
-                                <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                    <ArrowRight className="h-3 w-3 text-primary" />
-                                </div>
-                                <div>
-                                    <h4 className="text-sm font-bold text-white">{item.title}</h4>
-                                    <p className="text-xs text-slate-500">{item.text}</p>
-                                </div>
+                    <div className="space-y-8">
+                        <ProcedureStep 
+                            number="01" 
+                            title="Prise de contact" 
+                            description="Envoyez-nous une demande d'intérêt via le formulaire ou par email. Notre équipe relations investisseurs vous répondra sous 48h."
+                        />
+                        <ProcedureStep 
+                            number="02" 
+                            title="Examen du Pitch Deck" 
+                            description="Nous vous transmettrons notre dossier complet comprenant notre vision, nos metrics de croissance et notre roadmap technologique."
+                        />
+                        <ProcedureStep 
+                            number="03" 
+                            title="Due Diligence & Meeting" 
+                            description="Rencontre avec les fondateurs pour approfondir la stratégie et valider l'alignement des valeurs."
+                        />
+                        <ProcedureStep 
+                            number="04" 
+                            title="Finalisation" 
+                            description="Signature des accords de partenariat et intégration dans l'écosystème Ndara Afrique."
+                        />
+                    </div>
+                </div>
+                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] p-8 shadow-2xl sticky top-24">
+                    <div className="space-y-6">
+                        <div className="p-4 bg-primary/10 rounded-2xl inline-block">
+                            <FileText className="h-8 w-8 text-primary" />
+                        </div>
+                        <h3 className="text-2xl font-bold text-white uppercase tracking-tight">Demander le dossier</h3>
+                        <p className="text-slate-400 text-sm">Recevez immédiatement notre présentation investisseur (Pitch Deck 2024) et nos prévisions financières.</p>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                <span>Roadmap Produit & IA</span>
                             </div>
-                        ))}
-                    </div>
-                </div>
-                <div className="relative aspect-square rounded-[3rem] overflow-hidden border border-slate-800 shadow-2xl">
-                    <Image 
-                        src="https://picsum.photos/seed/ndarainvest/800/800" 
-                        alt="Vision Ndara" 
-                        fill 
-                        className="object-cover opacity-60 grayscale hover:grayscale-0 transition-all duration-700"
-                        data-ai-hint="african business people"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent" />
-                </div>
-            </section>
-
-            {/* --- ACTION --- */}
-            <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] p-8 md:p-12 text-center shadow-2xl">
-                <CardHeader>
-                    <div className="p-4 bg-primary/10 rounded-full inline-block mx-auto mb-6">
-                        <Lightbulb className="h-10 w-10 text-primary" />
-                    </div>
-                    <CardTitle className="text-3xl font-black text-white uppercase tracking-tight">Prêt à rejoindre l'aventure ?</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                    <p className="text-slate-400 max-w-xl mx-auto">
-                        Nous sommes ouverts aux partenariats stratégiques et aux levées de fonds pour accélérer notre déploiement panafricain.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" className="h-14 px-10 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20" asChild>
-                            <a href="mailto:oyonomathias@gmail.com?subject=Investissement Ndara Afrique">
-                                Demander le Pitch Deck
+                            <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                <span>Analyse du marché Panafricain</span>
+                            </div>
+                            <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                <span>Modèle économique & Scalabilité</span>
+                            </div>
+                        </div>
+                        <Button className="w-full h-14 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 mt-4" asChild>
+                            <a href="mailto:oyonomathias@gmail.com?subject=Demande de Pitch Deck - Ndara Afrique">
+                                Recevoir le Pitch Deck
                             </a>
                         </Button>
-                        <Button variant="outline" size="lg" className="h-14 px-10 rounded-xl border-slate-800 bg-slate-900 text-slate-300 font-black uppercase text-[10px] tracking-widest" asChild>
-                            <Link href="/student/support">
-                                Contacter l'Équipe
-                            </Link>
-                        </Button>
                     </div>
-                </CardContent>
-            </Card>
+                </Card>
+            </section>
+
+            {/* --- ACTION WHATSAPP --- */}
+            <section className="text-center space-y-8 bg-primary/5 p-12 rounded-[3rem] border border-primary/10">
+                <div className="p-4 bg-emerald-500/10 rounded-full inline-block mx-auto">
+                    <MessageCircle className="h-10 w-10 text-emerald-500" />
+                </div>
+                <h2 className="text-3xl font-black text-white uppercase tracking-tight">Besoin d'un échange direct ?</h2>
+                <p className="text-slate-400 max-w-xl mx-auto">
+                    Vous souhaitez discuter d'un partenariat stratégique ou d'une opportunité spécifique ? Parlons-en de vive voix.
+                </p>
+                <div className="flex justify-center">
+                    <Button variant="outline" size="lg" className="h-14 px-10 rounded-xl border-slate-800 bg-slate-900 text-slate-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-800" asChild>
+                        <a href="https://wa.me/23675000000?text=Bonjour Mathias, je souhaite discuter d'un investissement sur Ndara Afrique." target="_blank" rel="noopener noreferrer">
+                            Contacter via WhatsApp
+                        </a>
+                    </Button>
+                </div>
+            </section>
 
         </main>
     </div>

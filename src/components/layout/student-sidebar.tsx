@@ -13,7 +13,6 @@ import {
   Users,
   User,
   Heart,
-  LogIn,
   Shield,
   Search,
   Play,
@@ -96,6 +95,13 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
   const isProfileComplete = currentUser?.isProfileComplete || false;
+
+  const profileProgress = useMemo(() => {
+      let progress = 0;
+      if (currentUser?.username) progress += 50;
+      if (currentUser?.careerGoals?.interestDomain) progress += 50;
+      return progress;
+  }, [currentUser]);
 
   const studentMenu = [
     {
