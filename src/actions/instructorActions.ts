@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
@@ -14,7 +15,7 @@ const CourseFormSchema = z.object({
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
   price: z.coerce.number().min(0, "Le prix ne peut être négatif."),
   category: z.string().min(3, "La catégorie est requise."),
-  imageUrl: z.string().url("L'URL de l'image est invalide.").optional().or(z.literal('')),
+  imageUrl: z.string().min(1, "L'image est obligatoire."),
 });
 
 export async function createCourseAction({ formData, instructorId }: { formData: unknown, instructorId: string }) {
@@ -32,16 +33,14 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     const db = getAdminDb();
     const newCourseRef = db.collection('courses').doc();
     
-    // Nettoyage rigoureux des données pour Firestore
     const data = validatedFields.data;
-    const finalImageUrl = (data.imageUrl && data.imageUrl.startsWith('http')) ? data.imageUrl : null;
 
     const newCoursePayload = {
       title: data.title,
       description: data.description,
       price: data.price,
       category: data.category,
-      imageUrl: finalImageUrl,
+      imageUrl: data.imageUrl,
       id: newCourseRef.id,
       courseId: newCourseRef.id,
       instructorId: instructorId,
@@ -61,7 +60,6 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   } catch (error: any) {
     console.error("CREATE_COURSE_CRITICAL_ERROR:", error);
     
-    // Message d'erreur pédagogique pour l'utilisateur
     let userMessage = `Erreur lors de l'enregistrement : ${error.message}`;
     if (error.message.includes('ADMIN_SDK_NOT_INITIALIZED')) {
         userMessage = "Le serveur n'est pas encore prêt. Assurez-vous d'avoir configuré la variable FIREBASE_SERVICE_ACCOUNT_KEY.";
@@ -93,14 +91,13 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
         const courseRef = db.collection('courses').doc(courseId);
         
         const data = validatedFields.data;
-        const finalImageUrl = (data.imageUrl && data.imageUrl.startsWith('http')) ? data.imageUrl : null;
 
         await courseRef.update({
             title: data.title,
             description: data.description,
             price: data.price,
             category: data.category,
-            imageUrl: finalImageUrl,
+            imageUrl: data.imageUrl,
             updatedAt: FieldValue.serverTimestamp(),
         });
         
