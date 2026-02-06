@@ -16,7 +16,7 @@ const CourseFormSchema = z.object({
   description: z.string().min(20, "La description doit faire au moins 20 caractères."),
   price: z.coerce.number().min(0, "Le prix ne peut être négatif."),
   category: z.string().min(3, "La catégorie est requise."),
-  imageUrl: z.string().url("L'URL de l'image est invalide.").optional(),
+  imageUrl: z.string().url("L'URL de l'image est invalide.").optional().or(z.literal('')),
 });
 
 export async function createCourseAction({ formData, instructorId }: { formData: unknown, instructorId: string }) {
@@ -31,14 +31,21 @@ export async function createCourseAction({ formData, instructorId }: { formData:
   }
   
   if (!adminDb) {
-      console.error("ADMIN_DB_NULL: La connexion à Firestore Admin a échoué. Vérifiez vos variables d'environnement.");
-      return { success: false, message: 'Le service de base de données est indisponible (Erreur de configuration).' };
+      console.error("ADMIN_DB_NULL: La connexion à Firestore Admin a échoué.");
+      return { success: false, message: 'Le service de base de données est indisponible.' };
   }
 
   try {
     const newCourseRef = adminDb.collection('courses').doc();
-    const newCourse: Partial<Course> = {
+    
+    // Nettoyage de l'URL si vide
+    const imageUrl = validatedFields.data.imageUrl || null;
+
+    const newCourse = {
       ...validatedFields.data,
+      imageUrl,
+      id: newCourseRef.id,
+      courseId: newCourseRef.id, // Pour la compatibilité avec le schéma required
       instructorId,
       status: 'Draft',
       createdAt: FieldValue.serverTimestamp(),
@@ -51,7 +58,7 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
     console.error("CREATE_COURSE_ERROR:", error.message);
-    return { success: false, message: 'Une erreur est survenue lors de la création du cours.' };
+    return { success: false, message: 'Erreur technique lors de la création. Vérifiez les champs.' };
   }
 }
 
@@ -73,8 +80,9 @@ export async function updateCourseAction({ courseId, formData }: { courseId: str
 
     try {
         const courseRef = adminDb.collection('courses').doc(courseId);
-        const dataToUpdate: Partial<Course> = {
+        const dataToUpdate = {
             ...validatedFields.data,
+            imageUrl: validatedFields.data.imageUrl || null,
             updatedAt: FieldValue.serverTimestamp(),
         };
 

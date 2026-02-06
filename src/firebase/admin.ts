@@ -17,10 +17,15 @@ if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount)
       });
+      
+      // Configuration globale pour ignorer les propriétés 'undefined' (évite les erreurs au set/update)
+      admin.firestore().settings({ ignoreUndefinedProperties: true });
+      
       console.log("Firebase Admin SDK initialisé via FIREBASE_SERVICE_ACCOUNT_KEY.");
     } else {
       // Tentative d'initialisation par défaut (utile dans certains environnements cloud)
       admin.initializeApp();
+      admin.firestore().settings({ ignoreUndefinedProperties: true });
       console.log("Firebase Admin SDK initialisé via les identifiants par défaut.");
     }
   } catch (error: any) {
