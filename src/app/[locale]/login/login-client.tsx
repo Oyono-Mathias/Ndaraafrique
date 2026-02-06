@@ -93,8 +93,7 @@ export default function LoginClient() {
                 setLogoUrl(settingsData.logoUrl);
             }
             if (settingsData?.siteName) {
-                const fetchedName = settingsData.siteName;
-                setSiteName(fetchedName === "Forma Afrique" ? "Ndara Afrique" : fetchedName);
+                setSiteName(settingsData.siteName);
             }
         }
     };
@@ -115,7 +114,7 @@ export default function LoginClient() {
             email: firebaseUser.email || '',
             fullName: firebaseUser.displayName || 'Utilisateur Ndara',
             username: firebaseUser.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + firebaseUser.uid.substring(0, 5),
-            phoneNumber: firebaseUser.phoneNumber || '',
+            phoneNumber: '',
             bio: '',
             role: 'student',
             status: 'active',
@@ -145,19 +144,13 @@ export default function LoginClient() {
         localStorage.setItem('ndaraafrique-role', 'student');
     } else {
         const existingData = userDocSnap.data() as NdaraUser;
+        const targetRole = existingData.role || 'student';
         
-        // Determination de la route selon le role en BDD
-        if (existingData.role === 'admin') {
-            targetRoute = '/admin';
-        } else if (existingData.role === 'instructor') {
-            targetRoute = '/instructor/dashboard';
-        } else {
-            targetRoute = '/student/dashboard';
-        }
+        if (targetRole === 'admin') targetRoute = '/admin';
+        else if (targetRole === 'instructor') targetRoute = '/instructor/dashboard';
+        else targetRoute = '/student/dashboard';
 
-        // Sauvegarde immédiate du rôle pour RoleContext
-        localStorage.setItem('ndaraafrique-role', existingData.role || 'student');
-        
+        localStorage.setItem('ndaraafrique-role', targetRole);
         await setDoc(userDocRef, { lastLogin: serverTimestamp(), isOnline: true }, { merge: true });
     }
     

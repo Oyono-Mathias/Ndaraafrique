@@ -2,19 +2,33 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { Button } from '@/components/ui/button';
-import { Wrench, Loader2, PanelLeft, Megaphone, X } from 'lucide-react';
+import { Wrench, Loader2, PanelLeft, Megaphone, X, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
+
+function VintageLoader() {
+    return (
+        <div className="flex flex-col items-center justify-center h-screen bg-slate-950 gap-6">
+            <div className="relative">
+                <div className="h-20 w-20 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+                <Sparkles className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-8 w-8 text-[#CC7722] animate-pulse" />
+            </div>
+            <div className="text-center space-y-2">
+                <p className="text-[#CC7722] font-black uppercase tracking-[0.3em] text-xs">Ndara Afrique</p>
+                <p className="text-slate-500 text-[10px] font-bold uppercase tracking-widest animate-pulse">Initialisation du savoir...</p>
+            </div>
+        </div>
+    );
+}
 
 function MaintenancePage() {
     return (
@@ -94,9 +108,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
         if (docSnap.exists()) {
             const settingsData = docSnap.data();
-            const fetchedName = settingsData.general?.siteName || '';
             setSiteSettings({
-                siteName: (fetchedName === "Forma Afrique" || !fetchedName) ? "Ndara Afrique" : fetchedName,
+                siteName: settingsData.general?.siteName || 'Ndara Afrique',
                 logoUrl: '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
@@ -148,7 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, searchParams]);
 
   useEffect(() => {
-    // Ne rien faire tant que le RoleContext est en train de charger (Firestore)
+    // CRITIQUE : Attendre que RoleContext ait fini de charger les données Firestore
     if (loading) return; 
 
     if (!user) {
@@ -187,16 +200,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <MaintenancePage />;
   }
 
-  // Écran de chargement unifié pendant la récupération du rôle réel
+  // Écran de chargement Vintage pendant la récupération du rôle réel
   if (loading && !isPublicPage && !isAuthPage) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-950">
-        <div className="flex flex-col items-center gap-4">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Initialisation de Ndara...</p>
-        </div>
-      </div>
-    );
+    return <VintageLoader />;
   }
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -48,26 +48,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const auth = getAuth();
-    const handleBeforeUnload = () => {
-        if (auth.currentUser) {
-            const userDocRef = doc(db, 'users', auth.currentUser.uid);
-            updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() });
-        }
-    };
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
         const userRef = doc(db, 'users', user.uid);
         await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
-        window.addEventListener('beforeunload', handleBeforeUnload);
-      } else {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
       }
     });
-
-    return () => {
-        window.removeEventListener('beforeunload', handleBeforeUnload);
-        unsubscribe();
-    };
+    return () => unsubscribe();
   }, [db]);
 
   useEffect(() => {
@@ -125,16 +112,16 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // Gestion de la persistance du mode actif
+          // Gestion de la persistance du mode actif via localStorage (survit au refresh)
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
               setRole(userData.role || 'student');
+              localStorage.setItem('ndaraafrique-role', userData.role || 'student');
           }
 
         } else {
-            // Création automatique du profil si inexistant
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
@@ -153,6 +140,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             };
             await setDoc(userDocRef, newUserDoc);
             setRole('student');
+            localStorage.setItem('ndaraafrique-role', 'student');
         }
         setLoading(false);
     }, (error) => {
@@ -168,12 +156,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       
-      // Notification visuelle
       toast({
           title: `Mode ${newRole === 'instructor' ? 'Formateur' : newRole === 'admin' ? 'Administrateur' : 'Étudiant'} activé`,
       });
 
-      // Redirection immédiate
       if (newRole === 'admin') router.push('/admin');
       else if (newRole === 'instructor') router.push('/instructor/dashboard');
       else router.push('/student/dashboard');
