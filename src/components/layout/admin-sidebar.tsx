@@ -70,7 +70,8 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
 
 export function AdminSidebar({ siteName = "Ndara Admin", logoUrl = "/logo.png", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const db = getFirestore();
-  const { currentUser, switchRole } = useRole();
+  const { currentUser, switchRole, availableRoles } = useRole();
+  const isInstructor = availableRoles.includes('instructor');
 
   const adminMenu = [
     { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
@@ -154,15 +155,17 @@ export function AdminSidebar({ siteName = "Ndara Admin", logoUrl = "/logo.png", 
                     <ArrowLeftRight className="h-3.5 w-3.5 text-primary" />
                     Étudiant
                 </Button>
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-xs font-bold gap-1.5"
-                    onClick={() => switchRole('instructor')}
-                >
-                    <ArrowLeftRight className="h-3.5 w-3.5 text-primary" />
-                    Formateur
-                </Button>
+                {isInstructor && (
+                  <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-xs font-bold gap-1.5"
+                      onClick={() => switchRole('instructor')}
+                  >
+                      <ArrowLeftRight className="h-3.5 w-3.5 text-primary" />
+                      Formateur
+                  </Button>
+                )}
             </div>
        </footer>
     </div>

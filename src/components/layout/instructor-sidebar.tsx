@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -20,7 +21,8 @@ import {
   UserCircle,
   X,
   ArrowLeftRight,
-  Shield
+  Shield,
+  FileQuestion
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -80,6 +82,7 @@ export function InstructorSidebar({
       label: "PÉDAGOGIE",
       items: [
         { label: "Devoirs", icon: ClipboardCheck, href: "/instructor/devoirs" },
+        { label: "Quiz", icon: FileQuestion, href: "/instructor/quiz" },
         { label: "Questions", icon: MessageSquare, href: "/instructor/questions-reponses" },
         { label: "Annonces", icon: Megaphone, href: "/instructor/annonces" },
         { label: "Avis", icon: Star, href: "/instructor/avis" },
@@ -92,37 +95,17 @@ export function InstructorSidebar({
         { label: "Revenus", icon: BadgeEuro, href: "/instructor/revenus" },
         { label: "Certificats", icon: Award, href: "/instructor/certificats" },
       ]
-    },
-    {
-      label: "COMPTE",
-      items: [
-        { label: "Mon Profil Public", icon: UserCircle, href: `/instructor/${currentUser?.uid}` },
-        { label: "Paramètres", icon: Settings, href: "/instructor/settings" },
-      ]
     }
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#111827] text-white border-r border-white/10 shadow-sm">
-      
-      <div className="p-4 border-b border-white/10 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-            <Image src="/logo.png" width={32} height={32} alt="Logo" className="rounded-full" />
-            <span className="font-bold text-lg text-white truncate">{siteName}</span>
-        </div>
-        <Button variant="ghost" size="icon" className="md:hidden text-slate-400" onClick={onLinkClick}>
-            <X className="h-6 w-6" />
-        </Button>
-      </div>
-
-      <div className="px-4 py-4">
-        <Button asChild className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-[0.15em] h-12 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">
-          <Link href="/instructor/courses/create" onClick={onLinkClick}>
-            <PlusCircle className="h-4 w-4" />
-            NOUVEAU COURS
-          </Link>
-        </Button>
-      </div>
+    <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
+      <header className="p-4 border-b border-white/10 flex items-center gap-2">
+        <Image src="/logo.png" width={28} height={28} alt="Ndara Afrique Logo" className="rounded-full" />
+        <span className="font-bold text-lg text-white truncate">
+          {siteName}
+        </span>
+      </header>
 
       <nav className="flex-1 py-2 overflow-y-auto custom-scrollbar">
         {groups.map((group, gIdx) => (
