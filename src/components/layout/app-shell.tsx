@@ -96,7 +96,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             const settingsData = docSnap.data();
             const fetchedName = settingsData.general?.siteName || '';
             setSiteSettings({
-                siteName: (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName,
+                siteName: (fetchedName === "Forma Afrique" || !fetchedName) ? "Ndara Afrique" : fetchedName,
                 logoUrl: '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
@@ -157,14 +157,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // ✅ LOGIQUE DE REDIRECTION BASÉE SUR LE RÔLE ACTIF (switchRole)
+    // ✅ REDIRECTION AUTOMATIQUE BASÉE SUR LE RÔLE ACTIF
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
+    const isRootPath = cleanPath === '/' || cleanPath === '';
 
-    if (role === 'admin' && !isAdminArea && !isPublicPage && !isAuthPage) {
+    // Si sur la page d'accueil ou de login mais déjà connecté, redirection vers le dashboard approprié
+    if (isRootPath || isAuthPage) {
+        if (role === 'admin') router.push('/admin');
+        else if (role === 'instructor') router.push('/instructor/dashboard');
+        else router.push('/student/dashboard');
+        return;
+    }
+
+    // Forcer la zone de navigation selon le rôle actif (switchRole)
+    if (role === 'admin' && !isAdminArea && !isPublicPage) {
       router.push('/admin');
-    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isAuthPage && !isStudentArea) {
+    } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {
       router.push('/instructor/dashboard');
     } else if (role === 'student' && (isAdminArea || isInstructorArea)) {
       router.push('/student/dashboard');

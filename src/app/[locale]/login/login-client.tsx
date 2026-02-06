@@ -73,7 +73,7 @@ export default function LoginClient() {
       if (role === 'admin') {
         router.push('/admin');
       } else if (role === 'instructor') {
-        router.push('/instructor/courses');
+        router.push('/instructor/dashboard');
       } else {
         router.push('/student/dashboard');
       }
@@ -93,7 +93,8 @@ export default function LoginClient() {
                 setLogoUrl(settingsData.logoUrl);
             }
             if (settingsData?.siteName) {
-                setSiteName(settingsData.siteName);
+                const fetchedName = settingsData.siteName;
+                setSiteName(fetchedName === "Forma Afrique" ? "Ndara Afrique" : fetchedName);
             }
         }
     };
@@ -109,7 +110,6 @@ export default function LoginClient() {
 
     if (!userDocSnap.exists()) {
         const now = serverTimestamp();
-        // On utilise 'as any' ici pour éviter les erreurs de propriétés manquantes dans NdaraUser
         const finalUserData: any = {
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
@@ -127,21 +127,12 @@ export default function LoginClient() {
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
             isProfileComplete: false,
             preferredLanguage: locale as 'fr' | 'en',
-            socialLinks: {
-                website: '',
-                twitter: '',
-                linkedin: '',
-                youtube: '',
-            },
+            socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
             payoutInfo: {},
             instructorNotificationPreferences: {},
             pedagogicalPreferences: {},
             notificationPreferences: {},
-            careerGoals: {
-                currentRole: '',
-                interestDomain: '',
-                mainGoal: '',
-            },
+            careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
             permissions: {},
             badges: [],
         };
@@ -151,13 +142,22 @@ export default function LoginClient() {
         }
 
         await setDoc(userDocRef, finalUserData, { merge: true });
+        localStorage.setItem('ndaraafrique-role', 'student');
     } else {
         const existingData = userDocSnap.data() as NdaraUser;
+        
+        // Determination de la route selon le role en BDD
         if (existingData.role === 'admin') {
             targetRoute = '/admin';
         } else if (existingData.role === 'instructor') {
-          targetRoute = '/instructor/courses';
+            targetRoute = '/instructor/dashboard';
+        } else {
+            targetRoute = '/student/dashboard';
         }
+
+        // Sauvegarde immédiate du rôle pour RoleContext
+        localStorage.setItem('ndaraafrique-role', existingData.role || 'student');
+        
         await setDoc(userDocRef, { lastLogin: serverTimestamp(), isOnline: true }, { merge: true });
     }
     
@@ -212,7 +212,7 @@ export default function LoginClient() {
         <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-6">
                 <Link href="/" className="mb-4">
-                  {logoUrl ? <Image src={logoUrl} alt={siteName} width={60} height={60} className="rounded-full" /> : <Image src="/icon.svg" alt="Ndara Afrique Logo" width={60} height={60}/>}
+                  <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full" />
                 </Link>
             </div>
             
