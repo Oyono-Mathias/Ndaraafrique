@@ -62,9 +62,18 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
     console.error("CREATE_COURSE_CRITICAL_ERROR:", error);
+    
+    // Message d'erreur pédagogique pour l'utilisateur
+    let userMessage = `Erreur serveur : ${error.message}`;
+    if (error.message.includes('ADMIN_SDK_NOT_INITIALIZED')) {
+        userMessage = "Le service de base de données n'est pas encore configuré sur le serveur. Veuillez contacter l'administrateur pour vérifier les variables d'environnement.";
+    } else if (error.message.includes('permission-denied')) {
+        userMessage = "Permissions Firestore insuffisantes pour le SDK Admin. Vérifiez les règles de sécurité.";
+    }
+
     return { 
       success: false, 
-      message: `Erreur serveur lors de l'enregistrement : ${error.message}. Vérifiez que les services Firebase (Firestore & Storage) sont activés.` 
+      message: userMessage 
     };
   }
 }

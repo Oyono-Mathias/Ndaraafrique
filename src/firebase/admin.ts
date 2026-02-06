@@ -44,7 +44,7 @@ export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
 export function getAdminDb() {
     const db = admin.apps.length > 0 ? admin.firestore() : null;
     if (!db) {
-        throw new Error("La base de données Firebase Admin n'est pas initialisée. Vérifiez vos variables d'environnement (FIREBASE_SERVICE_ACCOUNT_KEY).");
+        throw new Error("ADMIN_SDK_NOT_INITIALIZED: Vérifiez que la variable d'environnement FIREBASE_SERVICE_ACCOUNT_KEY est bien configurée dans votre projet (Vercel ou Firebase Hosting).");
     }
     return db;
 }
