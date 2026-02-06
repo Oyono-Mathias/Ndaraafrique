@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition } from 'react';
@@ -84,7 +83,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
         toast({ 
             variant: 'destructive', 
             title: "Échec du téléversement", 
-            description: "Cloud Storage n'est pas activé. Utilisez l'option 'Images Internes' pour continuer." 
+            description: "Cloud Storage n'est pas activé. Utilisez l'option 'Templates' pour continuer." 
         });
         setUploadProgress(null);
       },
@@ -102,7 +101,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const handleSelectTemplate = (url: string) => {
       form.setValue('imageUrl', url);
       setImagePreview(url);
-      toast({ title: "Image interne sélectionnée" });
+      toast({ title: "Template sélectionné" });
   };
 
   const handleMathiasHelp = async () => {
