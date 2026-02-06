@@ -35,7 +35,7 @@ interface SidebarProps {
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname() || '';
-  const isActive = pathname.startsWith(href);
+  const isActive = pathname.replace(/^\/(en|fr)/, '').startsWith(href);
 
   return (
     <Link

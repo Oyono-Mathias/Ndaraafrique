@@ -148,7 +148,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, searchParams]);
 
   useEffect(() => {
-    if (loading) return; // ✅ IMPORTANT : On attend que le profil complet soit chargé (Auth + Firestore)
+    // Ne rien faire tant que le RoleContext est en train de charger (Firestore)
+    if (loading) return; 
 
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
@@ -157,13 +158,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // ✅ REDIRECTION AUTOMATIQUE BASÉE SUR LE RÔLE ACTIF
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
     const isRootPath = cleanPath === '/' || cleanPath === '';
 
-    // Si sur la page d'accueil ou de login mais déjà connecté, redirection vers le dashboard approprié
+    // ✅ REDIRECTION SMART AU CHARGEMENT / ACTUALISATION
     if (isRootPath || isAuthPage) {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
@@ -171,12 +171,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // Forcer la zone de navigation selon le rôle actif (switchRole)
+    // ✅ GARDE-FOU STRICT PAR RÔLE ACTIF
     if (role === 'admin' && !isAdminArea && !isPublicPage) {
       router.push('/admin');
     } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {
+      // Si on est formateur et qu'on n'est ni en zone formateur, ni en zone publique, ni en zone étudiant choisie
       router.push('/instructor/dashboard');
     } else if (role === 'student' && (isAdminArea || isInstructorArea)) {
+      // Si on a basculé en mode étudiant, on ne doit pas être en zone admin/formateur
       router.push('/student/dashboard');
     }
 
@@ -192,7 +194,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="flex h-screen w-full items-center justify-center bg-slate-950">
         <div className="flex flex-col items-center gap-4">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Chargement de votre espace...</p>
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Initialisation...</p>
         </div>
       </div>
     );

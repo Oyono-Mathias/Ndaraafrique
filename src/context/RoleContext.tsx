@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -42,7 +41,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         const userDocRef = doc(db, 'users', auth.currentUser.uid);
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
-    // ✅ Suppression de la clé localStorage Ndara
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
     router.push('/login');
@@ -127,11 +125,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // ✅ Correction de la clé localStorage
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
+              // Si pas de préférence, on utilise le rôle défini en BDD
               setRole(userData.role || 'student');
           }
 
@@ -153,6 +151,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
             };
             await setDoc(userDocRef, newUserDoc);
+            setRole('student');
         }
         setLoading(false);
     }, (error) => {
@@ -166,7 +165,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
-      // ✅ Correction de la clé localStorage
       localStorage.setItem('ndaraafrique-role', newRole);
       
       if (newRole === 'admin') router.push('/admin');
