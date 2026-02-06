@@ -69,7 +69,6 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     timestamp: new Date() 
   }), []);
 
-  // Écoute temps réel des derniers messages
   useEffect(() => {
     if (!user) return;
 
@@ -149,8 +148,17 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
       const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       
       batch.set(userMsgRef, { sender: "user", text: userText, timestamp: serverTimestamp() });
-      batch.set(aiMsgRef, { sender: "ai", text: result.response, timestamp: serverTimestamp() });
+      batch.set(aiMsgRef, { 
+        sender: "ai", 
+        text: result.response, 
+        timestamp: serverTimestamp(),
+        error: result.isError 
+      });
       await batch.commit();
+
+      if (result.isError) {
+          setHasError(true);
+      }
     } catch (error) {
       console.error("Tutor error:", error);
       setHasError(true);
@@ -161,7 +169,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-      <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
         <Button variant="ghost" size="icon" className="mr-0 text-slate-300 h-10 w-8 rounded-full" onClick={() => router.push('/student/dashboard')}>
@@ -222,7 +230,8 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                       "max-w-[85%] px-2.5 py-1.5 rounded-lg text-[14.5px] leading-relaxed shadow-sm relative min-w-[60px]",
                       isMe 
                         ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
-                        : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
+                        : "bg-[#202c33] text-[#e9edef] rounded-tl-none",
+                      msg.error && !isMe && "border border-red-500/30"
                   )}>
                     <p className="whitespace-pre-wrap pr-10">{msg.text}</p>
                     <div className={cn(
@@ -250,7 +259,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
           {hasError && (
             <div className="flex flex-col items-center gap-4 py-6 animate-in fade-in zoom-in duration-500">
                 <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-xl border border-red-500/20 max-w-[80%] text-center">
-                    <p className="text-sm">Oups ! Mathias a du mal à se connecter à sa source de savoir. Tu peux réessayer ou contacter notre équipe humaine.</p>
+                    <p className="text-sm">Oups ! Mathias a du mal à se connecter. Tu peux réessayer ou contacter notre équipe humaine pour obtenir de l'aide.</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => handleSendMessage()} className="bg-transparent border-slate-700 text-slate-300 rounded-full h-9 px-4">
@@ -258,7 +267,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                     </Button>
                     <Button variant="secondary" size="sm" asChild className="rounded-full h-9 px-4 bg-primary text-primary-foreground font-bold">
                         <Link href="/student/support">
-                            <HelpCircle className="h-3 w-3 mr-2" /> Support
+                            <HelpCircle className="h-3 w-3 mr-2" /> Support Client
                         </Link>
                     </Button>
                 </div>

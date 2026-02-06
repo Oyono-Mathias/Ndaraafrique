@@ -129,7 +129,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-       <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
+       {/* Fond WhatsApp Pattern généré par CSS pour éviter les liens cassés */}
+       <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
        <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
             <Button 

@@ -2,10 +2,6 @@
 
 /**
  * @fileOverview Implements the MATHIAS AI Tutor Chat flow for student assistance.
- *
- * - mathiasTutor - The main function to initiate the AI tutor chat.
- * - MathiasTutorInput - Input type for the mathiasTutor function.
- * - MathiasTutorOutput - Output type for the mathiasTutor function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -20,13 +16,10 @@ export type MathiasTutorInput = z.infer<typeof MathiasTutorInputSchema>;
 
 const MathiasTutorOutputSchema = z.object({
   response: z.string().describe('The AI tutor’s response to the student’s query.'),
+  isError: z.boolean().optional().describe('Flag indicating if the response is an error message.'),
 });
 export type MathiasTutorOutput = z.infer<typeof MathiasTutorOutputSchema>;
 
-/**
- * Tool to fetch the course catalog from Firestore.
- * Handles errors internally to prevent flow crashes.
- */
 const getCourseCatalog = ai.defineTool(
     {
         name: 'getCourseCatalog',
@@ -57,9 +50,6 @@ const getCourseCatalog = ai.defineTool(
     }
 );
 
-/**
- * Tool to search the FAQ in Firestore.
- */
 const searchFaq = ai.defineTool(
     {
         name: 'searchFaq',
@@ -78,7 +68,6 @@ const searchFaq = ai.defineTool(
             if (keywords.length === 0) return { answer: undefined };
             
             const faqsRef = adminDb.collection('faqs');
-            // Simplified search for prototype robustness
             const q = faqsRef.where('tags', 'array-contains-any', keywords.slice(0, 10));
             const snapshot = await q.get();
 
@@ -132,18 +121,23 @@ const mathiasTutorFlow = ai.defineFlow(
   async input => {
     try {
         if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
-            console.error("MATHIAS Error: No API Key configured.");
-            return { response: "Bara ala ! Je rencontre une petite difficulté de configuration. Si ma sagesse vous manque, n'hésitez pas à ouvrir un ticket au support client ou à consulter notre FAQ. Je serai de retour très bientôt !" };
+            return { 
+                response: "Bara ala ! Je rencontre une petite difficulté de configuration. Si ma sagesse vous manque, n'hésitez pas à ouvrir un ticket au support client. Je serai de retour très bientôt !",
+                isError: true
+            };
         }
 
         const {output} = await mathiasTutorPrompt(input);
         if (!output || !output.response) {
             throw new Error("L'IA n'a pas généré de contenu.");
         }
-        return output;
+        return { ...output, isError: false };
     } catch (error: any) {
         console.error("Mathias Flow Execution Error:", error);
-        return { response: "Bara ala ! J'ai eu un petit vertige technique en cherchant votre réponse. Vous pouvez réessayer dans quelques secondes. Si le problème persiste, n'hésitez pas à ouvrir un ticket au support, mon équipe humaine prendra le relais !" };
+        return { 
+            response: "Bara ala ! J'ai eu un petit vertige technique en cherchant votre réponse. Vous pouvez réessayer dans quelques secondes. Si le problème persiste, n'hésitez pas à ouvrir un ticket au support.",
+            isError: true 
+        };
     }
   }
 );
