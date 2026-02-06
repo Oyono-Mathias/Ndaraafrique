@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Client de chat pour le Tuteur MATHIAS.
+ * Gère l'historique et l'interactivité en temps réel.
  */
 
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
@@ -261,6 +262,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Message"
+                    autoComplete="off"
                     disabled={isAiResponding}
                     className="flex-1 bg-transparent border-none text-white placeholder:text-[#8696a0] text-[16px] h-10 focus-visible:ring-0 shadow-none px-1"
                 />

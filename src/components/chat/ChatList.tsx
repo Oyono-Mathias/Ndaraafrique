@@ -2,11 +2,12 @@
 
 /**
  * @fileOverview Liste des conversations Ndara Afrique (Android-First).
+ * Synchronisation en temps réel avec Firestore.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, getDocs, onSnapshot } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { MessageSquare, Search, UserPlus, MoreVertical } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -16,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import type { Chat, NdaraUser } from '@/lib/types';
-import { formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceToNowStrict, isToday, format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 
@@ -26,7 +27,15 @@ interface EnrichedChat extends Chat {
 
 const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSelected: boolean, isUnread: boolean }) => {
     const router = useRouter();
-    const lastDate = (chat.updatedAt as any)?.toDate?.();
+    const lastDate = (chat.updatedAt as any)?.toDate?.() || new Date();
+
+    const displayTime = useMemo(() => {
+        if (!lastDate) return '';
+        if (isToday(lastDate)) {
+            return format(lastDate, 'HH:mm', { locale: fr });
+        }
+        return formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr });
+    }, [lastDate]);
 
     return (
         <button 
@@ -59,7 +68,7 @@ const ChatListItem = ({ chat, isSelected, isUnread }: { chat: EnrichedChat, isSe
                         "text-[10px] font-black uppercase tracking-tighter",
                         isUnread ? "text-primary" : "text-slate-500"
                     )}>
-                        {lastDate ? formatDistanceToNowStrict(lastDate, { addSuffix: false, locale: fr }) : ''}
+                        {displayTime}
                     </span>
                 </div>
                 <p className={cn(
@@ -78,44 +87,42 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
     const db = getFirestore();
     const router = useRouter();
     const [enrichedChats, setEnrichedChats] = useState<EnrichedChat[]>([]);
-    const [dataLoading, setDataLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const chatsQuery = useMemo(() =>
-        user ? query(
+    useEffect(() => {
+        if (!user) return;
+
+        // Écouter la liste des chats en temps réel
+        const chatsQuery = query(
             collection(db, 'chats'), 
             where('participants', 'array-contains', user.uid), 
             orderBy('updatedAt', 'desc')
-        ) : null,
-        [db, user]
-    );
-    const { data: chats, isLoading: chatsLoading } = useCollection<Chat>(chatsQuery);
+        );
 
-    useEffect(() => {
-        if (!chats || chatsLoading) return;
-
-        const enrich = async () => {
-            setDataLoading(true);
-            const otherIds = chats.map(c => c.participants.find(p => p !== user?.uid)).filter(Boolean) as string[];
+        const unsubscribe = onSnapshot(chatsQuery, async (snap) => {
+            const chatsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as Chat));
+            const otherIds = chatsData.map(c => c.participants.find(p => p !== user.uid)).filter(Boolean) as string[];
             
             if (otherIds.length === 0) {
                 setEnrichedChats([]);
-                setDataLoading(false);
+                setIsLoading(false);
                 return;
             }
 
+            // Charger les profils des autres participants
             const usersMap = new Map<string, NdaraUser>();
             const uniqueOtherIds = [...new Set(otherIds)];
 
             for (let i = 0; i < uniqueOtherIds.length; i += 30) {
                 const chunk = uniqueOtherIds.slice(i, i + 30);
                 const q = query(collection(db, 'users'), where('uid', 'in', chunk));
-                const snap = await getDocs(q);
-                snap.forEach(d => usersMap.set(d.id, d.data() as NdaraUser));
+                const userSnap = await getDocs(q);
+                userSnap.forEach(d => usersMap.set(d.id, d.data() as NdaraUser));
             }
 
-            const enriched = chats.map(chat => {
-                const otherId = chat.participants.find(p => p !== user?.uid);
+            const enriched = chatsData.map(chat => {
+                const otherId = chat.participants.find(p => p !== user.uid);
                 return {
                     ...chat,
                     otherParticipant: usersMap.get(otherId || '') || { fullName: 'Utilisateur Ndara' }
@@ -123,11 +130,11 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
             });
 
             setEnrichedChats(enriched);
-            setDataLoading(false);
-        };
+            setIsLoading(false);
+        });
 
-        enrich();
-    }, [chats, user, db, chatsLoading]);
+        return () => unsubscribe();
+    }, [user, db]);
 
     const filteredChats = useMemo(() => {
         return enrichedChats.filter(c => 
@@ -156,7 +163,7 @@ export function ChatList({ selectedChatId }: { selectedChatId: string | null }) 
             </header>
 
             <ScrollArea className="flex-1">
-                {chatsLoading || dataLoading ? (
+                {isLoading ? (
                     <div className="px-4 space-y-4">
                         {[...Array(6)].map((_, i) => (
                             <div key={i} className="flex items-center gap-4 py-2">

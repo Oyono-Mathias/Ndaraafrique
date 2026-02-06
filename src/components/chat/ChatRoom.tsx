@@ -41,6 +41,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Écouter les métadonnées du chat et charger l'autre participant
   useEffect(() => {
     if (!chatId || !user) return;
 
@@ -58,7 +59,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 });
             }
 
-            // Marquage comme lu
+            // Marquer comme lu si nécessaire
             if (data.unreadBy?.includes(user.uid)) {
                 updateDoc(chatRef, { 
                     unreadBy: arrayRemove(user.uid) 
@@ -70,6 +71,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     return () => unsubChat();
   }, [chatId, user, db, otherParticipant]);
 
+  // Écouter les messages en temps réel
   useEffect(() => {
     if (!chatId) return;
     const q = query(collection(db, `chats/${chatId}/messages`), orderBy('createdAt', 'asc'));
@@ -78,6 +80,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         const msgs = snap.docs.map(d => ({ id: d.id, ...d.data() } as Message));
         setMessages(msgs);
         
+        // Scroll automatique vers le bas
         setTimeout(() => {
             if (scrollAreaRef.current) {
                 const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
@@ -104,16 +107,18 @@ export function ChatRoom({ chatId }: { chatId: string }) {
         const msgRef = doc(collection(db, `chats/${chatId}/messages`));
         const chatRef = doc(db, 'chats', chatId);
 
+        const now = serverTimestamp();
+
         batch.set(msgRef, {
             senderId: user.uid,
             text,
-            createdAt: serverTimestamp(),
+            createdAt: now,
             status: 'sent',
         });
 
         batch.update(chatRef, {
             lastMessage: text,
-            updatedAt: serverTimestamp(),
+            updatedAt: now,
             lastSenderId: user.uid,
             unreadBy: arrayUnion(otherParticipant?.uid || '')
         });
@@ -128,7 +133,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-       {/* Fond doodle WhatsApp exact */}
        <div className="absolute inset-0 opacity-[0.06] pointer-events-none bg-[url('https://i.postimg.cc/9FmXdBZ0/whatsapp-bg.png')] z-0 bg-repeat" />
 
        {/* --- HEADER --- */}
@@ -177,6 +181,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
                 {messages.map((msg) => {
                     const isMe = msg.senderId === user?.uid;
+                    // Gestion du timestamp null pendant l'envoi optimiste
                     const date = (msg.createdAt as any)?.toDate?.() || new Date();
                     
                     return (
@@ -190,7 +195,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                     ? "bg-[#005c4b] text-[#e9edef] rounded-tr-none" 
                                     : "bg-[#202c33] text-[#e9edef] rounded-tl-none"
                             )}>
-                                <span className="pr-12">{msg.text}</span>
+                                <span className="pr-12 block whitespace-pre-wrap">{msg.text}</span>
                                 <div className={cn(
                                   "absolute bottom-1 right-1.5 flex items-center gap-1",
                                   isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
@@ -205,7 +210,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             </div>
         </ScrollArea>
 
-        {/* --- INPUT (BARRE DE SAISIE FLOTTANTE) --- */}
+        {/* --- INPUT (BARRE DE SAISIE) --- */}
         <div className="p-2 bg-transparent safe-area-pb z-20 flex items-end gap-2">
             <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md">
                 <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Smile className="h-6 w-6" /></Button>
@@ -214,6 +219,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                         value={newMessage}
                         onChange={(e) => setNewMessage(e.target.value)}
                         placeholder="Message"
+                        autoComplete="off"
                         className="flex-1 bg-transparent border-none text-white placeholder:text-[#8696a0] text-[16px] h-10 focus-visible:ring-0 shadow-none px-1"
                     />
                 </form>
