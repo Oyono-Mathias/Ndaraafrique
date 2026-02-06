@@ -141,6 +141,7 @@ export default function LoginClient() {
         }
 
         await setDoc(userDocRef, finalUserData, { merge: true });
+        // Initialiser le rôle par défaut dans le stockage local pour éviter les délais
         localStorage.setItem('ndaraafrique-role', 'student');
     } else {
         const existingData = userDocSnap.data() as NdaraUser;
@@ -150,6 +151,7 @@ export default function LoginClient() {
         else if (targetRole === 'instructor') targetRoute = '/instructor/dashboard';
         else targetRoute = '/student/dashboard';
 
+        // ✅ Sauvegarde immédiate du rôle réel
         localStorage.setItem('ndaraafrique-role', targetRole);
         await setDoc(userDocRef, { lastLogin: serverTimestamp(), isOnline: true }, { merge: true });
     }

@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp } from 'firebase/firestore';
 import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -112,7 +112,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // Gestion de la persistance du mode actif via localStorage (survit au refresh)
+          // GESTION DE LA PERSISTANCE DU MODE : Priorité au choix local s'il est valide
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
@@ -122,6 +122,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
         } else {
+            // Création automatique si le document n'existe pas
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
@@ -142,6 +143,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             setRole('student');
             localStorage.setItem('ndaraafrique-role', 'student');
         }
+        // ✅ On ne libère le chargement qu'une fois le rôle résolu
         setLoading(false);
     }, (error) => {
         console.error("Error fetching user data:", error);

@@ -161,6 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
     const isRootPath = cleanPath === '/' || cleanPath === '';
 
+    // REDIRECTION STRICTE BASÉE SUR LE RÔLE ACTIF (Défini par RoleContext)
     if (isRootPath || isAuthPage) {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
@@ -168,6 +169,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
+    // Protection des zones
     if (role === 'admin' && !isAdminArea && !isPublicPage) {
       router.push('/admin');
     } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {
@@ -183,7 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <MaintenancePage />;
   }
 
-  // ✅ Utilisation du nouveau LoadingScreen Vintage
+  // ✅ UTILISATION DU LOADING SCREEN VINTAGE POUR ÉVITER LES SAUTS DE PAGE
   if (loading && !isPublicPage && !isAuthPage) {
     return <LoadingScreen />;
   }
