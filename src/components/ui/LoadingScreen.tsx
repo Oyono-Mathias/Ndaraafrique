@@ -40,7 +40,7 @@ export function LoadingScreen() {
         {/* Cercle d'animation principal */}
         <div className="relative h-24 w-24">
           {/* Anneau extérieur tournant */}
-          <div className="absolute inset-0 rounded-full border-2 border-[#CC7722]/20 border-t-[#CC7722] animate-spin duration-[2s]" />
+          <div className="absolute inset-0 rounded-full border-2 border-[#CC7722]/20 border-t-[#CC7722] animate-spin [animation-duration:2s]" />
           
           {/* Icône centrale pulsante */}
           <div className="absolute inset-0 flex items-center justify-center">

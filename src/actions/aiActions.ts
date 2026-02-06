@@ -1,10 +1,8 @@
-
 'use server';
 
 import { adminDb } from '@/firebase/admin';
-import { grantCourseAccess } from './userActions';
+import { grantCourseAccess } from '@/actions/userActions';
 import type { NdaraUser, Course } from '@/lib/types';
-import { FieldValue } from 'firebase-admin/firestore';
 
 async function findUserByEmail(email: string): Promise<(NdaraUser & { uid: string }) | null> {
     if (!adminDb) return null;
@@ -18,7 +16,6 @@ async function findUserByEmail(email: string): Promise<(NdaraUser & { uid: strin
 
 async function findCourseByTitle(title: string): Promise<(Course & { id: string }) | null> {
     if (!adminDb) return null;
-    // This requires a very close match. A more robust solution might use a search index like Algolia.
     const coursesRef = adminDb.collection('courses');
     const q = coursesRef.where('title', '>=', title).where('title', '<=', title + '\uf8ff').limit(1);
     const snapshot = await q.get();
