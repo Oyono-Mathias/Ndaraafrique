@@ -94,6 +94,16 @@ export interface NdaraUser {
   permissions?: { [key: string]: boolean };
 };
 
+export interface InvestorLead {
+  id: string;
+  fullName: string;
+  email: string;
+  organization?: string;
+  message?: string;
+  createdAt: Timestamp | FieldValue;
+  status: 'new' | 'contacted' | 'interested' | 'rejected';
+}
+
 export interface Lecture {
   id: string;
   title: string;

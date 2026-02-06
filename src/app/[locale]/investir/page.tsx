@@ -2,12 +2,13 @@
 
 /**
  * @fileOverview Page dédiée aux investisseurs et partenaires de Ndara Afrique.
- * Présente la vision, l'impact et la procédure pour rejoindre l'aventure.
+ * Présente la vision, l'impact et la procédure opérationnelle pour rejoindre l'aventure.
  */
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { TrendingUp, Globe, Users, ShieldCheck, FileText, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { TrendingUp, Globe, Users, ShieldCheck, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { InvestorLeadForm } from '@/components/investor/InvestorLeadForm';
 
 const ImpactStat = ({ icon: Icon, value, label }: { icon: React.ElementType, value: string, label: string }) => (
     <div className="text-center p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] shadow-xl">
@@ -62,48 +63,38 @@ export default function InvestPage() {
                     <div className="space-y-8">
                         <ProcedureStep 
                             number="01" 
-                            title="Prise de contact" 
-                            description="Envoyez-nous une demande d'intérêt via le formulaire ou par email. Notre équipe relations investisseurs vous répondra sous 48h."
+                            title="Manifestation d'intérêt" 
+                            description="Remplissez le formulaire ci-contre pour nous faire part de votre intérêt. Vos données sont traitées confidentiellement."
                         />
                         <ProcedureStep 
                             number="02" 
                             title="Examen du Pitch Deck" 
-                            description="Nous vous transmettrons notre dossier complet comprenant notre vision, nos metrics de croissance et notre roadmap technologique."
+                            description="Dès réception, nous vous transmettons notre dossier complet : vision, metrics de croissance et roadmap IA."
                         />
                         <ProcedureStep 
                             number="03" 
                             title="Due Diligence & Meeting" 
-                            description="Rencontre avec les fondateurs pour approfondir la stratégie et valider l'alignement des valeurs."
+                            description="Rencontre avec les fondateurs (Mathias Oyono) pour approfondir la stratégie et valider l'alignement des valeurs."
                         />
                         <ProcedureStep 
                             number="04" 
                             title="Finalisation" 
-                            description="Signature des accords de partenariat et intégration dans l'écosystème Ndara Afrique."
+                            description="Signature des accords de partenariat et intégration officielle dans l'écosystème Ndara Afrique."
                         />
                     </div>
                 </div>
+                
                 <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] p-8 shadow-2xl sticky top-24">
-                    <div className="space-y-6">
-                        <div className="p-4 bg-primary/10 rounded-2xl inline-block">
-                            <FileText className="h-8 w-8 text-primary" />
+                    <InvestorLeadForm />
+                    <div className="mt-8 pt-6 border-t border-white/5 space-y-3">
+                        <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            <span>Impact Panafricain Garanti</span>
                         </div>
-                        <h3 className="text-2xl font-bold text-white uppercase tracking-tight">Demander le dossier</h3>
-                        <p className="text-slate-400 text-sm">Recevez immédiatement notre présentation investisseur (Pitch Deck 2024) et nos prévisions financières.</p>
-                        <div className="space-y-3">
-                            <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                <span>Impact Panafricain</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
-                                <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                                <span>Roadmap Technologique & IA</span>
-                            </div>
+                        <div className="flex items-center gap-3 text-sm text-slate-300 bg-slate-800/50 p-3 rounded-xl border border-slate-700">
+                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                            <span>Roadmap Technologique 2024</span>
                         </div>
-                        <Button className="w-full h-14 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 mt-4" asChild>
-                            <a href="mailto:oyonomathias@gmail.com?subject=Demande de Pitch Deck - Ndara Afrique">
-                                Recevoir le Pitch Deck
-                            </a>
-                        </Button>
                     </div>
                 </Card>
             </section>

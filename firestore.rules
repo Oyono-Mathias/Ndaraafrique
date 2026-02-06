@@ -196,5 +196,10 @@ service cloud.firestore {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
+
+    match /investor_leads/{leadId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+    }
   }
 }
