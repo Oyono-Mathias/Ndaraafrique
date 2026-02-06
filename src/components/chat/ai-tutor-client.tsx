@@ -11,7 +11,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic, Phone, Video, HelpCircle } from "lucide-react";
+import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic, Phone, Video, HelpCircle, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
@@ -133,21 +133,21 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!input.trim() || isAiResponding || !user) return;
+    const messageToSend = input.trim();
+    if (!messageToSend || isAiResponding || !user) return;
 
-    const userText = input;
     setInput("");
     setIsAiResponding(true);
     setHasError(false);
 
     try {
-      const result = await mathiasTutor({ query: userText, courseContext: initialContext || undefined });
+      const result = await mathiasTutor({ query: messageToSend, courseContext: initialContext || undefined });
       
       const batch = writeBatch(db);
       const userMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       const aiMsgRef = doc(collection(db, `users/${user.uid}/chatHistory`));
       
-      batch.set(userMsgRef, { sender: "user", text: userText, timestamp: serverTimestamp() });
+      batch.set(userMsgRef, { sender: "user", text: messageToSend, timestamp: serverTimestamp() });
       batch.set(aiMsgRef, { 
         sender: "ai", 
         text: result.response, 
@@ -169,6 +169,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
+      {/* Pattern CSS Robuste */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
@@ -262,7 +263,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                     <p className="text-sm">Oups ! Mathias a du mal à se connecter. Tu peux réessayer ou contacter notre équipe humaine pour obtenir de l'aide.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleSendMessage()} className="bg-transparent border-slate-700 text-slate-300 rounded-full h-9 px-4">
+                    <Button variant="outline" size="sm" onClick={() => handleSendMessage()} className="bg-transparent border-slate-700 text-slate-300 rounded-full h-9 px-4 hover:bg-slate-800">
                         <RefreshCw className="h-3 w-3 mr-2" /> Réessayer
                     </Button>
                     <Button variant="secondary" size="sm" asChild className="rounded-full h-9 px-4 bg-primary text-primary-foreground font-bold">
@@ -283,7 +284,7 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
                 <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Message"
+                    placeholder="Posez votre question..."
                     autoComplete="off"
                     disabled={isAiResponding}
                     className="flex-1 bg-transparent border-none text-white placeholder:text-[#8696a0] text-[16px] h-10 focus-visible:ring-0 shadow-none px-1"
