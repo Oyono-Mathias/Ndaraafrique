@@ -19,6 +19,7 @@ if (!admin.apps.length) {
       
       console.log("Firebase Admin SDK : Initialisé avec succès via la clé JSON.");
     } else {
+      // Tentative d'initialisation par défaut (utile sur Google Cloud / Firebase App Hosting)
       admin.initializeApp();
       console.log("Firebase Admin SDK : Initialisé via les identifiants par défaut de l'environnement.");
     }
@@ -41,7 +42,8 @@ export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
 // Helper pour récupérer la DB de manière sécurisée dans les actions
 export function getAdminDb() {
     if (!admin.apps.length || !adminDb) {
-        throw new Error("Le service de base de données Admin n'est pas initialisé.");
+        // En mode développement, si les variables sont absentes, on renvoie une erreur claire
+        throw new Error("Le service de base de données Admin n'est pas initialisé. Vérifiez FIREBASE_SERVICE_ACCOUNT_KEY.");
     }
     return adminDb;
 }
