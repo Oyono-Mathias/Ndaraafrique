@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Dashboard Formateur Ndara Afrique (Android-First Vintage).
- * Interface de pilotage avec suivi des revenus, inscriptions et devoirs.
+ * Interface de pilotage fiabilisée avec gestion des états vides et erreurs.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -16,7 +16,7 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Users, 
@@ -45,13 +45,17 @@ export default function InstructorDashboard() {
     useEffect(() => {
         if (!instructor?.uid) return;
 
-        setIsLoading(true);
+        // On commence par mettre isLoading à false après un court délai pour éviter le blocage
+        // si une collection est vide.
+        const loadingTimeout = setTimeout(() => setIsLoading(false), 3000);
 
+        // 1. Écouter les revenus (Paiements)
         const unsubPayments = onSnapshot(
             query(collection(db, 'payments'), where('instructorId', '==', instructor.uid), where('status', '==', 'Completed')),
             (snap) => {
                 const total = snap.docs.reduce((acc, d) => acc + (d.data().amount || 0), 0);
                 const performanceMap = new Map<string, number>();
+                
                 snap.docs.forEach(d => {
                     const data = d.data();
                     const title = data.courseTitle || 'Formation';
@@ -64,37 +68,52 @@ export default function InstructorDashboard() {
 
                 setStats(prev => ({ ...prev, totalRevenue: total }));
                 setCoursePerformance(perfArray);
+                setIsLoading(false);
+            },
+            (err) => {
+                console.warn("Firestore error (payments):", err);
+                setIsLoading(false);
             }
         );
 
+        // 2. Compter les étudiants inscrits
         const fetchStudents = async () => {
-            const q = query(collection(db, 'users'), where('role', '==', 'student'));
-            const snap = await getCountFromServer(q);
-            setStats(prev => ({ ...prev, studentCount: snap.data().count }));
+            try {
+                const q = query(collection(db, 'enrollments'), where('instructorId', '==', instructor.uid));
+                const snap = await getCountFromServer(q);
+                setStats(prev => ({ ...prev, studentCount: snap.data().count }));
+            } catch (e) {
+                console.warn("Could not count students:", e);
+            }
         };
         fetchStudents();
 
+        // 3. Devoirs en attente (Collection 'devoirs')
         const unsubDevoirs = onSnapshot(
             query(
                 collection(db, 'devoirs'), 
                 where('instructorId', '==', instructor.uid),
                 where('status', '==', 'submitted'),
-                orderBy('submittedAt', 'desc'),
                 limit(5)
             ),
             (snap) => {
                 setPendingSubmissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AssignmentSubmission)));
                 setIsLoading(false);
+            },
+            (err) => {
+                console.warn("Firestore error (devoirs):", err);
+                setIsLoading(false);
             }
         );
 
         return () => {
+            clearTimeout(loadingTimeout);
             unsubPayments();
             unsubDevoirs();
         };
     }, [instructor?.uid, db]);
 
-    if (isUserLoading || isLoading) {
+    if (isUserLoading || (isLoading && stats.totalRevenue === 0 && stats.studentCount === 0)) {
         return (
             <div className="flex flex-col gap-6 p-4 bg-slate-950 min-h-screen">
                 <Skeleton className="h-10 w-3/4 bg-slate-900 rounded-xl" />
@@ -118,6 +137,7 @@ export default function InstructorDashboard() {
                 <p className="text-slate-500 text-sm mt-2 font-medium italic">Gérez votre académie avec Ndara Afrique.</p>
             </header>
 
+            {/* --- CARTES STATISTIQUES --- */}
             <section className="px-4 grid grid-cols-2 gap-3">
                 <Link href="/instructor/revenus" className="block active:scale-95 transition-transform">
                     <div className="bg-slate-900 border border-slate-800 p-5 rounded-[2rem] shadow-xl relative overflow-hidden h-full">
@@ -146,6 +166,7 @@ export default function InstructorDashboard() {
                 </Link>
             </section>
 
+            {/* --- DEVOIRS À CORRIGER --- */}
             <section className="px-4 space-y-4">
                 <div className="flex items-center justify-between px-1">
                     <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2">
@@ -183,6 +204,7 @@ export default function InstructorDashboard() {
                 )}
             </section>
 
+            {/* --- PERFORMANCE --- */}
             <section className="px-4 space-y-4">
                 <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
                     <TrendingUp className="h-4 w-4" />
@@ -203,12 +225,13 @@ export default function InstructorDashboard() {
                             </span>
                         </div>
                     ))}
-                    {coursePerformance.length === 0 && (
-                        <p className="text-center py-4 text-[10px] text-slate-600 uppercase font-bold">Aucune vente enregistrée</p>
+                    {!isLoading && coursePerformance.length === 0 && (
+                        <p className="text-center py-4 text-[10px] text-slate-600 uppercase font-bold italic opacity-50">Aucune vente enregistrée</p>
                     )}
                 </div>
             </section>
 
+            {/* --- ACCÈS RAPIDES --- */}
             <section className="px-4 grid grid-cols-1 gap-3">
                 <Button variant="outline" asChild className="h-16 justify-between bg-slate-900 border-slate-800 rounded-[1.5rem] group active:scale-95 transition-all">
                     <Link href="/instructor/courses" className="w-full flex items-center justify-between">
