@@ -101,7 +101,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
-          // Calcul des rôles disponibles
           const roles: UserRole[] = ['student'];
           if (userData.role === 'instructor' || userData.isInstructorApproved || userData.role === 'admin') {
               roles.push('instructor');
@@ -126,7 +125,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // Persistance du rôle actif
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
@@ -167,7 +165,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       
-      // Redirection immédiate selon le rôle
       if (newRole === 'admin') router.push('/admin');
       else if (newRole === 'instructor') router.push('/instructor/dashboard');
       else router.push('/student/dashboard');

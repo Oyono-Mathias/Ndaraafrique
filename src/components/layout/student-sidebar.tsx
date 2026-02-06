@@ -94,8 +94,9 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   const [globalProgress, setGlobalProgress] = useState(0);
   const db = getFirestore();
   const [showInstructorSignup, setShowInstructorSignup] = useState(true);
+  
+  // ✅ Correction build : Calcul du profileProgress AVANT le return
   const isProfileComplete = currentUser?.isProfileComplete || false;
-
   const profileProgress = useMemo(() => {
       let progress = 0;
       if (currentUser?.username) progress += 50;
@@ -153,19 +154,16 @@ export function StudentSidebar({ siteName, logoUrl, onLinkClick }: { siteName?: 
   useEffect(() => {
     if (!user?.uid) return;
 
-    // Listen for unread messages
     const chatsQuery = query(collection(db, 'chats'), where('unreadBy', 'array-contains', user.uid));
     const unsubChats = onSnapshot(chatsQuery, (snapshot) => {
         setUnreadMessages(snapshot.size);
     });
 
-    // Listen for unread notifications
     const notifsQuery = query(collection(db, `users/${user.uid}/notifications`), where('read', '==', false));
     const unsubNotifs = onSnapshot(notifsQuery, (snapshot) => {
         setUnreadNotifs(snapshot.size);
     });
 
-    // Listen for global progress
     const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', user.uid));
     const unsubProgress = onSnapshot(progressQuery, (snapshot) => {
         const progressDocs = snapshot.docs.map(d => d.data() as CourseProgress);
