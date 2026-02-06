@@ -74,7 +74,7 @@ function AnnouncementBanner() {
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
-  const { role, isUserLoading, user, currentUser } = useRole();
+  const { role, loading, user, currentUser } = useRole();
   const router = useRouter();
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
@@ -148,7 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, searchParams]);
 
   useEffect(() => {
-    if (isUserLoading) return;
+    if (loading) return; // ✅ IMPORTANT : On attend que le profil complet soit chargé (Auth + Firestore)
 
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
@@ -180,17 +180,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       router.push('/student/dashboard');
     }
 
-  }, [user, role, isUserLoading, cleanPath, router, isPublicPage, isAuthPage]);
+  }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage]);
 
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
 
-  if (isUserLoading && !isPublicPage && !isAuthPage) {
+  if (loading && !isPublicPage && !isAuthPage) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">Chargement de votre espace...</p>
+        </div>
       </div>
     );
   }
