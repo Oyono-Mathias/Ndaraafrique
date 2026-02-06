@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Image from "next/image";
 import { 
   LayoutDashboard, 
   BookOpen, 
@@ -30,6 +31,33 @@ interface SidebarProps {
   logoUrl?: string;
   onLinkClick?: () => void;
 }
+
+const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
+  const pathname = usePathname() || '';
+  const isActive = pathname.startsWith(href);
+
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={cn(
+        "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
+        isActive
+          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20'
+          : 'text-slate-300 hover:bg-slate-800'
+      )}
+    >
+      <div className="flex items-center">
+        <Icon className={cn(
+          "w-5 h-5 mr-4 transition-colors duration-300",
+          isActive ? 'text-primary-foreground' : 'text-slate-500 group-hover:text-primary'
+        )} />
+        <span className="font-medium text-sm leading-tight">{label}</span>
+      </div>
+      {isActive && <div className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 bg-primary-foreground rounded-r-full"></div>}
+    </Link>
+  );
+};
 
 export function InstructorSidebar({ 
   siteName = "Ndara Afrique", 
@@ -75,64 +103,53 @@ export function InstructorSidebar({
   ];
 
   return (
-    <div className="flex flex-col h-full bg-[#050a14] text-white border-r border-slate-800/50">
+    <div className="flex flex-col h-full bg-[#111827] text-white border-r border-white/10 shadow-sm">
       
-      <div className="p-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-            <div className="h-10 w-10 relative bg-primary/20 border border-primary/30 rounded-xl flex items-center justify-center overflow-hidden">
-                <img src="/logo.png" alt="Logo" className="h-7 w-7 object-contain" />
-            </div>
-            <span className="font-bold text-xl tracking-tight line-clamp-1">{siteName}</span>
+      <div className="p-4 border-b border-white/10 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+            <Image src="/logo.png" width={32} height={32} alt="Logo" className="rounded-full" />
+            <span className="font-bold text-lg text-white truncate">{siteName}</span>
         </div>
         <Button variant="ghost" size="icon" className="md:hidden text-slate-400" onClick={onLinkClick}>
             <X className="h-6 w-6" />
         </Button>
       </div>
 
-      <div className="px-4 mb-6">
-        <Button asChild className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] tracking-[0.15em] h-14 rounded-2xl shadow-2xl shadow-primary/30 active:scale-95 transition-all">
+      <div className="px-4 py-4">
+        <Button asChild className="w-full justify-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-[0.15em] h-12 rounded-xl shadow-lg shadow-primary/20 active:scale-95 transition-all">
           <Link href="/instructor/courses/create" onClick={onLinkClick}>
-            <PlusCircle className="h-5 w-5" />
+            <PlusCircle className="h-4 w-4" />
             NOUVEAU COURS
           </Link>
         </Button>
       </div>
 
-      <div className="flex-1 px-4 space-y-8 overflow-y-auto custom-scrollbar pb-10">
+      <nav className="flex-1 py-2 overflow-y-auto custom-scrollbar">
         {groups.map((group, gIdx) => (
-          <div key={gIdx} className="space-y-1">
+          <div key={gIdx} className="py-2">
             {group.label && (
-                <p className="text-[10px] font-black text-slate-500 uppercase px-4 mb-3 tracking-[0.25em]">
+                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
                     {group.label}
                 </p>
             )}
-            {group.items.map((item) => {
-              const active = pathname.includes(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onLinkClick}
-                  className={cn(
-                    "flex items-center gap-x-4 px-4 py-3.5 text-sm font-bold transition-all rounded-2xl group",
-                    active 
-                      ? "bg-primary/10 text-primary" 
-                      : "text-slate-400 hover:text-white hover:bg-slate-800/40"
-                  )}
-                >
-                  <item.icon className={cn("h-5 w-5 transition-colors", active ? "text-primary" : "text-slate-500 group-hover:text-slate-300")} />
-                  <span className="tracking-tight">{item.label}</span>
-                </Link>
-              );
-            })}
+            {group.items.map((item) => (
+              <SidebarItem
+                key={item.href}
+                href={item.href}
+                icon={item.icon}
+                label={item.label}
+                onClick={() => onLinkClick?.()}
+              />
+            ))}
           </div>
         ))}
-      </div>
+      </nav>
 
-      <div className="p-4 border-t border-slate-800/50 space-y-2">
+      <footer className="p-4 border-t border-white/10 space-y-2">
+          <UserNav />
           <Button 
             variant="outline" 
-            className="w-full justify-center bg-slate-900 border-slate-800 hover:bg-slate-800 text-slate-300 gap-2 font-bold"
+            className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold"
             onClick={() => switchRole('student')}
           >
               <ArrowLeftRight className="h-4 w-4 text-primary" />
@@ -144,7 +161,7 @@ export function InstructorSidebar({
                   Panneau Admin
               </Button>
           )}
-      </div>
+      </footer>
     </div>
   );
 }
