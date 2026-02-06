@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -41,7 +40,7 @@ export function SplashScreen() {
     >
       <div className="relative overflow-hidden">
         <Image
-          src="/icon.svg"
+          src="/logo.png"
           alt="Ndara Afrique Logo"
           width={150}
           height={150}

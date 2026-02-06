@@ -68,7 +68,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
 };
 
 
-export function AdminSidebar({ siteName = "Ndara Admin", logoUrl, onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
+export function AdminSidebar({ siteName = "Ndara Admin", logoUrl = "/logo.png", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const db = getFirestore();
   const { currentUser, switchRole } = useRole();
 
@@ -125,7 +125,7 @@ export function AdminSidebar({ siteName = "Ndara Admin", logoUrl, onLinkClick }:
   return (
     <div className="flex flex-col h-full bg-[#111827] border-r border-slate-700">
       <header className="p-4 border-b border-slate-700 flex items-center gap-2">
-        <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt="Logo" className="rounded-full" />
+        <Image src="/logo.png" width={32} height={32} alt="Logo" className="rounded-full" />
         <span className="font-bold text-lg text-white truncate">
           {siteName}
         </span>

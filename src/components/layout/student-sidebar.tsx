@@ -22,7 +22,7 @@ import {
   Trophy,
   CreditCard,
   ArrowLeftRight,
-  Shield, // ✅ Correction Build : Import manquant
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -85,7 +85,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 };
 
 
-export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/icon.svg", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
+export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const { switchRole, availableRoles, user, currentUser } = useRole();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
@@ -97,7 +97,6 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/icon.sv
   
   const isProfileComplete = currentUser?.isProfileComplete || false;
   
-  // ✅ Correction Build : Définition de la variable avant le rendu
   const profileProgress = useMemo(() => {
       let progress = 0;
       if (currentUser?.username) progress += 50;
@@ -186,7 +185,7 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/icon.sv
       <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
         <header className="p-4 border-b border-white/10">
           <Link href="/student/dashboard" className="flex items-center gap-2" onClick={onLinkClick}>
-              <Image src={logoUrl || "/icon.svg"} width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
+              <Image src="/logo.png" width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
               <span className="font-bold text-lg text-white">Ndara Afrique</span>
           </Link>
         </header>

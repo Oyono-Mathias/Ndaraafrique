@@ -98,7 +98,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             // ✅ Sécurité Branding
             setSiteSettings({
                 siteName: (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName,
-                logoUrl: settingsData.general?.logoUrl || '/logo.png',
+                logoUrl: '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
                 allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
                 announcementMessage: settingsData.platform?.announcementMessage || ''

@@ -33,7 +33,7 @@ interface SidebarProps {
 
 export function InstructorSidebar({ 
   siteName = "Ndara Afrique", 
-  logoUrl = "/icon.svg", 
+  logoUrl = "/logo.png", 
   onLinkClick 
 }: SidebarProps) {
   const pathname = usePathname();
@@ -80,7 +80,7 @@ export function InstructorSidebar({
       <div className="p-6 flex items-center justify-between">
         <div className="flex items-center gap-3">
             <div className="h-10 w-10 relative bg-primary/20 border border-primary/30 rounded-xl flex items-center justify-center overflow-hidden">
-                <img src={logoUrl} alt="Logo" className="h-7 w-7 object-contain" />
+                <img src="/logo.png" alt="Logo" className="h-7 w-7 object-contain" />
             </div>
             <span className="font-bold text-xl tracking-tight line-clamp-1">{siteName}</span>
         </div>

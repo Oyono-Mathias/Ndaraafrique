@@ -339,7 +339,7 @@ export default function LandingPage() {
   
   const fetchedName = settings?.general?.siteName || '';
   const siteName = (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName;
-  const logoUrl = settings?.general?.logoUrl || '/logo.png';
+  const logoUrl = '/logo.png';
 
   const popularCourses = useMemo(() => courses.filter(c => c.isPopular).slice(0, 8), [courses]);
   const freeCourses = useMemo(() => courses.filter(c => c.price === 0).slice(0, 8), [courses]);

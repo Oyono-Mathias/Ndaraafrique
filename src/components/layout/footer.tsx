@@ -1,4 +1,3 @@
-
 'use client';
 
 import Link from 'next/link';
@@ -18,7 +17,7 @@ export function Footer() {
   // ✅ Correction Branding Forcée
   const fetchedName = settings?.general?.siteName || '';
   const siteName = (fetchedName.includes('Forma') || !fetchedName) ? 'Ndara Afrique' : fetchedName;
-  const logoUrl = settings?.general?.logoUrl || '/logo.png';
+  const logoUrl = '/logo.png';
 
   return (
     <footer className="mt-32 border-t border-border/40 bg-muted/20 pt-20 pb-12">
@@ -29,7 +28,7 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-3 group mb-6">
               <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-lg bg-primary/20 flex items-center justify-center border border-white/10">
                 <Image 
-                    src={logoUrl} 
+                    src="/logo.png" 
                     alt={`${siteName} Logo`} 
                     width={40} 
                     height={40} 
