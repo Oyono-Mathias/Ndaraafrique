@@ -20,7 +20,7 @@ interface RoleContextType {
   loading: boolean;
   currentUser: NdaraUser | null;
   ndaraUser: any;
-  formaAfriqueUser: any;
+  ndaraafriqueUser: any;
   user: User | null;
   isUserLoading: boolean;
   setCurrentUser: React.Dispatch<React.SetStateAction<NdaraUser | null>>;
@@ -265,7 +265,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     isUserLoading,
     setCurrentUser,
     ndaraUser: currentUser,
-    formaAfriqueUser: currentUser,
+    ndaraafriqueUser: currentUser,
   }), [role, availableRoles, switchRole, secureSignOut, isUserLoading, loading, currentUser, user]);
 
   return (
