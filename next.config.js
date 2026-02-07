@@ -36,6 +36,14 @@ const nextConfig = {
       },
     ],
   },
+  webpack: (config) => {
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+      layers: true,
+    };
+    return config;
+  },
 };
  
 module.exports = withPWA(withNextIntl(nextConfig));
