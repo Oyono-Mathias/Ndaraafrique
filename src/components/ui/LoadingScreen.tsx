@@ -1,12 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Écran de chargement immersif Ndara Afrique.
- * Design Vintage, animation fluide et messages inspirants.
+ * Design épuré avec logo central et animation bleu primaire.
  */
 
 const loadingMessages = [
@@ -38,21 +38,26 @@ export function LoadingScreen() {
 
       <div className="relative flex flex-col items-center gap-8 animate-in fade-in duration-700">
         {/* Cercle d'animation principal */}
-        <div className="relative h-24 w-24">
+        <div className="relative h-28 w-28">
           {/* Anneau extérieur tournant */}
-          <div className="absolute inset-0 rounded-full border-2 border-[#CC7722]/20 border-t-[#CC7722] animate-spin [animation-duration:2s]" />
+          <div className="absolute inset-0 rounded-full border-2 border-primary/20 border-t-primary animate-spin [animation-duration:2s]" />
           
-          {/* Icône centrale pulsante */}
+          {/* Logo central pulsant */}
           <div className="absolute inset-0 flex items-center justify-center">
-            <div className="p-4 bg-[#CC7722]/10 rounded-full animate-pulse">
-              <Sparkles className="h-10 w-10 text-[#CC7722]" strokeWidth={1.5} />
+            <div className="relative h-16 w-16 p-1 bg-slate-900 rounded-full border border-primary/10 shadow-2xl animate-pulse">
+              <Image
+                src="/logo.png"
+                alt="Logo Ndara"
+                fill
+                className="object-contain p-2"
+              />
             </div>
           </div>
         </div>
 
         {/* Textes */}
         <div className="text-center space-y-3 relative z-10">
-          <h2 className="text-[#CC7722] font-black uppercase tracking-[0.4em] text-xs sm:text-sm">
+          <h2 className="text-primary font-black uppercase tracking-[0.4em] text-xs sm:text-sm">
             Ndara Afrique
           </h2>
           <div className="h-4 flex items-center justify-center">
@@ -65,7 +70,7 @@ export function LoadingScreen() {
 
       {/* Barre de progression indéterminée en bas */}
       <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-900 overflow-hidden">
-        <div className="h-full bg-[#CC7722] w-1/3 animate-[loadingLine_1.5s_infinite_ease-in-out]" />
+        <div className="h-full bg-primary w-1/3 animate-[loadingLine_1.5s_infinite_ease-in-out]" />
       </div>
 
       <style jsx global>{`
