@@ -27,6 +27,22 @@ service cloud.firestore {
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructorApproved == true;
     }
 
+    // --- RÈGLES PUBLIQUES (Paramètres & Contenu) ---
+    match /settings/{docId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /carousel_slides/{slideId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
     // --- RÈGLES UTILISATEURS ---
     match /users/{userId} {
       allow read: if isSignedIn();
@@ -91,16 +107,6 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
       }
     }
-    
-    match /settings/{docId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /promoCodes/{codeId} {
-      allow get, list: if isSignedIn();
-      allow write: if isAdmin();
-    }
 
     match /security_logs/{logId} {
       allow read, write: if isAdmin();
@@ -117,13 +123,8 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
     
-    match /faqs/{faqId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /carousel_slides/{slideId} {
-      allow read: if true;
+    match /promoCodes/{codeId} {
+      allow get, list: if isSignedIn();
       allow write: if isAdmin();
     }
   }
