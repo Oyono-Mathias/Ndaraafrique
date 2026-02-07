@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { NdaraUser } from '@/lib/types';
@@ -19,11 +19,22 @@ export function ApplicationsTable() {
   const [selectedApplication, setSelectedApplication] = useState<NdaraUser | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Correction : On retire l'orderBy de la requête Firestore pour éviter de masquer les docs sans date
   const applicationsQuery = useMemo(
-    () => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false), orderBy('createdAt', 'desc')),
+    () => query(collection(db, 'users'), where('role', '==', 'instructor'), where('isInstructorApproved', '==', false)),
     [db]
   );
-  const { data: applications, isLoading } = useCollection<NdaraUser>(applicationsQuery);
+  const { data: rawApplications, isLoading } = useCollection<NdaraUser>(applicationsQuery);
+
+  // Tri manuel en mémoire pour garantir la visibilité
+  const applications = useMemo(() => {
+    if (!rawApplications) return [];
+    return [...rawApplications].sort((a, b) => {
+      const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+      const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [rawApplications]);
 
   const handleViewDetails = (application: NdaraUser) => {
     setSelectedApplication(application);

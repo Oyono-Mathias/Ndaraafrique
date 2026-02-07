@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, getDocs, where, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, getDocs, where } from 'firebase/firestore';
 import type { Payout, NdaraUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -64,7 +64,7 @@ const PayoutRow = ({ payout, instructor }: { payout: Payout; instructor?: Partia
             <TableCell>
                 {payout.date && typeof (payout.date as any).toDate === 'function' 
                     ? format((payout.date as any).toDate(), 'd MMM yyyy, HH:mm', { locale: fr }) 
-                    : ''}
+                    : 'Date inconnue'}
             </TableCell>
             <TableCell>
                 <Badge variant={getStatusVariant(payout.status as PayoutStatus)} className="capitalize">
@@ -135,11 +135,21 @@ export function PayoutsTable() {
     const db = getFirestore();
     const [filter, setFilter] = useState<PayoutStatus>('en_attente');
 
+    // Correction : On retire l'orderBy de la requête Firestore
     const payoutsQuery = useMemo(() => {
-        return query(collection(db, 'payouts'), where('status', '==', filter), orderBy('date', 'desc'));
+        return query(collection(db, 'payouts'), where('status', '==', filter));
     }, [db, filter]);
     
-    const { data: payouts, isLoading: payoutsLoading } = useCollection<Payout>(payoutsQuery);
+    const { data: rawPayouts, isLoading: payoutsLoading } = useCollection<Payout>(payoutsQuery);
+
+    const payouts = useMemo(() => {
+      if (!rawPayouts) return [];
+      return [...rawPayouts].sort((a, b) => {
+        const dateA = (a.date as any)?.toDate?.() || new Date(0);
+        const dateB = (b.date as any)?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      });
+    }, [rawPayouts]);
 
     const [usersMap, setUsersMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
     const [usersLoading, setUsersLoading] = useState(true);
@@ -179,13 +189,13 @@ export function PayoutsTable() {
                 <TabsTrigger value="rejete">Rejetées</TabsTrigger>
             </TabsList>
             <TabsContent value="en_attente">
-                <PayoutsGrid isLoading={isLoading} payouts={payouts || []} usersMap={usersMap} />
+                <PayoutsGrid isLoading={isLoading} payouts={payouts} usersMap={usersMap} />
             </TabsContent>
             <TabsContent value="valide">
-                <PayoutsGrid isLoading={isLoading} payouts={payouts || []} usersMap={usersMap} />
+                <PayoutsGrid isLoading={isLoading} payouts={payouts} usersMap={usersMap} />
             </TabsContent>
             <TabsContent value="rejete">
-                <PayoutsGrid isLoading={isLoading} payouts={payouts || []} usersMap={usersMap} />
+                <PayoutsGrid isLoading={isLoading} payouts={payouts} usersMap={usersMap} />
             </TabsContent>
         </Tabs>
     );

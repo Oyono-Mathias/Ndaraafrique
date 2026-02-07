@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy, getDocs, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs } from 'firebase/firestore';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Course, NdaraUser } from '@/lib/types';
@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Eye, Frown, ShieldAlert } from 'lucide-react';
+import { Eye, ShieldAlert } from 'lucide-react';
 import { ModerationDetailsModal } from './ModerationDetailsModal';
 
 export function ModerationQueue() {
@@ -20,11 +20,21 @@ export function ModerationQueue() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
+  // Correction : On retire l'orderBy pour garantir que tous les cours en attente s'affichent
   const coursesQuery = useMemo(
-    () => query(collection(db, 'courses'), where('status', '==', 'Pending Review'), orderBy('createdAt', 'desc')),
+    () => query(collection(db, 'courses'), where('status', '==', 'Pending Review')),
     [db]
   );
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+  const { data: rawCourses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
+
+  const courses = useMemo(() => {
+    if (!rawCourses) return [];
+    return [...rawCourses].sort((a, b) => {
+      const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+      const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [rawCourses]);
 
   useEffect(() => {
     if (!courses || courses.length === 0) return;
