@@ -33,6 +33,7 @@ import {
   UserCog,
   Ban,
   UserCheck,
+  Users,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
