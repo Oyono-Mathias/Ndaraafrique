@@ -43,7 +43,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    router.push('/login');
+    // ✅ Redirection vers la Landing Page au lieu de /login
+    router.push('/');
   }, [db, router]);
 
   useEffect(() => {

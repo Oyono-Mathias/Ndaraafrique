@@ -151,7 +151,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
-        router.push('/login');
+        // ✅ Redirection vers l'accueil (/) au lieu de /login pour les non-connectés
+        router.push('/');
       }
       return;
     }
@@ -161,7 +162,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
     const isRootPath = cleanPath === '/' || cleanPath === '';
 
-    // REDIRECTION STRICTE BASÉE SUR LE RÔLE ACTIF (Défini par RoleContext)
+    // REDIRECTION STRICTE BASÉE SUR LE RÔLE ACTIF
     if (isRootPath || isAuthPage) {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
@@ -185,7 +186,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return <MaintenancePage />;
   }
 
-  // ✅ UTILISATION DU LOADING SCREEN VINTAGE POUR ÉVITER LES SAUTS DE PAGE
+  // UTILISATION DU LOADING SCREEN VINTAGE
   if (loading && !isPublicPage && !isAuthPage) {
     return <LoadingScreen />;
   }
