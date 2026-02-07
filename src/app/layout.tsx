@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     description: "Rejoignez la révolution de l'éducation en Afrique. Des cours de haute qualité accessibles partout.",
     images: [
       {
-        url: "https://ndara-afrique.app/og-image.jpg", // Image à ajouter dans public/
+        url: "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&h=630&auto=format&fit=crop",
         width: 1200,
         height: 630,
         alt: "Ndara Afrique - Apprenez. Construisez. Prospérez.",
@@ -45,19 +45,12 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Ndara Afrique",
     description: "Le futur de la formation en ligne pour les talents africains.",
-    images: ["https://ndara-afrique.app/og-image.jpg"],
+    images: ["https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&h=630&auto=format&fit=crop"],
     creator: "@ndaraafrique",
   },
   robots: {
     index: true,
     follow: true,
-    googleBot: {
-      index: true,
-      follow: true,
-      'max-video-preview': -1,
-      'max-image-preview': 'large',
-      'max-snippet': -1,
-    },
   },
 };
 
@@ -78,6 +71,7 @@ export default function RootLayout({
         <link rel="icon" href="/logo.png" type="image/png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body
         className={cn(

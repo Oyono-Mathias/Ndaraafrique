@@ -1,29 +1,22 @@
 {
   "name": "Ndara Afrique",
   "short_name": "Ndara",
-  "description": "L'excellence par le savoir - Formations d'experts africains",
+  "description": "Plateforme d'E-learning Pan-Africaine",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#020617",
-  "theme_color": "#CC7722",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any"
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/logo.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
+      "type": "image/png"
     }
   ]
 }
