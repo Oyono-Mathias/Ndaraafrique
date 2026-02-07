@@ -3,8 +3,8 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // --- RÈGLES PUBLIQUES (Lecture libre pour tous) ---
-    // Ces règles doivent être prioritaires pour permettre le chargement du site sans connexion.
+    // --- ACCÈS PUBLICS (Lecture autorisée pour tous, même sans connexion) ---
+    // Indispensable pour charger le site, le logo, les textes et les cours sur la page d'accueil.
     
     match /settings/{docId} {
       allow read: if true;
@@ -26,13 +26,29 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /courses/{courseId} {
+      // Tout le monde peut voir la liste et le détail des cours
+      allow get, list: if true;
+      allow create: if isSignedIn() && (isApprovedInstructor() || isAdmin());
+      allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
+      
+       match /sections/{sectionId} {
+        allow read: if true;
+        allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
+        match /lectures/{lectureId} {
+          allow read: if true;
+          allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
+        }
+      }
+    }
+
     // --- FONCTIONS DE SÉCURITÉ ---
     function isSignedIn() {
       return request.auth != null;
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isSignedIn() && request.auth.uid == userId;
     }
 
     function isAdmin() {
@@ -63,22 +79,6 @@ service cloud.firestore {
       match /wishlist/{courseId} { allow read, write, delete: if isOwner(userId); }
       match /notifications/{notificationId} { allow read, write, list: if isOwner(userId); }
       match /activity/{activityId} { allow read, list: if isOwner(userId); }
-    }
-
-    // --- RÈGLES COURS ---
-    match /courses/{courseId} {
-      allow get, list: if true;
-      allow create: if isSignedIn() && (isApprovedInstructor() || isAdmin());
-      allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-      
-       match /sections/{sectionId} {
-        allow read: if true;
-        allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-        match /lectures/{lectureId} {
-          allow read: if true;
-          allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-        }
-      }
     }
 
     // --- RÈGLES PAIEMENTS ---
