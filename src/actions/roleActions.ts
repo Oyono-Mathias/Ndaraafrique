@@ -113,6 +113,13 @@ export async function initializeDefaultRoles(adminId: string): Promise<{ success
     return { success: true };
   } catch (error: any) {
     console.error("Error initializing roles:", error);
-    return { success: false, error: error.message };
+    
+    // Rendre l'erreur plus explicite pour l'utilisateur
+    let userFriendlyError = error.message;
+    if (error.message.includes('refresh access token')) {
+        userFriendlyError = "Erreur d'authentification serveur. La clé de compte de service Firebase est invalide ou a expiré. Veuillez vérifier vos variables d'environnement.";
+    }
+    
+    return { success: false, error: userFriendlyError };
   }
 }

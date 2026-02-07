@@ -15,7 +15,7 @@ function initializeAdmin() {
 
   try {
     if (serviceAccountKey) {
-      // Nettoyage de la clé pour gérer les sauts de ligne
+      // Nettoyage de la clé pour gérer les sauts de ligne et les caractères spéciaux
       const cleanedKey = serviceAccountKey.trim();
       const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
       
@@ -24,7 +24,8 @@ function initializeAdmin() {
         projectId: projectId
       });
     } else {
-      // Fallback pour les environnements avec credentials par défaut (ex: Google Cloud)
+      // Fallback pour les environnements avec credentials par défaut (ex: Google Cloud ou Firebase Hosting)
+      // Si on est en production sur Firebase, initializeApp sans arguments fonctionne souvent par magie
       return admin.initializeApp({
         projectId: projectId
       });
@@ -42,15 +43,14 @@ function initializeAdmin() {
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas encore configuré. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY.");
+    throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le serveur n'a pas pu initialiser le compte de service. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY dans vos paramètres d'environnement.");
   }
   const db = admin.firestore();
   
-  // ✅ Crucial : Empêche Firestore de planter si une valeur est undefined
   try {
     db.settings({ ignoreUndefinedProperties: true });
   } catch (e) {
-    // Les paramètres ne peuvent être définis qu'une fois, on ignore si déjà fait
+    // Les paramètres ne peuvent être définis qu'une fois
   }
   
   return db;
@@ -62,11 +62,11 @@ export function getAdminDb() {
 export function getAdminAuth() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_CONFIG_ERROR: Le serveur n'est pas encore configuré.");
+    throw new Error("ADMIN_SDK_NOT_INITIALIZED: Impossible d'accéder à Auth Admin.");
   }
   return admin.auth();
 }
 
-// Exportation des instances pour compatibilité ascendante (avec vérification de sécurité)
+// Exportation des instances pour compatibilité
 export const adminDb = admin.apps.length > 0 ? admin.firestore() : null;
 export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
