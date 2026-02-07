@@ -10,6 +10,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { getFirestore, doc, collection, query, where, getDocs, setDoc, serverTimestamp, collectionGroup } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -73,7 +74,6 @@ export default function StudentAssignmentDetailPage() {
 
         // 2. Vérifier si une soumission existe déjà
         if (user) {
-            const subRef = doc(db, 'devoirs', `${user.uid}_${assignmentId}`);
             const subSnap = await getDocs(query(collection(db, 'devoirs'), where('studentId', '==', user.uid), where('assignmentId', '==', assignmentId)));
             if (!subSnap.empty) {
                 setSubmission(subSnap.docs[0].data() as AssignmentSubmission);
