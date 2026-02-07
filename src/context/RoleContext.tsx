@@ -88,12 +88,14 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
+          // Détermination dynamique des rôles disponibles
           const roles: UserRole[] = ['student'];
-          if (userData.role === 'instructor' || userData.isInstructorApproved || userData.role === 'admin') {
+          
+          // Un admin a TOUS les rôles par défaut
+          if (user.email === 'salguienow@gmail.com' || userData.role === 'admin') {
+              roles.push('instructor', 'admin');
+          } else if (userData.role === 'instructor' || userData.isInstructorApproved) {
               roles.push('instructor');
-          }
-          if (userData.role === 'admin') {
-              roles.push('admin');
           }
 
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && userData.fullName);
@@ -107,6 +109,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               profilePictureURL: userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: isComplete,
+              role: userData.role || 'student'
           } as any;
           
           setCurrentUser(resolvedUser);
@@ -122,12 +125,13 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
         } else {
+            // Création automatique du document utilisateur s'il n'existe pas
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
                 username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + user.uid.substring(0, 5),
                 fullName: user.displayName || 'Utilisateur Ndara',
-                role: 'student',
+                role: (user.email === 'salguienow@gmail.com') ? 'admin' : 'student',
                 status: 'active',
                 isInstructorApproved: false,
                 createdAt: serverTimestamp(),
@@ -139,8 +143,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
             };
             await setDoc(userDocRef, newUserDoc);
-            setRole('student');
-            localStorage.setItem('ndaraafrique-role', 'student');
+            setRole(newUserDoc.role as UserRole);
+            localStorage.setItem('ndaraafrique-role', newUserDoc.role);
         }
         setLoading(false);
     }, (error) => {

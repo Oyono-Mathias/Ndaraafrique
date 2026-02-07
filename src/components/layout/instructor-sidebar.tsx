@@ -1,4 +1,3 @@
-
 'use client';
 
 import React from 'react';
@@ -130,20 +129,24 @@ export function InstructorSidebar({
 
       <footer className="p-4 border-t border-white/10 space-y-2">
           <UserNav />
-          <Button 
-            variant="outline" 
-            className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold"
-            onClick={() => switchRole('student')}
-          >
-              <ArrowLeftRight className="h-4 w-4 text-primary" />
-              Mode Étudiant
-          </Button>
-          {isAdmin && (
-              <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => switchRole('admin')}>
-                  <Shield className="h-4 w-4" />
-                  Panneau Admin
-              </Button>
-          )}
+          
+          <div className="space-y-2">
+            {isAdmin && (
+                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => switchRole('admin')}>
+                    <Shield className="h-4 w-4" />
+                    Mode Administrateur
+                </Button>
+            )}
+
+            <Button 
+                variant="outline" 
+                className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold"
+                onClick={() => switchRole('student')}
+            >
+                <ArrowLeftRight className="h-4 w-4 text-primary" />
+                Mode Étudiant
+            </Button>
+          </div>
       </footer>
     </div>
   );
