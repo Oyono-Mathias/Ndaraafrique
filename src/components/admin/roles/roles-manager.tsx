@@ -19,8 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
-import { Loader2, ShieldCheck, ShieldAlert, Lock } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Loader2, ShieldCheck, ShieldAlert, Lock, AlertCircle, Database } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function RolesManager() {
     const db = getFirestore();
@@ -28,12 +28,12 @@ export function RolesManager() {
     const { currentUser } = useRole();
 
     const rolesQuery = useMemo(() => query(collection(db, 'roles'), orderBy('name')), [db]);
-    const { data: roles, isLoading: rolesLoading } = useCollection<Role>(rolesQuery);
+    const { data: roles, isLoading: rolesLoading, error } = useCollection<Role>(rolesQuery);
 
     const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);
     const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
 
-    // ✅ Sélection automatique du rôle par défaut une fois les rôles chargés
+    // ✅ Sélection automatique du premier rôle trouvé
     useEffect(() => {
         if (roles && roles.length > 0 && !selectedRoleId) {
             const instructorRole = roles.find(r => r.name === 'instructor');
@@ -81,13 +81,37 @@ export function RolesManager() {
         }
     };
 
-    if (rolesLoading && !roles) {
+    if (rolesLoading) {
         return (
             <div className="space-y-6">
                 <Skeleton className="h-12 w-64 bg-slate-800 rounded-xl" />
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-64 w-full bg-slate-800 rounded-2xl" />)}
                 </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-red-500/5 border border-red-500/20 rounded-3xl">
+                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
+                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Erreur d'accès</h3>
+                <p className="text-slate-400 mt-2 max-w-md">
+                    Impossible de charger les rôles. Vérifiez vos permissions ou la configuration de la base de données.
+                </p>
+            </div>
+        );
+    }
+
+    if (roles && roles.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-3xl">
+                <Database className="h-12 w-12 text-slate-700 mb-4" />
+                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Aucun rôle défini</h3>
+                <p className="text-slate-500 mt-2 max-w-md">
+                    La collection 'roles' est vide dans Firestore. Veuillez créer les documents 'student', 'instructor' et 'admin' pour commencer.
+                </p>
             </div>
         );
     }
@@ -175,7 +199,7 @@ export function RolesManager() {
             ) : (
                 <div className="text-center py-20 opacity-30">
                     <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
-                    <p className="font-black uppercase tracking-[0.3em]">Chargement des permissions...</p>
+                    <p className="font-black uppercase tracking-[0.3em]">Initialisation du rôle...</p>
                 </div>
             )}
         </div>
