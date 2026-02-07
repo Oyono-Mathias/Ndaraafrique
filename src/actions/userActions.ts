@@ -1,4 +1,4 @@
-'use server';
+'use client';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -87,20 +87,22 @@ export async function updateUserProfileAction({
 }
 
 /**
- * Offre l'accès à un cours (Admin Grant)
+ * Offre l'accès à un cours (Admin Grant / Test Access)
  */
 export async function grantCourseAccess({
     studentId,
     courseId,
     adminId,
     reason,
-    expirationInDays
+    expirationInDays,
+    expirationMinutes
 }: {
     studentId: string;
     courseId: string;
     adminId: string;
     reason: string;
     expirationInDays?: number;
+    expirationMinutes?: number;
 }) {
     try {
         const db = getAdminDb();
@@ -112,6 +114,13 @@ export async function grantCourseAccess({
         if (!courseDoc.exists) return { success: false, error: "Cours introuvable" };
         const courseData = courseDoc.data();
 
+        let expiresAt = null;
+        if (expirationMinutes) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60 * 1000);
+        } else if (expirationInDays) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 24 * 60 * 60 * 1000);
+        }
+
         batch.set(enrollmentRef, {
             studentId,
             courseId,
@@ -120,10 +129,10 @@ export async function grantCourseAccess({
             lastAccessedAt: FieldValue.serverTimestamp(),
             progress: 0,
             status: 'active',
-            enrollmentType: 'admin_grant',
+            enrollmentType: expirationMinutes ? 'test_access' : 'admin_grant',
             grantedBy: adminId,
             grantReason: reason,
-            expiresAt: expirationInDays ? Timestamp.fromMillis(Date.now() + expirationInDays * 24 * 60 * 60 * 1000) : null
+            expiresAt: expiresAt
         }, { merge: true });
 
         const auditRef = db.collection('admin_audit_logs').doc();
@@ -131,7 +140,7 @@ export async function grantCourseAccess({
             adminId,
             eventType: 'course.grant',
             target: { id: enrollmentId, type: 'enrollment' },
-            details: `Accès offert à ${studentId} pour le cours ${courseId}. Raison: ${reason}`,
+            details: `Accès ${expirationMinutes ? 'TEST (' + expirationMinutes + 'm)' : 'OFFERT'} accordé à ${studentId} pour le cours ${courseId}. Raison: ${reason}`,
             timestamp: FieldValue.serverTimestamp(),
         });
 

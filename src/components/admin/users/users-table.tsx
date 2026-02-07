@@ -16,8 +16,8 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSub,
   DropdownMenuSubTrigger,
-  DropdownMenuSubContent,
   DropdownMenuPortal,
+  DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,7 @@ import {
   UserCheck,
   Users,
   Globe,
+  Clock,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -180,7 +181,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
                 {createdAt ? format(createdAt, "d MMM yyyy", { locale: fr }) : '---'}
             </TableCell>
             <TableCell className="text-right">
-                <AlertDialog border-slate-800 open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+                <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-all active:scale-90" disabled={isActionLoading}>
@@ -205,6 +206,11 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
                                 <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="cursor-pointer gap-2 py-2.5 text-primary">
                                     <Gift className="h-4 w-4 text-primary" />
                                     <span className="font-bold text-xs uppercase tracking-tight">Offrir un cours</span>
+                                </DropdownMenuItem>
+
+                                <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="cursor-pointer gap-2 py-2.5 text-amber-500">
+                                    <Clock className="h-4 w-4 text-amber-500" />
+                                    <span className="font-bold text-xs uppercase tracking-tight">Accès Test (30m+)</span>
                                 </DropdownMenuItem>
 
                                 <DropdownMenuSeparator className="bg-slate-800" />
