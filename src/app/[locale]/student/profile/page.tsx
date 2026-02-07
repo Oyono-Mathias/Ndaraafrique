@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -10,6 +9,7 @@ import { useRole } from '@/context/RoleContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { LogOut, User, Settings, ShieldCheck, Globe, Milestone, KeyRound, CheckCircle2, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';

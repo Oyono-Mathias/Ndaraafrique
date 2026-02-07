@@ -11,6 +11,7 @@ import { getFirestore, collection, query, where, getDocs, documentId } from 'fir
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
