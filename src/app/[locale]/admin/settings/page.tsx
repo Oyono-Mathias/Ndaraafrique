@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -28,7 +27,10 @@ import {
   ShieldCheck, 
   Loader2, 
   Save,
-  Percent
+  Percent,
+  FileText,
+  Layout,
+  Info
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -40,6 +42,17 @@ const settingsSchema = z.object({
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
+  // Contenu About Page
+  aboutMainTitle: z.string().optional(),
+  aboutHistoryTitle: z.string().optional(),
+  aboutHistoryFrench: z.string().optional(),
+  aboutHistorySango: z.string().optional(),
+  aboutVisionTitle: z.string().optional(),
+  aboutVisionFrench: z.string().optional(),
+  aboutVisionSango: z.string().optional(),
+  // Légal
+  termsOfService: z.string().optional(),
+  privacyPolicy: z.string().optional(),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -53,15 +66,6 @@ export default function AdminSettingsPage() {
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: {
-      siteName: 'Ndara Afrique',
-      logoUrl: '/logo.png',
-      contactEmail: 'contact@ndara-afrique.com',
-      commission: 20,
-      announcementMessage: '',
-      maintenanceMode: false,
-      allowInstructorSignup: true,
-    }
   });
 
   useEffect(() => {
@@ -77,6 +81,17 @@ export default function AdminSettingsPage() {
           announcementMessage: data.platform?.announcementMessage || '',
           maintenanceMode: data.platform?.maintenanceMode || false,
           allowInstructorSignup: data.platform?.allowInstructorSignup ?? true,
+          // About
+          aboutMainTitle: data.content?.aboutPage?.mainTitle || '',
+          aboutHistoryTitle: data.content?.aboutPage?.historyTitle || '',
+          aboutHistoryFrench: data.content?.aboutPage?.historyFrench || '',
+          aboutHistorySango: data.content?.aboutPage?.historySango || '',
+          aboutVisionTitle: data.content?.aboutPage?.visionTitle || '',
+          aboutVisionFrench: data.content?.aboutPage?.visionFrench || '',
+          aboutVisionSango: data.content?.aboutPage?.visionSango || '',
+          // Légal
+          termsOfService: data.legal?.termsOfService || '',
+          privacyPolicy: data.legal?.privacyPolicy || '',
         });
       }
       setIsLoading(false);
@@ -99,6 +114,24 @@ export default function AdminSettingsPage() {
           allowInstructorSignup: values.allowInstructorSignup,
           autoApproveCourses: false,
           enableInternalMessaging: true
+        },
+        content: {
+          aboutPage: {
+            mainTitle: values.aboutMainTitle || '',
+            mainSubtitle: '',
+            historyTitle: values.aboutHistoryTitle || '',
+            historyFrench: values.aboutHistoryFrench || '',
+            historySango: values.aboutHistorySango || '',
+            visionTitle: values.aboutVisionTitle || '',
+            visionFrench: values.aboutVisionFrench || '',
+            visionSango: values.aboutVisionSango || '',
+            ctaTitle: '',
+            ctaSubtitle: '',
+          }
+        },
+        legal: {
+          termsOfService: values.termsOfService || '',
+          privacyPolicy: values.privacyPolicy || '',
         }
       }
     });
@@ -120,16 +153,17 @@ export default function AdminSettingsPage() {
           <SettingsIcon className="h-8 w-8 text-primary" />
           Configuration de Ndara
         </h1>
-        <p className="text-slate-400">Pilotez l'expérience utilisateur et les règles de gestion.</p>
+        <p className="text-slate-400">Pilotez l'expérience utilisateur et les règles de gestion sans coder.</p>
       </header>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1">
+            <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1 overflow-x-auto flex-wrap">
               <TabsTrigger value="general" className="py-2 px-6"><Globe className="h-4 w-4 mr-2" />Général</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-6"><ShieldCheck className="h-4 w-4 mr-2" />Plateforme</TabsTrigger>
-              <TabsTrigger value="business" className="py-2 px-6"><Percent className="h-4 w-4 mr-2" />Commerce</TabsTrigger>
+              <TabsTrigger value="content" className="py-2 px-6"><Layout className="h-4 w-4 mr-2" />Pages & Textes</TabsTrigger>
+              <TabsTrigger value="legal" className="py-2 px-6"><FileText className="h-4 w-4 mr-2" />Légal</TabsTrigger>
             </TabsList>
 
             {/* --- ONGLET GÉNÉRAL --- */}
@@ -149,6 +183,9 @@ export default function AdminSettingsPage() {
                   <FormField control={form.control} name="contactEmail" render={({ field }) => (
                     <FormItem><FormLabel>Email de contact public</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
                   )} />
+                  <FormField control={form.control} name="commission" render={({ field }) => (
+                    <FormItem><FormLabel>Commission Ndara (%)</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -165,7 +202,7 @@ export default function AdminSettingsPage() {
                       <FormItem>
                         <FormLabel>Message d'annonce (Bannière)</FormLabel>
                         <FormControl><Textarea rows={3} placeholder="Sera affiché en haut de toutes les pages..." {...field} /></FormControl>
-                        <FormDescription>Conseil : Ajoutez les traductions Sango et Lingala pour plus d'impact.</FormDescription>
+                        <FormDescription>Format recommandé : Message FR - Sango: ... - Lingala: ...</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -194,24 +231,65 @@ export default function AdminSettingsPage() {
               </div>
             </TabsContent>
 
-            {/* --- ONGLET COMMERCE --- */}
-            <TabsContent value="business">
+            {/* --- ONGLET CONTENU --- */}
+            <TabsContent value="content">
               <Card className="bg-slate-900 border-slate-800">
                 <CardHeader>
-                  <CardTitle>Commission & Gains</CardTitle>
+                  <CardTitle>Page "À Propos"</CardTitle>
+                  <CardDescription>Gérez le manifeste et l'histoire de la plateforme.</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <FormField control={form.control} name="commission" render={({ field }) => (
-                    <FormItem className="max-w-xs">
-                      <FormLabel>Commission Ndara (%)</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input type="number" {...field} className="pl-10" />
-                          <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
-                        </div>
-                      </FormControl>
-                      <FormDescription>Part prélevée par la plateforme sur chaque vente.</FormDescription>
-                      <FormMessage />
+                <CardContent className="space-y-8">
+                  <FormField control={form.control} name="aboutMainTitle" render={({ field }) => (
+                    <FormItem><FormLabel>Titre principal</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                  )} />
+                  
+                  <div className="pt-4 border-t border-slate-800 space-y-4">
+                    <h3 className="font-bold text-primary flex items-center gap-2"><Info className="h-4 w-4"/> Notre Histoire</h3>
+                    <FormField control={form.control} name="aboutHistoryTitle" render={({ field }) => (
+                      <FormItem><FormLabel>Titre Section</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="aboutHistoryFrench" render={({ field }) => (
+                      <FormItem><FormLabel>Texte (Français)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="aboutHistorySango" render={({ field }) => (
+                      <FormItem><FormLabel>Texte (Sango)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                    )} />
+                  </div>
+
+                  <div className="pt-4 border-t border-slate-800 space-y-4">
+                    <h3 className="font-bold text-primary flex items-center gap-2"><Globe className="h-4 w-4"/> Notre Vision</h3>
+                    <FormField control={form.control} name="aboutVisionTitle" render={({ field }) => (
+                      <FormItem><FormLabel>Titre Section</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="aboutVisionFrench" render={({ field }) => (
+                      <FormItem><FormLabel>Texte (Français)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="aboutVisionSango" render={({ field }) => (
+                      <FormItem><FormLabel>Texte (Sango)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* --- ONGLET LÉGAL --- */}
+            <TabsContent value="legal">
+              <Card className="bg-slate-900 border-slate-800">
+                <CardHeader>
+                  <CardTitle>Documents Légaux</CardTitle>
+                  <CardDescription>Éditez les contrats de confiance avec vos utilisateurs.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  <FormField control={form.control} name="termsOfService" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Conditions Générales d'Utilisation (CGU)</FormLabel>
+                      <FormControl><Textarea rows={15} {...field} className="font-mono text-xs" /></FormControl>
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="privacyPolicy" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Politique de Confidentialité</FormLabel>
+                      <FormControl><Textarea rows={15} {...field} className="font-mono text-xs" /></FormControl>
                     </FormItem>
                   )} />
                 </CardContent>
@@ -222,7 +300,7 @@ export default function AdminSettingsPage() {
           <div className="flex justify-end pt-4 border-t border-slate-800">
             <Button type="submit" disabled={isSaving} size="lg" className="px-10 h-14 rounded-2xl shadow-xl shadow-primary/20">
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
-              Sauvegarder les réglages
+              Enregistrer les modifications
             </Button>
           </div>
         </form>
