@@ -70,6 +70,8 @@ export interface NdaraUser {
   status?: 'active' | 'suspended';
   bio?: string;
   preferredLanguage?: 'fr' | 'en';
+  countryCode?: string;
+  countryName?: string;
   socialLinks?: {
       website?: string;
       twitter?: string;

@@ -58,6 +58,7 @@ export default function LoginClient() {
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
   const [siteName, setSiteName] = useState('Ndara Afrique');
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -98,6 +99,23 @@ export default function LoginClient() {
         }
     };
     fetchSettings();
+
+    // Détection automatique du pays au chargement
+    const fetchCountry = async () => {
+        try {
+            const res = await fetch('https://ipapi.co/json/');
+            const data = await res.json();
+            if (data.country_code && data.country_name) {
+                setDetectedCountry({
+                    code: data.country_code,
+                    name: data.country_name
+                });
+            }
+        } catch (e) {
+            console.error("Échec de la détection du pays:", e);
+        }
+    };
+    fetchCountry();
   }, [db]);
   
 
@@ -126,6 +144,8 @@ export default function LoginClient() {
             profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
             isProfileComplete: false,
             preferredLanguage: locale as 'fr' | 'en',
+            countryCode: detectedCountry?.code || 'Unknown',
+            countryName: detectedCountry?.name || 'Unknown',
             socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
             payoutInfo: {},
             instructorNotificationPreferences: {},
@@ -141,7 +161,6 @@ export default function LoginClient() {
         }
 
         await setDoc(userDocRef, finalUserData, { merge: true });
-        // Initialiser le rôle par défaut dans le stockage local pour éviter les délais
         localStorage.setItem('ndaraafrique-role', 'student');
     } else {
         const existingData = userDocSnap.data() as NdaraUser;
@@ -151,9 +170,15 @@ export default function LoginClient() {
         else if (targetRole === 'instructor') targetRoute = '/instructor/dashboard';
         else targetRoute = '/student/dashboard';
 
-        // ✅ Sauvegarde immédiate du rôle réel
         localStorage.setItem('ndaraafrique-role', targetRole);
-        await setDoc(userDocRef, { lastLogin: serverTimestamp(), isOnline: true }, { merge: true });
+        
+        // Mise à jour de la dernière connexion et pays si disponible
+        const updateData: any = { lastLogin: serverTimestamp(), isOnline: true };
+        if (detectedCountry) {
+            updateData.countryCode = detectedCountry.code;
+            updateData.countryName = detectedCountry.name;
+        }
+        await setDoc(userDocRef, updateData, { merge: true });
     }
     
     toast({ title: "Connexion réussie !" });
@@ -204,7 +229,7 @@ export default function LoginClient() {
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 auth-page-container" style={containerStyle}>
-        <div className="w-full max-w-md">
+        <div className="w-full max-md">
             <div className="flex flex-col items-center text-center mb-6">
                 <Link href="/" className="mb-4">
                   <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full" />
