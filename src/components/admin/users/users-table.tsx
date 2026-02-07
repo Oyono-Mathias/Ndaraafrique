@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -35,6 +34,7 @@ import {
   Ban,
   UserCheck,
   Users,
+  Globe,
 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
@@ -159,6 +159,14 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
             </TableCell>
             <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email}</TableCell>
             <TableCell>
+                <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-slate-300">{targetUser.countryName || '---'}</span>
+                    {targetUser.countryCode && (
+                        <span className="text-[9px] font-black text-slate-600 uppercase">({targetUser.countryCode})</span>
+                    )}
+                </div>
+            </TableCell>
+            <TableCell>
                 <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
                     {targetUser.role}
                 </Badge>
@@ -172,7 +180,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
                 {createdAt ? format(createdAt, "d MMM yyyy", { locale: fr }) : '---'}
             </TableCell>
             <TableCell className="text-right">
-                <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
+                <AlertDialog border-slate-800 open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-all active:scale-90" disabled={isActionLoading}>
@@ -315,6 +323,7 @@ export function UsersTable() {
                         <TableRow className="border-slate-800 bg-slate-800/30">
                             <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Nom & Identifiant</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Adresse Email</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Pays</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Rôle</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
                             <TableHead className="text-[10px] font-black uppercase tracking-widest">Inscription</TableHead>
@@ -325,7 +334,7 @@ export function UsersTable() {
                         {isLoading ? (
                             [...Array(5)].map((_, i) => (
                                 <TableRow key={i} className="border-slate-800">
-                                    <TableCell colSpan={6}><Skeleton className="h-12 w-full bg-slate-800/50 rounded-xl"/></TableCell>
+                                    <TableCell colSpan={7}><Skeleton className="h-12 w-full bg-slate-800/50 rounded-xl"/></TableCell>
                                 </TableRow>
                             ))
                         ) : filteredUsers.length > 0 ? (
@@ -338,7 +347,7 @@ export function UsersTable() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-64 text-center">
+                                <TableCell colSpan={7} className="h-64 text-center">
                                     <div className="flex flex-col items-center justify-center opacity-20">
                                         <Users className="h-16 w-16 mb-4" />
                                         <p className="font-black uppercase tracking-widest text-xs">Aucun membre trouvé</p>
