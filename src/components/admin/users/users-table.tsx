@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, getDocs, where } from 'firebase/firestore';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -55,24 +55,24 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 
-
-
 const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
     const { currentUser: adminUser, user: adminAuthUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
     const [isAlertOpen, setIsAlertOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
-    const [isRoleChanging, setIsRoleChanging] = useState(false);
+    const [isActionLoading, setIsActionLoading] = useState(false);
 
     const handleStatusUpdate = async (status: 'active' | 'suspended') => {
-        if (!adminUser) return;
+        if (!adminUser || isActionLoading) return;
+        setIsActionLoading(true);
         const result = await updateUserStatus({ userId: targetUser.uid, status, adminId: adminUser.uid });
         if (result.success) {
             toast({ title: 'Statut mis à jour' });
         } else {
             toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         }
+        setIsActionLoading(false);
     }
 
     const handleDeleteUser = async () => {
@@ -100,11 +100,14 @@ const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
     const handleViewProfile = () => {
         if (targetUser.role === 'instructor') {
             router.push(`/instructor/${targetUser.uid}`);
+        } else {
+            toast({ title: "Profil étudiant", description: "La vue détaillée du profil étudiant sera bientôt disponible." });
         }
     };
     
     const handleContactUser = async () => {
-        if (!adminUser) return;
+        if (!adminUser || isActionLoading) return;
+        setIsActionLoading(true);
         try {
             const chatId = await startChat(adminUser.uid, targetUser.uid);
             router.push(`/admin/messages?chatId=${chatId}`);
@@ -114,125 +117,134 @@ const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
                 title: 'Erreur de messagerie',
                 description: error.message || "Impossible de démarrer la conversation.",
             });
+        } finally {
+            setIsActionLoading(false);
         }
-    };
-    
-    const handleOfferCourse = () => {
-        toast({
-            title: 'Fonctionnalité à venir',
-            description: "La fonctionnalité pour offrir un cours sera bientôt disponible.",
-        });
     };
 
     const handleRoleChange = async (newRole: UserRole) => {
-        if (!adminUser || newRole === targetUser.role) return;
-        setIsRoleChanging(true);
+        if (!adminUser || newRole === targetUser.role || isActionLoading) return;
+        setIsActionLoading(true);
         const result = await updateUserRole({ userId: targetUser.uid, role: newRole, adminId: adminUser.uid });
         if (result.success) {
             toast({ title: 'Rôle mis à jour avec succès.' });
         } else {
             toast({ variant: 'destructive', title: 'Erreur', description: result.error });
         }
-        setIsRoleChanging(false);
+        setIsActionLoading(false);
     };
 
     const canInteract = adminUser?.uid !== targetUser.uid;
     const canDelete = canInteract && targetUser.role !== 'admin';
     const canChangeRole = canInteract && targetUser.role !== 'admin';
 
+    // ✅ Sécurisation de la date Firestore
+    const createdAt = (targetUser.createdAt as any)?.toDate?.() || null;
+
     return (
-        <TableRow>
+        <TableRow className="group">
             <TableCell>
                 <div className="flex items-center gap-3">
-                    <Avatar>
+                    <Avatar className="h-9 w-9 border border-slate-800">
                         <AvatarImage src={targetUser.profilePictureURL} />
-                        <AvatarFallback>{targetUser.fullName?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{targetUser.fullName?.charAt(0)}</AvatarFallback>
                     </Avatar>
-                    <div className="font-medium">{targetUser.fullName}</div>
+                    <div className="flex flex-col">
+                        <span className="font-bold text-sm text-white">{targetUser.fullName}</span>
+                        <span className="text-[10px] text-slate-500 font-medium">@{targetUser.username}</span>
+                    </div>
                 </div>
             </TableCell>
-            <TableCell>{targetUser.email}</TableCell>
+            <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email}</TableCell>
             <TableCell>
-                <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'}>{targetUser.role}</Badge>
+                <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
+                    {targetUser.role}
+                </Badge>
             </TableCell>
             <TableCell>
-                 <Badge variant={targetUser.status === 'active' ? 'success' : 'warning'}>{targetUser.status}</Badge>
+                 <Badge variant={targetUser.status === 'active' ? 'success' : 'warning'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
+                    {targetUser.status || 'N/A'}
+                 </Badge>
             </TableCell>
-            <TableCell>
-                {targetUser.createdAt && typeof (targetUser.createdAt as any).toDate === 'function' 
-                    ? format((targetUser.createdAt as any).toDate(), "d MMM yyyy", { locale: fr }) 
-                    : 'N/A'}
+            <TableCell className="text-[10px] font-black text-slate-500 uppercase">
+                {createdAt ? format(createdAt, "d MMM yyyy", { locale: fr }) : '---'}
             </TableCell>
-            <TableCell>
+            <TableCell className="text-right">
                 <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                                <span className="sr-only">Ouvrir menu</span>
-                                <MoreHorizontal className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-all active:scale-90" disabled={isActionLoading}>
+                                {isActionLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <MoreHorizontal className="h-4 w-4" />}
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem onClick={handleViewProfile} disabled={targetUser.role !== 'instructor'}>
-                                <UserProfileIcon className="mr-2 h-4 w-4" />
-                                Voir le profil
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleContactUser} disabled={!canInteract}>
-                                <MessageSquare className="mr-2 h-4 w-4" />
-                                Contacter
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleOfferCourse}>
-                                <Gift className="mr-2 h-4 w-4" />
-                                Offrir un cours
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                             <DropdownMenuSub>
-                                <DropdownMenuSubTrigger disabled={!canChangeRole}>
-                                    <UserCog className="mr-2 h-4 w-4" />
-                                    <span>Changer le rôle</span>
-                                </DropdownMenuSubTrigger>
-                                <DropdownMenuPortal>
-                                    <DropdownMenuSubContent>
-                                        <DropdownMenuItem onClick={() => handleRoleChange('student')}>Étudiant</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => handleRoleChange('instructor')}>Instructeur</DropdownMenuItem>
-                                    </DropdownMenuSubContent>
-                                </DropdownMenuPortal>
-                            </DropdownMenuSub>
-                            {targetUser.status === 'active' ? (
-                                <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="text-amber-500 focus:bg-amber-500/10 focus:text-amber-500" disabled={!canInteract}>
-                                    <Ban className="mr-2 h-4 w-4" /> Suspendre
+                        <DropdownMenuPortal>
+                            <DropdownMenuContent align="end" className="w-56 bg-slate-900 border-slate-800 text-slate-300">
+                                <DropdownMenuLabel className="text-[10px] font-black uppercase text-slate-500 tracking-[0.2em]">Actions Utilisateur</DropdownMenuLabel>
+                                <DropdownMenuSeparator className="bg-slate-800" />
+                                
+                                <DropdownMenuItem onClick={handleViewProfile} className="cursor-pointer gap-2 py-2.5">
+                                    <UserProfileIcon className="h-4 w-4 text-primary" />
+                                    <span className="font-bold text-xs uppercase tracking-tight">Voir le profil</span>
                                 </DropdownMenuItem>
-                            ) : (
-                                <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="text-green-500 focus:bg-green-500/10 focus:text-green-500" disabled={!canInteract}>
-                                    <UserCheck className="mr-2 h-4 w-4" /> Réactiver
+                                
+                                <DropdownMenuItem onClick={handleContactUser} disabled={!canInteract} className="cursor-pointer gap-2 py-2.5">
+                                    <MessageSquare className="h-4 w-4 text-blue-400" />
+                                    <span className="font-bold text-xs uppercase tracking-tight">Envoyer un message</span>
                                 </DropdownMenuItem>
-                            )}
-                            {canDelete && (
-                                <>
-                                <DropdownMenuSeparator />
-                                <AlertDialogTrigger asChild>
-                                    <DropdownMenuItem onSelect={(e) => e.preventDefault()} className="text-destructive focus:bg-destructive/10 focus:text-destructive">
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                        Supprimer
+
+                                <DropdownMenuSeparator className="bg-slate-800" />
+                                
+                                <DropdownMenuSub>
+                                    <DropdownMenuSubTrigger disabled={!canChangeRole} className="cursor-pointer gap-2 py-2.5">
+                                        <UserCog className="h-4 w-4 text-amber-400" />
+                                        <span className="font-bold text-xs uppercase tracking-tight">Modifier le rôle</span>
+                                    </DropdownMenuSubTrigger>
+                                    <DropdownMenuPortal>
+                                        <DropdownMenuSubContent className="bg-slate-900 border-slate-800 text-slate-300">
+                                            <DropdownMenuItem onClick={() => handleRoleChange('student')} className="cursor-pointer font-bold text-xs uppercase">Étudiant</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleRoleChange('instructor')} className="cursor-pointer font-bold text-xs uppercase">Instructeur</DropdownMenuItem>
+                                        </DropdownMenuSubContent>
+                                    </DropdownMenuPortal>
+                                </DropdownMenuSub>
+
+                                {targetUser.status === 'active' ? (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('suspended')} className="cursor-pointer gap-2 py-2.5 text-amber-500 focus:text-amber-500 focus:bg-amber-500/10" disabled={!canInteract}>
+                                        <Ban className="h-4 w-4" />
+                                        <span className="font-bold text-xs uppercase tracking-tight">Suspendre l'accès</span>
                                     </DropdownMenuItem>
-                                </AlertDialogTrigger>
-                                </>
-                            )}
-                        </DropdownMenuContent>
+                                ) : (
+                                    <DropdownMenuItem onClick={() => handleStatusUpdate('active')} className="cursor-pointer gap-2 py-2.5 text-green-500 focus:text-green-500 focus:bg-green-500/10" disabled={!canInteract}>
+                                        <UserCheck className="h-4 w-4" />
+                                        <span className="font-bold text-xs uppercase tracking-tight">Réactiver le compte</span>
+                                    </DropdownMenuItem>
+                                )}
+
+                                {canDelete && (
+                                    <>
+                                    <DropdownMenuSeparator className="bg-slate-800" />
+                                    <AlertDialogTrigger asChild>
+                                        <DropdownMenuItem className="cursor-pointer gap-2 py-2.5 text-red-500 focus:text-red-500 focus:bg-red-500/10">
+                                            <Trash2 className="h-4 w-4" />
+                                            <span className="font-bold text-xs uppercase tracking-tight">Supprimer définitivement</span>
+                                        </DropdownMenuItem>
+                                    </AlertDialogTrigger>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenuPortal>
                     </DropdownMenu>
-                    <AlertDialogContent>
+                    <AlertDialogContent className="bg-slate-900 border-slate-800">
                         <AlertDialogHeader>
-                            <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                Cette action est irréversible et supprimera définitivement le compte de <b className="text-white">{targetUser.fullName}</b> ainsi que toutes ses données.
+                            <AlertDialogTitle className="text-xl font-black text-white uppercase tracking-tight">Attention !</AlertDialogTitle>
+                            <AlertDialogDescription className="text-slate-400">
+                                Cette action est irréversible. Toutes les données de <b className="text-white">{targetUser.fullName}</b> seront définitivement supprimées du système.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
-                            <AlertDialogCancel>Annuler</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="bg-destructive hover:bg-destructive/90">
-                                {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                                Oui, supprimer
+                            <AlertDialogCancel className="bg-slate-800 border-none text-slate-300">Annuler</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDeleteUser} disabled={isDeleting} className="bg-red-600 hover:bg-red-700 text-white font-bold">
+                                {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                                Confirmer la suppression
                             </AlertDialogAction>
                         </AlertDialogFooter>
                     </AlertDialogContent>
@@ -259,46 +271,52 @@ export function UsersTable() {
     }, [users, searchTerm]);
     
     return (
-        <div className="space-y-4">
-            <div className="flex justify-between items-center">
-                <div className="relative max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
+                <div className="relative flex-1 max-w-sm">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                     <Input 
-                        placeholder="Rechercher par nom, email..." 
-                        className="pl-10 dark:bg-slate-800"
+                        placeholder="Chercher par nom, email..." 
+                        className="pl-10 h-12 bg-slate-900 border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-primary/30"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
-                 <Button>
+                 <Button className="h-12 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Ajouter un utilisateur
+                    Nouvel utilisateur
                 </Button>
             </div>
-             <div className="border rounded-lg dark:border-slate-700">
+
+             <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
                 <Table>
                     <TableHeader>
-                        <TableRow>
-                            <TableHead>Nom</TableHead>
-                            <TableHead>Email</TableHead>
-                            <TableHead>Rôle</TableHead>
-                            <TableHead>Statut</TableHead>
-                            <TableHead>Date d'inscription</TableHead>
-                            <TableHead><span className="sr-only">Actions</span></TableHead>
+                        <TableRow className="border-slate-800 bg-slate-800/30">
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Nom & Identifiant</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Adresse Email</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Rôle</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
+                            <TableHead className="text-[10px] font-black uppercase tracking-widest">Inscription</TableHead>
+                            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             [...Array(5)].map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell colSpan={6}><Skeleton className="h-10 w-full bg-slate-800"/></TableCell>
+                                <TableRow key={i} className="border-slate-800">
+                                    <TableCell colSpan={6}><Skeleton className="h-12 w-full bg-slate-800/50 rounded-xl"/></TableCell>
                                 </TableRow>
                             ))
                         ) : filteredUsers.length > 0 ? (
                             filteredUsers.map(user => <UserRow key={user.uid} user={user} />)
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={6} className="h-24 text-center">Aucun utilisateur trouvé.</TableCell>
+                                <TableCell colSpan={6} className="h-64 text-center">
+                                    <div className="flex flex-col items-center justify-center opacity-20">
+                                        <Users className="h-16 w-16 mb-4" />
+                                        <p className="font-black uppercase tracking-widest text-xs">Aucun membre trouvé</p>
+                                    </div>
+                                </TableCell>
                             </TableRow>
                         )}
                     </TableBody>
