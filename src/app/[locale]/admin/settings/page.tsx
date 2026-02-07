@@ -180,6 +180,7 @@ export default function AdminSettingsPage() {
             visionTitle: values.aboutVisionTitle || '',
             visionFrench: values.aboutVisionFrench || '',
             visionSango: values.aboutVisionSango || '',
+            // ✅ Correction de type critique : Mapper bio undefined en string vide
             teamMembers: (values.teamMembers || []).map(m => ({
               name: m.name,
               role: m.role,

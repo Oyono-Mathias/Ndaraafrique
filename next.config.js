@@ -43,7 +43,7 @@ const nextConfig = {
       layers: true,
     };
 
-    // Force l'ignorance des modules Node.js côté client pour éviter les erreurs avec firebase-admin
+    // Ignore Node.js specific modules on the client side to avoid errors with firebase-admin
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

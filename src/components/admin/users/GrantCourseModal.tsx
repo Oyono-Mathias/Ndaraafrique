@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -37,14 +37,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Loader2, Gift, CheckCircle2, Clock } from 'lucide-react';
+import { Loader2, Gift, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const grantFormSchema = z.object({
   courseId: z.string().min(1, "Veuillez sélectionner un cours."),
   reason: z.string().min(5, "Veuillez indiquer un motif valable (min. 5 caract.)."),
   isTemporary: z.boolean().default(false),
-  durationValue: z.coerce.number().min(30, "Minimum 30 minutes.").optional(),
+  durationValue: z.coerce.number().min(1, "La durée est requise."),
   durationUnit: z.enum(['minutes', 'hours', 'days']).default('minutes'),
 });
 
@@ -109,9 +109,13 @@ export function GrantCourseModal({ isOpen, onOpenChange, targetUser }: GrantCour
     let expirationInDays = undefined;
 
     if (values.isTemporary && values.durationValue) {
-        if (values.durationUnit === 'minutes') expirationMinutes = values.durationValue;
-        else if (values.durationUnit === 'hours') expirationMinutes = values.durationValue * 60;
-        else if (values.durationUnit === 'days') expirationInDays = values.durationValue;
+        if (values.durationUnit === 'minutes') {
+            expirationMinutes = values.durationValue;
+        } else if (values.durationUnit === 'hours') {
+            expirationMinutes = values.durationValue * 60;
+        } else if (values.durationUnit === 'days') {
+            expirationInDays = values.durationValue;
+        }
     }
 
     try {
@@ -134,14 +138,14 @@ export function GrantCourseModal({ isOpen, onOpenChange, targetUser }: GrantCour
         toast({
           variant: 'destructive',
           title: "Erreur",
-          description: result.error,
+          description: result.error || "Une erreur est survenue lors de l'attribution.",
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       toast({
         variant: 'destructive',
         title: "Erreur technique",
-        description: "Impossible de valider l'accès pour le moment.",
+        description: error.message || "Impossible de valider l'accès pour le moment.",
       });
     } finally {
       setIsSubmitting(false);
@@ -152,8 +156,8 @@ export function GrantCourseModal({ isOpen, onOpenChange, targetUser }: GrantCour
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 p-0 overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
           <DialogTitle className="flex items-center gap-2 text-white">
             <Gift className="h-5 w-5 text-primary" />
             Accorder un accès
@@ -164,23 +168,27 @@ export function GrantCourseModal({ isOpen, onOpenChange, targetUser }: GrantCour
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5 p-6">
             <FormField
               control={form.control}
               name="courseId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Formation</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white">
                         <SelectValue placeholder={isLoadingCourses ? "Chargement..." : "Choisir un cours"} />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                      {courses.map(course => (
-                        <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
-                      ))}
+                      {courses.length > 0 ? (
+                        courses.map(course => (
+                          <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-xs text-slate-500">Aucun cours publié trouvé.</div>
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -208,7 +216,7 @@ export function GrantCourseModal({ isOpen, onOpenChange, targetUser }: GrantCour
             />
 
             {isTemporary && (
-                <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2">
+                <div className="grid grid-cols-2 gap-3 animate-in slide-in-from-top-2 duration-300">
                     <FormField
                         control={form.control}
                         name="durationValue"
