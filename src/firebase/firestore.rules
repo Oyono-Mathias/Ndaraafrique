@@ -27,7 +27,7 @@ service cloud.firestore {
     }
 
     // --- ACCÈS PUBLICS (Lecture pour tous, même non connectés) ---
-    // Indispensable pour la Landing Page, le logo et les infos de base
+    // Indispensable pour la Landing Page, le logo, le nom du site et les cours
     
     match /settings/{docId} {
       allow read: if true;
@@ -50,7 +50,7 @@ service cloud.firestore {
     }
 
     match /courses/{courseId} {
-      allow read: if true; // Tout le monde peut voir les cours
+      allow read: if true; 
       allow create: if isSignedIn() && (isApprovedInstructor() || isAdmin());
       allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
       
@@ -61,7 +61,6 @@ service cloud.firestore {
       }
     }
 
-    // Autoriser le compteur d'inscriptions public et l'annuaire
     match /enrollments/{enrollmentId} {
         allow read: if true; 
         allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
@@ -69,14 +68,14 @@ service cloud.firestore {
     }
 
     match /users/{userId} {
-      allow read: if true; // Public pour l'annuaire et les infos formateurs
+      allow read: if true; 
       allow create: if isOwner(userId);
       allow update: if isAdmin() || (
         isOwner(userId) && 
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isInstructorApproved', 'permissions', 'status', 'email', 'uid'])
       );
 
-      // Sous-collections PRIVÉES
+      // Sous-collections PRIVÉES de l'utilisateur
       match /notifications/{id} { allow read, write: if isOwner(userId); }
       match /activity/{id} { allow read, write: if isOwner(userId); }
       match /wishlist/{id} { allow read, write: if isOwner(userId); }
@@ -134,19 +133,15 @@ service cloud.firestore {
       }
     }
 
-    // --- RÈGLES ADMINISTRATEUR ---
-    
     match /payouts/{payoutId} {
       allow read, list: if isAdmin() || (isSignedIn() && isOwner(resource.data.instructorId));
       allow create: if isSignedIn() && isApprovedInstructor() && isOwner(request.resource.data.instructorId);
       allow update: if isAdmin();
     }
 
+    match /promoCodes/{codeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /security_logs/{logId} { allow read, write: if isAdmin(); }
     match /admin_audit_logs/{logId} { allow read, write: if isAdmin(); }
-    match /admin_grants/{grantId} { allow read, write: if isAdmin(); }
-    match /investor_leads/{leadId} { allow read, write: if isAdmin(); allow create: if true; }
-    match /promoCodes/{codeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /tracking_events/{eventId} { allow create: if true; allow read: if isAdmin(); }
   }
 }
