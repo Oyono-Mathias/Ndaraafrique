@@ -12,13 +12,11 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getUserData(userId) {
-      // Utilisation de getAfter pour s'assurer que les données sont lues même pendant une création
-      return get(/databases/$(database)/documents/users/$(userId)).data;
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isAdmin() {
-      // Vérification robuste du rôle admin dans Firestore
       return isSignedIn() && 
              exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
@@ -29,44 +27,29 @@ service cloud.firestore {
     }
     
     function isApprovedInstructor() {
-      let userData = getUserData(request.auth.uid);
+      let userData = getUserData();
       return userData.role == 'instructor' && userData.isInstructorApproved == true;
-    }
-    
-    function isStudentEnrolled(courseId) {
-        return exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
     }
 
     // --- RÈGLES UTILISATEURS ---
     match /users/{userId} {
       allow read: if isSignedIn();
       allow create: if isSignedIn() && isOwner(userId);
-      
-      // Un utilisateur ne peut pas modifier son propre rôle ou ses permissions
       allow update: if isAdmin() || (
         isOwner(userId) && 
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isInstructorApproved', 'permissions', 'status', 'email', 'uid'])
       );
 
-      match /chatHistory/{messageId} {
-        allow read, write: if isOwner(userId);
-      }
-      match /wishlist/{courseId} {
-        allow read, write, delete: if isOwner(userId);
-      }
-      match /notifications/{notificationId} {
-        allow read, write, list: if isOwner(userId);
-      }
-      match /activity/{activityId} {
-        allow read, list: if isOwner(userId); 
-      }
+      match /chatHistory/{messageId} { allow read, write: if isOwner(userId); }
+      match /wishlist/{courseId} { allow read, write, delete: if isOwner(userId); }
+      match /notifications/{notificationId} { allow read, write, list: if isOwner(userId); }
+      match /activity/{activityId} { allow read, list: if isOwner(userId); }
     }
 
     // --- RÈGLES COURS ---
     match /courses/{courseId} {
-      allow get: if true;
-      allow list: if true; 
-      allow create: if isSignedIn() && isApprovedInstructor();
+      allow get, list: if true;
+      allow create: if isSignedIn() && (isApprovedInstructor() || isAdmin());
       allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
       
        match /sections/{sectionId} {
@@ -81,14 +64,9 @@ service cloud.firestore {
 
     // --- RÈGLES PAIEMENTS ---
     match /payments/{paymentId} {
-      // Accès total pour les admins, accès restreint pour les proprios
-      allow get: if isAdmin() 
+      allow get, list: if isAdmin() 
                  || isOwner(resource.data.userId) 
                  || isOwner(resource.data.instructorId);
-      
-      allow list: if isAdmin() 
-                 || (isSignedIn() && ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid))
-                 || (isSignedIn() && ('userId' in request.query.where && request.query.where.userId == request.auth.uid));
                     
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
@@ -96,25 +74,28 @@ service cloud.firestore {
 
     // --- RÈGLES INSCRIPTIONS ---
     match /enrollments/{enrollmentId} {
-        allow get: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin()); 
+        allow get, list: if isAdmin() 
+                    || isOwner(resource.data.studentId) 
+                    || isOwner(resource.data.instructorId);
         allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
-        allow list: if isAdmin() || (isSignedIn() && (
-             ('instructorId' in request.query.where && request.query.where.instructorId == request.auth.uid) ||
-             ('studentId' in request.query.where && request.query.where.studentId == request.auth.uid)
-        ));
-        allow update: if isAdmin();
-        allow delete: if isAdmin();
+        allow update, delete: if isAdmin();
     }
 
     // --- AUTRES COLLECTIONS ---
     match /support_tickets/{ticketId} {
       allow read, create: if isSignedIn();
       allow update, delete: if (isSignedIn() && isOwner(resource.data.userId)) || isAdmin();
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn();
+      }
     }
 
     match /chats/{chatId} {
       allow create: if isSignedIn();
-      allow read, update: if isSignedIn() && request.auth.uid in resource.data.participants;
+      allow read, update: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
+      match /messages/{msgId} {
+        allow read, write: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
+      }
     }
     
     match /settings/{docId} {
@@ -133,6 +114,22 @@ service cloud.firestore {
 
     match /admin_audit_logs/{logId} {
       allow read, write: if isAdmin();
+    }
+
+    match /payouts/{payoutId} {
+      allow read: if isAdmin() || isOwner(resource.data.instructorId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.instructorId);
+      allow update: if isAdmin();
+    }
+    
+    match /faqs/{faqId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /carousel_slides/{slideId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }
