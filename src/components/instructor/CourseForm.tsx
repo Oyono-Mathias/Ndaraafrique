@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, Link as LinkIcon, CheckCircle2, Frown } from 'lucide-react';
 import type { Course, CourseTemplate } from '@/lib/types';
 import Image from 'next/image';
