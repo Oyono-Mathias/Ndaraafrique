@@ -1,4 +1,4 @@
-'use client';
+'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';

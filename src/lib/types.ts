@@ -65,6 +65,13 @@ export interface FCMToken {
   createdAt: Timestamp | FieldValue;
 }
 
+export interface TeamMember {
+  name: string;
+  role: string;
+  imageUrl: string;
+  bio: string;
+}
+
 export interface NdaraUser {
   uid: string;
   email: string;
@@ -369,6 +376,7 @@ export interface Settings {
       visionSango: string;
       ctaTitle: string;
       ctaSubtitle: string;
+      teamMembers?: TeamMember[];
     };
     landingPage?: {
       heroTitle?: string;

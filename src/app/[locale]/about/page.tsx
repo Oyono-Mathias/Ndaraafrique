@@ -1,16 +1,15 @@
-
 'use client';
 
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { ChevronsRight } from 'lucide-react';
+import { ChevronsRight, Users as UsersIcon } from 'lucide-react';
 import Link from 'next/link';
 import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import type { Settings } from '@/lib/types';
+import type { Settings, TeamMember as TeamMemberType } from '@/lib/types';
 
 const SangoQuote = ({ children }: { children: React.ReactNode }) => {
     return (
@@ -38,18 +37,38 @@ const Section = ({ title, frenchText, sangoText, children }: { title: string, fr
     </section>
 );
 
-const TeamMember = ({ name, role, imageUrl, bio }: { name: string, role: string, imageUrl: string, bio: string }) => (
-    <div className="text-center">
-        <Avatar className="w-32 h-32 mx-auto mb-4 border-4 border-slate-700">
-            <AvatarImage src={imageUrl} alt={name} className="grayscale" />
-            <AvatarFallback className="bg-slate-800 text-3xl">{name.charAt(0)}</AvatarFallback>
+const TeamMember = ({ name, role, imageUrl, bio }: TeamMemberType) => (
+    <div className="text-center group">
+        <Avatar className="w-32 h-32 mx-auto mb-4 border-4 border-slate-700 transition-all duration-500 group-hover:border-primary group-hover:scale-105">
+            <AvatarImage src={imageUrl} alt={name} className="grayscale group-hover:grayscale-0 transition-all" />
+            <AvatarFallback className="bg-slate-800 text-3xl font-black">{name.charAt(0)}</AvatarFallback>
         </Avatar>
-        <h3 className="font-bold text-xl text-white">{name}</h3>
-        <p className="text-primary font-semibold">{role}</p>
-        <p className="text-slate-400 text-sm mt-2 max-w-xs mx-auto">{bio}</p>
+        <h3 className="font-bold text-xl text-white group-hover:text-primary transition-colors">{name}</h3>
+        <p className="text-primary font-black uppercase text-[10px] tracking-widest mt-1">{role}</p>
+        <p className="text-slate-400 text-sm mt-3 max-w-xs mx-auto leading-relaxed">{bio}</p>
     </div>
 );
 
+const defaultTeam: TeamMemberType[] = [
+    { 
+        name: "Mathias Oyono", 
+        role: "CEO & Visionnaire",
+        imageUrl: "/placeholder-avatars/mathias.jpg", 
+        bio: "Passionné par l'éducation et la technologie, Mathias rêve d'une Afrique leader de l'innovation."
+    },
+    { 
+        name: "Amina Diallo", 
+        role: "Directrice Pédagogique",
+        imageUrl: "/placeholder-avatars/amina.jpg", 
+        bio: "Experte en ingénierie pédagogique, Amina s'assure que chaque cours est une expérience d'apprentissage exceptionnelle."
+    },
+    { 
+        name: "Kwame Nkrumah", 
+        role: "Responsable Technologique",
+        imageUrl: "/placeholder-avatars/kwame.jpg", 
+        bio: "Architecte de la plateforme, Kwame est obsédé par la création d'une expérience utilisateur fluide et robuste."
+    }
+];
 
 export default function AboutPage() {
   const db = getFirestore();
@@ -57,6 +76,9 @@ export default function AboutPage() {
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
 
   const content = settings?.content?.aboutPage;
+  const teamMembers = content?.teamMembers && content.teamMembers.length > 0 
+    ? content.teamMembers 
+    : defaultTeam;
   
   if (isLoading) {
     return (
@@ -75,7 +97,7 @@ export default function AboutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden bg-grainy">
         {/* Subtle background pattern */}
         <div 
             className="absolute inset-0 z-0 opacity-[0.03]"
@@ -85,11 +107,11 @@ export default function AboutPage() {
         />
         
         <div className="relative z-10 container mx-auto px-4 py-16 md:py-24">
-            <header className="text-center mb-16 md:mb-24">
-                <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-white">
+            <header className="text-center mb-16 md:mb-24 animate-in fade-in slide-in-from-top-4 duration-1000">
+                <h1 className="text-5xl md:text-7xl font-black tracking-tighter text-white uppercase">
                     {content?.mainTitle || "Le Manifeste Ndara"}
                 </h1>
-                <p className="mt-4 text-lg md:text-xl text-slate-400 max-w-3xl mx-auto">
+                <p className="mt-4 text-lg md:text-xl text-slate-400 max-w-3xl mx-auto font-medium italic">
                     {content?.mainSubtitle || "Plus qu'une plateforme. Un mouvement pour l'émancipation technologique du continent."}
                 </p>
             </header>
@@ -109,35 +131,24 @@ export default function AboutPage() {
                     sangoText={content?.visionSango || "Vision ti e ayeke ti tene que Afrique aga pëpe mbeni zo so ayeke vo ye senge, me mbeni kota zo so ayeke leke aye ti technologie. E yeke leke mbeni lege so na yâ ni, amaseka kue so ayeke na ndara awara aye so alingbi ti tene ala leke aye ti kekereke, na ala ga akozo zo na yâ ti économie numérique ti dunia."}
                 />
                 
-                <Section title="L'Équipe Fondatrice">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mt-8">
-                        <TeamMember 
-                            name="Mathias Oyono" 
-                            role="CEO & Visionnaire"
-                            imageUrl="/placeholder-avatars/mathias.jpg" 
-                            bio="Passionné par l'éducation et la technologie, Mathias rêve d'une Afrique leader de l'innovation."
-                        />
-                         <TeamMember 
-                            name="Amina Diallo" 
-                            role="Directrice Pédagogique"
-                            imageUrl="/placeholder-avatars/amina.jpg" 
-                            bio="Experte en ingénierie pédagogique, Amina s'assure que chaque cours est une expérience d'apprentissage exceptionnelle."
-                        />
-                         <TeamMember 
-                            name="Kwame Nkrumah" 
-                            role="Responsable Technologique"
-                            imageUrl="/placeholder-avatars/kwame.jpg" 
-                            bio="Architecte de la plateforme, Kwame est obsédé par la création d'une expérience utilisateur fluide et robuste."
-                        />
+                <Section title="L'Équipe">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mt-12">
+                        {teamMembers.map((member, index) => (
+                            <TeamMember 
+                                key={index}
+                                {...member}
+                            />
+                        ))}
                     </div>
                 </Section>
                 
-                <Separator className="my-16 bg-slate-700" />
+                <Separator className="my-24 bg-slate-800" />
 
-                <section className="text-center">
-                     <h2 className="text-3xl font-bold text-white">{content?.ctaTitle || "Ga, mo mû mbage ti mo."}</h2>
-                     <p className="mt-2 text-slate-400">{content?.ctaSubtitle || "Rejoignez des milliers d'apprenants et de formateurs qui construisent le futur."}</p>
-                     <Button size="lg" asChild className="mt-6 h-14 text-lg animate-pulse">
+                <section className="text-center bg-slate-900/40 p-12 rounded-[3rem] border border-white/5 shadow-2xl relative overflow-hidden group">
+                     <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                     <h2 className="text-3xl font-black text-white uppercase tracking-tight relative z-10">{content?.ctaTitle || "Ga, mo mû mbage ti mo."}</h2>
+                     <p className="mt-4 text-slate-400 max-w-xl mx-auto font-medium relative z-10">{content?.ctaSubtitle || "Rejoignez des milliers d'apprenants et de formateurs qui construisent le futur de l'Afrique avec Ndara."}</p>
+                     <Button size="lg" asChild className="mt-10 h-16 px-12 rounded-2xl nd-cta-primary animate-pulse relative z-10">
                          <Link href="/login?tab=register">
                             Devenir Membre
                             <ChevronsRight className="ml-2 h-5 w-5" />
