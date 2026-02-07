@@ -22,6 +22,7 @@ import {
   History,
   Shield,
   ArrowLeftRight,
+  Library,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -85,6 +86,7 @@ export function AdminSidebar({ siteName = "Ndara Admin", logoUrl = "/logo.png", 
     { href: "/admin/support", icon: HelpCircle, label: "Support", countId: 'openTickets' },
     { href: "/admin/logs", icon: History, label: "Journal d'Audit" },
     { href: "/admin/assistant", icon: Sparkles, label: "Assistant IA" },
+    { href: "/admin/templates", icon: Library, label: "Modèles d'images" },
     { href: "/admin/carousel", icon: GalleryHorizontal, label: "Carrousel" },
     { href: "/admin/messages", icon: MessageSquare, label: "Messagerie" },
     { href: "/admin/faq", icon: MessageCircleQuestion, label: "FAQ" },

@@ -34,6 +34,13 @@ export interface CarouselSlide {
   createdAt?: Timestamp | FieldValue;
 }
 
+export interface CourseTemplate {
+  id: string;
+  imageUrl: string;
+  description: string;
+  createdAt?: Timestamp | FieldValue;
+}
+
 export interface AdminGrant {
   id: string;
   studentId: string;
