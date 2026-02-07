@@ -36,12 +36,28 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config) => {
+  webpack: (config, { isServer }) => {
     config.experiments = {
       ...config.experiments,
       asyncWebAssembly: true,
       layers: true,
     };
+
+    // Force l'ignorance des modules Node.js côté client pour éviter les erreurs avec firebase-admin
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        net: false,
+        tls: false,
+        fs: false,
+        child_process: false,
+        canvas: false,
+        dns: false,
+        path: false,
+        os: false,
+      };
+    }
+
     return config;
   },
 };
