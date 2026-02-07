@@ -13,7 +13,10 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isSignedIn() && request.auth.token.email == 'salguienow@gmail.com';
+      return isSignedIn() && (
+        request.auth.token.email == 'salguienow@gmail.com' || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     function isApprovedInstructor() {
@@ -26,8 +29,11 @@ service cloud.firestore {
         return isSignedIn() && request.auth.uid == get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId;
     }
 
+    function isStudentEnrolled(courseId) {
+        return isSignedIn() && exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId));
+    }
+
     // --- ACCÈS PUBLICS (Lecture pour tous, même non connectés) ---
-    // Ces règles DOIVENT être en haut pour résoudre l'erreur de permission sur settings/global
     
     match /settings/{docId} {
       allow read: if true;
@@ -54,7 +60,6 @@ service cloud.firestore {
       allow create: if isSignedIn() && (isApprovedInstructor() || isAdmin());
       allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
       
-      // Accès aux contenus des cours (sections, leçons, quiz)
       match /{allSubcollections=**} {
         allow read: if true; 
         allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
@@ -67,11 +72,17 @@ service cloud.firestore {
         allow update, delete: if isAdmin();
     }
 
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
+      allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId));
+    }
+
     // --- ACCÈS RÉSERVÉS AUX MEMBRES CONNECTÉS ---
 
     match /users/{userId} {
-      allow read: if true; 
-      allow create: if isOwner(userId);
+      allow read: if isSignedIn(); 
+      allow create: if true; // Autorise la création de compte
       allow update: if isAdmin() || (
         isOwner(userId) && 
         !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isInstructorApproved', 'permissions', 'status', 'email', 'uid'])
@@ -82,7 +93,6 @@ service cloud.firestore {
       match /activity/{id} { allow read, write: if isOwner(userId); }
       match /wishlist/{id} { allow read, write: if isOwner(userId); }
       match /chatHistory/{id} { allow read, write: if isOwner(userId); }
-      match /fcmTokens/{id} { allow read, write: if isOwner(userId); }
     }
 
     match /course_progress/{progressId} {
@@ -96,7 +106,6 @@ service cloud.firestore {
 
     match /payments/{paymentId} {
       allow read: if isAdmin() || (isSignedIn() && (resource == null || isOwner(resource.data.userId)));
-      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update: if isAdmin();
     }
@@ -139,9 +148,15 @@ service cloud.firestore {
       allow update: if isAdmin();
     }
 
+    match /resources/{resourceId} {
+      allow read: if true;
+      allow write: if isAdmin() || isApprovedInstructor();
+    }
+
     match /promoCodes/{codeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
     match /security_logs/{logId} { allow read, write: if isAdmin(); }
     match /admin_audit_logs/{logId} { allow read, write: if isAdmin(); }
     match /tracking_events/{eventId} { allow create: if true; allow read: if isAdmin(); }
+    match /recommended_courses/{userId} { allow read: if isOwner(userId); }
   }
 }
