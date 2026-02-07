@@ -34,7 +34,7 @@ export const metadata: Metadata = {
     description: "Rejoignez la révolution de l'éducation en Afrique. Des cours de haute qualité accessibles partout.",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1531482615713-2c65a2ad7a2b?q=80&w=1200&h=630&auto=format&fit=crop",
+        url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200&h=630&auto=format&fit=crop",
         width: 1200,
         height: 630,
         alt: "Ndara Afrique - Apprenez. Construisez. Prospérez.",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Ndara Afrique",
     description: "Le futur de la formation en ligne pour les talents africains.",
-    images: ["https://images.unsplash.com/photo-1531482615713-2c65a2ad7a2b?q=80&w=1200&h=630&auto=format&fit=crop"],
+    images: ["https://images.unsplash.com/photo-1524178232363-1fb2b075b655?q=80&w=1200&h=630&auto=format&fit=crop"],
     creator: "@ndaraafrique",
   },
   robots: {
