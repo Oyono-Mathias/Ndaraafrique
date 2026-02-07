@@ -141,7 +141,6 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
     const canDelete = canInteract && targetUser.role !== 'admin';
     const canChangeRole = canInteract && targetUser.role !== 'admin';
 
-    // ✅ Sécurisation de la date Firestore
     const createdAt = (targetUser.createdAt as any)?.toDate?.() || null;
 
     return (
@@ -211,6 +210,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
                                         <DropdownMenuSubContent className="bg-slate-900 border-slate-800 text-slate-300">
                                             <DropdownMenuItem onClick={() => handleRoleChange('student')} className="cursor-pointer font-bold text-xs uppercase">Étudiant</DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleRoleChange('instructor')} className="cursor-pointer font-bold text-xs uppercase">Instructeur</DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleRoleChange('admin')} className="cursor-pointer font-bold text-xs uppercase text-red-400">Administrateur</DropdownMenuItem>
                                         </DropdownMenuSubContent>
                                     </DropdownMenuPortal>
                                 </DropdownMenuSub>
