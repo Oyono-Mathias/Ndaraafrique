@@ -180,7 +180,12 @@ export default function AdminSettingsPage() {
             visionTitle: values.aboutVisionTitle || '',
             visionFrench: values.aboutVisionFrench || '',
             visionSango: values.aboutVisionSango || '',
-            teamMembers: values.teamMembers || [],
+            teamMembers: (values.teamMembers || []).map(m => ({
+              name: m.name,
+              role: m.role,
+              imageUrl: m.imageUrl,
+              bio: m.bio || ''
+            })),
             ctaTitle: '',
             ctaSubtitle: '',
           }
