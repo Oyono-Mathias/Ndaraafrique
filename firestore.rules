@@ -64,25 +64,25 @@ service cloud.firestore {
 
     // --- RÈGLES PAIEMENTS ---
     match /payments/{paymentId} {
-      allow get, list: if isAdmin() 
-                 || isOwner(resource.data.userId) 
-                 || isOwner(resource.data.instructorId);
-                    
+      allow read, list: if isAdmin();
+      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId));
+      allow list: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId));
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
 
     // --- RÈGLES INSCRIPTIONS ---
     match /enrollments/{enrollmentId} {
-        allow get, list: if isAdmin() 
-                    || isOwner(resource.data.studentId) 
-                    || isOwner(resource.data.instructorId);
+        allow read, list: if isAdmin();
+        allow get: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId));
+        allow list: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId));
         allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
         allow update, delete: if isAdmin();
     }
 
     // --- AUTRES COLLECTIONS ---
     match /support_tickets/{ticketId} {
+      allow read, list: if isAdmin();
       allow read, create: if isSignedIn();
       allow update, delete: if (isSignedIn() && isOwner(resource.data.userId)) || isAdmin();
       match /messages/{msgId} {
@@ -117,7 +117,8 @@ service cloud.firestore {
     }
 
     match /payouts/{payoutId} {
-      allow read: if isAdmin() || isOwner(resource.data.instructorId);
+      allow read, list: if isAdmin();
+      allow read: if isOwner(resource.data.instructorId);
       allow create: if isSignedIn() && isOwner(request.resource.data.instructorId);
       allow update: if isAdmin();
     }
