@@ -91,8 +91,9 @@ export function useCollection<T = any>(
         setData(null);
         setIsLoading(false);
 
-        // trigger global error propagation
-        errorEmitter.emit('permission-error', contextualError);
+        // DO NOT emit to errorEmitter to prevent global crash boundary if handleable locally
+        // errorEmitter.emit('permission-error', contextualError);
+        console.warn("Firestore Permission Denied for path:", path, contextualError);
       }
     );
 

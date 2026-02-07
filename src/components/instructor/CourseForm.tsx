@@ -40,8 +40,14 @@ interface CourseFormProps {
   onSubmit: (data: CourseFormValues) => Promise<void>;
 }
 
+// ✅ Nouvelles catégories stratégiques Ndara Afrique
 const courseCategories = [
-    "Développement Web", "Développement Mobile", "Data Science & IA", "Marketing Digital", "Design (UI/UX)", "Entrepreneuriat", "Bureautique", "Autre"
+    "AgriTech", 
+    "FinTech", 
+    "Énergies Renouvelables", 
+    "Développement Web", 
+    "Entrepreneuriat", 
+    "Soft Skills"
 ];
 
 export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
@@ -70,7 +76,8 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     if (!file || !user) return;
 
     const storage = getStorage();
-    const storageRef = ref(storage, `course_thumbnails/${user.uid}/${Date.now()}_${file.name}`);
+    // ✅ Utilisation du chemin dynamique avec UID
+    const storageRef = ref(storage, `courses/${user.uid}/${Date.now()}_${file.name}`);
     const uploadTask = uploadBytesResumable(storageRef, file);
 
     uploadTask.on('state_changed',
@@ -83,7 +90,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
         toast({ 
             variant: 'destructive', 
             title: "Échec du téléversement", 
-            description: "Cloud Storage n'est pas activé. Utilisez l'option 'Templates' pour continuer." 
+            description: "Erreur lors de l'envoi vers Firebase Storage." 
         });
         setUploadProgress(null);
       },
@@ -92,7 +99,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
           form.setValue('imageUrl', downloadURL);
           setImagePreview(downloadURL);
           setUploadProgress(null);
-          toast({ title: "Image téléversée !" });
+          toast({ title: "Image de formation prête !" });
         });
       }
     );
@@ -115,7 +122,10 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     try {
         const result = await assistCourseCreation({ courseTitle: title });
         form.setValue('description', result.description);
-        form.setValue('category', result.category);
+        // On garde la catégorie si elle est déjà dans notre liste fermée
+        if (courseCategories.includes(result.category)) {
+            form.setValue('category', result.category);
+        }
         toast({ title: "Mathias a rédigé votre contenu !", description: "Vérifiez et ajustez si besoin." });
     } catch (error) {
         toast({ variant: 'destructive', title: "Erreur IA", description: "Mathias n'a pas pu répondre. Réessayez." });
@@ -165,7 +175,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
-                    <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Titre du cours</FormLabel><FormControl><Input placeholder="Ex: Introduction à React.js pour les débutants" {...field} className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )}/>
+                    <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Titre du cours</FormLabel><FormControl><Input placeholder="Ex: Maîtriser l'AgriTech durable" {...field} className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )}/>
                     <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description</FormLabel><FormControl><Textarea placeholder="Décrivez ce que les étudiants apprendront..." {...field} rows={6} className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl resize-none" /></FormControl><FormMessage /></FormItem> )}/>
                 </CardContent>
             </Card>
@@ -204,7 +214,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
 
                     <div className="flex flex-wrap gap-2">
                         <Button type="button" variant={imageSource === 'template' ? 'default' : 'outline'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest"><LayoutGrid className="h-3.5 w-3.5 mr-2" /> Templates</Button>
-                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'outline'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest"><ImageIcon className="h-3.5 w-3.5 mr-2" /> Mon Fichier</Button>
+                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'outline'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest"><ImageIcon className="h-3.5 w-3.5 mr-2" /> Téléverser</Button>
                         <Button type="button" variant={imageSource === 'url' ? 'default' : 'outline'} onClick={() => setImageSource('url')} size="sm" className="rounded-xl h-10 px-4 font-bold text-[10px] uppercase tracking-widest"><LinkIcon className="h-3.5 w-3.5 mr-2" /> URL Externe</Button>
                     </div>
 

@@ -12,14 +12,8 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
-    function getUserData() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-    }
-
     function isAdmin() {
-      return isSignedIn() && 
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      return isSignedIn() && request.auth.token.email == 'salguienow@gmail.com';
     }
     
     function isCourseOwner(courseId) {
@@ -27,8 +21,10 @@ service cloud.firestore {
     }
     
     function isApprovedInstructor() {
-      let userData = getUserData();
-      return userData.role == 'instructor' && userData.isInstructorApproved == true;
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor' && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructorApproved == true;
     }
 
     // --- RÈGLES UTILISATEURS ---
@@ -64,18 +60,16 @@ service cloud.firestore {
 
     // --- RÈGLES PAIEMENTS ---
     match /payments/{paymentId} {
-      allow read, list: if isAdmin();
-      allow get: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId));
-      allow list: if isSignedIn() && (isOwner(resource.data.userId) || isOwner(resource.data.instructorId));
+      allow read: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId));
+      allow list: if isAdmin() || (isSignedIn() && request.query.where.userId == request.auth.uid);
       allow create: if isSignedIn() && isOwner(request.resource.data.userId);
       allow update, delete: if isAdmin();
     }
 
     // --- RÈGLES INSCRIPTIONS ---
     match /enrollments/{enrollmentId} {
-        allow read, list: if isAdmin();
-        allow get: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId));
-        allow list: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId));
+        allow read: if isAdmin() || (isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId)));
+        allow list: if isAdmin() || (isSignedIn() && (request.query.where.studentId == request.auth.uid || request.query.where.instructorId == request.auth.uid));
         allow create: if isSignedIn() && isOwner(request.resource.data.studentId);
         allow update, delete: if isAdmin();
     }
