@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -6,11 +5,10 @@
  * Permet de consulter les consignes, télécharger les ressources et envoyer son travail.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { getFirestore, doc, collection, query, where, getDocs, setDoc, serverTimestamp, collectionGroup } from 'firebase/firestore';
-import { useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -130,7 +128,7 @@ export default function StudentAssignmentDetailPage() {
       const subId = `${user.uid}_${assignmentId}`;
       const subRef = doc(db, 'devoirs', subId);
       
-      const payload = {
+      const payload: AssignmentSubmission = {
         id: subId,
         studentId: user.uid,
         studentName: currentUser?.fullName || 'Étudiant Ndara',
@@ -268,7 +266,7 @@ export default function StudentAssignmentDetailPage() {
                             <div>
                                 <p className="text-sm font-bold text-white">Travail transmis</p>
                                 <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">
-                                    Le {format((submission.submittedAt as any).toDate(), 'dd MMM à HH:mm', { locale: fr })}
+                                    Le {submission.submittedAt && typeof (submission.submittedAt as any).toDate === 'function' ? format((submission.submittedAt as any).toDate(), 'dd MMM à HH:mm', { locale: fr }) : 'récemment'}
                                 </p>
                             </div>
                         </div>

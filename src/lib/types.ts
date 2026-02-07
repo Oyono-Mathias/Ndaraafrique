@@ -165,6 +165,8 @@ export interface Assignment {
   description: string;
   courseId: string;
   sectionId: string;
+  instructorId?: string;
+  courseTitle?: string;
   correctionGuide?: string;
   attachments?: { name: string; url: string }[];
   dueDate?: Timestamp | FieldValue;
