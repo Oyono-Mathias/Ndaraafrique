@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Layout principal pour l'espace étudiant.
- * Isole la logique dépendante des SearchParams pour éviter les erreurs de chargement (ChunkLoadError).
+ * Gère dynamiquement l'affichage de la navigation pour une expérience immersive.
  */
 
 function StudentLayoutContent({ children }: { children: React.ReactNode }) {
@@ -18,7 +18,7 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
 
-  // ✅ Correction robuste : On nettoie le chemin du préfixe de langue pour la comparaison
+  // On nettoie le chemin du préfixe de langue pour la comparaison
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
@@ -40,11 +40,14 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
       '/student/liste-de-souhaits'
     ];
 
-    // Sur mobile, on ne montre la barre que si on n'est pas dans un chat précis
+    // Vérifier si on est sur une page de détail de devoir (ex: /student/devoirs/XYZ)
+    const isAssignmentDetail = cleanPath.startsWith('/student/devoirs/') && cleanPath.split('/').length > 3;
+
+    // Sur mobile, on cache la barre si on est dans un chat précis ou une soumission de devoir
     const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
     const isGlobalPage = globalNavPaths.some(p => cleanPath === p);
 
-    return isGlobalPage || isMessageList;
+    return (isGlobalPage || isMessageList || isAssignmentDetail);
   }, [cleanPath, searchParams]);
 
   if (isUserLoading) {
