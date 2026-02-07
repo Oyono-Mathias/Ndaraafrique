@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -55,8 +56,9 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
+import { GrantCourseModal } from './GrantCourseModal';
 
-const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
+const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGrantRequest: (user: NdaraUser) => void }) => {
     const { currentUser: adminUser, user: adminAuthUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
@@ -193,6 +195,11 @@ const UserRow = ({ user: targetUser }: { user: NdaraUser }) => {
                                     <span className="font-bold text-xs uppercase tracking-tight">Envoyer un message</span>
                                 </DropdownMenuItem>
 
+                                <DropdownMenuItem onClick={() => onGrantRequest(targetUser)} className="cursor-pointer gap-2 py-2.5 text-primary">
+                                    <Gift className="h-4 w-4 text-primary" />
+                                    <span className="font-bold text-xs uppercase tracking-tight">Offrir un cours</span>
+                                </DropdownMenuItem>
+
                                 <DropdownMenuSeparator className="bg-slate-800" />
                                 
                                 <DropdownMenuSub>
@@ -261,6 +268,8 @@ export function UsersTable() {
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [selectedUserForGrant, setSelectedUserForGrant] = useState<NdaraUser | null>(null);
+    const [isGrantModalOpen, setIsGrantModalOpen] = useState(false);
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
@@ -270,9 +279,20 @@ export function UsersTable() {
             user.username?.toLowerCase().includes(searchTerm.toLowerCase())
         );
     }, [users, searchTerm]);
+
+    const handleOpenGrantModal = (user: NdaraUser) => {
+        setSelectedUserForGrant(user);
+        setIsGrantModalOpen(true);
+    };
     
     return (
         <div className="space-y-6">
+            <GrantCourseModal 
+                isOpen={isGrantModalOpen} 
+                onOpenChange={setIsGrantModalOpen} 
+                targetUser={selectedUserForGrant} 
+            />
+
             <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-4">
                 <div className="relative flex-1 max-w-sm">
                     <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
@@ -309,7 +329,13 @@ export function UsersTable() {
                                 </TableRow>
                             ))
                         ) : filteredUsers.length > 0 ? (
-                            filteredUsers.map(user => <UserRow key={user.uid} user={user} />)
+                            filteredUsers.map(user => (
+                                <UserRow 
+                                    key={user.uid} 
+                                    user={user} 
+                                    onGrantRequest={handleOpenGrantModal}
+                                />
+                            ))
                         ) : (
                             <TableRow>
                                 <TableCell colSpan={6} className="h-64 text-center">
