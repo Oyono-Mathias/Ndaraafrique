@@ -63,11 +63,6 @@ const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }
                     <span className="text-xl font-bold tracking-tighter text-white">{siteName}</span>
                 </Link>
                 <div className="flex items-center gap-2">
-                    <Button asChild variant="ghost" size="icon" className="text-white hover:bg-white/10">
-                        <Link href="/search">
-                            <Search className="h-5 w-5" />
-                        </Link>
-                    </Button>
                     <Link href={user ? dashboardUrl : "/login"}>
                         <Button variant="outline" className="nd-cta-secondary bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-9 px-6 rounded-full text-xs font-bold uppercase tracking-widest">
                             {user ? "Mon Espace" : "Se connecter"}
@@ -142,7 +137,7 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     );
 };
 
-const InteractiveSteps = () => {
+const InteractiveSteps = ({ title, subtitle }: { title?: string, subtitle?: string }) => {
     const [activeStep, setActiveStep] = useState(0);
     const steps = [
         {
@@ -167,8 +162,8 @@ const InteractiveSteps = () => {
 
     return (
         <section className="py-16">
-             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-white">Comment ça marche ?</h2>
-             <p className="text-slate-400 text-center max-w-xl mx-auto mb-10">Un parcours simple en 3 étapes pour transformer votre carrière.</p>
+             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-white">{title || "Comment ça marche ?"}</h2>
+             <p className="text-slate-400 text-center max-w-xl mx-auto mb-10">{subtitle || "Un parcours simple en 3 étapes pour transformer votre carrière."}</p>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
                  <div className="space-y-4">
                     {steps.map((step, index) => {
@@ -254,7 +249,7 @@ const PaymentMethodsSection = () => {
     );
 };
 
-const TrustSection = () => {
+const TrustSection = ({ title, subtitle }: { title?: string, subtitle?: string }) => {
     const trustFeatures = [
         {
             icon: ShieldCheck,
@@ -275,9 +270,9 @@ const TrustSection = () => {
 
     return (
         <section className="py-16">
-             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-white">Votre sérénité, notre priorité</h2>
+             <h2 className="text-2xl md:text-3xl font-bold text-center mb-4 text-white">{title || "Votre sérénité, notre priorité"}</h2>
              <p className="text-slate-400 text-center max-w-2xl mx-auto mb-12">
-                Nous intégrons les meilleures technologies pour garantir la sécurité et la traçabilité de chaque transaction.
+                {subtitle || "Nous intégrons les meilleures technologies pour garantir la sécurité et la traçabilité de chaque transaction."}
              </p>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {trustFeatures.map((feature, index) => (
@@ -306,6 +301,11 @@ export default function LandingPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
   const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+
+  // Fetch Settings for content
+  const settingsRef = doc(db, 'settings', 'global');
+  const { data: settings } = useDoc<Settings>(settingsRef);
+  const content = settings?.content?.landingPage;
 
   useEffect(() => {
     const q = query(
@@ -338,7 +338,7 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
   
-  const siteName = "Ndara Afrique";
+  const siteName = settings?.general?.siteName || "Ndara Afrique";
   const logoUrl = '/logo.png';
 
   // --- LOGIQUE DE GROUPEMENT PAR CATÉGORIE ---
@@ -367,10 +367,10 @@ export default function LandingPage() {
             La plateforme N°1 pour les compétences du futur en Afrique
           </Badge>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight text-white animate-fade-in-up">
-            Apprenez. Construisez. Prospérez.
+            {content?.heroTitle || "Apprenez. Construisez. Prospérez."}
           </h1>
           <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up">
-            Des formations de pointe conçues par des experts africains, pour les talents africains sur {siteName}. Transformez vos ambitions en succès.
+            {content?.heroSubtitle || `Des formations de pointe conçues par des experts africains, pour les talents africains sur ${siteName}. Transformez vos ambitions en succès.`}
           </p>
           <div className="animate-fade-in-up flex flex-col items-center">
               <Link href={user ? dashboardUrl : "/login?tab=register"}>
@@ -380,7 +380,7 @@ export default function LandingPage() {
                             <LayoutDashboard className="w-5 h-5 mr-2" />
                             Accéder à mon tableau de bord
                           </>
-                      ) : "Démarrer mon parcours"}
+                      ) : (content?.heroCtaText || "Démarrer mon parcours")}
                   </button>
               </Link>
               <EnrollmentCounter />
@@ -398,7 +398,10 @@ export default function LandingPage() {
             isLoading={loading}
           />
 
-          <InteractiveSteps />
+          <InteractiveSteps 
+            title={content?.howItWorksTitle} 
+            subtitle={content?.howItWorksSubtitle} 
+          />
 
           <PaymentMethodsSection />
 
@@ -424,16 +427,23 @@ export default function LandingPage() {
               ))
           )}
 
-          <TrustSection />
+          <TrustSection 
+            title={content?.securitySectionTitle} 
+            subtitle={content?.securitySectionSubtitle} 
+          />
 
           {/* --- FINAL CTA --- */}
           <section className="text-center py-24 bg-slate-900/30 rounded-[3rem] border border-white/5 relative overflow-hidden group">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <h2 className="text-3xl md:text-4xl font-black text-white relative z-10">Prêt à transformer votre avenir ?</h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto relative z-10">Rejoignez des milliers de talents qui construisent le futur de l'Afrique avec Ndara Afrique.</p>
+            <h2 className="text-3xl md:text-4xl font-black text-white relative z-10">
+                {content?.finalCtaTitle || "Prêt à transformer votre avenir ?"}
+            </h2>
+            <p className="mt-4 text-slate-400 max-w-xl mx-auto relative z-10">
+                {content?.finalCtaSubtitle || "Rejoignez des milliers de talents qui construisent le futur de l'Afrique avec Ndara Afrique."}
+            </p>
             <Button size="lg" asChild className="mt-10 h-14 px-12 rounded-2xl nd-cta-primary animate-pulse relative z-10">
                 <Link href={user ? dashboardUrl : "/login?tab=register"}>
-                    {user ? "Accéder au Tableau de bord" : "Devenir Membre"}
+                    {user ? "Accéder au Tableau de bord" : (content?.finalCtaButtonText || "Devenir Membre")}
                     <ChevronsRight className="ml-2 h-5 w-5" />
                 </Link>
             </Button>

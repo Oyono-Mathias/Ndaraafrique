@@ -30,7 +30,8 @@ import {
   Percent,
   FileText,
   Layout,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -42,6 +43,17 @@ const settingsSchema = z.object({
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
+  // Contenu Landing Page
+  landingHeroTitle: z.string().optional(),
+  landingHeroSubtitle: z.string().optional(),
+  landingHeroCta: z.string().optional(),
+  landingStepsTitle: z.string().optional(),
+  landingStepsSubtitle: z.string().optional(),
+  landingTrustTitle: z.string().optional(),
+  landingTrustSubtitle: z.string().optional(),
+  landingFinalCtaTitle: z.string().optional(),
+  landingFinalCtaSubtitle: z.string().optional(),
+  landingFinalCtaBtn: z.string().optional(),
   // Contenu About Page
   aboutMainTitle: z.string().optional(),
   aboutHistoryTitle: z.string().optional(),
@@ -81,6 +93,17 @@ export default function AdminSettingsPage() {
           announcementMessage: data.platform?.announcementMessage || '',
           maintenanceMode: data.platform?.maintenanceMode || false,
           allowInstructorSignup: data.platform?.allowInstructorSignup ?? true,
+          // Landing
+          landingHeroTitle: data.content?.landingPage?.heroTitle || '',
+          landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || '',
+          landingHeroCta: data.content?.landingPage?.heroCtaText || '',
+          landingStepsTitle: data.content?.landingPage?.howItWorksTitle || '',
+          landingStepsSubtitle: data.content?.landingPage?.howItWorksSubtitle || '',
+          landingTrustTitle: data.content?.landingPage?.securitySectionTitle || '',
+          landingTrustSubtitle: data.content?.landingPage?.securitySectionSubtitle || '',
+          landingFinalCtaTitle: data.content?.landingPage?.finalCtaTitle || '',
+          landingFinalCtaSubtitle: data.content?.landingPage?.finalCtaSubtitle || '',
+          landingFinalCtaBtn: data.content?.landingPage?.finalCtaButtonText || '',
           // About
           aboutMainTitle: data.content?.aboutPage?.mainTitle || '',
           aboutHistoryTitle: data.content?.aboutPage?.historyTitle || '',
@@ -116,6 +139,18 @@ export default function AdminSettingsPage() {
           enableInternalMessaging: true
         },
         content: {
+          landingPage: {
+            heroTitle: values.landingHeroTitle,
+            heroSubtitle: values.landingHeroSubtitle,
+            heroCtaText: values.landingHeroCta,
+            howItWorksTitle: values.landingStepsTitle,
+            howItWorksSubtitle: values.landingStepsSubtitle,
+            securitySectionTitle: values.landingTrustTitle,
+            securitySectionSubtitle: values.landingTrustSubtitle,
+            finalCtaTitle: values.landingFinalCtaTitle,
+            finalCtaSubtitle: values.landingFinalCtaSubtitle,
+            finalCtaButtonText: values.landingFinalCtaBtn,
+          },
           aboutPage: {
             mainTitle: values.aboutMainTitle || '',
             mainSubtitle: '',
@@ -162,7 +197,7 @@ export default function AdminSettingsPage() {
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1 overflow-x-auto flex-wrap">
               <TabsTrigger value="general" className="py-2 px-6"><Globe className="h-4 w-4 mr-2" />Général</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-6"><ShieldCheck className="h-4 w-4 mr-2" />Plateforme</TabsTrigger>
-              <TabsTrigger value="content" className="py-2 px-6"><Layout className="h-4 w-4 mr-2" />Pages & Textes</TabsTrigger>
+              <TabsTrigger value="content" className="py-2 px-6"><Layout className="h-4 w-4 mr-2" />Accueil & À propos</TabsTrigger>
               <TabsTrigger value="legal" className="py-2 px-6"><FileText className="h-4 w-4 mr-2" />Légal</TabsTrigger>
             </TabsList>
 
@@ -233,43 +268,89 @@ export default function AdminSettingsPage() {
 
             {/* --- ONGLET CONTENU --- */}
             <TabsContent value="content">
-              <Card className="bg-slate-900 border-slate-800">
-                <CardHeader>
-                  <CardTitle>Page "À Propos"</CardTitle>
-                  <CardDescription>Gérez le manifeste et l'histoire de la plateforme.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-8">
-                  <FormField control={form.control} name="aboutMainTitle" render={({ field }) => (
-                    <FormItem><FormLabel>Titre principal</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
-                  
-                  <div className="pt-4 border-t border-slate-800 space-y-4">
-                    <h3 className="font-bold text-primary flex items-center gap-2"><Info className="h-4 w-4"/> Notre Histoire</h3>
-                    <FormField control={form.control} name="aboutHistoryTitle" render={({ field }) => (
-                      <FormItem><FormLabel>Titre Section</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+              <div className="space-y-8">
+                {/* CONFIGURATION LANDING PAGE */}
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Sparkles className="h-5 w-5 text-primary"/>Page d'Accueil</CardTitle>
+                    <CardDescription>Gérez les textes du Hero et des sections principales.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
+                        <FormItem><FormLabel>Titre Hero</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="landingHeroCta" render={({ field }) => (
+                        <FormItem><FormLabel>Texte Bouton Hero</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                    </div>
+                    <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
+                      <FormItem><FormLabel>Sous-titre Hero</FormLabel><FormControl><Textarea rows={2} {...field} /></FormControl></FormItem>
                     )} />
-                    <FormField control={form.control} name="aboutHistoryFrench" render={({ field }) => (
-                      <FormItem><FormLabel>Texte (Français)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="aboutHistorySango" render={({ field }) => (
-                      <FormItem><FormLabel>Texte (Sango)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
-                    )} />
-                  </div>
+                    
+                    <Separator className="bg-slate-800" />
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="landingStepsTitle" render={({ field }) => (
+                        <FormItem><FormLabel>Titre "Comment ça marche"</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="landingStepsSubtitle" render={({ field }) => (
+                        <FormItem><FormLabel>Sous-titre "Comment ça marche"</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                    </div>
 
-                  <div className="pt-4 border-t border-slate-800 space-y-4">
-                    <h3 className="font-bold text-primary flex items-center gap-2"><Globe className="h-4 w-4"/> Notre Vision</h3>
-                    <FormField control={form.control} name="aboutVisionTitle" render={({ field }) => (
-                      <FormItem><FormLabel>Titre Section</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                    <Separator className="bg-slate-800" />
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="landingFinalCtaTitle" render={({ field }) => (
+                        <FormItem><FormLabel>Titre CTA Final</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="landingFinalCtaBtn" render={({ field }) => (
+                        <FormItem><FormLabel>Bouton CTA Final</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* CONFIGURATION ABOUT PAGE */}
+                <Card className="bg-slate-900 border-slate-800">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5 text-primary"/>Page "À Propos"</CardTitle>
+                    <CardDescription>Gérez le manifeste et l'histoire de la plateforme.</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-8">
+                    <FormField control={form.control} name="aboutMainTitle" render={({ field }) => (
+                      <FormItem><FormLabel>Titre principal</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
                     )} />
-                    <FormField control={form.control} name="aboutVisionFrench" render={({ field }) => (
-                      <FormItem><FormLabel>Texte (Français)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="aboutVisionSango" render={({ field }) => (
-                      <FormItem><FormLabel>Texte (Sango)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
-                    )} />
-                  </div>
-                </CardContent>
-              </Card>
+                    
+                    <div className="pt-4 border-t border-slate-800 space-y-4">
+                      <h3 className="font-bold text-primary flex items-center gap-2"><Info className="h-4 w-4"/> Notre Histoire</h3>
+                      <FormField control={form.control} name="aboutHistoryTitle" render={({ field }) => (
+                        <FormItem><FormLabel>Titre Section</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="aboutHistoryFrench" render={({ field }) => (
+                        <FormItem><FormLabel>Texte (Français)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="aboutHistorySango" render={({ field }) => (
+                        <FormItem><FormLabel>Texte (Sango)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                      )} />
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-800 space-y-4">
+                      <h3 className="font-bold text-primary flex items-center gap-2"><Globe className="h-4 w-4"/> Notre Vision</h3>
+                      <FormField control={form.control} name="aboutVisionTitle" render={({ field }) => (
+                        <FormItem><FormLabel>Titre Section</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="aboutVisionFrench" render={({ field }) => (
+                        <FormItem><FormLabel>Texte (Français)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                      )} />
+                      <FormField control={form.control} name="aboutVisionSango" render={({ field }) => (
+                        <FormItem><FormLabel>Texte (Sango)</FormLabel><FormControl><Textarea rows={4} {...field} /></FormControl></FormItem>
+                      )} />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </TabsContent>
 
             {/* --- ONGLET LÉGAL --- */}

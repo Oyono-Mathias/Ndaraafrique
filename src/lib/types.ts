@@ -287,7 +287,7 @@ export interface CourseAnswer {
   userId: string; // ID of the user who answered (can be student or instructor)
   body: string;
   createdAt: Timestamp | FieldValue;
-  isOfficial: boolean; // True if the answer is from the course instructor
+  isOfficial: boolean; // True if the answer from the course instructor
 }
 
 
@@ -360,10 +360,20 @@ export interface Settings {
       ctaSubtitle: string;
     };
     landingPage?: {
+      heroTitle?: string;
+      heroSubtitle?: string;
+      heroCtaText?: string;
+      howItWorksTitle?: string;
+      howItWorksSubtitle?: string;
       howItWorks_step1_imageUrl?: string;
       howItWorks_step2_imageUrl?: string;
       howItWorks_step3_imageUrl?: string;
+      securitySectionTitle?: string;
+      securitySectionSubtitle?: string;
       securitySection_imageUrl?: string;
+      finalCtaTitle?: string;
+      finalCtaSubtitle?: string;
+      finalCtaButtonText?: string;
       finalCta_imageUrl?: string;
     };
   };
