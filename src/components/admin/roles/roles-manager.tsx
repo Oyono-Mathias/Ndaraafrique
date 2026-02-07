@@ -1,7 +1,11 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
+/**
+ * @fileOverview Interface de gestion des Rôles & Permissions.
+ * Permet de configurer dynamiquement les accès pour chaque type d'utilisateur.
+ */
+
+import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import type { Role } from '@/lib/types';
@@ -15,7 +19,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldCheck, ShieldAlert, Lock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function RolesManager() {
@@ -29,114 +33,150 @@ export function RolesManager() {
     const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);
     const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
 
+    // ✅ Sélection automatique du rôle par défaut une fois les rôles chargés
+    useEffect(() => {
+        if (roles && roles.length > 0 && !selectedRoleId) {
+            const instructorRole = roles.find(r => r.name === 'instructor');
+            setSelectedRoleId(instructorRole?.id || roles[0].id);
+        }
+    }, [roles, selectedRoleId]);
+
     const selectedRole = useMemo(() => {
         return roles?.find(r => r.id === selectedRoleId);
     }, [roles, selectedRoleId]);
 
-    // Set default role selection
-    useState(() => {
-        if (roles && roles.length > 0 && !selectedRoleId) {
-            setSelectedRoleId(roles.find(r => r.name === 'instructor')?.id || roles[0].id);
-        }
-    });
-
     const handlePermissionChange = async (permissionKey: string, checked: boolean) => {
         if (!selectedRoleId || !currentUser) return;
 
+        // Empêcher la modification si c'est l'admin (pour la sécurité)
+        if (selectedRole?.name === 'admin') return;
+
         setSavingStates(prev => ({ ...prev, [permissionKey]: true }));
 
-        const result = await updateRolePermissions({
-            roleId: selectedRoleId,
-            permissions: {
-                [permissionKey]: checked
-            },
-            adminId: currentUser.uid,
-        });
-
-        if (result.success) {
-            toast({
-                title: 'Permission mise à jour',
-                description: `Le rôle '${selectedRole?.name}' a été modifié.`,
+        try {
+            const result = await updateRolePermissions({
+                roleId: selectedRoleId,
+                permissions: {
+                    [permissionKey]: checked
+                },
+                adminId: currentUser.uid,
             });
-        } else {
+
+            if (result.success) {
+                toast({
+                    title: 'Permission mise à jour',
+                    description: `Le rôle '${selectedRole?.name}' a été mis à jour.`,
+                });
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error: any) {
             toast({
                 variant: 'destructive',
-                title: 'Erreur',
-                description: result.error || 'Impossible de mettre à jour la permission.',
+                title: 'Erreur de sauvegarde',
+                description: error.message || 'Impossible de mettre à jour la permission.',
             });
+        } finally {
+            setSavingStates(prev => ({ ...prev, [permissionKey]: false }));
         }
-        setSavingStates(prev => ({ ...prev, [permissionKey]: false }));
     };
 
-    if (rolesLoading) {
+    if (rolesLoading && !roles) {
         return (
             <div className="space-y-6">
-                <Skeleton className="h-10 w-64" />
+                <Skeleton className="h-12 w-64 bg-slate-800 rounded-xl" />
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-60 w-full" />)}
+                    {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-64 w-full bg-slate-800 rounded-2xl" />)}
                 </div>
             </div>
         );
     }
     
     return (
-        <div className="space-y-6">
-            <div>
-                <Label htmlFor="role-selector" className="text-base font-semibold">Éditer le rôle</Label>
-                <Select onValueChange={setSelectedRoleId} defaultValue={selectedRoleId}>
-                    <SelectTrigger id="role-selector" className="w-full md:w-72 mt-2 dark:bg-slate-800 h-12 text-base">
-                        <SelectValue placeholder="Sélectionnez un rôle" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {roles?.map(role => (
-                            <SelectItem key={role.id} value={role.id} className="capitalize">{role.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="flex-1">
+                    <Label htmlFor="role-selector" className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Configuration du rôle</Label>
+                    <Select onValueChange={setSelectedRoleId} value={selectedRoleId}>
+                        <SelectTrigger id="role-selector" className="w-full md:w-80 mt-1.5 bg-slate-900 border-slate-800 h-12 text-base rounded-xl">
+                            <SelectValue placeholder="Sélectionnez un rôle" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            {roles?.map(role => (
+                                <SelectItem key={role.id} value={role.id} className="capitalize font-bold py-3">
+                                    {role.name === 'admin' ? '🛡️ Administrateur' : role.name === 'instructor' ? '🎓 Formateur' : '👤 Étudiant'}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                
+                {selectedRole?.name === 'admin' && (
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl flex gap-3 max-w-sm">
+                        <ShieldAlert className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-tighter leading-tight">
+                            Rôle Maître : Les permissions administrateur sont verrouillées au maximum pour garantir l'intégrité du système.
+                        </p>
+                    </div>
+                )}
             </div>
 
             {selectedRole ? (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {Object.entries(PERMISSION_GROUPS).map(([groupName, permissions]) => (
-                        <Card key={groupName} className="dark:bg-slate-800/50 dark:border-slate-700/80">
-                            <CardHeader>
-                                <CardTitle className="text-lg text-white">{groupName}</CardTitle>
+                        <Card key={groupName} className="bg-slate-900 border-slate-800 shadow-xl rounded-2xl overflow-hidden">
+                            <CardHeader className="bg-slate-800/30 border-b border-white/5 py-4">
+                                <CardTitle className="text-sm font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                    <ShieldCheck className="h-4 w-4" />
+                                    {groupName}
+                                </CardTitle>
                             </CardHeader>
-                            <CardContent className="space-y-4">
-                                {Object.entries(permissions).map(([key, description]) => (
-                                    <TooltipProvider key={key} delayDuration={100}>
-                                        <Tooltip>
-                                            <TooltipTrigger className="w-full">
-                                                <div className="flex items-center justify-between p-3 border rounded-lg dark:border-slate-700">
-                                                    <Label htmlFor={`switch-${key}`} className="text-sm cursor-pointer dark:text-slate-300 text-left flex-1 pr-2">{description}</Label>
-                                                    <div className="w-10 h-6 flex items-center justify-center">
-                                                        {savingStates[key] ? (
-                                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                                        ) : (
-                                                            <Switch
-                                                                id={`switch-${key}`}
-                                                                checked={selectedRole.permissions?.[key] || false}
-                                                                onCheckedChange={(checked) => handlePermissionChange(key, checked)}
-                                                                disabled={selectedRole.name === 'admin'}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </TooltipTrigger>
-                                            {selectedRole.name === 'admin' && (
-                                                 <TooltipContent>
-                                                    <p>Les administrateurs ont toutes les permissions par défaut.</p>
-                                                </TooltipContent>
-                                            )}
-                                        </Tooltip>
-                                    </TooltipProvider>
-                                ))}
+                            <CardContent className="p-4 space-y-3">
+                                {Object.entries(permissions).map(([key, description]) => {
+                                    const isSaving = savingStates[key];
+                                    const isAdmin = selectedRole.name === 'admin';
+                                    
+                                    return (
+                                        <div key={key} className={cn(
+                                            "flex items-center justify-between p-3 rounded-xl border transition-all",
+                                            selectedRole.permissions?.[key] ? "bg-primary/5 border-primary/20" : "bg-slate-950/50 border-slate-800 opacity-60"
+                                        )}>
+                                            <div className="flex-1 pr-4">
+                                                <Label 
+                                                    htmlFor={`switch-${key}`} 
+                                                    className="text-xs font-bold text-slate-200 cursor-pointer block"
+                                                >
+                                                    {description}
+                                                </Label>
+                                                <p className="text-[9px] text-slate-500 font-mono mt-0.5">{key}</p>
+                                            </div>
+                                            
+                                            <div className="w-10 flex justify-center">
+                                                {isSaving ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                                                ) : isAdmin ? (
+                                                    <Lock className="h-4 w-4 text-slate-600" />
+                                                ) : (
+                                                    <Switch
+                                                        id={`switch-${key}`}
+                                                        checked={selectedRole.permissions?.[key] || false}
+                                                        onCheckedChange={(checked) => handlePermissionChange(key, checked)}
+                                                        className="data-[state=checked]:bg-primary"
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </CardContent>
                         </Card>
                     ))}
                 </div>
             ) : (
-                <p>Veuillez sélectionner un rôle pour voir ses permissions.</p>
+                <div className="text-center py-20 opacity-30">
+                    <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4" />
+                    <p className="font-black uppercase tracking-[0.3em]">Chargement des permissions...</p>
+                </div>
             )}
         </div>
     );

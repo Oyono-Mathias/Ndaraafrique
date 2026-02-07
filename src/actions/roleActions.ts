@@ -1,8 +1,11 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
+
+/**
+ * @fileOverview Actions serveur pour la gestion fine des permissions par rôle.
+ */
 
 export async function updateRolePermissions({
   roleId,
@@ -13,25 +16,29 @@ export async function updateRolePermissions({
   permissions: { [key: string]: boolean },
   adminId: string
 }): Promise<{ success: boolean; error?: string }> {
-  try { if (!adminDb) {
-              throw new Error("Firebase Admin SDK non initialisé");
-                  }
+  try {
+    const db = getAdminDb();
+    const batch = db.batch();
 
-   const batch = adminDb.batch(); // Maintenant TypeScript sait que ce n'est pas null
-                      // ... suite du code
+    // 1. Préparation de la mise à jour granulaire (dot notation)
+    // On évite d'écraser tout l'objet 'permissions'
+    const updateData: { [key: string]: any } = {};
+    Object.entries(permissions).forEach(([key, value]) => {
+        updateData[`permissions.${key}`] = value;
+    });
 
+    const roleRef = db.collection('roles').doc(roleId);
+    batch.update(roleRef, updateData);
+
+    // 2. Journalisation dans l'audit admin
+    const auditLogRef = db.collection('admin_audit_logs').doc();
+    const permissionKeys = Object.keys(permissions).join(', ');
     
-    // 1. Update the role document
-    const roleRef = adminDb.collection('roles').doc(roleId);
-    batch.update(roleRef, { permissions });
-
-    // 2. Log the action to the audit log
-    const auditLogRef = adminDb.collection('admin_audit_logs').doc();
     batch.set(auditLogRef, {
       adminId,
       eventType: 'role.permissions.update',
       target: { id: roleId, type: 'role' },
-      details: `Permissions pour le rôle '${roleId}' ont été mises à jour.`,
+      details: `Permissions [${permissionKeys}] pour le rôle '${roleId}' mises à jour.`,
       timestamp: FieldValue.serverTimestamp(),
     });
 
@@ -40,6 +47,6 @@ export async function updateRolePermissions({
 
   } catch (error: any) {
     console.error("Error updating role permissions:", error);
-    return { success: false, error: "Une erreur est survenue." };
+    return { success: false, error: error.message || "Une erreur est survenue lors de la mise à jour." };
   }
 }
