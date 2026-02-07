@@ -11,16 +11,53 @@ const fontSans = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Ndara Afrique - L'excellence par le savoir",
-  description: "Apprenez des compétences d'avenir avec des cours conçus par des experts locaux.",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Ndara Afrique",
+  title: {
+    default: "Ndara Afrique - Plateforme d'E-learning Pan-Africaine",
+    template: "%s | Ndara Afrique"
   },
-  formatDetection: {
-    telephone: false,
+  description: "Apprenez les compétences du futur avec des experts africains. Formations en AgriTech, Développement Web, IA et Entrepreneuriat. Accès par Mobile Money.",
+  keywords: ["e-learning afrique", "formation en ligne", "apprendre le code", "agritech", "intelligence artificielle", "ndara afrique", "mathias oyono"],
+  authors: [{ name: "Mathias Oyono" }],
+  creator: "Ndara Afrique",
+  publisher: "Ndara Afrique",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    type: "website",
+    locale: "fr_FR",
+    url: "https://ndara-afrique.app",
+    siteName: "Ndara Afrique",
+    title: "Ndara Afrique - L'excellence par le savoir",
+    description: "Rejoignez la révolution de l'éducation en Afrique. Des cours de haute qualité accessibles partout.",
+    images: [
+      {
+        url: "https://ndara-afrique.app/og-image.jpg", // Image à ajouter dans public/
+        width: 1200,
+        height: 630,
+        alt: "Ndara Afrique - Apprenez. Construisez. Prospérez.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ndara Afrique",
+    description: "Le futur de la formation en ligne pour les talents africains.",
+    images: ["https://ndara-afrique.app/og-image.jpg"],
+    creator: "@ndaraafrique",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
   },
 };
 
