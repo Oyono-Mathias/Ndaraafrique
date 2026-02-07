@@ -21,7 +21,6 @@ export async function updateRolePermissions({
     const batch = db.batch();
 
     // 1. Préparation de la mise à jour granulaire (dot notation)
-    // On évite d'écraser tout l'objet 'permissions'
     const updateData: { [key: string]: any } = {};
     Object.entries(permissions).forEach(([key, value]) => {
         updateData[`permissions.${key}`] = value;
@@ -48,5 +47,72 @@ export async function updateRolePermissions({
   } catch (error: any) {
     console.error("Error updating role permissions:", error);
     return { success: false, error: error.message || "Une erreur est survenue lors de la mise à jour." };
+  }
+}
+
+/**
+ * Initialise les rôles par défaut dans la collection 'roles'
+ */
+export async function initializeDefaultRoles(adminId: string): Promise<{ success: boolean; error?: string }> {
+  try {
+    const db = getAdminDb();
+    const batch = db.batch();
+
+    const roles = {
+      admin: {
+        name: 'admin',
+        permissions: {
+          'admin.access': true,
+          'admin.courses.manage': true,
+          'admin.reviews.manage': true,
+          'admin.settings.manage': true,
+          'admin.users.list': true,
+          'admin.users.read': true,
+          'admin.users.manage': true,
+          'admin.instructors.review': true,
+          'admin.moderation.courses': true,
+          'admin.payments.list': true,
+          'admin.payouts.manage': true,
+          'admin.marketing.manage': true,
+          'admin.support.manage': true,
+          'admin.security.read': true,
+          'admin.logs.read': true,
+          'admin.roles.manage': true,
+        }
+      },
+      instructor: {
+        name: 'instructor',
+        permissions: {
+          'admin.access': false,
+          'admin.courses.manage': false,
+        }
+      },
+      student: {
+        name: 'student',
+        permissions: {
+          'admin.access': false,
+        }
+      }
+    };
+
+    Object.entries(roles).forEach(([id, data]) => {
+      const ref = db.collection('roles').doc(id);
+      batch.set(ref, data);
+    });
+
+    const auditLogRef = db.collection('admin_audit_logs').doc();
+    batch.set(auditLogRef, {
+      adminId,
+      eventType: 'role.permissions.update',
+      target: { id: 'all', type: 'role' },
+      details: `Initialisation des rôles par défaut par l'admin ${adminId}.`,
+      timestamp: FieldValue.serverTimestamp(),
+    });
+
+    await batch.commit();
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error initializing roles:", error);
+    return { success: false, error: error.message };
   }
 }

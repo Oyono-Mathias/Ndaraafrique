@@ -11,7 +11,7 @@ import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import type { Role } from '@/lib/types';
 import { useRole } from '@/context/RoleContext';
 import { PERMISSION_GROUPS } from '@/lib/permissions';
-import { updateRolePermissions } from '@/actions/roleActions';
+import { updateRolePermissions, initializeDefaultRoles } from '@/actions/roleActions';
 import { useToast } from '@/hooks/use-toast';
 
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -19,7 +19,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
-import { Loader2, ShieldCheck, ShieldAlert, Lock, AlertCircle, Database } from 'lucide-react';
+import { Loader2, ShieldCheck, ShieldAlert, Lock, AlertCircle, Database, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export function RolesManager() {
@@ -32,6 +33,7 @@ export function RolesManager() {
 
     const [selectedRoleId, setSelectedRoleId] = useState<string | undefined>(undefined);
     const [savingStates, setSavingStates] = useState<Record<string, boolean>>({});
+    const [isInitializing, setIsInitializing] = useState(false);
 
     // ✅ Sélection automatique du premier rôle trouvé
     useEffect(() => {
@@ -81,6 +83,23 @@ export function RolesManager() {
         }
     };
 
+    const handleInitialize = async () => {
+        if (!currentUser) return;
+        setIsInitializing(true);
+        try {
+            const result = await initializeDefaultRoles(currentUser.uid);
+            if (result.success) {
+                toast({ title: "Rôles initialisés !", description: "Les définitions de rôles ont été créées." });
+            } else {
+                toast({ variant: 'destructive', title: "Erreur", description: result.error });
+            }
+        } catch (e) {
+            toast({ variant: 'destructive', title: "Erreur technique" });
+        } finally {
+            setIsInitializing(false);
+        }
+    };
+
     if (rolesLoading) {
         return (
             <div className="space-y-6">
@@ -106,12 +125,24 @@ export function RolesManager() {
 
     if (roles && roles.length === 0) {
         return (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-3xl">
-                <Database className="h-12 w-12 text-slate-700 mb-4" />
-                <h3 className="text-xl font-bold text-white uppercase tracking-tight">Aucun rôle défini</h3>
-                <p className="text-slate-500 mt-2 max-w-md">
-                    La collection 'roles' est vide dans Firestore. Veuillez créer les documents 'student', 'instructor' et 'admin' pour commencer.
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[2.5rem] animate-in fade-in duration-700">
+                <Database className="h-16 w-16 text-slate-700 mb-6" />
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Configuration requise</h3>
+                <p className="text-slate-500 mt-3 max-w-md mx-auto leading-relaxed">
+                    Vos utilisateurs ont des rôles, mais les **définitions de permissions** n'existent pas encore dans la collection `roles`.
                 </p>
+                <Button 
+                    onClick={handleInitialize} 
+                    disabled={isInitializing}
+                    className="mt-8 h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20"
+                >
+                    {isInitializing ? (
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    ) : (
+                        <Sparkles className="h-5 w-5 mr-2" />
+                    )}
+                    Initialiser les rôles par défaut
+                </Button>
             </div>
         );
     }
