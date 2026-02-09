@@ -32,11 +32,7 @@ service cloud.firestore {
         return isSignedIn() && (isAdmin() || request.auth.uid == get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId);
     }
 
-    function isStudentEnrolled(courseId) {
-        return isSignedIn() && (isAdmin() || exists(/databases/$(database)/documents/enrollments/$(request.auth.uid + '_' + courseId)));
-    }
-
-    // --- ACCÈS PUBLICS (Lecture pour tous, même non connectés) ---
+    // --- ACCÈS PUBLICS ---
     
     match /settings/{docId} {
       allow read: if true;
@@ -108,7 +104,7 @@ service cloud.firestore {
     }
 
     match /payments/{paymentId} {
-      allow read: if isAdmin() || (isSignedIn() && (resource == null || isOwner(resource.data.userId)));
+      allow read: if isAdmin() || (isSignedIn() && (resource == null || isOwner(resource.data.userId) || resource.data.instructorId == request.auth.uid));
       allow create: if isSignedIn() && (isOwner(request.resource.data.userId) || isAdmin());
       allow update: if isAdmin();
     }
