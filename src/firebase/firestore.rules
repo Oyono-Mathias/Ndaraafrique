@@ -98,7 +98,8 @@ service cloud.firestore {
     }
 
     match /course_progress/{progressId} {
-      allow read, write: if isSignedIn() && (request.auth.uid == request.resource.data.userId || isAdmin() || (resource != null && request.auth.uid == resource.data.userId));
+      allow read: if isSignedIn() && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid) || (resource == null && progressId.startsWith(request.auth.uid + "_")));
+      allow write: if isSignedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
     }
 
     match /roles/{roleId} {
@@ -113,7 +114,7 @@ service cloud.firestore {
     }
 
     match /devoirs/{submissionId} {
-      allow read: if isSignedIn() && (isOwner(resource.data.studentId) || isOwner(resource.data.instructorId) || isAdmin());
+      allow read: if isSignedIn() && (isAdmin() || (resource != null && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid)) || resource == null);
       allow create: if isSignedIn() && (isOwner(request.resource.data.studentId) || isAdmin());
       allow update: if isSignedIn() || isAdmin();
     }
