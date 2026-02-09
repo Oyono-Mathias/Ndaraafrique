@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -49,14 +48,36 @@ export function OnboardingGuide() {
 
   useEffect(() => {
     setIsClient(true);
-    if (typeof window !== 'undefined' && user) {
-      // ✅ Correction de la clé localStorage pour Ndara Afrique
+    if (user) {
       const hasOnboarded = localStorage.getItem('ndara-afrique-onboarded');
       if (!hasOnboarded) {
         setShowWelcome(true);
       }
     }
   }, [user]);
+
+  useEffect(() => {
+    if (tourStep === null) {
+        document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+        return;
+    }
+
+    const currentStepData = tourSteps[tourStep];
+    const targetElement = document.getElementById(currentStepData.targetId);
+    
+    if (targetElement) {
+        const rect = targetElement.getBoundingClientRect();
+        const trigger = document.getElementById(`popover-trigger-${currentStepData.targetId}`);
+        
+        if (trigger) {
+            trigger.style.setProperty('--popover-trigger-top', `${rect.top + (rect.height / 2)}px`);
+            trigger.style.setProperty('--popover-trigger-left', `${rect.left + rect.width}px`);
+        }
+        
+        document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
+        targetElement.classList.add('tour-highlight');
+    }
+  }, [tourStep]);
 
   const startTour = () => {
     setShowWelcome(false);
@@ -106,7 +127,7 @@ export function OnboardingGuide() {
                     style={{
                         top: `var(--popover-trigger-top)`,
                         left: `var(--popover-trigger-left)`,
-                    }}
+                    } as React.CSSProperties}
                 ></div>
             </PopoverTrigger>
             <PopoverContent
@@ -142,25 +163,6 @@ export function OnboardingGuide() {
                 border-radius: var(--radius);
               }
             `}</style>
-            <script dangerouslySetInnerHTML={{
-                __html: `
-                    (function() {
-                        const targetElement = document.getElementById('${currentStepData.targetId}');
-                        if (targetElement) {
-                            const rect = targetElement.getBoundingClientRect();
-                            const trigger = document.getElementById('popover-trigger-${currentStepData.targetId}');
-                            
-                            if (trigger) {
-                                trigger.style.setProperty('--popover-trigger-top', \`\${rect.top + (rect.height / 2)}px\`);
-                                trigger.style.setProperty('--popover-trigger-left', \`\${rect.left + rect.width}px\`);
-                            }
-                            
-                            document.querySelectorAll('.tour-highlight').forEach(el => el.classList.remove('tour-highlight'));
-                            targetElement.classList.add('tour-highlight');
-                        }
-                    })();
-                `
-            }} />
         </Popover>
       )}
     </>

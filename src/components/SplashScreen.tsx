@@ -9,6 +9,8 @@ export function SplashScreen() {
   const [isFading, setIsFading] = useState(false);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
     const sessionStarted = sessionStorage.getItem('ndara-session-started');
     if (!sessionStarted) {
       setIsVisible(true);

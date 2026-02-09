@@ -39,7 +39,7 @@ function AnnouncementBanner() {
             if (docSnap.exists()) {
                 const message = docSnap.data().platform?.announcementMessage || '';
                 setAnnouncement(message);
-                if (message && sessionStorage.getItem('ndara-announcement-dismissed') !== message) {
+                if (message && typeof window !== 'undefined' && sessionStorage.getItem('ndara-announcement-dismissed') !== message) {
                     setIsVisible(true);
                 } else {
                     setIsVisible(false);
@@ -51,7 +51,9 @@ function AnnouncementBanner() {
 
     const handleDismiss = () => {
         setIsVisible(false);
-        sessionStorage.setItem('ndara-announcement-dismissed', announcement);
+        if (typeof window !== 'undefined') {
+            sessionStorage.setItem('ndara-announcement-dismissed', announcement);
+        }
     };
 
     if (!isVisible || !announcement) return null;
@@ -78,6 +80,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   
   const [siteSettings, setSiteSettings] = useState({
       siteName: 'Ndara Afrique',
@@ -90,6 +93,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const settingsRef = doc(db, 'settings', 'global');
     const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
         if (docSnap.exists()) {
@@ -147,11 +151,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [pathname, searchParams]);
 
   useEffect(() => {
-    if (loading) return; 
+    if (loading || !mounted) return; 
 
     if (!user) {
       if (!isPublicPage && !isAuthPage) {
-        // ✅ Redirection vers l'accueil (/) au lieu de /login pour les non-connectés
         router.push('/');
       }
       return;
@@ -162,7 +165,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
     const isRootPath = cleanPath === '/' || cleanPath === '';
 
-    // REDIRECTION STRICTE BASÉE SUR LE RÔLE ACTIF
     if (isRootPath || isAuthPage) {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
@@ -170,7 +172,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // Protection des zones
     if (role === 'admin' && !isAdminArea && !isPublicPage) {
       router.push('/admin');
     } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {
@@ -179,15 +180,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       router.push('/student/dashboard');
     }
 
-  }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage]);
+  }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage, mounted]);
 
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
     return <MaintenancePage />;
   }
 
-  // UTILISATION DU LOADING SCREEN VINTAGE
-  if (loading && !isPublicPage && !isAuthPage) {
+  if ((loading || !mounted) && !isPublicPage && !isAuthPage) {
     return <LoadingScreen />;
   }
   
@@ -203,9 +203,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <OfflineBar />
       <div className={cn(
         "min-h-screen w-full bg-slate-950 text-white", 
-        isAdminArea ? "admin-grid-layout" : (showNavigation && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
+        (mounted && isAdminArea) ? "admin-grid-layout" : (mounted && showNavigation && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
       )}>
-        {!isRootPath && !isAuthPage && user && showNavigation && (
+        {mounted && !isRootPath && !isAuthPage && user && showNavigation && (
           <aside className={cn("hidden h-screen sticky top-0", isAdminArea ? "md:hidden" : "md:block")}>
              {role === 'admin' ? (
               <AdminSidebar {...sidebarProps} />
@@ -218,7 +218,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         )}
         <div className="flex flex-col flex-1 min-h-screen">
           <AnnouncementBanner />
-          {!isRootPath && !isAuthPage && user && showNavigation && (
+          {mounted && !isRootPath && !isAuthPage && user && showNavigation && (
             <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm")}>
               {!isAdminArea && user && (
                  <div className="md:hidden">
