@@ -6,6 +6,20 @@ import { z } from 'zod';
 import type { Lecture } from '@/lib/types';
 import { getStorage } from 'firebase-admin/storage';
 
+/**
+ * @fileOverview Actions pour la gestion des leçons.
+ * Diagnostic des erreurs de connexion serveur amélioré.
+ */
+
+function handleServerError(error: any) {
+    console.error("Server Action Error (Lecture):", error);
+    const msg = error.message || "";
+    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE") || msg.includes("refresh access token") || msg.includes("UNKNOWN")) {
+        return "Configuration serveur invalide. Vérifiez la clé FIREBASE_SERVICE_ACCOUNT_KEY.";
+    }
+    return "Erreur lors de la gestion de la leçon : " + msg;
+}
+
 const lectureSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
   type: z.enum(['video', 'text', 'pdf']),
@@ -34,8 +48,7 @@ export async function createLecture({ courseId, sectionId, formData }: { courseI
     });
     return { success: true, lectureId: newLectureRef.id };
   } catch (error: any) {
-    console.error("Error creating lecture:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: handleServerError(error) };
   }
 }
 
@@ -54,11 +67,9 @@ export async function updateLecture({ courseId, sectionId, lectureId, formData }
         });
         return { success: true };
     } catch (error: any) {
-        console.error("Error updating lecture:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: handleServerError(error) };
     }
 }
-
 
 export async function deleteLecture({ courseId, sectionId, lectureId }: { courseId: string, sectionId: string, lectureId: string }) {
     try {
@@ -80,8 +91,7 @@ export async function deleteLecture({ courseId, sectionId, lectureId }: { course
         await lectureRef.delete();
         return { success: true };
     } catch (error: any) {
-        console.error("Error deleting lecture:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: handleServerError(error) };
     }
 }
 
@@ -97,7 +107,6 @@ export async function reorderLectures({ courseId, sectionId, orderedLectures }: 
         await batch.commit();
         return { success: true };
     } catch (error: any) {
-        console.error("Error reordering lectures:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: handleServerError(error) };
     }
 }

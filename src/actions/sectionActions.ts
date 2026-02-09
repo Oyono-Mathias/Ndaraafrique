@@ -5,7 +5,21 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * @fileOverview Actions pour la gestion des sections de cours.
+ * Gestion d'erreurs améliorée pour le diagnostic des problèmes de connexion.
  */
+
+function handleServerError(error: any) {
+    console.error("Server Action Error:", error);
+    const msg = error.message || "";
+    
+    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE") || msg.includes("refresh access token") || msg.includes("UNKNOWN")) {
+        return "Erreur d'authentification serveur. Votre clé FIREBASE_SERVICE_ACCOUNT_KEY est probablement invalide ou mal configurée sur votre hébergeur.";
+    }
+    if (msg.includes("permission-denied")) {
+        return "Accès refusé. Le compte de service n'a pas les droits nécessaires sur Firestore.";
+    }
+    return "Une erreur est survenue lors de l'opération : " + msg;
+}
 
 export async function createSection({ courseId, title }: { courseId: string; title: string }) {
     try {
@@ -23,8 +37,7 @@ export async function createSection({ courseId, title }: { courseId: string; tit
 
         return { success: true, sectionId: newSectionRef.id };
     } catch (error: any) {
-        console.error("Error creating section:", error);
-        return { success: false, error: error.message || "Impossible de créer la section." };
+        return { success: false, error: handleServerError(error) };
     }
 }
 
@@ -35,18 +48,7 @@ export async function updateSectionTitle({ courseId, sectionId, title }: { cours
         await sectionRef.update({ title: title });
         return { success: true };
     } catch (error: any) {
-        console.error("Error updating section title:", error);
-        
-        let msg = error.message;
-        if (msg.includes("CONFIGURATION_MANQUANTE")) {
-            msg = "Le serveur n'est pas configuré. Ajoutez la clé FIREBASE_SERVICE_ACCOUNT_KEY dans les variables d'environnement de votre hébergeur.";
-        } else if (msg.includes("permission-denied")) {
-            msg = "Accès refusé. Vérifiez les permissions de votre compte de service.";
-        } else {
-            msg = "Erreur de base de données : " + msg;
-        }
-        
-        return { success: false, error: msg };
+        return { success: false, error: handleServerError(error) };
     }
 }
 
@@ -66,8 +68,7 @@ export async function deleteSection({ courseId, sectionId }: { courseId: string;
 
         return { success: true };
     } catch (error: any) {
-        console.error("Error deleting section:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: handleServerError(error) };
     }
 }
 
@@ -85,7 +86,6 @@ export async function reorderSections({ courseId, orderedSections }: { courseId:
         await batch.commit();
         return { success: true };
     } catch (error: any) {
-        console.error("Error reordering sections:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: handleServerError(error) };
     }
 }
