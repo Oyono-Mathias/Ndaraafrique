@@ -32,10 +32,14 @@ export function SectionForm({ courseId, section, onDone }: { courseId: string; s
           toast({ title: 'Titre de la section mis à jour.' });
           onDone();
         } else {
+          const errorMsg = typeof result?.error === 'string' 
+            ? result.error 
+            : "Une erreur est survenue lors de la sauvegarde.";
+          
           toast({ 
             variant: 'destructive', 
             title: 'Erreur', 
-            description: result?.error || "Une erreur est survenue lors de la sauvegarde." 
+            description: errorMsg 
           });
         }
       } catch (e: any) {

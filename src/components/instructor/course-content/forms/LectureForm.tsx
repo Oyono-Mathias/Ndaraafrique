@@ -124,10 +124,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                     onOpenChange(false);
                 } else {
+                    const errorMsg = typeof result?.error === 'string' 
+                        ? result.error 
+                        : 'Certains champs sont invalides. Veuillez vérifier le formulaire.';
+                    
                     toast({ 
                         variant: 'destructive', 
                         title: 'Erreur', 
-                        description: result?.error || 'Une erreur est survenue lors de l\'enregistrement.' 
+                        description: errorMsg 
                     });
                 }
             } catch (e: any) {

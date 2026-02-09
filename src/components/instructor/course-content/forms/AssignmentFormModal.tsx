@@ -52,7 +52,6 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                 title: assignment.title || '',
                 description: assignment.description || '',
                 correctionGuide: assignment.correctionGuide || '',
-                // ✅ Correction robuste de .toDate() pour le build Vercel
                 dueDate: (assignment.dueDate && typeof (assignment.dueDate as any).toDate === 'function') 
                     ? (assignment.dueDate as any).toDate() 
                     : undefined,
@@ -100,7 +99,11 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                 toast({ title: assignment ? 'Devoir modifié' : 'Devoir créé' });
                 onOpenChange(false);
             } else {
-                toast({ variant: 'destructive', title: 'Erreur', description: JSON.stringify(result.error) });
+                const errorMsg = typeof result.error === 'string' 
+                    ? result.error 
+                    : 'Certains champs sont invalides. Veuillez vérifier le formulaire.';
+                
+                toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
             }
         });
     };
