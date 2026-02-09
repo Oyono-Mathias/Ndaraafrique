@@ -1,7 +1,6 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 
@@ -19,9 +18,10 @@ export async function createQuestion({ courseId, sectionId, quizId, formData }: 
     if (!validatedFields.success) {
       return { success: false, error: validatedFields.error.flatten().fieldErrors };
     }
-    if (!adminDb) return { success: false, error: "Service indisponible" };
+    
     try {
-      const questionsRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions');
+      const db = getAdminDb();
+      const questionsRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions');
       const q = await questionsRef.orderBy('order', 'desc').limit(1).get();
       const lastOrder = q.empty ? -1 : q.docs[0].data().order;
 
@@ -33,6 +33,7 @@ export async function createQuestion({ courseId, sectionId, quizId, formData }: 
       });
       return { success: true, questionId: newQuestionRef.id };
     } catch (error: any) {
+      console.error("Error creating question:", error);
       return { success: false, error: error.message };
     }
 }
@@ -42,41 +43,45 @@ export async function updateQuestion({ courseId, sectionId, quizId, questionId, 
     if (!validatedFields.success) {
         return { success: false, error: validatedFields.error.flatten().fieldErrors };
     }
-    if (!adminDb) return { success: false, error: "Service indisponible" };
+    
     try {
-        const questionRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions').doc(questionId);
+        const db = getAdminDb();
+        const questionRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions').doc(questionId);
         await questionRef.update({
             ...validatedFields.data,
             updatedAt: FieldValue.serverTimestamp(),
         });
         return { success: true };
     } catch (error: any) {
+        console.error("Error updating question:", error);
         return { success: false, error: error.message };
     }
 }
 
 export async function deleteQuestion({ courseId, sectionId, quizId, questionId }: { courseId: string; sectionId: string; quizId: string; questionId: string }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const questionRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions').doc(questionId);
+        const db = getAdminDb();
+        const questionRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions').doc(questionId);
         await questionRef.delete();
         return { success: true };
     } catch (error: any) {
+        console.error("Error deleting question:", error);
         return { success: false, error: error.message };
     }
 }
 
 export async function reorderQuestions({ courseId, sectionId, quizId, orderedQuestions }: { courseId: string; sectionId: string; quizId: string; orderedQuestions: { id: string, order: number }[] }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const batch = adminDb.batch();
-        const questionsRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions');
+        const db = getAdminDb();
+        const batch = db.batch();
+        const questionsRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('quizzes').doc(quizId).collection('questions');
         orderedQuestions.forEach(q => {
             batch.update(questionsRef.doc(q.id), { order: q.order });
         });
         await batch.commit();
         return { success: true };
     } catch (error: any) {
+        console.error("Error reordering questions:", error);
         return { success: false, error: error.message };
     }
 }

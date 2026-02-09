@@ -1,7 +1,6 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import type { Lecture } from '@/lib/types';
@@ -20,9 +19,10 @@ export async function createLecture({ courseId, sectionId, formData }: { courseI
   if (!validatedFields.success) {
     return { success: false, error: validatedFields.error.flatten().fieldErrors };
   }
-  if (!adminDb) return { success: false, error: "Service indisponible" };
+  
   try {
-    const sectionRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId);
+    const db = getAdminDb();
+    const sectionRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId);
     const lecturesQuery = await sectionRef.collection('lectures').orderBy('order', 'desc').limit(1).get();
     const lastOrder = lecturesQuery.empty ? -1 : lecturesQuery.docs[0].data().order;
 
@@ -34,6 +34,7 @@ export async function createLecture({ courseId, sectionId, formData }: { courseI
     });
     return { success: true, lectureId: newLectureRef.id };
   } catch (error: any) {
+    console.error("Error creating lecture:", error);
     return { success: false, error: error.message };
   }
 }
@@ -43,24 +44,26 @@ export async function updateLecture({ courseId, sectionId, lectureId, formData }
     if (!validatedFields.success) {
         return { success: false, error: validatedFields.error.flatten().fieldErrors };
     }
-    if (!adminDb) return { success: false, error: "Service indisponible" };
+    
     try {
-        const lectureRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures').doc(lectureId);
+        const db = getAdminDb();
+        const lectureRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures').doc(lectureId);
         await lectureRef.update({
             ...validatedFields.data,
             updatedAt: FieldValue.serverTimestamp(),
         });
         return { success: true };
     } catch (error: any) {
+        console.error("Error updating lecture:", error);
         return { success: false, error: error.message };
     }
 }
 
 
 export async function deleteLecture({ courseId, sectionId, lectureId }: { courseId: string, sectionId: string, lectureId: string }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const lectureRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures').doc(lectureId);
+        const db = getAdminDb();
+        const lectureRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures').doc(lectureId);
         const lectureDoc = await lectureRef.get();
         if(!lectureDoc.exists) return { success: false, error: "Leçon introuvable" };
         
@@ -77,15 +80,16 @@ export async function deleteLecture({ courseId, sectionId, lectureId }: { course
         await lectureRef.delete();
         return { success: true };
     } catch (error: any) {
+        console.error("Error deleting lecture:", error);
         return { success: false, error: error.message };
     }
 }
 
 export async function reorderLectures({ courseId, sectionId, orderedLectures }: { courseId: string, sectionId: string, orderedLectures: { id: string, order: number }[] }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const batch = adminDb.batch();
-        const lecturesRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures');
+        const db = getAdminDb();
+        const batch = db.batch();
+        const lecturesRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('lectures');
         orderedLectures.forEach(lecture => {
             const docRef = lecturesRef.doc(lecture.id);
             batch.update(docRef, { order: lecture.order });
@@ -93,6 +97,7 @@ export async function reorderLectures({ courseId, sectionId, orderedLectures }: 
         await batch.commit();
         return { success: true };
     } catch (error: any) {
+        console.error("Error reordering lectures:", error);
         return { success: false, error: error.message };
     }
 }

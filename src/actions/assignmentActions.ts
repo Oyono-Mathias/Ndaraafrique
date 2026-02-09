@@ -1,10 +1,8 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
-import { getStorage } from 'firebase-admin/storage';
 
 const assignmentSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -30,15 +28,12 @@ export async function gradeSubmissionAction({
   studentId,
   courseName,
 }: GradeSubmissionParams): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) {
-    return { success: false, error: 'Service indisponible.' };
-  }
-
   try {
-    const batch = adminDb.batch();
+    const db = getAdminDb();
+    const batch = db.batch();
 
-    // The collection is named 'devoirs' as per the user's mental model in the prompt
-    const submissionRef = adminDb.collection('devoirs').doc(submissionId);
+    // The collection is named 'devoirs' as per the user's mental model
+    const submissionRef = db.collection('devoirs').doc(submissionId);
     batch.update(submissionRef, {
       grade,
       feedback,
@@ -47,7 +42,7 @@ export async function gradeSubmissionAction({
     });
 
     // Add to student's activity feed
-    const activityRef = adminDb.collection('users').doc(studentId).collection('activity').doc();
+    const activityRef = db.collection('users').doc(studentId).collection('activity').doc();
     batch.set(activityRef, {
         userId: studentId,
         type: 'assignment',
@@ -71,15 +66,16 @@ export async function createAssignment({ courseId, sectionId, formData }: { cour
     if (!validatedFields.success) {
       return { success: false, error: validatedFields.error.flatten().fieldErrors };
     }
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-      const newAssignmentRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc();
+      const db = getAdminDb();
+      const newAssignmentRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc();
       await newAssignmentRef.set({
         ...validatedFields.data,
         createdAt: FieldValue.serverTimestamp(),
       });
       return { success: true, assignmentId: newAssignmentRef.id };
     } catch (error: any) {
+      console.error("Error creating assignment:", error);
       return { success: false, error: error.message };
     }
 }
@@ -89,26 +85,28 @@ export async function updateAssignment({ courseId, sectionId, assignmentId, form
     if (!validatedFields.success) {
         return { success: false, error: validatedFields.error.flatten().fieldErrors };
     }
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const assignmentRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc(assignmentId);
+        const db = getAdminDb();
+        const assignmentRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc(assignmentId);
         await assignmentRef.update({
             ...validatedFields.data,
             updatedAt: FieldValue.serverTimestamp(),
         });
         return { success: true };
     } catch (error: any) {
+        console.error("Error updating assignment:", error);
         return { success: false, error: error.message };
     }
 }
 
 export async function deleteAssignment({ courseId, sectionId, assignmentId }: { courseId: string, sectionId: string, assignmentId: string }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const assignmentRef = adminDb.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc(assignmentId);
+        const db = getAdminDb();
+        const assignmentRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId).collection('assignments').doc(assignmentId);
         await assignmentRef.delete();
         return { success: true };
     } catch (error: any) {
+        console.error("Error deleting assignment:", error);
         return { success: false, error: error.message };
     }
 }

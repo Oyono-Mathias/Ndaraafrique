@@ -1,6 +1,6 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendUserNotification } from '@/actions/notificationActions';
 
@@ -17,12 +17,9 @@ export async function answerQuestionAction({
   instructorId,
   studentId,
 }: AnswerQuestionParams): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) {
-    return { success: false, error: 'Service indisponible.' };
-  }
-
   try {
-    const questionRef = adminDb.collection('questions').doc(questionId);
+    const db = getAdminDb();
+    const questionRef = db.collection('questions').doc(questionId);
     const questionDoc = await questionRef.get();
 
     if (!questionDoc.exists) {
@@ -33,7 +30,7 @@ export async function answerQuestionAction({
       return { success: false, error: 'Permission refusée. Vous n\'êtes pas l\'instructeur de ce cours.' };
     }
 
-    const batch = adminDb.batch();
+    const batch = db.batch();
 
     batch.update(questionRef, {
       answerText,

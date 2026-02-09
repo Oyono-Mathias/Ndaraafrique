@@ -1,11 +1,10 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { sendAdminNotification, sendUserNotification } from './notificationActions';
 
-interface RefundAndRevokeParams {
+interface RefundAndRevokeAccessParams {
   userId: string;
   courseId: string;
   ticketId: string;
@@ -26,13 +25,9 @@ export async function createSupportTicket({
     courseId?: string; 
     instructorId?: string; 
 }) {
-  if (!adminDb) {
-    console.error("Échec createSupportTicket : adminDb est null. Vérifiez FIREBASE_SERVICE_ACCOUNT_KEY.");
-    return { success: false, error: "Le service de support est temporairement indisponible (Config Error)." };
-  }
-
   try {
-    const ticketRef = adminDb.collection('support_tickets').doc();
+    const db = getAdminDb();
+    const ticketRef = db.collection('support_tickets').doc();
     const ticketData = {
       userId,
       subject,
@@ -45,7 +40,7 @@ export async function createSupportTicket({
       updatedAt: FieldValue.serverTimestamp(),
     };
     
-    const batch = adminDb.batch();
+    const batch = db.batch();
     batch.set(ticketRef, ticketData);
     
     const messageRef = ticketRef.collection('messages').doc();
@@ -57,7 +52,6 @@ export async function createSupportTicket({
 
     await batch.commit();
 
-    // Notify Admins
     try {
         await sendAdminNotification({
             title: 'Nouveau ticket de support',
@@ -76,14 +70,13 @@ export async function createSupportTicket({
   }
 }
 
-export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Promise<{ success: boolean; error?: string }> {
+export async function refundAndRevokeAccess(params: RefundAndRevokeAccessParams): Promise<{ success: boolean; error?: string }> {
     const { userId, courseId, ticketId } = params;
     
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-    
-    const batch = adminDb.batch();
     try {
-        const paymentQuery = adminDb.collection('payments')
+        const db = getAdminDb();
+        const batch = db.batch();
+        const paymentQuery = db.collection('payments')
             .where('userId', '==', userId)
             .where('courseId', '==', courseId)
             .limit(1);
@@ -99,10 +92,10 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeParams): Prom
         }
 
         const enrollmentId = `${userId}_${courseId}`;
-        const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
+        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
         batch.delete(enrollmentRef);
         
-        const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
+        const ticketRef = db.collection('support_tickets').doc(ticketId);
         batch.update(ticketRef, { 
             status: 'fermé', 
             updatedAt: Timestamp.now(),
@@ -130,9 +123,9 @@ export async function moderateCourse(
     adminId: string, 
     feedback?: string
 ): Promise<{ success: boolean; error?: string }> {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const courseRef = adminDb.collection('courses').doc(courseId);
+        const db = getAdminDb();
+        const courseRef = db.collection('courses').doc(courseId);
         const courseDoc = await courseRef.get();
         if (!courseDoc.exists) return { success: false, error: "Cours introuvable." };
         
@@ -143,7 +136,7 @@ export async function moderateCourse(
             publishedAt: decision === 'approve' ? FieldValue.serverTimestamp() : null
         });
 
-        await adminDb.collection('security_logs').add({
+        await db.collection('security_logs').add({
             eventType: decision === 'approve' ? 'course_approved' : 'course_rejected',
             userId: adminId,
             targetId: courseId,
@@ -151,7 +144,7 @@ export async function moderateCourse(
             timestamp: FieldValue.serverTimestamp(),
         });
 
-        await adminDb.collection('admin_audit_logs').add({
+        await db.collection('admin_audit_logs').add({
             adminId: adminId,
             eventType: 'course.moderation',
             target: { id: courseId, type: 'course' },
@@ -169,6 +162,7 @@ export async function moderateCourse(
         
         return { success: true };
     } catch (error: any) {
+        console.error("Error moderating course:", error);
         return { success: false, error: error.message };
     }
 }
@@ -178,12 +172,12 @@ export async function processPayout(
     decision: 'valide' | 'rejete',
     adminId: string
 ): Promise<{ success: boolean; error?: string }> {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const payoutRef = adminDb.collection('payouts').doc(payoutId);
+        const db = getAdminDb();
+        const payoutRef = db.collection('payouts').doc(payoutId);
         await payoutRef.update({ status: decision });
 
-        await adminDb.collection('admin_audit_logs').add({
+        await db.collection('admin_audit_logs').add({
             adminId: adminId,
             eventType: 'payout.process',
             target: { id: payoutId, type: 'payout' },
@@ -193,18 +187,19 @@ export async function processPayout(
         
         return { success: true };
     } catch (error: any) {
+        console.error("Error processing payout:", error);
         return { success: false, error: error.message };
     }
 }
 
 export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticketId: string, adminId: string, text: string }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
+        const db = getAdminDb();
+        const ticketRef = db.collection('support_tickets').doc(ticketId);
         const ticketDoc = await ticketRef.get();
         if (!ticketDoc.exists) throw new Error("Ticket introuvable.");
 
-        const batch = adminDb.batch();
+        const batch = db.batch();
         const messagePayload = {
             senderId: adminId,
             text: `[Support Ndara Afrique] : ${text}`,
@@ -237,10 +232,10 @@ export async function addAdminReplyToTicket({ ticketId, adminId, text }: { ticke
 }
 
 export async function closeTicket({ ticketId, adminId, resolution }: { ticketId: string, adminId: string, resolution: string }): Promise<{ success: boolean; error?: string }> {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
     try {
-        const ticketRef = adminDb.collection('support_tickets').doc(ticketId);
-        const batch = adminDb.batch();
+        const db = getAdminDb();
+        const ticketRef = db.collection('support_tickets').doc(ticketId);
+        const batch = db.batch();
 
         batch.update(ticketRef, {
             status: 'fermé',

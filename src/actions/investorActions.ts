@@ -1,6 +1,6 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification } from './notificationActions';
 
@@ -10,10 +10,9 @@ export async function submitInvestorLead(formData: {
     organization?: string; 
     message?: string; 
 }) {
-    if (!adminDb) return { success: false, error: "Service indisponible" };
-
     try {
-        const leadRef = adminDb.collection('investor_leads').doc();
+        const db = getAdminDb();
+        const leadRef = db.collection('investor_leads').doc();
         await leadRef.set({
             ...formData,
             status: 'new',
@@ -24,7 +23,7 @@ export async function submitInvestorLead(formData: {
         await sendAdminNotification({
             title: '🤝 Nouveau Partenaire Potentiel',
             body: `${formData.fullName} (${formData.organization || 'Individuel'}) souhaite recevoir le dossier investisseur.`,
-            link: '/admin/settings', // On pourra créer une page dédiée plus tard
+            link: '/admin/settings',
             type: 'general'
         });
 

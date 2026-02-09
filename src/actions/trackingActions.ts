@@ -1,7 +1,6 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
 interface TrackingEventArgs {
@@ -12,19 +11,14 @@ interface TrackingEventArgs {
 }
 
 export async function logTrackingEvent(event: TrackingEventArgs) {
-    if (!adminDb) {
-        // Silently fail if admin DB is not initialized. This can happen during build.
-        return;
-    }
-
     try {
+        const db = getAdminDb();
         const eventData = {
             ...event,
             timestamp: FieldValue.serverTimestamp(),
         };
-        await adminDb.collection('tracking_events').add(eventData);
+        await db.collection('tracking_events').add(eventData);
     } catch (error) {
         console.error("Error logging tracking event:", error);
-        // We don't want to throw an error here as it's a background task.
     }
 }
