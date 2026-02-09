@@ -19,6 +19,72 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 }
 
 /**
+ * Migration massive de tous les profils utilisateurs.
+ * Initialise les champs manquants et les notifications de bienvenue.
+ */
+export async function migrateUserProfilesAction(adminId: string) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Non autorisé." };
+
+    try {
+        const db = getAdminDb();
+        const usersSnap = await db.collection('users').get();
+        let batch = db.batch();
+        let operationCount = 0;
+        let migratedCount = 0;
+
+        for (const userDoc of usersSnap.docs) {
+            const data = userDoc.data();
+            const updates: any = {};
+            let needsUpdate = false;
+
+            // 1. Vérification des champs de base
+            if (!data.role) { updates.role = 'student'; needsUpdate = true; }
+            if (data.isInstructorApproved === undefined) { updates.isInstructorApproved = false; needsUpdate = true; }
+            if (!data.status) { updates.status = 'active'; needsUpdate = true; }
+            if (data.isProfileComplete === undefined) { 
+                updates.isProfileComplete = !!(data.username && data.fullName); 
+                needsUpdate = true; 
+            }
+
+            if (needsUpdate) {
+                batch.set(userDoc.ref, updates, { merge: true });
+                operationCount++;
+            }
+
+            // 2. Initialisation de la notification de bienvenue
+            const welcomeRef = userDoc.ref.collection('notifications').doc('welcome');
+            const welcomeSnap = await welcomeRef.get();
+            if (!welcomeSnap.exists) {
+                batch.set(welcomeRef, {
+                    text: `Bara ala ! Bienvenue sur Ndara Afrique. Votre profil a été mis à jour par le système pour garantir votre accès à toutes nos fonctionnalités.`,
+                    type: 'success',
+                    read: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                    link: '/student/dashboard'
+                });
+                operationCount++;
+            }
+
+            if (needsUpdate) migratedCount++;
+
+            // Respect de la limite des 500 opérations par batch
+            if (operationCount >= 450) {
+                await batch.commit();
+                batch = db.batch();
+                operationCount = 0;
+            }
+        }
+
+        await batch.commit();
+        return { success: true, count: migratedCount };
+    } catch (error: any) {
+        console.error("Migration Error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Met à jour le profil d'un utilisateur de manière sécurisée.
  */
 export async function updateUserProfileAction({
@@ -53,36 +119,14 @@ export async function updateUserProfileAction({
             }
         }
 
-        // 3. Nettoyage
-        if (filteredData.fullName) filteredData.fullName = filteredData.fullName.trim().substring(0, 100);
-        if (filteredData.username) filteredData.username = filteredData.username.trim().toLowerCase();
-        if (filteredData.bio) filteredData.bio = filteredData.bio.trim().substring(0, 1000);
-
         const userRef = db.collection('users').doc(userId);
-        
-        // Calcul automatique de la complétion du profil
-        const isComplete = !!(filteredData.username && filteredData.careerGoals?.interestDomain && filteredData.fullName);
-        filteredData.isProfileComplete = isComplete;
         filteredData.updatedAt = FieldValue.serverTimestamp();
 
         await userRef.update(filteredData);
         return { success: true };
     } catch (error: any) {
         console.error("Error updating profile Action:", error);
-        
-        // ✅ Renvoi de l'erreur réelle pour aider au débogage
-        let errorMessage = error.message || "Erreur inconnue";
-        
-        if (errorMessage.includes('ADMIN_SDK_CONFIG_ERROR')) {
-            errorMessage = "Le serveur n'est pas encore configuré (Clé FIREBASE_SERVICE_ACCOUNT_KEY manquante).";
-        } else if (errorMessage.includes('NOT_FOUND')) {
-            errorMessage = "Utilisateur introuvable dans la base de données.";
-        }
-
-        return { 
-            success: false, 
-            error: errorMessage 
-        };
+        return { success: false, error: error.message };
     }
 }
 
@@ -140,7 +184,7 @@ export async function grantCourseAccess({
             adminId,
             eventType: 'course.grant',
             target: { id: enrollmentId, type: 'enrollment' },
-            details: `Accès ${expirationMinutes ? 'TEST (' + expirationMinutes + 'm)' : 'OFFERT'} accordé à ${studentId} pour le cours ${courseId}. Raison: ${reason}`,
+            details: `Accès accordé à ${studentId}. Raison: ${reason}`,
             timestamp: FieldValue.serverTimestamp(),
         });
 
@@ -168,16 +212,6 @@ export async function deleteUserAccount({ userId, idToken }: { userId: string, i
         const batch = db.batch();
         await auth.deleteUser(userId);
         batch.delete(db.collection('users').doc(userId));
-
-        if (requesterUid !== userId) {
-            batch.set(db.collection('admin_audit_logs').doc(), {
-                adminId: requesterUid,
-                eventType: 'user.delete',
-                target: { id: userId, type: 'user' },
-                details: `Compte ${userId} supprimé par l'admin.`,
-                timestamp: FieldValue.serverTimestamp(),
-            });
-        }
         
         await batch.commit();
         return { success: true };
@@ -239,14 +273,6 @@ export async function approveInstructorApplication({ userId, decision, message, 
         await userRef.update({ 
             isInstructorApproved: decision === 'accepted',
             role: decision === 'accepted' ? 'instructor' : 'student'
-        });
-
-        await db.collection('admin_audit_logs').add({
-            adminId,
-            eventType: 'instructor.application',
-            target: { id: userId, type: 'user' },
-            details: `Candidature instructeur de ${userId} : ${decision}.`,
-            timestamp: FieldValue.serverTimestamp(),
         });
 
         return { success: true };

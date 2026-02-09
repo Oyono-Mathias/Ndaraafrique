@@ -11,6 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { updateGlobalSettings } from '@/actions/settingsActions';
+import { migrateUserProfilesAction } from '@/actions/userActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,7 +35,8 @@ import {
   Sparkles,
   Users as UsersIcon,
   Plus,
-  Trash2
+  Trash2,
+  Wrench
 } from 'lucide-react';
 import type { Settings, TeamMember } from '@/lib/types';
 
@@ -86,6 +88,7 @@ export default function AdminSettingsPage() {
   const db = getFirestore();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMigrating, setIsMigrating] = useState(false);
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -141,6 +144,25 @@ export default function AdminSettingsPage() {
     });
     return () => unsubscribe();
   }, [db, form]);
+
+  const handleMigration = async () => {
+    if (!currentUser) return;
+    if (!confirm("Voulez-vous vraiment lancer la migration de tous les profils ? Cette action est irréversible.")) return;
+
+    setIsMigrating(true);
+    try {
+        const result = await migrateUserProfilesAction(currentUser.uid);
+        if (result.success) {
+            toast({ title: "Migration réussie !", description: `${result.count} profils ont été régularisés.` });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur de migration", description: result.error });
+        }
+    } catch (e) {
+        toast({ variant: 'destructive', title: "Erreur critique" });
+    } finally {
+        setIsMigrating(false);
+    }
+  };
 
   const onSubmit = async (values: SettingsValues) => {
     if (!currentUser) return;
@@ -226,6 +248,7 @@ export default function AdminSettingsPage() {
               <TabsTrigger value="content" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><Layout className="h-3 w-3 mr-2" />Textes & SEO</TabsTrigger>
               <TabsTrigger value="team" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><UsersIcon className="h-3 w-3 mr-2" />L'Équipe</TabsTrigger>
               <TabsTrigger value="legal" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><FileText className="h-3 w-3 mr-2" />Légal</TabsTrigger>
+              <TabsTrigger value="maintenance" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest text-amber-500"><Wrench className="h-3 w-3 mr-2" />Maintenance</TabsTrigger>
             </TabsList>
 
             {/* --- ONGLET GÉNÉRAL --- */}
@@ -291,6 +314,40 @@ export default function AdminSettingsPage() {
                   </CardContent>
                 </Card>
               </div>
+            </TabsContent>
+
+            {/* --- ONGLET MAINTENANCE (NOUVEAU) --- */}
+            <TabsContent value="maintenance">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden border-amber-500/20">
+                    <CardHeader className="bg-amber-500/5 border-b border-amber-500/10">
+                        <CardTitle className="text-amber-500 flex items-center gap-2">
+                            <Wrench className="h-5 w-5" />
+                            Outils de Maintenance des Données
+                        </CardTitle>
+                        <CardDescription className="text-amber-500/60">Actions de nettoyage et régularisation massive.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-6 space-y-6">
+                        <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div className="flex-1 space-y-1">
+                                <h3 className="text-white font-bold">Régularisation des Profils Utilisateurs</h3>
+                                <p className="text-sm text-slate-500 leading-relaxed">
+                                    Initialise les champs <code className="text-primary">role</code>, <code className="text-primary">status</code>, et <code className="text-primary">isInstructorApproved</code> pour tous les utilisateurs existants. 
+                                    Ajoute également une notification de bienvenue si manquante. Utilise des lots (batches) sécurisés.
+                                </p>
+                            </div>
+                            <Button 
+                                type="button" 
+                                variant="outline" 
+                                onClick={handleMigration} 
+                                disabled={isMigrating}
+                                className="h-12 px-8 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shrink-0 rounded-xl"
+                            >
+                                {isMigrating ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Sparkles className="h-4 w-4 mr-2" />}
+                                Réparer tous les profils
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
 
             {/* --- ONGLET CONTENU --- */}
