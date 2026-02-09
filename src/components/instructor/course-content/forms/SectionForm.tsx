@@ -35,14 +35,14 @@ export function SectionForm({ courseId, section, onDone }: { courseId: string; s
           toast({ 
             variant: 'destructive', 
             title: 'Erreur', 
-            description: result?.error || "Une erreur inconnue est survenue." 
+            description: result?.error || "Une erreur est survenue lors de la sauvegarde." 
           });
         }
       } catch (e: any) {
         toast({ 
           variant: 'destructive', 
           title: 'Erreur système', 
-          description: "Le serveur n'a pas répondu correctement." 
+          description: "Le serveur ne répond pas. Vérifiez votre connexion." 
         });
       }
     });

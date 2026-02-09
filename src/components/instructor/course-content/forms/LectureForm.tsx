@@ -134,7 +134,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 toast({ 
                     variant: 'destructive', 
                     title: 'Erreur système', 
-                    description: "Le serveur n'a pas répondu correctement." 
+                    description: "Échec de la communication avec le serveur." 
                 });
             }
         });

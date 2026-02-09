@@ -25,7 +25,6 @@ function initializeAdmin() {
       });
     } else {
       // Fallback pour les environnements avec credentials par défaut (ex: Google Cloud ou Firebase Hosting)
-      // Si on est en production sur Firebase, initializeApp sans arguments fonctionne souvent par magie
       return admin.initializeApp({
         projectId: projectId
       });
@@ -38,12 +37,11 @@ function initializeAdmin() {
 
 /**
  * Récupère l'instance Firestore Admin de manière sécurisée.
- * @throws Error si le SDK n'est pas configuré.
  */
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le serveur n'a pas pu initialiser le compte de service. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY dans vos paramètres d'environnement.");
+    throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le serveur n'a pas pu initialiser le compte de service. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY.");
   }
   const db = admin.firestore();
   
