@@ -3,18 +3,20 @@ import { firebaseConfig } from '@/firebase/config';
 
 /**
  * @fileOverview Initialisation robuste du SDK Firebase Admin.
- * Fournit des accesseurs sécurisés pour Firestore et Auth sur le serveur.
+ * Gère la connexion sécurisée côté serveur pour les Actions.
  */
 
 const projectId = firebaseConfig.projectId;
 
 function initializeAdmin() {
+  // Si déjà initialisé, on retourne l'instance existante
   if (admin.apps.length > 0) return admin.app();
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   try {
     if (serviceAccountKey) {
+      // Nettoyage de la clé pour gérer les retours à la ligne dans les variables d'env
       const cleanedKey = serviceAccountKey.trim();
       const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
       
@@ -23,7 +25,8 @@ function initializeAdmin() {
         projectId: projectId
       });
     } else {
-      // Fallback pour les environnements sans clé explicite (ex: Google Cloud)
+      // Fallback pour les environnements avec identifiants par défaut (ex: Google Cloud Functions)
+      // Note: En local ou sur Vercel, cela peut échouer sans clé explicite.
       return admin.initializeApp({
         projectId: projectId
       });
@@ -35,27 +38,24 @@ function initializeAdmin() {
 }
 
 /**
- * Récupère l'instance Firestore Admin de manière sécurisée et initialisée.
+ * Récupère l'instance Firestore Admin.
+ * @throws Error si l'initialisation échoue (souvent dû à une clé manquante).
  */
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("DÉFAUT_CONFIGURATION : La clé FIREBASE_SERVICE_ACCOUNT_KEY est manquante ou invalide dans les paramètres du serveur (Vercel/Firebase).");
+    throw new Error("CONFIGURATION_MANQUANTE : La variable d'environnement FIREBASE_SERVICE_ACCOUNT_KEY n'est pas configurée sur le serveur.");
   }
   return app.firestore();
 }
 
 /**
- * Récupère l'instance Auth Admin de manière sécurisée.
+ * Récupère l'instance Auth Admin.
  */
 export function getAdminAuth() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("DÉFAUT_CONFIGURATION : Impossible d'initialiser l'authentification Admin.");
+    throw new Error("CONFIGURATION_MANQUANTE : Impossible d'initialiser l'authentification Admin.");
   }
   return app.auth();
 }
-
-// Export pour compatibilité descendante
-export const adminDb = null;
-export const adminAuth = null;

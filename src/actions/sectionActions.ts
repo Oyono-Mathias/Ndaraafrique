@@ -36,7 +36,14 @@ export async function updateSectionTitle({ courseId, sectionId, title }: { cours
         return { success: true };
     } catch (error: any) {
         console.error("Error updating section title:", error);
-        return { success: false, error: error.message || "Erreur de connexion à la base de données." };
+        
+        // Retourne un message d'erreur plus clair pour l'interface
+        let msg = "Erreur de connexion à la base de données.";
+        if (error.message.includes("CONFIGURATION_MANQUANTE")) {
+            msg = "Le serveur n'est pas configuré. Ajoutez la clé FIREBASE_SERVICE_ACCOUNT_KEY.";
+        }
+        
+        return { success: false, error: msg };
     }
 }
 

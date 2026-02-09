@@ -1,27 +1,41 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { grantCourseAccess } from '@/actions/userActions';
 import type { NdaraUser, Course } from '@/lib/types';
 
+/**
+ * @fileOverview Actions pour l'assistant IA Mathias.
+ */
+
 async function findUserByEmail(email: string): Promise<(NdaraUser & { uid: string }) | null> {
-    if (!adminDb) return null;
-    const usersRef = adminDb.collection('users');
-    const q = usersRef.where('email', '==', email).limit(1);
-    const snapshot = await q.get();
-    if (snapshot.empty) return null;
-    const userDoc = snapshot.docs[0];
-    return { uid: userDoc.id, ...userDoc.data() } as (NdaraUser & { uid: string });
+    try {
+        const db = getAdminDb();
+        const usersRef = db.collection('users');
+        const q = usersRef.where('email', '==', email).limit(1);
+        const snapshot = await q.get();
+        if (snapshot.empty) return null;
+        const userDoc = snapshot.docs[0];
+        return { uid: userDoc.id, ...userDoc.data() } as (NdaraUser & { uid: string });
+    } catch (e) {
+        console.error("Error finding user:", e);
+        return null;
+    }
 }
 
 async function findCourseByTitle(title: string): Promise<(Course & { id: string }) | null> {
-    if (!adminDb) return null;
-    const coursesRef = adminDb.collection('courses');
-    const q = coursesRef.where('title', '>=', title).where('title', '<=', title + '\uf8ff').limit(1);
-    const snapshot = await q.get();
-    if (snapshot.empty) return null;
-    const courseDoc = snapshot.docs[0];
-    return { id: courseDoc.id, ...courseDoc.data() } as (Course & { id: string });
+    try {
+        const db = getAdminDb();
+        const coursesRef = db.collection('courses');
+        const q = coursesRef.where('title', '>=', title).where('title', '<=', title + '\uf8ff').limit(1);
+        const snapshot = await q.get();
+        if (snapshot.empty) return null;
+        const courseDoc = snapshot.docs[0];
+        return { id: courseDoc.id, ...courseDoc.data() } as (Course & { id: string });
+    } catch (e) {
+        console.error("Error finding course:", e);
+        return null;
+    }
 }
 
 interface GrantAccessParams {
