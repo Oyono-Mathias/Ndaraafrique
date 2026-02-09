@@ -2,160 +2,20 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // --- FONCTIONS DE SÉCURITÉ ---
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-
-    function isAdmin() {
-      return isSignedIn() && (
-        request.auth.token.email == 'salguienow@gmail.com' || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-    }
-
-    function isApprovedInstructor() {
-      return isSignedIn() && (
-             isAdmin() || (
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'instructor' && 
-               get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isInstructorApproved == true
-             )
-      );
-    }
-
-    function isCourseOwner(courseId) {
-        return isSignedIn() && (isAdmin() || request.auth.uid == get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId);
-    }
-
-    // --- ACCÈS PUBLICS ---
     
+    // Règle de développement : Autorise tout si l'utilisateur est connecté
+    // À restreindre avant la mise en production réelle
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Accès public pour les réglages de base (Logo, Nom du site)
     match /settings/{docId} {
       allow read: if true;
-      allow write: if isAdmin();
     }
     
-    match /faqs/{faqId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
     match /carousel_slides/{slideId} {
       allow read: if true;
-      allow write: if isAdmin();
     }
-
-    match /course_templates/{templateId} {
-      allow read: if true;
-      allow write: if isAdmin();
-    }
-
-    match /courses/{courseId} {
-      allow read: if true; 
-      allow create: if isSignedIn() && (isApprovedInstructor() || isAdmin());
-      allow update: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-      
-      match /{allSubcollections=**} {
-        allow read: if true; 
-        allow write: if isSignedIn() && (isCourseOwner(courseId) || isAdmin());
-      }
-    }
-
-    match /enrollments/{enrollmentId} {
-        allow read: if true; 
-        allow create: if isSignedIn() && (isOwner(request.resource.data.studentId) || isAdmin());
-        allow update, delete: if isAdmin();
-    }
-
-    match /reviews/{reviewId} {
-      allow read: if true;
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId);
-      allow update, delete: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId));
-    }
-
-    // --- ACCÈS RÉSERVÉS AUX MEMBRES CONNECTÉS ---
-
-    match /users/{userId} {
-      allow read: if isSignedIn(); 
-      allow create: if true; 
-      allow update: if isAdmin() || (
-        isOwner(userId) && 
-        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isInstructorApproved', 'permissions', 'status', 'email', 'uid'])
-      );
-
-      match /notifications/{id} { allow read, write: if isOwner(userId) || isAdmin(); }
-      match /activity/{id} { allow read, write: if isOwner(userId) || isAdmin(); }
-      match /wishlist/{id} { allow read, write: if isOwner(userId) || isAdmin(); }
-      match /chatHistory/{id} { allow read, write: if isOwner(userId) || isAdmin(); }
-    }
-
-    match /course_progress/{progressId} {
-      allow read: if isSignedIn() && (isAdmin() || (resource != null && resource.data.userId == request.auth.uid) || (resource == null && progressId.startsWith(request.auth.uid + "_")));
-      allow write: if isSignedIn() && (isAdmin() || request.resource.data.userId == request.auth.uid);
-    }
-
-    match /roles/{roleId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
-    }
-
-    match /payments/{paymentId} {
-      allow read: if isAdmin() || (isSignedIn() && (resource == null || isOwner(resource.data.userId) || resource.data.instructorId == request.auth.uid));
-      allow create: if isSignedIn() && (isOwner(request.resource.data.userId) || isAdmin());
-      allow update: if isAdmin();
-    }
-
-    match /devoirs/{submissionId} {
-      allow read: if isSignedIn() && (isAdmin() || (resource != null && (resource.data.studentId == request.auth.uid || resource.data.instructorId == request.auth.uid)) || resource == null);
-      allow create: if isSignedIn() && (isOwner(request.resource.data.studentId) || isAdmin());
-      allow update: if isSignedIn() || isAdmin();
-    }
-
-    match /questions/{qId} {
-      allow read: if true;
-      allow create: if isSignedIn();
-      allow update: if isSignedIn() || isAdmin();
-    }
-
-    match /chats/{chatId} {
-      allow create: if isSignedIn();
-      allow read, update: if isSignedIn() && (request.auth.uid in resource.data.participants || isAdmin());
-      
-      match /messages/{msgId} {
-        allow read: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
-        allow create: if isSignedIn() && (request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants || isAdmin());
-      }
-    }
-
-    match /support_tickets/{ticketId} {
-      allow read: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId));
-      allow create: if isSignedIn();
-      allow update: if isAdmin() || (isSignedIn() && isOwner(resource.data.userId));
-      
-      match /messages/{msgId} {
-        allow read, write: if isSignedIn() || isAdmin();
-      }
-    }
-
-    match /payouts/{payoutId} {
-      allow read, list: if isAdmin() || (isSignedIn() && isOwner(resource.data.instructorId));
-      allow create: if isSignedIn() && isApprovedInstructor() && isOwner(request.resource.data.instructorId);
-      allow update: if isAdmin();
-    }
-
-    match /resources/{resourceId} {
-      allow read: if true;
-      allow write: if isAdmin() || isApprovedInstructor();
-    }
-
-    match /promoCodes/{codeId} { allow read: if isSignedIn(); allow write: if isAdmin(); }
-    match /security_logs/{logId} { allow read, write: if isAdmin(); }
-    match /admin_audit_logs/{logId} { allow read, write: if isAdmin(); }
-    match /tracking_events/{eventId} { allow create: if true; allow read: if isAdmin(); }
-    match /recommended_courses/{userId} { allow read: if isOwner(userId) || isAdmin(); }
   }
 }
