@@ -53,17 +53,13 @@ export async function createCourseAction({ formData, instructorId }: { formData:
     
     await newCourseRef.set(newCoursePayload);
     
-    console.log(`Course Created Successfully: ${newCourseRef.id} by ${instructorId}`);
-    
     return { success: true, courseId: newCourseRef.id };
   } catch (error: any) {
-    console.error("CREATE_COURSE_CRITICAL_ERROR:", error);
+    console.error("CREATE_COURSE_ERROR:", error);
     
     let userMessage = `Erreur lors de l'enregistrement : ${error.message}`;
-    if (error.message.includes('ADMIN_SDK_NOT_INITIALIZED')) {
-        userMessage = "Le serveur n'est pas encore prêt. Assurez-vous d'avoir configuré la variable FIREBASE_SERVICE_ACCOUNT_KEY.";
-    } else if (error.message.includes('permission-denied')) {
-        userMessage = "Accès refusé à la base de données. Vérifiez les permissions de votre compte de service.";
+    if (error.message.includes('CONFIGURATION_MANQUANTE')) {
+        userMessage = "Configuration serveur incomplète (Clé API manquante).";
     }
 
     return { 

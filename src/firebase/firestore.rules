@@ -2,20 +2,56 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // --- FONCTIONS DE SÉCURITÉ ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
     
-    // Règle de développement : Autorise tout si l'utilisateur est connecté
-    // À restreindre avant la mise en production réelle
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
     }
 
-    // Accès public pour les réglages de base (Logo, Nom du site)
+    // --- RÈGLES DE DÉVELOPPEMENT (DÉVERROUILLAGE) ---
+    // Autorise tout pour les utilisateurs connectés pendant la phase de modification
+    match /{document=**} {
+      allow read, write: if isSignedIn();
+    }
+
+    // --- PROFIL UTILISATEUR ---
+    match /users/{userId} {
+      // Autorise la création de son propre profil
+      allow create: if isOwner(userId);
+      allow read, update: if isOwner(userId);
+      
+      match /notifications/{notifId} {
+        allow create, read, update: if isOwner(userId);
+      }
+      
+      match /chatHistory/{msgId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // --- ACCÈS PUBLICS ---
     match /settings/{docId} {
       allow read: if true;
     }
     
+    match /faqs/{faqId} {
+      allow read: if true;
+    }
+
     match /carousel_slides/{slideId} {
       allow read: if true;
+    }
+
+    match /courses/{courseId} {
+      allow read: if true; 
+      
+      match /{allSubcollections=**} {
+        allow read: if true; 
+      }
     }
   }
 }

@@ -7,8 +7,25 @@ import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, GoogleAuthProvider, signInWithPopup, User as FirebaseUser } from 'firebase/auth';
-import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { 
+  getAuth, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  updateProfile, 
+  GoogleAuthProvider, 
+  signInWithPopup, 
+  deleteUser,
+  User as FirebaseUser 
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  doc, 
+  setDoc, 
+  serverTimestamp, 
+  getDoc, 
+  writeBatch,
+  collection
+} from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslations, useLocale } from 'next-intl';
@@ -48,7 +65,6 @@ const PasswordInput = ({ field }: { field: any }) => {
   );
 };
 
-
 export default function LoginClient() {
   const t = useTranslations('Auth');
   const searchParams = useSearchParams();
@@ -57,8 +73,6 @@ export default function LoginClient() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
   const [siteName, setSiteName] = useState('Ndara Afrique');
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [detectedCountry, setDetectedCountry] = useState<{ code: string; name: string } | null>(null);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -71,13 +85,8 @@ export default function LoginClient() {
   
   useEffect(() => {
     if (!isUserLoading && user) {
-      if (role === 'admin') {
-        router.push('/admin');
-      } else if (role === 'instructor') {
-        router.push('/instructor/dashboard');
-      } else {
-        router.push('/student/dashboard');
-      }
+      const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+      router.push(target);
     }
   }, [user, isUserLoading, role, router]);
 
@@ -87,201 +96,165 @@ export default function LoginClient() {
         const settingsSnap = await getDoc(settingsRef);
         if (settingsSnap.exists()) {
             const settingsData = settingsSnap.data()?.general;
-            if (settingsData?.loginBackgroundImage) {
-                setLoginBackground(settingsData.loginBackgroundImage);
-            }
-             if (settingsData?.logoUrl) {
-                setLogoUrl(settingsData.logoUrl);
-            }
-            if (settingsData?.siteName) {
-                setSiteName(settingsData.siteName);
-            }
+            if (settingsData?.loginBackgroundImage) setLoginBackground(settingsData.loginBackgroundImage);
+            if (settingsData?.siteName) setSiteName(settingsData.siteName);
         }
     };
     fetchSettings();
-
-    // Détection automatique du pays au chargement
-    const fetchCountry = async () => {
-        try {
-            const res = await fetch('https://ipapi.co/json/');
-            const data = await res.json();
-            if (data.country_code && data.country_name) {
-                setDetectedCountry({
-                    code: data.country_code,
-                    name: data.country_name
-                });
-            }
-        } catch (e) {
-            console.error("Échec de la détection du pays:", e);
-        }
-    };
-    fetchCountry();
   }, [db]);
-  
-
-  const handleAuthSuccess = async (firebaseUser: FirebaseUser, acceptedTerms?: boolean) => {
-    const userDocRef = doc(db, "users", firebaseUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
-
-    let targetRoute = '/student/dashboard';
-
-    if (!userDocSnap.exists()) {
-        const now = serverTimestamp();
-        const finalUserData: any = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            fullName: firebaseUser.displayName || 'Utilisateur Ndara',
-            username: firebaseUser.displayName?.replace(/\s/g, '_').toLowerCase() || 'user' + firebaseUser.uid.substring(0, 5),
-            phoneNumber: '',
-            bio: '',
-            role: 'student',
-            status: 'active',
-            isInstructorApproved: false,
-            createdAt: now,
-            lastLogin: now,
-            isOnline: true,
-            lastSeen: now,
-            profilePictureURL: firebaseUser.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(firebaseUser.displayName || 'A')}`,
-            isProfileComplete: false,
-            preferredLanguage: locale as 'fr' | 'en',
-            countryCode: detectedCountry?.code || 'Unknown',
-            countryName: detectedCountry?.name || 'Unknown',
-            socialLinks: { website: '', twitter: '', linkedin: '', youtube: '' },
-            payoutInfo: {},
-            instructorNotificationPreferences: {},
-            pedagogicalPreferences: {},
-            notificationPreferences: {},
-            careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
-            permissions: {},
-            badges: [],
-        };
-
-        if (acceptedTerms) {
-            finalUserData.termsAcceptedAt = now;
-        }
-
-        await setDoc(userDocRef, finalUserData, { merge: true });
-        localStorage.setItem('ndaraafrique-role', 'student');
-    } else {
-        const existingData = userDocSnap.data() as NdaraUser;
-        const targetRole = existingData.role || 'student';
-        
-        if (targetRole === 'admin') targetRoute = '/admin';
-        else if (targetRole === 'instructor') targetRoute = '/instructor/dashboard';
-        else targetRoute = '/student/dashboard';
-
-        localStorage.setItem('ndaraafrique-role', targetRole);
-        
-        // Mise à jour de la dernière connexion et pays si disponible
-        const updateData: any = { lastLogin: serverTimestamp(), isOnline: true };
-        if (detectedCountry) {
-            updateData.countryCode = detectedCountry.code;
-            updateData.countryName = detectedCountry.name;
-        }
-        await setDoc(userDocRef, updateData, { merge: true });
-    }
-    
-    toast({ title: "Connexion réussie !" });
-    router.push(targetRoute);
-  };
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
-      const userCredential = await signInWithEmailAndPassword(getAuth(), values.email, values.password);
-      await handleAuthSuccess(userCredential.user);
-    } catch (error) { toast({ variant: 'destructive', title: "Erreur", description: "Email ou mot de passe incorrect." }); }
-    finally { setIsLoading(false); }
+      await signInWithEmailAndPassword(getAuth(), values.email, values.password);
+      toast({ title: "Connexion réussie !" });
+    } catch (error) { 
+      toast({ variant: 'destructive', title: "Erreur", description: "Email ou mot de passe incorrect." }); 
+    } finally { 
+      setIsLoading(false); 
+    }
   };
 
   const onRegisterSubmit = async (values: z.infer<typeof registerSchema>) => {
     setIsLoading(true);
+    const auth = getAuth();
+    let authUser: FirebaseUser | null = null;
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(getAuth(), values.email, values.password);
-      await updateProfile(userCredential.user, { displayName: values.fullName });
-      await handleAuthSuccess(userCredential.user, values.terms);
-    } catch (error) { 
-        if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
-            toast({ variant: 'destructive', title: "Erreur", description: "Cette adresse e-mail est déjà utilisée." });
-        } else {
-            toast({ variant: 'destructive', title: "Erreur", description: "Une erreur est survenue lors de l'inscription." });
+      // 1. Création du compte Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+      authUser = userCredential.user;
+      
+      // 2. Mise à jour du nom dans Auth
+      await updateProfile(authUser, { displayName: values.fullName });
+
+      // 3. Création atomique du profil dans Firestore
+      const uid = authUser.uid;
+      const batch = writeBatch(db);
+      
+      const userRef = doc(db, "users", uid);
+      const welcomeRef = doc(db, "users", uid, "notifications", "welcome");
+
+      const userData = {
+        uid,
+        email: values.email,
+        fullName: values.fullName,
+        username: values.fullName.replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
+        role: 'student',
+        status: 'active',
+        isInstructorApproved: false,
+        createdAt: serverTimestamp(),
+        isProfileComplete: false,
+        preferredLanguage: locale as 'fr' | 'en',
+        isOnline: true,
+        lastSeen: serverTimestamp(),
+      };
+
+      batch.set(userRef, userData);
+
+      batch.set(welcomeRef, {
+        text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
+        type: 'success',
+        read: false,
+        createdAt: serverTimestamp(),
+        link: '/student/dashboard'
+      });
+
+      await batch.commit();
+      toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
+      router.push('/student/dashboard');
+
+    } catch (error: any) {
+      console.error("Registration flow error:", error);
+      
+      // 4. NETTOYAGE : Si Firestore échoue, on supprime l'utilisateur Auth pour éviter les comptes fantômes
+      if (authUser) {
+        try {
+          await deleteUser(authUser);
+        } catch (cleanupErr) {
+          console.error("Critical failure: Could not delete ghost auth user after Firestore error", cleanupErr);
         }
+      }
+
+      let msg = "Une erreur est survenue lors de l'inscription.";
+      if (error instanceof FirebaseError) {
+        if (error.code === 'auth/email-already-in-use') msg = "Cette adresse email est déjà utilisée.";
+      }
+      toast({ variant: 'destructive', title: "Échec de l'inscription", description: msg });
+    } finally {
+      setIsLoading(false);
     }
-    finally { setIsLoading(false); }
   };
 
   const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     setIsLoading(true);
     try {
-      const result = await signInWithPopup(getAuth(), provider);
-      await handleAuthSuccess(result.user, true); 
+      await signInWithPopup(getAuth(), provider);
     } catch (err) {
-      toast({ variant: 'destructive', title: "Erreur", description: "Erreur lors de la connexion avec Google." });
+      toast({ variant: 'destructive', title: "Erreur Google", description: "La connexion a échoué." });
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
-  
-  if (isUserLoading) return <div className="flex h-screen w-full items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
 
   const containerStyle = loginBackground ? { backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url('${loginBackground}')` } : {};
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 auth-page-container" style={containerStyle}>
-        <div className="w-full max-md">
+    <div className="min-h-screen w-full flex items-center justify-center p-4 auth-page-container bg-slate-950" style={containerStyle}>
+        <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-6">
                 <Link href="/" className="mb-4">
-                  <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full" />
+                  <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full shadow-2xl" />
                 </Link>
             </div>
             
-            <div className="auth-card rounded-2xl p-6 sm:p-8">
+            <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl">
                <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 text-slate-300">
-                        <TabsTrigger value="login">{t('loginButton')}</TabsTrigger>
-                        <TabsTrigger value="register">{t('registerButton')}</TabsTrigger>
+                    <TabsList className="grid w-full grid-cols-2 bg-slate-800/50 rounded-2xl h-12 p-1">
+                        <TabsTrigger value="login" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">{t('loginButton')}</TabsTrigger>
+                        <TabsTrigger value="register" className="rounded-xl font-bold uppercase text-[10px] tracking-widest">{t('registerButton')}</TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="login" className="space-y-6 mt-6">
+                    <TabsContent value="login" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2">
                         <Form {...loginForm}>
                         <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-end">
-                              <Link href="/forgot-password" className="text-sm font-semibold text-primary hover:underline">{t('password_forgot')}</Link>
+                              <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
-                            <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
+                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
-                         <div className="relative my-4 text-center">
-                            <span className="absolute inset-x-0 top-1/2 h-px bg-white/10"></span>
-                            <span className="relative bg-[#161e2d] px-4 text-sm text-gray-500">OU</span>
+                         <div className="relative my-6 text-center">
+                            <span className="absolute inset-x-0 top-1/2 h-px bg-white/5"></span>
+                            <span className="relative bg-slate-900 px-4 text-[10px] font-black text-slate-600">OU</span>
                         </div>
-                        <Button onClick={loginWithGoogle} variant="outline" className="w-full h-12 bg-transparent border-slate-700 text-white hover:bg-slate-800/70 hover:text-white" disabled={isLoading}>
+                        <Button onClick={loginWithGoogle} variant="outline" className="w-full h-14 bg-transparent border-slate-800 rounded-2xl text-white hover:bg-white/5 font-bold" disabled={isLoading}>
                              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-3" />
                             Continuer avec Google
                         </Button>
                     </TabsContent>
 
-                    <TabsContent value="register" className="mt-6">
+                    <TabsContent value="register" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
                         <Form {...registerForm}>
                             <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-300">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="terms" render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
-                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="border-slate-500 data-[state=checked]:bg-primary data-[state=checked]:border-primary mt-1" /></FormControl>
+                                 <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
                                  <div className="space-y-1 leading-none">
-                                    <FormLabel className="text-xs font-normal text-slate-400">
-                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-primary/80 hover:text-primary">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-primary/80 hover:text-primary">{t('privacy_policy')}</Link>
+                                    <FormLabel className="text-[10px] font-medium text-slate-500 leading-normal">
+                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-slate-300">{t('privacy_policy')}</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>
                               </FormItem>
                             )} />
-                            <Button type="submit" className="w-full h-12 text-lg font-semibold !mt-6" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
+                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 mt-4" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
                             </form>
                         </Form>
                     </TabsContent>
