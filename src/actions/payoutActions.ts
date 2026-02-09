@@ -1,7 +1,6 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendAdminNotification } from './notificationActions';
 
@@ -11,29 +10,22 @@ interface PayoutRequest {
 }
 
 export async function requestPayout({ instructorId, amount }: PayoutRequest): Promise<{ success: boolean; error?: string }> {
-    if (!adminDb) {
-        return { success: false, error: "Le service est temporairement indisponible." };
-    }
-    if (amount <= 0) {
-        return { success: false, error: "Le montant doit être positif." };
-    }
-
     try {
-        const batch = adminDb.batch();
+        const db = getAdminDb();
+        const batch = db.batch();
 
-        const payoutRef = adminDb.collection('payouts').doc();
+        const payoutRef = db.collection('payouts').doc();
         batch.set(payoutRef, {
             instructorId,
             amount,
             status: 'en_attente',
             date: FieldValue.serverTimestamp(),
-            method: 'Mobile Money' // Default method for now
+            method: 'Mobile Money'
         });
 
         await batch.commit();
 
-        // Send notification to admin
-        const instructorDoc = await adminDb.collection('users').doc(instructorId).get();
+        const instructorDoc = await db.collection('users').doc(instructorId).get();
         const instructorName = instructorDoc.data()?.fullName || 'Un instructeur';
 
         await sendAdminNotification({
@@ -47,6 +39,6 @@ export async function requestPayout({ instructorId, amount }: PayoutRequest): Pr
 
     } catch (error: any) {
         console.error("Error requesting payout:", error);
-        return { success: false, error: "Une erreur est survenue lors de la demande de retrait." };
+        return { success: false, error: "Une erreur est survenue lors de la demande de retrait : " + error.message };
     }
 }

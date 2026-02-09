@@ -37,10 +37,13 @@ export async function updateSectionTitle({ courseId, sectionId, title }: { cours
     } catch (error: any) {
         console.error("Error updating section title:", error);
         
-        // Retourne un message d'erreur plus clair pour l'interface
-        let msg = "Erreur de connexion à la base de données.";
-        if (error.message.includes("CONFIGURATION_MANQUANTE")) {
-            msg = "Le serveur n'est pas configuré. Ajoutez la clé FIREBASE_SERVICE_ACCOUNT_KEY.";
+        let msg = error.message;
+        if (msg.includes("CONFIGURATION_MANQUANTE")) {
+            msg = "Le serveur n'est pas configuré. Ajoutez la clé FIREBASE_SERVICE_ACCOUNT_KEY dans les variables d'environnement de votre hébergeur.";
+        } else if (msg.includes("permission-denied")) {
+            msg = "Accès refusé. Vérifiez les permissions de votre compte de service.";
+        } else {
+            msg = "Erreur de base de données : " + msg;
         }
         
         return { success: false, error: msg };

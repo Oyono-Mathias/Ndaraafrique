@@ -1,6 +1,6 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { getStorage } from 'firebase-admin/storage';
@@ -19,12 +19,9 @@ export async function createResourceAction({ formData, instructorId }: { formDat
     return { success: false, error: validatedFields.error.flatten().fieldErrors };
   }
   
-  if (!adminDb) {
-    return { success: false, error: 'Service indisponible' };
-  }
-
   try {
-    const newResourceRef = adminDb.collection('resources').doc();
+    const db = getAdminDb();
+    const newResourceRef = db.collection('resources').doc();
     await newResourceRef.set({
       ...validatedFields.data,
       instructorId,
@@ -38,12 +35,9 @@ export async function createResourceAction({ formData, instructorId }: { formDat
 }
 
 export async function deleteResourceAction({ resourceId, instructorId }: { resourceId: string, instructorId: string }) {
-  if (!adminDb) {
-    return { success: false, error: 'Service indisponible' };
-  }
-
   try {
-    const resourceRef = adminDb.collection('resources').doc(resourceId);
+    const db = getAdminDb();
+    const resourceRef = db.collection('resources').doc(resourceId);
     const resourceDoc = await resourceRef.get();
 
     if (!resourceDoc.exists || resourceDoc.data()?.instructorId !== instructorId) {
