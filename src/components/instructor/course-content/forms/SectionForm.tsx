@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useEffect } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,7 +42,7 @@ export function SectionForm({ courseId, section, onDone }: { courseId: string; s
         toast({ 
           variant: 'destructive', 
           title: 'Erreur système', 
-          description: "Le serveur ne répond pas. Vérifiez votre connexion." 
+          description: "Le serveur est indisponible. Vérifiez votre connexion." 
         });
       }
     });

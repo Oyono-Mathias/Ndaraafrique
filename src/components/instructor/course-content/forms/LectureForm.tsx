@@ -57,7 +57,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const selectedType = form.watch('type');
     
     useEffect(() => {
-        if(lecture) {
+        if(lecture && isOpen) {
             form.reset({
                 title: lecture.title,
                 type: lecture.type,
@@ -65,7 +65,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 textContent: lecture.textContent || '',
                 duration: lecture.duration || 0,
             });
-        } else {
+        } else if (isOpen) {
             form.reset({ title: '', type: 'video', contentUrl: '', textContent: '', duration: 0 });
         }
     }, [lecture, form, isOpen]);
@@ -127,14 +127,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ 
                         variant: 'destructive', 
                         title: 'Erreur', 
-                        description: result?.error || 'Une erreur inconnue est survenue.' 
+                        description: result?.error || 'Une erreur est survenue lors de l\'enregistrement.' 
                     });
                 }
             } catch (e: any) {
                 toast({ 
                     variant: 'destructive', 
                     title: 'Erreur système', 
-                    description: "Échec de la communication avec le serveur." 
+                    description: "Le serveur est indisponible. Vérifiez votre connexion." 
                 });
             }
         });

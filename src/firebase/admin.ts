@@ -2,8 +2,8 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation sécurisée et robuste du SDK Firebase Admin.
- * Tente de corriger les erreurs de formatage communes de la clé secrète.
+ * @fileOverview Initialisation ultra-robuste du SDK Firebase Admin.
+ * Gère le format JSON complexe de la clé de compte de service.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -14,18 +14,15 @@ function initializeAdmin() {
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    console.error('CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.');
+    console.error('CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing in environment variables.');
     return null;
   }
 
   try {
-    // Nettoyage de la clé pour éviter les erreurs de JSON.parse et de refresh token
+    // Nettoyage et parsing du JSON
     const cleanedKey = serviceAccountKey.trim();
-    
-    // On essaie de parser le JSON
     const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
     
-    // Vérification sommaire de la présence de la clé privée
     if (!serviceAccount.private_key) {
         console.error('CRITICAL: The service account JSON is missing the private_key field.');
         return null;

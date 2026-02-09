@@ -8,14 +8,13 @@ import { getStorage } from 'firebase-admin/storage';
 
 /**
  * @fileOverview Actions pour la gestion des leçons.
- * Diagnostic des erreurs de connexion serveur amélioré.
  */
 
 function handleServerError(error: any) {
     console.error("Server Action Error (Lecture):", error);
     const msg = error.message || "";
-    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE") || msg.includes("refresh access token") || msg.includes("UNKNOWN")) {
-        return "Configuration serveur invalide. Vérifiez la clé FIREBASE_SERVICE_ACCOUNT_KEY.";
+    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE")) {
+        return "Configuration serveur incomplète (Clé API manquante).";
     }
     return "Erreur lors de la gestion de la leçon : " + msg;
 }
@@ -78,16 +77,6 @@ export async function deleteLecture({ courseId, sectionId, lectureId }: { course
         const lectureDoc = await lectureRef.get();
         if(!lectureDoc.exists) return { success: false, error: "Leçon introuvable" };
         
-        const data = lectureDoc.data() as Lecture;
-        if(data.contentUrl && data.type !== 'text'){
-            try {
-                const fileUrl = new URL(data.contentUrl);
-                const path = decodeURIComponent(fileUrl.pathname.split('/o/')[1].split('?')[0]);
-                await getStorage().bucket().file(path).delete();
-            } catch(e) {
-                console.warn(`Could not delete file from storage: ${data.contentUrl}`, e);
-            }
-        }
         await lectureRef.delete();
         return { success: true };
     } catch (error: any) {
