@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
@@ -25,6 +25,9 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
+// Email du super-administrateur
+const MASTER_ADMIN_EMAIL = 'salguienow@gmail.com';
+
 export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
@@ -43,7 +46,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ Redirection vers la Landing Page au lieu de /login
     router.push('/');
   }, [db, router]);
 
@@ -89,11 +91,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
-          // Détermination dynamique des rôles disponibles
-          const roles: UserRole[] = ['student'];
+          const isMasterAdmin = user.email === MASTER_ADMIN_EMAIL || userData.role === 'admin';
           
-          // Un admin a TOUS les rôles par défaut
-          if (user.email === 'salguienow@gmail.com' || userData.role === 'admin') {
+          const roles: UserRole[] = ['student'];
+          if (isMasterAdmin) {
               roles.push('instructor', 'admin');
           } else if (userData.role === 'instructor' || userData.isInstructorApproved) {
               roles.push('instructor');
@@ -110,7 +111,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               profilePictureURL: userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
               status: userData.status || 'active',
               isProfileComplete: isComplete,
-              role: userData.role || 'student'
+              role: isMasterAdmin ? 'admin' : (userData.role || 'student')
           } as any;
           
           setCurrentUser(resolvedUser);
@@ -120,19 +121,19 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
-              const defaultRole = userData.role || 'student';
+              const defaultRole = resolvedUser.role || 'student';
               setRole(defaultRole as UserRole);
               localStorage.setItem('ndaraafrique-role', defaultRole);
           }
 
         } else {
-            // Création automatique du document utilisateur s'il n'existe pas
+            const isMasterAdmin = user.email === MASTER_ADMIN_EMAIL;
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
                 username: user.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + user.uid.substring(0, 5),
                 fullName: user.displayName || 'Utilisateur Ndara',
-                role: (user.email === 'salguienow@gmail.com') ? 'admin' : 'student',
+                role: isMasterAdmin ? 'admin' : 'student',
                 status: 'active',
                 isInstructorApproved: false,
                 createdAt: serverTimestamp(),
@@ -145,6 +146,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             };
             await setDoc(userDocRef, newUserDoc);
             setRole(newUserDoc.role as UserRole);
+            setAvailableRoles(isMasterAdmin ? ['student', 'instructor', 'admin'] : ['student']);
             localStorage.setItem('ndaraafrique-role', newUserDoc.role);
         }
         setLoading(false);
