@@ -6,7 +6,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 
 const MathiasTutorInputSchema = z.object({
   query: z.string().describe('The student’s question or request for the AI tutor.'),
@@ -31,9 +31,9 @@ const getCourseCatalog = ai.defineTool(
         })),
     },
     async () => {
-        if (!adminDb) return [];
         try {
-            const coursesRef = adminDb.collection('courses');
+            const db = getAdminDb();
+            const coursesRef = db.collection('courses');
             const snapshot = await coursesRef.limit(10).get();
             if (snapshot.empty) return [];
             return snapshot.docs.map(doc => {
@@ -62,12 +62,12 @@ const searchFaq = ai.defineTool(
         }),
     },
     async ({ query }) => {
-        if (!adminDb) return { answer: undefined };
        try {
+            const db = getAdminDb();
             const keywords = query.toLowerCase().split(/\s+/).filter(k => k.length > 3);
             if (keywords.length === 0) return { answer: undefined };
             
-            const faqsRef = adminDb.collection('faqs');
+            const faqsRef = db.collection('faqs');
             const q = faqsRef.where('tags', 'array-contains-any', keywords.slice(0, 10));
             const snapshot = await q.get();
 
@@ -122,7 +122,7 @@ const mathiasTutorFlow = ai.defineFlow(
     try {
         if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
             return { 
-                response: "Bara ala ! Je rencontre une petite difficulté de configuration. Si ma sagesse vous manque, n'hésitez pas à ouvrir un ticket au support client. Je serai de retour très bientôt !",
+                response: "Bara ala ! Je rencontre une petite difficulté de configuration. Je serai de retour très bientôt !",
                 isError: true
             };
         }
@@ -135,7 +135,7 @@ const mathiasTutorFlow = ai.defineFlow(
     } catch (error: any) {
         console.error("Mathias Flow Execution Error:", error);
         return { 
-            response: "Bara ala ! J'ai eu un petit vertige technique en cherchant votre réponse. Vous pouvez réessayer dans quelques secondes. Si le problème persiste, n'hésitez pas à ouvrir un ticket au support.",
+            response: "Bara ala ! J'ai eu un petit vertige technique. Vous pouvez réessayer dans quelques secondes.",
             isError: true 
         };
     }

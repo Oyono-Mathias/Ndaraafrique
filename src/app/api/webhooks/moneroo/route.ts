@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { sendUserNotification } from '@/actions/notificationActions';
 
@@ -23,18 +23,15 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: 'Missing metadata in transaction' }, { status: 400 });
       }
 
+      const db = getAdminDb();
       const enrollmentId = `${userId}_${courseId}`;
       
-      if (!adminDb) {
-        throw new Error('Firebase Admin DB not initialized');
-      }
-
       // 1. Récupération des infos du cours pour enrichir l'inscription
-      const courseDoc = await adminDb.collection('courses').doc(courseId).get();
+      const courseDoc = await db.collection('courses').doc(courseId).get();
       const courseData = courseDoc.data();
 
       // 2. Création/Mise à jour de l'inscription
-      const enrollmentRef = adminDb.collection('enrollments').doc(enrollmentId);
+      const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
       await enrollmentRef.set({
         studentId: userId,
         courseId: courseId,
@@ -57,7 +54,7 @@ export async function POST(req: Request) {
       });
 
       // 4. Log de l'activité
-      const activityRef = adminDb.collection('users').doc(userId).collection('activity').doc();
+      const activityRef = db.collection('users').doc(userId).collection('activity').doc();
       await activityRef.set({
         userId,
         type: 'enrollment',

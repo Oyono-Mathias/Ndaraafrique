@@ -38,6 +38,10 @@ function initializeAdmin() {
   }
 }
 
+/**
+ * Retourne l'instance Firestore du SDK Admin.
+ * L'initialisation est faite à chaque appel pour garantir la disponibilité.
+ */
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
@@ -46,6 +50,9 @@ export function getAdminDb() {
   return app.firestore();
 }
 
+/**
+ * Retourne l'instance Auth du SDK Admin.
+ */
 export function getAdminAuth() {
   const app = initializeAdmin();
   if (!app) {

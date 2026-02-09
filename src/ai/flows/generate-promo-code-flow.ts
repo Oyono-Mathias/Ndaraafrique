@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview A Genkit flow that acts as an internal admin assistant (Mathias).
@@ -6,7 +5,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { generateAnnouncement, GenerateAnnouncementInputSchema, GenerateAnnouncementOutputSchema } from './generate-announcement-flow';
 import type { GenerateAnnouncementInput, GenerateAnnouncementOutput } from './generate-announcement-flow';
@@ -33,12 +32,9 @@ const createPromoCodeTool = ai.defineTool(
     }),
   },
   async (input) => {
-    if (!adminDb) {
-      console.error("Admin DB not initialized, cannot create promo code.");
-      return { success: false, code: input.code };
-    }
     try {
-      const promoRef = adminDb.collection('promoCodes').doc(input.code);
+      const db = getAdminDb();
+      const promoRef = db.collection('promoCodes').doc(input.code);
       const dataToSet: any = { ...input, createdAt: FieldValue.serverTimestamp() };
       
       if (input.expiresAt) {
@@ -84,9 +80,8 @@ const grantCourseAccessTool = ai.defineTool(
         }),
     },
     async (input, context: any) => {
-        // On utilise une petite astuce pour dire à TypeScript d'ignorer la structure du contexte ici
-const auth = context?.auth as any;
-const adminId = auth?.uid || auth?.adminId;
+        const auth = context?.auth as any;
+        const adminId = auth?.uid || auth?.adminId;
         if (!adminId) {
             return { success: false, error: "Admin ID is missing. Cannot perform this action." };
         }

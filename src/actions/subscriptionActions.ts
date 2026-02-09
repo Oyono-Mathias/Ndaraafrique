@@ -1,6 +1,6 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { sendAdminNotification } from './notificationActions';
 import { Timestamp, FieldValue } from 'firebase-admin/firestore';
 import type { SubscriptionPlan, NdaraUser } from '@/lib/types';
@@ -15,7 +15,7 @@ class Moneroo {
 
     async verify(transactionId: string): Promise<{ status: string; data?: any; message?: string }> {
         if (!this.secretKey || this.secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-             console.warn("Moneroo secret key is not configured. Simulating successful payment verification is DEACTIVATED. A real key is required.");
+             console.warn("Moneroo secret key is not configured.");
              return { status: 'error', message: 'Moneroo secret key not configured on the server.' };
         }
         
@@ -33,12 +33,12 @@ export async function verifySubscriptionTransaction(transactionId: string): Prom
     const secretKey = process.env.MONEROO_SECRET_KEY;
 
     if (!secretKey || secretKey === "YOUR_MONEROO_SECRET_KEY_HERE") {
-        console.error("CRITICAL: Moneroo secret key is not configured. Subscription verification cannot proceed.");
-        return { success: false, error: 'Payment gateway not configured. Contact support.' };
+        console.error("CRITICAL: Moneroo secret key is not configured.");
+        return { success: false, error: 'Passerelle de paiement non configurée.' };
     }
-    if (!adminDb) return { success: false, error: "Database not connected" };
 
     try {
+        const db = getAdminDb();
         const moneroo = new Moneroo(secretKey);
         const response = await moneroo.verify(transactionId);
         
@@ -46,16 +46,16 @@ export async function verifySubscriptionTransaction(transactionId: string): Prom
             const { userId, planId } = response.data.metadata;
 
             if (!userId || !planId) {
-                throw new Error("User ID or Plan ID missing in transaction metadata.");
+                throw new Error("Métadonnées transaction incomplètes.");
             }
             
             const [planSnap, userSnap] = await Promise.all([
-                adminDb.collection('subscription_plans').doc(planId).get(),
-                adminDb.collection('users').doc(userId).get()
+                db.collection('subscription_plans').doc(planId).get(),
+                db.collection('users').doc(userId).get()
             ]);
 
             if (!planSnap.exists || !userSnap.exists) {
-                throw new Error("Plan or User not found.");
+                throw new Error("Plan ou Utilisateur introuvable.");
             }
 
             const plan = planSnap.data() as SubscriptionPlan;
@@ -79,35 +79,23 @@ export async function verifySubscriptionTransaction(transactionId: string): Prom
                 paymentTransactionId: transactionId,
             };
 
-            const subscriptionRef = adminDb.collection('users').doc(userId).collection('subscriptions').doc(transactionId);
+            const subscriptionRef = db.collection('users').doc(userId).collection('subscriptions').doc(transactionId);
             await subscriptionRef.set(subscriptionData);
 
             await sendAdminNotification({
                 title: '🎉 Nouvel Abonnement',
                 body: `${user.fullName} s'est abonné(e) au plan "${plan.name}".`,
-                link: `/admin/users`, // A dedicated subscription page could be better
+                link: `/admin/users`,
                 type: 'general'
             });
 
             return { success: true };
         } else {
-             await sendAdminNotification({
-                title: '⚠️ Anomalie de Paiement Abonnement',
-                body: `Échec de la vérification Moneroo pour la transaction abonnement ID: ${transactionId}. Statut: ${response.data?.status || 'inconnu'}.`,
-                link: '/admin/payments',
-                type: 'financialAnomalies'
-            });
-            return { success: false, error: `Paiement non finalisé. Statut : ${response.data?.status}` };
+            return { success: false, error: `Paiement non finalisé.` };
         }
 
     } catch (error: any) {
         console.error("Error verifying Moneroo subscription transaction:", error);
-         await sendAdminNotification({
-            title: '🔥 Erreur Critique (Abonnement)',
-            body: `Le service de vérification Moneroo a échoué. Cause: ${error.message}`,
-            link: '/admin/settings',
-            type: 'financialAnomalies'
-        });
         return { success: false, error: error.message || 'Erreur de vérification du paiement.' };
     }
 }

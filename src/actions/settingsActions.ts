@@ -1,7 +1,6 @@
-
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Settings } from '@/lib/types';
 
@@ -14,16 +13,16 @@ export async function updateGlobalSettings({
   settings,
   adminId
 }: UpdateSettingsParams): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) return { success:false, error: "Database not connected" };
   try {
-    const batch = adminDb.batch();
+    const db = getAdminDb();
+    const batch = db.batch();
     
     // 1. Update the settings document
-    const settingsRef = adminDb.collection('settings').doc('global');
+    const settingsRef = db.collection('settings').doc('global');
     batch.set(settingsRef, settings, { merge: true });
 
     // 2. Log the action to the audit log
-    const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+    const auditLogRef = db.collection('admin_audit_logs').doc();
     batch.set(auditLogRef, {
       adminId,
       eventType: 'settings.update',
@@ -37,6 +36,6 @@ export async function updateGlobalSettings({
 
   } catch (error: any) {
     console.error("Error updating global settings:", error);
-    return { success: false, error: "Une erreur est survenue lors de la sauvegarde des paramètres." };
+    return { success: false, error: "Une erreur est survenue lors de la sauvegarde des paramètres : " + (error.message || "Base de données non connectée") };
   }
 }
