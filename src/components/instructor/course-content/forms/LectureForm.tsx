@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
@@ -120,11 +119,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 ? await updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
                 : await createLecture({ courseId, sectionId, formData: values });
             
-            if(result.success){
+            if(result && result.success){
                 toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                 onOpenChange(false);
             } else {
-                toast({ variant: 'destructive', title: 'Erreur', description: JSON.stringify(result.error) });
+                toast({ variant: 'destructive', title: 'Erreur', description: result?.error || 'Une erreur inconnue est survenue.' });
             }
         });
     };
