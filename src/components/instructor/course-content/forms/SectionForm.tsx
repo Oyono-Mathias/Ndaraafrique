@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useTransition, useEffect } from 'react';
@@ -27,12 +26,24 @@ export function SectionForm({ courseId, section, onDone }: { courseId: string; s
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
-      const result = await updateSectionTitle({ courseId, sectionId: section.id, title: values.title });
-      if (result.success) {
-        toast({ title: 'Titre de la section mis à jour.' });
-        onDone();
-      } else {
-        toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+      try {
+        const result = await updateSectionTitle({ courseId, sectionId: section.id, title: values.title });
+        if (result && result.success) {
+          toast({ title: 'Titre de la section mis à jour.' });
+          onDone();
+        } else {
+          toast({ 
+            variant: 'destructive', 
+            title: 'Erreur', 
+            description: result?.error || "Une erreur inconnue est survenue." 
+          });
+        }
+      } catch (e: any) {
+        toast({ 
+          variant: 'destructive', 
+          title: 'Erreur système', 
+          description: "Le serveur n'a pas répondu correctement." 
+        });
       }
     });
   };

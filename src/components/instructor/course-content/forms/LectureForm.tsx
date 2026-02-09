@@ -115,15 +115,27 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {
-            const result = lecture
-                ? await updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
-                : await createLecture({ courseId, sectionId, formData: values });
-            
-            if(result && result.success){
-                toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
-                onOpenChange(false);
-            } else {
-                toast({ variant: 'destructive', title: 'Erreur', description: result?.error || 'Une erreur inconnue est survenue.' });
+            try {
+                const result = lecture
+                    ? await updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
+                    : await createLecture({ courseId, sectionId, formData: values });
+                
+                if(result && result.success){
+                    toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
+                    onOpenChange(false);
+                } else {
+                    toast({ 
+                        variant: 'destructive', 
+                        title: 'Erreur', 
+                        description: result?.error || 'Une erreur inconnue est survenue.' 
+                    });
+                }
+            } catch (e: any) {
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'Erreur système', 
+                    description: "Le serveur n'a pas répondu correctement." 
+                });
             }
         });
     };
