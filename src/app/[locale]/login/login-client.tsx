@@ -36,7 +36,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
-import type { NdaraUser } from '@/lib/types';
 import { useRole } from '@/context/RoleContext';
 
 const loginSchema = z.object({
@@ -72,7 +71,6 @@ export default function LoginClient() {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   const [loginBackground, setLoginBackground] = useState<string | null>(null);
-  const [siteName, setSiteName] = useState('Ndara Afrique');
   
   const router = useRouter();
   const { toast } = useToast();
@@ -89,19 +87,6 @@ export default function LoginClient() {
       router.push(target);
     }
   }, [user, isUserLoading, role, router]);
-
-  useEffect(() => {
-    const fetchSettings = async () => {
-        const settingsRef = doc(db, 'settings', 'global');
-        const settingsSnap = await getDoc(settingsRef);
-        if (settingsSnap.exists()) {
-            const settingsData = settingsSnap.data()?.general;
-            if (settingsData?.loginBackgroundImage) setLoginBackground(settingsData.loginBackgroundImage);
-            if (settingsData?.siteName) setSiteName(settingsData.siteName);
-        }
-    };
-    fetchSettings();
-  }, [db]);
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -128,7 +113,7 @@ export default function LoginClient() {
       // 2. Mise à jour du nom dans Auth
       await updateProfile(authUser, { displayName: values.fullName });
 
-      // 3. Création atomique du profil dans Firestore
+      // 3. Création atomique du profil dans Firestore via Batch
       const uid = authUser.uid;
       const batch = writeBatch(db);
       
@@ -152,6 +137,7 @@ export default function LoginClient() {
 
       batch.set(userRef, userData);
 
+      // Création du message de bienvenue
       batch.set(welcomeRef, {
         text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
         type: 'success',
@@ -167,12 +153,12 @@ export default function LoginClient() {
     } catch (error: any) {
       console.error("Registration flow error:", error);
       
-      // 4. NETTOYAGE : Si Firestore échoue, on supprime l'utilisateur Auth pour éviter les comptes fantômes
+      // 4. GESTION D'ERREUR EXPERTE : Suppression du compte Auth en cas d'échec Firestore
       if (authUser) {
         try {
           await deleteUser(authUser);
         } catch (cleanupErr) {
-          console.error("Critical failure: Could not delete ghost auth user after Firestore error", cleanupErr);
+          console.error("Cleanup failure: Could not delete orphan auth user", cleanupErr);
         }
       }
 
@@ -198,10 +184,8 @@ export default function LoginClient() {
     }
   };
 
-  const containerStyle = loginBackground ? { backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url('${loginBackground}')` } : {};
-
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-4 auth-page-container bg-slate-950" style={containerStyle}>
+    <div className="min-h-screen w-full flex items-center justify-center p-4 bg-slate-950">
         <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-6">
                 <Link href="/" className="mb-4">
@@ -219,42 +203,34 @@ export default function LoginClient() {
                     <TabsContent value="login" className="space-y-6 mt-6 animate-in fade-in slide-in-from-bottom-2">
                         <Form {...loginForm}>
                         <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
-                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-end">
                               <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
-                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
+                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
                         </Form>
-                         <div className="relative my-6 text-center">
-                            <span className="absolute inset-x-0 top-1/2 h-px bg-white/5"></span>
-                            <span className="relative bg-slate-900 px-4 text-[10px] font-black text-slate-600">OU</span>
-                        </div>
-                        <Button onClick={loginWithGoogle} variant="outline" className="w-full h-14 bg-transparent border-slate-800 rounded-2xl text-white hover:bg-white/5 font-bold" disabled={isLoading}>
-                             <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5 mr-3" />
-                            Continuer avec Google
-                        </Button>
                     </TabsContent>
 
                     <TabsContent value="register" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
                         <Form {...registerForm}>
                             <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Mathias OYONO" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
-                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase tracking-widest ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="fullName" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('fullNameLabel')}</FormLabel><FormControl><Input placeholder="Prénom & Nom" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="nom@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
+                            <FormField control={registerForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={registerForm.control} name="terms" render={({ field }) => (
                               <FormItem className="flex flex-row items-start space-x-3 space-y-0 pt-2">
                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
                                  <div className="space-y-1 leading-none">
-                                    <FormLabel className="text-[10px] font-medium text-slate-500 leading-normal">
-                                      {t('i_agree_to')} <Link href="/cgu" target="_blank" className="underline text-slate-300">{t('terms_of_use')}</Link> {t('and')} <Link href="/mentions-legales" target="_blank" className="underline text-slate-300">{t('privacy_policy')}</Link>
+                                    <FormLabel className="text-[10px] font-medium text-slate-500">
+                                      {t('i_agree_to')} <Link href="/cgu" className="underline text-slate-300">CGU</Link> et <Link href="/mentions-legales" className="underline text-slate-300">Confidentialité</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>
                               </FormItem>
                             )} />
-                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl shadow-primary/20 mt-4" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
+                            <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl mt-4" disabled={isLoading || !registerForm.watch('terms')}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('create_account')}</Button>
                             </form>
                         </Form>
                     </TabsContent>

@@ -2,7 +2,8 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation sécurisée et robuste du SDK Firebase Admin.
+ * @fileOverview Initialisation sécurisée du SDK Firebase Admin.
+ * Gère l'authentification serveur pour les Server Actions.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -22,7 +23,7 @@ function initializeAdmin() {
         projectId: projectId
       });
     } else {
-      // Fallback ADC (Application Default Credentials) - Fonctionne en interne GCP / Firebase Studio
+      // Internal Fallback pour environnements supportant ADC
       return admin.initializeApp({
         projectId: projectId
       });
@@ -36,7 +37,7 @@ function initializeAdmin() {
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("CONFIGURATION_MANQUANTE : La variable d'environnement FIREBASE_SERVICE_ACCOUNT_KEY n'est pas configurée.");
+    throw new Error("CONFIGURATION_MANQUANTE : Variable FIREBASE_SERVICE_ACCOUNT_KEY absente.");
   }
   return app.firestore();
 }
