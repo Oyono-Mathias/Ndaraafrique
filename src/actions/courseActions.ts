@@ -4,6 +4,39 @@ import { adminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Course } from '@/lib/types';
 
+/**
+ * Action pour soumettre un cours à la modération.
+ * Utilisée par les formateurs.
+ */
+export async function submitCourseForReviewAction({
+  courseId,
+  instructorId,
+}: {
+  courseId: string;
+  instructorId: string;
+}): Promise<{ success: boolean; error?: string }> {
+  if (!adminDb) return { success: false, error: 'Service indisponible' };
+  try {
+    const courseRef = adminDb.collection('courses').doc(courseId);
+    const courseDoc = await courseRef.get();
+
+    if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+    if (courseDoc.data()?.instructorId !== instructorId) {
+      return { success: false, error: 'Vous n\'êtes pas autorisé à modifier ce cours.' };
+    }
+
+    await courseRef.update({
+      status: 'Pending Review',
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error submitting course for review:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function updateCourseStatusByAdmin({
   courseId,
   status,
@@ -57,9 +90,6 @@ export async function deleteCourseByAdmin({
 
     // 1. Delete the course document
     batch.delete(courseRef);
-
-    // IMPORTANT: In a production app, a Cloud Function is required to recursively delete subcollections.
-    // This action only deletes the main course document.
 
     // 2. Log the action to the audit log
     const auditLogRef = adminDb.collection('admin_audit_logs').doc();
