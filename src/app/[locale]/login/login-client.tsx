@@ -70,7 +70,6 @@ export default function LoginClient() {
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
-  const [loginBackground, setLoginBackground] = useState<string | null>(null);
   
   const router = useRouter();
   const { toast } = useToast();
@@ -106,17 +105,12 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
-      // 1. Création du compte Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       authUser = userCredential.user;
-      
-      // 2. Mise à jour du nom dans Auth
       await updateProfile(authUser, { displayName: values.fullName });
 
-      // 3. Création atomique du profil dans Firestore via Batch
       const uid = authUser.uid;
       const batch = writeBatch(db);
-      
       const userRef = doc(db, "users", uid);
       const welcomeRef = doc(db, "users", uid, "notifications", "welcome");
 
@@ -136,8 +130,6 @@ export default function LoginClient() {
       };
 
       batch.set(userRef, userData);
-
-      // Création du message de bienvenue
       batch.set(welcomeRef, {
         text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
         type: 'success',
@@ -148,25 +140,15 @@ export default function LoginClient() {
 
       await batch.commit();
       toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
-      router.push('/student/dashboard');
-
     } catch (error: any) {
-      console.error("Registration flow error:", error);
-      
-      // 4. GESTION D'ERREUR EXPERTE : Suppression du compte Auth en cas d'échec Firestore
       if (authUser) {
-        try {
-          await deleteUser(authUser);
-        } catch (cleanupErr) {
-          console.error("Cleanup failure: Could not delete orphan auth user", cleanupErr);
-        }
+        try { await deleteUser(authUser); } catch (e) {}
       }
-
       let msg = "Une erreur est survenue lors de l'inscription.";
-      if (error instanceof FirebaseError) {
-        if (error.code === 'auth/email-already-in-use') msg = "Cette adresse email est déjà utilisée.";
+      if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
+        msg = "Cette adresse email est déjà utilisée.";
       }
-      toast({ variant: 'destructive', title: "Échec de l'inscription", description: msg });
+      toast({ variant: 'destructive', title: "Échec", description: msg });
     } finally {
       setIsLoading(false);
     }
@@ -176,7 +158,41 @@ export default function LoginClient() {
     const provider = new GoogleAuthProvider();
     setIsLoading(true);
     try {
-      await signInWithPopup(getAuth(), provider);
+      const result = await signInWithPopup(getAuth(), provider);
+      const user = result.user;
+      
+      // Vérifier si le profil Firestore existe
+      const userRef = doc(db, "users", user.uid);
+      const userSnap = await getDoc(userRef);
+      
+      if (!userSnap.exists()) {
+        const batch = writeBatch(db);
+        const userData = {
+          uid: user.uid,
+          email: user.email,
+          fullName: user.displayName || 'Utilisateur Google',
+          username: (user.displayName || 'user').replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
+          role: 'student',
+          status: 'active',
+          isInstructorApproved: false,
+          createdAt: serverTimestamp(),
+          isProfileComplete: false,
+          preferredLanguage: locale as 'fr' | 'en',
+          isOnline: true,
+          lastSeen: serverTimestamp(),
+          profilePictureURL: user.photoURL || ''
+        };
+        batch.set(userRef, userData);
+        batch.set(doc(db, "users", user.uid, "notifications", "welcome"), {
+          text: `Bara ala ! Bienvenue sur Ndara Afrique. Votre profil a été créé via Google.`,
+          type: 'success',
+          read: false,
+          createdAt: serverTimestamp(),
+          link: '/student/dashboard'
+        });
+        await batch.commit();
+      }
+      toast({ title: "Connexion Google réussie !" });
     } catch (err) {
       toast({ variant: 'destructive', title: "Erreur Google", description: "La connexion a échoué." });
     } finally {
@@ -234,6 +250,26 @@ export default function LoginClient() {
                             </form>
                         </Form>
                     </TabsContent>
+
+                    <div className="relative my-8">
+                        <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-slate-800"></span></div>
+                        <div className="relative flex justify-center text-[10px] uppercase font-black"><span className="bg-[#111827] px-4 text-slate-500 tracking-widest">OU</span></div>
+                    </div>
+
+                    <Button 
+                        variant="outline" 
+                        onClick={loginWithGoogle} 
+                        disabled={isLoading} 
+                        className="w-full h-14 rounded-2xl border-slate-800 bg-slate-800/30 hover:bg-slate-800 text-white font-bold gap-3"
+                    >
+                        <svg className="h-5 w-5" viewBox="0 0 24 24">
+                            <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.18 1-.78 1.85-1.63 2.42v2.77h2.64c1.54-1.42 2.43-3.5 2.43-5.92z"/>
+                            <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-2.64-2.77c-.73.49-1.66.78-2.64.78-2.85 0-5.27-1.92-6.13-4.51H2.18v2.16C3.99 19.53 7.7 23 12 23z"/>
+                            <path fill="currentColor" d="M5.87 13.84c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.5H2.18C1.43 8.99 1 10.45 1 12s.43 3.01 1.18 4.5l3.69-2.66z"/>
+                            <path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 4.47 2.18 8.5l3.69 2.66c.86-2.59 3.28-4.51 6.13-4.51z"/>
+                        </svg>
+                        Continuer avec Google
+                    </Button>
                 </Tabs>
             </div>
         </div>
