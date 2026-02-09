@@ -1,12 +1,11 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import type { Course } from '@/lib/types';
 
 /**
  * Action pour soumettre un cours à la modération.
- * Utilisée par les formateurs.
  */
 export async function submitCourseForReviewAction({
   courseId,
@@ -15,9 +14,9 @@ export async function submitCourseForReviewAction({
   courseId: string;
   instructorId: string;
 }): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) return { success: false, error: 'Service indisponible' };
   try {
-    const courseRef = adminDb.collection('courses').doc(courseId);
+    const db = getAdminDb();
+    const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
 
     if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
@@ -33,7 +32,7 @@ export async function submitCourseForReviewAction({
     return { success: true };
   } catch (error: any) {
     console.error('Error submitting course for review:', error);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || 'Erreur serveur.' };
   }
 }
 
@@ -46,19 +45,18 @@ export async function updateCourseStatusByAdmin({
   status: Course['status'];
   adminId: string;
 }): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) return { success: false, error: 'Service indisponible' };
   try {
-    const courseRef = adminDb.collection('courses').doc(courseId);
+    const db = getAdminDb();
+    const courseRef = db.collection('courses').doc(courseId);
     
-    const batch = adminDb.batch();
+    const batch = db.batch();
     batch.update(courseRef, { status });
 
-    // Add to admin audit log
-    batch.set(adminDb.collection('admin_audit_logs').doc(), {
+    batch.set(db.collection('admin_audit_logs').doc(), {
       adminId,
       eventType: 'course.moderation',
       target: { id: courseId, type: 'course' },
-      details: `Le statut du cours a été changé à '${status}' par l'admin ${adminId}.`,
+      details: `Le statut du cours a été changé à '${status}' par l'admin.`,
       timestamp: FieldValue.serverTimestamp(),
     });
 
@@ -77,35 +75,31 @@ export async function deleteCourseByAdmin({
   courseId: string;
   adminId: string;
 }): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) return { success: false, error: 'Service indisponible' };
   try {
-    const courseRef = adminDb.collection('courses').doc(courseId);
+    const db = getAdminDb();
+    const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
     if (!courseDoc.exists) {
       return { success: false, error: 'Cours introuvable.' };
     }
     const courseTitle = courseDoc.data()?.title || 'Titre inconnu';
 
-    const batch = adminDb.batch();
-
-    // 1. Delete the course document
+    const batch = db.batch();
     batch.delete(courseRef);
 
-    // 2. Log the action to the audit log
-    const auditLogRef = adminDb.collection('admin_audit_logs').doc();
+    const auditLogRef = db.collection('admin_audit_logs').doc();
     batch.set(auditLogRef, {
       adminId,
       eventType: 'course.delete',
       target: { id: courseId, type: 'course' },
-      details: `Le cours "${courseTitle}" (ID: ${courseId}) a été supprimé par l'administrateur ${adminId}.`,
+      details: `Le cours "${courseTitle}" a été supprimé par l'administrateur.`,
       timestamp: FieldValue.serverTimestamp(),
     });
 
     await batch.commit();
-
     return { success: true };
   } catch (error: any) {
     console.error('Error deleting course:', error);
-    return { success: false, error: 'Une erreur est survenue lors de la suppression du cours.' };
+    return { success: false, error: 'Une erreur est survenue lors de la suppression.' };
   }
 }

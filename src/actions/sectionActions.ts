@@ -3,6 +3,10 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
+/**
+ * @fileOverview Actions pour la gestion des sections de cours.
+ */
+
 export async function createSection({ courseId, title }: { courseId: string; title: string }) {
     try {
         const db = getAdminDb();
@@ -20,7 +24,7 @@ export async function createSection({ courseId, title }: { courseId: string; tit
         return { success: true, sectionId: newSectionRef.id };
     } catch (error: any) {
         console.error("Error creating section:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || "Impossible de créer la section." };
     }
 }
 
@@ -32,14 +36,13 @@ export async function updateSectionTitle({ courseId, sectionId, title }: { cours
         return { success: true };
     } catch (error: any) {
         console.error("Error updating section title:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: error.message || "Erreur de connexion à la base de données." };
     }
 }
 
 export async function deleteSection({ courseId, sectionId }: { courseId: string; sectionId: string }) {
     try {
         const db = getAdminDb();
-        // IMPORTANT: In a production app, deleting subcollections should be handled by a Cloud Function.
         const sectionRef = db.collection('courses').doc(courseId).collection('sections').doc(sectionId);
         const lecturesSnapshot = await sectionRef.collection('lectures').get();
         

@@ -2,8 +2,8 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation robuste et "Lazy" du SDK Firebase Admin.
- * Empêche les plantages au build et fournit un accès sécurisé à Firestore.
+ * @fileOverview Initialisation robuste du SDK Firebase Admin.
+ * Fournit des accesseurs sécurisés pour Firestore et Auth sur le serveur.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -15,7 +15,6 @@ function initializeAdmin() {
 
   try {
     if (serviceAccountKey) {
-      // Nettoyage de la clé pour gérer les sauts de ligne et les caractères spéciaux
       const cleanedKey = serviceAccountKey.trim();
       const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
       
@@ -24,7 +23,7 @@ function initializeAdmin() {
         projectId: projectId
       });
     } else {
-      // Fallback pour les environnements avec credentials par défaut (ex: Google Cloud ou Firebase Hosting)
+      // Fallback pour les environnements sans clé explicite (ex: Google Cloud)
       return admin.initializeApp({
         projectId: projectId
       });
@@ -36,22 +35,14 @@ function initializeAdmin() {
 }
 
 /**
- * Récupère l'instance Firestore Admin de manière sécurisée.
+ * Récupère l'instance Firestore Admin de manière sécurisée et initialisée.
  */
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_NOT_INITIALIZED: Le serveur n'a pas pu initialiser le compte de service. Vérifiez la variable FIREBASE_SERVICE_ACCOUNT_KEY.");
+    throw new Error("DÉFAUT_CONFIGURATION : La clé FIREBASE_SERVICE_ACCOUNT_KEY est manquante ou invalide dans les paramètres du serveur (Vercel/Firebase).");
   }
-  const db = admin.firestore();
-  
-  try {
-    db.settings({ ignoreUndefinedProperties: true });
-  } catch (e) {
-    // Les paramètres ne peuvent être définis qu'une fois
-  }
-  
-  return db;
+  return app.firestore();
 }
 
 /**
@@ -60,11 +51,11 @@ export function getAdminDb() {
 export function getAdminAuth() {
   const app = initializeAdmin();
   if (!app) {
-    throw new Error("ADMIN_SDK_NOT_INITIALIZED: Impossible d'accéder à Auth Admin.");
+    throw new Error("DÉFAUT_CONFIGURATION : Impossible d'initialiser l'authentification Admin.");
   }
-  return admin.auth();
+  return app.auth();
 }
 
-// Exportation des instances pour compatibilité
-export const adminDb = admin.apps.length > 0 ? admin.firestore() : null;
-export const adminAuth = admin.apps.length > 0 ? admin.auth() : null;
+// Export pour compatibilité descendante
+export const adminDb = null;
+export const adminAuth = null;
