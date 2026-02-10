@@ -1,9 +1,12 @@
 'use server';
 
-import { adminDb } from '@/firebase/admin';
+import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-// ✅ Correction : Utilisation de l'alias absolu pour garantir que le fichier est trouvé
 import { sendUserNotification } from '@/actions/notificationActions';
+
+/**
+ * @fileOverview Actions pour la réponse aux questions (version sécurisée pour le build).
+ */
 
 interface AnswerQuestionParams {
   questionId: string;
@@ -18,24 +21,20 @@ export async function answerQuestionAction({
   instructorId,
   studentId,
 }: AnswerQuestionParams): Promise<{ success: boolean; error?: string }> {
-  if (!adminDb) {
-    return { success: false, error: 'Service indisponible.' };
-  }
-
   try {
-    const questionRef = adminDb.collection('questions').doc(questionId);
+    const db = getAdminDb();
+    const questionRef = db.collection('questions').doc(questionId);
     const questionDoc = await questionRef.get();
 
     if (!questionDoc.exists) {
       return { success: false, error: 'Question introuvable.' };
     }
     
-    // Authorization check: ensure the user modifying is the designated instructor
     if (questionDoc.data()?.instructorId !== instructorId) {
       return { success: false, error: 'Permission refusée. Vous n\'êtes pas l\'instructeur de ce cours.' };
     }
 
-    const batch = adminDb.batch();
+    const batch = db.batch();
 
     batch.update(questionRef, {
       answerText,
@@ -45,11 +44,10 @@ export async function answerQuestionAction({
 
     await batch.commit();
     
-    // Notify student about the answer
     await sendUserNotification(studentId, {
       text: `Un instructeur a répondu à votre question sur le cours "${questionDoc.data()?.courseTitle}".`,
       link: `/student/mes-questions`,
-      type: 'success' // ✅ Ajout du type pour correspondre à l'interface de notification
+      type: 'success'
     });
 
     return { success: true };

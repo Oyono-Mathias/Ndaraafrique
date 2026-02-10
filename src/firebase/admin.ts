@@ -19,7 +19,7 @@ function initializeAdmin() {
   }
 
   try {
-    // Nettoyage et parsing du JSON
+    // Nettoyage et parsing du JSON pour supporter les différents formats de collage
     const cleanedKey = serviceAccountKey.trim();
     const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
     
@@ -40,7 +40,6 @@ function initializeAdmin() {
 
 /**
  * Retourne l'instance Firestore du SDK Admin.
- * L'initialisation est faite à chaque appel pour garantir la disponibilité.
  */
 export function getAdminDb() {
   const app = initializeAdmin();
