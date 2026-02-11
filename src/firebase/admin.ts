@@ -28,7 +28,7 @@ function initializeAdmin() {
       jsonString = jsonString.slice(1, -1);
     }
 
-    // 2. Parsing JSON
+    // 2. Parsing JSON robuste
     try {
         serviceAccount = JSON.parse(jsonString);
     } catch (e) {
@@ -58,7 +58,6 @@ function initializeAdmin() {
 
 /**
  * Retourne l'instance Firestore du SDK Admin.
- * @throws Erreur explicite si la config est manquante.
  */
 export function getAdminDb() {
   const app = initializeAdmin();
@@ -70,7 +69,6 @@ export function getAdminDb() {
 
 /**
  * Retourne l'instance Auth du SDK Admin.
- * @throws Erreur explicite si la config est manquante.
  */
 export function getAdminAuth() {
   const app = initializeAdmin();
