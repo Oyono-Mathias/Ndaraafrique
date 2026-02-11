@@ -117,7 +117,7 @@ const adminAssistantPrompt = ai.definePrompt({
       - Make reasonable assumptions if details are missing.
       - You MUST use the 'createPromoCodeTool'.
       - After a successful call, respond in French: "C'est fait ! Le code promo [CODE] offrant [XX]% de réduction a été créé."
-      - If it fails, say: "Désolé, je n'ai pas pu créer le code promo."
+      - If it it fails, say: "Désolé, je n'ai pas pu créer le code promo."
 
     - If the user's prompt is to WRITE text (announcement, message, etc.):
       - You MUST call the 'generateAnnouncementTool' with the prompt as the 'topic'.
