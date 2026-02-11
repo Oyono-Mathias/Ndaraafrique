@@ -2,8 +2,8 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation ultra-robuste du SDK Firebase Admin.
- * Gère le format JSON complexe de la clé de compte de service.
+ * @fileOverview Initialisation ultra-résiliente du SDK Firebase Admin.
+ * Tente de réparer les erreurs courantes de formatage de clé JSON (quotes, échappements, etc.)
  */
 
 const projectId = firebaseConfig.projectId;
@@ -19,13 +19,25 @@ function initializeAdmin() {
   }
 
   try {
-    // Nettoyage et parsing du JSON pour supporter les différents formats de collage
-    const cleanedKey = serviceAccountKey.trim();
-    const serviceAccount = JSON.parse(cleanedKey.replace(/\\n/g, '\n'));
+    let serviceAccount;
     
-    if (!serviceAccount.private_key) {
+    // Tenter un parsing direct
+    try {
+        serviceAccount = JSON.parse(serviceAccountKey);
+    } catch (e) {
+        // Si ça échoue, nettoyer les quotes et les retours à la ligne échappés
+        const cleaned = serviceAccountKey.trim().replace(/^['"]|['"]$/g, '');
+        serviceAccount = JSON.parse(cleaned.replace(/\\n/g, '\n'));
+    }
+    
+    if (!serviceAccount || !serviceAccount.private_key) {
         console.error('CRITICAL: The service account JSON is missing the private_key field.');
         return null;
+    }
+
+    // S'assurer que la clé privée contient bien des vrais retours à la ligne
+    if (typeof serviceAccount.private_key === 'string') {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
     return admin.initializeApp({

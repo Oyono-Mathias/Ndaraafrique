@@ -9,11 +9,13 @@ import { FieldValue } from 'firebase-admin/firestore';
  */
 
 function handleServerError(error: any) {
-    console.error("Server Action Error:", error);
+    // Log précis côté serveur (visible dans les logs Vercel)
+    console.error("CRITICAL SERVER ERROR (Section):", error);
+    
     const msg = error.message || "";
     
-    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE") || msg.includes("refresh access token") || msg.includes("UNKNOWN")) {
-        return "Erreur d'authentification serveur. Votre clé FIREBASE_SERVICE_ACCOUNT_KEY est probablement invalide ou mal configurée sur votre hébergeur.";
+    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE") || msg.includes("refresh access token") || msg.includes("UNKNOWN") || msg.includes("invalid_grant")) {
+        return "Erreur d'authentification serveur. Votre clé FIREBASE_SERVICE_ACCOUNT_KEY est probablement invalide ou mal configurée sur votre hébergeur. Vérifiez que le JSON est complet et correct.";
     }
     if (msg.includes("permission-denied")) {
         return "Accès refusé. Le compte de service n'a pas les droits nécessaires sur Firestore.";
