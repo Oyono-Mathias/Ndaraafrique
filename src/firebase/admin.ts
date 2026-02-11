@@ -3,7 +3,7 @@ import { firebaseConfig } from '@/firebase/config';
 
 /**
  * @fileOverview Initialisation ultra-résiliente du SDK Firebase Admin.
- * Tente de réparer les erreurs courantes de formatage de clé JSON (quotes, échappements, etc.)
+ * Gère les problèmes de formatage de clé JSON fréquents sur Vercel/Cloud Workstations.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -11,7 +11,7 @@ const projectId = firebaseConfig.projectId;
 function initializeAdmin() {
   if (admin.apps.length > 0) return admin.app();
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
     console.error('CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing in environment variables.');
@@ -21,13 +21,19 @@ function initializeAdmin() {
   try {
     let serviceAccount;
     
-    // Tenter un parsing direct
+    // 1. Nettoyage du texte (suppression des guillemets extérieurs potentiels)
+    let jsonString = serviceAccountKey.trim();
+    if ((jsonString.startsWith("'") && jsonString.endsWith("'")) || 
+        (jsonString.startsWith('"') && jsonString.endsWith('"'))) {
+      jsonString = jsonString.slice(1, -1);
+    }
+
+    // 2. Parsing JSON
     try {
-        serviceAccount = JSON.parse(serviceAccountKey);
+        serviceAccount = JSON.parse(jsonString);
     } catch (e) {
-        // Si ça échoue, nettoyer les quotes et les retours à la ligne échappés
-        const cleaned = serviceAccountKey.trim().replace(/^['"]|['"]$/g, '');
-        serviceAccount = JSON.parse(cleaned.replace(/\\n/g, '\n'));
+        // Fallback si des retours à la ligne échappés bloquent (\n)
+        serviceAccount = JSON.parse(jsonString.replace(/\\n/g, '\n'));
     }
     
     if (!serviceAccount || !serviceAccount.private_key) {
@@ -35,14 +41,14 @@ function initializeAdmin() {
         return null;
     }
 
-    // S'assurer que la clé privée contient bien des vrais retours à la ligne
+    // 3. Correction forcée de la clé privée (indispensable pour RSA)
     if (typeof serviceAccount.private_key === 'string') {
         serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
     return admin.initializeApp({
       credential: admin.credential.cert(serviceAccount),
-      projectId: projectId
+      projectId: serviceAccount.project_id || projectId
     });
   } catch (error: any) {
     console.error('CRITICAL: Firebase Admin Initialization Failed:', error.message);
@@ -52,6 +58,7 @@ function initializeAdmin() {
 
 /**
  * Retourne l'instance Firestore du SDK Admin.
+ * @throws Erreur explicite si la config est manquante.
  */
 export function getAdminDb() {
   const app = initializeAdmin();
@@ -63,6 +70,7 @@ export function getAdminDb() {
 
 /**
  * Retourne l'instance Auth du SDK Admin.
+ * @throws Erreur explicite si la config est manquante.
  */
 export function getAdminAuth() {
   const app = initializeAdmin();
