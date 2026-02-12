@@ -21,10 +21,11 @@ function initializeAdmin() {
   try {
     let serviceAccount;
     
-    // 1. Nettoyage du texte (suppression des guillemets extérieurs potentiels)
+    // 1. Nettoyage du texte (suppression des guillemets extérieurs potentiels et espaces)
     let jsonString = serviceAccountKey.trim();
-    if ((jsonString.startsWith("'") && jsonString.endsWith("'")) || 
-        (jsonString.startsWith('"') && jsonString.endsWith('"'))) {
+    
+    // Gérer le cas où la variable est entourée de guillemets simples (fréquent dans .env)
+    if (jsonString.startsWith("'") && jsonString.endsWith("'")) {
       jsonString = jsonString.slice(1, -1);
     }
 
@@ -32,8 +33,13 @@ function initializeAdmin() {
     try {
         serviceAccount = JSON.parse(jsonString);
     } catch (e) {
-        // Fallback si des retours à la ligne échappés bloquent (\n)
-        serviceAccount = JSON.parse(jsonString.replace(/\\n/g, '\n'));
+        // Fallback si des retours à la ligne échappés bloquent (\n) ou si c'est déjà une chaîne échappée
+        try {
+            serviceAccount = JSON.parse(jsonString.replace(/\\n/g, '\n'));
+        } catch (e2) {
+            console.error('JSON Parse Error:', e2);
+            return null;
+        }
     }
     
     if (!serviceAccount || !serviceAccount.private_key) {
