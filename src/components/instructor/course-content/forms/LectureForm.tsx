@@ -124,6 +124,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                     onOpenChange(false);
                 } else {
+                    // ✅ Fixed: Robustly convert potential object error to string for toast description
                     const errorMsg = typeof result?.error === 'string' 
                         ? result.error 
                         : 'Certains champs sont invalides. Veuillez vérifier le formulaire.';
