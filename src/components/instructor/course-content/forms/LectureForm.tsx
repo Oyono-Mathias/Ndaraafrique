@@ -126,7 +126,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 } else {
                     const errorMsg = typeof result?.error === 'string' 
                         ? result.error 
-                        : 'Certains champs sont invalides. Veuillez vérifier le formulaire.';
+                        : "Une erreur est survenue lors de la validation.";
                     
                     toast({ 
                         variant: 'destructive', 
@@ -138,7 +138,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 toast({ 
                     variant: 'destructive', 
                     title: 'Erreur système', 
-                    description: "Le serveur est indisponible. Vérifiez votre connexion." 
+                    description: "Impossible de contacter le serveur." 
                 });
             }
         });

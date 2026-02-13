@@ -120,13 +120,6 @@ const mathiasTutorFlow = ai.defineFlow(
   },
   async input => {
     try {
-        if (!process.env.GOOGLE_GENAI_API_KEY && !process.env.GEMINI_API_KEY) {
-            return { 
-                response: "Bara ala ! Je rencontre une petite difficulté de configuration. Je serai de retour très bientôt !",
-                isError: true
-            };
-        }
-
         const {output} = await mathiasTutorPrompt(input);
         if (!output || !output.response) {
             throw new Error("L'IA n'a pas généré de contenu.");

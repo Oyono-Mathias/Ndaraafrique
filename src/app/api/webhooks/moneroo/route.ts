@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         studentId: userId,
         courseId: courseId,
         instructorId: courseData?.instructorId || '',
-        status: 'active', // Passage au statut actif
+        status: 'active', 
         enrollmentDate: FieldValue.serverTimestamp(),
         lastAccessedAt: FieldValue.serverTimestamp(),
         progress: 0,
@@ -65,11 +65,9 @@ export async function POST(req: Request) {
         createdAt: FieldValue.serverTimestamp()
       });
 
-      console.log(`Moneroo Webhook: Enrollment ${enrollmentId} activated successfully.`);
       return NextResponse.json({ received: true, activated: true });
     }
 
-    console.log(`Moneroo Webhook: Transaction ${transactionId} received with status ${status}. No action taken.`);
     return NextResponse.json({ received: true, activated: false });
 
   } catch (error: any) {

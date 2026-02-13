@@ -3,7 +3,6 @@ import { firebaseConfig } from '@/firebase/config';
 
 /**
  * @fileOverview Initialisation ultra-résiliente du SDK Firebase Admin.
- * Gère les problèmes de formatage de clé JSON fréquents sur Vercel/Cloud Workstations.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -21,7 +20,7 @@ function initializeAdmin() {
   try {
     let serviceAccount;
     
-    // Nettoyage robuste de la chaîne
+    // Nettoyage robuste de la chaîne pour gérer les formats Vercel/Local
     let jsonString = serviceAccountKey.trim();
     if (jsonString.startsWith("'") && jsonString.endsWith("'")) {
       jsonString = jsonString.slice(1, -1);
