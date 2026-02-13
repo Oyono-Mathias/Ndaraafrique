@@ -19,7 +19,7 @@ function initializeAdmin() {
   }
 
   try {
-    // 1. Nettoyage des guillemets éventuels ajoutés par l'hébergeur
+    // 1. Nettoyage des guillemets éventuels ajoutés par l'hébergeur ou le .env
     serviceAccountKey = serviceAccountKey.trim();
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
@@ -33,10 +33,11 @@ function initializeAdmin() {
     try {
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
+      // Fallback si les \n sont mal interprétés
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // 3. Correction forcée de la clé privée (doit avoir de vrais sauts de ligne)
+    // 3. Correction forcée de la clé privée (doit avoir de vrais sauts de ligne pour être valide)
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
