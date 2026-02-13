@@ -3,6 +3,7 @@ import { firebaseConfig } from '@/firebase/config';
 
 /**
  * @fileOverview Initialisation ultra-résiliente du SDK Firebase Admin.
+ * Gère les erreurs de formatage JSON et les variables d'environnement manquantes.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -10,30 +11,33 @@ const projectId = firebaseConfig.projectId;
 function initializeAdmin() {
   if (admin.apps.length > 0) return admin.app();
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    console.error('CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.');
+    console.error('FIREBASE_SERVICE_ACCOUNT_KEY is missing from environment variables.');
     return null;
   }
 
   try {
-    let serviceAccount;
-    
-    // Nettoyage robuste de la chaîne pour gérer les formats Vercel/Local
-    let jsonString = serviceAccountKey.trim();
-    if (jsonString.startsWith("'") && jsonString.endsWith("'")) {
-      jsonString = jsonString.slice(1, -1);
+    // 1. Nettoyage des guillemets éventuels ajoutés par l'hébergeur
+    serviceAccountKey = serviceAccountKey.trim();
+    if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) {
+      serviceAccountKey = serviceAccountKey.slice(1, -1);
+    }
+    if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) {
+      serviceAccountKey = serviceAccountKey.slice(1, -1);
     }
 
+    // 2. Tentative de parsing JSON avec fallback pour les sauts de ligne échappés
+    let serviceAccount;
     try {
-      serviceAccount = JSON.parse(jsonString);
+      serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Fallback si des \n sont restés échappés
-      serviceAccount = JSON.parse(jsonString.replace(/\\n/g, '\n'));
+      serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    if (typeof serviceAccount.private_key === 'string') {
+    // 3. Correction forcée de la clé privée (doit avoir de vrais sauts de ligne)
+    if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
@@ -47,14 +51,25 @@ function initializeAdmin() {
   }
 }
 
+/**
+ * Retourne l'instance Firestore Admin.
+ * Lance une erreur explicite si la config est manquante.
+ */
 export function getAdminDb() {
   const app = initializeAdmin();
-  if (!app) throw new Error("CONFIGURATION_SERVEUR_INCOMPLETE");
+  if (!app) {
+    throw new Error("CONFIGURATION_SERVEUR_INCOMPLETE");
+  }
   return app.firestore();
 }
 
+/**
+ * Retourne l'instance Auth Admin.
+ */
 export function getAdminAuth() {
   const app = initializeAdmin();
-  if (!app) throw new Error("CONFIGURATION_SERVEUR_INCOMPLETE");
+  if (!app) {
+    throw new Error("CONFIGURATION_SERVEUR_INCOMPLETE");
+  }
   return app.auth();
 }

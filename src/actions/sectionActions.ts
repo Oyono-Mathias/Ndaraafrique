@@ -5,22 +5,24 @@ import { FieldValue } from 'firebase-admin/firestore';
 
 /**
  * @fileOverview Actions pour la gestion des sections de cours.
- * Gestion d'erreurs améliorée pour le diagnostic des problèmes de connexion.
+ * Fournit des messages d'erreur détaillés pour le diagnostic.
  */
 
 function handleServerError(error: any) {
-    // Log précis côté serveur (visible dans les logs Vercel)
-    console.error("CRITICAL SERVER ERROR (Section):", error);
+    console.error("SERVER_ACTION_ERROR:", error);
     
     const msg = error.message || "";
     
-    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE") || msg.includes("refresh access token") || msg.includes("UNKNOWN") || msg.includes("invalid_grant")) {
-        return "Erreur d'authentification serveur. Votre clé FIREBASE_SERVICE_ACCOUNT_KEY est probablement invalide ou mal configurée sur votre hébergeur. Vérifiez que le JSON est complet et correct.";
+    if (msg.includes("CONFIGURATION_SERVEUR_INCOMPLETE")) {
+        return "Erreur d'authentification serveur. Votre clé FIREBASE_SERVICE_ACCOUNT_KEY est absente ou mal configurée dans les variables d'environnement de votre hébergeur.";
+    }
+    if (msg.includes("refresh access token") || msg.includes("invalid_grant")) {
+        return "Clé de compte de service invalide ou expirée. Veuillez générer une nouvelle clé JSON dans la console Firebase.";
     }
     if (msg.includes("permission-denied")) {
-        return "Accès refusé. Le compte de service n'a pas les droits nécessaires sur Firestore.";
+        return "Accès refusé. Le compte de service n'a pas les droits nécessaires (Rôle 'Éditeur' ou 'Propriétaire' requis sur GCP).";
     }
-    return "Une erreur est survenue lors de l'opération : " + msg;
+    return "Une erreur est survenue : " + msg;
 }
 
 export async function createSection({ courseId, title }: { courseId: string; title: string }) {
