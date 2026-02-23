@@ -20,7 +20,7 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * Synchronise les utilisateurs de Firebase Auth vers Firestore.
- * Utile pour récupérer les "12 membres" s'ils ne sont pas tous dans Firestore.
+ * Récupère les 12 membres réels et crée les profils manquants.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -39,18 +39,21 @@ export async function syncUsersWithAuthAction(adminId: string) {
             const userSnap = await userRef.get();
 
             if (!userSnap.exists) {
+                // Création du profil à partir des données de l'Auth
                 batch.set(userRef, {
                     uid: userRecord.uid,
                     email: userRecord.email || '',
                     fullName: userRecord.displayName || 'Utilisateur Ndara',
-                    username: 'user_' + userRecord.uid.substring(0, 5),
+                    username: userRecord.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + userRecord.uid.substring(0, 5),
                     role: 'student',
                     status: 'active',
                     isInstructorApproved: false,
-                    isProfileComplete: false,
+                    isProfileComplete: !!userRecord.displayName,
+                    profilePictureURL: userRecord.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userRecord.displayName || 'A')}`,
                     createdAt: FieldValue.serverTimestamp(),
                     isOnline: false,
-                    lastSeen: FieldValue.serverTimestamp()
+                    lastSeen: FieldValue.serverTimestamp(),
+                    careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' }
                 });
                 operationCount++;
                 createdCount++;
@@ -96,6 +99,10 @@ export async function migrateUserProfilesAction(adminId: string) {
             if (data.isProfileComplete === undefined) { 
                 updates.isProfileComplete = !!(data.username && data.fullName); 
                 needsUpdate = true; 
+            }
+            if (!data.careerGoals) {
+                updates.careerGoals = { currentRole: '', interestDomain: '', mainGoal: '' };
+                needsUpdate = true;
             }
 
             if (needsUpdate) {

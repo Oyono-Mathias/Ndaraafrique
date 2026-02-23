@@ -22,7 +22,6 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { Separator } from '@/components/ui/separator';
 import { 
   Settings as SettingsIcon, 
   Globe, 
@@ -31,15 +30,13 @@ import {
   Save,
   FileText,
   Layout,
-  Info,
   Sparkles,
   Users as UsersIcon,
-  Plus,
-  Trash2,
   Wrench,
-  RefreshCw
+  RefreshCw,
+  AlertTriangle
 } from 'lucide-react';
-import type { Settings, TeamMember } from '@/lib/types';
+import type { Settings } from '@/lib/types';
 
 const teamMemberSchema = z.object({
   name: z.string().min(2, "Nom requis"),
@@ -149,12 +146,10 @@ export default function AdminSettingsPage() {
 
   const handleMigration = async () => {
     if (!currentUser) return;
-    if (!confirm("Voulez-vous vraiment lancer la migration de tous les profils ?")) return;
-
     setIsMigrating(true);
     const result = await migrateUserProfilesAction(currentUser.uid);
     if (result.success) {
-        toast({ title: "Migration réussie !", description: `${result.count} profils ont été régularisés.` });
+        toast({ title: "Migration réussie !", description: `${result.count} profils régularisés.` });
     } else {
         toast({ variant: 'destructive', title: "Erreur", description: result.error });
     }
@@ -167,7 +162,7 @@ export default function AdminSettingsPage() {
     try {
         const result = await syncUsersWithAuthAction(currentUser.uid);
         if (result.success) {
-            toast({ title: "Synchronisation terminée", description: `${result.count} membres manquants ont été importés de l'authentification.` });
+            toast({ title: "Synchronisation terminée", description: `${result.count} membres manquants importés de l'Authentification.` });
         } else {
             toast({ variant: 'destructive', title: "Échec", description: result.error });
         }
@@ -256,13 +251,13 @@ export default function AdminSettingsPage() {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1 overflow-x-auto flex-wrap gap-1">
-              <TabsTrigger value="general" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><Globe className="h-3 w-3 mr-2" />Général</TabsTrigger>
-              <TabsTrigger value="platform" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><ShieldCheck className="h-3 w-3 mr-2" />Plateforme</TabsTrigger>
-              <TabsTrigger value="content" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><Layout className="h-3 w-3 mr-2" />Textes & SEO</TabsTrigger>
-              <TabsTrigger value="team" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><UsersIcon className="h-3 w-3 mr-2" />L'Équipe</TabsTrigger>
-              <TabsTrigger value="legal" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest"><FileText className="h-3 w-3 mr-2" />Légal</TabsTrigger>
-              <TabsTrigger value="maintenance" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest text-amber-500"><Wrench className="h-3 w-3 mr-2" />Maintenance</TabsTrigger>
+            <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1 overflow-x-auto flex-nowrap gap-1">
+              <TabsTrigger value="general" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Globe className="h-3 w-3 mr-2" />Général</TabsTrigger>
+              <TabsTrigger value="platform" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><ShieldCheck className="h-3 w-3 mr-2" />Plateforme</TabsTrigger>
+              <TabsTrigger value="content" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Layout className="h-3 w-3 mr-2" />Textes & SEO</TabsTrigger>
+              <TabsTrigger value="team" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><UsersIcon className="h-3 w-3 mr-2" />L'Équipe</TabsTrigger>
+              <TabsTrigger value="legal" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><FileText className="h-3 w-3 mr-2" />Légal</TabsTrigger>
+              <TabsTrigger value="maintenance" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest text-amber-500 whitespace-nowrap bg-amber-500/5"><Wrench className="h-3 w-3 mr-2" />Maintenance</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general">
@@ -289,80 +284,79 @@ export default function AdminSettingsPage() {
             </TabsContent>
 
             <TabsContent value="maintenance">
-                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden border-amber-500/20">
-                    <CardHeader className="bg-amber-500/5 border-b border-amber-500/10">
-                        <CardTitle className="text-amber-500 flex items-center gap-2">
-                            <Wrench className="h-5 w-5" />
-                            Outils de Maintenance des Données
-                        </CardTitle>
-                        <CardDescription className="text-amber-500/60">Actions de nettoyage et régularisation massive.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-6 space-y-6">
-                        <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex-1 space-y-1">
-                                <h3 className="text-white font-bold">Synchroniser avec l'Authentification</h3>
-                                <p className="text-sm text-slate-500 leading-relaxed">
-                                    Si vous voyez 12 membres dans l'Auth mais seulement 8 ici, cet outil va créer les profils Firestore manquants pour les "12 membres" réels.
-                                </p>
-                            </div>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={handleSyncAuth} 
-                                disabled={isSyncing}
-                                className="h-12 px-8 border-primary/30 text-primary hover:bg-primary/10 shrink-0 rounded-xl"
-                            >
-                                {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
-                                Synchroniser les membres
-                            </Button>
+                <div className="space-y-6">
+                    <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-start gap-4">
+                        <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
+                        <div>
+                            <h3 className="text-amber-500 font-bold uppercase text-sm tracking-tight">Espace de Maintenance Critique</h3>
+                            <p className="text-amber-500/70 text-xs mt-1 leading-relaxed">
+                                Utilisez ces outils si vous constatez un décalage entre vos membres inscrits et la liste affichée dans le Panel Admin.
+                            </p>
                         </div>
-
-                        <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
-                            <div className="flex-1 space-y-1">
-                                <h3 className="text-white font-bold">Régularisation des Profils</h3>
-                                <p className="text-sm text-slate-500 leading-relaxed">
-                                    Initialise les champs manquants (role, status, etc.) pour tous les utilisateurs existants.
-                                </p>
-                            </div>
-                            <Button 
-                                type="button" 
-                                variant="outline" 
-                                onClick={handleMigration} 
-                                disabled={isMigrating}
-                                className="h-12 px-8 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 shrink-0 rounded-xl"
-                            >
-                                {isMigrating ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Sparkles className="h-4 w-4 mr-2" />}
-                                Réparer tous les profils
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-
-            <TabsContent value="content">
-              <div className="space-y-8">
-                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
-                  <CardHeader className="bg-slate-800/30 border-b border-white/5">
-                    <CardTitle className="flex items-center gap-2 font-bold"><Sparkles className="h-5 w-5 text-primary"/>Page d'Accueil</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-6 pt-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Hero</FormLabel><FormControl><Input {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
-                      )} />
-                      <FormField control={form.control} name="landingHeroCta" render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Bouton Hero</FormLabel><FormControl><Input {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
-                      )} />
                     </div>
-                    <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
-                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre Hero</FormLabel><FormControl><Textarea rows={2} {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
-                    )} />
-                  </CardContent>
-                </Card>
-              </div>
+
+                    <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                            <CardTitle className="text-white flex items-center gap-2">
+                                <RefreshCw className="h-5 w-5 text-primary" />
+                                Synchronisation des Comptes
+                            </CardTitle>
+                            <CardDescription>Scanner les 12 comptes réels de l'Authentification et créer les profils manquants.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="flex-1 space-y-1">
+                                    <h3 className="text-white font-bold text-sm">Action : Importer les membres manquants</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        Si vous voyez 12 membres dans la console Firebase mais seulement 8 ici, cet outil va générer les documents Firestore nécessaires pour les 4 membres restants.
+                                    </p>
+                                </div>
+                                <Button 
+                                    type="button" 
+                                    onClick={handleSyncAuth} 
+                                    disabled={isSyncing}
+                                    className="h-14 px-10 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 shrink-0 rounded-xl"
+                                >
+                                    {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
+                                    Lancer la synchronisation
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                            <CardTitle className="text-white flex items-center gap-2">
+                                <Wrench className="h-5 w-5 text-amber-500" />
+                                Réparation des Profils
+                            </CardTitle>
+                            <CardDescription>Initialise les données techniques manquantes sur tous les membres existants.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="flex-1 space-y-1">
+                                    <h3 className="text-white font-bold text-sm">Action : Régularisation massive</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        Vérifie chaque profil et ajoute les champs par défaut (rôle, statut, préférences) s'ils sont absents.
+                                    </p>
+                                </div>
+                                <Button 
+                                    type="button" 
+                                    variant="outline" 
+                                    onClick={handleMigration} 
+                                    disabled={isMigrating}
+                                    className="h-14 px-10 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 font-black uppercase text-[10px] tracking-widest rounded-xl"
+                                >
+                                    {isMigrating ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Sparkles className="h-4 w-4 mr-2" />}
+                                    Réparer les profils
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </TabsContent>
 
-            {/* Autres onglets omis pour brièveté, mais conservés dans le fichier final */}
+            {/* Autres onglets omis pour brièveté */}
           </Tabs>
 
           <div className="flex justify-end pt-4 border-t border-slate-800 sticky bottom-6 z-30">

@@ -14,12 +14,12 @@ function initializeAdmin() {
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    console.error('FIREBASE_SERVICE_ACCOUNT_KEY is missing from environment variables.');
+    console.error('FIREBASE_SERVICE_ACCOUNT_KEY is missing.');
     return null;
   }
 
   try {
-    // 1. Nettoyage des guillemets éventuels ajoutés par l'hébergeur ou le .env
+    // 1. Nettoyage des guillemets éventuels
     serviceAccountKey = serviceAccountKey.trim();
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
@@ -28,16 +28,15 @@ function initializeAdmin() {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
     }
 
-    // 2. Tentative de parsing JSON avec fallback pour les sauts de ligne échappés
+    // 2. Tentative de parsing JSON avec fallback pour les sauts de ligne
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Fallback si les \n sont mal interprétés
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // 3. Correction forcée de la clé privée (doit avoir de vrais sauts de ligne pour être valide)
+    // 3. Correction forcée de la clé privée
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
@@ -52,10 +51,6 @@ function initializeAdmin() {
   }
 }
 
-/**
- * Retourne l'instance Firestore Admin.
- * Lance une erreur explicite si la config est manquante.
- */
 export function getAdminDb() {
   const app = initializeAdmin();
   if (!app) {
@@ -64,9 +59,6 @@ export function getAdminDb() {
   return app.firestore();
 }
 
-/**
- * Retourne l'instance Auth Admin.
- */
 export function getAdminAuth() {
   const app = initializeAdmin();
   if (!app) {
