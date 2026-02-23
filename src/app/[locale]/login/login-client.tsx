@@ -23,8 +23,7 @@ import {
   setDoc, 
   serverTimestamp, 
   getDoc, 
-  writeBatch,
-  collection
+  writeBatch
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
@@ -105,17 +104,17 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
+      // 1. Création dans Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       authUser = userCredential.user;
+      
+      // 2. Mise à jour du profil Auth
       await updateProfile(authUser, { displayName: values.fullName });
 
-      const uid = authUser.uid;
-      const batch = writeBatch(db);
-      const userRef = doc(db, "users", uid);
-      const welcomeRef = doc(db, "users", uid, "notifications", "welcome");
-
+      // 3. Création immédiate dans Firestore (Garantie de doublon)
+      const userRef = doc(db, "users", authUser.uid);
       const userData = {
-        uid,
+        uid: authUser.uid,
         email: values.email,
         fullName: values.fullName,
         username: values.fullName.replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000),
@@ -129,24 +128,32 @@ export default function LoginClient() {
         lastSeen: serverTimestamp(),
       };
 
-      batch.set(userRef, userData);
-      batch.set(welcomeRef, {
-        text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
-        type: 'success',
-        read: false,
-        createdAt: serverTimestamp(),
-        link: '/student/dashboard'
-      });
+      try {
+        await setDoc(userRef, userData);
+        
+        // Notification de bienvenue
+        const welcomeRef = doc(db, "users", authUser.uid, "notifications", "welcome");
+        await setDoc(welcomeRef, {
+          text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
+          type: 'success',
+          read: false,
+          createdAt: serverTimestamp(),
+          link: '/student/dashboard'
+        });
 
-      await batch.commit();
-      toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
-    } catch (error: any) {
-      if (authUser) {
-        try { await deleteUser(authUser); } catch (e) {}
+        toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
+      } catch (firestoreError: any) {
+        // En cas d'échec Firestore, on supprime le compte Auth pour rester propre
+        if (authUser) await deleteUser(authUser);
+        throw new Error("Échec de la création du profil. Veuillez réessayer.");
       }
+
+    } catch (error: any) {
       let msg = "Une erreur est survenue lors de l'inscription.";
       if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
         msg = "Cette adresse email est déjà utilisée.";
+      } else if (error.message) {
+        msg = error.message;
       }
       toast({ variant: 'destructive', title: "Échec", description: msg });
     } finally {
@@ -161,12 +168,10 @@ export default function LoginClient() {
       const result = await signInWithPopup(getAuth(), provider);
       const user = result.user;
       
-      // Vérifier si le profil Firestore existe
       const userRef = doc(db, "users", user.uid);
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
-        const batch = writeBatch(db);
         const userData = {
           uid: user.uid,
           email: user.email,
@@ -182,15 +187,15 @@ export default function LoginClient() {
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || ''
         };
-        batch.set(userRef, userData);
-        batch.set(doc(db, "users", user.uid, "notifications", "welcome"), {
+        await setDoc(userRef, userData);
+        
+        await setDoc(doc(db, "users", user.uid, "notifications", "welcome"), {
           text: `Bara ala ! Bienvenue sur Ndara Afrique. Votre profil a été créé via Google.`,
           type: 'success',
           read: false,
           createdAt: serverTimestamp(),
           link: '/student/dashboard'
         });
-        await batch.commit();
       }
       toast({ title: "Connexion Google réussie !" });
     } catch (err) {
