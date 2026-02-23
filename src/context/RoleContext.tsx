@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -160,18 +161,19 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
+      // 1. Mise à jour de l'état
       setRole(newRole);
+      // 2. Persistance pour le prochain rafraîchissement
       localStorage.setItem('ndaraafrique-role', newRole);
       
       toast({
           title: `Mode ${newRole === 'instructor' ? 'Formateur' : newRole === 'admin' ? 'Administrateur' : 'Étudiant'} activé`,
       });
 
-      if (newRole === 'admin') router.push('/admin');
-      else if (newRole === 'instructor') router.push('/instructor/dashboard');
-      else router.push('/student/dashboard');
+      // La redirection est gérée automatiquement par le useEffect de l'AppShell
+      // pour éviter les conflits de navigation.
     }
-  }, [availableRoles, router, toast]);
+  }, [availableRoles, toast]);
   
   const value = useMemo(() => ({
     role,
