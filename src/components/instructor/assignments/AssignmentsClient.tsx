@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -33,31 +33,35 @@ export function AssignmentsClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // Récupérer toutes les soumissions de devoirs (collection 'devoirs')
+  // Récupérer toutes les soumissions de devoirs (Tri manuel)
   const submissionsQuery = useMemo(
-    () => currentUser ? query(collection(db, 'devoirs'), where('instructorId', '==', currentUser.uid), orderBy('submittedAt', 'desc')) : null,
+    () => currentUser ? query(collection(db, 'devoirs'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
-  const { data: allSubmissions, isLoading: submissionsLoading } = useCollection<AssignmentSubmission>(submissionsQuery);
+  const { data: rawSubmissions, isLoading: submissionsLoading } = useCollection<AssignmentSubmission>(submissionsQuery);
 
   const filteredSubmissions = useMemo(() => {
-    if (!allSubmissions) return [];
-    return allSubmissions.filter(sub => {
+    if (!rawSubmissions) return [];
+    
+    // Tri manuel par date
+    const sorted = [...rawSubmissions].sort((a, b) => {
+        const dateA = (a.submittedAt as any)?.toDate?.() || new Date(0);
+        const dateB = (b.submittedAt as any)?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    return sorted.filter(sub => {
       const courseMatch = courseFilter === 'all' || sub.courseId === courseFilter;
       const statusMatch = statusFilter === 'all' || sub.status === statusFilter;
       return courseMatch && statusMatch;
     });
-  }, [allSubmissions, courseFilter, statusFilter]);
+  }, [rawSubmissions, courseFilter, statusFilter]);
 
   const handleGradeClick = (submission: AssignmentSubmission) => {
     setSelectedSubmission(submission);
     setIsModalOpen(true);
   };
   
-  const getStatusVariant = (status: AssignmentSubmission['status']) => {
-    return status === 'submitted' ? 'warning' : 'success';
-  };
-
   const isLoading = coursesLoading || submissionsLoading;
 
   return (
@@ -66,7 +70,6 @@ export function AssignmentsClient() {
       
       <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
         <CardContent className="p-6 space-y-6">
-          {/* --- FILTRES --- */}
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="space-y-1.5 w-full sm:w-[250px]">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Formation</label>
@@ -96,7 +99,6 @@ export function AssignmentsClient() {
             </div>
           </div>
           
-          {/* --- TABLE --- */}
           <div className="border rounded-2xl border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/30 dark:bg-black/20">
             <Table>
               <TableHeader>

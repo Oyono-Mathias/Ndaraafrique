@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, getDocs, documentId, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { startChat } from '@/lib/chat';
@@ -44,18 +44,18 @@ export function StudentsClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les inscriptions
+  // 2. Récupérer les inscriptions (Trié manuellement pour éviter les problèmes d'index/missing fields)
   const enrollmentsQuery = useMemo(
-    () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), orderBy('enrollmentDate', 'desc')) : null,
+    () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
-  const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
+  const { data: rawEnrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const [enrichedEnrollments, setEnrichedEnrollments] = useState<EnrichedEnrollment[]>([]);
   const [relatedDataLoading, setRelatedDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!enrollments || enrollments.length === 0) {
+    if (!rawEnrollments || rawEnrollments.length === 0) {
         setEnrichedEnrollments([]);
         setRelatedDataLoading(false);
         return;
@@ -63,25 +63,39 @@ export function StudentsClient() {
 
     const enrichData = async () => {
         setRelatedDataLoading(true);
-        const studentIds = [...new Set(enrollments.map(e => e.studentId))];
-        const courseIds = [...new Set(enrollments.map(e => e.courseId))];
+        
+        // Tri manuel par date
+        const sortedEnrollments = [...rawEnrollments].sort((a, b) => {
+            const dateA = (a.enrollmentDate as any)?.toDate?.() || new Date(0);
+            const dateB = (b.enrollmentDate as any)?.toDate?.() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
+
+        const studentIds = [...new Set(sortedEnrollments.map(e => e.studentId))];
+        const courseIds = [...new Set(sortedEnrollments.map(e => e.courseId))];
 
         const studentsMap = new Map<string, Partial<NdaraUser>>();
         const coursesMap = new Map<string, Partial<Course>>();
 
         // Fetch students
         if (studentIds.length > 0) {
-            const studentsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 30))));
-            studentsSnap.forEach(doc => studentsMap.set(doc.id, doc.data() as NdaraUser));
+            for (let i = 0; i < studentIds.length; i += 30) {
+                const chunk = studentIds.slice(i, i + 30);
+                const studentsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', chunk)));
+                studentsSnap.forEach(doc => studentsMap.set(doc.id, doc.data() as NdaraUser));
+            }
         }
         
         // Fetch courses details
         if (courseIds.length > 0) {
-            const coursesSnap = await getDocs(query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30))));
-            coursesSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
+            for (let i = 0; i < courseIds.length; i += 30) {
+                const chunk = courseIds.slice(i, i + 30);
+                const coursesSnap = await getDocs(query(collection(db, 'courses'), where(documentId(), 'in', chunk)));
+                coursesSnap.forEach(doc => coursesMap.set(doc.id, { id: doc.id, ...doc.data() } as Course));
+            }
         }
         
-        const newEnrichedData = enrollments.map(e => ({
+        const newEnrichedData = sortedEnrollments.map(e => ({
             ...e,
             student: studentsMap.get(e.studentId),
             course: coursesMap.get(e.courseId)
@@ -92,7 +106,7 @@ export function StudentsClient() {
     };
 
     enrichData();
-  }, [enrollments, db]);
+  }, [rawEnrollments, db]);
 
   const filteredData = useMemo(() => {
     return enrichedEnrollments.filter(item => {
@@ -121,7 +135,6 @@ export function StudentsClient() {
     <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
       <CardContent className="p-6 space-y-6">
         
-        {/* --- FILTRES --- */}
         <div className="flex flex-col sm:flex-row gap-4 items-end">
           <div className="relative flex-1 w-full">
              <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Rechercher</label>
@@ -149,7 +162,6 @@ export function StudentsClient() {
           </div>
         </div>
 
-        {/* --- TABLE DES ÉTUDIANTS --- */}
         <div className="border rounded-2xl border-slate-200 dark:border-slate-800 overflow-hidden">
             <Table>
               <TableHeader>

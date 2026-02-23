@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
@@ -33,21 +33,29 @@ export function QnaClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les questions (collection 'questions')
+  // 2. Récupérer les questions (Tri manuel)
   const questionsQuery = useMemo(
-    () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid), orderBy('createdAt', 'desc')) : null,
+    () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
-  const { data: allQuestions, isLoading: questionsLoading } = useCollection<CourseQuestion>(questionsQuery);
+  const { data: rawQuestions, isLoading: questionsLoading } = useCollection<CourseQuestion>(questionsQuery);
 
   const filteredQuestions = useMemo(() => {
-    if (!allQuestions) return [];
-    return allQuestions.filter(q => {
+    if (!rawQuestions) return [];
+    
+    // Tri manuel par date
+    const sorted = [...rawQuestions].sort((a, b) => {
+        const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+        const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+    });
+
+    return sorted.filter(q => {
       const courseMatch = courseFilter === 'all' || q.courseId === courseFilter;
       const statusMatch = statusFilter === 'all' || q.status === statusFilter;
-      return courseMatch && statusMatch;
+      return courseMatch && searchMatch;
     });
-  }, [allQuestions, courseFilter, statusFilter]);
+  }, [rawQuestions, courseFilter, statusFilter]);
 
   const handleReplyClick = (question: CourseQuestion) => {
     setSelectedQuestion(question);
@@ -62,8 +70,6 @@ export function QnaClient() {
       
       <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
         <CardContent className="p-6 space-y-6">
-          
-          {/* --- FILTRES --- */}
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="space-y-1.5 w-full sm:w-[250px]">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Par Formation</label>
@@ -93,7 +99,6 @@ export function QnaClient() {
             </div>
           </div>
           
-          {/* --- LISTE DES QUESTIONS --- */}
           {isLoading ? (
             <div className="space-y-4 pt-4">
               {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-100 dark:bg-slate-800" />)}
