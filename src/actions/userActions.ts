@@ -20,7 +20,6 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * SCRIPT DE MIGRATION : Synchronise les utilisateurs de Firebase Auth vers Firestore.
- * Scanne les 10 membres réels et crée les profils manquants.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -75,7 +74,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
         return { success: true, count: createdCount };
     } catch (error: any) {
         console.error("Migration/Sync Error:", error);
-        return { success: false, error: "Erreur lors de la synchronisation : " + error.message };
+        return { success: false, error: "Erreur lors de la synchronisation : " + (error.message === "CONFIGURATION_SERVEUR_INCOMPLETE" ? "Clé Admin manquante" : error.message) };
     }
 }
 
@@ -126,7 +125,7 @@ export async function migrateUserProfilesAction(adminId: string) {
 }
 
 /**
- * Accorde un accès manuel à un cours (Offrir un cours).
+ * Accorde un accès manuel à un cours.
  */
 export async function grantCourseAccess({
     studentId,
@@ -234,13 +233,14 @@ export async function approveInstructorApplication({
         await batch.commit();
         return { success: true };
     } catch (e: any) {
+        console.error("Approval error:", e);
+        if (e.message === "CONFIGURATION_SERVEUR_INCOMPLETE") {
+            return { success: false, error: "Configuration serveur incomplète (Clé Admin manquante)." };
+        }
         return { success: false, error: e.message };
     }
 }
 
-/**
- * Met à jour le profil d'un utilisateur de manière sécurisée.
- */
 export async function updateUserProfileAction({
     userId,
     data,
@@ -277,7 +277,6 @@ export async function updateUserProfileAction({
         await userRef.update(filteredData);
         return { success: true };
     } catch (error: any) {
-        console.error("Error updating profile Action:", error);
         return { success: false, error: error.message };
     }
 }

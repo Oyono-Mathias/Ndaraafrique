@@ -170,7 +170,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // ✅ Correction : Autoriser l'administrateur à accéder à la page /account
+    // Autoriser explicitement /account pour l'administrateur
     if (role === 'admin' && !isAdminArea && !isPublicPage && cleanPath !== '/account') {
       router.push('/admin');
     } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {

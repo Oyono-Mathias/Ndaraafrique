@@ -2,7 +2,7 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation ultra-résiliente du SDK Firebase Admin.
+ * @fileOverview Initialisation robuste du SDK Firebase Admin.
  * Gère les erreurs de formatage JSON et les variables d'environnement manquantes.
  */
 
@@ -14,12 +14,12 @@ function initializeAdmin() {
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    console.error('FIREBASE_SERVICE_ACCOUNT_KEY is missing.');
+    console.error('CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is undefined.');
     return null;
   }
 
   try {
-    // 1. Nettoyage des guillemets éventuels
+    // 1. Nettoyage des guillemets et espaces
     serviceAccountKey = serviceAccountKey.trim();
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
@@ -28,15 +28,16 @@ function initializeAdmin() {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
     }
 
-    // 2. Tentative de parsing JSON avec fallback pour les sauts de ligne
+    // 2. Tentative de parsing JSON avec fallback pour les sauts de ligne échappés
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
+      // Si le JSON contient des sauts de ligne littéraux \n mal interprétés
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // 3. Correction forcée de la clé privée
+    // 3. Correction forcée de la clé privée pour les certificats
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
