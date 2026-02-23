@@ -20,7 +20,8 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 }
 
 /**
- * SCRIPT DE MIGRATION MASSIF : Synchronise les utilisateurs de Firebase Auth vers Firestore.
+ * SCRIPT DE MIGRATION : Synchronise les utilisateurs de Firebase Auth vers Firestore.
+ * Utile pour connecter les 10 membres réels de l'Authentification.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -126,7 +127,7 @@ export async function migrateUserProfilesAction(adminId: string) {
 }
 
 /**
- * Accorde un accès manuel à un cours.
+ * Accorde un accès manuel à un cours (Offrir un cours).
  */
 export async function grantCourseAccess({
     studentId,
