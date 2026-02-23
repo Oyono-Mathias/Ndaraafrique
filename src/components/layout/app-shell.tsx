@@ -86,7 +86,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       siteName: 'Ndara Afrique',
       logoUrl: '/logo.png',
       maintenanceMode: false,
-      allowInstructorSignup: true,
       announcementMessage: ''
     });
   const db = getFirestore();
@@ -102,7 +101,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 siteName: settingsData.general?.siteName || 'Ndara Afrique',
                 logoUrl: '/logo.png',
                 maintenanceMode: settingsData.platform?.maintenanceMode || false,
-                allowInstructorSignup: settingsData.platform?.allowInstructorSignup ?? true,
                 announcementMessage: settingsData.platform?.announcementMessage || ''
             });
         }
@@ -172,7 +170,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    if (role === 'admin' && !isAdminArea && !isPublicPage) {
+    // ✅ Correction : Autoriser l'administrateur à accéder à la page /account
+    if (role === 'admin' && !isAdminArea && !isPublicPage && cleanPath !== '/account') {
       router.push('/admin');
     } else if (role === 'instructor' && !isInstructorArea && !isPublicPage && !isStudentArea) {
       router.push('/instructor/dashboard');

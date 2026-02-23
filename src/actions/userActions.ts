@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -21,7 +20,7 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * SCRIPT DE MIGRATION : Synchronise les utilisateurs de Firebase Auth vers Firestore.
- * Utile pour connecter les 10 membres réels de l'Authentification.
+ * Scanne les 10 membres réels et crée les profils manquants.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
