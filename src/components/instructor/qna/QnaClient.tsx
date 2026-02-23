@@ -33,7 +33,7 @@ export function QnaClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les questions sans tri serveur pour éviter de masquer des docs incomplets
+  // 2. Récupérer les questions
   const questionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]

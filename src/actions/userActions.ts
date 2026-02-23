@@ -1,8 +1,7 @@
-
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
-import { FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { FieldValue } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
@@ -20,8 +19,11 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 }
 
 /**
- * Synchronise les utilisateurs de Firebase Auth vers Firestore.
- * Récupère les 10 membres réels affichés dans la console Firebase et crée les profils manquants.
+ * SCRIPT DE MIGRATION MASSIF : Synchronise les utilisateurs de Firebase Auth vers Firestore.
+ * - Liste tous les utilisateurs de l'Auth (Admin SDK).
+ * - Vérifie l'existence du document /users/{uid}.
+ * - Crée le profil avec email, fullName, role 'student' et status 'active' si manquant.
+ * - Utilise writeBatch pour l'optimisation.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -31,7 +33,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
         const auth = getAdminAuth();
         const db = getAdminDb();
         
-        // 1. Lister tous les utilisateurs de l'authentification
+        // 1. Lister tous les utilisateurs de l'authentification Firebase
         const listUsers = await auth.listUsers();
         let batch = db.batch();
         let operationCount = 0;
@@ -42,22 +44,27 @@ export async function syncUsersWithAuthAction(adminId: string) {
             const userSnap = await userRef.get();
 
             if (!userSnap.exists) {
-                // 2. Création du profil à partir des données de l'Auth (Google ou Email)
+                // 2. Préparation des données de base à partir de l'Auth
+                const email = userRecord.email || '';
+                const fullName = userRecord.displayName || email.split('@')[0] || 'Utilisateur Ndara';
+                const username = fullName.replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000);
+
                 batch.set(userRef, {
                     uid: userRecord.uid,
-                    email: userRecord.email || '',
-                    fullName: userRecord.displayName || 'Utilisateur Ndara',
-                    username: userRecord.displayName?.replace(/\s/g, '_').toLowerCase() || 'user_' + userRecord.uid.substring(0, 5),
+                    email: email,
+                    fullName: fullName,
+                    username: username,
                     role: 'student',
                     status: 'active',
                     isInstructorApproved: false,
-                    isProfileComplete: !!(userRecord.displayName && userRecord.email),
-                    profilePictureURL: userRecord.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userRecord.displayName || 'A')}`,
+                    isProfileComplete: !!userRecord.displayName,
+                    profilePictureURL: userRecord.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(fullName)}`,
                     createdAt: FieldValue.serverTimestamp(),
                     isOnline: false,
                     lastSeen: FieldValue.serverTimestamp(),
                     careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' }
                 });
+                
                 operationCount++;
                 createdCount++;
             }
@@ -73,60 +80,8 @@ export async function syncUsersWithAuthAction(adminId: string) {
         if (operationCount > 0) await batch.commit();
         return { success: true, count: createdCount };
     } catch (error: any) {
-        console.error("Sync Error:", error);
+        console.error("Migration/Sync Error:", error);
         return { success: false, error: "Erreur lors de la synchronisation : " + error.message };
-    }
-}
-
-/**
- * Migration massive de tous les profils utilisateurs existants.
- */
-export async function migrateUserProfilesAction(adminId: string) {
-    const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "Non autorisé." };
-
-    try {
-        const db = getAdminDb();
-        const usersSnap = await db.collection('users').get();
-        let batch = db.batch();
-        let operationCount = 0;
-        let migratedCount = 0;
-
-        for (const userDoc of usersSnap.docs) {
-            const data = userDoc.data();
-            const updates: any = {};
-            let needsUpdate = false;
-
-            if (!data.role) { updates.role = 'student'; needsUpdate = true; }
-            if (data.isInstructorApproved === undefined) { updates.isInstructorApproved = false; needsUpdate = true; }
-            if (!data.status) { updates.status = 'active'; needsUpdate = true; }
-            if (data.isProfileComplete === undefined) { 
-                updates.isProfileComplete = !!(data.username && data.fullName); 
-                needsUpdate = true; 
-            }
-            if (!data.careerGoals) {
-                updates.careerGoals = { currentRole: '', interestDomain: '', mainGoal: '' };
-                needsUpdate = true;
-            }
-
-            if (needsUpdate) {
-                batch.set(userDoc.ref, updates, { merge: true });
-                operationCount++;
-                migratedCount++;
-            }
-
-            if (operationCount >= 450) {
-                await batch.commit();
-                batch = db.batch();
-                operationCount = 0;
-            }
-        }
-
-        if (operationCount > 0) await batch.commit();
-        return { success: true, count: migratedCount };
-    } catch (error: any) {
-        console.error("Migration Error:", error);
-        return { success: false, error: error.message };
     }
 }
 
@@ -170,93 +125,6 @@ export async function updateUserProfileAction({
         return { success: true };
     } catch (error: any) {
         console.error("Error updating profile Action:", error);
-        return { success: false, error: error.message };
-    }
-}
-
-export async function grantCourseAccess({
-    studentId,
-    courseId,
-    adminId,
-    reason,
-    expirationInDays,
-    expirationMinutes
-}: {
-    studentId: string;
-    courseId: string;
-    adminId: string;
-    reason: string;
-    expirationInDays?: number;
-    expirationMinutes?: number;
-}) {
-    try {
-        const db = getAdminDb();
-        const batch = db.batch();
-        const enrollmentId = `${studentId}_${courseId}`;
-        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
-        
-        const courseDoc = await db.collection('courses').doc(courseId).get();
-        if (!courseDoc.exists) return { success: false, error: "Cours introuvable" };
-        const courseData = courseDoc.data();
-
-        let expiresAt = null;
-        if (expirationMinutes) {
-            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60 * 1000);
-        } else if (expirationInDays) {
-            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 24 * 60 * 60 * 1000);
-        }
-
-        batch.set(enrollmentRef, {
-            studentId,
-            courseId,
-            instructorId: courseData?.instructorId || '',
-            enrollmentDate: FieldValue.serverTimestamp(),
-            lastAccessedAt: FieldValue.serverTimestamp(),
-            progress: 0,
-            status: 'active',
-            enrollmentType: expirationMinutes ? 'test_access' : 'admin_grant',
-            grantedBy: adminId,
-            grantReason: reason,
-            expiresAt: expiresAt
-        }, { merge: true });
-
-        const auditRef = db.collection('admin_audit_logs').doc();
-        batch.set(auditRef, {
-            adminId,
-            eventType: 'course.grant',
-            target: { id: enrollmentId, type: 'enrollment' },
-            details: `Accès accordé à ${studentId}. Raison: ${reason}`,
-            timestamp: FieldValue.serverTimestamp(),
-        });
-
-        await batch.commit();
-        return { success: true };
-    } catch (error: any) {
-        console.error("Error granting course access Action:", error);
-        return { success: false, error: error.message };
-    }
-}
-
-export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
-    try {
-        const auth = getAdminAuth();
-        const db = getAdminDb();
-        
-        const decodedToken = await auth.verifyIdToken(idToken);
-        const requesterUid = decodedToken.uid;
-        const isAdmin = await isRequesterAdmin(requesterUid);
-
-        if (requesterUid !== userId && !isAdmin) {
-           return { success: false, error: "Permission refusée." };
-        }
-    
-        const batch = db.batch();
-        await auth.deleteUser(userId);
-        batch.delete(db.collection('users').doc(userId));
-        
-        await batch.commit();
-        return { success: true };
-    } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
@@ -305,19 +173,22 @@ export async function updateUserRole({ userId, role, adminId }: { userId: string
     }
 }
 
-export async function approveInstructorApplication({ userId, decision, message, adminId }: { userId: string, decision: 'accepted' | 'rejected', message: string, adminId: string }): Promise<{ success: boolean, error?: string }> {
+export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }): Promise<{ success: boolean, error?: string }> {
     try {
+        const auth = getAdminAuth();
         const db = getAdminDb();
-        if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
+        const decodedToken = await auth.verifyIdToken(idToken);
+        const requesterUid = decodedToken.uid;
+        const isAdmin = await isRequesterAdmin(requesterUid);
 
-        const userRef = db.collection('users').doc(userId);
-        await userRef.update({ 
-            isInstructorApproved: decision === 'accepted',
-            role: decision === 'accepted' ? 'instructor' : 'student'
-        });
-
+        if (requesterUid !== userId && !isAdmin) return { success: false, error: "Permission refusée." };
+    
+        const batch = db.batch();
+        await auth.deleteUser(userId);
+        batch.delete(db.collection('users').doc(userId));
+        await batch.commit();
         return { success: true };
-    } catch(error: any) {
+    } catch (error: any) {
         return { success: false, error: error.message };
     }
 }
