@@ -53,7 +53,7 @@ export function QnaClient() {
     return sorted.filter(q => {
       const courseMatch = courseFilter === 'all' || q.courseId === courseFilter;
       const statusMatch = statusFilter === 'all' || q.status === statusFilter;
-      return courseMatch && searchMatch;
+      return courseMatch && statusMatch;
     });
   }, [rawQuestions, courseFilter, statusFilter]);
 
@@ -73,7 +73,7 @@ export function QnaClient() {
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="space-y-1.5 w-full sm:w-[250px]">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Par Formation</label>
-                <Select value={courseFilter} onValueChange={setCourseFilter}>
+                < Select value={courseFilter} onValueChange={setCourseFilter}>
                 <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl">
                     <SelectValue placeholder="Filtrer par cours..." />
                 </SelectTrigger>
