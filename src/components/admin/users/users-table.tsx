@@ -59,7 +59,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { GrantCourseModal } from './GrantCourseModal';
 
-const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGrantRequest: (user: NdaraUser) => void }) => {
+const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser & { id: string }, onGrantRequest: (user: NdaraUser) => void }) => {
     const { currentUser: adminUser, user: adminAuthUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
@@ -70,7 +70,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
     const handleStatusUpdate = async (status: 'active' | 'suspended') => {
         if (!adminUser || isActionLoading) return;
         setIsActionLoading(true);
-        const result = await updateUserStatus({ userId: targetUser.uid, status, adminId: adminUser.uid });
+        const result = await updateUserStatus({ userId: targetUser.uid || targetUser.id, status, adminId: adminUser.uid });
         if (result.success) {
             toast({ title: 'Statut mis à jour' });
         } else {
@@ -87,7 +87,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
         setIsDeleting(true);
         try {
             const idToken = await adminAuthUser.getIdToken(true);
-            const result = await deleteUserAccount({ userId: targetUser.uid, idToken });
+            const result = await deleteUserAccount({ userId: targetUser.uid || targetUser.id, idToken });
             if (result.success) {
                 toast({ title: 'Utilisateur supprimé', description: 'Le compte a été supprimé avec succès.' });
                 setIsAlertOpen(false);
@@ -103,7 +103,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
     
     const handleViewProfile = () => {
         if (targetUser.role === 'instructor') {
-            router.push(`/instructor/${targetUser.uid}`);
+            router.push(`/instructor/${targetUser.uid || targetUser.id}`);
         } else {
             toast({ title: "Profil étudiant", description: "La vue détaillée du profil étudiant sera bientôt disponible." });
         }
@@ -113,7 +113,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
         if (!adminUser || isActionLoading) return;
         setIsActionLoading(true);
         try {
-            const chatId = await startChat(adminUser.uid, targetUser.uid);
+            const chatId = await startChat(adminUser.uid, targetUser.uid || targetUser.id);
             router.push(`/admin/messages?chatId=${chatId}`);
         } catch (error: any) {
             toast({
@@ -129,7 +129,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
     const handleRoleChange = async (newRole: UserRole) => {
         if (!adminUser || newRole === targetUser.role || isActionLoading) return;
         setIsActionLoading(true);
-        const result = await updateUserRole({ userId: targetUser.uid, role: newRole, adminId: adminUser.uid });
+        const result = await updateUserRole({ userId: targetUser.uid || targetUser.id, role: newRole, adminId: adminUser.uid });
         if (result.success) {
             toast({ title: 'Rôle mis à jour avec succès.' });
         } else {
@@ -138,7 +138,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
         setIsActionLoading(false);
     };
 
-    const canInteract = adminUser?.uid !== targetUser.uid;
+    const canInteract = adminUser?.uid !== (targetUser.uid || targetUser.id);
     const canDelete = canInteract && targetUser.role !== 'admin';
     const canChangeRole = canInteract && targetUser.role !== 'admin';
 
@@ -288,8 +288,8 @@ export function UsersTable() {
     const filteredUsers = useMemo(() => {
         if (!users) return [];
         
-        // 1. Filtrage sécurisé : On ne filtre que si le terme de recherche n'est pas vide
         let list = users;
+        // Filtrage uniquement si le champ de recherche n'est pas vide
         if (searchTerm.trim() !== '') {
             const search = searchTerm.toLowerCase();
             list = users.filter(user => 
@@ -299,7 +299,7 @@ export function UsersTable() {
             );
         }
 
-        // 2. Tri manuel par date en mémoire pour garantir la visibilité de TOUS les documents
+        // Tri manuel par date en mémoire utilisant l'ID de document comme clé de secours
         return [...list].sort((a, b) => {
             const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
             const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
@@ -359,8 +359,8 @@ export function UsersTable() {
                         ) : filteredUsers.length > 0 ? (
                             filteredUsers.map(user => (
                                 <UserRow 
-                                    key={user.uid} 
-                                    user={user} 
+                                    key={user.id} 
+                                    user={user as any} 
                                     onGrantRequest={handleOpenGrantModal}
                                 />
                             ))

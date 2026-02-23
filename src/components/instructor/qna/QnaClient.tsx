@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Reply, Frown, Clock, MessageSquare, BookOpen } from 'lucide-react';
+import { Reply, MessageSquare, Clock, BookOpen } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ReplyModal } from './ReplyModal';
@@ -33,7 +33,7 @@ export function QnaClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les questions sans tri serveur pour éviter de masquer des documents
+  // 2. Récupérer les questions sans tri serveur
   const questionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
@@ -43,7 +43,6 @@ export function QnaClient() {
   const filteredQuestions = useMemo(() => {
     if (!rawQuestions) return [];
     
-    // Tri manuel par date en mémoire
     const sorted = [...rawQuestions].sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
         const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
