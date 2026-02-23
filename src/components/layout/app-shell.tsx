@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -149,6 +148,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage, cleanPath: localeCleanPath };
   }, [pathname, searchParams]);
 
+  // Redirection automatique basée sur le rôle
   useEffect(() => {
     if (loading || !mounted) return; 
 
@@ -164,7 +164,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
     const isRootPath = cleanPath === '/' || cleanPath === '';
 
-    // Gestion des redirections forcées par Rôle
+    // Gestion des redirections forcées lors du changement de rôle ou accès direct racine
     if (isRootPath || isAuthPage) {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
@@ -172,19 +172,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    // Redirection si on est dans la mauvaise zone pour son rôle actuel
-    if (role === 'admin' && !isAdminArea && !isPublicPage && cleanPath !== '/account' && !isStudentArea) {
-      // Les admins peuvent naviguer partout mais si on veut forcer le dashboard admin:
-      // router.push('/admin');
-    } else if (role === 'instructor' && isAdminArea) {
+    // Sécurité : On s'assure que l'utilisateur est dans sa zone
+    if (role === 'instructor' && isAdminArea) {
       router.push('/instructor/dashboard');
     } else if (role === 'student' && (isAdminArea || isInstructorArea)) {
       router.push('/student/dashboard');
     }
-
-    // Cas spécifique : Si on vient de basculer de rôle et qu'on est "perdu" dans une zone interdite
-    if (role === 'instructor' && isAdminArea) router.push('/instructor/dashboard');
-    if (role === 'student' && (isAdminArea || isInstructorArea)) router.push('/student/dashboard');
 
   }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage, mounted]);
 

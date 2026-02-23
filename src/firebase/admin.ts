@@ -2,8 +2,8 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation robuste du SDK Firebase Admin.
- * Gère les erreurs de formatage JSON et les variables d'environnement manquantes.
+ * @fileOverview Initialisation ultra-robuste du SDK Firebase Admin.
+ * Gère les formats de clés JSON complexes, les sauts de ligne et les guillemets parasites.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -14,12 +14,12 @@ function initializeAdmin() {
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-    console.error('CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is undefined.');
+    console.error('CRITICAL ERROR: FIREBASE_SERVICE_ACCOUNT_KEY is undefined in environment variables.');
     return null;
   }
 
   try {
-    // 1. Nettoyage des guillemets et espaces
+    // 1. Nettoyage profond de la chaîne (espaces, guillemets simples/doubles en début/fin)
     serviceAccountKey = serviceAccountKey.trim();
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
@@ -28,18 +28,20 @@ function initializeAdmin() {
       serviceAccountKey = serviceAccountKey.slice(1, -1);
     }
 
-    // 2. Tentative de parsing JSON avec fallback pour les sauts de ligne échappés
+    // 2. Parsing JSON avec support des sauts de ligne échappés
     let serviceAccount;
     try {
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Si le JSON contient des sauts de ligne littéraux \n mal interprétés
+      // Fallback si les \n sont mal échappés
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // 3. Correction forcée de la clé privée pour les certificats
+    // 3. Correction impérative de la clé privée pour le format PEM
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
-      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      if (!serviceAccount.private_key.includes('\n')) {
+        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+      }
     }
 
     return admin.initializeApp({
@@ -47,7 +49,7 @@ function initializeAdmin() {
       projectId: serviceAccount.project_id || projectId
     });
   } catch (error: any) {
-    console.error('CRITICAL: Firebase Admin Initialization Failed:', error.message);
+    console.error('CRITICAL ERROR: Firebase Admin Initialization Failed:', error.message);
     return null;
   }
 }
