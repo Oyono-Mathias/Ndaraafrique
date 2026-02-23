@@ -64,7 +64,7 @@ export function StudentsClient() {
     const enrichData = async () => {
         setRelatedDataLoading(true);
         
-        // Tri manuel par date
+        // Tri manuel par date en mémoire pour garantir l'affichage même si les dates sont manquantes
         const sortedEnrollments = [...rawEnrollments].sort((a, b) => {
             const dateA = (a.enrollmentDate as any)?.toDate?.() || new Date(0);
             const dateB = (b.enrollmentDate as any)?.toDate?.() || new Date(0);
