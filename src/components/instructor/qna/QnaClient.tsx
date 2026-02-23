@@ -33,7 +33,7 @@ export function QnaClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les questions sans tri serveur
+  // 2. Récupérer les questions sans tri serveur pour éviter de masquer des docs incomplets
   const questionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
@@ -72,7 +72,7 @@ export function QnaClient() {
           <div className="flex flex-col sm:flex-row gap-4 items-end">
             <div className="space-y-1.5 w-full sm:w-[250px]">
                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Par Formation</label>
-                < Select value={courseFilter} onValueChange={setCourseFilter}>
+                <Select value={courseFilter} onValueChange={setCourseFilter}>
                 <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl">
                     <SelectValue placeholder="Filtrer par cours..." />
                 </SelectTrigger>

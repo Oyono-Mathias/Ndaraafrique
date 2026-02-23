@@ -19,8 +19,60 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 }
 
 /**
+ * Synchronise les utilisateurs de Firebase Auth vers Firestore.
+ * Utile pour récupérer les "12 membres" s'ils ne sont pas tous dans Firestore.
+ */
+export async function syncUsersWithAuthAction(adminId: string) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Non autorisé." };
+
+    try {
+        const auth = getAdminAuth();
+        const db = getAdminDb();
+        const listUsers = await auth.listUsers();
+        let batch = db.batch();
+        let operationCount = 0;
+        let createdCount = 0;
+
+        for (const userRecord of listUsers.users) {
+            const userRef = db.collection('users').doc(userRecord.uid);
+            const userSnap = await userRef.get();
+
+            if (!userSnap.exists) {
+                batch.set(userRef, {
+                    uid: userRecord.uid,
+                    email: userRecord.email || '',
+                    fullName: userRecord.displayName || 'Utilisateur Ndara',
+                    username: 'user_' + userRecord.uid.substring(0, 5),
+                    role: 'student',
+                    status: 'active',
+                    isInstructorApproved: false,
+                    isProfileComplete: false,
+                    createdAt: FieldValue.serverTimestamp(),
+                    isOnline: false,
+                    lastSeen: FieldValue.serverTimestamp()
+                });
+                operationCount++;
+                createdCount++;
+            }
+
+            if (operationCount >= 450) {
+                await batch.commit();
+                batch = db.batch();
+                operationCount = 0;
+            }
+        }
+
+        if (operationCount > 0) await batch.commit();
+        return { success: true, count: createdCount };
+    } catch (error: any) {
+        console.error("Sync Error:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Migration massive de tous les profils utilisateurs.
- * Initialise les champs manquants et les notifications de bienvenue.
  */
 export async function migrateUserProfilesAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -38,7 +90,6 @@ export async function migrateUserProfilesAction(adminId: string) {
             const updates: any = {};
             let needsUpdate = false;
 
-            // 1. Vérification des champs de base
             if (!data.role) { updates.role = 'student'; needsUpdate = true; }
             if (data.isInstructorApproved === undefined) { updates.isInstructorApproved = false; needsUpdate = true; }
             if (!data.status) { updates.status = 'active'; needsUpdate = true; }
@@ -50,25 +101,9 @@ export async function migrateUserProfilesAction(adminId: string) {
             if (needsUpdate) {
                 batch.set(userDoc.ref, updates, { merge: true });
                 operationCount++;
+                migratedCount++;
             }
 
-            // 2. Initialisation de la notification de bienvenue
-            const welcomeRef = userDoc.ref.collection('notifications').doc('welcome');
-            const welcomeSnap = await welcomeRef.get();
-            if (!welcomeSnap.exists) {
-                batch.set(welcomeRef, {
-                    text: `Bara ala ! Bienvenue sur Ndara Afrique. Votre profil a été mis à jour par le système pour garantir votre accès à toutes nos fonctionnalités.`,
-                    type: 'success',
-                    read: false,
-                    createdAt: FieldValue.serverTimestamp(),
-                    link: '/student/dashboard'
-                });
-                operationCount++;
-            }
-
-            if (needsUpdate) migratedCount++;
-
-            // Respect de la limite des 500 opérations par batch
             if (operationCount >= 450) {
                 await batch.commit();
                 batch = db.batch();
@@ -76,7 +111,7 @@ export async function migrateUserProfilesAction(adminId: string) {
             }
         }
 
-        await batch.commit();
+        if (operationCount > 0) await batch.commit();
         return { success: true, count: migratedCount };
     } catch (error: any) {
         console.error("Migration Error:", error);
@@ -98,14 +133,12 @@ export async function updateUserProfileAction({
 }) {
     try {
         const db = getAdminDb();
-
-        // 1. Autorisation : Seul le propriétaire ou un admin peut modifier
         const isAdmin = await isRequesterAdmin(requesterId);
+        
         if (userId !== requesterId && !isAdmin) {
             return { success: false, error: "Permission refusée." };
         }
 
-        // 2. Filtrage des champs autorisés
         const allowedFields = [
             'fullName', 'username', 'bio', 'phoneNumber', 
             'profilePictureURL', 'preferredLanguage', 'socialLinks', 
@@ -130,9 +163,6 @@ export async function updateUserProfileAction({
     }
 }
 
-/**
- * Offre l'accès à un cours (Admin Grant / Test Access)
- */
 export async function grantCourseAccess({
     studentId,
     courseId,
