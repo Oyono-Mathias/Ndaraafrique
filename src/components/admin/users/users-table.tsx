@@ -278,7 +278,8 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
 
 export function UsersTable() {
     const db = getFirestore();
-    const usersQuery = useMemo(() => query(collection(db, 'users'), orderBy('createdAt', 'desc')), [db]);
+    // ✅ Suppression de l'orderBy pour garantir que TOUS les utilisateurs s'affichent
+    const usersQuery = useMemo(() => query(collection(db, 'users')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -287,11 +288,18 @@ export function UsersTable() {
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        return users.filter(user => 
+        // Filtre par recherche
+        const list = users.filter(user => 
             user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             user.username?.toLowerCase().includes(searchTerm.toLowerCase())
         );
+        // Tri manuel par date en mémoire
+        return list.sort((a, b) => {
+            const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+            const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
     }, [users, searchTerm]);
 
     const handleOpenGrantModal = (user: NdaraUser) => {
