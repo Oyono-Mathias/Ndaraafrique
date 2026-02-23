@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -20,15 +21,17 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * Synchronise les utilisateurs de Firebase Auth vers Firestore.
- * Récupère les 12 membres réels et crée les profils manquants.
+ * Récupère les 10 membres réels affichés dans la console Firebase et crée les profils manquants.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
-    if (!isAdmin) return { success: false, error: "Non autorisé." };
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
 
     try {
         const auth = getAdminAuth();
         const db = getAdminDb();
+        
+        // 1. Lister tous les utilisateurs de l'authentification
         const listUsers = await auth.listUsers();
         let batch = db.batch();
         let operationCount = 0;
@@ -39,7 +42,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
             const userSnap = await userRef.get();
 
             if (!userSnap.exists) {
-                // Création du profil à partir des données de l'Auth
+                // 2. Création du profil à partir des données de l'Auth (Google ou Email)
                 batch.set(userRef, {
                     uid: userRecord.uid,
                     email: userRecord.email || '',
@@ -48,7 +51,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
                     role: 'student',
                     status: 'active',
                     isInstructorApproved: false,
-                    isProfileComplete: !!userRecord.displayName,
+                    isProfileComplete: !!(userRecord.displayName && userRecord.email),
                     profilePictureURL: userRecord.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userRecord.displayName || 'A')}`,
                     createdAt: FieldValue.serverTimestamp(),
                     isOnline: false,
@@ -59,6 +62,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
                 createdCount++;
             }
 
+            // Commiter par paquets de 450 (limite Firestore = 500)
             if (operationCount >= 450) {
                 await batch.commit();
                 batch = db.batch();
@@ -70,12 +74,12 @@ export async function syncUsersWithAuthAction(adminId: string) {
         return { success: true, count: createdCount };
     } catch (error: any) {
         console.error("Sync Error:", error);
-        return { success: false, error: error.message };
+        return { success: false, error: "Erreur lors de la synchronisation : " + error.message };
     }
 }
 
 /**
- * Migration massive de tous les profils utilisateurs.
+ * Migration massive de tous les profils utilisateurs existants.
  */
 export async function migrateUserProfilesAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);

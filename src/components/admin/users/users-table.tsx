@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -141,12 +142,12 @@ const UserRow = ({
                         <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{targetUser.fullName?.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-bold text-sm text-white">{targetUser.fullName}</span>
-                        <span className="text-[10px] text-slate-500 font-medium">@{targetUser.username}</span>
+                        <span className="font-bold text-sm text-white">{targetUser.fullName || 'Nouvel Utilisateur'}</span>
+                        <span className="text-[10px] text-slate-500 font-medium">@{targetUser.username || targetUser.id.substring(0, 8)}</span>
                     </div>
                 </div>
             </TableCell>
-            <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email}</TableCell>
+            <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email || 'N/A'}</TableCell>
             <TableCell>
                 <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
                     {targetUser.role || 'student'}
@@ -158,7 +159,7 @@ const UserRow = ({
                  </Badge>
             </TableCell>
             <TableCell className="text-[10px] font-black text-slate-500 uppercase">
-                {createdAt ? format(createdAt, "d MMM yyyy", { locale: fr }) : '---'}
+                {createdAt ? format(createdAt, "d MMM yyyy", { locale: fr }) : 'En attente'}
             </TableCell>
             <TableCell className="text-right">
                 <AlertDialog open={isAlertOpen} onOpenChange={setIsAlertOpen}>
@@ -230,7 +231,7 @@ const UserRow = ({
                         <AlertDialogHeader>
                             <AlertDialogTitle className="text-xl font-black text-white uppercase tracking-tight">Attention</AlertDialogTitle>
                             <AlertDialogDescription className="text-slate-400">
-                                Supprimer définitivement <b>{targetUser.fullName}</b> ? Cette action est irréversible.
+                                Supprimer définitivement <b>{targetUser.fullName || targetUser.email}</b> ? Cette action est irréversible.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -259,6 +260,8 @@ export function UsersTable() {
     const filteredUsers = useMemo(() => {
         if (!users) return [];
         let list = [...users];
+        
+        // On affiche d'abord tout le monde, puis on filtre si nécessaire
         if (searchTerm.trim() !== '') {
             const s = searchTerm.toLowerCase();
             list = list.filter(u => 
@@ -267,6 +270,8 @@ export function UsersTable() {
                 (u.username || '').toLowerCase().includes(s)
             );
         }
+        
+        // Tri manuel en mémoire par date de création (décroissant)
         return list.sort((a, b) => {
             const dA = (a.createdAt as any)?.toDate?.() || new Date(0);
             const dB = (b.createdAt as any)?.toDate?.() || new Date(0);
@@ -331,7 +336,7 @@ export function UsersTable() {
                                 />
                             ))
                         ) : (
-                            <TableRow><TableCell colSpan={6} className="h-64 text-center opacity-20"><Users className="h-16 w-16 mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucun membre</p></TableCell></TableRow>
+                            <TableRow><TableCell colSpan={6} className="h-64 text-center opacity-20"><Users className="h-16 w-16 mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucun membre trouvé</p></TableCell></TableRow>
                         )}
                     </TableBody>
                 </Table>
