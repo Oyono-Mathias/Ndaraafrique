@@ -1,7 +1,8 @@
+
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
@@ -20,10 +21,6 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * SCRIPT DE MIGRATION MASSIF : Synchronise les utilisateurs de Firebase Auth vers Firestore.
- * - Liste tous les utilisateurs de l'Auth (Admin SDK).
- * - Vérifie l'existence du document /users/{uid}.
- * - Crée le profil avec email, fullName, role 'student' et status 'active' si manquant.
- * - Utilise writeBatch pour l'optimisation.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -33,7 +30,6 @@ export async function syncUsersWithAuthAction(adminId: string) {
         const auth = getAdminAuth();
         const db = getAdminDb();
         
-        // 1. Lister tous les utilisateurs de l'authentification Firebase
         const listUsers = await auth.listUsers();
         let batch = db.batch();
         let operationCount = 0;
@@ -44,7 +40,6 @@ export async function syncUsersWithAuthAction(adminId: string) {
             const userSnap = await userRef.get();
 
             if (!userSnap.exists) {
-                // 2. Préparation des données de base à partir de l'Auth
                 const email = userRecord.email || '';
                 const fullName = userRecord.displayName || email.split('@')[0] || 'Utilisateur Ndara';
                 const username = fullName.replace(/\s/g, '_').toLowerCase() + Math.floor(1000 + Math.random() * 9000);
@@ -69,7 +64,6 @@ export async function syncUsersWithAuthAction(adminId: string) {
                 createdCount++;
             }
 
-            // Commiter par paquets de 450 (limite Firestore = 500)
             if (operationCount >= 450) {
                 await batch.commit();
                 batch = db.batch();
@@ -82,6 +76,165 @@ export async function syncUsersWithAuthAction(adminId: string) {
     } catch (error: any) {
         console.error("Migration/Sync Error:", error);
         return { success: false, error: "Erreur lors de la synchronisation : " + error.message };
+    }
+}
+
+/**
+ * Répare les profils existants en ajoutant les champs par défaut manquants.
+ */
+export async function migrateUserProfilesAction(adminId: string) {
+    if (!(await isRequesterAdmin(adminId))) return { success: false, error: "Action réservée aux admins." };
+    
+    try {
+        const db = getAdminDb();
+        const usersSnap = await db.collection('users').get();
+        let batch = db.batch();
+        let count = 0;
+        let totalRepaired = 0;
+
+        for (const doc of usersSnap.docs) {
+            const data = doc.data();
+            const updates: any = {};
+            let needsUpdate = false;
+
+            if (data.status === undefined) { updates.status = 'active'; needsUpdate = true; }
+            if (data.role === undefined) { updates.role = 'student'; needsUpdate = true; }
+            if (data.isInstructorApproved === undefined) { updates.isInstructorApproved = false; needsUpdate = true; }
+            if (data.isProfileComplete === undefined) { 
+                updates.isProfileComplete = !!(data.username && data.careerGoals?.interestDomain);
+                needsUpdate = true;
+            }
+
+            if (needsUpdate) {
+                batch.update(doc.ref, updates);
+                count++;
+                totalRepaired++;
+            }
+
+            if (count >= 450) {
+                await batch.commit();
+                batch = db.batch();
+                count = 0;
+            }
+        }
+
+        if (count > 0) await batch.commit();
+        return { success: true, count: totalRepaired };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Accorde un accès manuel à un cours.
+ */
+export async function grantCourseAccess({
+    studentId,
+    courseId,
+    adminId,
+    reason,
+    expirationMinutes,
+    expirationInDays,
+}: {
+    studentId: string;
+    courseId: string;
+    adminId: string;
+    reason: string;
+    expirationMinutes?: number;
+    expirationInDays?: number;
+}) {
+    try {
+        const db = getAdminDb();
+        const batch = db.batch();
+        
+        const enrollmentId = `${studentId}_${courseId}`;
+        const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
+        
+        const courseDoc = await db.collection('courses').doc(courseId).get();
+        if (!courseDoc.exists) return { success: false, error: "Cours introuvable." };
+        const courseData = courseDoc.data();
+
+        let expiresAt = null;
+        if (expirationMinutes) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60 * 1000);
+        } else if (expirationInDays) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 24 * 60 * 60 * 1000);
+        }
+
+        batch.set(enrollmentRef, {
+            studentId,
+            courseId,
+            instructorId: courseData?.instructorId || '',
+            status: 'active',
+            enrollmentDate: FieldValue.serverTimestamp(),
+            lastAccessedAt: FieldValue.serverTimestamp(),
+            progress: 0,
+            enrollmentType: 'admin_grant',
+            expiresAt: expiresAt || null
+        }, { merge: true });
+
+        const grantRef = db.collection('admin_grants').doc();
+        batch.set(grantRef, {
+            studentId,
+            courseId,
+            grantedBy: adminId,
+            reason,
+            createdAt: FieldValue.serverTimestamp(),
+            expiresAt: expiresAt || null
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Approuve ou rejette une candidature d'instructeur.
+ */
+export async function approveInstructorApplication({
+    userId,
+    decision,
+    message,
+    adminId
+}: {
+    userId: string;
+    decision: 'accepted' | 'rejected';
+    message: string;
+    adminId: string;
+}) {
+    try {
+        const db = getAdminDb();
+        const userRef = db.collection('users').doc(userId);
+        const batch = db.batch();
+        
+        if (decision === 'accepted') {
+            batch.update(userRef, {
+                isInstructorApproved: true,
+                role: 'instructor'
+            });
+        } else {
+            batch.update(userRef, {
+                isInstructorApproved: false,
+                role: 'student',
+                'instructorApplication.status': 'rejected'
+            });
+        }
+
+        const auditLogRef = db.collection('admin_audit_logs').doc();
+        batch.set(auditLogRef, {
+            adminId,
+            eventType: 'instructor.application',
+            target: { id: userId, type: 'user' },
+            details: `Candidature instructeur ${decision} pour ${userId}.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
     }
 }
 
