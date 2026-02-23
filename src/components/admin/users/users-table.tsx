@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, getDocs, where, documentId } from 'firebase/firestore';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -150,15 +150,15 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
                 <div className="flex items-center gap-3">
                     <Avatar className="h-9 w-9 border border-slate-800">
                         <AvatarImage src={targetUser.profilePictureURL} />
-                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{targetUser.fullName?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{targetUser.fullName?.charAt(0) || '?'}</AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col">
-                        <span className="font-bold text-sm text-white">{targetUser.fullName}</span>
-                        <span className="text-[10px] text-slate-500 font-medium">@{targetUser.username}</span>
+                        <span className="font-bold text-sm text-white">{targetUser.fullName || 'Utilisateur Ndara'}</span>
+                        <span className="text-[10px] text-slate-500 font-medium">@{targetUser.username || 'n/a'}</span>
                     </div>
                 </div>
             </TableCell>
-            <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email}</TableCell>
+            <TableCell className="text-xs text-slate-400 font-medium">{targetUser.email || 'Pas d\'email'}</TableCell>
             <TableCell>
                 <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-slate-300">{targetUser.countryName || '---'}</span>
@@ -169,12 +169,12 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
             </TableCell>
             <TableCell>
                 <Badge variant={targetUser.role === 'admin' ? 'destructive' : targetUser.role === 'instructor' ? 'secondary' : 'default'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
-                    {targetUser.role}
+                    {targetUser.role || 'student'}
                 </Badge>
             </TableCell>
             <TableCell>
                  <Badge variant={targetUser.status === 'active' ? 'success' : 'warning'} className="font-black text-[9px] uppercase tracking-widest border-none px-2 py-0">
-                    {targetUser.status || 'N/A'}
+                    {targetUser.status || 'active'}
                  </Badge>
             </TableCell>
             <TableCell className="text-[10px] font-black text-slate-500 uppercase">
@@ -259,7 +259,7 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
                         <AlertDialogHeader>
                             <AlertDialogTitle className="text-xl font-black text-white uppercase tracking-tight">Attention !</AlertDialogTitle>
                             <AlertDialogDescription className="text-slate-400">
-                                Cette action est irréversible. Toutes les données de <b className="text-white">{targetUser.fullName}</b> seront définitivement supprimées du système.
+                                Cette action est irréversible. Toutes les données de <b className="text-white">{targetUser.fullName || 'cet utilisateur'}</b> seront définitivement supprimées du système.
                             </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -278,7 +278,6 @@ const UserRow = ({ user: targetUser, onGrantRequest }: { user: NdaraUser, onGran
 
 export function UsersTable() {
     const db = getFirestore();
-    // ✅ Suppression de l'orderBy pour garantir que TOUS les utilisateurs s'affichent
     const usersQuery = useMemo(() => query(collection(db, 'users')), [db]);
     const { data: users, isLoading } = useCollection<NdaraUser>(usersQuery);
 
@@ -288,14 +287,20 @@ export function UsersTable() {
 
     const filteredUsers = useMemo(() => {
         if (!users) return [];
-        // Filtre par recherche
-        const list = users.filter(user => 
-            user.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            user.username?.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        // Tri manuel par date en mémoire
-        return list.sort((a, b) => {
+        
+        // 1. Filtrage sécurisé : On ne filtre que si le terme de recherche n'est pas vide
+        let list = users;
+        if (searchTerm.trim() !== '') {
+            const search = searchTerm.toLowerCase();
+            list = users.filter(user => 
+                (user.fullName || '').toLowerCase().includes(search) ||
+                (user.email || '').toLowerCase().includes(search) ||
+                (user.username || '').toLowerCase().includes(search)
+            );
+        }
+
+        // 2. Tri manuel par date en mémoire pour garantir la visibilité de TOUS les documents
+        return [...list].sort((a, b) => {
             const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
             const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
             return dateB.getTime() - dateA.getTime();

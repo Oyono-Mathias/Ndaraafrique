@@ -33,7 +33,7 @@ export function QnaClient() {
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les questions (Tri manuel)
+  // 2. Récupérer les questions sans tri serveur pour éviter de masquer des documents
   const questionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
@@ -43,7 +43,7 @@ export function QnaClient() {
   const filteredQuestions = useMemo(() => {
     if (!rawQuestions) return [];
     
-    // Tri manuel par date
+    // Tri manuel par date en mémoire
     const sorted = [...rawQuestions].sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
         const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
