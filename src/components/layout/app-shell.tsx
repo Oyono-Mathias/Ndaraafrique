@@ -37,7 +37,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [db]);
 
-  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
+  const cleanPath = useMemo(() => {
+    return pathname.replace(/^\/(en|fr)/, '') || '/';
+  }, [pathname]);
 
   useEffect(() => {
     if (loading || !mounted) return;
@@ -50,13 +52,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser Mon Compte pour tous les rôles
+    // Autoriser Mon Compte pour tous les rôles sans redirection de force
     if (cleanPath === '/account') return;
 
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
     // Redirections basées sur le rôle ACTIF
+    // Correction : On utilise cleanPath pour détecter si on est dans la mauvaise zone
     if (role === 'admin' && !isAdminArea && !isPublic) {
       router.push('/admin');
     } else if (role === 'instructor' && (isAdminArea) && !isPublic) {

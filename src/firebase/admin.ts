@@ -25,12 +25,14 @@ function initializeAdmin() {
 
     let serviceAccount;
     try {
+      // Tentative de parsing direct
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Gestion des caractères d'échappement problématiques
+      // Gestion des caractères d'échappement problématiques (\n dans la clé privée)
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
+    // Correction spécifique pour la clé privée
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
