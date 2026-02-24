@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -54,15 +53,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // --- ACCÈS AUX PAGES COMMUNES ---
+    // On autorise toujours l'accès au profil sans redirection automatique
     if (cleanPath === '/account') return;
 
     // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
-    // Si l'admin bascule en mode étudiant, il doit être redirigé hors de la zone admin
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
     if (role === 'admin') {
-        // En mode admin, on reste dans admin sauf si on demande explicitement une page publique
+        // En mode admin, on peut naviguer partout, mais on reste prioritairement en zone admin
         return;
     } else if (role === 'instructor') {
         // Si on est formateur mais dans la zone admin, on dégage vers le dashboard formateur
@@ -87,6 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
   const isLandingPage = cleanPath === '/';
+  // On cache la sidebar sur les pages publiques et d'auth
   const showNav = user && !isAuthPage && !isLandingPage;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);

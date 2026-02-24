@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Universal - Version Ultra-Moderne.
  * Structure 70/30 avec Sidebar interactive et gestion d'état fluide.
+ * Design Dark-Mode par défaut.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -24,7 +24,7 @@ import {
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight, Lock } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight, Lock, Award } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -197,7 +197,10 @@ function CoursePlayerPageContent() {
                         className="absolute top-0 left-0"
                         controls
                         pip
-                        config={{ file: { attributes: { controlsList: 'nodownload' } } }}
+                        config={{ 
+                          file: { attributes: { controlsList: 'nodownload' } },
+                          youtube: { playerVars: { modestbranding: 1, rel: 0 } }
+                        }}
                       />
                     )}
                   </div>

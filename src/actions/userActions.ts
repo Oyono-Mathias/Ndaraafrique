@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -7,7 +6,7 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
- * Support complet des expirations (jours et minutes).
+ * Support complet des expirations et des types de build production.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -81,7 +80,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
 
 /**
  * ACCORDE L'ACCÈS À UN COURS
- * Correction Vercel : Ajout explicite du support expirationMinutes
+ * Version corrigée pour le build Vercel avec support expirationMinutes
  */
 export async function grantCourseAccess({
     studentId,

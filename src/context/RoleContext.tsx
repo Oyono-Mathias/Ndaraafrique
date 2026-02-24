@@ -132,6 +132,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       
+      // La redirection est maintenant déclenchée par l'AppShell qui observe le changement de role
       const target = newRole === 'admin' ? '/admin' : newRole === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
       router.push(target);
       

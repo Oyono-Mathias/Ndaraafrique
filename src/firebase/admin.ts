@@ -1,4 +1,3 @@
-
 import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
@@ -28,6 +27,7 @@ function initializeAdmin() {
 
     let serviceAccount;
     try {
+      // Tentative de parsing direct
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
       // Fallback si les sauts de ligne ne sont pas correctement échappés dans la chaîne
