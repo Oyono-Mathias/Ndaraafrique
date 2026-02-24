@@ -17,64 +17,10 @@ import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
 
-function MaintenancePage() {
-    return (
-        <div className="flex flex-col items-center justify-center h-screen bg-slate-950 text-center p-4">
-            <div className="p-6 bg-slate-900 rounded-full mb-6">
-                <Wrench className="h-16 w-16 text-primary animate-pulse" />
-            </div>
-            <h1 className="text-3xl font-bold text-white uppercase tracking-tighter">Maintenance en cours</h1>
-            <p className="text-slate-400 mt-2 max-w-xs mx-auto">Nous peaufinons Ndara Afrique pour vous. Revenez dans quelques instants.</p>
-        </div>
-    );
-}
-
-function AnnouncementBanner() {
-    const [isVisible, setIsVisible] = useState(false);
-    const [announcement, setAnnouncement] = useState('');
-    const db = getFirestore();
-
-    useEffect(() => {
-        const settingsRef = doc(db, 'settings', 'global');
-        const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
-            if (docSnap.exists()) {
-                const message = docSnap.data().platform?.announcementMessage || '';
-                setAnnouncement(message);
-                if (message && typeof window !== 'undefined' && sessionStorage.getItem('ndara-announcement-dismissed') !== message) {
-                    setIsVisible(true);
-                } else {
-                    setIsVisible(false);
-                }
-            }
-        });
-        return () => unsubscribe();
-    }, [db]);
-
-    const handleDismiss = () => {
-        setIsVisible(false);
-        if (typeof window !== 'undefined') {
-            sessionStorage.setItem('ndara-announcement-dismissed', announcement);
-        }
-    };
-
-    if (!isVisible || !announcement) return null;
-
-    const [mainMessage, ...translations] = announcement.split('Sango:');
-    const sangoLingala = translations.length > 0 ? `Sango: ${translations.join('Sango:')}` : '';
-
-    return (
-        <div className="bg-primary text-primary-foreground p-2.5 flex items-center justify-center gap-4 text-[11px] font-black uppercase tracking-widest relative z-[60]">
-            <Megaphone className="h-4 w-4 hidden sm:block flex-shrink-0" />
-            <p className="text-center text-balance leading-tight">
-                {mainMessage.trim()}
-                {sangoLingala && <span className="hidden md:inline opacity-70 ml-2 font-bold">{sangoLingala}</span>}
-            </p>
-            <Button variant="ghost" size="icon" onClick={handleDismiss} className="h-6 w-6 hover:bg-black/20 shrink-0">
-                <X className="h-3 w-3" />
-            </Button>
-        </div>
-    );
-}
+/**
+ * @fileOverview AppShell Ndara Afrique.
+ * Gère les redirections de rôles, la maintenance et les bannières.
+ */
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
@@ -82,169 +28,104 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
-  
-  const [siteSettings, setSiteSettings] = useState({
-      siteName: 'Ndara Afrique',
-      logoUrl: '/logo.png',
-      maintenanceMode: false,
-      announcementMessage: ''
-    });
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
+  const [siteSettings, setSiteSettings] = useState({
+      maintenanceMode: false,
+      announcementMessage: ''
+  });
+
   useEffect(() => {
     setMounted(true);
-    const settingsRef = doc(db, 'settings', 'global');
-    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const settingsData = docSnap.data();
+    const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        if (snap.exists()) {
+            const data = snap.data();
             setSiteSettings({
-                siteName: settingsData.general?.siteName || 'Ndara Afrique',
-                logoUrl: '/logo.png',
-                maintenanceMode: settingsData.platform?.maintenanceMode || false,
-                announcementMessage: settingsData.platform?.announcementMessage || ''
+                maintenanceMode: data.platform?.maintenanceMode || false,
+                announcementMessage: data.platform?.announcementMessage || ''
             });
         }
     });
-    return () => unsubscribe();
+    return () => unsub();
   }, [db]);
 
-  const { isAuthPage, isPublicPage, showNavigation, cleanPath } = useMemo(() => {
-    const authPaths = ['/login', '/register', '/forgot-password'];
-    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline', '/investir', '/account'];
-    
-    const localeCleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
-    
-    const isAuth = authPaths.some(p => localeCleanPath === p);
-    let isPublic = staticPublicPaths.includes(localeCleanPath) || isAuth;
+  const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
 
-    if (!isPublic) {
-        if (localeCleanPath.startsWith('/verify/')) isPublic = true;
-    }
-
-    const globalNavPaths = [
-      '/student/dashboard',
-      '/student/courses',
-      '/student/notifications',
-      '/student/profile',
-      '/account',
-      '/student/devoirs',
-      '/student/results',
-      '/student/mes-certificats',
-      '/student/annuaire',
-      '/student/messages',
-      '/student/paiements',
-      '/student/liste-de-souhaits',
-      '/instructor/dashboard',
-      '/instructor/courses',
-      '/instructor/students',
-      '/instructor/revenus',
-      '/instructor/questions-reponses',
-      '/instructor/settings',
-      '/admin'
-    ];
-
-    const isMessageList = localeCleanPath === '/student/messages' && !searchParams.get('chatId');
-    const isGlobalPage = globalNavPaths.some(p => localeCleanPath === p || localeCleanPath.startsWith(p));
-    
-    return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage, cleanPath: localeCleanPath };
-  }, [pathname, searchParams]);
-
-  // Redirection automatique basée sur le rôle
+  // REDIRECTIONS INTELLIGENTES
   useEffect(() => {
-    if (loading || !mounted) return; 
+    if (loading || !mounted) return;
 
     if (!user) {
-      if (!isPublicPage && !isAuthPage) {
-        router.push('/');
+      const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir'];
+      if (!publicPaths.includes(cleanPath) && !cleanPath.startsWith('/verify/')) {
+        router.push('/login');
       }
       return;
     }
 
-    const isAdminArea = cleanPath.startsWith('/admin');
-    const isInstructorArea = cleanPath.startsWith('/instructor');
-    const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
-    const isRootPath = cleanPath === '/' || cleanPath === '';
+    // Autoriser l'accès à /account pour TOUS les utilisateurs connectés
+    if (cleanPath === '/account') return;
 
-    // Gestion des redirections lors du changement de rôle
-    if (isRootPath || isAuthPage) {
+    // Redirection automatique vers le bon dashboard si on est sur la racine ou login
+    if (cleanPath === '/' || cleanPath === '/login' || cleanPath === '/register') {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
         else router.push('/student/dashboard');
         return;
     }
 
-    // Sécurité : On s'assure que l'utilisateur est dans sa zone
-    if (role === 'instructor' && isAdminArea) {
-      router.push('/instructor/dashboard');
-    } else if (role === 'student' && (isAdminArea || isInstructorArea)) {
-      router.push('/student/dashboard');
+    // Sécurité de zone
+    if (role === 'student' && (cleanPath.startsWith('/admin') || cleanPath.startsWith('/instructor'))) {
+        router.push('/student/dashboard');
     }
+    if (role === 'instructor' && cleanPath.startsWith('/admin')) {
+        router.push('/instructor/dashboard');
+    }
+  }, [user, role, loading, cleanPath, router, mounted]);
 
-  }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage, mounted]);
-
-
+  if (loading || !mounted) return <LoadingScreen />;
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
-    return <MaintenancePage />;
+      return (
+        <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
+            <Wrench className="h-16 w-16 text-primary animate-pulse mb-4" />
+            <h1 className="text-2xl font-black text-white uppercase">Maintenance Ndara</h1>
+            <p className="text-slate-500 mt-2">Nous revenons dans quelques instants.</p>
+        </div>
+      );
   }
 
-  if ((loading || !mounted) && !isPublicPage && !isAuthPage) {
-    return <LoadingScreen />;
-  }
-  
+  const showNav = user && cleanPath !== '/' && !['/login', '/register', '/forgot-password'].includes(cleanPath);
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
-  const sidebarProps = { siteName: siteSettings.siteName, logoUrl: siteSettings.logoUrl, onLinkClick: handleSidebarLinkClick };
-  
-  const isAdminArea = cleanPath.startsWith('/admin');
-  const isRootPath = cleanPath === '/';
-  
+  const sidebarProps = { onLinkClick: handleSidebarLinkClick };
+
   return (
     <>
       <SplashScreen />
       <OfflineBar />
-      <div className={cn(
-        "min-h-screen w-full bg-slate-950 text-white", 
-        (mounted && isAdminArea) ? "admin-grid-layout" : (mounted && showNavigation && !isRootPath) && "md:grid md:grid-cols-[280px_1fr]"
-      )}>
-        {mounted && !isRootPath && !isAuthPage && user && showNavigation && (
-          <aside className={cn("hidden h-screen sticky top-0", isAdminArea ? "md:hidden" : "md:block")}>
-             {role === 'admin' ? (
-              <AdminSidebar {...sidebarProps} />
-            ) : role === 'instructor' ? (
-              <InstructorSidebar {...sidebarProps} />
-            ) : (
-              <StudentSidebar {...sidebarProps} />
-            )}
+      <div className={cn("min-h-screen w-full bg-slate-950", showNav && !cleanPath.startsWith('/admin') && "md:grid md:grid-cols-[280px_1fr]")}>
+        {showNav && !cleanPath.startsWith('/admin') && (
+          <aside className="hidden md:block h-screen sticky top-0">
+             {role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
-        <div className="flex flex-col flex-1 min-h-screen">
-          <AnnouncementBanner />
-          {mounted && !isRootPath && !isAuthPage && user && showNavigation && (
-            <header className={cn("flex h-16 items-center gap-4 border-b border-slate-800 px-4 lg:px-6 sticky top-0 z-30 bg-slate-900/80 backdrop-blur-sm")}>
-              {!isAdminArea && user && (
-                 <div className="md:hidden">
-                  <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                      <SheetTrigger asChild>
-                          <Button variant="outline" size="icon" className="shrink-0 bg-transparent border-slate-700">
-                              <PanelLeft className="h-5 w-5" />
-                              <span className="sr-only">Ouvrir le menu</span>
-                          </Button>
-                      </SheetTrigger>
-                      <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[300px] bg-[#111827] border-r-0">
-                          {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
-                      </SheetContent>
-                  </Sheet>
-                </div>
-              )}
-              <div className="w-full flex justify-end">
-                  <Header />
+        <div className="flex flex-col flex-1">
+          {showNav && (
+            <header className="flex h-16 items-center justify-between border-b border-slate-800 px-4 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-30">
+              <div className="md:hidden">
+                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+                    <SheetTrigger asChild>
+                        <Button variant="outline" size="icon" className="bg-transparent border-slate-700"><PanelLeft className="h-5 w-5" /></Button>
+                    </SheetTrigger>
+                    <SheetContent side="left" className="p-0 w-[300px] bg-[#111827] border-none">
+                        {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
+                    </SheetContent>
+                </Sheet>
               </div>
+              <div className="ml-auto"><Header /></div>
             </header>
           )}
-          
-          <main className={cn("p-6", (!showNavigation || isRootPath) && "!p-0")}>
-              {children}
-          </main>
+          <main className={cn(showNav ? "p-6" : "p-0")}>{children}</main>
         </div>
       </div>
     </>

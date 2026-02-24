@@ -19,6 +19,10 @@ import { ReplyModal } from './ReplyModal';
 import type { CourseQuestion, Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
+/**
+ * @fileOverview Gestionnaire de questions-réponses pour les formateurs.
+ */
+
 export function QnaClient() {
   const db = getFirestore();
   const { currentUser } = useRole();
@@ -27,14 +31,12 @@ export function QnaClient() {
   const [selectedQuestion, setSelectedQuestion] = useState<CourseQuestion | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Récupérer les cours
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les questions
   const questionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
@@ -44,17 +46,17 @@ export function QnaClient() {
   const filteredQuestions = useMemo(() => {
     if (!rawQuestions) return [];
     
-    const sorted = [...rawQuestions].sort((a, b) => {
+    return rawQuestions
+      .filter(q => {
+        const courseMatch = courseFilter === 'all' || q.courseId === courseFilter;
+        const statusMatch = statusFilter === 'all' || q.status === statusFilter;
+        return courseMatch && statusMatch;
+      })
+      .sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
         const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
         return dateB.getTime() - dateA.getTime();
-    });
-
-    return sorted.filter(q => {
-      const courseMatch = courseFilter === 'all' || q.courseId === courseFilter;
-      const statusMatch = statusFilter === 'all' || q.status === statusFilter;
-      return courseMatch && statusMatch;
-    });
+      });
   }, [rawQuestions, courseFilter, statusFilter]);
 
   const handleReplyClick = (question: CourseQuestion) => {
