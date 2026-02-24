@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -179,6 +180,11 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.pn
     };
   }, [user, db]);
 
+  const handleSwitchRole = (newRole: 'instructor' | 'admin') => {
+    switchRole(newRole);
+    onLinkClick?.();
+  };
+
   return (
     <>
       <OnboardingGuide />
@@ -230,19 +236,19 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.pn
             </div>
         </div>
 
-        <footer className="p-4 border-t border-white/10 space-y-2">
+        <footer className="p-4 mt-auto border-t border-white/10 space-y-2">
            <UserNav />
           
           <div className="space-y-2">
             {isAdmin && (
-                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => switchRole('admin')}>
+                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => handleSwitchRole('admin')}>
                     <Shield className="h-4 w-4" />
                     Mode Administrateur
                 </Button>
             )}
             
             {isInstructor ? (
-                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold" onClick={() => switchRole('instructor')}>
+                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold" onClick={() => handleSwitchRole('instructor')}>
                     <ArrowLeftRight className="h-4 w-4 text-primary" />
                     Mode Formateur
                 </Button>

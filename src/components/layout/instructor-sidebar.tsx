@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -97,6 +98,16 @@ export function InstructorSidebar({
     }
   ];
 
+  const handleSwitchToStudent = () => {
+    switchRole('student');
+    onLinkClick?.();
+  };
+
+  const handleSwitchToAdmin = () => {
+    switchRole('admin');
+    onLinkClick?.();
+  };
+
   return (
     <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
       <header className="p-4 border-b border-white/10 flex items-center gap-2">
@@ -132,7 +143,7 @@ export function InstructorSidebar({
           
           <div className="space-y-2">
             {isAdmin && (
-                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => switchRole('admin')}>
+                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={handleSwitchToAdmin}>
                     <Shield className="h-4 w-4" />
                     Mode Administrateur
                 </Button>
@@ -141,7 +152,7 @@ export function InstructorSidebar({
             <Button 
                 variant="outline" 
                 className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold"
-                onClick={() => switchRole('student')}
+                onClick={handleSwitchToStudent}
             >
                 <ArrowLeftRight className="h-4 w-4 text-primary" />
                 Mode Étudiant

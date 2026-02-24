@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -110,7 +111,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const { isAuthPage, isPublicPage, showNavigation, cleanPath } = useMemo(() => {
     const authPaths = ['/login', '/register', '/forgot-password'];
-    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline', '/investir'];
+    const staticPublicPaths = ['/', '/about', '/cgu', '/mentions-legales', '/abonnements', '/search', '/offline', '/investir', '/account'];
     
     const localeCleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
     
@@ -139,11 +140,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       '/instructor/students',
       '/instructor/revenus',
       '/instructor/questions-reponses',
-      '/instructor/settings'
+      '/instructor/settings',
+      '/admin'
     ];
 
     const isMessageList = localeCleanPath === '/student/messages' && !searchParams.get('chatId');
-    const isGlobalPage = globalNavPaths.includes(localeCleanPath) || isMessageList;
+    const isGlobalPage = globalNavPaths.some(p => localeCleanPath === p || localeCleanPath.startsWith(p));
     
     return { isAuthPage: isAuth, isPublicPage: isPublic, showNavigation: isGlobalPage, cleanPath: localeCleanPath };
   }, [pathname, searchParams]);
@@ -164,7 +166,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isStudentArea = cleanPath.startsWith('/student') || cleanPath === '/account';
     const isRootPath = cleanPath === '/' || cleanPath === '';
 
-    // Gestion des redirections forcées lors du changement de rôle ou accès direct racine
+    // Gestion des redirections lors du changement de rôle
     if (isRootPath || isAuthPage) {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
