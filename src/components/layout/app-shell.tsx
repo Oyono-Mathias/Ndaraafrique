@@ -59,10 +59,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
     // Redirections basées sur le rôle ACTIF
-    // Correction : On utilise cleanPath pour détecter si on est dans la mauvaise zone
     if (role === 'admin' && !isAdminArea && !isPublic) {
       router.push('/admin');
-    } else if (role === 'instructor' && (isAdminArea) && !isPublic) {
+    } else if (role === 'instructor' && isAdminArea && !isPublic) {
       router.push('/instructor/dashboard');
     } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublic) {
       router.push('/student/dashboard');

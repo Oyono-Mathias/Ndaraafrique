@@ -25,7 +25,7 @@ import {
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, BookOpen } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, BookOpen, AlertCircle } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -97,9 +97,9 @@ function CoursePlayerPageContent() {
         }
 
         // B. Sinon, priorité à la dernière leçon consultée (Firestore)
-        if (!startLecture && courseProgress?.lastLessonId) {
+        if (!startLecture && (courseProgress as any)?.lastLessonId) {
             for (const list of lecturesData.values()) {
-                const found = list.find(l => l.id === courseProgress.lastLessonId);
+                const found = list.find(l => l.id === (courseProgress as any).lastLessonId);
                 if (found) { startLecture = found; break; }
             }
         }
@@ -125,7 +125,7 @@ function CoursePlayerPageContent() {
       }
     };
     fetchCurriculum();
-  }, [courseId, db, courseProgress?.lastLessonId, lessonIdFromUrl]);
+  }, [courseId, db, (courseProgress as any)?.lastLessonId, lessonIdFromUrl]);
   
   const totalLecturesCount = useMemo(() => {
     return Array.from(lecturesMap.values()).reduce((acc, current) => acc + current.length, 0);
@@ -142,7 +142,7 @@ function CoursePlayerPageContent() {
   const handleMarkAsCompleted = useCallback(async () => {
     if (!user || !activeLecture || !course || !progressRef || totalLecturesCount === 0) return;
 
-    const completedLessons = courseProgress?.completedLessons || [];
+    const completedLessons = (courseProgress as any)?.completedLessons || [];
 
     if (!completedLessons.includes(activeLecture.id)) {
       const updatedCompletedLessons = [...completedLessons, activeLecture.id];
@@ -192,7 +192,7 @@ function CoursePlayerPageContent() {
   }
 
   const completionDate = (courseProgress?.updatedAt as any)?.toDate?.() || new Date();
-  const completedLessons = courseProgress?.completedLessons || [];
+  const completedLessons = (courseProgress as any)?.completedLessons || [];
 
   return (
     <>
@@ -208,20 +208,39 @@ function CoursePlayerPageContent() {
        <div className="flex flex-col lg:flex-row h-screen bg-black overflow-hidden">
             
             <main className="flex-1 flex flex-col bg-slate-950 min-h-0 relative overflow-y-auto lg:overflow-hidden">
-                <div className="flex-1 relative lg:overflow-y-auto">
+                <div className="flex-1 relative lg:overflow-y-auto bg-black">
                   {course?.contentType === 'ebook' && course?.ebookUrl ? (
                       <PdfViewerClient fileUrl={course.ebookUrl} />
-                  ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
-                    <div className="aspect-video lg:absolute lg:inset-0 flex items-center justify-center bg-black">
-                       <ReactPlayer
-                           url={activeLecture.contentUrl}
-                           width="100%"
-                           height="100%"
-                           controls={true}
-                           playing={true}
-                           config={{ file: { attributes: { controlsList: 'nodownload' } } }}
-                       />
-                    </div>
+                  ) : activeLecture?.type === 'video' ? (
+                    activeLecture.contentUrl ? (
+                      <div className="aspect-video lg:absolute lg:inset-0 flex items-center justify-center bg-black">
+                        <ReactPlayer
+                            url={activeLecture.contentUrl}
+                            width="100%"
+                            height="100%"
+                            controls={true}
+                            playing={true}
+                            config={{ 
+                              file: { 
+                                attributes: { 
+                                  controlsList: 'nodownload',
+                                  onContextMenu: (e: any) => e.preventDefault(),
+                                },
+                                forceVideo: true
+                              } 
+                            }}
+                            onError={(e) => {
+                              console.error("Video Error:", e);
+                              toast({ variant: 'destructive', title: 'Erreur de lecture', description: 'Impossible de charger la vidéo.' });
+                            }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                        <AlertCircle className="h-12 w-12 text-slate-700 mb-4" />
+                        <p className="text-slate-400">URL de vidéo non configurée pour cette leçon.</p>
+                      </div>
+                    )
                   ) : activeLecture?.type === 'pdf' && activeLecture.contentUrl ? (
                      <PdfViewerClient fileUrl={activeLecture.contentUrl} />
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
