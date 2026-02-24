@@ -53,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // --- ACCÈS AUX PAGES COMMUNES ---
-    // On autorise toujours l'accès au profil sans redirection automatique
+    // On autorise toujours l'accès à la page de profil et de compte sans redirection forcée
     if (cleanPath === '/account') return;
 
     // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
@@ -86,8 +86,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
   const isLandingPage = cleanPath === '/';
-  // On cache la sidebar sur les pages publiques et d'auth
-  const showNav = user && !isAuthPage && !isLandingPage;
+  const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/');
+  
+  // On cache la sidebar sur les pages d'authentification et de landing public
+  const showNav = user && !isAuthPage && !isPublicView;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
