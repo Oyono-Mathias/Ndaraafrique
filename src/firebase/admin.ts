@@ -1,27 +1,30 @@
+
 import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
  * @fileOverview Initialisation sécurisée du SDK Firebase Admin.
- * Gère le parsing robuste de la clé JSON des variables d'environnement.
+ * Empêche toute exécution côté client pour éviter les erreurs de bundle Webpack.
  */
 
 const projectId = firebaseConfig.projectId;
 
 function initializeAdmin() {
+  // Sécurité supplémentaire : si on n'est pas sur le serveur, on s'arrête immédiatement
+  if (typeof window !== 'undefined') return null;
+
   if (admin.apps.length > 0) return admin.app();
 
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
+      console.warn("FIREBASE_SERVICE_ACCOUNT_KEY is missing. Server actions requiring admin privileges will fail.");
       return null;
   }
 
   try {
     serviceAccountKey = serviceAccountKey.trim();
     
-    // Nettoyage des guillemets
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
     if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
 
@@ -29,11 +32,9 @@ function initializeAdmin() {
     try {
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Fallback si les sauts de ligne sont mal échappés
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // Correction spécifique pour la clé privée
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }

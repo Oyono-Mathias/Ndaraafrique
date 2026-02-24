@@ -43,10 +43,11 @@ const nextConfig = {
       layers: true,
     };
 
-    // Ignore Node.js specific modules on the client side to avoid errors with firebase-admin
+    // Empêche le bundle client de tenter de résoudre les modules Node.js requis par firebase-admin
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
+        http2: false,
         net: false,
         tls: false,
         fs: false,
@@ -55,6 +56,12 @@ const nextConfig = {
         dns: false,
         path: false,
         os: false,
+        stream: false,
+        util: false,
+        crypto: false,
+        zlib: false,
+        process: false,
+        events: false,
       };
     }
 

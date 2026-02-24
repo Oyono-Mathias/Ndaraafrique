@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -14,10 +15,10 @@ interface CertificatePremiumProps {
 }
 
 export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePremiumProps>(({
-  studentName,
-  courseName,
-  completionDate,
-  certificateId,
+  studentName = "Lamassien Saleh",
+  courseName = "Masterclass IA & Business Intelligence",
+  completionDate = "24 Février 2026",
+  certificateId = "NDR-2026-AB12C34",
   instructorName = "Directeur Pédagogique",
   className
 }, ref) => {
@@ -65,7 +66,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
             Ce document atteste officiellement que
           </p>
           <div className="relative inline-block px-12 py-2 border-b-2 border-[#e5c185]">
-            <h2 className="text-4xl md:text-6xl font-serif font-black text-gray-900 capitalize tracking-tight">
+            <h2 className="text-4xl md:text-6xl font-serif font-black text-[#CC7722] capitalize tracking-tight">
               {studentName}
             </h2>
           </div>
@@ -112,7 +113,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
                <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">CEO, Fondateur</p>
             </div>
             <div className="text-center space-y-2">
-               <div className="h-12 w-32 border-b border-gray-300 flex items-end justify-center italic font-serif text-2xl text-gray-600 pb-1">
+               <div className="h-12 w-32 border-b border-gray-400 flex items-end justify-center italic font-serif text-2xl text-gray-600 pb-1">
                   Directeur P.
                </div>
                <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">{instructorName}</p>
