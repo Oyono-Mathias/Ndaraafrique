@@ -11,7 +11,7 @@ const projectId = firebaseConfig.projectId;
 function initializeAdmin() {
   if (admin.apps.length > 0) return admin.app();
 
-  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
       console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
@@ -19,10 +19,21 @@ function initializeAdmin() {
   }
 
   try {
-    const serviceAccount = JSON.parse(serviceAccountKey.trim());
+    serviceAccountKey = serviceAccountKey.trim();
+    // Gérer les guillemets superflus si présents
+    if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
+    if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
+
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(serviceAccountKey);
+    } catch (e) {
+      // Fallback si les sauts de ligne ne sont pas correctement échappés
+      serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
+    }
     
-    // Nettoyage de la clé privée pour les environnements de prod
-    if (serviceAccount.private_key) {
+    // Nettoyage final de la clé privée
+    if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 

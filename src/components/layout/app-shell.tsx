@@ -52,19 +52,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser explicitement la page de compte
+    // Autoriser explicitement la page de compte pour tous les rôles
     if (cleanPath === '/account') return;
 
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    // Redirections fluides basées sur le rôle ACTIF
-    if (role === 'admin' && !isAdminArea && !isPublic) {
-      router.push('/admin');
-    } else if (role === 'instructor' && isAdminArea && !isPublic) {
-      router.push('/instructor/dashboard');
-    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublic) {
-      router.push('/student/dashboard');
+    // --- LOGIQUE DE REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
+    if (role === 'admin') {
+        // Un admin peut aller n'importe où, mais par défaut on le garde en admin si il est dans la zone admin
+        return;
+    } else if (role === 'instructor') {
+        if (isAdminArea) router.push('/instructor/dashboard');
+    } else if (role === 'student') {
+        if (isInstructorArea || isAdminArea) router.push('/student/dashboard');
     }
   }, [user, role, loading, cleanPath, router, mounted]);
 

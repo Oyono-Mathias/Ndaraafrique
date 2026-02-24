@@ -6,7 +6,6 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
- * Version exportée pour le build Vercel.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -79,7 +78,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
 }
 
 /**
- * ACCORDE L'ACCÈS À UN COURS (Supporte expirationMinutes pour le build)
+ * ACCORDE L'ACCÈS À UN COURS
  */
 export async function grantCourseAccess({
     studentId,

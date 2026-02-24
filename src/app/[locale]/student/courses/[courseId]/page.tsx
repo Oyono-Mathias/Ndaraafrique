@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours haute performance pour les étudiants.
- * À gauche : Zone de lecture multimédia (vidéo, PDF, texte) et contrôles.
- * À droite : Curriculum (sections et leçons) avec état de complétion.
+ * @fileOverview Lecteur de cours Ndara Universal.
+ * Gère la lecture multimédia (vidéo, PDF, texte) avec conteneur responsive 16:9.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -33,7 +32,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
-// Import dynamique pour éviter les erreurs de SSR
+// Import dynamique pour le lecteur vidéo
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 function CoursePlayerPageContent() {
@@ -45,6 +44,7 @@ function CoursePlayerPageContent() {
   const { toast } = useToast();
   const router = useRouter();
 
+  const [hasWindow, setHasWindow] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
@@ -52,21 +52,24 @@ function CoursePlayerPageContent() {
   const [isLoadingContent, setIsLoadingContent] = useState(true);
   const [videoError, setVideoError] = useState(false);
 
-  // 1. Récupération des données du cours
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setHasWindow(true);
+    }
+  }, []);
+
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
   const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [course, db]);
   const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
 
-  // 2. Suivi de progression
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const { data: courseProgress, isLoading: progressLoading } = useDoc<CourseProgress>(progressRef);
   
   const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
   const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
 
-  // 3. Chargement du curriculum
   useEffect(() => {
     if (!courseId) return;
     const fetchCurriculum = async () => {
@@ -85,7 +88,6 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lecturesData);
         
-        // Auto-sélection
         let startLecture: Lecture | null = null;
         if (lessonIdFromUrl) {
             for (const list of lecturesData.values()) {
@@ -100,12 +102,10 @@ function CoursePlayerPageContent() {
             }
         }
         if (!startLecture && fetchedSections.length > 0) {
-            for (const section of fetchedSections) {
-                const sectionLectures = lecturesData.get(section.id);
-                if (sectionLectures && sectionLectures.length > 0) {
-                    startLecture = sectionLectures[0];
-                    break;
-                }
+            const firstSection = fetchedSections[0];
+            const sectionLectures = lecturesData.get(firstSection.id);
+            if (sectionLectures && sectionLectures.length > 0) {
+                startLecture = sectionLectures[0];
             }
         }
         if (startLecture) setActiveLecture(startLecture);
@@ -156,14 +156,7 @@ function CoursePlayerPageContent() {
     }
   }, [user, activeLecture, courseId, totalLecturesCount, course, progressRef, courseProgress, toast]);
 
-  const handleAskMathias = () => {
-    if (!activeLecture) return;
-    router.push(`/student/tutor?context=${activeLecture.id}`);
-  };
-  
-  const isPageLoading = isLoadingContent || courseLoading || progressLoading || instructorLoading || quizzesLoading;
-  
-  if (isPageLoading) {
+  if (isLoadingContent || courseLoading || progressLoading || instructorLoading || quizzesLoading) {
       return (
         <div className="flex flex-col lg:flex-row h-screen bg-slate-950 overflow-hidden">
           <div className="flex-1 p-4 lg:p-8 space-y-4">
@@ -190,53 +183,34 @@ function CoursePlayerPageContent() {
         certificateId={`${user?.uid}_${courseId}`}
       />
        <div className="flex flex-col lg:flex-row h-screen bg-black overflow-hidden">
-            
-            <main className="flex-1 flex flex-col bg-slate-950 min-h-0 relative overflow-y-auto lg:overflow-hidden">
-                <div className="flex-1 relative lg:overflow-y-auto bg-black flex flex-col items-center justify-center">
+            <main className="flex-1 flex flex-col bg-slate-950 min-h-0 relative overflow-y-auto">
+                <div className="flex-1 bg-black flex flex-col">
                   {course?.contentType === 'ebook' && course?.ebookUrl ? (
                       <PdfViewerClient fileUrl={course.ebookUrl} />
                   ) : activeLecture?.type === 'video' ? (
-                    activeLecture.contentUrl ? (
-                      <div className="w-full h-full relative group">
-                        {videoError ? (
-                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900/80 p-8 text-center animate-in fade-in duration-500">
-                                <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-                                <h3 className="text-xl font-bold text-white mb-2">Erreur de chargement</h3>
-                                <p className="text-slate-400 max-w-xs mb-6">Nous n'avons pas pu charger cette vidéo. Essayez de l'ouvrir dans un nouvel onglet.</p>
-                                <Button variant="secondary" asChild className="rounded-xl">
-                                    <a href={activeLecture.contentUrl} target="_blank" rel="noopener noreferrer">
-                                        <ExternalLink className="h-4 w-4 mr-2" /> Ouvrir la vidéo
-                                    </a>
-                                </Button>
-                            </div>
-                        ) : (
-                            <ReactPlayer
-                                url={activeLecture.contentUrl}
-                                width="100%"
-                                height="100%"
-                                controls={true}
-                                playing={true}
-                                playsinline={true}
-                                pip={true}
-                                config={{ 
-                                  file: { 
-                                    attributes: { 
-                                      controlsList: 'nodownload',
-                                      onContextMenu: (e: any) => e.preventDefault(),
-                                    },
-                                    forceVideo: true
-                                  } 
-                                }}
-                                onError={() => setVideoError(true)}
-                            />
-                        )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                        <AlertCircle className="h-12 w-12 text-slate-700 mb-4" />
-                        <p className="text-slate-400">Leçon sans vidéo associée.</p>
-                      </div>
-                    )
+                    <div className="w-full max-w-5xl mx-auto bg-black overflow-hidden">
+                        <div className="relative pt-[56.25%] bg-black">
+                            {hasWindow && activeLecture.contentUrl ? (
+                                <ReactPlayer
+                                    url={activeLecture.contentUrl}
+                                    width="100%"
+                                    height="100%"
+                                    className="absolute top-0 left-0"
+                                    controls={true}
+                                    pip={true}
+                                    stopOnTerminate={false}
+                                    config={{
+                                        file: { attributes: { controlsList: 'nodownload', forceVideo: true } }
+                                    }}
+                                    onError={() => setVideoError(true)}
+                                />
+                            ) : (
+                                <div className="absolute inset-0 flex items-center justify-center text-slate-500">
+                                    {videoError ? "Erreur lors de la lecture" : "Chargement du lecteur..."}
+                                </div>
+                            )}
+                        </div>
+                    </div>
                   ) : activeLecture?.type === 'pdf' && activeLecture.contentUrl ? (
                      <PdfViewerClient fileUrl={activeLecture.contentUrl} />
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
@@ -246,31 +220,25 @@ function CoursePlayerPageContent() {
                       </div>
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full min-h-[300px] p-8 text-center bg-slate-900/30">
-                        <div className="p-6 bg-primary/10 rounded-full mb-6">
-                            <Play className="h-16 w-16 text-primary animate-pulse" />
-                        </div>
+                        <Play className="h-16 w-16 text-primary animate-pulse mb-6" />
                         <h3 className="text-2xl font-bold text-white italic">"Bara ala, Tonga na ndara"</h3>
-                        <p className="text-slate-400 max-w-sm mt-3 text-lg">Sélectionnez une leçon pour commencer.</p>
+                        <p className="text-slate-400 mt-3">Sélectionnez une leçon dans le menu pour commencer.</p>
                     </div>
                   )}
                 </div>
 
-                 <div className="p-4 lg:p-6 bg-[#0f172a] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shadow-2xl z-10">
+                 <div className="p-4 lg:p-6 bg-[#0f172a] border-t border-slate-800 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 z-10">
                     <div className="flex-1 overflow-hidden">
-                        <h1 className="font-bold text-lg lg:text-xl text-white truncate">{activeLecture?.title || 'Chargement...'}</h1>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-1">
-                            <BookOpen className="h-3.5 w-3.5" />
-                            <span className="truncate">{course?.title}</span>
-                        </div>
+                        <h1 className="font-bold text-lg lg:text-xl text-white truncate">{activeLecture?.title || 'Démarrage du cours...'}</h1>
+                        <p className="text-xs text-slate-500 mt-1 uppercase font-bold tracking-widest">{course?.title}</p>
                     </div>
-                    
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <Button variant="secondary" onClick={handleAskMathias} className="flex-1 sm:flex-none bg-slate-800 hover:bg-slate-700 text-white border-slate-700 h-11 px-6 rounded-xl transition-all active:scale-95">
+                        <Button variant="secondary" onClick={() => router.push(`/student/tutor?context=${activeLecture?.id}`)} className="flex-1 sm:flex-none bg-slate-800 h-11 px-6 rounded-xl">
                             <Bot className="h-5 w-5 mr-2 text-primary" /> Aide Mathias
                         </Button>
                         {activeLecture && (
-                           <Button onClick={handleMarkAsCompleted} disabled={completedLessons.includes(activeLecture.id)} className={cn("flex-1 sm:flex-none h-11 px-8 rounded-xl font-bold transition-all active:scale-95 shadow-lg", completedLessons.includes(activeLecture.id) ? "bg-green-600/20 text-green-400 border border-green-500/30" : "bg-primary hover:bg-primary/90 text-white")}>
-                               <CheckCircle className="h-5 w-5 mr-2" /> {completedLessons.includes(activeLecture.id) ? "Fait" : "Terminer"}
+                           <Button onClick={handleMarkAsCompleted} disabled={completedLessons.includes(activeLecture.id)} className={cn("flex-1 sm:flex-none h-11 px-8 rounded-xl font-bold", completedLessons.includes(activeLecture.id) ? "bg-green-600/20 text-green-400" : "bg-primary text-white")}>
+                               <CheckCircle className="h-5 w-5 mr-2" /> {completedLessons.includes(activeLecture.id) ? "Terminée" : "Finir la leçon"}
                            </Button>
                         )}
                     </div>
