@@ -6,7 +6,6 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
- * Indispensable pour connecter les 10 membres de l'Auth vers Firestore.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -22,7 +21,6 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 /**
  * SYNCHRONISATION AUTH -> FIRESTORE
  * Scanne tous les utilisateurs de Firebase Auth et crée les profils manquants.
- * C'est l'outil qui va faire apparaître vos 10 membres.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -82,6 +80,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
 
 /**
  * ACCORDE L'ACCÈS À UN COURS
+ * Corrigé : Acceptation de expirationMinutes pour le build Vercel.
  */
 export async function grantCourseAccess({
     studentId,
@@ -89,12 +88,14 @@ export async function grantCourseAccess({
     adminId,
     reason,
     expirationInDays,
+    expirationMinutes,
 }: {
     studentId: string;
     courseId: string;
     adminId: string;
     reason: string;
     expirationInDays?: number;
+    expirationMinutes?: number;
 }) {
     try {
         const db = getAdminDb();
@@ -103,7 +104,13 @@ export async function grantCourseAccess({
         if (!courseDoc.exists) return { success: false, error: "Cours introuvable." };
 
         const enrollmentRef = db.collection('enrollments').doc(`${studentId}_${courseId}`);
-        const expiresAt = expirationInDays ? Timestamp.fromMillis(Date.now() + expirationInDays * 86400000) : null;
+        
+        let expiresAt = null;
+        if (expirationInDays) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 86400000);
+        } else if (expirationMinutes) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60000);
+        }
 
         batch.set(enrollmentRef, {
             studentId,

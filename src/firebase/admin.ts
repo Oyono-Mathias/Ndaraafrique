@@ -2,8 +2,7 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation ultra-robuste du SDK Firebase Admin.
- * Optimisé pour Vercel avec lecture JSON sécurisée.
+ * @fileOverview Initialisation sécurisée du SDK Firebase Admin pour Vercel.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -13,35 +12,35 @@ function initializeAdmin() {
 
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
+  if (!serviceAccountKey) {
+      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing from environment variables.");
+      return null;
+  }
+
   try {
-    if (serviceAccountKey) {
-      // Nettoyage des guillemets éventuels
-      serviceAccountKey = serviceAccountKey.trim();
-      if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
-      if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
+    // Nettoyage des guillemets éventuels pour une lecture robuste
+    serviceAccountKey = serviceAccountKey.trim();
+    if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
+    if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
 
-      let serviceAccount;
-      try {
-        serviceAccount = JSON.parse(serviceAccountKey);
-      } catch (e) {
-        // Fallback pour les échappements de nouvelles lignes
-        serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
-      }
-      
-      if (serviceAccount && typeof serviceAccount.private_key === 'string') {
-        serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
-      }
-
-      return admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount),
-        projectId: serviceAccount.project_id || projectId
-      });
+    let serviceAccount;
+    try {
+      serviceAccount = JSON.parse(serviceAccountKey);
+    } catch (e) {
+      // Gestion des caractères d'échappement problématiques
+      serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // Auto-init en environnement Google Cloud
-    return admin.initializeApp();
+    if (serviceAccount && typeof serviceAccount.private_key === 'string') {
+      serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+    }
+
+    return admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount),
+      projectId: serviceAccount.project_id || projectId
+    });
   } catch (error: any) {
-    console.warn('Firebase Admin Init Notice:', error.message);
+    console.error('Firebase Admin Init Error:', error.message);
     return null;
   }
 }

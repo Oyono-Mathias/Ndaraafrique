@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -26,7 +25,6 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
-// Email du super-administrateur
 const MASTER_ADMIN_EMAIL = 'salguienow@gmail.com';
 
 export function RoleProvider({ children }: { children: ReactNode }) {
@@ -43,23 +41,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const auth = getAuth();
     if (auth.currentUser) {
         const userDocRef = doc(db, 'users', auth.currentUser.uid);
-        await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
+        await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    router.push('/');
+    router.push('/login');
   }, [db, router]);
-
-  useEffect(() => {
-    const auth = getAuth();
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
-      }
-    });
-    return () => unsubscribe();
-  }, [db]);
 
   useEffect(() => {
     if (isUserLoading) {
@@ -82,13 +69,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
           if (userData.status === 'suspended') {
             await secureSignOut();
-            toast({
-                variant: 'destructive',
-                title: 'Compte suspendu',
-                description: 'Votre compte a été suspendu.',
-                duration: Infinity,
-            });
-            setLoading(false);
+            toast({ variant: 'destructive', title: 'Compte suspendu' });
             return;
           }
           
@@ -101,17 +82,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
-          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && userData.fullName);
-
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
               email: user.email || '',
               username: userData.username || 'user_' + user.uid.substring(0, 5),
               fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
-              profilePictureURL: userData.profilePictureURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(userData.fullName || 'A')}`,
-              status: userData.status || 'active',
-              isProfileComplete: isComplete,
               role: isMasterAdmin ? 'admin' : (userData.role || 'student')
           } as any;
           
@@ -122,9 +98,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
           } else {
-              const defaultRole = resolvedUser.role || 'student';
-              setRole(defaultRole as UserRole);
-              localStorage.setItem('ndaraafrique-role', defaultRole);
+              setRole(resolvedUser.role);
           }
 
         } else {
@@ -138,17 +112,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 status: 'active',
                 isInstructorApproved: false,
                 createdAt: serverTimestamp(),
-                lastLogin: serverTimestamp(),
                 isOnline: true,
                 lastSeen: serverTimestamp(),
-                profilePictureURL: user.photoURL || `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.displayName || 'A')}`,
-                isProfileComplete: false,
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
             };
             await setDoc(userDocRef, newUserDoc);
-            setRole(newUserDoc.role as UserRole);
-            setAvailableRoles(isMasterAdmin ? ['student', 'instructor', 'admin'] : ['student']);
-            localStorage.setItem('ndaraafrique-role', newUserDoc.role);
         }
         setLoading(false);
     }, (error) => {
@@ -161,19 +129,15 @@ export function RoleProvider({ children }: { children: ReactNode }) {
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
-      // 1. Mise à jour de l'état
       setRole(newRole);
-      // 2. Persistance pour le prochain rafraîchissement
       localStorage.setItem('ndaraafrique-role', newRole);
       
-      toast({
-          title: `Mode ${newRole === 'instructor' ? 'Formateur' : newRole === 'admin' ? 'Administrateur' : 'Étudiant'} activé`,
-      });
-
-      // La redirection est gérée automatiquement par le useEffect de l'AppShell
-      // pour éviter les conflits de navigation.
+      const target = newRole === 'admin' ? '/admin' : newRole === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+      router.push(target);
+      
+      toast({ title: `Mode ${newRole} activé` });
     }
-  }, [availableRoles, toast]);
+  }, [availableRoles, router, toast]);
   
   const value = useMemo(() => ({
     role,

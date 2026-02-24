@@ -8,17 +8,12 @@ import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { Button } from '@/components/ui/button';
-import { Wrench, PanelLeft, Megaphone, X, Loader2 } from 'lucide-react';
+import { Wrench, PanelLeft, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
-
-/**
- * @fileOverview AppShell Ndara Afrique.
- * Gère les redirections de rôles, la maintenance et les accès sécurisés.
- */
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
@@ -30,18 +25,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [siteSettings, setSiteSettings] = useState({
       maintenanceMode: false,
-      announcementMessage: ''
   });
 
   useEffect(() => {
     setMounted(true);
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
         if (snap.exists()) {
-            const data = snap.data();
-            setSiteSettings({
-                maintenanceMode: data.platform?.maintenanceMode || false,
-                announcementMessage: data.platform?.announcementMessage || ''
-            });
+            setSiteSettings({ maintenanceMode: snap.data().platform?.maintenanceMode || false });
         }
     });
     return () => unsub();
@@ -49,7 +39,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const cleanPath = useMemo(() => pathname.replace(/^\/(en|fr)/, '') || '/', [pathname]);
 
-  // REDIRECTIONS INTELLIGENTES
   useEffect(() => {
     if (loading || !mounted) return;
 
@@ -61,33 +50,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser l'accès à Mon Compte pour TOUT LE MONDE
+    // Autoriser Mon Compte pour tous les rôles
     if (cleanPath === '/account') return;
 
-    // Redirection vers le dashboard approprié si sur une page publique ou racine
-    if (cleanPath === '/' || cleanPath === '/login') {
-        if (role === 'admin') router.push('/admin');
-        else if (role === 'instructor') router.push('/instructor/dashboard');
-        else router.push('/student/dashboard');
-        return;
-    }
+    const isAdminArea = cleanPath.startsWith('/admin');
+    const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    // Sécurité de zone
-    const isAdminPath = cleanPath.startsWith('/admin');
-    const isInstructorPath = cleanPath.startsWith('/instructor');
-
-    if (role === 'admin') return;
-
-    if (role === 'instructor') {
-        if (isAdminPath) router.push('/instructor/dashboard');
-        return;
-    }
-
-    if (role === 'student') {
-        if ((isAdminPath || isInstructorPath) && !isPublic) {
-            router.push('/student/dashboard');
-        }
-        return;
+    // Redirections basées sur le rôle ACTIF
+    if (role === 'admin' && !isAdminArea && !isPublic) {
+      router.push('/admin');
+    } else if (role === 'instructor' && (isAdminArea) && !isPublic) {
+      router.push('/instructor/dashboard');
+    } else if (role === 'student' && (isInstructorArea || isAdminArea) && !isPublic) {
+      router.push('/student/dashboard');
     }
   }, [user, role, loading, cleanPath, router, mounted]);
 
@@ -96,14 +71,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
-            <Wrench className="h-16 w-16 text-primary animate-pulse mb-4" />
+            <Wrench className="h-16 w-16 text-primary mb-4" />
             <h1 className="text-2xl font-black text-white uppercase">Maintenance Ndara</h1>
             <p className="text-slate-500 mt-2">Nous revenons dans quelques instants.</p>
         </div>
       );
   }
 
-  const showNav = user && cleanPath !== '/' && !['/login', '/register', '/forgot-password'].includes(cleanPath);
+  const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
+  const isLandingPage = cleanPath === '/';
+  const showNav = user && !isAuthPage && !isLandingPage;
+  
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
@@ -111,8 +89,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <SplashScreen />
       <OfflineBar />
-      <div className={cn("min-h-screen w-full bg-slate-950", showNav && !cleanPath.startsWith('/admin') && "md:grid md:grid-cols-[280px_1fr]")}>
-        {showNav && !cleanPath.startsWith('/admin') && (
+      <div className={cn("min-h-screen w-full bg-slate-950", showNav && "md:grid md:grid-cols-[280px_1fr]")}>
+        {showNav && (
           <aside className="hidden md:block h-screen sticky top-0">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
