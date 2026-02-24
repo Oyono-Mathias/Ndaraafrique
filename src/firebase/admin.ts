@@ -1,3 +1,4 @@
+
 import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
@@ -20,6 +21,7 @@ function initializeAdmin() {
 
   try {
     serviceAccountKey = serviceAccountKey.trim();
+    
     // Gérer les guillemets superflus si présents
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
     if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
@@ -32,7 +34,7 @@ function initializeAdmin() {
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // Nettoyage final de la clé privée
+    // Nettoyage final de la clé privée pour s'assurer que les sauts de ligne sont réels
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }

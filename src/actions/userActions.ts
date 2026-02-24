@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -6,6 +7,7 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
+ * Corrigé : Support du paramètre expirationMinutes pour le build Vercel.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {

@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -20,7 +21,6 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Gestionnaire de questions-réponses pour les formateurs.
- * Corrigé : Suppression des variables non définies pour le build.
  */
 
 export function QnaClient() {
