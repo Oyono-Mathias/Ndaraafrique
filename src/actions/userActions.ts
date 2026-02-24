@@ -80,7 +80,6 @@ export async function syncUsersWithAuthAction(adminId: string) {
 
 /**
  * ACCORDE L'ACCÈS À UN COURS
- * Corrigé : Acceptation de expirationMinutes pour le build Vercel.
  */
 export async function grantCourseAccess({
     studentId,
