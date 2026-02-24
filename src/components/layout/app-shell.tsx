@@ -53,7 +53,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // --- ACCÈS AUX PAGES COMMUNES ---
-    // On autorise toujours l'accès à la page de profil et de compte sans redirection forcée
     if (cleanPath === '/account') return;
 
     // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
@@ -61,13 +60,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
     if (role === 'admin') {
-        // En mode admin, on peut naviguer partout, mais on reste prioritairement en zone admin
-        return;
+        return; // Admin can go anywhere
     } else if (role === 'instructor') {
-        // Si on est formateur mais dans la zone admin, on dégage vers le dashboard formateur
         if (isAdminArea) router.push('/instructor/dashboard');
     } else if (role === 'student') {
-        // Si on est étudiant mais dans une zone pro, on dégage vers le dashboard étudiant
         if (isInstructorArea || isAdminArea) router.push('/student/dashboard');
     }
   }, [user, role, loading, cleanPath, router, mounted]);
@@ -88,7 +84,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isLandingPage = cleanPath === '/';
   const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/');
   
-  // On cache la sidebar sur les pages d'authentification et de landing public
   const showNav = user && !isAuthPage && !isPublicView;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);

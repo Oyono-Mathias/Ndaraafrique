@@ -6,7 +6,6 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
- * Version stabilisée pour le build Vercel.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {

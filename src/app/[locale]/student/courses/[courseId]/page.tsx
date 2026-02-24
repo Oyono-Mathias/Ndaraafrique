@@ -70,7 +70,7 @@ function CoursePlayerPageContent() {
   const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
   const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
 
-  // Chargement du curriculum (Modules et Leçons)
+  // Chargement du curriculum
   useEffect(() => {
     if (!courseId) return;
     const fetchCurriculum = async () => {
@@ -224,7 +224,6 @@ function CoursePlayerPageContent() {
             )}
           </div>
 
-          {/* BARRE D'INFOS SOUS LECTEUR */}
           <div className="p-4 lg:p-6 bg-[#0a0a0a] border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex-1 min-w-0">
               <h1 className="text-lg lg:text-xl font-black text-white truncate uppercase tracking-tight">
