@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useMemo } from 'react';
@@ -21,6 +20,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Gestionnaire de questions-réponses pour les formateurs.
+ * Correction Build : Suppression de la variable non définie searchMatch.
  */
 
 export function QnaClient() {

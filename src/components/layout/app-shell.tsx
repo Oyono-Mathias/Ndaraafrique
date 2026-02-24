@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -20,6 +19,7 @@ import { OfflineBar } from '@/components/OfflineBar';
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère les redirections de rôles, la maintenance et les bannières.
+ * Correction : Permet l'accès à /account pour tous les rôles et fluidifie le changement de mode.
  */
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -64,7 +64,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser l'accès à /account pour TOUS les utilisateurs connectés
+    // ACCÈS UNIVERSEL À /account
     if (cleanPath === '/account') return;
 
     // Redirection automatique vers le bon dashboard si on est sur la racine ou login
@@ -76,15 +76,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // Sécurité de zone
-    if (role === 'student' && (cleanPath.startsWith('/admin') || cleanPath.startsWith('/instructor'))) {
-        router.push('/student/dashboard');
+    const isAdminPath = cleanPath.startsWith('/admin');
+    const isInstructorPath = cleanPath.startsWith('/instructor');
+
+    if (role === 'admin') {
+        // L'admin peut aller partout
+        return;
     }
-    if (role === 'instructor' && cleanPath.startsWith('/admin')) {
-        router.push('/instructor/dashboard');
+
+    if (role === 'instructor') {
+        // L'instructeur ne peut pas aller en admin
+        if (isAdminPath) router.push('/instructor/dashboard');
+        return;
+    }
+
+    if (role === 'student') {
+        // L'étudiant ne peut aller ni en admin, ni en instructeur
+        if (isAdminPath || isInstructorPath) router.push('/student/dashboard');
+        return;
     }
   }, [user, role, loading, cleanPath, router, mounted]);
 
   if (loading || !mounted) return <LoadingScreen />;
+  
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
@@ -106,7 +120,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className={cn("min-h-screen w-full bg-slate-950", showNav && !cleanPath.startsWith('/admin') && "md:grid md:grid-cols-[280px_1fr]")}>
         {showNav && !cleanPath.startsWith('/admin') && (
           <aside className="hidden md:block h-screen sticky top-0">
-             {role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
+             {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
         <div className="flex flex-col flex-1">

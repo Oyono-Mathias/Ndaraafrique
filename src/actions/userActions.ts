@@ -1,4 +1,3 @@
-
 'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -7,6 +6,7 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
+ * Indispensable pour connecter les 10 membres de l'Auth vers Firestore.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -22,6 +22,7 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 /**
  * SYNCHRONISATION AUTH -> FIRESTORE
  * Scanne tous les utilisateurs de Firebase Auth et crée les profils manquants.
+ * C'est l'outil qui va faire apparaître vos 10 membres.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -64,6 +65,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
                 count++;
             }
 
+            // Limite de 500 opérations par batch Firestore
             if (count >= 450) {
                 await batch.commit();
                 batch = db.batch();
@@ -74,6 +76,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
         if (count > 0) await batch.commit();
         return { success: true, count: created };
     } catch (error: any) {
+        console.error("Sync Error:", error);
         return { success: false, error: error.message };
     }
 }
@@ -111,6 +114,16 @@ export async function grantCourseAccess({
             expiresAt
         }, { merge: true });
 
+        // Log de l'action
+        const logRef = db.collection('admin_audit_logs').doc();
+        batch.set(logRef, {
+            adminId,
+            eventType: 'course.grant',
+            target: { id: studentId, type: 'user' },
+            details: `Accès au cours "${courseDoc.data()?.title}" accordé. Motif: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
         await batch.commit();
         return { success: true };
     } catch (e: any) {
@@ -118,14 +131,28 @@ export async function grantCourseAccess({
     }
 }
 
-export async function approveInstructorApplication({ userId, decision, adminId }: { userId: string, decision: 'accepted' | 'rejected', adminId: string }) {
+export async function approveInstructorApplication({ userId, decision, adminId, message }: { userId: string, decision: 'accepted' | 'rejected', adminId: string, message?: string }) {
     try {
         const db = getAdminDb();
+        const batch = db.batch();
         const userRef = db.collection('users').doc(userId);
-        await userRef.update({
+        
+        batch.update(userRef, {
             role: decision === 'accepted' ? 'instructor' : 'student',
-            isInstructorApproved: decision === 'accepted'
+            isInstructorApproved: decision === 'accepted',
+            'instructorApplication.decisionAt': FieldValue.serverTimestamp()
         });
+
+        const auditRef = db.collection('admin_audit_logs').doc();
+        batch.set(auditRef, {
+            adminId,
+            eventType: 'instructor.application',
+            target: { id: userId, type: 'user' },
+            details: `Candidature ${decision === 'accepted' ? 'approuvée' : 'rejetée'}.`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
         return { success: true };
     } catch (e: any) {
         return { success: false, error: e.message };
@@ -143,7 +170,37 @@ export async function updateUserProfileAction({ userId, data, requesterId }: { u
 }
 
 export async function migrateUserProfilesAction(adminId: string) {
-    return { success: true, count: 0 }; // Placeholder
+    try {
+        const db = getAdminDb();
+        const usersSnap = await db.collection('users').get();
+        let count = 0;
+        let batch = db.batch();
+
+        for (const doc of usersSnap.docs) {
+            const data = doc.data();
+            const updates: any = {};
+            let needsUpdate = false;
+
+            if (data.status === undefined) { updates.status = 'active'; needsUpdate = true; }
+            if (data.role === undefined) { updates.role = 'student'; needsUpdate = true; }
+            if (data.isInstructorApproved === undefined) { updates.isInstructorApproved = false; needsUpdate = true; }
+
+            if (needsUpdate) {
+                batch.update(doc.ref, updates);
+                count++;
+            }
+
+            if (count % 450 === 0 && count > 0) {
+                await batch.commit();
+                batch = db.batch();
+            }
+        }
+
+        if (count % 450 !== 0) await batch.commit();
+        return { success: true, count };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
 }
 
 export async function updateUserStatus({ userId, status, adminId }: { userId: string, status: string, adminId: string }) {
@@ -166,7 +223,7 @@ export async function updateUserRole({ userId, role, adminId }: { userId: string
     }
 }
 
-export async function deleteUserAccount({ userId }: { userId: string, idToken: string }) {
+export async function deleteUserAccount({ userId, idToken }: { userId: string, idToken: string }) {
     try {
         const auth = getAdminAuth();
         const db = getAdminDb();
