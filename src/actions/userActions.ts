@@ -1,4 +1,4 @@
-'use client';
+'use server';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -6,6 +6,7 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
+ * Corrigé pour le build Vercel (typage expirationMinutes).
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -20,7 +21,6 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * SYNCHRONISATION AUTH -> FIRESTORE
- * Importe les comptes de l'Authentification qui n'ont pas encore de profil Firestore.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);

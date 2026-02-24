@@ -14,27 +14,26 @@ function initializeAdmin() {
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing from environment variables.");
+      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
       return null;
   }
 
   try {
     serviceAccountKey = serviceAccountKey.trim();
     
-    // Suppression des guillemets éventuels autour de la chaîne JSON
+    // Nettoyage des guillemets
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
     if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
 
     let serviceAccount;
     try {
-      // Tentative de parsing direct
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Fallback si les sauts de ligne ne sont pas correctement échappés dans la chaîne
+      // Fallback si les sauts de ligne sont mal échappés
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // Nettoyage de la clé privée pour garantir que \n est interprété comme un saut de ligne réel
+    // Correction spécifique pour la clé privée
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }

@@ -24,7 +24,7 @@ import {
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight, Lock, Award } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight, Lock, Award, ArrowLeft } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -198,7 +198,13 @@ function CoursePlayerPageContent() {
                         controls
                         pip
                         config={{ 
-                          file: { attributes: { controlsList: 'nodownload' } },
+                          file: { 
+                            attributes: { 
+                              controlsList: 'nodownload',
+                              disablePictureInPicture: false
+                            },
+                            forceVideo: true
+                          },
                           youtube: { playerVars: { modestbranding: 1, rel: 0 } }
                         }}
                       />

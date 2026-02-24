@@ -54,16 +54,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // --- ACCÈS AUX PAGES COMMUNES ---
-    // Ne jamais rediriger si on est sur la page Mon Compte
-    if (cleanPath === '/account') return;
+    // Ne jamais rediriger si on est sur la page Mon Compte ou Recherche
+    if (cleanPath === '/account' || cleanPath === '/search') return;
 
     // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
+    const isStudentArea = cleanPath.startsWith('/student');
 
     if (role === 'admin') {
-        // L'admin peut aller partout, mais on le garde prioritairement sur le panel
-        // sauf s'il va explicitement sur une page commune (/account, /search)
+        // L'admin peut aller partout, on le laisse naviguer librement
         return; 
     } else if (role === 'instructor') {
         if (isAdminArea) router.push('/instructor/dashboard');
