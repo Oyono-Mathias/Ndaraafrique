@@ -7,7 +7,7 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
- * Corrigé : Support du paramètre expirationMinutes pour le build Vercel.
+ * Support complet des expirations (jours et minutes).
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -81,6 +81,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
 
 /**
  * ACCORDE L'ACCÈS À UN COURS
+ * Correction Vercel : Ajout explicite du support expirationMinutes
  */
 export async function grantCourseAccess({
     studentId,

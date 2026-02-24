@@ -15,14 +15,14 @@ function initializeAdmin() {
   let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
+      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing from environment variables.");
       return null;
   }
 
   try {
     serviceAccountKey = serviceAccountKey.trim();
     
-    // Gérer les guillemets superflus si présents
+    // Suppression des guillemets éventuels autour de la chaîne JSON
     if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
     if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
 
@@ -30,11 +30,11 @@ function initializeAdmin() {
     try {
       serviceAccount = JSON.parse(serviceAccountKey);
     } catch (e) {
-      // Fallback si les sauts de ligne ne sont pas correctement échappés
+      // Fallback si les sauts de ligne ne sont pas correctement échappés dans la chaîne
       serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
     }
     
-    // Nettoyage final de la clé privée pour s'assurer que les sauts de ligne sont réels
+    // Nettoyage de la clé privée pour garantir que \n est interprété comme un saut de ligne réel
     if (serviceAccount && typeof serviceAccount.private_key === 'string') {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
@@ -44,7 +44,7 @@ function initializeAdmin() {
       projectId: serviceAccount.project_id || projectId
     });
   } catch (error: any) {
-    console.error('Firebase Admin Init Error:', error.message);
+    console.error('Firebase Admin Initialization Error:', error.message);
     return null;
   }
 }

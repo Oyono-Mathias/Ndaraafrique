@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -52,19 +53,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser explicitement la page de compte pour tous les rôles
+    // --- ACCÈS AUX PAGES COMMUNES ---
     if (cleanPath === '/account') return;
 
+    // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
+    // Si l'admin bascule en mode étudiant, il doit être redirigé hors de la zone admin
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    // --- LOGIQUE DE REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
     if (role === 'admin') {
-        // Un admin peut aller n'importe où, mais par défaut on le garde en admin si il est dans la zone admin
+        // En mode admin, on reste dans admin sauf si on demande explicitement une page publique
         return;
     } else if (role === 'instructor') {
+        // Si on est formateur mais dans la zone admin, on dégage vers le dashboard formateur
         if (isAdminArea) router.push('/instructor/dashboard');
     } else if (role === 'student') {
+        // Si on est étudiant mais dans une zone pro, on dégage vers le dashboard étudiant
         if (isInstructorArea || isAdminArea) router.push('/student/dashboard');
     }
   }, [user, role, loading, cleanPath, router, mounted]);
