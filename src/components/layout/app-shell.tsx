@@ -1,32 +1,29 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { Button } from '@/components/ui/button';
-import { Wrench, PanelLeft, Megaphone, X } from 'lucide-react';
+import { Wrench, PanelLeft, Megaphone, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
-import { LoadingScreen } from '@/components/ui/LoadingScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
- * Gère les redirections de rôles, la maintenance et les bannières.
- * Correction : Permet l'accès à /account pour tous les rôles et fluidifie le changement de mode.
+ * Gère les redirections de rôles, la maintenance et les accès sécurisés.
  */
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
   const router = useRouter();
   const pathname = usePathname() || '';
-  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -56,19 +53,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (loading || !mounted) return;
 
+    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir'];
+    const isPublic = publicPaths.includes(cleanPath) || cleanPath.startsWith('/verify/');
+
     if (!user) {
-      const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir'];
-      if (!publicPaths.includes(cleanPath) && !cleanPath.startsWith('/verify/')) {
-        router.push('/login');
-      }
+      if (!isPublic) router.push('/login');
       return;
     }
 
-    // ACCÈS UNIVERSEL À /account
+    // Autoriser l'accès à Mon Compte pour TOUT LE MONDE
     if (cleanPath === '/account') return;
 
-    // Redirection automatique vers le bon dashboard si on est sur la racine ou login
-    if (cleanPath === '/' || cleanPath === '/login' || cleanPath === '/register') {
+    // Redirection vers le dashboard approprié si sur une page publique ou racine
+    if (cleanPath === '/' || cleanPath === '/login') {
         if (role === 'admin') router.push('/admin');
         else if (role === 'instructor') router.push('/instructor/dashboard');
         else router.push('/student/dashboard');
@@ -79,25 +76,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isAdminPath = cleanPath.startsWith('/admin');
     const isInstructorPath = cleanPath.startsWith('/instructor');
 
-    if (role === 'admin') {
-        // L'admin peut aller partout
-        return;
-    }
+    if (role === 'admin') return;
 
     if (role === 'instructor') {
-        // L'instructeur ne peut pas aller en admin
         if (isAdminPath) router.push('/instructor/dashboard');
         return;
     }
 
     if (role === 'student') {
-        // L'étudiant ne peut aller ni en admin, ni en instructeur
-        if (isAdminPath || isInstructorPath) router.push('/student/dashboard');
+        if ((isAdminPath || isInstructorPath) && !isPublic) {
+            router.push('/student/dashboard');
+        }
         return;
     }
   }, [user, role, loading, cleanPath, router, mounted]);
 
-  if (loading || !mounted) return <LoadingScreen />;
+  if (loading || !mounted) return <div className="h-screen flex items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (

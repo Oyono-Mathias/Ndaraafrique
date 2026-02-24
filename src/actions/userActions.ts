@@ -65,7 +65,6 @@ export async function syncUsersWithAuthAction(adminId: string) {
                 count++;
             }
 
-            // Limite de 500 opérations par batch Firestore
             if (count >= 450) {
                 await batch.commit();
                 batch = db.batch();
@@ -81,6 +80,9 @@ export async function syncUsersWithAuthAction(adminId: string) {
     }
 }
 
+/**
+ * ACCORDE L'ACCÈS À UN COURS
+ */
 export async function grantCourseAccess({
     studentId,
     courseId,
@@ -114,7 +116,6 @@ export async function grantCourseAccess({
             expiresAt
         }, { merge: true });
 
-        // Log de l'action
         const logRef = db.collection('admin_audit_logs').doc();
         batch.set(logRef, {
             adminId,
@@ -131,6 +132,9 @@ export async function grantCourseAccess({
     }
 }
 
+/**
+ * APPROUVE UNE CANDIDATURE D'INSTRUCTEUR
+ */
 export async function approveInstructorApplication({ userId, decision, adminId, message }: { userId: string, decision: 'accepted' | 'rejected', adminId: string, message?: string }) {
     try {
         const db = getAdminDb();
@@ -159,17 +163,13 @@ export async function approveInstructorApplication({ userId, decision, adminId, 
     }
 }
 
-export async function updateUserProfileAction({ userId, data, requesterId }: { userId: string, data: any, requesterId: string }) {
-    try {
-        const db = getAdminDb();
-        await db.collection('users').doc(userId).update(data);
-        return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}
-
+/**
+ * RÉGULARISATION DES PROFILS
+ */
 export async function migrateUserProfilesAction(adminId: string) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
+
     try {
         const db = getAdminDb();
         const usersSnap = await db.collection('users').get();
@@ -190,16 +190,27 @@ export async function migrateUserProfilesAction(adminId: string) {
                 count++;
             }
 
-            if (count % 450 === 0 && count > 0) {
+            if (count >= 450) {
                 await batch.commit();
                 batch = db.batch();
+                count = 0;
             }
         }
 
-        if (count % 450 !== 0) await batch.commit();
+        if (count > 0) await batch.commit();
         return { success: true, count };
     } catch (e: any) {
         return { success: false, error: e.message };
+    }
+}
+
+export async function updateUserProfileAction({ userId, data, requesterId }: { userId: string, data: any, requesterId: string }) {
+    try {
+        const db = getAdminDb();
+        await db.collection('users').doc(userId).update(data);
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
     }
 }
 
