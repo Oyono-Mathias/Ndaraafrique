@@ -37,6 +37,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [db]);
 
+  // ✅ Nettoyage robuste de l'URL pour la logique de redirection
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
@@ -53,6 +54,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // --- ACCÈS AUX PAGES COMMUNES ---
+    // Ne jamais rediriger si on est sur la page Mon Compte
     if (cleanPath === '/account') return;
 
     // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
@@ -60,7 +62,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
     if (role === 'admin') {
-        return; // Admin can go anywhere
+        // L'admin peut aller partout, mais on le garde prioritairement sur le panel
+        // sauf s'il va explicitement sur une page commune (/account, /search)
+        return; 
     } else if (role === 'instructor') {
         if (isAdminArea) router.push('/instructor/dashboard');
     } else if (role === 'student') {
@@ -84,6 +88,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isLandingPage = cleanPath === '/';
   const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/');
   
+  // On affiche la navigation si l'utilisateur est connecté et qu'on n'est pas sur une landing/auth
   const showNav = user && !isAuthPage && !isPublicView;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);

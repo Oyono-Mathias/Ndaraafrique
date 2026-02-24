@@ -34,7 +34,9 @@ import {
   Users as UsersIcon,
   Wrench,
   RefreshCw,
-  AlertTriangle
+  AlertTriangle,
+  Plus,
+  Trash2
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -283,6 +285,100 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
+            <TabsContent value="platform">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                  <CardTitle className="text-lg font-bold">Règles & État</CardTitle>
+                  <CardDescription>Bannière d'annonce, maintenance et inscriptions.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  <FormField control={form.control} name="announcementMessage" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Message d'annonce global (Haut de page)</FormLabel><FormControl><Textarea {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white">Mode Maintenance</FormLabel><FormDescription className="text-xs">Bloque l'accès aux non-admins.</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white">Recrutement Formateurs</FormLabel><FormDescription className="text-xs">Affiche le lien "Devenir Instructeur".</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="content">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                  <CardTitle className="text-lg font-bold">Textes Page d'Accueil</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Hero</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                  )} />
+                  <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre Hero</FormLabel><FormControl><Textarea {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                  )} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="team">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5 flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-bold">Équipe Ndara</CardTitle>
+                    <CardDescription>Gérez les membres affichés sur la page "À Propos".</CardDescription>
+                  </div>
+                  <Button type="button" size="sm" onClick={() => append({ name: '', role: '', imageUrl: '', bio: '' })} className="rounded-xl">
+                    <Plus className="h-4 w-4 mr-2" /> Ajouter
+                  </Button>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  {fields.map((field, index) => (
+                    <div key={field.id} className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 relative group">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2 text-slate-500 hover:text-red-500">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                      <div className="grid md:grid-cols-3 gap-4">
+                        <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Nom</FormLabel><FormControl><Input {...field} className="bg-slate-900" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">URL Image</FormLabel><FormControl><Input {...field} className="bg-slate-900" /></FormControl></FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="legal">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                  <CardTitle className="text-lg font-bold">Documents Légaux</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  <FormField control={form.control} name="termsOfService" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Conditions Générales (HTML supporté)</FormLabel><FormControl><Textarea {...field} rows={10} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                  )} />
+                  <FormField control={form.control} name="privacyPolicy" render={({ field }) => (
+                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Confidentialité (HTML supporté)</FormLabel><FormControl><Textarea {...field} rows={10} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                  )} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
             <TabsContent value="maintenance">
                 <div className="space-y-6">
                     <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-start gap-4">
@@ -301,14 +397,14 @@ export default function AdminSettingsPage() {
                                 <RefreshCw className="h-5 w-5 text-primary" />
                                 Synchronisation des Comptes
                             </CardTitle>
-                            <CardDescription>Scanner les 12 comptes réels de l'Authentification et créer les profils manquants.</CardDescription>
+                            <CardDescription>Scanner les comptes réels de l'Authentification et créer les profils Firestore manquants.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div className="flex-1 space-y-1">
                                     <h3 className="text-white font-bold text-sm">Action : Importer les membres manquants</h3>
                                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                                        Si vous voyez 12 membres dans la console Firebase mais seulement 8 ici, cet outil va générer les documents Firestore nécessaires pour les 4 membres restants.
+                                        Si vous avez 10 membres dans la console Firebase mais qu'ils n'apparaissent pas ici, cet outil va générer les documents Firestore nécessaires.
                                     </p>
                                 </div>
                                 <Button 
@@ -355,8 +451,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </div>
             </TabsContent>
-
-            {/* Autres onglets omis pour brièveté */}
           </Tabs>
 
           <div className="flex justify-end pt-4 border-t border-slate-800 sticky bottom-6 z-30">

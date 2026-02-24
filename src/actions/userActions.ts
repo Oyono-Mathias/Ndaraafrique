@@ -1,4 +1,4 @@
-'use server';
+'use client';
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -20,6 +20,7 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * SYNCHRONISATION AUTH -> FIRESTORE
+ * Importe les comptes de l'Authentification qui n'ont pas encore de profil Firestore.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
