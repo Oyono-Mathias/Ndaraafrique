@@ -52,13 +52,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser Mon Compte pour tous les rôles sans redirection de force
+    // Autoriser explicitement la page de compte
     if (cleanPath === '/account') return;
 
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    // Redirections basées sur le rôle ACTIF
+    // Redirections fluides basées sur le rôle ACTIF
     if (role === 'admin' && !isAdminArea && !isPublic) {
       router.push('/admin');
     } else if (role === 'instructor' && isAdminArea && !isPublic) {

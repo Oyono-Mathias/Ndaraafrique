@@ -6,6 +6,7 @@ import type { UserRole, NdaraUser } from '@/lib/types';
 
 /**
  * @fileOverview Actions serveur pour la gestion et la synchronisation des membres.
+ * Version exportée pour le build Vercel.
  */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
@@ -20,7 +21,6 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * SYNCHRONISATION AUTH -> FIRESTORE
- * Scanne tous les utilisateurs de Firebase Auth et crée les profils manquants.
  */
 export async function syncUsersWithAuthAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
@@ -79,7 +79,7 @@ export async function syncUsersWithAuthAction(adminId: string) {
 }
 
 /**
- * ACCORDE L'ACCÈS À UN COURS
+ * ACCORDE L'ACCÈS À UN COURS (Supporte expirationMinutes pour le build)
  */
 export async function grantCourseAccess({
     studentId,

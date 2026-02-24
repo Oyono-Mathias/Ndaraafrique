@@ -2,7 +2,8 @@ import * as admin from 'firebase-admin';
 import { firebaseConfig } from '@/firebase/config';
 
 /**
- * @fileOverview Initialisation sécurisée du SDK Firebase Admin pour Vercel.
+ * @fileOverview Initialisation sécurisée du SDK Firebase Admin.
+ * Gère le parsing robuste de la clé JSON des variables d'environnement.
  */
 
 const projectId = firebaseConfig.projectId;
@@ -10,30 +11,18 @@ const projectId = firebaseConfig.projectId;
 function initializeAdmin() {
   if (admin.apps.length > 0) return admin.app();
 
-  let serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+  const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
 
   if (!serviceAccountKey) {
-      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing from environment variables.");
+      console.error("CRITICAL: FIREBASE_SERVICE_ACCOUNT_KEY is missing.");
       return null;
   }
 
   try {
-    // Nettoyage des guillemets éventuels pour une lecture robuste
-    serviceAccountKey = serviceAccountKey.trim();
-    if (serviceAccountKey.startsWith("'") && serviceAccountKey.endsWith("'")) serviceAccountKey = serviceAccountKey.slice(1, -1);
-    if (serviceAccountKey.startsWith('"') && serviceAccountKey.endsWith('"')) serviceAccountKey = serviceAccountKey.slice(1, -1);
-
-    let serviceAccount;
-    try {
-      // Tentative de parsing direct
-      serviceAccount = JSON.parse(serviceAccountKey);
-    } catch (e) {
-      // Gestion des caractères d'échappement problématiques (\n dans la clé privée)
-      serviceAccount = JSON.parse(serviceAccountKey.replace(/\\n/g, '\n'));
-    }
+    const serviceAccount = JSON.parse(serviceAccountKey.trim());
     
-    // Correction spécifique pour la clé privée
-    if (serviceAccount && typeof serviceAccount.private_key === 'string') {
+    // Nettoyage de la clé privée pour les environnements de prod
+    if (serviceAccount.private_key) {
       serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
     }
 
