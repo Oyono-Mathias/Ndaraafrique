@@ -11,7 +11,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { useFirebaseApp } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
 import { useRouter } from 'next/navigation';
@@ -50,6 +51,7 @@ const accountSchema = z.object({
 
 export default function AccountPage() {
   const { currentUser, isUserLoading, secureSignOut } = useRole();
+  const firebaseApp = useFirebaseApp();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -75,33 +77,35 @@ export default function AccountPage() {
   }, [currentUser, form]);
 
   const handleImageClick = () => {
+    if (isUploading) return;
     fileInputRef.current?.click();
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || !currentUser) return;
+    if (!file || !currentUser || !firebaseApp) return;
 
-    // Validation basique
+    // Validation du type de fichier
     if (!file.type.startsWith('image/')) {
         toast({ variant: 'destructive', title: "Fichier invalide", description: "Veuillez sélectionner une image." });
         return;
     }
 
+    // Validation de la taille (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        toast({ variant: 'destructive', title: "Fichier trop lourd", description: "L'image ne doit pas dépasser 2MB." });
+        return;
+    }
+
     setIsUploading(true);
-    const storage = getStorage();
-    const storageRef = ref(storage, `avatars/${currentUser.uid}/${Date.now()}_${file.name}`);
+    const storage = getStorage(firebaseApp);
+    const fileName = `avatars/${currentUser.uid}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
+    const storageRef = ref(storage, fileName);
     
     try {
-        const uploadTask = uploadBytesResumable(storageRef, file);
-        
-        const downloadURL = await new Promise<string>((resolve, reject) => {
-            uploadTask.on('state_changed', 
-                null, 
-                (error) => reject(error), 
-                () => getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject)
-            );
-        });
+        // Utilisation de uploadBytes (plus robuste que resumable pour les petits fichiers)
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
 
         const result = await updateUserProfileAction({
             userId: currentUser.uid,
@@ -115,9 +119,16 @@ export default function AccountPage() {
             throw new Error(result.error);
         }
     } catch (error: any) {
-        toast({ variant: 'destructive', title: "Erreur d'upload", description: error.message });
+        console.error("Upload Error:", error);
+        toast({ 
+            variant: 'destructive', 
+            title: "Erreur d'upload", 
+            description: "Impossible d'envoyer l'image. Vérifiez votre connexion ou les permissions." 
+        });
     } finally {
         setIsUploading(false);
+        // Réinitialiser le champ pour permettre de sélectionner le même fichier deux fois
+        if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -193,13 +204,13 @@ export default function AccountPage() {
                                   <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
                               </Avatar>
                               {isUploading && (
-                                  <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+                                  <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center z-20">
                                       <Loader2 className="h-8 w-8 animate-spin text-white" />
                                   </div>
                               )}
-                              <Button size="icon" className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-primary shadow-xl border-4 border-slate-950" type="button">
+                              <div className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-primary shadow-xl border-4 border-slate-950 flex items-center justify-center text-white">
                                   <Camera className="h-4 w-4" />
-                              </Button>
+                              </div>
                               <input 
                                   type="file" 
                                   ref={fileInputRef} 
