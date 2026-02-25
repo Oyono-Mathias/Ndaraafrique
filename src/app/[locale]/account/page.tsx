@@ -2,29 +2,26 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Gère le profil public, la bio et les liens sociaux. Design Android-First Premium.
+ * Gère le profil public, la bio, les liens sociaux et la photo de profil.
  */
 
-import { useState, useEffect } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useState, useEffect, useRef } from 'react';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
 import { useRouter } from 'next/navigation';
-
-import 'react-phone-number-input/style.css';
-import PhoneInput from 'react-phone-number-input/react-hook-form-input';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Twitter, Youtube, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link as LinkIcon, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +52,8 @@ export default function AccountPage() {
   const { currentUser, isUserLoading, secureSignOut } = useRole();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<z.infer<typeof accountSchema>>({
     resolver: zodResolver(accountSchema),
@@ -74,6 +73,53 @@ export default function AccountPage() {
       });
     }
   }, [currentUser, form]);
+
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    // Validation basique
+    if (!file.type.startsWith('image/')) {
+        toast({ variant: 'destructive', title: "Fichier invalide", description: "Veuillez sélectionner une image." });
+        return;
+    }
+
+    setIsUploading(true);
+    const storage = getStorage();
+    const storageRef = ref(storage, `avatars/${currentUser.uid}/${Date.now()}_${file.name}`);
+    
+    try {
+        const uploadTask = uploadBytesResumable(storageRef, file);
+        
+        const downloadURL = await new Promise<string>((resolve, reject) => {
+            uploadTask.on('state_changed', 
+                null, 
+                (error) => reject(error), 
+                () => getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject)
+            );
+        });
+
+        const result = await updateUserProfileAction({
+            userId: currentUser.uid,
+            data: { profilePictureURL: downloadURL },
+            requesterId: currentUser.uid
+        });
+
+        if (result.success) {
+            toast({ title: "Photo mise à jour", description: "Votre nouvelle photo de profil est en ligne." });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Erreur d'upload", description: error.message });
+    } finally {
+        setIsUploading(false);
+    }
+  };
 
   const onSubmit = async (values: z.infer<typeof accountSchema>) => {
     if (!currentUser) return;
@@ -141,16 +187,29 @@ export default function AccountPage() {
               <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                       <div className="flex flex-col items-center gap-4">
-                          <div className="relative">
-                              <Avatar className="h-28 w-28 border-4 border-slate-800 shadow-2xl">
+                          <div className="relative group cursor-pointer" onClick={handleImageClick}>
+                              <Avatar className="h-28 w-28 border-4 border-slate-800 shadow-2xl transition-transform group-hover:scale-105">
                                   <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
                                   <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
                               </Avatar>
+                              {isUploading && (
+                                  <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
+                                      <Loader2 className="h-8 w-8 animate-spin text-white" />
+                                  </div>
+                              )}
                               <Button size="icon" className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-primary shadow-xl border-4 border-slate-950" type="button">
                                   <Camera className="h-4 w-4" />
                               </Button>
+                              <input 
+                                  type="file" 
+                                  ref={fileInputRef} 
+                                  className="hidden" 
+                                  accept="image/*" 
+                                  onChange={handleImageUpload} 
+                                  disabled={isUploading}
+                              />
                           </div>
-                          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Photo de profil</p>
+                          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Cliquez pour changer la photo</p>
                       </div>
 
                       <div className="grid gap-6">
@@ -214,7 +273,7 @@ export default function AccountPage() {
                           </div>
                       </div>
 
-                      <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
+                      <Button type="submit" disabled={isSaving || isUploading} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
                           {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : <><Sparkles className="mr-2 h-4 w-4" /> Mettre à jour mon profil</>}
                       </Button>
                   </form>
