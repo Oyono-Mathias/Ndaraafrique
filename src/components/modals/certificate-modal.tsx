@@ -68,7 +68,7 @@ export function CertificateModal({
       const originalElement = certificateRef.current;
       const clone = originalElement.cloneNode(true) as HTMLDivElement;
       
-      // On force les dimensions réelles sur le clone
+      // On force les dimensions réelles sur le clone pour le rendu PDF impeccable
       clone.style.position = 'fixed';
       clone.style.left = '-9999px';
       clone.style.top = '0';
@@ -76,11 +76,12 @@ export function CertificateModal({
       clone.style.width = '1123px';
       clone.style.height = '794px';
       clone.style.visibility = 'visible';
+      clone.style.zIndex = '-1';
       
       document.body.appendChild(clone);
 
       const canvas = await html2canvas(clone, {
-        scale: 2, // 300 DPI approx
+        scale: 2, // 300 DPI approx pour une netteté totale
         useCORS: true,
         logging: false,
         backgroundColor: '#fdfcf7',

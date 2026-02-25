@@ -32,7 +32,7 @@ export function CertificatesClient() {
   const [selectedCert, setSelectedCert] = useState<(Enrollment & { student?: NdaraUser; course?: Course; instructorName?: string }) | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Récupération des inscriptions à 100%
+  // 1. Récupération des inscriptions à 100% par instructeur
   const enrollmentsQuery = useMemo(
     () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser]
@@ -59,20 +59,19 @@ export function CertificatesClient() {
         const instructorsMap = new Map<string, string>();
 
         if (studentIds.length > 0) {
-          const studentsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 30))));
-          studentsSnap.forEach(d => studentsMap.set(d.id, d.data() as NdaraUser));
+          for (let i = 0; i < studentIds.length; i += 30) {
+            const chunk = studentIds.slice(i, i + 30);
+            const studentsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', chunk)));
+            studentsSnap.forEach(d => studentsMap.set(d.id, d.data() as NdaraUser));
+          }
         }
 
         if (courseIds.length > 0) {
-          const coursesSnap = await getDocs(query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30))));
-          
-          const instructorIds = [...new Set(coursesSnap.docs.map(d => d.data().instructorId))];
-          if (instructorIds.length > 0) {
-              const instrSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
-              instrSnap.forEach(d => instructorsMap.set(d.id, d.data().fullName));
+          for (let i = 0; i < courseIds.length; i += 30) {
+            const chunk = courseIds.slice(i, i + 30);
+            const coursesSnap = await getDocs(query(collection(db, 'courses'), where(documentId(), 'in', chunk)));
+            coursesSnap.forEach(d => coursesMap.set(d.id, { id: d.id, ...d.data() } as Course));
           }
-
-          coursesSnap.forEach(d => coursesMap.set(d.id, { id: d.id, ...d.data() } as Course));
         }
 
         const enriched = enrollments.map(e => {
@@ -81,7 +80,7 @@ export function CertificatesClient() {
                 ...e,
                 student: studentsMap.get(e.studentId),
                 course: course,
-                instructorName: instructorsMap.get(course?.instructorId || '') || "Formateur Ndara"
+                instructorName: currentUser?.fullName || "Formateur Ndara"
             };
         }).sort((a, b) => {
             const dateA = (a.lastAccessedAt as any)?.toDate?.() || (a.enrollmentDate as any)?.toDate?.() || new Date(0);
@@ -98,7 +97,7 @@ export function CertificatesClient() {
     };
 
     enrichData();
-  }, [enrollments, enrollmentsLoading, db]);
+  }, [enrollments, enrollmentsLoading, db, currentUser?.fullName]);
 
   const filteredCerts = useMemo(() => {
     return enrichedCertificates.filter(c => 

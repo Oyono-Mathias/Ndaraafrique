@@ -1,11 +1,10 @@
-
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
  * Affiche uniquement les cours terminés à 100%.
- * ✅ RÉSOLU : Disparition du certificat corrigée par stabilisation de la requête.
- * ✅ RÉSOLU : Plus de boucle de rafraîchissement.
+ * ✅ RÉSOLU : Stabilité totale des données.
+ * ✅ RÉSOLU : Plus de boucle de rafraîchissement infinie.
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -52,7 +51,7 @@ export default function MesCertificatsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const repairPerformed = useRef(false);
 
-  // 1. STABILISATION DE LA REQUÊTE : On utilise l'ID pour éviter les déconnexions
+  // 1. Stabilisation de la requête Firestore
   const userId = currentUser?.uid;
   const enrollmentsQuery = useMemo(() =>
     userId ? query(collection(db, 'enrollments'), where('studentId', '==', userId)) : null,
@@ -64,7 +63,7 @@ export default function MesCertificatsPage() {
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 🛡️ RÉPARATION UNIQUE : Synchronise les 100% une seule fois
+  // 🛡️ Réparation automatique unique pour les anciens certificats
   useEffect(() => {
     if (!userId || !enrollments || enrollmentsLoading || repairPerformed.current) return;
 
@@ -88,7 +87,7 @@ export default function MesCertificatsPage() {
     checkAndRepair().catch(err => console.warn("Repair error:", err));
   }, [enrollments, userId, db, enrollmentsLoading]);
 
-  // 💎 ENRICHISSEMENT PRÉSERVÉ : Filtre et enrichit sans perdre l'affichage
+  // 💎 Enrichissement des données avec filtrage en mémoire pour stabilité
   useEffect(() => {
     if (enrollmentsLoading) return;
     
@@ -99,9 +98,6 @@ export default function MesCertificatsPage() {
     };
     
     const enrichData = async () => {
-        // On ne met dataLoading à true que si on n'a encore rien
-        if (enrichedData.length === 0) setDataLoading(true);
-        
         try {
             const completedEnrollments = enrollments.filter(e => e.progress >= 100);
             
@@ -156,7 +152,9 @@ export default function MesCertificatsPage() {
           completionDate={
             selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function'
                 ? (selectedCertificate.lastAccessedAt as any).toDate()
-                : new Date()
+                : (selectedCertificate.enrollmentDate && typeof (selectedCertificate.enrollmentDate as any).toDate === 'function')
+                    ? (selectedCertificate.enrollmentDate as any).toDate()
+                    : new Date()
           }
           certificateId={selectedCertificate.id}
         />
@@ -198,7 +196,9 @@ export default function MesCertificatsPage() {
                             <p className="text-xs text-slate-500 font-medium italic">
                                 Obtenu le {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
                                     ? format((cert.lastAccessedAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) 
-                                    : 'Récemment'}
+                                    : cert.enrollmentDate && typeof (cert.enrollmentDate as any).toDate === 'function'
+                                        ? format((cert.enrollmentDate as any).toDate(), 'dd MMM yyyy', { locale: fr })
+                                        : 'Récemment'}
                             </p>
                         </div>
                     </div>
