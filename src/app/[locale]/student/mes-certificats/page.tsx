@@ -1,19 +1,20 @@
+
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
  * Affiche uniquement les cours terminés à 100%.
- * ✅ INCLUT LA RÉPARATION AUTOMATIQUE : Synchronise enrollments avec course_progress si besoin.
+ * ✅ INCLUS : Réparation intelligente sans boucle infinie.
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs, documentId, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight, RefreshCw } from 'lucide-react';
+import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CertificateModal } from '@/components/modals/certificate-modal';
@@ -48,26 +49,26 @@ export default function MesCertificatsPage() {
   const { currentUser } = useRole();
   const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isRepairing, setIsRepairing] = useState(false);
+  const repairPerformed = useRef(false);
 
-  // 1. Récupération des inscriptions (toutes, pour filtrage en mémoire et réparation)
+  // 1. Récupération des inscriptions
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid
       ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid))
       : null,
-    [db, currentUser]
+    [db, currentUser?.uid]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 🛡️ MÉCANISME DE RÉPARATION SILENCIEUSE
+  // 🛡️ RÉPARATION INTELLIGENTE (S'exécute une seule fois pour éviter les boucles)
   useEffect(() => {
-    if (!currentUser || !enrollments || enrollmentsLoading) return;
+    if (!currentUser || !enrollments || enrollmentsLoading || repairPerformed.current) return;
 
     const checkAndRepair = async () => {
-        // On récupère les progressions réelles
+        repairPerformed.current = true;
         const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
         const progressSnap = await getDocs(progressQuery);
         const progressList = progressSnap.docs.map(d => d.data() as CourseProgress);
@@ -75,13 +76,9 @@ export default function MesCertificatsPage() {
         for (const prog of progressList) {
             if (prog.progressPercent === 100) {
                 const enrollment = enrollments.find(e => e.courseId === prog.courseId);
-                // Si l'inscription existe mais n'est pas marquée à 100%, on répare
                 if (enrollment && enrollment.progress < 100) {
                     const enrollmentRef = doc(db, 'enrollments', enrollment.id);
-                    await setDoc(enrollmentRef, { 
-                        progress: 100, 
-                        lastAccessedAt: serverTimestamp() 
-                    }, { merge: true });
+                    await setDoc(enrollmentRef, { progress: 100, lastAccessedAt: serverTimestamp() }, { merge: true });
                 }
             }
         }
@@ -102,11 +99,12 @@ export default function MesCertificatsPage() {
     const enrichData = async () => {
         setDataLoading(true);
         try {
-            // On ne garde que ceux à 100% pour l'affichage final
+            // Filtrage des cours à 100%
             const completedEnrollments = enrollments.filter(e => e.progress >= 100);
             
             if (completedEnrollments.length === 0) {
                 setEnrichedData([]);
+                setDataLoading(false);
                 return;
             }
 
@@ -196,8 +194,8 @@ export default function MesCertificatsPage() {
                             </h3>
                             <p className="text-xs text-slate-500 font-medium italic">
                                 Obtenu le {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
-                                    ? format((cert.lastAccessedAt as any).toDate(), 'dd MMMM yyyy', { locale: fr }) 
-                                    : 'récemment'}
+                                    ? format((cert.lastAccessedAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) 
+                                    : 'Récemment'}
                             </p>
                         </div>
                     </div>
