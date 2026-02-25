@@ -4,8 +4,8 @@
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
  * Affiche uniquement les cours terminés à 100%.
+ * ✅ RÉSOLU : Disparition du certificat corrigée par stabilisation de la requête.
  * ✅ RÉSOLU : Plus de boucle de rafraîchissement.
- * ✅ RÉSOLU : Visibilité garantie sans dépendre des index Firestore complexes.
  */
 
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -52,32 +52,31 @@ export default function MesCertificatsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const repairPerformed = useRef(false);
 
-  // 1. Récupération de TOUTES les inscriptions (plus fiable qu'un filtre progress == 100 qui nécessite un index)
+  // 1. STABILISATION DE LA REQUÊTE : On utilise l'ID pour éviter les déconnexions
+  const userId = currentUser?.uid;
   const enrollmentsQuery = useMemo(() =>
-    currentUser?.uid
-      ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid))
-      : null,
-    [db, currentUser?.uid]
+    userId ? query(collection(db, 'enrollments'), where('studentId', '==', userId)) : null,
+    [db, userId]
   );
+  
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 🛡️ RÉPARATION SILENCIEUSE : Synchronise les 100% sans boucles
+  // 🛡️ RÉPARATION UNIQUE : Synchronise les 100% une seule fois
   useEffect(() => {
-    if (!currentUser || !enrollments || enrollmentsLoading || repairPerformed.current) return;
+    if (!userId || !enrollments || enrollmentsLoading || repairPerformed.current) return;
 
     const checkAndRepair = async () => {
         repairPerformed.current = true;
-        const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
+        const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', userId));
         const progressSnap = await getDocs(progressQuery);
         const progressList = progressSnap.docs.map(d => d.data() as CourseProgress);
 
         for (const prog of progressList) {
             if (prog.progressPercent === 100) {
                 const enrollment = enrollments.find(e => e.courseId === prog.courseId);
-                // Si le cours est fini dans la progression mais pas dans l'inscription, on répare
                 if (enrollment && enrollment.progress < 100) {
                     const enrollmentRef = doc(db, 'enrollments', enrollment.id);
                     await setDoc(enrollmentRef, { progress: 100, lastAccessedAt: serverTimestamp() }, { merge: true });
@@ -87,11 +86,12 @@ export default function MesCertificatsPage() {
     };
 
     checkAndRepair().catch(err => console.warn("Repair error:", err));
-  }, [enrollments, currentUser, db, enrollmentsLoading]);
+  }, [enrollments, userId, db, enrollmentsLoading]);
 
-  // ENRICHISSEMENT DES DONNÉES : On ne garde que les cours à 100%
+  // 💎 ENRICHISSEMENT PRÉSERVÉ : Filtre et enrichit sans perdre l'affichage
   useEffect(() => {
     if (enrollmentsLoading) return;
+    
     if (!enrollments || enrollments.length === 0) {
         setDataLoading(false);
         setEnrichedData([]);
@@ -99,9 +99,10 @@ export default function MesCertificatsPage() {
     };
     
     const enrichData = async () => {
-        setDataLoading(true);
+        // On ne met dataLoading à true que si on n'a encore rien
+        if (enrichedData.length === 0) setDataLoading(true);
+        
         try {
-            // Filtrage manuel en mémoire : plus robuste
             const completedEnrollments = enrollments.filter(e => e.progress >= 100);
             
             if (completedEnrollments.length === 0) {
@@ -141,7 +142,7 @@ export default function MesCertificatsPage() {
     setIsModalOpen(true);
   };
   
-  const isLoading = enrollmentsLoading || dataLoading;
+  const isLoading = enrollmentsLoading || (dataLoading && enrichedData.length === 0);
 
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
