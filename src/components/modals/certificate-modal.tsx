@@ -20,10 +20,6 @@ interface CertificateModalProps {
   certificateId: string;
 }
 
-/**
- * @fileOverview Modal de visualisation et d'export du certificat.
- * Utilise un rendu masqué à l'échelle 1:1 pour garantir un PDF A4 parfait.
- */
 export function CertificateModal({ 
     isOpen, 
     onClose, 
@@ -44,7 +40,6 @@ export function CertificateModal({
     const handleResize = () => {
       if (typeof window === 'undefined') return;
       const width = window.innerWidth;
-      // Dimensions du certificat A4 Landscape : 1123px de large
       if (width < 640) {
         setScale((width - 48) / 1123); 
       } else {
@@ -69,20 +64,35 @@ export function CertificateModal({
     setIsDownloading(true);
 
     try {
-      // Pour un export parfait, on s'assure de capturer à l'échelle réelle (sans le transform scale du CSS)
-      const element = certificateRef.current;
+      // TECHNIQUE ROBUSTE : On crée un clone invisible à l'échelle 1:1 pour la capture
+      const originalElement = certificateRef.current;
+      const clone = originalElement.cloneNode(true) as HTMLDivElement;
       
-      const canvas = await html2canvas(element, {
-        scale: 2, // Haute résolution 300DPI
+      // On force les dimensions réelles sur le clone
+      clone.style.position = 'fixed';
+      clone.style.left = '-9999px';
+      clone.style.top = '0';
+      clone.style.transform = 'none';
+      clone.style.width = '1123px';
+      clone.style.height = '794px';
+      clone.style.visibility = 'visible';
+      
+      document.body.appendChild(clone);
+
+      const canvas = await html2canvas(clone, {
+        scale: 2, // 300 DPI approx
         useCORS: true,
         logging: false,
         backgroundColor: '#fdfcf7',
         width: 1123,
         height: 794,
+        windowWidth: 1123,
+        windowHeight: 794
       });
 
+      document.body.removeChild(clone);
+
       const imgData = canvas.toDataURL('image/png', 1.0);
-      
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -108,7 +118,6 @@ export function CertificateModal({
             <DialogDescription>Diplôme officiel de {studentName}</DialogDescription>
         </DialogHeader>
         
-        {/* Zone d'aperçu centrée */}
         <div className="w-full flex-1 flex items-center justify-center p-4 md:p-8 overflow-hidden min-h-[600px]">
             <div 
                 style={{ 
@@ -130,7 +139,6 @@ export function CertificateModal({
             </div>
         </div>
 
-        {/* Pied de page fixe */}
         <div className="w-full p-6 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 sticky bottom-0 z-50">
             <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button 
