@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -24,7 +25,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, Award, Trophy, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowLeft, CheckCircle2, XCircle, Award, Trophy, ChevronRight, HelpCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -46,7 +47,7 @@ export default function TakeQuizPage() {
   const [finalResult, setFinalResult] = useState<{ score: number; total: number; percentage: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Récupération du quiz et de ses questions
+  // 1. Récupération du quiz et de ses questions via collectionGroup
   useEffect(() => {
     if (!quizId) return;
 
@@ -66,9 +67,9 @@ export default function TakeQuizPage() {
         const quizData = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuiz(quizData);
 
-        const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions')));
+        const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions'), orderBy('order')));
         const fetchedQuestions = questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question));
-        setQuestions(fetchedQuestions.sort((a, b) => (a.order || 0) - (b.order || 0)));
+        setQuestions(fetchedQuestions);
 
       } catch (error) {
         console.error("Error fetching quiz:", error);
@@ -95,7 +96,7 @@ export default function TakeQuizPage() {
   };
 
   const submitQuiz = async () => {
-    if (!user || !quiz) return;
+    if (!user || !quiz || questions.length === 0) return;
     setIsSubmitting(true);
 
     let correctCount = 0;
@@ -134,7 +135,7 @@ export default function TakeQuizPage() {
       }
     } catch (error) {
       console.error("Error submitting quiz:", error);
-      toast({ variant: 'destructive', title: "Erreur lors de l'enregistrement du score" });
+      toast({ variant: 'destructive', title: "Erreur lors de l'enregistrement" });
     } finally {
       setIsSubmitting(false);
     }
@@ -142,62 +143,50 @@ export default function TakeQuizPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 p-6">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        <p className="text-slate-400 animate-pulse">Préparation de vos questions...</p>
+        <p className="text-slate-500 mt-4 font-bold uppercase tracking-widest text-xs animate-pulse">Chargement du quiz...</p>
       </div>
     );
   }
 
   if (finalResult) {
-    const isSuccess = finalResult.percentage >= 50;
+    const isSuccess = finalResult.percentage >= 70;
     return (
-      <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in zoom-in-95 duration-500">
-        <Card className="text-center border-2 border-slate-800 bg-slate-900/50 backdrop-blur-xl shadow-2xl">
-          <CardHeader>
-            <div className="flex justify-center mb-6">
-              {isSuccess ? (
-                <div className="p-4 bg-green-500/20 rounded-full ring-8 ring-green-500/10">
-                  <Trophy className="h-16 w-16 text-green-400" />
-                </div>
-              ) : (
-                <div className="p-4 bg-amber-500/20 rounded-full ring-8 ring-amber-500/10">
-                  <Award className="h-16 w-16 text-amber-400" />
-                </div>
-              )}
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4">
+        <Card className="w-full max-w-lg bg-slate-900 border-slate-800 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in duration-500">
+          <div className="h-2 w-full bg-slate-800">
+            <div className={cn("h-full transition-all duration-1000", isSuccess ? "bg-green-500" : "bg-amber-500")} style={{ width: '100%' }} />
+          </div>
+          <CardHeader className="text-center pt-10">
+            <div className="mx-auto mb-6 p-4 rounded-full bg-slate-800/50 w-24 h-24 flex items-center justify-center ring-8 ring-slate-900">
+              {isSuccess ? <Trophy className="h-12 w-12 text-yellow-500" /> : <Award className="h-12 w-12 text-amber-500" />}
             </div>
-            <CardTitle className="text-3xl font-bold text-white">Quiz Terminé !</CardTitle>
-            <CardDescription className="text-lg mt-2">
-              {quiz?.title}
-            </CardDescription>
+            <CardTitle className="text-3xl font-black text-white uppercase tracking-tight">Quiz Terminé !</CardTitle>
+            <CardDescription className="text-slate-400 mt-2 font-medium">{quiz?.title}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="py-8">
-              <span className={cn(
-                "text-7xl font-black tracking-tighter",
-                isSuccess ? "text-green-400" : "text-amber-400"
-              )}>
+          <CardContent className="text-center space-y-6 pb-10">
+            <div className="space-y-1">
+              <p className={cn("text-7xl font-black tracking-tighter", isSuccess ? "text-green-400" : "text-amber-400")}>
                 {finalResult.percentage}%
-              </span>
-              <p className="text-slate-400 mt-2 font-medium">
-                {finalResult.score} bonnes réponses sur {finalResult.total}
               </p>
+              <p className="text-slate-500 font-bold uppercase text-[10px] tracking-[0.3em]">Score final</p>
             </div>
-            <div className="p-4 rounded-xl bg-slate-800/50 border border-slate-700/50">
-              <p className="text-slate-200">
-                {isSuccess 
-                  ? "Excellent travail ! Vous maîtrisez bien ce sujet." 
-                  : "C'est un bon début. Relisez le cours pour améliorer votre score la prochaine fois !"}
-              </p>
-            </div>
+            <p className="text-slate-300 text-sm max-w-xs mx-auto leading-relaxed font-medium">
+              {isSuccess 
+                ? "Bara ala ! Vous avez brillamment réussi cette évaluation. Vos compétences sont validées." 
+                : "C'est un bon début, mais vous pouvez faire mieux. Repassez le cours et tentez de nouveau !"}
+            </p>
           </CardContent>
-          <CardFooter className="flex flex-col sm:flex-row gap-4 justify-center pb-8 px-8">
-            <Button variant="outline" className="w-full sm:w-auto h-12 px-8" onClick={() => window.location.reload()}>
-              Réessayer
+          <CardFooter className="bg-slate-900/50 p-6 flex flex-col gap-3">
+            <Button onClick={() => router.push(`/student/courses/${quiz?.courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">
+              Continuer la formation
             </Button>
-            <Button className="w-full sm:w-auto h-12 px-8" onClick={() => router.push(`/student/dashboard`)}>
-              Retour au tableau de bord
-            </Button>
+            {!isSuccess && (
+              <Button variant="ghost" onClick={() => window.location.reload()} className="w-full h-12 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                Réessayer le quiz
+              </Button>
+            )}
           </CardFooter>
         </Card>
       </div>
@@ -208,70 +197,76 @@ export default function TakeQuizPage() {
   const progress = ((currentStep + 1) / questions.length) * 100;
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4">
-      <header className="mb-8 space-y-4">
-        <Button variant="ghost" className="text-slate-400 hover:text-white -ml-4" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Abandonner le quiz
+    <div className="min-h-screen bg-slate-950 flex flex-col pb-24">
+      <header className="p-4 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl flex items-center justify-between sticky top-0 z-30">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-slate-400">
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white line-clamp-1">{quiz?.title}</h1>
-          <span className="text-sm font-mono text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
-            {currentStep + 1} / {questions.length}
-          </span>
+        <div className="text-center">
+          <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">Évaluation</p>
+          <h1 className="text-sm font-bold text-white line-clamp-1 max-w-[200px]">{quiz?.title}</h1>
         </div>
-        <Progress value={progress} className="h-2 bg-slate-800" />
+        <div className="text-[10px] font-black text-slate-500 bg-slate-800 px-3 py-1 rounded-full border border-white/5">
+          {currentStep + 1} / {questions.length}
+        </div>
       </header>
 
-      <Card className="border-slate-800 bg-slate-900/40 shadow-xl overflow-hidden">
-        <div className="h-1 bg-gradient-to-r from-primary/50 via-primary to-primary/50" />
-        <CardHeader className="p-8">
-          <CardTitle className="text-xl md:text-2xl text-slate-100 leading-relaxed">
-            {currentQuestion?.text}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="px-8 pb-8">
-          <RadioGroup
-            value={answers[currentQuestion?.id]?.toString()}
-            onValueChange={(val) => handleAnswerSelect(parseInt(val, 10))}
-            className="space-y-4"
-          >
-            {currentQuestion?.options.map((option, idx) => (
-              <label
-                key={idx}
-                className={cn(
-                  "flex items-center gap-4 p-5 rounded-xl border-2 cursor-pointer transition-all duration-200",
-                  answers[currentQuestion.id] === idx
-                    ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(79,70,229,0.1)]"
-                    : "bg-slate-800/30 border-slate-700/50 hover:bg-slate-800/60 hover:border-slate-600"
-                )}
-              >
-                <RadioGroupItem value={idx.toString()} className="h-5 w-5" />
-                <span className="text-slate-200 font-medium">{option.text}</span>
-              </label>
-            ))}
-          </RadioGroup>
-        </CardContent>
-        <CardFooter className="p-8 bg-slate-900/20 border-t border-slate-800/50 flex justify-end">
+      <div className="h-1 w-full bg-slate-900">
+        <div className="h-full bg-primary transition-all duration-500" style={{ width: `${progress}%` }} />
+      </div>
+
+      <main className="flex-1 flex flex-col p-4 max-w-2xl mx-auto w-full space-y-8 pt-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <h2 className="text-2xl font-black text-white leading-tight">
+          {currentQuestion?.text}
+        </h2>
+
+        <RadioGroup
+          value={answers[currentQuestion?.id]?.toString()}
+          onValueChange={(val) => handleAnswerSelect(parseInt(val, 10))}
+          className="space-y-4"
+        >
+          {currentQuestion?.options.map((option, idx) => (
+            <label
+              key={idx}
+              className={cn(
+                "flex items-center gap-4 p-5 rounded-3xl border-2 cursor-pointer transition-all active:scale-[0.98]",
+                answers[currentQuestion.id] === idx
+                  ? "border-primary bg-primary/5 shadow-2xl shadow-primary/10"
+                  : "border-slate-800 bg-slate-900/40 hover:border-slate-700"
+              )}
+            >
+              <RadioGroupItem value={idx.toString()} className="h-5 w-5 border-slate-600 data-[state=checked]:border-primary data-[state=checked]:bg-primary" />
+              <span className={cn(
+                "text-[15px] font-bold leading-snug",
+                answers[currentQuestion.id] === idx ? "text-white" : "text-slate-400"
+              )}>
+                {option.text}
+              </span>
+            </label>
+          ))}
+        </RadioGroup>
+      </main>
+
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur-2xl border-t border-white/5 z-40 safe-area-pb">
+        <div className="max-w-2xl mx-auto">
           <Button
-            size="lg"
-            className="h-12 px-10 font-bold text-base"
-            disabled={answers[currentQuestion?.id] === undefined || isSubmitting}
             onClick={handleNext}
+            disabled={answers[currentQuestion?.id] === undefined || isSubmitting}
+            className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95"
           >
             {isSubmitting ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : currentStep === questions.length - 1 ? (
-              "Terminer le quiz"
+              "Terminer & Voir le score"
             ) : (
               <>
                 Question suivante
-                <ChevronRight className="h-5 w-5 ml-2" />
+                <ChevronRight className="ml-2 h-4 w-4" />
               </>
             )}
           </Button>
-        </CardFooter>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
