@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée pour les formateurs.
- * Permet désormais de visualiser le certificat de l'étudiant.
+ * Affiche la date d'obtention précise et permet la visualisation immédiate.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -101,8 +101,6 @@ export function CertificatesClient() {
     setIsModalOpen(true);
   };
 
-  const showSkeletons = enrollmentsLoading || (isLoading && enrichedCertificates.length === 0 && enrollments && enrollments.length > 0);
-
   return (
     <div className="space-y-6">
       {/* Modal de visualisation */}
@@ -139,7 +137,7 @@ export function CertificatesClient() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {showSkeletons ? (
+            {enrollmentsLoading ? (
               [...Array(3)].map((_, i) => (
                 <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full bg-slate-800" /></TableCell></TableRow>
               ))

@@ -2,13 +2,12 @@
 
 /**
  * @fileOverview Page de présentation détaillée d'un cours (Preview).
- * Android-First.
- * Gère l'affichage dynamique des infos, du curriculum et la conversion Mobile Money.
+ * Gère l'inscription instantanée pour les cours gratuits et l'accès permanent.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getFirestore, collection, query, getDocs, orderBy } from 'firebase/firestore';
+import { doc, getFirestore, collection, query, getDocs, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
@@ -24,19 +23,26 @@ import {
   Users, 
   PlayCircle,
   ArrowLeft,
-  Share2,
-  Lock
+  Lock,
+  Loader2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment } from '@/lib/types';
 
 export default function CourseDetailPage() {
   const { courseId } = useParams();
   const router = useRouter();
-  const { user, isUserLoading } = useRole();
+  const { user, currentUser, isUserLoading } = useRole();
+  const { toast } = useToast();
   const db = getFirestore();
+
+  const [isEnrolling, setIsEnrolling] = useState(false);
+  const [sections, setSections] = useState<Section[]>([]);
+  const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
+  const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
 
   // --- RÉCUPÉRATION DES DONNÉES ---
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
@@ -48,10 +54,6 @@ export default function CourseDetailPage() {
   // Vérifier si l'étudiant est déjà inscrit
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment, isLoading: enrollmentLoading } = useDoc<Enrollment>(enrollmentRef);
-
-  const [sections, setSections] = useState<Section[]>([]);
-  const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
-  const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
 
   useEffect(() => {
     if (!courseId) return;
@@ -81,23 +83,53 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
 
-  if (isLoading) return <CourseDetailSkeleton />;
-
-  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
-
   const isEnrolled = !!enrollment;
 
-  const handleAction = () => {
+  const handleAction = async () => {
     if (!user) {
       router.push('/login');
       return;
     }
+
     if (isEnrolled) {
       router.push(`/student/courses/${courseId}`);
+      return;
+    }
+
+    // Si le cours est gratuit, on inscrit l'utilisateur directement
+    if (course?.price === 0) {
+      setIsEnrolling(true);
+      try {
+        const enrollmentId = `${user.uid}_${courseId}`;
+        const ref = doc(db, 'enrollments', enrollmentId);
+        
+        await setDoc(ref, {
+          studentId: user.uid,
+          courseId: courseId,
+          instructorId: course.instructorId,
+          status: 'active',
+          progress: 0,
+          enrollmentDate: serverTimestamp(),
+          lastAccessedAt: serverTimestamp(),
+          priceAtEnrollment: 0,
+          enrollmentType: 'free'
+        });
+
+        toast({ title: "Bienvenue !", description: "Vous êtes maintenant inscrit gratuitement." });
+        router.push(`/student/courses/${courseId}`);
+      } catch (error) {
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de valider l'inscription." });
+      } finally {
+        setIsEnrolling(false);
+      }
     } else {
+      // Sinon direction le checkout
       router.push(`/student/checkout/${courseId}`);
     }
   };
+
+  if (isLoading) return <CourseDetailSkeleton />;
+  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
 
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
@@ -122,10 +154,7 @@ export default function CourseDetailPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
       </div>
 
-      {/* --- CORPS DE PAGE --- */}
       <div className="px-4 -mt-8 relative z-10 space-y-8">
-        
-        {/* Infos Titre & Catégorie */}
         <div className="space-y-4">
           <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none font-black uppercase tracking-[0.1em] text-[10px] px-3 py-1 rounded-md">
             {course.category}
@@ -141,12 +170,11 @@ export default function CourseDetailPage() {
             </div>
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              <span>Accès à vie</span>
+              <span>Accès permanent</span>
             </div>
           </div>
         </div>
 
-        {/* Profil Formateur */}
         {instructor && (
           <Link href={`/instructor/${instructor.uid}`} className="flex items-center gap-4 p-4 bg-slate-900 border border-slate-800 rounded-2xl active:scale-95 transition-transform">
             <Avatar className="h-14 w-14 border-2 border-slate-800">
@@ -162,7 +190,6 @@ export default function CourseDetailPage() {
           </Link>
         )}
 
-        {/* Description */}
         <section className="space-y-3">
           <h2 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
             <div className="h-1 w-6 bg-primary rounded-full" />
@@ -173,7 +200,6 @@ export default function CourseDetailPage() {
           </p>
         </section>
 
-        {/* Programme du cours */}
         <section className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-black text-white uppercase tracking-tighter flex items-center gap-2">
@@ -206,32 +232,34 @@ export default function CourseDetailPage() {
           </div>
         </section>
 
-        {/* Réassurance */}
         <div className="bg-slate-900/20 border border-slate-800 rounded-2xl p-5 flex items-start gap-4">
           <ShieldCheck className="h-6 w-6 text-emerald-500 shrink-0" />
           <div>
             <p className="text-xs font-bold text-white uppercase tracking-widest">Garantie Ndara</p>
             <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
-              Inscrivez-vous en toute confiance. Accès immédiat dès validation du Mobile Money. Certificat vérifiable inclus.
+              Inscrivez-vous en toute confiance. L'accès au contenu est permanent et lié à votre compte Ndara Afrique.
             </p>
           </div>
         </div>
       </div>
 
-      {/* --- FOOTER CTA (STICKY) --- */}
+      {/* --- FOOTER CTA --- */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto flex items-center gap-4">
           {!isEnrolled && (
             <div className="flex-shrink-0">
               <p className="text-[9px] uppercase font-black text-slate-500 tracking-widest mb-0.5">Tarif unique</p>
               <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-white">{(course.price || 0).toLocaleString('fr-FR')}</span>
-                <span className="text-[10px] font-black text-primary uppercase">XOF</span>
+                <span className="text-2xl font-black text-white">
+                  {course.price > 0 ? (course.price || 0).toLocaleString('fr-FR') : "OFFERT"}
+                </span>
+                {course.price > 0 && <span className="text-[10px] font-black text-primary uppercase">XOF</span>}
               </div>
             </div>
           )}
           <Button 
             onClick={handleAction}
+            disabled={isEnrolling}
             className={cn(
               "flex-1 h-14 rounded-xl text-sm font-black uppercase tracking-wider transition-all active:scale-95 shadow-xl",
               isEnrolled 
@@ -239,7 +267,7 @@ export default function CourseDetailPage() {
                 : "bg-primary text-primary-foreground hover:bg-primary/90 shadow-primary/20"
             )}
           >
-            {isEnrolled ? "Reprendre le cours" : "S'inscrire (Mobile Money)"}
+            {isEnrolling ? <Loader2 className="h-5 w-5 animate-spin" /> : isEnrolled ? "Reprendre le cours" : course.price === 0 ? "S'inscrire (Gratuit)" : "S'inscrire (Moneroo)"}
             <ChevronRight className="ml-2 h-5 w-5" />
           </Button>
         </div>
