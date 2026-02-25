@@ -15,15 +15,16 @@ interface CertificatePremiumProps {
 
 /**
  * @fileOverview Certificat de réussite premium Ndara Afrique.
- * Format A4 Paysage (1123px x 794px).
- * Signataire Officiel : Oyono Mathias (CEO & Fondateur).
+ * Format A4 Paysage réel (1123px x 794px pour 96 DPI).
+ * Signataire CEO : Oyono Mathias.
+ * Signataire Formateur : Dynamique selon le cours.
  */
 export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePremiumProps>(({
   studentName,
   courseName,
   completionDate,
   certificateId,
-  instructorName = "Formateur Ndara",
+  instructorName = "L'Équipe Pédagogique",
   className
 }, ref) => {
   return (
@@ -36,7 +37,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
         className
       )}
     >
-      {/* Texture Guillochis Subtile */}
+      {/* Texture de fond de sécurité */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <pattern id="pattern-cert-final" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -46,9 +47,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
         </svg>
       </div>
 
-      {/* Bordures de sécurité */}
       <div className="absolute inset-4 border-[2px] border-[#e5c185] opacity-40 pointer-events-none"></div>
-      <div className="absolute inset-6 border-[1px] border-gray-300 pointer-events-none"></div>
 
       <div className="relative h-full flex flex-col items-center justify-between p-16 text-center z-10">
         
@@ -112,22 +111,22 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
           
           {/* Signatures */}
           <div className="flex justify-end gap-16 pb-4">
-            {/* Signature CEO (Oyono Mathias) */}
+            {/* Signature CEO - Oyono Mathias */}
             <div className="text-center space-y-2">
                <div className="h-14 w-40 border-b border-gray-300 flex items-end justify-center italic font-serif text-3xl text-gray-700 pb-1">
                   Mathias
                </div>
                <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">Oyono Mathias</p>
-               <p className="text-[8px] font-bold uppercase text-primary tracking-widest leading-none mt-1">CEO & FONDATEUR</p>
+               <p className="text-[8px] font-bold uppercase text-[#CC7722] tracking-widest leading-none mt-1">CEO & FONDATEUR</p>
             </div>
             
-            {/* Signature Formateur */}
+            {/* Signature Formateur Dynamique */}
             <div className="text-center space-y-2">
                <div className="h-14 w-40 border-b border-gray-400 flex items-end justify-center italic font-serif text-2xl text-gray-700 pb-1">
                   {instructorName.split(' ')[0]}
                </div>
                <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">{instructorName}</p>
-               <p className="text-[8px] font-bold uppercase text-slate-500 tracking-widest leading-none mt-1">Formateur Expert</p>
+               <p className="text-[8px] font-bold uppercase text-slate-500 tracking-widest leading-none mt-1">Expert Formateur</p>
             </div>
           </div>
         </div>

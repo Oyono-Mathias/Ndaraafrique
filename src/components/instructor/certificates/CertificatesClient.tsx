@@ -26,14 +26,13 @@ export function CertificatesClient() {
   const db = getFirestore();
   const { currentUser } = useRole();
   const [searchTerm, setSearchTerm] = useState('');
-  const [enrichedCertificates, setEnrichedCertificates] = useState<(Enrollment & { student?: NdaraUser; course?: Course })[]>([]);
+  const [enrichedCertificates, setEnrichedCertificates] = useState<(Enrollment & { student?: NdaraUser; course?: Course; instructorName?: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
-  // État pour la modal de visualisation
-  const [selectedCert, setSelectedCert] = useState<(Enrollment & { student?: NdaraUser; course?: Course }) | null>(null);
+  const [selectedCert, setSelectedCert] = useState<(Enrollment & { student?: NdaraUser; course?: Course; instructorName?: string }) | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Récupération des inscriptions terminées (progress == 100)
+  // 1. Récupération des inscriptions à 100%
   const enrollmentsQuery = useMemo(
     () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser]
@@ -57,6 +56,7 @@ export function CertificatesClient() {
 
         const studentsMap = new Map<string, NdaraUser>();
         const coursesMap = new Map<string, Course>();
+        const instructorsMap = new Map<string, string>();
 
         if (studentIds.length > 0) {
           const studentsSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 30))));
@@ -65,14 +65,25 @@ export function CertificatesClient() {
 
         if (courseIds.length > 0) {
           const coursesSnap = await getDocs(query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30))));
+          
+          const instructorIds = [...new Set(coursesSnap.docs.map(d => d.data().instructorId))];
+          if (instructorIds.length > 0) {
+              const instrSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
+              instrSnap.forEach(d => instructorsMap.set(d.id, d.data().fullName));
+          }
+
           coursesSnap.forEach(d => coursesMap.set(d.id, { id: d.id, ...d.data() } as Course));
         }
 
-        const enriched = enrollments.map(e => ({
-          ...e,
-          student: studentsMap.get(e.studentId),
-          course: coursesMap.get(e.courseId)
-        })).sort((a, b) => {
+        const enriched = enrollments.map(e => {
+            const course = coursesMap.get(e.courseId);
+            return {
+                ...e,
+                student: studentsMap.get(e.studentId),
+                course: course,
+                instructorName: instructorsMap.get(course?.instructorId || '') || "Formateur Ndara"
+            };
+        }).sort((a, b) => {
             const dateA = (a.lastAccessedAt as any)?.toDate?.() || (a.enrollmentDate as any)?.toDate?.() || new Date(0);
             const dateB = (b.lastAccessedAt as any)?.toDate?.() || (b.enrollmentDate as any)?.toDate?.() || new Date(0);
             return dateB.getTime() - dateA.getTime();
@@ -103,14 +114,13 @@ export function CertificatesClient() {
 
   return (
     <div className="space-y-6">
-      {/* Modal de visualisation */}
       {selectedCert && (
         <CertificateModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           courseName={selectedCert.course?.title || ''}
           studentName={selectedCert.student?.fullName || 'Étudiant Ndara'}
-          instructorName={currentUser?.fullName || ''}
+          instructorName={selectedCert.instructorName || 'Formateur Ndara'}
           completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || (selectedCert.enrollmentDate as any)?.toDate?.() || new Date()}
           certificateId={selectedCert.id}
         />
@@ -137,7 +147,7 @@ export function CertificatesClient() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {enrollmentsLoading ? (
+            {isLoading ? (
               [...Array(3)].map((_, i) => (
                 <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full bg-slate-800" /></TableCell></TableRow>
               ))
@@ -158,7 +168,7 @@ export function CertificatesClient() {
                               {cert.student?.fullName?.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="font-bold text-white text-sm">{cert.student?.fullName || 'Utilisateur Ndara'}</span>
+                        <span className="font-bold text-white text-sm">{cert.student?.fullName || 'Utilisateur'}</span>
                       </div>
                     </TableCell>
                     <TableCell>

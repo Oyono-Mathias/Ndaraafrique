@@ -20,6 +20,10 @@ interface CertificateModalProps {
   certificateId: string;
 }
 
+/**
+ * @fileOverview Modal de visualisation et d'export du certificat.
+ * Utilise un rendu masqué à l'échelle 1:1 pour garantir un PDF A4 parfait.
+ */
 export function CertificateModal({ 
     isOpen, 
     onClose, 
@@ -40,7 +44,7 @@ export function CertificateModal({
     const handleResize = () => {
       if (typeof window === 'undefined') return;
       const width = window.innerWidth;
-      // Dimensions du certificat A4 : 1123px de large
+      // Dimensions du certificat A4 Landscape : 1123px de large
       if (width < 640) {
         setScale((width - 48) / 1123); 
       } else {
@@ -56,7 +60,7 @@ export function CertificateModal({
   }, [isOpen]);
 
   const handleWhatsAppShare = () => {
-    const text = `🎉 Très fier de partager mon certificat "${courseName}" obtenu sur Ndara Afrique ! 🚀\n\nVérifiez mon diplôme ici : ${verificationUrl}`;
+    const text = `🎉 Très fier de mon certificat "${courseName}" obtenu sur Ndara Afrique ! 🚀\n\nVérifiez mon diplôme ici : ${verificationUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -65,11 +69,11 @@ export function CertificateModal({
     setIsDownloading(true);
 
     try {
+      // Pour un export parfait, on s'assure de capturer à l'échelle réelle (sans le transform scale du CSS)
       const element = certificateRef.current;
       
-      // On capture le certificat à sa taille réelle (1123x794) sans tenir compte de la mise à l'échelle de l'aperçu
       const canvas = await html2canvas(element, {
-        scale: 2, // Haute résolution pour éviter les textes flous
+        scale: 2, // Haute résolution 300DPI
         useCORS: true,
         logging: false,
         backgroundColor: '#fdfcf7',
@@ -79,13 +83,13 @@ export function CertificateModal({
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       
-      // jsPDF utilise des mm pour le format A4 paysage : 297 x 210
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
 
+      // A4 Landscape : 297mm x 210mm
       pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
       pdf.save(`Certificat_Ndara_${studentName.replace(/\s/g, '_')}.pdf`);
       
@@ -104,7 +108,7 @@ export function CertificateModal({
             <DialogDescription>Diplôme officiel de {studentName}</DialogDescription>
         </DialogHeader>
         
-        {/* Zone d'aperçu centrée avec mise à l'échelle responsive */}
+        {/* Zone d'aperçu centrée */}
         <div className="w-full flex-1 flex items-center justify-center p-4 md:p-8 overflow-hidden min-h-[600px]">
             <div 
                 style={{ 
@@ -126,7 +130,7 @@ export function CertificateModal({
             </div>
         </div>
 
-        {/* Barre d'actions fixe en bas */}
+        {/* Pied de page fixe */}
         <div className="w-full p-6 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 sticky bottom-0 z-50">
             <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button 

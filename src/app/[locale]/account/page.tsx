@@ -26,7 +26,6 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link as LinkIcon, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { cn } from '@/lib/utils';
 
 const domains = [
     "Développement Web",
@@ -90,11 +89,6 @@ export default function AccountPage() {
         return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-        toast({ variant: 'destructive', title: "Fichier trop lourd", description: "L'image ne doit pas dépasser 2MB." });
-        return;
-    }
-
     setIsUploading(true);
     const storage = getStorage(firebaseApp);
     const fileName = `avatars/${currentUser.uid}/${Date.now()}_${file.name.replace(/\s+/g, '_')}`;
@@ -111,17 +105,13 @@ export default function AccountPage() {
         });
 
         if (result.success) {
-            toast({ title: "Photo mise à jour", description: "Votre nouvelle photo de profil est en ligne." });
+            toast({ title: "Photo mise à jour" });
         } else {
             throw new Error(result.error);
         }
     } catch (error: any) {
         console.error("Upload Error:", error);
-        toast({ 
-            variant: 'destructive', 
-            title: "Erreur d'upload", 
-            description: "Impossible d'envoyer l'image. Vérifiez votre connexion." 
-        });
+        toast({ variant: 'destructive', title: "Échec du téléchargement" });
     } finally {
         setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
@@ -152,7 +142,7 @@ export default function AccountPage() {
         });
 
         if (result.success) {
-            toast({ title: "Identité mise à jour", description: "Votre profil est maintenant à jour." });
+            toast({ title: "Profil mis à jour !" });
         } else {
             throw new Error(result.error);
         }
@@ -167,9 +157,9 @@ export default function AccountPage() {
     if (!currentUser?.email) return;
     try {
         await sendPasswordResetEmail(getAuth(), currentUser.email);
-        toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception pour changer votre mot de passe." });
+        toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception." });
     } catch (e) {
-        toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'envoyer l'email." });
+        toast({ variant: 'destructive', title: "Erreur technique" });
     }
   };
 
@@ -254,7 +244,6 @@ export default function AccountPage() {
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Ma Biographie</FormLabel>
                                   <FormControl><Textarea {...field} rows={4} placeholder="Parlez-nous de vous..." className="bg-slate-900 border-slate-800 rounded-2xl resize-none p-4" /></FormControl>
-                                  <FormDescription className="text-[9px] italic">S'affiche sur votre profil public.</FormDescription>
                                   <FormMessage />
                               </FormItem>
                           )}/>
@@ -267,13 +256,13 @@ export default function AccountPage() {
                                   <FormField control={form.control} name="linkedin" render={({ field }) => (
                                       <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-1 pr-4">
                                           <div className="p-3 bg-blue-600/10 rounded-xl text-blue-400"><Linkedin className="h-4 w-4"/></div>
-                                          <FormControl><Input {...field} placeholder="https://linkedin.com/in/..." className="border-none bg-transparent focus-visible:ring-0 h-10" /></FormControl>
+                                          <FormControl><Input {...field} placeholder="Lien LinkedIn" className="border-none bg-transparent focus-visible:ring-0 h-10" /></FormControl>
                                       </div>
                                   )}/>
                                   <FormField control={form.control} name="website" render={({ field }) => (
                                       <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-1 pr-4">
                                           <div className="p-3 bg-primary/10 rounded-xl text-primary"><LinkIcon className="h-4 w-4"/></div>
-                                          <FormControl><Input {...field} placeholder="https://monsite.com" className="border-none bg-transparent focus-visible:ring-0 h-10" /></FormControl>
+                                          <FormControl><Input {...field} placeholder="Mon Site Web" className="border-none bg-transparent focus-visible:ring-0 h-10" /></FormControl>
                                       </div>
                                   )}/>
                               </div>
