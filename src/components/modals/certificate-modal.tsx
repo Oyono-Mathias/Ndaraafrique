@@ -1,10 +1,5 @@
 'use client';
 
-/**
- * @fileOverview Modal de présentation du Certificat Ndara Afrique.
- * Gère la mise à l'échelle responsive pour mobile et l'export PDF haute qualité au format A4.
- */
-
 import React, { useRef, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
@@ -41,17 +36,15 @@ export function CertificateModal({
   const verificationUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificateId}` : '';
   const formattedDate = format(completionDate, 'dd MMMM yyyy', { locale: fr });
 
-  // Mise à l'échelle pour l'aperçu mobile sans affecter les dimensions réelles du certificat
   useEffect(() => {
     const handleResize = () => {
       if (typeof window === 'undefined') return;
       const width = window.innerWidth;
+      // Dimensions du certificat A4 : 1123px de large
       if (width < 640) {
-        const newScale = (width - 48) / 1123; 
-        setScale(newScale);
+        setScale((width - 48) / 1123); 
       } else {
-        const newScale = Math.min(1, (window.innerWidth - 100) / 1123);
-        setScale(newScale);
+        setScale(Math.min(1, (window.innerWidth - 100) / 1123));
       }
     };
 
@@ -63,7 +56,7 @@ export function CertificateModal({
   }, [isOpen]);
 
   const handleWhatsAppShare = () => {
-    const text = `🎉 Je suis fier de partager mon certificat "${courseName}" obtenu sur Ndara Afrique ! 🚀\n\nVérifiez mon diplôme ici : ${verificationUrl}`;
+    const text = `🎉 Très fier de partager mon certificat "${courseName}" obtenu sur Ndara Afrique ! 🚀\n\nVérifiez mon diplôme ici : ${verificationUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -74,28 +67,25 @@ export function CertificateModal({
     try {
       const element = certificateRef.current;
       
-      // Capturer le certificat avec une haute densité de pixels
+      // On capture le certificat à sa taille réelle (1123x794) sans tenir compte de la mise à l'échelle de l'aperçu
       const canvas = await html2canvas(element, {
-        scale: 2, // Haute résolution
+        scale: 2, // Haute résolution pour éviter les textes flous
         useCORS: true,
         logging: false,
         backgroundColor: '#fdfcf7',
         width: 1123,
         height: 794,
-        windowWidth: 1123,
-        windowHeight: 794,
       });
 
       const imgData = canvas.toDataURL('image/png', 1.0);
       
-      // Créer le PDF au format A4 Paysage exact (297mm x 210mm)
+      // jsPDF utilise des mm pour le format A4 paysage : 297 x 210
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a4'
       });
 
-      // L'image doit remplir exactement la page A4 (297x210)
       pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
       pdf.save(`Certificat_Ndara_${studentName.replace(/\s/g, '_')}.pdf`);
       
@@ -108,25 +98,22 @@ export function CertificateModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-screen-2xl p-0 border-0 bg-slate-950/95 shadow-none overflow-hidden overflow-y-auto max-h-[98vh] custom-scrollbar">
+      <DialogContent className="max-w-screen-2xl p-0 border-0 bg-slate-950/90 shadow-none overflow-y-auto max-h-[98vh] flex flex-col items-center">
         <DialogHeader className="sr-only">
-            <DialogTitle>Certificat d'Accomplissement</DialogTitle>
-            <DialogDescription>
-            Certificat pour {courseName} décerné à {studentName}.
-            </DialogDescription>
+            <DialogTitle>Certificat Ndara Afrique</DialogTitle>
+            <DialogDescription>Diplôme officiel de {studentName}</DialogDescription>
         </DialogHeader>
         
-        {/* --- CONTENEUR D'APERÇU --- */}
-        <div className="flex flex-col items-center justify-start py-12 px-4 min-h-[85vh]">
+        {/* Zone d'aperçu centrée avec mise à l'échelle responsive */}
+        <div className="w-full flex-1 flex items-center justify-center p-4 md:p-8 overflow-hidden min-h-[600px]">
             <div 
                 style={{ 
                     transform: `scale(${scale})`, 
-                    transformOrigin: 'top center',
+                    transformOrigin: 'center center',
                     width: '1123px',
                     height: '794px',
-                    transition: 'transform 0.3s ease-out'
                 }}
-                className="shadow-2xl shadow-black/50"
+                className="shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex-shrink-0"
             >
                 <CertificatePremium 
                     ref={certificateRef}
@@ -139,26 +126,23 @@ export function CertificateModal({
             </div>
         </div>
 
-        {/* --- BARRE D'ACTIONS FIXE --- */}
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-slate-900/80 backdrop-blur-xl border-t border-white/10 z-50">
-            <div className="max-w-2xl mx-auto flex flex-col sm:flex-row gap-4">
+        {/* Barre d'actions fixe en bas */}
+        <div className="w-full p-6 bg-slate-900/95 backdrop-blur-xl border-t border-white/10 sticky bottom-0 z-50">
+            <div className="max-w-3xl mx-auto grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Button 
                     onClick={handleDownloadPDF}
                     disabled={isDownloading}
-                    className="flex-1 h-14 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
+                    className="h-14 rounded-2xl bg-white text-slate-900 hover:bg-slate-100 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
                 >
                     {isDownloading ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <Download className="mr-3 h-5 w-5" />}
                     TÉLÉCHARGER (PDF)
                 </Button>
                 <Button 
                     onClick={handleWhatsAppShare}
-                    className="flex-1 h-14 rounded-2xl bg-[#25D366] hover:bg-[#25D366]/90 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
+                    className="h-14 rounded-2xl bg-[#25D366] hover:bg-[#25D366]/90 text-white font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all"
                 >
                     <Share2 className="mr-3 h-5 w-5" />
                     PARTAGER WHATSAPP
-                </Button>
-                <Button variant="ghost" onClick={onClose} className="sm:hidden text-slate-500 font-bold uppercase text-[10px]">
-                    Fermer
                 </Button>
             </div>
         </div>
