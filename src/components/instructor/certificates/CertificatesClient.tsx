@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée pour les formateurs.
- * Correction du chargement infini : Suppression du tri serveur pour éviter les problèmes d'index.
+ * Permet désormais de visualiser le certificat de l'étudiant.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -13,11 +13,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Award, Search, User, BookOpen, Clock, Frown } from 'lucide-react';
+import { Award, Search, User, BookOpen, Clock, Frown, Eye } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { CertificateModal } from '@/components/modals/certificate-modal';
 import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 
 export function CertificatesClient() {
@@ -26,9 +28,12 @@ export function CertificatesClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [enrichedCertificates, setEnrichedCertificates] = useState<(Enrollment & { student?: NdaraUser; course?: Course })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // État pour la modal de visualisation
+  const [selectedCert, setSelectedCert] = useState<(Enrollment & { student?: NdaraUser; course?: Course }) | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // 1. Récupération des inscriptions terminées (progress == 100)
-  // Suppression de l'orderBy pour garantir que la requête ne bloque pas si l'index est manquant
   const enrollmentsQuery = useMemo(
     () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser]
@@ -68,8 +73,8 @@ export function CertificatesClient() {
           student: studentsMap.get(e.studentId),
           course: coursesMap.get(e.courseId)
         })).sort((a, b) => {
-            const dateA = (a.lastAccessedAt as any)?.toDate?.() || new Date(0);
-            const dateB = (b.lastAccessedAt as any)?.toDate?.() || new Date(0);
+            const dateA = (a.lastAccessedAt as any)?.toDate?.() || (a.enrollmentDate as any)?.toDate?.() || new Date(0);
+            const dateB = (b.lastAccessedAt as any)?.toDate?.() || (b.enrollmentDate as any)?.toDate?.() || new Date(0);
             return dateB.getTime() - dateA.getTime();
         });
 
@@ -91,10 +96,28 @@ export function CertificatesClient() {
     );
   }, [enrichedCertificates, searchTerm]);
 
+  const handleViewCertificate = (cert: any) => {
+    setSelectedCert(cert);
+    setIsModalOpen(true);
+  };
+
   const showSkeletons = enrollmentsLoading || (isLoading && enrichedCertificates.length === 0 && enrollments && enrollments.length > 0);
 
   return (
     <div className="space-y-6">
+      {/* Modal de visualisation */}
+      {selectedCert && (
+        <CertificateModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          courseName={selectedCert.course?.title || ''}
+          studentName={selectedCert.student?.fullName || 'Étudiant Ndara'}
+          instructorName={currentUser?.fullName || ''}
+          completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || (selectedCert.enrollmentDate as any)?.toDate?.() || new Date()}
+          certificateId={selectedCert.id}
+        />
+      )}
+
       <div className="relative max-w-sm">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
         <Input 
@@ -112,7 +135,7 @@ export function CertificatesClient() {
               <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Apprenant</TableHead>
               <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Formation</TableHead>
               <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">Date d'obtention</TableHead>
-              <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-widest text-right">Statut</TableHead>
+              <TableHead className="text-slate-400 font-bold uppercase text-[10px] tracking-widest text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -121,36 +144,51 @@ export function CertificatesClient() {
                 <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full bg-slate-800" /></TableCell></TableRow>
               ))
             ) : filteredCerts.length > 0 ? (
-              filteredCerts.map((cert) => (
-                <TableRow key={cert.id} className="border-slate-800 hover:bg-slate-800/40">
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8 border border-slate-700">
-                        <AvatarImage src={cert.student?.profilePictureURL} />
-                        <AvatarFallback className="bg-slate-800 text-[10px] font-bold text-slate-500">
-                            {cert.student?.fullName?.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="font-bold text-white text-sm">{cert.student?.fullName || 'Utilisateur Ndara'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-slate-300 text-sm">
-                      <BookOpen className="h-3.5 w-3.5 text-primary" />
-                      <span className="line-clamp-1">{cert.course?.title || 'Cours supprimé'}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-slate-500 text-xs">
-                    <div className="flex items-center gap-1.5">
-                      <Clock className="h-3.5 w-3.5" />
-                      {cert.lastAccessedAt ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <Badge className="bg-green-500/10 text-green-400 border-none text-[9px] font-black uppercase">Certifié</Badge>
-                  </TableCell>
-                </TableRow>
-              ))
+              filteredCerts.map((cert) => {
+                const dateRaw = cert.lastAccessedAt || cert.enrollmentDate;
+                const formattedDate = dateRaw && (dateRaw as any).toDate 
+                    ? format((dateRaw as any).toDate(), 'd MMM yyyy', { locale: fr }) 
+                    : 'Récemment';
+
+                return (
+                  <TableRow key={cert.id} className="border-slate-800 hover:bg-slate-800/40">
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8 border border-slate-700">
+                          <AvatarImage src={cert.student?.profilePictureURL} />
+                          <AvatarFallback className="bg-slate-800 text-[10px] font-bold text-slate-500">
+                              {cert.student?.fullName?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-bold text-white text-sm">{cert.student?.fullName || 'Utilisateur Ndara'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2 text-slate-300 text-sm">
+                        <BookOpen className="h-3.5 w-3.5 text-primary" />
+                        <span className="line-clamp-1">{cert.course?.title || 'Cours supprimé'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-slate-500 text-xs">
+                      <div className="flex items-center gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        {formattedDate}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-9 px-4 rounded-xl font-bold text-primary hover:bg-primary/10"
+                        onClick={() => handleViewCertificate(cert)}
+                      >
+                        <Eye className="mr-2 h-4 w-4" />
+                        Voir
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
             ) : (
               <TableRow>
                 <TableCell colSpan={4} className="h-48 text-center">

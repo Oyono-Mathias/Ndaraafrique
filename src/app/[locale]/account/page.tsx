@@ -85,13 +85,11 @@ export default function AccountPage() {
     const file = e.target.files?.[0];
     if (!file || !currentUser || !firebaseApp) return;
 
-    // Validation du type de fichier
     if (!file.type.startsWith('image/')) {
         toast({ variant: 'destructive', title: "Fichier invalide", description: "Veuillez sélectionner une image." });
         return;
     }
 
-    // Validation de la taille (max 2MB)
     if (file.size > 2 * 1024 * 1024) {
         toast({ variant: 'destructive', title: "Fichier trop lourd", description: "L'image ne doit pas dépasser 2MB." });
         return;
@@ -103,7 +101,6 @@ export default function AccountPage() {
     const storageRef = ref(storage, fileName);
     
     try {
-        // Utilisation de uploadBytes (plus robuste que resumable pour les petits fichiers)
         const snapshot = await uploadBytes(storageRef, file);
         const downloadURL = await getDownloadURL(snapshot.ref);
 
@@ -123,11 +120,10 @@ export default function AccountPage() {
         toast({ 
             variant: 'destructive', 
             title: "Erreur d'upload", 
-            description: "Impossible d'envoyer l'image. Vérifiez votre connexion ou les permissions." 
+            description: "Impossible d'envoyer l'image. Vérifiez votre connexion." 
         });
     } finally {
         setIsUploading(false);
-        // Réinitialiser le champ pour permettre de sélectionner le même fichier deux fois
         if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
