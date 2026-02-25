@@ -15,14 +15,14 @@ interface CertificatePremiumProps {
 
 /**
  * @fileOverview Composant de certificat au format A4 Paysage (1123px x 794px).
- * Design Premium avec bordures ornementales et signatures.
+ * Identité mise à jour : Oyono Mathias (CEO & Fondateur).
  */
 export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePremiumProps>(({
   studentName,
   courseName,
   completionDate,
   certificateId,
-  instructorName = "Directeur Pédagogique",
+  instructorName = "Formateur Ndara",
   className
 }, ref) => {
   return (
@@ -110,17 +110,22 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
           </div>
           
           <div className="flex justify-end gap-16 pb-4">
+            {/* Signature Fondateur */}
             <div className="text-center space-y-2">
-               <div className="h-14 w-36 border-b border-gray-300 flex items-end justify-center italic font-serif text-3xl text-gray-600 pb-1">
-                  Saleh
+               <div className="h-14 w-40 border-b border-gray-300 flex items-end justify-center italic font-serif text-3xl text-gray-700 pb-1">
+                  Mathias
                </div>
-               <p className="text-[10px] font-black uppercase text-gray-800 tracking-tighter leading-none">CEO, Fondateur</p>
+               <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">Oyono Mathias</p>
+               <p className="text-[8px] font-bold uppercase text-primary tracking-widest leading-none mt-1">CEO & Fondateur</p>
             </div>
+            
+            {/* Signature Formateur Dynamique */}
             <div className="text-center space-y-2">
-               <div className="h-14 w-36 border-b border-gray-400 flex items-end justify-center italic font-serif text-3xl text-gray-600 pb-1">
-                  Directeur P.
+               <div className="h-14 w-40 border-b border-gray-400 flex items-end justify-center italic font-serif text-2xl text-gray-700 pb-1">
+                  {instructorName.split(' ')[0]}
                </div>
-               <p className="text-[10px] font-black uppercase text-gray-800 tracking-tighter leading-none">{instructorName}</p>
+               <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">{instructorName}</p>
+               <p className="text-[8px] font-bold uppercase text-slate-500 tracking-widest leading-none mt-1">Formateur Expert</p>
             </div>
           </div>
         </div>
