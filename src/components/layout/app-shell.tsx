@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -37,7 +38,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => unsub();
   }, [db]);
 
-  // ✅ Nettoyage robuste de l'URL pour la logique de redirection
+  // Nettoyage de l'URL pour la redirection
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
@@ -53,19 +54,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // --- ACCÈS AUX PAGES COMMUNES ---
-    // Ne jamais rediriger si on est sur la page Mon Compte ou Recherche
+    // Autoriser la navigation vers les pages communes sans redirection forcée
     if (cleanPath === '/account' || cleanPath === '/search') return;
 
-    // --- REDIRECTION BASÉE SUR LE RÔLE ACTIF ---
+    // Redirection basée sur le rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
-    const isStudentArea = cleanPath.startsWith('/student');
 
-    if (role === 'admin') {
-        // L'admin peut aller partout, on le laisse naviguer librement
-        return; 
-    } else if (role === 'instructor') {
+    if (role === 'admin') return; 
+    
+    if (role === 'instructor') {
         if (isAdminArea) router.push('/instructor/dashboard');
     } else if (role === 'student') {
         if (isInstructorArea || isAdminArea) router.push('/student/dashboard');
@@ -88,8 +86,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isLandingPage = cleanPath === '/';
   const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/');
   
-  // On affiche la navigation si l'utilisateur est connecté et qu'on n'est pas sur une landing/auth
   const showNav = user && !isAuthPage && !isPublicView;
+  const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').length > 3;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
@@ -98,14 +96,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <SplashScreen />
       <OfflineBar />
-      <div className={cn("min-h-screen w-full bg-slate-950", showNav && "md:grid md:grid-cols-[280px_1fr]")}>
-        {showNav && (
+      <div className={cn("min-h-screen w-full bg-slate-950", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
+        {showNav && !isFullScreen && (
           <aside className="hidden md:block h-screen sticky top-0">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
         <div className="flex flex-col flex-1">
-          {showNav && (
+          {showNav && !isFullScreen && (
             <header className="flex h-16 items-center justify-between border-b border-slate-800 px-4 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-30">
               <div className="md:hidden">
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
@@ -120,7 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="ml-auto"><Header /></div>
             </header>
           )}
-          <main className={cn(showNav ? "p-6" : "p-0")}>{children}</main>
+          <main className={cn(showNav && !isFullScreen ? "p-6" : "p-0")}>{children}</main>
         </div>
       </div>
     </>

@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -16,6 +17,67 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
         return userDoc.exists && userDoc.data()?.role === 'admin';
     } catch {
         return false;
+    }
+}
+
+/**
+ * ACCORDE L'ACCÈS À UN COURS
+ * Version corrigée pour le build Vercel avec expirationMinutes.
+ */
+export async function grantCourseAccess({
+    studentId,
+    courseId,
+    adminId,
+    reason,
+    expirationInDays,
+    expirationMinutes,
+}: {
+    studentId: string;
+    courseId: string;
+    adminId: string;
+    reason: string;
+    expirationInDays?: number;
+    expirationMinutes?: number;
+}) {
+    try {
+        const db = getAdminDb();
+        const batch = db.batch();
+        const courseDoc = await db.collection('courses').doc(courseId).get();
+        if (!courseDoc.exists) return { success: false, error: "Cours introuvable." };
+
+        const enrollmentRef = db.collection('enrollments').doc(`${studentId}_${courseId}`);
+        
+        let expiresAt = null;
+        if (expirationInDays) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 86400000);
+        } else if (expirationMinutes) {
+            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60000);
+        }
+
+        batch.set(enrollmentRef, {
+            studentId,
+            courseId,
+            instructorId: courseDoc.data()?.instructorId || '',
+            status: 'active',
+            progress: 0,
+            enrollmentDate: FieldValue.serverTimestamp(),
+            lastAccessedAt: FieldValue.serverTimestamp(),
+            expiresAt
+        }, { merge: true });
+
+        const logRef = db.collection('admin_audit_logs').doc();
+        batch.set(logRef, {
+            adminId,
+            eventType: 'course.grant',
+            target: { id: studentId, type: 'user' },
+            details: `Accès au cours "${courseDoc.data()?.title}" accordé. Motif: ${reason}`,
+            timestamp: FieldValue.serverTimestamp()
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
     }
 }
 
@@ -78,69 +140,6 @@ export async function syncUsersWithAuthAction(adminId: string) {
     }
 }
 
-/**
- * ACCORDE L'ACCÈS À UN COURS
- */
-export async function grantCourseAccess({
-    studentId,
-    courseId,
-    adminId,
-    reason,
-    expirationInDays,
-    expirationMinutes,
-}: {
-    studentId: string;
-    courseId: string;
-    adminId: string;
-    reason: string;
-    expirationInDays?: number;
-    expirationMinutes?: number;
-}) {
-    try {
-        const db = getAdminDb();
-        const batch = db.batch();
-        const courseDoc = await db.collection('courses').doc(courseId).get();
-        if (!courseDoc.exists) return { success: false, error: "Cours introuvable." };
-
-        const enrollmentRef = db.collection('enrollments').doc(`${studentId}_${courseId}`);
-        
-        let expiresAt = null;
-        if (expirationInDays) {
-            expiresAt = Timestamp.fromMillis(Date.now() + expirationInDays * 86400000);
-        } else if (expirationMinutes) {
-            expiresAt = Timestamp.fromMillis(Date.now() + expirationMinutes * 60000);
-        }
-
-        batch.set(enrollmentRef, {
-            studentId,
-            courseId,
-            instructorId: courseDoc.data()?.instructorId || '',
-            status: 'active',
-            progress: 0,
-            enrollmentDate: FieldValue.serverTimestamp(),
-            lastAccessedAt: FieldValue.serverTimestamp(),
-            expiresAt
-        }, { merge: true });
-
-        const logRef = db.collection('admin_audit_logs').doc();
-        batch.set(logRef, {
-            adminId,
-            eventType: 'course.grant',
-            target: { id: studentId, type: 'user' },
-            details: `Accès au cours "${courseDoc.data()?.title}" accordé. Motif: ${reason}`,
-            timestamp: FieldValue.serverTimestamp()
-        });
-
-        await batch.commit();
-        return { success: true };
-    } catch (e: any) {
-        return { success: false, error: e.message };
-    }
-}
-
-/**
- * APPROUVE UNE CANDIDATURE D'INSTRUCTEUR
- */
 export async function approveInstructorApplication({ userId, decision, adminId, message }: { userId: string, decision: 'accepted' | 'rejected', adminId: string, message?: string }) {
     try {
         const db = getAdminDb();
@@ -169,9 +168,6 @@ export async function approveInstructorApplication({ userId, decision, adminId, 
     }
 }
 
-/**
- * RÉGULARISATION DES PROFILS
- */
 export async function migrateUserProfilesAction(adminId: string) {
     const isAdmin = await isRequesterAdmin(adminId);
     if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };

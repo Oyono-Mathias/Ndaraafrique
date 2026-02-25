@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -57,7 +58,6 @@ function CoursePlayerPageContent() {
     setHasWindow(true);
   }, []);
 
-  // Données de base
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
   
@@ -70,7 +70,6 @@ function CoursePlayerPageContent() {
   const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
   const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
 
-  // Chargement du curriculum
   useEffect(() => {
     if (!courseId) return;
     const fetchCurriculum = async () => {
@@ -89,7 +88,6 @@ function CoursePlayerPageContent() {
         }
         setLecturesMap(lMap);
         
-        // Déterminer la leçon à afficher par défaut
         let startLecture: Lecture | null = null;
         if (lessonIdFromUrl) {
             for (const list of lMap.values()) {
@@ -181,8 +179,6 @@ function CoursePlayerPageContent() {
       />
 
       <div className="flex flex-col lg:flex-row h-screen bg-black overflow-hidden font-sans">
-        
-        {/* --- ZONE GAUCHE : LECTEUR (70%) --- */}
         <main className="flex-1 flex flex-col min-h-0 bg-[#050505]">
           <div className="flex-1 bg-black flex flex-col justify-center overflow-y-auto">
             {activeLecture ? (
@@ -199,13 +195,9 @@ function CoursePlayerPageContent() {
                         pip
                         config={{ 
                           file: { 
-                            attributes: { 
-                              controlsList: 'nodownload',
-                              disablePictureInPicture: false
-                            },
+                            attributes: { controlsList: 'nodownload' },
                             forceVideo: true
-                          },
-                          youtube: { playerVars: { modestbranding: 1, rel: 0 } }
+                          }
                         }}
                       />
                     )}
@@ -250,7 +242,6 @@ function CoursePlayerPageContent() {
                     completedLessons.includes(activeLecture.id) ? "bg-green-500/10 text-green-500" : "bg-primary text-white shadow-lg shadow-primary/20"
                   )}
                 >
-                  {completedLessons.includes(activeLecture.id) ? <CheckCircle className="mr-2 h-4 w-4" /> : null}
                   {completedLessons.includes(activeLecture.id) ? "Validée" : "Terminer la leçon"}
                 </Button>
               )}
@@ -258,7 +249,6 @@ function CoursePlayerPageContent() {
           </div>
         </main>
 
-        {/* --- ZONE DROITE : SIDEBAR (30%) --- */}
         <aside className="w-full lg:w-[350px] flex-shrink-0 bg-[#0f0f0f] border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col h-[50vh] lg:h-full">
           <CourseSidebar 
             course={course} 
