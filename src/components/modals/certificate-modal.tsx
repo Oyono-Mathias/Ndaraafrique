@@ -1,14 +1,15 @@
 'use client';
 
 /**
- * @fileOverview Modal de présentation du Certificat Ndara Afrique utilisant le composant Premium.
+ * @fileOverview Modal de présentation du Certificat Ndara Afrique.
+ * Gère la mise à l'échelle responsive pour mobile et l'export PDF haute qualité.
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Award, Share2, ShieldCheck, Download, Loader2, X } from 'lucide-react';
+import { Share2, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -36,8 +37,31 @@ export function CertificateModal({
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [scale, setScale] = useState(1);
   const verificationUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificateId}` : '';
   const formattedDate = format(completionDate, 'dd MMMM yyyy', { locale: fr });
+
+  // ✅ Logique de mise à l'échelle pour mobile
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === 'undefined') return;
+      const width = window.innerWidth;
+      if (width < 640) {
+        // Le certificat A4 fait 1123px de large en base. 
+        // On calcule le ratio pour qu'il tienne dans l'écran moins les paddings.
+        const newScale = (width - 48) / 1123; 
+        setScale(newScale);
+      } else {
+        setScale(1);
+      }
+    };
+
+    if (isOpen) {
+      handleResize();
+      window.addEventListener('resize', handleResize);
+    }
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isOpen]);
 
   const handleWhatsAppShare = () => {
     const text = `🎉 Je suis fier de partager mon certificat "${courseName}" obtenu sur Ndara Afrique ! 🚀\n\nVérifiez mon diplôme ici : ${verificationUrl}`;
@@ -50,11 +74,15 @@ export function CertificateModal({
 
     try {
       const element = certificateRef.current;
+      
+      // On force le rendu temporairement à l'échelle 1 pour la capture
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 2, // Haute définition
         useCORS: true,
         logging: false,
-        backgroundColor: '#fdfcf7'
+        backgroundColor: '#fdfcf7',
+        width: 1123, // Largeur A4 paysage standard en pixels 96dpi
+        height: 794,
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -75,7 +103,7 @@ export function CertificateModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-5xl p-0 border-0 bg-transparent shadow-none overflow-hidden overflow-y-auto max-h-[95vh] selection:bg-orange-100">
+      <DialogContent className="max-w-6xl p-0 border-0 bg-slate-950/95 shadow-none overflow-hidden overflow-y-auto max-h-[98vh] custom-scrollbar">
         <DialogHeader className="sr-only">
             <DialogTitle>Certificat d'Accomplissement</DialogTitle>
             <DialogDescription>
@@ -83,19 +111,31 @@ export function CertificateModal({
             </DialogDescription>
         </DialogHeader>
         
-        <div className="p-4 sm:p-0">
-            <CertificatePremium 
-                ref={certificateRef}
-                studentName={studentName}
-                courseName={courseName}
-                completionDate={formattedDate}
-                certificateId={certificateId}
-                instructorName={instructorName}
-            />
+        {/* --- CONTENEUR DE PRÉVISUALISATION --- */}
+        <div className="flex justify-center items-center py-8 px-4 overflow-hidden">
+            <div 
+                style={{ 
+                    transform: `scale(${scale})`, 
+                    transformOrigin: 'top center',
+                    width: '1123px', // Largeur fixe pour le composant interne
+                    height: `${794 * scale}px`, // Hauteur ajustée pour le flux flex
+                    transition: 'transform 0.3s ease-out'
+                }}
+                className="flex-shrink-0"
+            >
+                <CertificatePremium 
+                    ref={certificateRef}
+                    studentName={studentName}
+                    courseName={courseName}
+                    completionDate={formattedDate}
+                    certificateId={certificateId}
+                    instructorName={instructorName}
+                />
+            </div>
         </div>
 
         {/* --- ACTIONS --- */}
-        <div className="flex flex-col gap-3 px-4 pb-10 mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex flex-col gap-4 px-6 pb-12 mt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 max-w-2xl mx-auto">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Button 
                     onClick={handleDownloadPDF}
@@ -114,15 +154,7 @@ export function CertificateModal({
                 </Button>
             </div>
             
-            <div className="bg-white/10 backdrop-blur-md border border-white/10 p-4 rounded-2xl flex items-center gap-4">
-                <div className="p-2 bg-primary/20 rounded-lg">
-                    <ShieldCheck className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-[10px] text-slate-400 font-medium leading-relaxed uppercase tracking-tight">
-                    Ce certificat est un titre officiel Ndara Afrique. Vous pouvez l'ajouter à votre CV LinkedIn pour valoriser vos compétences.
-                </p>
-            </div>
-            <Button variant="ghost" onClick={onClose} className="text-slate-500 hover:text-white font-bold uppercase text-[10px] tracking-[0.3em] h-10 mt-2">
+            <Button variant="ghost" onClick={onClose} className="text-slate-500 hover:text-white font-bold uppercase text-[10px] tracking-[0.3em] h-10">
                 Fermer l'aperçu
             </Button>
         </div>
