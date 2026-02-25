@@ -20,7 +20,8 @@ import {
   orderBy,
   serverTimestamp,
   setDoc,
-  where
+  where,
+  updateDoc
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
@@ -130,6 +131,7 @@ function CoursePlayerPageContent() {
       const percent = Math.round((updated.length / totalLecturesCount) * 100);
       
       try {
+        // 1. Mise à jour de la progression détaillée
         await setDoc(progressRef, {
           userId: user.uid,
           courseId: courseId,
@@ -141,11 +143,19 @@ function CoursePlayerPageContent() {
           lastLessonTitle: activeLecture.title,
           updatedAt: serverTimestamp(),
         }, { merge: true });
+
+        // 2. Synchronisation avec le document d'inscription (essentiel pour les certificats et la liste de cours)
+        const enrollmentRef = doc(db, 'enrollments', `${user.uid}_${courseId}`);
+        await setDoc(enrollmentRef, {
+            progress: percent,
+            lastAccessedAt: serverTimestamp()
+        }, { merge: true });
         
         toast({ title: "Leçon terminée !", description: "Votre progression est à jour." });
         if (percent >= 100) setShowCertificateModal(true);
       } catch (e) {
-        console.error(e);
+        console.error("Error updating progress:", e);
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour votre progression." });
       }
     }
   };

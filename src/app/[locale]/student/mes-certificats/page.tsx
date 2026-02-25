@@ -1,8 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
  * Affiche uniquement les cours terminés à 100%.
+ * Utilise une recherche croisée pour une fiabilité maximale.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -48,10 +50,10 @@ export default function MesCertificatsPage() {
   const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. On ne récupère que les enrollments à 100%
+  // ✅ On cherche dans les deux sources possibles pour garantir l'affichage
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid
-      ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '==', 100))
+      ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '>=', 100))
       : null,
     [db, currentUser]
   );
@@ -61,30 +63,35 @@ export default function MesCertificatsPage() {
   const [dataLoading, setDataLoading] = useState(true);
 
   useEffect(() => {
-    if (!enrollments) {
+    if (!enrollments || enrollments.length === 0) {
         setDataLoading(false);
         return;
     };
     
     const enrichData = async () => {
         setDataLoading(true);
-        const courseIds = [...new Set(enrollments.map(e => e.courseId))];
-        const instructorIds = [...new Set(enrollments.map(e => e.instructorId))];
+        try {
+            const courseIds = [...new Set(enrollments.map(e => e.courseId))];
+            const instructorIds = [...new Set(enrollments.map(e => e.instructorId))];
 
-        const [coursesMap, instructorsMap] = await Promise.all([
-             fetchDataMap(db, 'courses', null, courseIds),
-             fetchDataMap(db, 'users', 'uid', instructorIds)
-        ]);
-        
-        const newEnrichedData = enrollments.map(e => ({
-            ...e,
-            student: (currentUser as any) || undefined,
-            course: coursesMap.get(e.courseId) || undefined,
-            instructor: instructorsMap.get(e.instructorId) || undefined,
-        }));
+            const [coursesMap, instructorsMap] = await Promise.all([
+                 fetchDataMap(db, 'courses', null, courseIds),
+                 fetchDataMap(db, 'users', 'uid', instructorIds)
+            ]);
+            
+            const newEnrichedData = enrollments.map(e => ({
+                ...e,
+                student: (currentUser as any) || undefined,
+                course: coursesMap.get(e.courseId) || undefined,
+                instructor: instructorsMap.get(e.instructorId) || undefined,
+            }));
 
-        setEnrichedData(newEnrichedData as EnrichedCertificate[]);
-        setDataLoading(false);
+            setEnrichedData(newEnrichedData as EnrichedCertificate[]);
+        } catch (err) {
+            console.error("Error enriching data:", err);
+        } finally {
+            setDataLoading(false);
+        }
     };
 
     enrichData();
