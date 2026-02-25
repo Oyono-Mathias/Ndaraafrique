@@ -15,7 +15,7 @@ interface CertificatePremiumProps {
 
 /**
  * @fileOverview Composant de certificat au format A4 Paysage (1123px x 794px).
- * Identité mise à jour : Oyono Mathias (CEO & Fondateur).
+ * Identité : Oyono Mathias (CEO & Fondateur).
  */
 export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePremiumProps>(({
   studentName,
@@ -29,8 +29,9 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
     <div 
       ref={ref}
       id="ndara-certificate-premium"
+      style={{ width: '1123px', height: '794px' }}
       className={cn(
-        "relative w-[1123px] h-[794px] bg-[#fdfcf7] shadow-2xl overflow-hidden text-gray-900 font-sans border-[12px] border-double border-[#e5c185] ring-1 ring-gray-200 flex flex-col",
+        "relative bg-[#fdfcf7] shadow-2xl overflow-hidden text-gray-900 font-sans border-[12px] border-double border-[#e5c185] ring-1 ring-gray-200 flex flex-col shrink-0",
         className
       )}
     >
@@ -116,7 +117,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
                   Mathias
                </div>
                <p className="text-[9px] font-black uppercase text-gray-800 tracking-tighter leading-none">Oyono Mathias</p>
-               <p className="text-[8px] font-bold uppercase text-primary tracking-widest leading-none mt-1">CEO & Fondateur</p>
+               <p className="text-[8px] font-bold uppercase text-primary tracking-widest leading-none mt-1">CEO & FONDATEUR</p>
             </div>
             
             {/* Signature Formateur Dynamique */}

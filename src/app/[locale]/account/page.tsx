@@ -223,7 +223,7 @@ export default function AccountPage() {
                           <FormField control={form.control} name="fullName" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Nom Complet</FormLabel>
-                                  <FormControl><Input {...field} className="h-14 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                  <FormControl><Input {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>
@@ -232,7 +232,7 @@ export default function AccountPage() {
                               <FormField control={form.control} name="username" render={({ field }) => (
                                   <FormItem>
                                       <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Pseudo unique</FormLabel>
-                                      <FormControl><Input {...field} className="h-14 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                      <FormControl><Input {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
                                       <FormMessage />
                                   </FormItem>
                               )}/>
@@ -240,7 +240,7 @@ export default function AccountPage() {
                                   <FormItem>
                                       <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Spécialité</FormLabel>
                                       <Select onValueChange={field.onChange} value={field.value}>
-                                          <FormControl><SelectTrigger className="h-14 bg-slate-900 border-slate-800 rounded-2xl"><SelectValue /></SelectTrigger></FormControl>
+                                          <FormControl><SelectTrigger className="h-12 bg-slate-900 border-slate-800 rounded-2xl"><SelectValue /></SelectTrigger></FormControl>
                                           <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                               {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                                           </SelectContent>
