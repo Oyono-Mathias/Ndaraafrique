@@ -1,4 +1,3 @@
-
 'use server';
 
 /**
@@ -22,7 +21,6 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 
 /**
  * ACCORDE L'ACCÈS À UN COURS
- * Version corrigée pour le build Vercel avec expirationMinutes.
  */
 export async function grantCourseAccess({
     studentId,

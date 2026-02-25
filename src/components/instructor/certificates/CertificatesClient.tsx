@@ -1,9 +1,13 @@
-
 'use client';
+
+/**
+ * @fileOverview Liste des certificats de l'étudiant optimisée pour les formateurs.
+ * Correction du chargement infini : Suppression du tri serveur pour éviter les problèmes d'index.
+ */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -24,14 +28,21 @@ export function CertificatesClient() {
   const [isLoading, setIsLoading] = useState(true);
 
   // 1. Récupération des inscriptions terminées (progress == 100)
+  // Suppression de l'orderBy pour garantir que la requête ne bloque pas si l'index est manquant
   const enrollmentsQuery = useMemo(
-    () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100), orderBy('lastAccessedAt', 'desc')) : null,
+    () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser]
   );
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
 
   useEffect(() => {
-    if (!enrollments || enrollmentsLoading) return;
+    if (enrollmentsLoading) return;
+
+    if (!enrollments || enrollments.length === 0) {
+        setEnrichedCertificates([]);
+        setIsLoading(false);
+        return;
+    }
 
     const enrichData = async () => {
       setIsLoading(true);
@@ -56,7 +67,11 @@ export function CertificatesClient() {
           ...e,
           student: studentsMap.get(e.studentId),
           course: coursesMap.get(e.courseId)
-        }));
+        })).sort((a, b) => {
+            const dateA = (a.lastAccessedAt as any)?.toDate?.() || new Date(0);
+            const dateB = (b.lastAccessedAt as any)?.toDate?.() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
 
         setEnrichedCertificates(enriched);
       } catch (error) {
@@ -75,6 +90,8 @@ export function CertificatesClient() {
       c.course?.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [enrichedCertificates, searchTerm]);
+
+  const showSkeletons = enrollmentsLoading || (isLoading && enrichedCertificates.length === 0 && enrollments && enrollments.length > 0);
 
   return (
     <div className="space-y-6">
@@ -99,7 +116,7 @@ export function CertificatesClient() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
+            {showSkeletons ? (
               [...Array(3)].map((_, i) => (
                 <TableRow key={i}><TableCell colSpan={4}><Skeleton className="h-10 w-full bg-slate-800" /></TableCell></TableRow>
               ))
@@ -110,15 +127,17 @@ export function CertificatesClient() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 border border-slate-700">
                         <AvatarImage src={cert.student?.profilePictureURL} />
-                        <AvatarFallback className="bg-slate-800 text-[10px]">{cert.student?.fullName?.charAt(0)}</AvatarFallback>
+                        <AvatarFallback className="bg-slate-800 text-[10px] font-bold text-slate-500">
+                            {cert.student?.fullName?.charAt(0)}
+                        </AvatarFallback>
                       </Avatar>
-                      <span className="font-bold text-white text-sm">{cert.student?.fullName}</span>
+                      <span className="font-bold text-white text-sm">{cert.student?.fullName || 'Utilisateur Ndara'}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2 text-slate-300 text-sm">
                       <BookOpen className="h-3.5 w-3.5 text-primary" />
-                      <span className="line-clamp-1">{cert.course?.title}</span>
+                      <span className="line-clamp-1">{cert.course?.title || 'Cours supprimé'}</span>
                     </div>
                   </TableCell>
                   <TableCell className="text-slate-500 text-xs">
