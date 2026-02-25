@@ -1,24 +1,23 @@
-
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
  * Affiche uniquement les cours terminés à 100%.
- * Utilise une recherche croisée pour une fiabilité maximale.
+ * ✅ INCLUT LA RÉPARATION AUTOMATIQUE : Synchronise enrollments avec course_progress si besoin.
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight } from 'lucide-react';
+import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CertificateModal } from '@/components/modals/certificate-modal';
-import type { Enrollment, NdaraUser, Course } from '@/lib/types';
+import type { Enrollment, NdaraUser, Course, CourseProgress } from '@/lib/types';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -49,11 +48,12 @@ export default function MesCertificatsPage() {
   const { currentUser } = useRole();
   const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
 
-  // ✅ On cherche dans les deux sources possibles pour garantir l'affichage
+  // 1. Récupération des inscriptions (toutes, pour filtrage en mémoire et réparation)
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid
-      ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '>=', 100))
+      ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid))
       : null,
     [db, currentUser]
   );
@@ -62,24 +62,63 @@ export default function MesCertificatsPage() {
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
+  // 🛡️ MÉCANISME DE RÉPARATION SILENCIEUSE
   useEffect(() => {
+    if (!currentUser || !enrollments || enrollmentsLoading) return;
+
+    const checkAndRepair = async () => {
+        // On récupère les progressions réelles
+        const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
+        const progressSnap = await getDocs(progressQuery);
+        const progressList = progressSnap.docs.map(d => d.data() as CourseProgress);
+
+        for (const prog of progressList) {
+            if (prog.progressPercent === 100) {
+                const enrollment = enrollments.find(e => e.courseId === prog.courseId);
+                // Si l'inscription existe mais n'est pas marquée à 100%, on répare
+                if (enrollment && enrollment.progress < 100) {
+                    const enrollmentRef = doc(db, 'enrollments', enrollment.id);
+                    await setDoc(enrollmentRef, { 
+                        progress: 100, 
+                        lastAccessedAt: serverTimestamp() 
+                    }, { merge: true });
+                }
+            }
+        }
+    };
+
+    checkAndRepair().catch(err => console.warn("Silent repair failed:", err));
+  }, [enrollments, currentUser, db, enrollmentsLoading]);
+
+  // ENRICHISSEMENT DES DONNÉES
+  useEffect(() => {
+    if (enrollmentsLoading) return;
     if (!enrollments || enrollments.length === 0) {
         setDataLoading(false);
+        setEnrichedData([]);
         return;
     };
     
     const enrichData = async () => {
         setDataLoading(true);
         try {
-            const courseIds = [...new Set(enrollments.map(e => e.courseId))];
-            const instructorIds = [...new Set(enrollments.map(e => e.instructorId))];
+            // On ne garde que ceux à 100% pour l'affichage final
+            const completedEnrollments = enrollments.filter(e => e.progress >= 100);
+            
+            if (completedEnrollments.length === 0) {
+                setEnrichedData([]);
+                return;
+            }
+
+            const courseIds = [...new Set(completedEnrollments.map(e => e.courseId))];
+            const instructorIds = [...new Set(completedEnrollments.map(e => e.instructorId))];
 
             const [coursesMap, instructorsMap] = await Promise.all([
                  fetchDataMap(db, 'courses', null, courseIds),
                  fetchDataMap(db, 'users', 'uid', instructorIds)
             ]);
             
-            const newEnrichedData = enrollments.map(e => ({
+            const newEnrichedData = completedEnrollments.map(e => ({
                 ...e,
                 student: (currentUser as any) || undefined,
                 course: coursesMap.get(e.courseId) || undefined,
@@ -95,7 +134,7 @@ export default function MesCertificatsPage() {
     };
 
     enrichData();
-  }, [enrollments, db, currentUser]);
+  }, [enrollments, db, currentUser, enrollmentsLoading]);
 
   const handleViewCertificate = (cert: EnrichedCertificate) => {
     setSelectedCertificate(cert);

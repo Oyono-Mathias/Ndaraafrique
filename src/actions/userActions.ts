@@ -80,6 +80,42 @@ export async function grantCourseAccess({
 }
 
 /**
+ * RÉPARER LES CERTIFICATS (MASS SYNC)
+ */
+export async function repairAllCertificatesAction(adminId: string) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
+
+    try {
+        const db = getAdminDb();
+        // 1. Récupérer toutes les progressions terminées
+        const progressSnap = await db.collection('course_progress').where('progressPercent', '==', 100).get();
+        let count = 0;
+        let batch = db.batch();
+
+        for (const doc of progressSnap.docs) {
+            const data = doc.data();
+            const enrollmentId = `${data.userId}_${data.courseId}`;
+            const enrollRef = db.collection('enrollments').doc(enrollmentId);
+            
+            batch.set(enrollRef, { progress: 100 }, { merge: true });
+            count++;
+
+            if (count % 450 === 0) {
+                await batch.commit();
+                batch = db.batch();
+            }
+        }
+
+        if (count % 450 !== 0) await batch.commit();
+        
+        return { success: true, count };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
  * SYNCHRONISATION AUTH -> FIRESTORE
  */
 export async function syncUsersWithAuthAction(adminId: string) {

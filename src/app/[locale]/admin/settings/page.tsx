@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { updateGlobalSettings } from '@/actions/settingsActions';
-import { migrateUserProfilesAction, syncUsersWithAuthAction } from '@/actions/userActions';
+import { migrateUserProfilesAction, syncUsersWithAuthAction, repairAllCertificatesAction } from '@/actions/userActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,7 +36,8 @@ import {
   RefreshCw,
   AlertTriangle,
   Plus,
-  Trash2
+  Trash2,
+  Award
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -90,6 +91,7 @@ export default function AdminSettingsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isMigrating, setIsMigrating] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isRepairing, setIsRepairing] = useState(false);
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -173,6 +175,18 @@ export default function AdminSettingsPage() {
     } finally {
         setIsSyncing(false);
     }
+  };
+
+  const handleRepairCertificates = async () => {
+    if (!currentUser) return;
+    setIsRepairing(true);
+    const result = await repairAllCertificatesAction(currentUser.uid);
+    if (result.success) {
+        toast({ title: "Réparation terminée", description: `${result.count} dossiers d'inscriptions synchronisés avec succès.` });
+    } else {
+        toast({ variant: 'destructive', title: "Échec", description: result.error });
+    }
+    setIsRepairing(false);
   };
 
   const onSubmit = async (values: SettingsValues) => {
@@ -390,6 +404,35 @@ export default function AdminSettingsPage() {
                             </p>
                         </div>
                     </div>
+
+                    <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
+                        <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                            <CardTitle className="text-white flex items-center gap-2">
+                                <Award className="h-5 w-5 text-primary" />
+                                Synchronisation des Certificats
+                            </CardTitle>
+                            <CardDescription>Scanner les progressions à 100% et forcer la mise à jour des certificats pour tous les élèves.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="pt-6">
+                            <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                                <div className="flex-1 space-y-1">
+                                    <h3 className="text-white font-bold text-sm">Action : Réparation massive des diplômes</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        Si des étudiants disent avoir fini un cours mais ne voient pas leur certificat, ce bouton synchronise tout globalement.
+                                    </p>
+                                </div>
+                                <Button 
+                                    type="button" 
+                                    onClick={handleRepairCertificates} 
+                                    disabled={isRepairing}
+                                    className="h-14 px-10 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 shrink-0 rounded-xl"
+                                >
+                                    {isRepairing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
+                                    Réparer tous les certificats
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
 
                     <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
                         <CardHeader className="bg-slate-800/30 border-b border-white/5">
