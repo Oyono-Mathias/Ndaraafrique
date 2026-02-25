@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Gère le profil, la sécurité et l'apparence. Optimisé Android-First.
+ * Gère le profil public, la bio et les liens sociaux. Design Android-First Premium.
  */
 
 import { useState, useEffect } from 'react';
@@ -23,13 +22,11 @@ import PhoneInput from 'react-phone-number-input/react-hook-form-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, User, ShieldCheck, Bell, KeyRound, Globe, Camera, CheckCircle2, ChevronRight, LogOut } from 'lucide-react';
+import { Loader2, User, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Twitter, Youtube, Link as LinkIcon, Sparkles } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ImageCropper } from '@/components/ui/ImageCropper';
 import { cn } from '@/lib/utils';
 
 const domains = [
@@ -48,17 +45,15 @@ const accountSchema = z.object({
   bio: z.string().max(500).optional(),
   phoneNumber: z.string().optional(),
   interestDomain: z.string().min(2, "Domaine requis."),
-  linkedin: z.string().url().or(z.literal('')).optional(),
-  website: z.string().url().or(z.literal('')).optional(),
+  linkedin: z.string().url("URL invalide").or(z.literal('')).optional(),
+  twitter: z.string().url("URL invalide").or(z.literal('')).optional(),
+  website: z.string().url("URL invalide").or(z.literal('')).optional(),
 });
 
 export default function AccountPage() {
   const { currentUser, isUserLoading, secureSignOut } = useRole();
   const { toast } = useToast();
-  const router = useRouter();
-  
   const [isSaving, setIsSaving] = useState(false);
-  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
   
   const form = useForm<z.infer<typeof accountSchema>>({
     resolver: zodResolver(accountSchema),
@@ -73,12 +68,13 @@ export default function AccountPage() {
         phoneNumber: currentUser.phoneNumber || '',
         interestDomain: currentUser.careerGoals?.interestDomain || '',
         linkedin: currentUser.socialLinks?.linkedin || '',
+        twitter: currentUser.socialLinks?.twitter || '',
         website: currentUser.socialLinks?.website || '',
       });
     }
   }, [currentUser, form]);
 
-  const onProfileSubmit = async (values: z.infer<typeof accountSchema>) => {
+  const onSubmit = async (values: z.infer<typeof accountSchema>) => {
     if (!currentUser) return;
     setIsSaving(true);
     
@@ -90,6 +86,7 @@ export default function AccountPage() {
             phoneNumber: values.phoneNumber,
             'careerGoals.interestDomain': values.interestDomain,
             'socialLinks.linkedin': values.linkedin,
+            'socialLinks.twitter': values.twitter,
             'socialLinks.website': values.website,
             isProfileComplete: !!(values.username && values.interestDomain)
         };
@@ -101,7 +98,7 @@ export default function AccountPage() {
         });
 
         if (result.success) {
-            toast({ title: "Profil mis à jour", description: "Vos informations ont été enregistrées." });
+            toast({ title: "Identité mise à jour", description: "Votre profil est maintenant à jour." });
         } else {
             throw new Error(result.error);
         }
@@ -116,9 +113,9 @@ export default function AccountPage() {
     if (!currentUser?.email) return;
     try {
         await sendPasswordResetEmail(getAuth(), currentUser.email);
-        toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception." });
+        toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception pour changer votre mot de passe." });
     } catch (e) {
-        toast({ variant: 'destructive', title: "Erreur" });
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'envoyer l'email." });
     }
   };
 
@@ -127,25 +124,23 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 pb-24">
-      <ImageCropper image={imageToCrop} onCropComplete={() => {}} onClose={() => setImageToCrop(null)} />
-      
-      <header className="px-4 text-center space-y-2">
-          <h1 className="text-3xl font-black text-white uppercase tracking-tight">Paramètres</h1>
-          <p className="text-slate-500 text-sm font-medium">Gérez votre identité et votre sécurité.</p>
+    <div className="max-w-2xl mx-auto space-y-8 pb-24 bg-grainy min-h-screen">
+      <header className="px-4 pt-8 text-center space-y-2">
+          <h1 className="text-3xl font-black text-white uppercase tracking-tight">Mon Identité</h1>
+          <p className="text-slate-500 text-sm font-medium">Gérez votre présence sur la plateforme Ndara.</p>
       </header>
 
       <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-2 bg-slate-900 border-b border-slate-800 p-0 rounded-none h-14">
-              <TabsTrigger value="profile" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none font-bold uppercase text-[10px] tracking-widest">Identité</TabsTrigger>
+              <TabsTrigger value="profile" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none font-bold uppercase text-[10px] tracking-widest">Profil Public</TabsTrigger>
               <TabsTrigger value="security" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none font-bold uppercase text-[10px] tracking-widest">Sécurité</TabsTrigger>
           </TabsList>
           
           <TabsContent value="profile" className="mt-8 px-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <Form {...form}>
-                  <form onSubmit={form.handleSubmit(onProfileSubmit)} className="space-y-8">
+                  <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
                       <div className="flex flex-col items-center gap-4">
-                          <div className="relative group">
+                          <div className="relative">
                               <Avatar className="h-28 w-28 border-4 border-slate-800 shadow-2xl">
                                   <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
                                   <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
@@ -169,14 +164,14 @@ export default function AccountPage() {
                           <div className="grid grid-cols-2 gap-4">
                               <FormField control={form.control} name="username" render={({ field }) => (
                                   <FormItem>
-                                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Pseudo</FormLabel>
+                                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Pseudo unique</FormLabel>
                                       <FormControl><Input {...field} className="h-14 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
                                       <FormMessage />
                                   </FormItem>
                               )}/>
                               <FormField control={form.control} name="interestDomain" render={({ field }) => (
                                   <FormItem>
-                                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Domaine</FormLabel>
+                                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Spécialité</FormLabel>
                                       <Select onValueChange={field.onChange} value={field.value}>
                                           <FormControl><SelectTrigger className="h-14 bg-slate-900 border-slate-800 rounded-2xl"><SelectValue /></SelectTrigger></FormControl>
                                           <SelectContent className="bg-slate-900 border-slate-800 text-white">
@@ -188,30 +183,38 @@ export default function AccountPage() {
                               )}/>
                           </div>
 
-                          <FormItem>
-                              <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Email (Privé)</FormLabel>
-                              <Input value={currentUser.email} readOnly disabled className="h-14 bg-slate-950 border-slate-900 text-slate-600 rounded-2xl cursor-not-allowed" />
-                          </FormItem>
-
-                          <Controller control={form.control} name="phoneNumber" render={({ field }) => (
-                              <FormItem>
-                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Téléphone</FormLabel>
-                                  <FormControl><PhoneInput {...field} defaultCountry="CM" international className="flex h-14 w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-white" /></FormControl>
-                                  <FormMessage/>
-                              </FormItem>
-                          )}/>
-
                           <FormField control={form.control} name="bio" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Ma Biographie</FormLabel>
-                                  <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-2xl resize-none p-4" /></FormControl>
+                                  <FormControl><Textarea {...field} rows={4} placeholder="Parlez-nous de vous..." className="bg-slate-900 border-slate-800 rounded-2xl resize-none p-4" /></FormControl>
+                                  <FormDescription className="text-[9px] italic">S'affiche sur votre profil public.</FormDescription>
                                   <FormMessage />
                               </FormItem>
                           )}/>
+
+                          <div className="space-y-4">
+                              <h3 className="text-[10px] font-black uppercase text-primary tracking-[0.2em] ml-1 flex items-center gap-2">
+                                  <Globe className="h-3 w-3" /> Réseaux Sociaux
+                              </h3>
+                              <div className="grid gap-3">
+                                  <FormField control={form.control} name="linkedin" render={({ field }) => (
+                                      <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-1 pr-4">
+                                          <div className="p-3 bg-blue-600/10 rounded-xl text-blue-400"><Linkedin className="h-4 w-4"/></div>
+                                          <FormControl><Input {...field} placeholder="https://linkedin.com/in/..." className="border-none bg-transparent focus-visible:ring-0 h-10" /></FormControl>
+                                      </div>
+                                  )}/>
+                                  <FormField control={form.control} name="website" render={({ field }) => (
+                                      <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-2xl p-1 pr-4">
+                                          <div className="p-3 bg-primary/10 rounded-xl text-primary"><LinkIcon className="h-4 w-4"/></div>
+                                          <FormControl><Input {...field} placeholder="https://monsite.com" className="border-none bg-transparent focus-visible:ring-0 h-10" /></FormControl>
+                                      </div>
+                                  )}/>
+                              </div>
+                          </div>
                       </div>
 
                       <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
-                          {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : "Sauvegarder mon profil"}
+                          {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : <><Sparkles className="mr-2 h-4 w-4" /> Mettre à jour mon profil</>}
                       </Button>
                   </form>
               </Form>
@@ -219,12 +222,12 @@ export default function AccountPage() {
 
           <TabsContent value="security" className="mt-8 px-4 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <section className="space-y-3">
-                  <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Accès & Sécurité</h3>
+                  <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Compte & Accès</h3>
                   <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
                       <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
                               <div className="p-3 bg-slate-800 rounded-2xl text-slate-400"><KeyRound className="h-6 w-6"/></div>
-                              <div><p className="text-sm font-bold text-white">Mot de passe</p><p className="text-[10px] text-slate-500 uppercase font-medium">Dernière modif : Inconnue</p></div>
+                              <div><p className="text-sm font-bold text-white">Mot de passe</p><p className="text-[10px] text-slate-500 uppercase font-medium">Sécurité standard</p></div>
                           </div>
                           <Button variant="outline" size="sm" onClick={handlePasswordReset} className="rounded-xl border-slate-700 h-10 px-4 font-bold">Modifier</Button>
                       </div>
@@ -232,7 +235,7 @@ export default function AccountPage() {
                       <div className="pt-6 border-t border-white/5 flex items-center justify-between">
                           <div className="flex items-center gap-4">
                               <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500"><ShieldCheck className="h-6 w-6"/></div>
-                              <div><p className="text-sm font-bold text-white">Validation 2FA</p><p className="text-[10px] text-emerald-500/60 uppercase font-black tracking-tighter">Bientôt disponible</p></div>
+                              <div><p className="text-sm font-bold text-white">État du compte</p><Badge variant="success" className="text-[9px] uppercase">Vérifié</Badge></div>
                           </div>
                       </div>
                   </div>
@@ -242,7 +245,7 @@ export default function AccountPage() {
                   <Button variant="destructive" className="w-full h-16 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all" onClick={secureSignOut}>
                       <LogOut className="mr-3 h-5 w-5" /> Se déconnecter
                   </Button>
-                  <p className="text-center text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] mt-6">Ndara Afrique Version 1.0.4</p>
+                  <p className="text-center text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] mt-6">Ndara Afrique Version 1.0.5</p>
               </section>
           </TabsContent>
       </Tabs>
