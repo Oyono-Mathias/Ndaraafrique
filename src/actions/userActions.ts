@@ -1,14 +1,14 @@
 
 'use server';
 
+/**
+ * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
+ * Sécurisation des mutations de profil et synchronisation.
+ */
+
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { UserRole } from '@/lib/types';
-
-/**
- * @fileOverview Actions serveur pour la gestion des membres.
- * Assure la synchronisation et l'attribution des droits.
- */
 
 async function isRequesterAdmin(uid: string): Promise<boolean> {
     try {

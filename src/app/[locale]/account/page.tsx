@@ -1,44 +1,36 @@
+
 'use client';
+
+/**
+ * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
+ * Gère le profil, la sécurité et l'apparence. Optimisé Android-First.
+ */
 
 import { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
-import { getAuth, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { getFirestore, doc, updateDoc, collection, query, where, getCountFromServer } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { useTranslations } from 'next-intl';
+import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { useToast } from '@/hooks/use-toast';
-import { deleteUserAccount, updateUserProfileAction } from '@/actions/userActions';
+import { updateUserProfileAction } from '@/actions/userActions';
 import { useRouter } from 'next/navigation';
 
-import 'react-phone-number-input/style.css'
-import PhoneInput from 'react-phone-number-input/react-hook-form-input'
+import 'react-phone-number-input/style.css';
+import PhoneInput from 'react-phone-number-input/react-hook-form-input';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, AlertTriangle, Bell, KeyRound, MonitorPlay, Users, Linkedin, Twitter, Globe, Settings, UserCog, Bot } from 'lucide-react';
-import { ImageCropper } from '@/components/ui/ImageCropper';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Switch } from '@/components/ui/switch';
+import { Loader2, User, ShieldCheck, Bell, KeyRound, Globe, Camera, CheckCircle2, ChevronRight, LogOut } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ImageCropper } from '@/components/ui/ImageCropper';
+import { cn } from '@/lib/utils';
 
 const domains = [
     "Développement Web",
@@ -46,44 +38,30 @@ const domains = [
     "Design UI/UX",
     "Marketing Digital",
     "Entrepreneuriat",
-    "Data Science",
-    "Cybersécurité",
-    "Bureautique",
+    "AgriTech",
     "Autre"
 ];
 
-const accountFormSchema = z.object({
+const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/),
   fullName: z.string().min(3, "Nom requis."),
   bio: z.string().max(500).optional(),
   phoneNumber: z.string().optional(),
   interestDomain: z.string().min(2, "Domaine requis."),
   linkedin: z.string().url().or(z.literal('')).optional(),
-  twitter: z.string().url().or(z.literal('')).optional(),
   website: z.string().url().or(z.literal('')).optional(),
-  notifyEnrollment: z.boolean().default(true),
-  notifyMessage: z.boolean().default(true),
-  notifyAssignment: z.boolean().default(true),
-  aiAssistanceEnabled: z.boolean().default(true),
 });
 
-type AccountFormValues = z.infer<typeof accountFormSchema>;
-
 export default function AccountPage() {
-  const { user, currentUser, isUserLoading } = useRole();
+  const { currentUser, isUserLoading, secureSignOut } = useRole();
   const { toast } = useToast();
   const router = useRouter();
-  const db = getFirestore();
   
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [imageToCrop, setImageToCrop] = useState<string | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(currentUser?.profilePictureURL || null);
   
-  const form = useForm<AccountFormValues>({
-    resolver: zodResolver(accountFormSchema),
-    mode: 'onChange'
+  const form = useForm<z.infer<typeof accountSchema>>({
+    resolver: zodResolver(accountSchema),
   });
 
   useEffect(() => {
@@ -95,184 +73,178 @@ export default function AccountPage() {
         phoneNumber: currentUser.phoneNumber || '',
         interestDomain: currentUser.careerGoals?.interestDomain || '',
         linkedin: currentUser.socialLinks?.linkedin || '',
-        twitter: currentUser.socialLinks?.twitter || '',
         website: currentUser.socialLinks?.website || '',
-        notifyEnrollment: currentUser.instructorNotificationPreferences?.newEnrollment ?? true,
-        notifyMessage: currentUser.instructorNotificationPreferences?.newMessage ?? true,
-        notifyAssignment: currentUser.instructorNotificationPreferences?.newAssignmentSubmission ?? true,
-        aiAssistanceEnabled: currentUser.pedagogicalPreferences?.aiAssistanceEnabled ?? true,
       });
-      setImagePreview(currentUser.profilePictureURL || null);
     }
   }, [currentUser, form]);
 
-  const onProfileSubmit = async (values: AccountFormValues) => {
+  const onProfileSubmit = async (values: z.infer<typeof accountSchema>) => {
     if (!currentUser) return;
     setIsSaving(true);
     
     try {
-        // Préparation du payload structuré pour la Server Action
         const payload = {
             username: values.username,
             fullName: values.fullName,
             bio: values.bio,
             phoneNumber: values.phoneNumber,
-            careerGoals: { interestDomain: values.interestDomain },
-            socialLinks: { 
-                linkedin: values.linkedin, 
-                twitter: values.twitter, 
-                website: values.website 
-            },
-            instructorNotificationPreferences: {
-                newEnrollment: values.notifyEnrollment,
-                newMessage: values.notifyMessage,
-                newAssignmentSubmission: values.notifyAssignment
-            },
-            pedagogicalPreferences: {
-                aiAssistanceEnabled: values.aiAssistanceEnabled
-            }
+            'careerGoals.interestDomain': values.interestDomain,
+            'socialLinks.linkedin': values.linkedin,
+            'socialLinks.website': values.website,
+            isProfileComplete: !!(values.username && values.interestDomain)
         };
 
         const result = await updateUserProfileAction({
             userId: currentUser.uid,
-            data: payload as any,
+            data: payload,
             requesterId: currentUser.uid
         });
 
         if (result.success) {
-            toast({ title: "Profil sécurisé", description: "Vos modifications ont été enregistrées." });
-            router.refresh();
+            toast({ title: "Profil mis à jour", description: "Vos informations ont été enregistrées." });
         } else {
             throw new Error(result.error);
         }
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Erreur de sécurité', description: error.message });
+      toast({ variant: 'destructive', title: 'Erreur', description: error.message });
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleAvatarUpload = async (croppedImage: File) => {
-    if (!currentUser) return;
-    setImageToCrop(null);
-    setIsUploading(true);
-
-    const storage = getStorage();
-    const filePath = `avatars/${currentUser.uid}/profile_${Date.now()}.webp`;
-    const storageRef = ref(storage, filePath);
-
+  const handlePasswordReset = async () => {
+    if (!currentUser?.email) return;
     try {
-      const snapshot = await uploadBytes(storageRef, croppedImage);
-      const downloadURL = await getDownloadURL(snapshot.ref);
-      
-      // On utilise la Server Action pour mettre à jour l'URL de l'avatar
-      await updateUserProfileAction({
-          userId: currentUser.uid,
-          data: { profilePictureURL: downloadURL },
-          requesterId: currentUser.uid
-      });
-
-      toast({ title: "Avatar mis à jour" });
-      setImagePreview(downloadURL);
-      router.refresh();
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Erreur d\'upload', description: "Impossible de mettre à jour l'avatar." });
-    } finally {
-      setIsUploading(false);
+        await sendPasswordResetEmail(getAuth(), currentUser.email);
+        toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception." });
+    } catch (e) {
+        toast({ variant: 'destructive', title: "Erreur" });
     }
   };
 
   if (isUserLoading || !currentUser) {
-    return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
+    return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto pb-20">
-      <ImageCropper image={imageToCrop} onCropComplete={handleAvatarUpload} onClose={() => setImageToCrop(null)} />
+    <div className="max-w-2xl mx-auto space-y-8 pb-24">
+      <ImageCropper image={imageToCrop} onCropComplete={() => {}} onClose={() => setImageToCrop(null)} />
       
-      <header className="text-center pt-4">
-          <h1 className="text-3xl font-black text-white uppercase tracking-tight">Mon Compte</h1>
-          <p className="text-slate-500 text-sm mt-1">Gérez vos informations de manière sécurisée.</p>
+      <header className="px-4 text-center space-y-2">
+          <h1 className="text-3xl font-black text-white uppercase tracking-tight">Paramètres</h1>
+          <p className="text-slate-500 text-sm font-medium">Gérez votre identité et votre sécurité.</p>
       </header>
 
       <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-[#111827] border-slate-800 p-1 h-auto">
-              <TabsTrigger value="profile" className="py-2.5 text-xs uppercase font-black tracking-widest">Profil</TabsTrigger>
-              <TabsTrigger value="security" className="py-2.5 text-xs uppercase font-black tracking-widest">Sécurité</TabsTrigger>
-              <TabsTrigger value="notifications" className="py-2.5 text-xs uppercase font-black tracking-widest">Alertes</TabsTrigger>
-              <TabsTrigger value="settings" className="py-2.5 text-xs uppercase font-black tracking-widest">Réglages</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 bg-slate-900 border-b border-slate-800 p-0 rounded-none h-14">
+              <TabsTrigger value="profile" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none font-bold uppercase text-[10px] tracking-widest">Identité</TabsTrigger>
+              <TabsTrigger value="security" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none font-bold uppercase text-[10px] tracking-widest">Sécurité</TabsTrigger>
           </TabsList>
           
-          <Form {...form}>
-          <form onSubmit={form.handleSubmit(onProfileSubmit)}>
-            <TabsContent value="profile" className="mt-6 animate-in fade-in slide-in-from-bottom-2">
-                <Card className="bg-[#111827] border-slate-800 shadow-2xl rounded-3xl overflow-hidden">
-                    <CardHeader className="border-b border-white/5">
-                        <CardTitle className="text-lg font-bold text-white">Informations Publiques</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-8 pt-6">
-                         <FormItem>
-                            <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Photo de profil</FormLabel>
-                            <div className="flex items-center gap-6">
-                                <label htmlFor="avatar-upload" className="cursor-pointer group relative">
-                                    <Avatar className="h-24 w-24 border-4 border-slate-800 shadow-2xl transition-transform active:scale-95">
-                                        <AvatarImage src={imagePreview || ''} className="object-cover" />
-                                        <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
-                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity rounded-full"><Bot className="h-6 w-6 text-white"/></div>
-                                    </Avatar>
-                                </label>
-                                <Input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && setImageToCrop(URL.createObjectURL(e.target.files[0]))} disabled={isUploading}/>
-                                {isUploading && <Loader2 className="h-6 w-6 animate-spin text-primary"/>}
-                            </div>
+          <TabsContent value="profile" className="mt-8 px-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <Form {...form}>
+                  <form onSubmit={form.handleSubmit(onProfileSubmit)} className="space-y-8">
+                      <div className="flex flex-col items-center gap-4">
+                          <div className="relative group">
+                              <Avatar className="h-28 w-28 border-4 border-slate-800 shadow-2xl">
+                                  <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
+                                  <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <Button size="icon" className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-primary shadow-xl border-4 border-slate-950" type="button">
+                                  <Camera className="h-4 w-4" />
+                              </Button>
+                          </div>
+                          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Photo de profil</p>
+                      </div>
+
+                      <div className="grid gap-6">
+                          <FormField control={form.control} name="fullName" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Nom Complet</FormLabel>
+                                  <FormControl><Input {...field} className="h-14 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}/>
+
+                          <div className="grid grid-cols-2 gap-4">
+                              <FormField control={form.control} name="username" render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Pseudo</FormLabel>
+                                      <FormControl><Input {...field} className="h-14 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}/>
+                              <FormField control={form.control} name="interestDomain" render={({ field }) => (
+                                  <FormItem>
+                                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Domaine</FormLabel>
+                                      <Select onValueChange={field.onChange} value={field.value}>
+                                          <FormControl><SelectTrigger className="h-14 bg-slate-900 border-slate-800 rounded-2xl"><SelectValue /></SelectTrigger></FormControl>
+                                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                              {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                          </SelectContent>
+                                      </Select>
+                                      <FormMessage />
+                                  </FormItem>
+                              )}/>
+                          </div>
+
+                          <FormItem>
+                              <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Email (Privé)</FormLabel>
+                              <Input value={currentUser.email} readOnly disabled className="h-14 bg-slate-950 border-slate-900 text-slate-600 rounded-2xl cursor-not-allowed" />
                           </FormItem>
-                        
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <FormField control={form.control} name="fullName" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Nom Complet</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>)}/>
-                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Email (Lecture seule)</FormLabel><Input value={currentUser.email} readOnly disabled className="h-12 bg-slate-900 border-slate-800 text-slate-600 rounded-xl cursor-not-allowed" /></FormItem>
-                            <FormField control={form.control} name="username" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Identifiant (@)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>)}/>
-                            <FormField control={form.control} name="interestDomain" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Domaine d'intérêt</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
-                                        <FormControl><SelectTrigger className="h-12 bg-slate-800/50 border-slate-700 rounded-xl"><SelectValue placeholder="Choisir un domaine..." /></SelectTrigger></FormControl>
-                                        <SelectContent className="bg-slate-900 border-slate-800 text-white">{domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )} />
-                        </div>
 
-                        <Controller control={form.control} name="phoneNumber" render={({ field }) => (
-                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">N° de téléphone</FormLabel><FormControl><PhoneInput {...field} defaultCountry="CM" international withCountryCallingCode className="flex h-12 w-full rounded-xl border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-white" /></FormControl><FormMessage/></FormItem>
-                        )}/>
+                          <Controller control={form.control} name="phoneNumber" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Téléphone</FormLabel>
+                                  <FormControl><PhoneInput {...field} defaultCountry="CM" international className="flex h-14 w-full rounded-2xl border border-slate-800 bg-slate-900 px-4 py-2 text-sm text-white" /></FormControl>
+                                  <FormMessage/>
+                              </FormItem>
+                          )}/>
 
-                        <FormField control={form.control} name="bio" render={({ field }) => (<FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Ma Biographie</FormLabel><FormControl><Textarea {...field} rows={4} className="bg-slate-800/50 border-slate-700 rounded-xl resize-none" /></FormControl><FormMessage /></FormItem>)} />
-                    </CardContent>
-                    <CardFooter className="bg-[#111827]/50 border-t border-white/5 px-6 py-6 flex justify-end">
-                        <Button type="submit" disabled={isSaving} className="h-12 px-10 rounded-xl font-black uppercase tracking-widest bg-primary shadow-xl shadow-primary/20">
-                            {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                            Mettre à jour mon profil
-                        </Button>
-                    </CardFooter>
-                </Card>
-            </TabsContent>
+                          <FormField control={form.control} name="bio" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Ma Biographie</FormLabel>
+                                  <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-2xl resize-none p-4" /></FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}/>
+                      </div>
 
-            <TabsContent value="security" className="mt-6">
-                 <Card className="bg-[#111827] border-slate-800 rounded-3xl">
-                    <CardHeader><CardTitle className="text-lg">Sécurité</CardTitle></CardHeader>
-                    <CardContent className="p-6">
-                        <div className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
-                           <div>
-                               <p className="text-sm font-bold text-white">Mot de passe</p>
-                               <p className="text-xs text-slate-500">Réinitialisation par email sécurisé.</p>
-                           </div>
-                           <Button variant="secondary" onClick={() => sendPasswordResetEmail(getAuth(), currentUser.email)} className="rounded-xl font-bold">Réinitialiser</Button>
-                        </div>
-                    </CardContent>
-                </Card>
-            </TabsContent>
-            </form>
-          </Form>
+                      <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
+                          {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : "Sauvegarder mon profil"}
+                      </Button>
+                  </form>
+              </Form>
+          </TabsContent>
+
+          <TabsContent value="security" className="mt-8 px-4 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+              <section className="space-y-3">
+                  <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Accès & Sécurité</h3>
+                  <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+                      <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                              <div className="p-3 bg-slate-800 rounded-2xl text-slate-400"><KeyRound className="h-6 w-6"/></div>
+                              <div><p className="text-sm font-bold text-white">Mot de passe</p><p className="text-[10px] text-slate-500 uppercase font-medium">Dernière modif : Inconnue</p></div>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={handlePasswordReset} className="rounded-xl border-slate-700 h-10 px-4 font-bold">Modifier</Button>
+                      </div>
+                      
+                      <div className="pt-6 border-t border-white/5 flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                              <div className="p-3 bg-emerald-500/10 rounded-2xl text-emerald-500"><ShieldCheck className="h-6 w-6"/></div>
+                              <div><p className="text-sm font-bold text-white">Validation 2FA</p><p className="text-[10px] text-emerald-500/60 uppercase font-black tracking-tighter">Bientôt disponible</p></div>
+                          </div>
+                      </div>
+                  </div>
+              </section>
+
+              <section className="pt-8">
+                  <Button variant="destructive" className="w-full h-16 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all" onClick={secureSignOut}>
+                      <LogOut className="mr-3 h-5 w-5" /> Se déconnecter
+                  </Button>
+                  <p className="text-center text-[9px] text-slate-600 font-black uppercase tracking-[0.3em] mt-6">Ndara Afrique Version 1.0.4</p>
+              </section>
+          </TabsContent>
       </Tabs>
     </div>
   );
