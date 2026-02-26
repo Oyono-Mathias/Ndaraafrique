@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
- * Supporte le mode Catalogue (Prix/Favoris) et le mode Étudiant (Progression).
+ * ✅ TEMPS RÉEL : Les avis (rating) et le nombre de témoignages sont connectés à Firestore.
  */
 
 import Link from 'next/link';
@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils';
 import { Star, Award, Heart } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Button } from '../ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -28,9 +28,9 @@ interface CourseCardProps {
 
 const StarRating = ({ rating, reviewCount }: { rating: number, reviewCount: number }) => (
     <div className="flex items-center gap-1.5 text-sm text-slate-400">
-        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-        <span className="font-bold text-slate-200">{rating.toFixed(1)}</span>
-        <span className="text-[10px] opacity-60">({reviewCount.toLocaleString()})</span>
+        <Star className={cn("w-4 h-4", rating > 0 ? "fill-yellow-400 text-yellow-400" : "text-slate-700")} />
+        <span className="font-bold text-slate-200">{rating > 0 ? rating.toFixed(1) : "Nouveau"}</span>
+        {reviewCount > 0 && <span className="text-[10px] opacity-60">({reviewCount.toLocaleString()})</span>}
     </div>
 );
 
@@ -40,14 +40,27 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
   const { toast } = useToast();
   const [isWishlisted, setIsWishlisted] = useState(false);
   
+  // ✅ États pour les statistiques temps réel
+  const [stats, setStats] = useState({ rating: 0, count: 0 });
+  
   const progress = course.progress ?? 0;
   const isStudentView = variant === 'student';
   
-  // Reprise intelligente du cours
   const lessonQuery = course.lastLessonId ? `?lesson=${course.lastLessonId}` : '';
   const href = isStudentView ? `/student/courses/${course.id}${lessonQuery}` : `/courses/${course.id}`;
 
-  // Écouter le statut du favori pour cet utilisateur
+  // ✅ Écouteur temps réel des avis
+  useEffect(() => {
+    const q = query(collection(db, 'reviews'), where('courseId', '==', course.id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const reviews = snapshot.docs.map(d => d.data());
+        const count = reviews.length;
+        const avg = count > 0 ? reviews.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count : 0;
+        setStats({ rating: avg, count });
+    });
+    return () => unsubscribe();
+  }, [course.id, db]);
+
   useEffect(() => {
     if (!user?.uid || isStudentView) return;
     const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
@@ -90,14 +103,14 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
       <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden h-full flex flex-col transition-all duration-300 hover:border-primary/50 hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/10">
         <div className="relative aspect-video overflow-hidden bg-slate-800">
           <Image
-            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/450`}
+            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
             alt={course.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             loading="lazy"
+            data-ai-hint="online learning"
           />
           
-          {/* Bouton Favoris (Wishlist) */}
           <div className="absolute top-3 right-3 z-10">
             {!isStudentView && (
               <Button 
@@ -152,7 +165,7 @@ export function CourseCard({ course, instructor, variant = 'catalogue' }: Course
               )
             ) : (
               <div className="flex items-center justify-between">
-                <StarRating rating={4.8} reviewCount={124} />
+                <StarRating rating={stats.rating} reviewCount={stats.count} />
                 <p className="font-black text-lg text-white">
                   {course.price > 0 ? `${course.price.toLocaleString('fr-FR')}` : 'GRATUIT'}
                   {course.price > 0 && <span className="text-[10px] ml-1 text-slate-500 uppercase">XOF</span>}

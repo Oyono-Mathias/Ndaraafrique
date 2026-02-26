@@ -1,18 +1,18 @@
+
 'use client';
 
 /**
  * @fileOverview Landing Page Ndara Afrique.
- * Affiche les formations groupées dynamiquement par catégories.
- * Design épuré avec un bouton d'action unique dans le Hero.
+ * ✅ TEMPS RÉEL : Le compteur d'inscriptions global est synchronisé en direct.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, getCountFromServer, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, doc } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, Search, LayoutDashboard, ChevronsRight, BookCopy, UserPlus, Award, Wallet, ShieldCheck, Lock, HelpingHand, BookOpen } from 'lucide-react';
+import { Sparkles, LayoutDashboard, ChevronsRight, BookCopy, UserPlus, Award, Wallet, ShieldCheck, Lock, HelpingHand } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -79,17 +79,12 @@ const EnrollmentCounter = () => {
     const db = getFirestore();
 
     useEffect(() => {
-        const fetchCount = async () => {
-            try {
-                const coll = collection(db, 'enrollments');
-                const snapshot = await getCountFromServer(coll);
-                setCount(snapshot.data().count);
-            } catch (error) {
-                console.error("Error fetching enrollment count:", error);
-                setCount(0);
-            }
-        };
-        fetchCount();
+        const q = collection(db, 'enrollments');
+        // ✅ Passage en temps réel (onSnapshot)
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            setCount(snapshot.size);
+        });
+        return () => unsubscribe();
     }, [db]);
 
     if (count === null || count < 10) return null;
@@ -302,7 +297,6 @@ export default function LandingPage() {
 
   const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
-  // Fetch Settings for content
   const settingsRef = doc(db, 'settings', 'global');
   const { data: settings } = useDoc<Settings>(settingsRef);
   const content = settings?.content?.landingPage;
@@ -341,7 +335,6 @@ export default function LandingPage() {
   const siteName = settings?.general?.siteName || "Ndara Afrique";
   const logoUrl = '/logo.png';
 
-  // --- LOGIQUE DE GROUPEMENT PAR CATÉGORIE ---
   const coursesByCategory = useMemo(() => {
     const groups: Record<string, Course[]> = {};
     courses.forEach(course => {
@@ -360,7 +353,6 @@ export default function LandingPage() {
       
       <div className="container mx-auto px-4">
         
-        {/* --- HERO SECTION --- */}
         <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
           <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up bg-primary/5">
             <Sparkles className="w-3 h-3 mr-2" />
@@ -390,7 +382,6 @@ export default function LandingPage() {
         <main className="space-y-12 sm:space-y-16 pb-24">
           <DynamicCarousel />
 
-          {/* --- SECTION NOUVEAUTÉS --- */}
           <CourseCarousel
             title="Dernières publications"
             courses={recentCourses}
@@ -405,7 +396,6 @@ export default function LandingPage() {
 
           <PaymentMethodsSection />
 
-          {/* --- AFFICHAGE DE TOUTES LES CATÉGORIES DYNAMIQUEMENT --- */}
           {loading ? (
               <div className="space-y-12">
                   {[...Array(2)].map((_, i) => (
@@ -432,7 +422,6 @@ export default function LandingPage() {
             subtitle={content?.securitySectionSubtitle} 
           />
 
-          {/* --- FINAL CTA --- */}
           <section className="text-center py-24 bg-slate-900/30 rounded-[3rem] border border-white/5 relative overflow-hidden group">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <h2 className="text-3xl md:text-4xl font-black text-white relative z-10">

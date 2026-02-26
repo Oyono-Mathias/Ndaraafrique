@@ -1,13 +1,15 @@
+
 'use client';
 
 /**
- * @fileOverview Page de présentation détaillée d'un cours (Preview).
+ * @fileOverview Page de présentation détaillée d'un cours.
+ * ✅ TEMPS RÉEL : Score d'avis et nombre d'inscrits connectés à Firestore.
  * ✅ RÉSOLU : Build Vercel fix (CertificateModal props).
  */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { doc, getFirestore, collection, query, getDocs, orderBy, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getFirestore, collection, query, getDocs, orderBy, setDoc, serverTimestamp, onSnapshot, where } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
@@ -43,6 +45,9 @@ export default function CourseDetailPage() {
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
+  
+  // ✅ Stats temps réel
+  const [stats, setStats] = useState({ rating: 0, reviewCount: 0, studentCount: 0 });
 
   // --- RÉCUPÉRATION DES DONNÉES ---
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
@@ -54,6 +59,28 @@ export default function CourseDetailPage() {
   // Vérifier si l'étudiant est déjà inscrit
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment, isLoading: enrollmentLoading } = useDoc<Enrollment>(enrollmentRef);
+
+  // ✅ Écouteurs temps réel (Avis & Inscrits)
+  useEffect(() => {
+    if (!courseId) return;
+
+    // Écouter les avis
+    const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
+    const unsubReviews = onSnapshot(qReviews, (snap) => {
+        const reviews = snap.docs.map(d => d.data());
+        const count = reviews.length;
+        const avg = count > 0 ? reviews.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count : 0;
+        setStats(prev => ({ ...prev, rating: avg, reviewCount: count }));
+    });
+
+    // Écouter les inscrits
+    const qEnrolls = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
+    const unsubEnrolls = onSnapshot(qEnrolls, (snap) => {
+        setStats(prev => ({ ...prev, studentCount: snap.size }));
+    });
+
+    return () => { unsubReviews(); unsubEnrolls(); };
+  }, [courseId, db]);
 
   useEffect(() => {
     if (!courseId) return;
@@ -96,7 +123,6 @@ export default function CourseDetailPage() {
       return;
     }
 
-    // Si le cours est gratuit, on inscrit l'utilisateur directement
     if (course?.price === 0) {
       setIsEnrolling(true);
       try {
@@ -123,7 +149,6 @@ export default function CourseDetailPage() {
         setIsEnrolling(false);
       }
     } else {
-      // Sinon direction le checkout
       router.push(`/student/checkout/${courseId}`);
     }
   };
@@ -134,7 +159,6 @@ export default function CourseDetailPage() {
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
       
-      {/* --- BANNIÈRE VISUELLE --- */}
       <div className="relative aspect-video w-full bg-slate-900 overflow-hidden shadow-2xl">
         <Button 
           variant="ghost" 
@@ -163,14 +187,14 @@ export default function CourseDetailPage() {
             {course.title}
           </h1>
           <div className="flex items-center gap-4 text-slate-400 text-xs font-bold">
-            <div className="flex items-center gap-1">
-              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-              <span className="text-white">4.9</span>
-              <span className="opacity-50">(245 apprenants)</span>
+            <div className="flex items-center gap-1.5">
+              <Star className={cn("h-4 w-4", stats.rating > 0 ? "text-yellow-500 fill-yellow-500" : "text-slate-700")} />
+              <span className="text-white">{stats.rating > 0 ? stats.rating.toFixed(1) : "Nouveau"}</span>
+              <span className="opacity-50">({stats.reviewCount} avis)</span>
             </div>
             <div className="flex items-center gap-1">
-              <Clock className="h-4 w-4" />
-              <span>Accès permanent</span>
+              <Users className="h-4 w-4" />
+              <span>{stats.studentCount} apprenants</span>
             </div>
           </div>
         </div>
@@ -243,7 +267,6 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* --- FOOTER CTA --- */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto flex items-center gap-4">
           {!isEnrolled && (
