@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours synchronisée).
- * ✅ RÉSOLU : Support hybride YouTube & Vidéo directe (MP4).
+ * ✅ RÉSOLU : Lecteur YouTube via Iframe Responsive (plus d'écran noir).
  * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
@@ -27,24 +28,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, CheckCircle, Bot, Play, MessageSquare } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
+import { YoutubePlayer } from '@/components/ui/youtube-player';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CourseSidebar } from '@/components/CourseSidebar'; 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
-
-// Import Plyr
-import 'plyr/dist/plyr.css';
-
-/**
- * Extrait l'ID d'une vidéo YouTube à partir de n'importe quel format d'URL.
- */
-function getYouTubeID(url: string) {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-}
 
 function CoursePlayerPageContent() {
   const { courseId } = useParams();
@@ -62,25 +52,6 @@ function CoursePlayerPageContent() {
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
-
-  // Initialisation Plyr
-  useEffect(() => {
-    if (activeLecture?.type === 'video' && typeof window !== 'undefined') {
-      console.log("Lecture Vidéo URL:", activeLecture.contentUrl);
-      let player: any;
-      import('plyr').then((PlyrModule) => {
-        const Plyr = PlyrModule.default;
-        player = new Plyr('.ndara-plyr-player', {
-          autoplay: false,
-          invertTime: false,
-          controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen']
-        });
-      });
-      return () => {
-        if (player && typeof player.destroy === 'function') player.destroy();
-      };
-    }
-  }, [activeLecture]);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -199,7 +170,6 @@ function CoursePlayerPageContent() {
   }
 
   const completedLessons = (courseProgress as any)?.completedLessons || [];
-  const youtubeId = activeLecture?.type === 'video' ? getYouTubeID(activeLecture.contentUrl || '') : null;
 
   return (
     <>
@@ -229,25 +199,7 @@ function CoursePlayerPageContent() {
             {activeLecture ? (
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
                 {activeLecture.type === 'video' ? (
-                  <div className="relative bg-black shadow-2xl overflow-hidden lg:rounded-2xl">
-                    {youtubeId ? (
-                      <div 
-                        key={activeLecture.id}
-                        className="ndara-plyr-player" 
-                        data-plyr-provider="youtube" 
-                        data-plyr-embed-id={youtubeId}
-                      ></div>
-                    ) : (
-                      <video 
-                        key={activeLecture.id}
-                        className="ndara-plyr-player w-full h-full" 
-                        playsInline 
-                        controls
-                      >
-                        <source src={activeLecture.contentUrl} type="video/mp4" />
-                      </video>
-                    )}
-                  </div>
+                  <YoutubePlayer url={activeLecture.contentUrl || ''} />
                 ) : activeLecture.type === 'pdf' ? (
                   <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden">
                     <PdfViewerClient fileUrl={activeLecture.contentUrl || ''} />
