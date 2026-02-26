@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Extraction automatique de l'ID YouTube pour Plyr.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
+ * ✅ RÉSOLU : Support hybride YouTube & Vidéo directe (MP4).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -43,7 +43,7 @@ import 'plyr/dist/plyr.css';
 function getYouTubeID(url: string) {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : url;
+  return (match && match[2].length === 11) ? match[2] : null;
 }
 
 function CoursePlayerPageContent() {
@@ -63,9 +63,10 @@ function CoursePlayerPageContent() {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
-  // Initialisation Plyr pour YouTube
+  // Initialisation Plyr
   useEffect(() => {
     if (activeLecture?.type === 'video' && typeof window !== 'undefined') {
+      console.log("Lecture Vidéo URL:", activeLecture.contentUrl);
       let player: any;
       import('plyr').then((PlyrModule) => {
         const Plyr = PlyrModule.default;
@@ -198,6 +199,7 @@ function CoursePlayerPageContent() {
   }
 
   const completedLessons = courseProgress?.completedLessons || [];
+  const youtubeId = activeLecture?.type === 'video' ? getYouTubeID(activeLecture.contentUrl || '') : null;
 
   return (
     <>
@@ -228,12 +230,23 @@ function CoursePlayerPageContent() {
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
                 {activeLecture.type === 'video' ? (
                   <div className="relative bg-black shadow-2xl overflow-hidden lg:rounded-2xl">
-                    <div 
-                      key={activeLecture.id} // ✅ Force le rechargement du DOM pour Plyr
-                      className="ndara-plyr-player" 
-                      data-plyr-provider="youtube" 
-                      data-plyr-embed-id={getYouTubeID(activeLecture.contentUrl || '')}
-                    ></div>
+                    {youtubeId ? (
+                      <div 
+                        key={activeLecture.id}
+                        className="ndara-plyr-player" 
+                        data-plyr-provider="youtube" 
+                        data-plyr-embed-id={youtubeId}
+                      ></div>
+                    ) : (
+                      <video 
+                        key={activeLecture.id}
+                        className="ndara-plyr-player w-full h-full" 
+                        playsInline 
+                        controls
+                      >
+                        <source src={activeLecture.contentUrl} type="video/mp4" />
+                      </video>
+                    )}
                   </div>
                 ) : activeLecture.type === 'pdf' ? (
                   <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden">

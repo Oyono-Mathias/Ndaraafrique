@@ -101,8 +101,8 @@ export default function MesCertificatsPage() {
           instructorName={selectedCert.instructorName || 'Oyono Mathias'}
           completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || new Date()}
           certificateId={selectedCert.id}
-          courseId={selectedCert.courseId} // ✅ Fix Type Error
-          userId={selectedCert.studentId}   // ✅ Fix Type Error
+          courseId={selectedCert.courseId}
+          userId={selectedCert.studentId}
         />
       )}
 

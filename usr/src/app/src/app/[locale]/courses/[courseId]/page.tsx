@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique (Optimisé avec Plyr).
- * ✅ RÉSOLU : Extraction automatique de l'ID YouTube pour Plyr.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
+ * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours).
+ * ✅ RÉSOLU : Support hybride YouTube & Vidéo directe (MP4).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -41,7 +41,7 @@ import 'plyr/dist/plyr.css';
 function getYouTubeID(url: string) {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : url;
+  return (match && match[2].length === 11) ? match[2] : null;
 }
 
 function CoursePlayerPageContent() {
@@ -55,9 +55,10 @@ function CoursePlayerPageContent() {
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
 
-  // Initialisation Plyr pour YouTube
+  // Initialisation Plyr
   useEffect(() => {
     if (activeLecture?.type === 'video' && typeof window !== 'undefined') {
+      console.log("Lecture Vidéo URL (Back):", activeLecture.contentUrl);
       let player: any;
       import('plyr').then((PlyrModule) => {
         const Plyr = PlyrModule.default;
@@ -173,6 +174,7 @@ function CoursePlayerPageContent() {
   }
 
   const completionDate = (courseProgress as any)?.updatedAt?.toDate?.() || new Date();
+  const youtubeId = activeLecture?.type === 'video' ? getYouTubeID(activeLecture.contentUrl || '') : null;
 
   return (
     <>
@@ -184,8 +186,8 @@ function CoursePlayerPageContent() {
         instructorName={instructor?.fullName || 'Oyono Mathias'}
         completionDate={completionDate}
         certificateId={`${user?.uid}_${courseId}`}
-        courseId={courseId as string} // ✅ Fix Type Error
-        userId={user?.uid || ''}       // ✅ Fix Type Error
+        courseId={courseId as string}
+        userId={user?.uid || ''}
       />
        <div className="flex flex-col h-screen bg-black">
         <div className="flex flex-1 overflow-hidden">
@@ -206,12 +208,23 @@ function CoursePlayerPageContent() {
                       <PdfViewerClient fileUrl={course.ebookUrl} />
                   ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
                     <div className="absolute inset-0">
-                       <div 
-                          key={activeLecture.id} // ✅ Force re-init pour Plyr
-                          className="ndara-plyr-player-alt" 
-                          data-plyr-provider="youtube" 
-                          data-plyr-embed-id={getYouTubeID(activeLecture.contentUrl)}
-                        ></div>
+                       {youtubeId ? (
+                         <div 
+                            key={activeLecture.id}
+                            className="ndara-plyr-player-alt" 
+                            data-plyr-provider="youtube" 
+                            data-plyr-embed-id={youtubeId}
+                          ></div>
+                       ) : (
+                         <video 
+                            key={activeLecture.id}
+                            className="ndara-plyr-player-alt w-full h-full" 
+                            playsInline 
+                            controls
+                          >
+                            <source src={activeLecture.contentUrl} type="video/mp4" />
+                          </video>
+                       )}
                     </div>
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
                       <div className="p-8 text-slate-300 prose prose-invert max-w-none">
