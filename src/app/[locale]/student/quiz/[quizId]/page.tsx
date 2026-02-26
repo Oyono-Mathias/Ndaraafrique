@@ -180,7 +180,7 @@ export default function TakeQuizPage() {
             </p>
           </CardContent>
           <CardFooter className="bg-slate-900/50 p-6 flex flex-col gap-3">
-            <Button onClick={() => router.push(`/student/courses/${quiz?.courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">
+            <Button onClick={() => router.push(`/student/courses/${quiz?.courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-xl active:scale-[0.98] transition-all">
               Continuer la formation
             </Button>
             {!isSuccess && (
