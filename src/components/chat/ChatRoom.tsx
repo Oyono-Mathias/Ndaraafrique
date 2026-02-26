@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Salon de discussion immersif (Style WhatsApp Android exact).
- * Synchronisation en temps réel avec Firestore et horodatage précis par message.
+ * Synchronisation en temps réel avec Firestore et indicateurs de lecture (Ticks).
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -19,13 +19,15 @@ import {
   getFirestore,
   arrayRemove,
   arrayUnion,
-  updateDoc
+  updateDoc,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, CheckCheck, Paperclip, Smile, Camera, Mic } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, Check, CheckCheck, Paperclip, Smile, Camera, Mic } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message, NdaraUser } from '@/lib/types';
 import { format, isSameDay } from 'date-fns';
@@ -58,10 +60,23 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 });
             }
 
+            // Marquer comme lu pour l'utilisateur actuel
             if (data.unreadBy?.includes(user.uid)) {
-                updateDoc(chatRef, { 
-                    unreadBy: arrayRemove(user.uid) 
-                }).catch(err => console.error("Error marking as read:", err));
+                updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
+                
+                // Marquer les messages individuels comme lus en batch
+                const msgsQuery = query(
+                    collection(db, `chats/${chatId}/messages`), 
+                    where('senderId', '==', otherId),
+                    where('status', '!=', 'read')
+                );
+                getDocs(msgsQuery).then(mSnap => {
+                    if (!mSnap.empty) {
+                        const batch = writeBatch(db);
+                        mSnap.docs.forEach(d => batch.update(d.ref, { status: 'read' }));
+                        batch.commit();
+                    }
+                });
             }
         }
     });
@@ -129,7 +144,6 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-       {/* Pattern CSS Robuste en remplacement des images distantes */}
        <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
        <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
@@ -153,7 +167,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                   <h2 className="font-bold text-sm text-white truncate leading-none">
                       {otherParticipant?.fullName || 'Chargement...'}
                   </h2>
-                  <p className="text-[10px] text-emerald-500 font-medium mt-1">
+                  <p className="text-[10px] text-emerald-500 font-medium mt-1 uppercase tracking-widest">
                       {otherParticipant?.isOnline ? 'en ligne' : ''}
                   </p>
               </div>
@@ -171,6 +185,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 {messages.map((msg, idx) => {
                     const isMe = msg.senderId === user?.uid;
                     const date = (msg.createdAt as any)?.toDate ? (msg.createdAt as any).toDate() : new Date();
+                    const isRead = msg.status === 'read';
                     
                     const prevMsg = messages[idx - 1];
                     const prevDate = prevMsg ? ((prevMsg.createdAt as any)?.toDate ? (prevMsg.createdAt as any).toDate() : new Date()) : null;
@@ -201,7 +216,11 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                                       isMe ? "text-[#e9edef]/60" : "text-[#8696a0]"
                                     )}>
                                       <span className="text-[10px]">{format(date, 'HH:mm', { locale: fr })}</span>
-                                      {isMe && <CheckCheck className="h-3 w-3 text-[#53bdeb]" />}
+                                      {isMe && (
+                                          isRead 
+                                            ? <CheckCheck className="h-3 w-3 text-[#53bdeb]" /> 
+                                            : <Check className="h-3 w-3" />
+                                      )}
                                     </div>
                                 </div>
                             </div>
