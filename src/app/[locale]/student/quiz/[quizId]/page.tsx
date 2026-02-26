@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Interface de passage de quiz optimisée.
- * ✅ RÉSOLU : Importation correcte de orderBy pour fixer l'erreur de build Vercel.
+ * Correction : Importation explicite de orderBy pour fixer l'erreur de build Vercel.
  */
 
 import { useState, useEffect } from 'react';
