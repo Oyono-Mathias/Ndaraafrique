@@ -26,7 +26,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   Download,
-  BookOpen
+  BookOpen,
+  Sparkles
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -46,13 +47,11 @@ export default function StudentAssignmentDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Form state
   const [textWork, setTextWork] = useState("");
   const [fileUrl, setFileUrl] = useState("");
   const [fileName, setFileName] = useState("");
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
 
-  // 1. Récupérer le devoir via collectionGroup car on ne connaît pas forcément le courseId/sectionId
   useEffect(() => {
     if (!assignmentId) return;
 
@@ -72,7 +71,6 @@ export default function StudentAssignmentDetailPage() {
         const assignData = { id: assignDoc.id, ...assignDoc.data() } as Assignment;
         setAssignment(assignData);
 
-        // 2. Vérifier si une soumission existe déjà
         if (user) {
             const subSnap = await getDocs(query(collection(db, 'devoirs'), where('studentId', '==', user.uid), where('assignmentId', '==', assignmentId)));
             if (!subSnap.empty) {
@@ -157,7 +155,7 @@ export default function StudentAssignmentDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="p-4 space-y-6">
+      <div className="p-4 space-y-6 bg-slate-950 min-h-screen">
         <Skeleton className="h-10 w-3/4 bg-slate-900" />
         <Skeleton className="h-64 w-full bg-slate-900" />
       </div>
@@ -173,10 +171,10 @@ export default function StudentAssignmentDetailPage() {
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
       <header className="px-4 pt-6 space-y-4">
         <Button variant="ghost" className="p-0 h-auto text-slate-500 hover:text-white" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4 mr-2" /> Retour aux devoirs
+          <ArrowLeft className="h-4 w-4 mr-2" /> Retour
         </Button>
         <div className="space-y-2">
-            <h1 className="text-2xl font-black text-white leading-tight">{assignment.title}</h1>
+            <h1 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">{assignment.title}</h1>
             <div className="flex items-center gap-2 text-[10px] font-black text-primary uppercase tracking-widest">
                 <BookOpen className="h-3 w-3" />
                 {assignment.courseTitle}
@@ -185,19 +183,18 @@ export default function StudentAssignmentDetailPage() {
       </header>
 
       <div className="px-4 space-y-6">
-        {/* --- CONSIGNES --- */}
         <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           <CardHeader className="border-b border-white/5 bg-slate-800/30">
-            <CardTitle className="text-sm font-black uppercase tracking-widest text-slate-400">Consignes</CardTitle>
+            <CardTitle className="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Consignes du formateur</CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
-                {assignment.description || "Aucune instruction spécifique fournie."}
+                {assignment.description || "Aucune instruction spécifique."}
             </p>
 
             {assignment.attachments && assignment.attachments.length > 0 && (
-                <div className="space-y-3">
-                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Ressources jointes</p>
+                <div className="space-y-3 pt-4 border-t border-white/5">
+                    <p className="text-[9px] font-black uppercase text-slate-500 tracking-widest">Documents à consulter</p>
                     <div className="grid gap-2">
                         {assignment.attachments.map((att, i) => (
                             <a 
@@ -205,7 +202,7 @@ export default function StudentAssignmentDetailPage() {
                                 href={att.url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="flex items-center justify-between p-3 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors group"
+                                className="flex items-center justify-between p-4 bg-slate-800/50 border border-slate-700 rounded-xl hover:bg-slate-800 transition-colors group"
                             >
                                 <div className="flex items-center gap-3">
                                     <FileText className="h-4 w-4 text-primary" />
@@ -219,54 +216,58 @@ export default function StudentAssignmentDetailPage() {
             )}
 
             <div className="flex items-center gap-4 pt-4 border-t border-white/5">
-                <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase">
+                <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-widest">
                     <Clock className="h-3.5 w-3.5" />
-                    Échéance : {dueDate ? format(dueDate, 'dd MMMM yyyy', { locale: fr }) : 'Aucune'}
+                    Date limite : {dueDate ? format(dueDate, 'dd MMMM yyyy', { locale: fr }) : 'Aucune'}
                 </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* --- ÉTAT DE LA SOUMISSION --- */}
         {submission ? (
             <Card className={cn(
-                "border-2 rounded-[2rem] overflow-hidden shadow-2xl animate-in fade-in duration-700",
+                "border-2 rounded-[2.5rem] overflow-hidden shadow-2xl animate-in fade-in duration-700",
                 isGraded ? "border-green-500/20 bg-green-500/5" : "border-primary/20 bg-primary/5"
             )}>
-                <CardHeader>
+                <CardHeader className="p-8 pb-4">
                     <div className="flex justify-between items-center">
-                        <CardTitle className="text-lg font-black text-white uppercase tracking-tight">Votre Travail</CardTitle>
+                        <CardTitle className="text-xl font-black text-white uppercase tracking-tight">Mon Travail</CardTitle>
                         <Badge className={cn(
-                            "border-none font-black text-[9px] uppercase px-3",
+                            "border-none font-black text-[10px] uppercase px-3 py-1",
                             isGraded ? "bg-green-500 text-white" : "bg-primary text-white"
                         )}>
-                            {isGraded ? "Noté" : "En attente de correction"}
+                            {isGraded ? "Note publiée" : "Correction en cours"}
                         </Badge>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="p-8 space-y-8">
                     {isGraded ? (
-                        <div className="space-y-6">
-                            <div className="flex flex-col items-center py-6 bg-slate-900 rounded-3xl border border-green-500/20">
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-2">Note obtenue</p>
-                                <h2 className="text-6xl font-black text-green-400">{submission.grade}<span className="text-2xl opacity-40">/20</span></h2>
+                        <div className="space-y-8">
+                            <div className="flex flex-col items-center py-8 bg-slate-900 rounded-[2rem] border border-green-500/20 shadow-xl">
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em] mb-2">Score de réussite</p>
+                                <h2 className="text-7xl font-black text-green-400 leading-none">
+                                    {submission.grade}<span className="text-2xl opacity-30">/20</span>
+                                </h2>
                             </div>
-                            <div className="space-y-3">
-                                <p className="text-[10px] font-black uppercase text-primary tracking-widest ml-1">Commentaire du formateur</p>
-                                <div className="p-5 bg-slate-900 border border-slate-800 rounded-2xl italic text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
-                                    "{submission.feedback || "Excellent travail, continuez ainsi !"}"
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-2 text-primary">
+                                    <Sparkles className="h-4 w-4" />
+                                    <p className="text-[10px] font-black uppercase tracking-widest">Retour du formateur</p>
+                                </div>
+                                <div className="p-6 bg-slate-900 border border-slate-800 rounded-2xl italic text-sm text-slate-300 leading-relaxed whitespace-pre-wrap">
+                                    "{submission.feedback || "Travail validé par l'équipe Ndara."}"
                                 </div>
                             </div>
                         </div>
                     ) : (
-                        <div className="flex items-center gap-4 p-4 bg-slate-900/50 rounded-2xl border border-slate-800">
-                            <div className="p-3 bg-primary/10 rounded-xl">
-                                <CheckCircle2 className="h-6 w-6 text-primary" />
+                        <div className="flex items-center gap-5 p-6 bg-slate-900/50 rounded-2xl border border-slate-800">
+                            <div className="p-4 bg-primary/10 rounded-2xl">
+                                <CheckCircle2 className="h-8 w-8 text-primary" />
                             </div>
                             <div>
-                                <p className="text-sm font-bold text-white">Travail transmis</p>
-                                <p className="text-[10px] text-slate-500 font-medium uppercase tracking-widest">
-                                    Le {submission.submittedAt && typeof (submission.submittedAt as any).toDate === 'function' ? format((submission.submittedAt as any).toDate(), 'dd MMM à HH:mm', { locale: fr }) : 'récemment'}
+                                <p className="text-base font-bold text-white leading-tight">Soumission confirmée</p>
+                                <p className="text-xs text-slate-500 font-medium uppercase tracking-widest mt-1">
+                                    Transmis le {submission.submittedAt && typeof (submission.submittedAt as any).toDate === 'function' ? format((submission.submittedAt as any).toDate(), 'dd MMM à HH:mm', { locale: fr }) : 'récemment'}
                                 </p>
                             </div>
                         </div>
@@ -274,7 +275,6 @@ export default function StudentAssignmentDetailPage() {
                 </CardContent>
             </Card>
         ) : (
-            /* --- FORMULAIRE DE SOUMISSION --- */
             <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                 <CardHeader className="p-8 pb-4">
                     <CardTitle className="text-xl font-black text-white uppercase tracking-tight">Rendre mon devoir</CardTitle>
@@ -284,23 +284,23 @@ export default function StudentAssignmentDetailPage() {
                     <div className="space-y-3">
                         <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Ma réponse (texte)</label>
                         <Textarea 
-                            placeholder="Écrivez votre travail ici..."
-                            rows={8}
-                            className="bg-slate-800/50 border-slate-700 rounded-2xl text-white resize-none p-4"
+                            placeholder="Développez votre réponse ici..."
+                            rows={10}
+                            className="bg-slate-800/50 border-slate-700 rounded-2xl text-white resize-none p-5 focus-visible:ring-primary/30"
                             value={textWork}
                             onChange={(e) => setTextWork(e.target.value)}
                         />
                     </div>
 
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Pièce jointe (PDF, Image, Archive...)</label>
+                        <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Pièce jointe</label>
                         {fileUrl ? (
-                            <div className="flex items-center justify-between p-4 bg-primary/10 border border-primary/20 rounded-2xl">
+                            <div className="flex items-center justify-between p-5 bg-primary/10 border border-primary/20 rounded-2xl shadow-lg">
                                 <div className="flex items-center gap-3">
                                     <Paperclip className="h-5 w-5 text-primary" />
                                     <span className="text-sm font-bold text-white truncate max-w-[200px]">{fileName}</span>
                                 </div>
-                                <Button variant="ghost" size="sm" onClick={() => { setFileUrl(""); setFileName(""); }} className="text-[10px] font-black uppercase">Supprimer</Button>
+                                <Button variant="ghost" size="sm" onClick={() => { setFileUrl(""); setFileName(""); }} className="text-[10px] font-black uppercase text-red-400 hover:text-red-500 hover:bg-red-500/10">Supprimer</Button>
                             </div>
                         ) : (
                             <div className="relative">
@@ -314,18 +314,18 @@ export default function StudentAssignmentDetailPage() {
                                 <label 
                                     htmlFor="submission-file"
                                     className={cn(
-                                        "flex flex-col items-center justify-center py-8 border-2 border-dashed border-slate-800 rounded-2xl cursor-pointer hover:border-primary/50 transition-colors",
+                                        "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-2xl cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
                                         uploadProgress !== null && "opacity-50 pointer-events-none"
                                     )}
                                 >
-                                    <Paperclip className="h-8 w-8 text-slate-700 mb-2" />
-                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Choisir un fichier</span>
+                                    <Paperclip className="h-10 w-10 text-slate-700 mb-3" />
+                                    <span className="text-xs font-black uppercase text-slate-500 tracking-widest">Sélecteur de fichier</span>
                                 </label>
                                 {uploadProgress !== null && (
-                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 rounded-2xl">
-                                        <div className="text-center space-y-2">
-                                            <Loader2 className="h-6 w-6 animate-spin text-primary mx-auto" />
-                                            <p className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{Math.round(uploadProgress)}%</p>
+                                    <div className="absolute inset-0 flex items-center justify-center bg-slate-950/80 rounded-2xl backdrop-blur-sm">
+                                        <div className="text-center space-y-3">
+                                            <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                                            <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">{Math.round(uploadProgress)}%</p>
                                         </div>
                                     </div>
                                 )}
@@ -337,18 +337,18 @@ export default function StudentAssignmentDetailPage() {
                     <Button 
                         onClick={handleSubmit}
                         disabled={isSubmitting || uploadProgress !== null || (!textWork.trim() && !fileUrl)}
-                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 active:scale-[0.98] transition-all"
+                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-sm tracking-[0.15em] shadow-2xl shadow-primary/20 active:scale-[0.98] transition-all"
                     >
-                        {isSubmitting ? <Loader2 className="h-6 w-6 animate-spin" /> : <>Soumettre mon travail <Send className="ml-2 h-4 w-4" /></>}
+                        {isSubmitting ? <Loader2 className="h-6 w-6 animate-spin" /> : <>Valider ma soumission <Send className="ml-2 h-4 w-4" /></>}
                     </Button>
                 </CardFooter>
             </Card>
         )}
 
-        <div className="bg-slate-900/30 border border-slate-800 rounded-2xl p-5 flex items-start gap-4">
-            <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-            <p className="text-[10px] text-slate-500 leading-relaxed font-medium uppercase tracking-tighter">
-                Une fois votre travail soumis, vous ne pourrez plus le modifier. Assurez-vous d'avoir bien répondu à toutes les consignes avant de cliquer sur envoyer.
+        <div className="bg-slate-900/30 border border-slate-800 rounded-3xl p-6 flex items-start gap-4">
+            <AlertCircle className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
+            <p className="text-[10px] text-slate-500 leading-relaxed font-bold uppercase tracking-tight">
+                Une fois votre travail soumis, il devient propriété pédagogique de Ndara Afrique pour correction. Vous ne pourrez plus le modifier. Prenez le temps de vous relire.
             </p>
         </div>
       </div>

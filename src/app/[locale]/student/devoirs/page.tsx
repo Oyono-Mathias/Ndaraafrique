@@ -42,6 +42,7 @@ export default function StudentAssignmentsPage() {
 
     setIsLoading(true);
 
+    // Écouter d'abord les inscriptions de l'étudiant
     const enrollQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
     
     const unsubEnroll = onSnapshot(enrollQuery, (enrollSnap) => {
@@ -53,6 +54,7 @@ export default function StudentAssignmentsPage() {
         return;
       }
 
+      // Écouter tous les devoirs via collectionGroup et filtrer par cours inscrits
       const assignmentsQuery = query(collectionGroup(db, 'assignments'), orderBy('createdAt', 'desc'));
       const unsubAssignments = onSnapshot(assignmentsQuery, (assignSnap) => {
         const filtered = assignSnap.docs
@@ -62,6 +64,7 @@ export default function StudentAssignmentsPage() {
         setAssignments(filtered);
       });
 
+      // Écouter les soumissions de l'étudiant
       const submissionsQuery = query(collection(db, 'devoirs'), where('studentId', '==', currentUser.uid));
       const unsubSubmissions = onSnapshot(submissionsQuery, (subSnap) => {
         const subMap: Record<string, any> = {};
@@ -99,12 +102,12 @@ export default function StudentAssignmentsPage() {
   return (
     <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen">
       <header className="px-4 pt-6 space-y-4">
-        <h1 className="text-2xl font-black text-white">Mes Devoirs</h1>
+        <h1 className="text-2xl font-black text-white uppercase tracking-tight">Mes Devoirs</h1>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
           <Input 
             placeholder="Rechercher un devoir..." 
-            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl text-white"
+            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl text-white placeholder:text-slate-600 focus-visible:ring-primary/30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -131,15 +134,15 @@ export default function StudentAssignmentsPage() {
           <TabsContent value="todo" className="m-0 space-y-4">
             {isLoading ? (
               <div className="space-y-4">
-                {[...Array(2)].map((_, i) => <Skeleton className="h-48 w-full rounded-2xl bg-slate-900" />)}
+                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />)}
               </div>
             ) : toDo.length > 0 ? (
               toDo.map(a => <AssignmentCard key={a.id} assignment={a} />)
             ) : (
               <div className="flex flex-col items-center justify-center py-16 px-8 text-center bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800/50">
                 <Bot className="h-16 w-16 text-slate-700 mb-6" />
-                <h3 className="text-xl font-black text-white leading-tight">Aucun devoir en attente.</h3>
-                <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto">Posez vos questions à Mathias si besoin !</p>
+                <h3 className="text-xl font-black text-white leading-tight">Tout est à jour !</h3>
+                <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[200px] mx-auto">Vous n'avez aucun devoir en attente pour le moment.</p>
               </div>
             )}
           </TabsContent>
@@ -147,7 +150,7 @@ export default function StudentAssignmentsPage() {
           <TabsContent value="completed" className="m-0 space-y-4">
             {isLoading ? (
               <div className="space-y-4">
-                {[...Array(2)].map((_, i) => <Skeleton className="h-48 w-full rounded-2xl bg-slate-900" />)}
+                {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-2xl bg-slate-900" />)}
               </div>
             ) : completed.length > 0 ? (
               completed.map(a => <AssignmentCard key={a.id} assignment={a} submission={submissions[a.id]} />)
@@ -180,11 +183,16 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
           </div>
           
           {submission ? (
-            <Badge className="bg-green-500/10 text-green-400 border-none text-[9px] font-black uppercase">Rendu</Badge>
+            <Badge className={cn(
+                "border-none text-[9px] font-black uppercase px-2",
+                submission.status === 'graded' ? "bg-green-500/10 text-green-400" : "bg-primary/10 text-primary"
+            )}>
+                {submission.status === 'graded' ? "Noté" : "Rendu"}
+            </Badge>
           ) : isOverdue ? (
             <Badge className="bg-red-500/10 text-red-400 border-none text-[9px] font-black uppercase">Retard</Badge>
           ) : (
-            <Badge variant="secondary" className="border-none text-[9px] font-black uppercase">Actif</Badge>
+            <Badge variant="secondary" className="border-none text-[9px] font-black uppercase">À faire</Badge>
           )}
         </div>
 
@@ -204,8 +212,8 @@ function AssignmentCard({ assignment, submission }: { assignment: any, submissio
             submission ? "bg-slate-800 text-slate-400" : "bg-primary text-white shadow-lg shadow-primary/20"
           )}
         >
-          <Link href={submission ? `/student/devoirs/${assignment.id}` : `/student/courses/${assignment.courseId}`}>
-            {submission ? "Consulter ma note" : "Ouvrir l'exercice"}
+          <Link href={`/student/devoirs/${assignment.id}`}>
+            {submission ? (submission.status === 'graded' ? "Consulter ma note" : "Voir ma soumission") : "Ouvrir l'exercice"}
             <ChevronRight className="ml-2 h-4 w-4" />
           </Link>
         </Button>

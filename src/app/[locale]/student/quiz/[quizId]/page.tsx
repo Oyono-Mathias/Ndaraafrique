@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -68,7 +67,7 @@ export default function TakeQuizPage() {
         const quizData = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuiz(quizData);
 
-        const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions'), orderBy('order')));
+        const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions'), orderBy('order', 'asc')));
         const fetchedQuestions = questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question));
         setQuestions(fetchedQuestions);
 
