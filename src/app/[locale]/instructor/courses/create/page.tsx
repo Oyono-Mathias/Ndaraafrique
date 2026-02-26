@@ -1,5 +1,9 @@
-
 'use client';
+
+/**
+ * @fileOverview Page de création de cours (Vue Android-First).
+ * ✅ SÉCURITÉ : Vérifie si le formateur est approuvé avant d'autoriser la création.
+ */
 
 import { CourseForm } from '@/components/instructor/CourseForm';
 import { createCourseAction } from '@/actions/instructorActions';
@@ -7,7 +11,7 @@ import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
-import { ShieldAlert, ArrowLeft } from 'lucide-react';
+import { ShieldAlert, ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -16,21 +20,31 @@ export default function CreateCoursePage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  if (isUserLoading) return null;
-
-  // Sécurité : Un formateur non approuvé ne peut pas créer de cours
-  if (!currentUser?.isInstructorApproved) {
+  if (isUserLoading) {
     return (
-      <div className="max-w-2xl mx-auto py-12 px-4 space-y-6">
-        <Alert variant="destructive" className="bg-red-500/10 border-red-500/20 text-red-400">
-          <ShieldAlert className="h-5 w-5" />
-          <AlertTitle className="font-bold uppercase tracking-tight">Accès restreint</AlertTitle>
-          <AlertDescription className="mt-2 text-sm opacity-90 leading-relaxed">
-            Votre compte formateur n'a pas encore été approuvé par nos administrateurs. 
-            Vous recevrez une notification dès que vous pourrez commencer à publier vos formations.
-          </AlertDescription>
-        </Alert>
-        <Button variant="outline" asChild className="w-full h-12 rounded-xl">
+        <div className="h-[60vh] flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+    );
+  }
+
+  // Sécurité : Un formateur non approuvé ne peut pas encore créer de cours
+  if (!currentUser?.isInstructorApproved && currentUser?.role !== 'admin') {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="flex justify-center mb-8">
+            <div className="p-6 bg-red-500/10 rounded-full border-4 border-red-500/20">
+                <ShieldAlert className="h-16 w-16 text-red-500" />
+            </div>
+        </div>
+        <div className="text-center space-y-4">
+            <h1 className="text-3xl font-black text-white uppercase tracking-tight">Accès restreint</h1>
+            <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
+                Votre compte formateur est en cours d'examen par notre équipe pédagogique. 
+                Dès approbation, vous pourrez créer vos formations et partager votre savoir.
+            </p>
+        </div>
+        <Button variant="outline" asChild className="w-full h-14 rounded-2xl bg-slate-900 border-slate-800 text-slate-300 font-bold uppercase text-[10px] tracking-widest mt-8">
           <Link href="/instructor/dashboard">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Retour au tableau de bord
@@ -42,19 +56,26 @@ export default function CreateCoursePage() {
 
   const handleCreateCourse = async (data: any) => {
     if (!currentUser) {
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Vous devez être connecté.' });
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Session expirée. Veuillez vous reconnecter.' });
       return;
     }
     
     const result = await createCourseAction({ formData: data, instructorId: currentUser.uid });
     
     if (result.success && result.courseId) {
-      toast({ title: 'Cours créé !', description: 'Vous pouvez maintenant ajouter du contenu.' });
+      toast({ 
+        title: 'Félicitations Ndara !', 
+        description: 'Votre cours est initialisé. Ajoutez maintenant vos leçons.' 
+      });
       router.push(`/instructor/courses/edit/${result.courseId}`);
     } else {
       toast({ variant: 'destructive', title: 'Erreur', description: result.message });
     }
   };
 
-  return <CourseForm mode="create" onSubmit={handleCreateCourse} />;
+  return (
+    <div className="min-h-full bg-slate-950/50 -m-6 p-6 rounded-2xl">
+        <CourseForm mode="create" onSubmit={handleCreateCourse} />
+    </div>
+  );
 }

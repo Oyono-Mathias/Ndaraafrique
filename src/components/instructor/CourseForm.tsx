@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition, useMemo } from 'react';
+import { useState, useTransition, useMemo, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,7 +20,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, Link as LinkIcon, CheckCircle2, Frown } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe } from 'lucide-react';
 import type { Course, CourseTemplate } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -48,6 +48,7 @@ const courseCategories = [
     "Énergies Renouvelables", 
     "Développement Web", 
     "Entrepreneuriat", 
+    "Marketing Digital",
     "Soft Skills"
 ];
 
@@ -62,7 +63,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const [imageSource, setImageSource] = useState<'upload' | 'template' | 'url'>('template');
   const { user } = useRole();
 
-  // ✅ Chargement dynamique des templates depuis Firestore
+  // Chargement des modèles d'images depuis la collection admin
   const templatesQuery = useMemo(() => query(collection(db, 'course_templates'), orderBy('createdAt', 'desc')), [db]);
   const { data: templates, isLoading: templatesLoading } = useCollection<CourseTemplate>(templatesQuery);
 
@@ -91,7 +92,6 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
         setUploadProgress(progress);
       },
       (error) => {
-        console.error("Upload failed:", error);
         toast({ variant: 'destructive', title: "Échec du téléversement" });
         setUploadProgress(null);
       },
@@ -109,13 +109,13 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const handleSelectTemplate = (url: string) => {
       form.setValue('imageUrl', url);
       setImagePreview(url);
-      toast({ title: "Modèle sélectionné" });
+      toast({ title: "Modèle appliqué" });
   };
 
   const handleMathiasHelp = async () => {
     const title = form.getValues('title');
     if (!title || title.length < 5) {
-        toast({ variant: 'destructive', title: "Titre trop court" });
+        toast({ variant: 'destructive', title: "Titre trop court", description: "Donnez un titre plus précis pour que Mathias puisse vous aider." });
         return;
     }
 
@@ -123,12 +123,13 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     try {
         const result = await assistCourseCreation({ courseTitle: title });
         form.setValue('description', result.description);
+        // On vérifie si la catégorie suggérée existe dans notre liste
         if (courseCategories.includes(result.category)) {
             form.setValue('category', result.category);
         }
-        toast({ title: "Mathias a rédigé votre contenu !" });
+        toast({ title: "Mathias a rédigé votre contenu !", description: "Vérifiez et ajustez si besoin." });
     } catch (error) {
-        toast({ variant: 'destructive', title: "Erreur IA" });
+        toast({ variant: 'destructive', title: "Erreur IA", description: "L'assistant n'a pas pu générer le contenu." });
     } finally {
         setIsAiLoading(false);
     }
@@ -144,20 +145,23 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     <Form {...form}>
         <form onSubmit={form.handleSubmit(processSubmit)} className="space-y-8 max-w-4xl mx-auto p-4 pb-24">
             {mode === 'create' && (
-                <header className="flex items-center gap-4">
-                    <Button variant="outline" size="icon" asChild className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700">
+                <header className="flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
+                    <Button variant="outline" size="icon" asChild className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl">
                         <Link href="/instructor/courses"><ArrowLeft className="h-4 w-4" /></Link>
                     </Button>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Créer mon cours</h1>
+                    <div>
+                        <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Nouvelle Formation</h1>
+                        <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Étape 1 : Identité du cours</p>
+                    </div>
                 </header>
             )}
             
-            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
-                <CardHeader className="border-b dark:border-white/5">
-                    <div className="flex justify-between items-start">
+            <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
+                <CardHeader className="border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30 p-8">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
-                            <CardTitle className="text-xl font-bold uppercase tracking-tight">Informations générales</CardTitle>
-                            <CardDescription>Décrivez votre cours pour attirer des apprenants.</CardDescription>
+                            <CardTitle className="text-xl font-bold uppercase tracking-tight">Contenu Pédagogique</CardTitle>
+                            <CardDescription>Présentez votre expertise de manière claire.</CardDescription>
                         </div>
                         <Button 
                             type="button" 
@@ -165,104 +169,154 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                             size="sm" 
                             onClick={handleMathiasHelp} 
                             disabled={isAiLoading}
-                            className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 rounded-xl"
+                            className="bg-primary/5 border-primary/20 text-primary hover:bg-primary/10 rounded-xl h-10 px-4 font-bold"
                         >
                             {isAiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Bot className="h-4 w-4 mr-2" />}
                             Aide de Mathias
                         </Button>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                    <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Titre du cours</FormLabel><FormControl><Input placeholder="Ex: Maîtriser l'AgriTech durable" {...field} className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )}/>
-                    <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Description</FormLabel><FormControl><Textarea placeholder="Contenu du cours..." {...field} rows={6} className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl resize-none" /></FormControl><FormMessage /></FormItem> )}/>
+                <CardContent className="space-y-6 p-8">
+                    <FormField control={form.control} name="title" render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la formation</FormLabel>
+                            <FormControl><Input placeholder="Ex: Devenir Expert en Finance Digitale" {...field} className="h-12 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl font-bold" /></FormControl>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
+                    <FormField control={form.control} name="description" render={({ field }) => ( 
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Résumé & Objectifs</FormLabel>
+                            <FormControl><Textarea placeholder="Décrivez ce que vos étudiants vont accomplir..." {...field} rows={8} className="bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl resize-none p-4 leading-relaxed" /></FormControl>
+                            <FormMessage />
+                        </FormItem> 
+                    )}/>
                 </CardContent>
             </Card>
             
              <div className="grid md:grid-cols-2 gap-6">
-                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
-                    <CardHeader className="border-b dark:border-white/5"><CardTitle className="text-sm font-bold uppercase tracking-tight">Prix (XOF)</CardTitle></CardHeader>
-                    <CardContent className="pt-6">
-                        <FormField control={form.control} name="price" render={({ field }) => ( <FormItem><FormControl><Input type="number" {...field} className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl font-bold" /></FormControl><FormMessage /></FormItem> )}/>
+                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
+                    <CardHeader className="p-6 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Tarification (XOF)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <FormField control={form.control} name="price" render={({ field }) => ( 
+                            <FormItem>
+                                <FormControl><Input type="number" {...field} className="h-14 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl font-black text-2xl" /></FormControl>
+                                <FormDescription className="text-[10px] italic">Laissez à 0 pour un cours gratuit.</FormDescription>
+                                <FormMessage />
+                            </FormItem> 
+                        )}/>
                     </CardContent>
                 </Card>
-                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
-                    <CardHeader className="border-b dark:border-white/5"><CardTitle className="text-sm font-bold uppercase tracking-tight">Catégorie</CardTitle></CardHeader>
-                    <CardContent className="pt-6">
-                        <FormField control={form.control} name="category" render={({ field }) => ( <FormItem><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl"><SelectValue placeholder="Catégorie" /></SelectTrigger></FormControl><SelectContent>{courseCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem> )}/>
+                <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
+                    <CardHeader className="p-6 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
+                        <CardTitle className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Domaine</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                        <FormField control={form.control} name="category" render={({ field }) => ( 
+                            <FormItem>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger className="h-14 bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800 rounded-xl font-bold">
+                                            <SelectValue placeholder="Choisir une catégorie" />
+                                        </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                        {courseCategories.map(cat => <SelectItem key={cat} value={cat} className="font-bold py-3">{cat}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem> 
+                        )}/>
                     </CardContent>
                 </Card>
             </div>
             
-             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
-                <CardHeader className="border-b dark:border-white/5">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight">Image de couverture</CardTitle>
+             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
+                <CardHeader className="p-8 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
+                    <CardTitle className="text-xl font-bold uppercase tracking-tight">Couverture Visuelle</CardTitle>
+                    <CardDescription>Une belle image augmente le taux d'inscription de 40%.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6 pt-6">
-                   <div className="w-full aspect-video rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-950/50">
+                <CardContent className="p-8 space-y-8">
+                   <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-inner">
                         {imagePreview ? (
-                            <Image src={imagePreview} alt="Aperçu" fill className="object-cover animate-in fade-in duration-500" />
+                            <Image src={imagePreview} alt="Aperçu" fill className="object-cover animate-in fade-in duration-700" />
                         ) : (
-                             <div className="text-center text-slate-400">
-                                <ImageIcon className="mx-auto h-12 w-12 opacity-20" />
-                                <p className="mt-2 text-xs font-bold uppercase tracking-widest">Aucune image</p>
+                             <div className="text-center text-slate-400 space-y-2">
+                                <ImageIcon className="mx-auto h-16 w-16 opacity-10" />
+                                <p className="text-[10px] font-black uppercase tracking-widest">Aucun visuel défini</p>
                              </div>
+                        )}
+                        {uploadProgress !== null && (
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-8">
+                                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                                <Progress value={uploadProgress} className="h-2 w-full max-w-xs" />
+                                <p className="text-white font-bold text-xs mt-2 uppercase tracking-widest">{Math.round(uploadProgress)}%</p>
+                            </div>
                         )}
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'outline'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-bold text-[10px] uppercase tracking-widest">Bibliothèque</Button>
-                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'outline'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-bold text-[10px] uppercase tracking-widest">Mon Fichier</Button>
-                        <Button type="button" variant={imageSource === 'url' ? 'default' : 'outline'} onClick={() => setImageSource('url')} size="sm" className="rounded-xl font-bold text-[10px] uppercase tracking-widest">Lien Direct</Button>
+                    <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl w-fit border border-slate-200 dark:border-slate-800">
+                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'ghost'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Bibliothèque Ndara</Button>
+                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'ghost'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Mon Fichier</Button>
+                        <Button type="button" variant={imageSource === 'url' ? 'default' : 'ghost'} onClick={() => setImageSource('url')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Lien Web</Button>
                     </div>
 
                     {imageSource === 'template' && (
-                        <div className="space-y-4">
+                        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
                             {templatesLoading ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-video rounded-xl bg-slate-800" />)}
+                                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-video rounded-2xl bg-slate-100 dark:bg-slate-800" />)}
                                 </div>
                             ) : templates && templates.length > 0 ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in slide-in-from-top-2 duration-300">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {templates.map((img) => (
                                         <button
                                             key={img.id}
                                             type="button"
                                             onClick={() => handleSelectTemplate(img.imageUrl)}
                                             className={cn(
-                                                "relative aspect-video rounded-xl overflow-hidden border-2 transition-all",
-                                                form.watch('imageUrl') === img.imageUrl ? "border-primary ring-2 ring-primary/20" : "border-transparent opacity-60 hover:opacity-100"
+                                                "relative aspect-video rounded-2xl overflow-hidden border-2 transition-all group active:scale-95",
+                                                form.watch('imageUrl') === img.imageUrl ? "border-primary ring-4 ring-primary/10 shadow-2xl" : "border-transparent opacity-60 hover:opacity-100"
                                             )}
                                         >
                                             <Image src={img.imageUrl} alt={img.description} fill className="object-cover" />
                                             {form.watch('imageUrl') === img.imageUrl && (
                                                 <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                    <CheckCircle2 className="h-6 w-6 text-white" />
+                                                    <CheckCircle2 className="h-8 w-8 text-white shadow-lg" />
                                                 </div>
                                             )}
                                         </button>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="text-center py-10 bg-slate-100 dark:bg-slate-800/30 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
-                                    <Frown className="h-8 w-8 mx-auto text-slate-400 mb-2" />
-                                    <p className="text-xs text-slate-500">Aucun modèle disponible pour le moment.</p>
+                                <div className="text-center py-12 bg-slate-50 dark:bg-slate-950/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+                                    <Frown className="h-10 w-10 mx-auto text-slate-300 mb-2 opacity-20" />
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aucun modèle disponible.</p>
                                 </div>
                             )}
                         </div>
                     )}
 
                     {imageSource === 'upload' && (
-                        <div className="space-y-4">
-                            <Input type="file" accept="image/*" onChange={handleImageUpload} className="bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 h-12 rounded-xl pt-2.5" disabled={uploadProgress !== null}/>
-                            {uploadProgress !== null && <Progress value={uploadProgress} className="h-1.5"/>}
+                        <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
+                            <label className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
+                                <ImageIcon className="h-10 w-10 text-slate-300 mb-2" />
+                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sélectionner un fichier image</span>
+                                <Input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadProgress !== null}/>
+                            </label>
                         </div>
                     )}
 
                     {imageSource === 'url' && (
                         <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                            <FormItem>
+                            <FormItem className="animate-in slide-in-from-bottom-2 duration-500">
                                 <FormControl>
-                                    <Input placeholder="URL de l'image..." {...field} onChange={(e) => { field.onChange(e); setImagePreview(e.target.value); }} className="h-12 bg-slate-50 dark:bg-slate-800/50 rounded-xl" />
+                                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-1 pr-4">
+                                        <div className="p-3 bg-slate-200 dark:bg-slate-800 rounded-xl text-slate-500"><Globe className="h-5 w-5"/></div>
+                                        <Input placeholder="https://images.unsplash.com/..." {...field} onChange={(e) => { field.onChange(e); setImagePreview(e.target.value); }} className="border-none bg-transparent focus-visible:ring-0 h-12" />
+                                    </div>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -271,11 +325,11 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                 </CardContent>
             </Card>
 
-            <div className="flex justify-end gap-4 sticky bottom-6 z-20">
-                <Button type="button" variant="outline" onClick={() => router.back()} disabled={isPending} className="h-14 px-8 rounded-2xl font-bold">Annuler</Button>
-                <Button type="submit" disabled={isPending || uploadProgress !== null} className="h-14 px-12 rounded-2xl bg-primary text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-2xl">
+            <div className="flex flex-col sm:flex-row justify-end gap-4 sticky bottom-6 z-20 pt-4 border-t border-white/5 bg-slate-950/80 backdrop-blur-xl p-4 -m-4 rounded-t-3xl">
+                <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending} className="h-14 px-8 rounded-2xl font-bold text-slate-500">Annuler</Button>
+                <Button type="submit" disabled={isPending || uploadProgress !== null} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 transition-all active:scale-[0.98]">
                     {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                    {mode === 'create' ? "Enregistrer ma formation" : "Sauvegarder"}
+                    {mode === 'create' ? "Créer ma formation" : "Enregistrer les modifications"}
                 </Button>
             </div>
         </form>
