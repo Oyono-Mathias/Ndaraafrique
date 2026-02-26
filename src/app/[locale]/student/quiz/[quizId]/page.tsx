@@ -16,7 +16,7 @@ import {
   getDocs,
   setDoc,
   serverTimestamp,
-  orderBy, // ✅ Importé pour corriger l'erreur de build
+  orderBy, 
   collectionGroup,
   where,
 } from 'firebase/firestore';
@@ -63,7 +63,6 @@ export default function TakeQuizPage() {
         const data = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuizData(data);
 
-        // ✅ Utilisation de orderBy sécurisée par l'importation ci-dessus
         const questionsQuery = query(collection(quizDoc.ref, 'questions'), orderBy('order', 'asc'));
         const questionsSnap = await getDocs(questionsQuery);
         setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
@@ -228,7 +227,7 @@ export default function TakeQuizPage() {
                 </Button>
             ) : (
                 <Button onClick={handleSubmit} disabled={isSubmitting || answers[currentQuestion?.id] === undefined} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 active:scale-95 transition-all">
-                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin"/> : null}
+                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : null}
                     Valider mon Quiz
                 </Button>
             )}

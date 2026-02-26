@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -47,7 +46,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (loading || !mounted) return;
 
     const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir'];
-    const isPublic = publicPaths.includes(cleanPath) || cleanPath.startsWith('/verify/');
+    
+    // Détection d'un profil instructeur public : /instructor/[id]
+    // Mais on doit exclure les routes privées comme /instructor/dashboard
+    const instructorPrivateRoutes = ['dashboard', 'courses', 'students', 'revenus', 'annonces', 'avis', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'certificats'];
+    const isInstructorPublicProfile = cleanPath.startsWith('/instructor/') && !instructorPrivateRoutes.some(sub => cleanPath.includes(`/instructor/${sub}`));
+
+    const isPublic = publicPaths.includes(cleanPath) || cleanPath.startsWith('/verify/') || isInstructorPublicProfile;
 
     if (!user) {
       if (!isPublic) router.push('/login');
@@ -55,7 +60,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // Autoriser la navigation vers les pages communes sans redirection forcée
-    if (cleanPath === '/account' || cleanPath === '/search') return;
+    if (cleanPath === '/account' || cleanPath === '/search' || isInstructorPublicProfile) return;
 
     // Redirection basée sur le rôle
     const isAdminArea = cleanPath.startsWith('/admin');
@@ -84,7 +89,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
   const isLandingPage = cleanPath === '/';
-  const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/');
+  
+  // Re-calcul pour l'affichage de la nav
+  const instructorPrivateRoutes = ['dashboard', 'courses', 'students', 'revenus', 'annonces', 'avis', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'certificats'];
+  const isInstructorPublicProfile = cleanPath.startsWith('/instructor/') && !instructorPrivateRoutes.some(sub => cleanPath.includes(`/instructor/${sub}`));
+  
+  const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/') || isInstructorPublicProfile;
   
   const showNav = user && !isAuthPage && !isPublicView;
   const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').length > 3;
