@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de nocookie et extraction ID étendue (incl. Shorts).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel.
+ * ✅ RÉSOLU : Utilisation de Plyr pour habiller YouTube.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (CertificateModal props).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
