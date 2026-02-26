@@ -24,6 +24,7 @@ import {
   CreditCard,
   ArrowLeftRight,
   Shield,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
@@ -121,6 +122,7 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.pn
         { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
         { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
         { href: "/student/devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
+        { href: "/student/mes-questions", icon: MessageCircle, label: 'Mes Questions', id: 'sidebar-nav-mes-questions' },
         { href: "/student/liste-de-souhaits", icon: Heart, label: 'Souhaits', id: 'sidebar-nav-wishlist' },
       ],
     },
