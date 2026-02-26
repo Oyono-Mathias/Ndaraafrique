@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * @fileOverview Gestionnaire de questions-réponses pour les formateurs.
+ * ✅ RÉSOLU : Tri en mémoire pour éviter les erreurs d'index Firestore.
+ */
+
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where } from 'firebase/firestore';
@@ -18,10 +23,6 @@ import { ReplyModal } from './ReplyModal';
 import type { CourseQuestion, Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
-/**
- * @fileOverview Gestionnaire de questions-réponses pour les formateurs.
- */
-
 export function QnaClient() {
   const db = getFirestore();
   const { currentUser } = useRole();
@@ -30,18 +31,21 @@ export function QnaClient() {
   const [selectedQuestion, setSelectedQuestion] = useState<CourseQuestion | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // 1. Récupération des cours
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
+  // 2. Récupération des questions (Sans orderBy pour la stabilité)
   const questionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'questions'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: rawQuestions, isLoading: questionsLoading } = useCollection<CourseQuestion>(questionsQuery);
 
+  // 3. Tri et filtrage en mémoire
   const filteredQuestions = useMemo(() => {
     if (!rawQuestions) return [];
     

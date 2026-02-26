@@ -1,24 +1,22 @@
-
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée Android.
- * Affiche uniquement les cours terminés à 100%.
  * ✅ RÉSOLU : Stabilité totale des données.
- * ✅ RÉSOLU : Plus de boucle de rafraîchissement infinie.
+ * ✅ RÉSOLU : Plus de disparition après 1 seconde.
  */
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, getDocs, documentId, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight, Clock } from 'lucide-react';
+import { Award, Trophy, Share2, Eye, ArrowRight, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { CertificateModal } from '@/components/modals/certificate-modal';
-import type { Enrollment, NdaraUser, Course, CourseProgress } from '@/lib/types';
+import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 import Link from 'next/link';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -28,34 +26,16 @@ interface EnrichedCertificate extends Enrollment {
   instructor?: Partial<NdaraUser>;
 }
 
-async function fetchDataMap(db: any, collectionName: string, fieldName: string | null, ids: string[]) {
-    const dataMap = new Map();
-    if (ids.length === 0) return dataMap;
-
-    for (let i = 0; i < ids.length; i += 30) {
-        const chunk = ids.slice(i, i + 30);
-        if (chunk.length === 0) continue;
-        
-        const key = fieldName || documentId();
-        const q = query(collection(db, collectionName), where(key, 'in', chunk));
-        const snapshot = await getDocs(q);
-        snapshot.forEach(doc => dataMap.set(doc.id, doc.data()));
-    }
-    return dataMap;
-}
-
 export default function MesCertificatsPage() {
   const db = getFirestore();
   const { currentUser } = useRole();
   const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const repairPerformed = useRef(false);
 
-  // 1. Stabilisation de la requête Firestore par ID utilisateur unique
-  const userId = currentUser?.uid;
+  // 1. Stabilisation de la requête Firestore
   const enrollmentsQuery = useMemo(() =>
-    userId ? query(collection(db, 'enrollments'), where('studentId', '==', userId)) : null,
-    [db, userId]
+    currentUser?.uid ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)) : null,
+    [db, currentUser?.uid]
   );
   
   const { data: enrollments, isLoading: enrollmentsLoading } = useCollection<Enrollment>(enrollmentsQuery);
@@ -63,31 +43,7 @@ export default function MesCertificatsPage() {
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 🛡️ Réparation automatique unique pour les anciens certificats (s'exécute 1 fois)
-  useEffect(() => {
-    if (!userId || !enrollments || enrollmentsLoading || repairPerformed.current) return;
-
-    const checkAndRepair = async () => {
-        repairPerformed.current = true;
-        const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', userId));
-        const progressSnap = await getDocs(progressQuery);
-        const progressList = progressSnap.docs.map(d => d.data() as CourseProgress);
-
-        for (const prog of progressList) {
-            if (prog.progressPercent === 100) {
-                const enrollment = enrollments.find(e => e.courseId === prog.courseId);
-                if (enrollment && enrollment.progress < 100) {
-                    const enrollmentRef = doc(db, 'enrollments', enrollment.id);
-                    await setDoc(enrollmentRef, { progress: 100, lastAccessedAt: serverTimestamp() }, { merge: true });
-                }
-            }
-        }
-    };
-
-    checkAndRepair().catch(err => console.warn("Repair error:", err));
-  }, [enrollments, userId, db, enrollmentsLoading]);
-
-  // 💎 Enrichissement des données stable en mémoire
+  // 2. Enrichissement des données avec cache local pour éviter le "flash" de disparition
   useEffect(() => {
     if (enrollmentsLoading) return;
     
@@ -110,10 +66,20 @@ export default function MesCertificatsPage() {
             const courseIds = [...new Set(completedEnrollments.map(e => e.courseId))];
             const instructorIds = [...new Set(completedEnrollments.map(e => e.instructorId))];
 
-            const [coursesMap, instructorsMap] = await Promise.all([
-                 fetchDataMap(db, 'courses', null, courseIds),
-                 fetchDataMap(db, 'users', 'uid', instructorIds)
-            ]);
+            const coursesMap = new Map();
+            const instructorsMap = new Map();
+
+            if (courseIds.length > 0) {
+                const q = query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30)));
+                const snap = await getDocs(q);
+                snap.forEach(d => coursesMap.set(d.id, d.data()));
+            }
+
+            if (instructorIds.length > 0) {
+                const q = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
+                const snap = await getDocs(q);
+                snap.forEach(d => instructorsMap.set(d.id, d.data()));
+            }
             
             const newEnrichedData = completedEnrollments.map(e => ({
                 ...e,

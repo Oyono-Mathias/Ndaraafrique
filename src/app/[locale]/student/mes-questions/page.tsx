@@ -2,14 +2,14 @@
 
 /**
  * @fileOverview Historique des questions posées par l'étudiant.
- * Affiche les échanges avec les instructeurs par cours.
- * ✅ RÉSOLU : Utilisation de useCollection pour une stabilité maximale.
+ * ✅ RÉSOLU : Tri en mémoire pour éviter les blocages d'index Firestore.
+ * ✅ RÉSOLU : Affichage instantané des échanges.
  */
 
 import { useState, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -25,17 +25,26 @@ export default function MesQuestionsPage() {
   const { currentUser } = useRole();
   const db = getFirestore();
 
-  // 🛡️ Stabilisation de la requête : On utilise useCollection qui gère mieux les index manquants
+  // 🛡️ REQUÊTE ULTRA-STABLE : On enlève orderBy pour ne pas dépendre d'un index Firestore
   const questionsQuery = useMemo(() => {
     if (!currentUser?.uid) return null;
     return query(
       collection(db, 'questions'),
-      where('studentId', '==', currentUser.uid),
-      orderBy('createdAt', 'desc')
+      where('studentId', '==', currentUser.uid)
     );
   }, [currentUser?.uid, db]);
 
-  const { data: questions, isLoading } = useCollection<CourseQuestion>(questionsQuery);
+  const { data: rawQuestions, isLoading } = useCollection<CourseQuestion>(questionsQuery);
+
+  // 💎 TRI EN MÉMOIRE : Garantit l'affichage même si l'index Firebase est en cours de création
+  const questions = useMemo(() => {
+    if (!rawQuestions) return [];
+    return [...rawQuestions].sort((a, b) => {
+      const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
+      const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [rawQuestions]);
 
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
@@ -53,7 +62,7 @@ export default function MesQuestionsPage() {
           <div className="space-y-4">
             {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-3xl bg-slate-900" />)}
           </div>
-        ) : questions && questions.length > 0 ? (
+        ) : questions.length > 0 ? (
           <div className="grid gap-4 animate-in fade-in duration-500">
             {questions.map((q) => (
               <QuestionItem key={q.id} question={q} />
