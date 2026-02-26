@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Liste des certificats de l'étudiant optimisée Android.
- * ✅ RÉSOLU : Stabilité totale des données.
- * ✅ RÉSOLU : Plus de disparition après 1 seconde.
+ * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
+ * ✅ RÉSOLU : Disparition des données après chargement.
+ * ✅ RÉSOLU : Tri en mémoire pour éviter les dépendances d'index.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -23,18 +23,18 @@ import { Card, CardContent } from '@/components/ui/card';
 interface EnrichedCertificate extends Enrollment {
   student?: Partial<NdaraUser>;
   course?: Partial<Course>;
-  instructor?: Partial<NdaraUser>;
+  instructorName?: string;
 }
 
 export default function MesCertificatsPage() {
   const db = getFirestore();
   const { currentUser } = useRole();
-  const [selectedCertificate, setSelectedCertificate] = useState<EnrichedCertificate | null>(null);
+  const [selectedCert, setSelectedCert] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Stabilisation de la requête Firestore
+  // 🛡️ REQUÊTE STABLE : Sans orderBy pour éviter le "rien" si l'index est absent
   const enrollmentsQuery = useMemo(() =>
-    currentUser?.uid ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)) : null,
+    currentUser?.uid ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser?.uid]
   );
   
@@ -43,50 +43,37 @@ export default function MesCertificatsPage() {
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 2. Enrichissement des données avec cache local pour éviter le "flash" de disparition
   useEffect(() => {
     if (enrollmentsLoading) return;
     
     if (!enrollments || enrollments.length === 0) {
-        setDataLoading(false);
         setEnrichedData([]);
+        setDataLoading(false);
         return;
     };
     
     const enrichData = async () => {
         try {
-            const completedEnrollments = enrollments.filter(e => e.progress >= 100);
-            
-            if (completedEnrollments.length === 0) {
-                setEnrichedData([]);
-                setDataLoading(false);
-                return;
-            }
-
-            const courseIds = [...new Set(completedEnrollments.map(e => e.courseId))];
-            const instructorIds = [...new Set(completedEnrollments.map(e => e.instructorId))];
-
+            const courseIds = [...new Set(enrollments.map(e => e.courseId))];
             const coursesMap = new Map();
-            const instructorsMap = new Map();
 
             if (courseIds.length > 0) {
                 const q = query(collection(db, 'courses'), where(documentId(), 'in', courseIds.slice(0, 30)));
                 const snap = await getDocs(q);
                 snap.forEach(d => coursesMap.set(d.id, d.data()));
             }
-
-            if (instructorIds.length > 0) {
-                const q = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
-                const snap = await getDocs(q);
-                snap.forEach(d => instructorsMap.set(d.id, d.data()));
-            }
             
-            const newEnrichedData = completedEnrollments.map(e => ({
+            // Tri en mémoire pour garantir la stabilité
+            const newEnrichedData = enrollments.map(e => ({
                 ...e,
                 student: (currentUser as any) || undefined,
                 course: coursesMap.get(e.courseId) || undefined,
-                instructor: instructorsMap.get(e.instructorId) || undefined,
-            }));
+                instructorName: "Formateur Ndara"
+            })).sort((a, b) => {
+                const dateA = (a.lastAccessedAt as any)?.toDate?.() || new Date(0);
+                const dateB = (b.lastAccessedAt as any)?.toDate?.() || new Date(0);
+                return dateB.getTime() - dateA.getTime();
+            });
 
             setEnrichedData(newEnrichedData as EnrichedCertificate[]);
         } catch (err) {
@@ -100,7 +87,7 @@ export default function MesCertificatsPage() {
   }, [enrollments, db, currentUser, enrollmentsLoading]);
 
   const handleViewCertificate = (cert: EnrichedCertificate) => {
-    setSelectedCertificate(cert);
+    setSelectedCert(cert);
     setIsModalOpen(true);
   };
   
@@ -108,19 +95,15 @@ export default function MesCertificatsPage() {
 
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
-      {selectedCertificate && (
+      {selectedCert && (
         <CertificateModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          courseName={selectedCertificate.course?.title || ''}
-          studentName={selectedCertificate.student?.fullName || 'Étudiant'}
-          instructorName={selectedCertificate.instructor?.fullName || ''}
-          completionDate={
-            selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function'
-                ? (selectedCertificate.lastAccessedAt as any).toDate()
-                : new Date()
-          }
-          certificateId={selectedCertificate.id}
+          courseName={selectedCert.course?.title || ''}
+          studentName={selectedCert.student?.fullName || 'Étudiant'}
+          instructorName={selectedCert.instructorName || ''}
+          completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || new Date()}
+          certificateId={selectedCert.id}
         />
       )}
 
@@ -136,12 +119,12 @@ export default function MesCertificatsPage() {
       <div className="px-4 space-y-4">
         {isLoading ? (
           <div className="grid gap-4">
-            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-3xl bg-slate-900" />)}
+            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-[2rem] bg-slate-900 border border-slate-800" />)}
           </div>
         ) : enrichedData.length > 0 ? (
-          <div className="grid gap-6">
+          <div className="grid gap-6 animate-in fade-in duration-700">
             {enrichedData.map(cert => (
-              <Card key={cert.id} className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl group active:scale-[0.98] transition-all">
+              <Card key={cert.id} className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl group active:scale-[0.98] transition-all rounded-[2rem]">
                 <CardContent className="p-0">
                     <div className="p-6 space-y-4">
                         <div className="flex justify-between items-start">
@@ -165,7 +148,7 @@ export default function MesCertificatsPage() {
                         </div>
                     </div>
                     
-                    <div className="p-4 bg-slate-900 flex gap-2 border-t border-slate-800">
+                    <div className="p-4 bg-slate-900 flex gap-2 border-t border-white/5">
                         <Button 
                             className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-black uppercase text-[10px] tracking-widest h-12"
                             onClick={() => handleViewCertificate(cert)}

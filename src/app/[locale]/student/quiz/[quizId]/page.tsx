@@ -16,7 +16,7 @@ import {
   getDocs,
   setDoc,
   serverTimestamp,
-  orderBy, // ✅ Ajouté pour le build
+  orderBy, // ✅ Importé pour corriger l'erreur de build
   collectionGroup,
   where,
 } from 'firebase/firestore';
@@ -63,7 +63,7 @@ export default function TakeQuizPage() {
         const data = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuizData(data);
 
-        // ✅ Utilisation sécurisée de orderBy
+        // ✅ Utilisation de orderBy sécurisée par l'importation ci-dessus
         const questionsQuery = query(collection(quizDoc.ref, 'questions'), orderBy('order', 'asc'));
         const questionsSnap = await getDocs(questionsQuery);
         setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
