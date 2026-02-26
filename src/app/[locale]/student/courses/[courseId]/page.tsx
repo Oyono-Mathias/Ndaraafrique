@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -68,7 +67,6 @@ function CoursePlayerPageContent() {
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const { data: courseProgress, isLoading: progressLoading } = useDoc<CourseProgress>(progressRef);
   
-  // ✅ Correction : Utilisation de collectionGroup pour trouver tous les quiz liés à ce cours
   const quizzesQuery = useMemo(() => 
     courseId ? query(collectionGroup(db, 'quizzes'), where('courseId', '==', courseId)) : null, 
     [db, courseId]
@@ -188,6 +186,8 @@ function CoursePlayerPageContent() {
         instructorName={instructor?.fullName || ''}
         completionDate={new Date()}
         certificateId={`${user?.uid}_${courseId}`}
+        courseId={courseId as string}
+        userId={user?.uid || ''}
       />
 
       <AskQuestionModal 

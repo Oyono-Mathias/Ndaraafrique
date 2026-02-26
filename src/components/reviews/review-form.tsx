@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -10,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
-import { Star, Loader2 } from 'lucide-react';
+import { Star, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { errorEmitter } from '@/firebase/error-emitter';
 import { FirestorePermissionError } from '@/firebase/errors';
@@ -46,7 +45,6 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
     setIsSubmitting(true);
     
     try {
-      // Fetch course to get instructorId
       const courseRef = doc(db, 'courses', courseId);
       const courseSnap = await getDoc(courseRef);
       if (!courseSnap.exists()) {
@@ -59,7 +57,7 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
       const reviewPayload = {
         courseId,
         userId,
-        instructorId: courseData.instructorId, // Add instructorId here
+        instructorId: courseData.instructorId,
         rating: values.rating,
         comment: values.comment,
         createdAt: serverTimestamp(),
@@ -68,17 +66,13 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
       const reviewsCollection = collection(db, 'reviews');
       await addDoc(reviewsCollection, reviewPayload);
       
-      toast({ title: 'Avis soumis !', description: 'Merci pour votre contribution.' });
+      toast({ title: 'Avis soumis !', description: 'Merci pour votre contribution Ndara.' });
       setSubmitted(true);
-      onReviewSubmit();
+      setTimeout(() => onReviewSubmit(), 2000);
 
     } catch (error) {
       console.error("Error submitting review:", error);
-      errorEmitter.emit('permission-error', new FirestorePermissionError({
-        path: 'reviews',
-        operation: 'create',
-        requestResourceData: { courseId, userId, ...values },
-      }));
+      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible d\'envoyer votre avis.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -86,24 +80,26 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
 
   if (submitted) {
     return (
-      <div className="text-center p-4 border rounded-lg bg-green-50 text-green-800">
-        <p>Merci pour votre avis !</p>
+      <div className="text-center p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-3 animate-in zoom-in duration-500">
+        <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto" />
+        <h3 className="font-bold text-white">Merci Ndara !</h3>
+        <p className="text-sm text-slate-400">Votre témoignage inspire la communauté.</p>
       </div>
     );
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="rating"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Votre note</FormLabel>
+            <FormItem className="text-center">
+              <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-4">Évaluez votre expérience</FormLabel>
               <FormControl>
                 <div
-                  className="flex items-center gap-1"
+                  className="flex items-center justify-center gap-3"
                   onMouseLeave={() => setHoverRating(0)}
                 >
                   {[...Array(5)].map((_, i) => {
@@ -114,14 +110,14 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
                         key={ratingValue}
                         onClick={() => field.onChange(ratingValue)}
                         onMouseEnter={() => setHoverRating(ratingValue)}
-                        className="p-0 bg-transparent border-none"
+                        className="p-0 bg-transparent border-none transition-transform active:scale-90"
                       >
                         <Star
                           className={cn(
-                            'w-6 h-6 cursor-pointer transition-colors',
+                            'w-8 h-8 cursor-pointer transition-all duration-300',
                             ratingValue <= (hoverRating || field.value)
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-300'
+                              ? 'text-yellow-400 fill-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.4)]'
+                              : 'text-slate-700'
                           )}
                         />
                       </button>
@@ -138,10 +134,12 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
           name="comment"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Votre commentaire</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Votre témoignage</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Décrivez votre expérience avec ce cours..."
+                  placeholder="Qu'avez-vous le plus aimé dans ce cours ?"
+                  className="bg-slate-950 border-slate-800 rounded-2xl resize-none p-4 text-white focus-visible:ring-primary/30"
+                  rows={4}
                   {...field}
                 />
               </FormControl>
@@ -149,9 +147,13 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Soumettre l'avis
+        <Button 
+            type="submit" 
+            disabled={isSubmitting || form.watch('rating') === 0} 
+            className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
+        >
+          {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          Publier mon avis
         </Button>
       </form>
     </Form>

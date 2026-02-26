@@ -4,11 +4,12 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Share2, Download, Loader2 } from 'lucide-react';
+import { Share2, Download, Loader2, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { CertificatePremium } from '../CertificatePremium';
+import { ReviewForm } from '../reviews/review-form';
 
 interface CertificateModalProps {
   isOpen: boolean;
@@ -18,6 +19,8 @@ interface CertificateModalProps {
   instructorName: string;
   completionDate: Date;
   certificateId: string;
+  courseId: string;
+  userId: string;
 }
 
 export function CertificateModal({ 
@@ -27,11 +30,14 @@ export function CertificateModal({
     studentName = "Cher Ndara", 
     instructorName, 
     completionDate, 
-    certificateId 
+    certificateId,
+    courseId,
+    userId
 }: CertificateModalProps) {
   
   const certificateRef = useRef<HTMLDivElement>(null);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [scale, setScale] = useState(1);
   const verificationUrl = typeof window !== 'undefined' ? `${window.location.origin}/verify/${certificateId}` : '';
   const formattedDate = format(completionDate, 'dd MMMM yyyy', { locale: fr });
@@ -64,11 +70,9 @@ export function CertificateModal({
     setIsDownloading(true);
 
     try {
-      // TECHNIQUE ROBUSTE : On crée un clone invisible à l'échelle 1:1 pour la capture
       const originalElement = certificateRef.current;
       const clone = originalElement.cloneNode(true) as HTMLDivElement;
       
-      // On force les dimensions réelles sur le clone pour le rendu PDF impeccable
       clone.style.position = 'fixed';
       clone.style.left = '-9999px';
       clone.style.top = '0';
@@ -81,7 +85,7 @@ export function CertificateModal({
       document.body.appendChild(clone);
 
       const canvas = await html2canvas(clone, {
-        scale: 2, // 300 DPI approx pour une netteté totale
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#fdfcf7',
@@ -100,7 +104,6 @@ export function CertificateModal({
         format: 'a4'
       });
 
-      // A4 Landscape : 297mm x 210mm
       pdf.addImage(imgData, 'PNG', 0, 0, 297, 210);
       pdf.save(`Certificat_Ndara_${studentName.replace(/\s/g, '_')}.pdf`);
       
@@ -113,13 +116,13 @@ export function CertificateModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-screen-2xl p-0 border-0 bg-slate-950/90 shadow-none overflow-y-auto max-h-[98vh] flex flex-col items-center">
+      <DialogContent className="max-w-screen-2xl p-0 border-0 bg-slate-950/95 shadow-none overflow-y-auto max-h-[98vh] flex flex-col items-center">
         <DialogHeader className="sr-only">
             <DialogTitle>Certificat Ndara Afrique</DialogTitle>
             <DialogDescription>Diplôme officiel de {studentName}</DialogDescription>
         </DialogHeader>
         
-        <div className="w-full flex-1 flex items-center justify-center p-4 md:p-8 overflow-hidden min-h-[600px]">
+        <div className="w-full flex-1 flex flex-col items-center p-4 md:p-8 overflow-hidden min-h-[600px]">
             <div 
                 style={{ 
                     transform: `scale(${scale})`, 
@@ -137,6 +140,26 @@ export function CertificateModal({
                     certificateId={certificateId}
                     instructorName={instructorName}
                 />
+            </div>
+
+            {/* Section Avis - Apparition douce après l'affichage du certificat */}
+            <div className="mt-12 w-full max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-1000 delay-500">
+                {!showReview ? (
+                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] text-center space-y-4 shadow-2xl">
+                        <div className="p-3 bg-primary/10 rounded-full inline-block">
+                            <Star className="h-8 w-8 text-primary fill-primary" />
+                        </div>
+                        <h3 className="text-xl font-bold text-white uppercase tracking-tight">Votre avis compte !</h3>
+                        <p className="text-slate-400 text-sm">Félicitations Ndara ! Aidez d'autres étudiants en partageant votre expérience sur ce cours.</p>
+                        <Button onClick={() => setShowReview(true)} className="rounded-xl h-12 px-8 font-black uppercase text-[10px] tracking-widest bg-slate-800 hover:bg-slate-700">
+                            Laisser un avis étoilé
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="bg-slate-900 border border-slate-800 p-8 rounded-[2.5rem] shadow-2xl">
+                        <ReviewForm courseId={courseId} userId={userId} onReviewSubmit={() => setShowReview(false)} />
+                    </div>
+                )}
             </div>
         </div>
 
