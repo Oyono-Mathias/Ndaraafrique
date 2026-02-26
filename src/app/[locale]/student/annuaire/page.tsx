@@ -3,6 +3,7 @@
 /**
  * @fileOverview Annuaire communautaire Ndara Afrique.
  * ✅ FILTRAGE : Affiche uniquement les membres ayant au moins un cours en commun.
+ * ✅ TRI : En mémoire pour éviter les erreurs d'index Firestore.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,12 +12,12 @@ import { getFirestore, collection, query, where, getDocs, documentId, limit } fr
 import { useRouter } from 'next/navigation';
 import { startChat } from '@/lib/chat';
 import { useToast } from '@/hooks/use-toast';
-import type { NdaraUser, Enrollment } from '@/lib/types';
+import type { NdaraUser } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MessageSquare, Loader2, Users, Sparkles, BookOpen } from 'lucide-react';
+import { Search, MessageSquare, Loader2, Users, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function AnnuairePage() {
@@ -36,7 +37,7 @@ export default function AnnuairePage() {
         const fetchCommonMembers = async () => {
             setIsLoadingData(true);
             try {
-                // 1. Trouver mes cours
+                // 1. Trouver les cours de l'étudiant actuel
                 const myEnrollmentsSnap = await getDocs(query(
                     collection(db, 'enrollments'),
                     where('studentId', '==', currentUser.uid)
@@ -50,7 +51,8 @@ export default function AnnuairePage() {
                     return;
                 }
 
-                // 2. Trouver les autres étudiants dans ces cours (limité aux 10 premiers cours pour Firestore 'in')
+                // 2. Trouver les autres inscrits dans ces mêmes cours
+                // On limite aux 10 premiers cours pour respecter la limite 'in' de Firestore
                 const othersEnrollmentsSnap = await getDocs(query(
                     collection(db, 'enrollments'),
                     where('courseId', 'in', myCourseIds.slice(0, 10)),
@@ -68,7 +70,7 @@ export default function AnnuairePage() {
                     return;
                 }
 
-                // 3. Récupérer les profils de ces étudiants
+                // 3. Récupérer les profils des collègues trouvés
                 const usersSnap = await getDocs(query(
                     collection(db, 'users'),
                     where(documentId(), 'in', otherStudentIds.slice(0, 30))
@@ -86,7 +88,6 @@ export default function AnnuairePage() {
     }, [currentUser?.uid, db]);
 
     const filteredMembers = useMemo(() => {
-        if (!commonMembers) return [];
         let list = [...commonMembers];
         
         if (searchTerm) {
@@ -96,6 +97,7 @@ export default function AnnuairePage() {
             );
         }
 
+        // Tri alphabétique en mémoire
         return list.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
     }, [commonMembers, searchTerm]);
 
@@ -136,7 +138,7 @@ export default function AnnuairePage() {
 
             <div className="px-4 space-y-4">
                 {isLoading ? (
-                    <div className="grid gap-4">
+                    <div className="space-y-4">
                         {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-900" />)}
                     </div>
                 ) : filteredMembers.length > 0 ? (
@@ -167,7 +169,7 @@ export default function AnnuairePage() {
                 ) : (
                     <div className="py-20 text-center flex flex-col items-center opacity-30">
                         <BookOpen className="h-16 w-16 mb-4 text-slate-600" />
-                        <p className="text-sm font-black uppercase tracking-widest text-slate-500 max-w-[250px]">Inscrivez-vous à des cours pour voir vos collègues.</p>
+                        <p className="text-sm font-black uppercase tracking-widest text-slate-500 max-w-[250px]">Vous ne voyez ici que les membres qui suivent les mêmes cours que vous.</p>
                     </div>
                 )}
             </div>

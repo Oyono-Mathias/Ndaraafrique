@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Universal.
- * Correction Build Vercel : Ajout des props courseId et userId au CertificateModal.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';

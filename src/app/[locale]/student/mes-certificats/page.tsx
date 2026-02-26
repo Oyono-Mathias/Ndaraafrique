@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * ✅ RÉSOLU : Tri en mémoire pour la robustesse.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
  */
 
 import { useState, useMemo, useEffect } from 'react';

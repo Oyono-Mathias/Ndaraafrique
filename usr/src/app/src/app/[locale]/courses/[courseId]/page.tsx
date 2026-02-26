@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours (Copie de secours synchronisée).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Ajout courseId et userId).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -44,7 +44,6 @@ function CoursePlayerPageContent() {
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   
-  const [isCompleted, setIsCompleted] = useState(false);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
@@ -128,7 +127,6 @@ function CoursePlayerPageContent() {
       toast({ title: "Progression sauvegardée !"})
 
       if (newProgress >= 100) {
-        setIsCompleted(true);
         setShowCertificateModal(true);
       }
     }
