@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
  */
 
 import { useState, useMemo, useEffect } from 'react';

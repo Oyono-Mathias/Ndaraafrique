@@ -1,5 +1,5 @@
 git add .
-git commit -m "fix: total build resolution and youtube player optimization"
+git commit -m "fix: resolve youtube black screen and final Vercel build type errors"
 git push origin main
 
 

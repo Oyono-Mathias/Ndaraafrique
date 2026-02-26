@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats décernés (Vue Formateur).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
  */
 
 import { useState, useMemo, useEffect } from 'react';

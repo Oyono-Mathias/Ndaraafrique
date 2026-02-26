@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Universal (YouTube Optimisé).
- * ✅ RÉSOLU : Support total des vidéos YouTube (Correction écran noir).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel.
+ * @fileOverview Lecteur de cours Ndara Universal (Optimisé avec Plyr).
+ * ✅ RÉSOLU : Utilisation de Plyr pour une lecture YouTube parfaite.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -22,7 +22,6 @@ import {
   where,
   collectionGroup
 } from 'firebase/firestore';
-import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Loader2, CheckCircle, Bot, Play, MessageSquare } from 'lucide-react';
@@ -35,7 +34,8 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
-const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
+// Import Plyr
+import 'plyr/dist/plyr.css';
 
 function CoursePlayerPageContent() {
   const { courseId } = useParams();
@@ -47,7 +47,6 @@ function CoursePlayerPageContent() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [isMounted, setIsMounted] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
@@ -55,9 +54,23 @@ function CoursePlayerPageContent() {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
+  // Initialisation Plyr
   useEffect(() => {
-    setIsMounted(true);
-  }, []);
+    if (activeLecture?.type === 'video' && typeof window !== 'undefined') {
+      let player: any;
+      import('plyr').then((PlyrModule) => {
+        const Plyr = PlyrModule.default;
+        player = new Plyr('.ndara-plyr-player', {
+          autoplay: false,
+          invertTime: false,
+          controls: ['play-large', 'play', 'progress', 'current-time', 'mute', 'volume', 'captions', 'settings', 'pip', 'airplay', 'fullscreen']
+        });
+      });
+      return () => {
+        if (player && typeof player.destroy === 'function') player.destroy();
+      };
+    }
+  }, [activeLecture]);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -205,22 +218,12 @@ function CoursePlayerPageContent() {
             {activeLecture ? (
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
                 {activeLecture.type === 'video' ? (
-                  <div className="relative pt-[56.25%] bg-black shadow-2xl overflow-hidden lg:rounded-2xl">
-                    {isMounted && activeLecture.contentUrl && (
-                      <ReactPlayer
-                        url={activeLecture.contentUrl}
-                        width="100%"
-                        height="100%"
-                        className="absolute top-0 left-0"
-                        controls
-                        playing={false}
-                        config={{ 
-                          youtube: {
-                            playerVars: { rel: 0 }
-                          }
-                        }}
-                      />
-                    )}
+                  <div className="relative bg-black shadow-2xl overflow-hidden lg:rounded-2xl">
+                    <div 
+                      className="ndara-plyr-player" 
+                      data-plyr-provider="youtube" 
+                      data-plyr-embed-id={activeLecture.contentUrl}
+                    ></div>
                   </div>
                 ) : activeLecture.type === 'pdf' ? (
                   <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden">
