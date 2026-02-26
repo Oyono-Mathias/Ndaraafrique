@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';

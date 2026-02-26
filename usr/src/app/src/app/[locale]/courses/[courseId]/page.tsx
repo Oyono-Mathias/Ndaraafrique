@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
- * @fileOverview Lecteur de cours (Copie de secours synchronisée).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
+ * @fileOverview Lecteur de cours Ndara Afrique.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';

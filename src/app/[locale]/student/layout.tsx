@@ -40,10 +40,14 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
       '/student/liste-de-souhaits'
     ];
 
+    // ✅ MASQUAGE CRITIQUE : Si on est dans un chat sur mobile, on cache la barre de navigation
+    const isChatOpen = cleanPath === '/student/messages' && searchParams.get('chatId');
+    if (isChatOpen) return false;
+
     // Vérifier si on est sur une page de détail de devoir (ex: /student/devoirs/XYZ)
     const isAssignmentDetail = cleanPath.startsWith('/student/devoirs/') && cleanPath.split('/').length > 3;
 
-    // Sur mobile, on cache la barre si on est dans un chat précis ou une soumission de devoir
+    // Sur mobile, on cache la barre si on est dans une soumission de devoir
     const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
     const isGlobalPage = globalNavPaths.some(p => cleanPath === p);
 
