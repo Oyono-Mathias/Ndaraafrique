@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,6 +13,8 @@ import {
   setDoc,
   serverTimestamp,
   orderBy,
+  collectionGroup,
+  where,
 } from 'firebase/firestore';
 import { useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
@@ -27,11 +30,12 @@ import confetti from 'canvas-confetti';
 
 /**
  * @fileOverview Interface de passage de quiz optimisée.
- * Correction Build Vercel : Ajout de l'importation 'orderBy'.
+ * Correction Build Vercel : Importations orderBy et collectionGroup assurées.
  */
 export default function TakeQuizPage() {
   const params = useParams();
-  const { courseId, quizId } = params;
+  const { quizId } = params;
+  const courseId = params.courseId;
   const router = useRouter();
   const { user } = useRole();
   const db = getFirestore();
@@ -42,26 +46,43 @@ export default function TakeQuizPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [finalScore, setFinalScore] = useState<number | null>(null);
-
-  const quizRef = useMemo(() => doc(db, 'quizzes', quizId as string), [db, quizId]);
-  const { data: quiz, isLoading: isQuizLoading } = useDoc<Quiz>(quizRef);
+  const [quizData, setQuizData] = useState<Quiz | null>(null);
+  const [isQuizLoading, setIsQuizLoading] = useState(true);
 
   useEffect(() => {
-    if (quiz) {
-      const fetchQuestions = async () => {
-        try {
-            const questionsQuery = query(collection(db, `quizzes/${quizId}/questions`), orderBy('order', 'asc'));
-            const questionsSnap = await getDocs(questionsQuery);
-            setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
-        } catch (e) {
-            console.error("Erreur chargement questions:", e);
-        }
-      };
-      fetchQuestions();
-    }
-  }, [quiz, db, quizId]);
+    if (!quizId) return;
 
-  const isLoading = isQuizLoading || questions.length === 0;
+    const fetchQuizAndQuestions = async () => {
+      setIsQuizLoading(true);
+      try {
+        // 1. Trouver le quiz via collectionGroup (car il est imbriqué dans courses/sections)
+        const quizQuery = query(collectionGroup(db, 'quizzes'), where('id', '==', quizId));
+        const quizSnap = await getDocs(quizQuery);
+        
+        if (quizSnap.empty) {
+          toast({ variant: 'destructive', title: "Quiz introuvable" });
+          return;
+        }
+
+        const quizDoc = quizSnap.docs[0];
+        const data = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
+        setQuizData(data);
+
+        // 2. Charger les questions de ce quiz
+        const questionsQuery = query(collection(quizDoc.ref, 'questions'), orderBy('order', 'asc'));
+        const questionsSnap = await getDocs(questionsQuery);
+        setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
+      } catch (e) {
+        console.error("Erreur chargement quiz:", e);
+      } finally {
+        setIsQuizLoading(false);
+      }
+    };
+
+    fetchQuizAndQuestions();
+  }, [quizId, db, toast]);
+
+  const isLoading = isQuizLoading || (questions.length === 0 && !finalScore);
 
   const handleAnswerSelect = (optionIndex: number) => {
     const currentQuestionId = questions[currentQuestionIndex].id;
@@ -82,7 +103,6 @@ export default function TakeQuizPage() {
     setIsSubmitting(true);
     let score = 0;
     questions.forEach(q => {
-      // @ts-ignore
       const correctIndex = q.options.findIndex(opt => opt.isCorrect);
       if (answers[q.id] === correctIndex) {
         score++;
@@ -106,9 +126,9 @@ export default function TakeQuizPage() {
         id: attemptId,
         studentId: user.uid,
         quizId,
-        quizTitle: quiz?.title || 'Quiz',
-        courseId,
-        courseTitle: quiz?.title || 'Formation',
+        quizTitle: quizData?.title || 'Quiz',
+        courseId: quizData?.courseId || '',
+        courseTitle: quizData?.title || 'Formation',
         answers,
         score: percentageScore,
         submittedAt: serverTimestamp(),
@@ -133,14 +153,14 @@ export default function TakeQuizPage() {
                   <CardHeader className="pt-10">
                       <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
                       <CardTitle className="text-2xl font-black text-white uppercase tracking-tight">Résultats du Quiz</CardTitle>
-                      <CardDescription className="text-slate-400 font-medium">{quiz?.title}</CardDescription>
+                      <CardDescription className="text-slate-400 font-medium">{quizData?.title}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 pb-10">
                       <p className={cn("text-7xl font-black tracking-tighter", finalScore >= 70 ? "text-green-400" : "text-amber-400")}>{finalScore}%</p>
                       <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{finalScore >= 70 ? "Félicitations, vous avez réussi !" : "Vous pouvez faire mieux, réessayez !"}</p>
                   </CardContent>
                   <CardFooter className="flex flex-col gap-3 p-6 bg-slate-950/50 border-t border-white/5">
-                      <Button onClick={() => router.push(`/student/courses/${courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl">
+                      <Button onClick={() => router.push(`/student/courses/${quizData?.courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl">
                           Retourner au cours
                       </Button>
                       <Button variant="ghost" onClick={() => {
@@ -163,7 +183,7 @@ export default function TakeQuizPage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="text-center overflow-hidden">
-            <h1 className="text-sm font-bold text-white uppercase tracking-widest truncate max-w-[200px]">{quiz?.title}</h1>
+            <h1 className="text-sm font-bold text-white uppercase tracking-widest truncate max-w-[200px]">{quizData?.title}</h1>
             <p className="text-[10px] font-black text-primary uppercase mt-0.5 tracking-tighter">Question {currentQuestionIndex + 1} / {questions.length}</p>
         </div>
         <div className="w-10" />
@@ -213,7 +233,7 @@ export default function TakeQuizPage() {
                 </Button>
             ) : (
                 <Button onClick={handleSubmit} disabled={isSubmitting || answers[currentQuestion?.id] === undefined} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 active:scale-95 transition-all">
-                    {isSubmitting ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : null}
+                    {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin"/> : null}
                     Valider mon Quiz
                 </Button>
             )}

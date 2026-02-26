@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Universal.
- * Intègre désormais la possibilité de poser des questions au formateur.
+ * Correction : Recherche des quiz via collectionGroup pour une visibilité totale.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -18,7 +19,8 @@ import {
   orderBy,
   serverTimestamp,
   setDoc,
-  where
+  where,
+  collectionGroup
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
@@ -66,7 +68,11 @@ function CoursePlayerPageContent() {
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
   const { data: courseProgress, isLoading: progressLoading } = useDoc<CourseProgress>(progressRef);
   
-  const quizzesQuery = useMemo(() => courseId ? query(collection(db, 'quizzes'), where('courseId', '==', courseId)) : null, [db, courseId]);
+  // ✅ Correction : Utilisation de collectionGroup pour trouver tous les quiz liés à ce cours
+  const quizzesQuery = useMemo(() => 
+    courseId ? query(collectionGroup(db, 'quizzes'), where('courseId', '==', courseId)) : null, 
+    [db, courseId]
+  );
   const { data: quizzes, isLoading: quizzesLoading } = useCollection<Quiz>(quizzesQuery);
 
   useEffect(() => {
