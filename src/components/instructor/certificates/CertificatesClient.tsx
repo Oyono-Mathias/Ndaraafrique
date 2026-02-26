@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats décernés (Vue Formateur).
- * Correction Build Vercel : Ajout des propriétés obligatoires au CertificateModal.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -32,7 +32,6 @@ export function CertificatesClient() {
   const [selectedCert, setSelectedCert] = useState<(Enrollment & { student?: NdaraUser; course?: Course; instructorName?: string }) | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 1. Récupération des inscriptions à 100% par instructeur
   const enrollmentsQuery = useMemo(
     () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser]

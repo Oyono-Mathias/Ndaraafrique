@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * Correction Build Vercel : Ajout des props courseId et userId au CertificateModal.
+ * ✅ RÉSOLU : Tri en mémoire pour la robustesse.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -31,7 +32,6 @@ export default function MesCertificatsPage() {
   const [selectedCert, setSelectedCert] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 🛡️ REQUÊTE STABLE : Sans orderBy pour éviter les erreurs d'index pendant le build
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser?.uid]
@@ -66,7 +66,7 @@ export default function MesCertificatsPage() {
                 ...e,
                 student: (currentUser as any) || undefined,
                 course: coursesMap.get(e.courseId) || undefined,
-                instructorName: "Formateur Ndara"
+                instructorName: "Oyono Mathias"
             })).sort((a, b) => {
                 const dateA = (a.lastAccessedAt as any)?.toDate?.() || new Date(0);
                 const dateB = (b.lastAccessedAt as any)?.toDate?.() || new Date(0);

@@ -2,22 +2,21 @@
 
 /**
  * @fileOverview Annuaire communautaire Ndara Afrique.
- * Optimisation : Tri en mémoire pour éviter les erreurs d'index Firestore et visibilité accrue.
+ * ✅ FILTRAGE : Affiche uniquement les membres ayant au moins un cours en commun.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, where, getDocs, documentId, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { startChat } from '@/lib/chat';
 import { useToast } from '@/hooks/use-toast';
-import type { NdaraUser } from '@/lib/types';
+import type { NdaraUser, Enrollment } from '@/lib/types';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MessageSquare, Loader2, Users, Sparkles } from 'lucide-react';
+import { Search, MessageSquare, Loader2, Users, Sparkles, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function AnnuairePage() {
@@ -28,34 +27,77 @@ export default function AnnuairePage() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [isContacting, setIsContacting] = useState<string | null>(null);
+    const [commonMembers, setCommonMembers] = useState<NdaraUser[]>([]);
+    const [isLoadingData, setIsLoadingData] = useState(true);
 
-    // 🛡️ REQUÊTE ROBUSTE : On récupère les 100 derniers inscrits sans filtre complexe pour garantir l'affichage
-    const membersQuery = useMemo(() => {
-        return query(
-            collection(db, 'users'),
-            limit(100)
-        );
-    }, [db]);
+    useEffect(() => {
+        if (!currentUser?.uid) return;
 
-    const { data: allMembers, isLoading: membersLoading } = useCollection<NdaraUser>(membersQuery);
+        const fetchCommonMembers = async () => {
+            setIsLoadingData(true);
+            try {
+                // 1. Trouver mes cours
+                const myEnrollmentsSnap = await getDocs(query(
+                    collection(db, 'enrollments'),
+                    where('studentId', '==', currentUser.uid)
+                ));
+                
+                const myCourseIds = myEnrollmentsSnap.docs.map(d => d.data().courseId);
 
-    // 💎 FILTRAGE ET TRI EN MÉMOIRE (Évite les erreurs d'index Firestore)
+                if (myCourseIds.length === 0) {
+                    setCommonMembers([]);
+                    setIsLoadingData(false);
+                    return;
+                }
+
+                // 2. Trouver les autres étudiants dans ces cours (limité aux 10 premiers cours pour Firestore 'in')
+                const othersEnrollmentsSnap = await getDocs(query(
+                    collection(db, 'enrollments'),
+                    where('courseId', 'in', myCourseIds.slice(0, 10)),
+                    limit(100)
+                ));
+
+                const otherStudentIds = [...new Set(othersEnrollmentsSnap.docs
+                    .map(d => d.data().studentId)
+                    .filter(id => id !== currentUser.uid)
+                )];
+
+                if (otherStudentIds.length === 0) {
+                    setCommonMembers([]);
+                    setIsLoadingData(false);
+                    return;
+                }
+
+                // 3. Récupérer les profils de ces étudiants
+                const usersSnap = await getDocs(query(
+                    collection(db, 'users'),
+                    where(documentId(), 'in', otherStudentIds.slice(0, 30))
+                ));
+
+                setCommonMembers(usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+            } catch (error) {
+                console.error("Error fetching common members:", error);
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+
+        fetchCommonMembers();
+    }, [currentUser?.uid, db]);
+
     const filteredMembers = useMemo(() => {
-        if (!allMembers) return [];
-        
-        let list = allMembers.filter(m => m.uid !== currentUser?.uid);
+        if (!commonMembers) return [];
+        let list = [...commonMembers];
         
         if (searchTerm) {
             list = list.filter(m => 
                 m.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                m.careerGoals?.interestDomain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                m.username?.toLowerCase().includes(searchTerm.toLowerCase())
+                m.careerGoals?.interestDomain?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
 
-        // Tri alphabétique simple
         return list.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
-    }, [allMembers, searchTerm, currentUser?.uid]);
+    }, [commonMembers, searchTerm]);
 
     const handleContact = async (memberId: string) => {
         if (!currentUser) return;
@@ -70,21 +112,21 @@ export default function AnnuairePage() {
         }
     };
 
-    const isLoading = isUserLoading || membersLoading;
+    const isLoading = isUserLoading || isLoadingData;
 
     return (
         <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
             <header className="px-4 pt-8 space-y-4">
                 <div className="flex items-center gap-2 text-primary">
-                    <Sparkles className="h-5 w-5" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Communauté</span>
+                    <Users className="h-5 w-5" />
+                    <span className="text-[10px] font-black uppercase tracking-widest">Ma Communauté</span>
                 </div>
-                <h1 className="text-3xl font-black text-white leading-tight">Annuaire des <br/><span className="text-primary">Ndara</span></h1>
+                <h1 className="text-3xl font-black text-white leading-tight">Mes collègues de <br/><span className="text-primary">formation</span></h1>
                 
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-600" />
                     <Input
-                        placeholder="Chercher un Ndara ou un domaine..."
+                        placeholder="Chercher un nom ou un domaine..."
                         className="h-14 pl-12 bg-slate-900 border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-primary/30"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
@@ -95,7 +137,7 @@ export default function AnnuairePage() {
             <div className="px-4 space-y-4">
                 {isLoading ? (
                     <div className="grid gap-4">
-                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-900" />)}
+                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-900" />)}
                     </div>
                 ) : filteredMembers.length > 0 ? (
                     <div className="grid gap-4 animate-in fade-in duration-500">
@@ -108,7 +150,7 @@ export default function AnnuairePage() {
                                 <div className="flex-1 min-w-0">
                                     <h3 className="font-bold text-white text-base truncate">{member.fullName || 'Membre Ndara'}</h3>
                                     <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase mt-1">
-                                        {member.careerGoals?.interestDomain || 'Apprenant'}
+                                        {member.careerGoals?.interestDomain || 'Étudiant'}
                                     </Badge>
                                 </div>
                                 <Button 
@@ -124,8 +166,8 @@ export default function AnnuairePage() {
                     </div>
                 ) : (
                     <div className="py-20 text-center flex flex-col items-center opacity-30">
-                        <Users className="h-16 w-16 mb-4 text-slate-600" />
-                        <p className="text-sm font-black uppercase tracking-widest text-slate-500">Aucun membre trouvé</p>
+                        <BookOpen className="h-16 w-16 mb-4 text-slate-600" />
+                        <p className="text-sm font-black uppercase tracking-widest text-slate-500 max-w-[250px]">Inscrivez-vous à des cours pour voir vos collègues.</p>
                     </div>
                 )}
             </div>

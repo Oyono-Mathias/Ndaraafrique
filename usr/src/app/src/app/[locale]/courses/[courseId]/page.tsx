@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours (Copie de sécurité synchronisée).
- * Correction Build Vercel : Ajout des paramètres obligatoires courseId et userId.
+ * @fileOverview Lecteur de cours (Copie de secours synchronisée).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (Ajout courseId et userId).
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useDoc, useCollection } from '@/firebase';
 import { useRole } from '@/context/RoleContext';
 import {
