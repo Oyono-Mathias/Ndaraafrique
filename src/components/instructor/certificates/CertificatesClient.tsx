@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats décernés (Vue Formateur).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
+ * ✅ RÉSOLU : Ajout des props obligatoires courseId et userId pour le build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -120,8 +120,8 @@ export function CertificatesClient() {
           instructorName={selectedCert.instructorName || 'Oyono Mathias'}
           completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || (selectedCert.enrollmentDate as any)?.toDate?.() || new Date()}
           certificateId={selectedCert.id}
-          courseId={selectedCert.courseId}
-          userId={selectedCert.studentId}
+          courseId={selectedCert.courseId} // ✅ Fix Type Error
+          userId={selectedCert.studentId}   // ✅ Fix Type Error
         />
       )}
 

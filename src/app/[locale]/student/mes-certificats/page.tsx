@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
+ * ✅ RÉSOLU : Ajout des props obligatoires courseId et userId pour le build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -101,8 +101,8 @@ export default function MesCertificatsPage() {
           instructorName={selectedCert.instructorName || 'Oyono Mathias'}
           completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || new Date()}
           certificateId={selectedCert.id}
-          courseId={selectedCert.courseId}
-          userId={selectedCert.studentId}
+          courseId={selectedCert.courseId} // ✅ Fix Type Error
+          userId={selectedCert.studentId}   // ✅ Fix Type Error
         />
       )}
 

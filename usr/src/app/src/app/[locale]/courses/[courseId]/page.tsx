@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique (Optimisé avec Plyr).
- * ✅ RÉSOLU : Utilisation de Plyr pour une lecture YouTube parfaite.
+ * ✅ RÉSOLU : Extraction automatique de l'ID YouTube pour Plyr.
  * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
  */
 
@@ -34,6 +34,15 @@ import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
 // Import Plyr
 import 'plyr/dist/plyr.css';
+
+/**
+ * Extrait l'ID d'une vidéo YouTube.
+ */
+function getYouTubeID(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : url;
+}
 
 function CoursePlayerPageContent() {
   const { courseId } = useParams();
@@ -175,8 +184,8 @@ function CoursePlayerPageContent() {
         instructorName={instructor?.fullName || 'Oyono Mathias'}
         completionDate={completionDate}
         certificateId={`${user?.uid}_${courseId}`}
-        courseId={courseId as string}
-        userId={user?.uid || ''}
+        courseId={courseId as string} // ✅ Fix Type Error
+        userId={user?.uid || ''}       // ✅ Fix Type Error
       />
        <div className="flex flex-col h-screen bg-black">
         <div className="flex flex-1 overflow-hidden">
@@ -198,9 +207,10 @@ function CoursePlayerPageContent() {
                   ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
                     <div className="absolute inset-0">
                        <div 
+                          key={activeLecture.id} // ✅ Force re-init pour Plyr
                           className="ndara-plyr-player-alt" 
                           data-plyr-provider="youtube" 
-                          data-plyr-embed-id={activeLecture.contentUrl}
+                          data-plyr-embed-id={getYouTubeID(activeLecture.contentUrl)}
                         ></div>
                     </div>
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (

@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Universal (Optimisé avec Plyr).
- * ✅ RÉSOLU : Utilisation de Plyr pour une lecture YouTube parfaite.
+ * @fileOverview Lecteur de cours Ndara Afrique.
+ * ✅ RÉSOLU : Extraction automatique de l'ID YouTube pour Plyr.
  * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
  */
 
@@ -36,6 +36,15 @@ import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
 // Import Plyr
 import 'plyr/dist/plyr.css';
+
+/**
+ * Extrait l'ID d'une vidéo YouTube à partir de n'importe quel format d'URL.
+ */
+function getYouTubeID(url: string) {
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : url;
+}
 
 function CoursePlayerPageContent() {
   const { courseId } = useParams();
@@ -220,9 +229,10 @@ function CoursePlayerPageContent() {
                 {activeLecture.type === 'video' ? (
                   <div className="relative bg-black shadow-2xl overflow-hidden lg:rounded-2xl">
                     <div 
+                      key={activeLecture.id} // ✅ Force le rechargement du DOM pour Plyr
                       className="ndara-plyr-player" 
                       data-plyr-provider="youtube" 
-                      data-plyr-embed-id={activeLecture.contentUrl}
+                      data-plyr-embed-id={getYouTubeID(activeLecture.contentUrl || '')}
                     ></div>
                   </div>
                 ) : activeLecture.type === 'pdf' ? (
