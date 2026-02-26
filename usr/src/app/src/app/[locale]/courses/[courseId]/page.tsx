@@ -153,9 +153,11 @@ function CoursePlayerPageContent() {
         onClose={() => setShowCertificateModal(false)}
         courseName={course?.title || ''}
         studentName={currentUser?.fullName || ''}
-        instructorName={instructor?.fullName || ''}
+        instructorName={instructor?.fullName || 'Oyono Mathias'}
         completionDate={completionDate}
         certificateId={`${user?.uid}_${courseId}`}
+        courseId={courseId as string}
+        userId={user?.uid || ''}
       />
        <div className="flex flex-col h-screen bg-black">
         <div className="flex flex-1 overflow-hidden">
