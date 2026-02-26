@@ -28,7 +28,7 @@ interface AskQuestionModalProps {
 
 /**
  * @fileOverview Modal permettant à l'étudiant de poser une question au formateur.
- * Enregistre la question dans Firestore et notifie l'instructeur.
+ * Résilient : Enregistre la question même si la notification échoue.
  */
 export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, instructorId }: AskQuestionModalProps) {
   const { currentUser } = useRole();
@@ -43,9 +43,21 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
 
   const onSubmit = async (values: z.infer<typeof questionSchema>) => {
     if (!currentUser) return;
+    
+    // Sécurité : Vérifier si l'instructorId est présent
+    if (!instructorId || instructorId === 'none' || instructorId === '') {
+        toast({ 
+            variant: 'destructive', 
+            title: "Action impossible", 
+            description: "Ce cours n'a pas de formateur assigné pour répondre à vos questions." 
+        });
+        return;
+    }
+
     setIsSubmitting(true);
 
     try {
+      // 1. Enregistrement de la question (Priorité absolue)
       await addDoc(collection(db, 'questions'), {
         courseId,
         courseTitle,
@@ -58,18 +70,27 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
         createdAt: serverTimestamp(),
       });
 
-      // Notifier l'instructeur
-      await sendUserNotification(instructorId, {
-        text: `Nouvelle question de ${currentUser.fullName} sur le cours "${courseTitle}".`,
-        link: `/instructor/questions-reponses`,
-        type: 'info'
-      });
+      // 2. Notification de l'instructeur (Optionnelle, ne bloque pas si échec serveur)
+      try {
+          await sendUserNotification(instructorId, {
+            text: `Nouvelle question de ${currentUser.fullName} sur le cours "${courseTitle}".`,
+            link: `/instructor/questions-reponses`,
+            type: 'info'
+          });
+      } catch (notifyError) {
+          console.warn("Question enregistrée mais échec de la notification formateur:", notifyError);
+      }
 
       toast({ title: "Question envoyée !", description: "Le formateur vous répondra prochainement." });
       form.reset();
       onOpenChange(false);
-    } catch (error) {
-      toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'envoyer votre question." });
+    } catch (error: any) {
+      console.error("AskQuestion Error:", error);
+      toast({ 
+        variant: 'destructive', 
+        title: "Erreur d'envoi", 
+        description: "Une erreur technique empêche l'envoi. Vérifiez votre connexion." 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -77,19 +98,19 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800">
-        <DialogHeader>
-          <DialogTitle className="text-white flex items-center gap-2">
+      <DialogContent className="sm:max-w-md bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden">
+        <DialogHeader className="p-6 pb-0">
+          <DialogTitle className="text-white flex items-center gap-2 uppercase tracking-tight font-black">
             <MessageSquare className="h-5 w-5 text-primary" />
             Poser une question
           </DialogTitle>
-          <DialogDescription className="text-slate-400">
+          <DialogDescription className="text-slate-400 text-xs font-medium">
             Votre formateur vous répondra directement dans votre espace "Mes Questions".
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 p-6">
             <FormField
               control={form.control}
               name="questionText"
@@ -99,7 +120,7 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
                     <Textarea 
                       placeholder="Décrivez votre question ou le point qui vous bloque..." 
                       rows={5}
-                      className="bg-slate-800 border-slate-700 text-white resize-none p-4 rounded-xl focus-visible:ring-primary/30"
+                      className="bg-slate-850 border-slate-700 text-white resize-none p-4 rounded-2xl focus-visible:ring-primary/30 text-sm leading-relaxed"
                       {...field}
                     />
                   </FormControl>
@@ -107,9 +128,9 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
                 </FormItem>
               )}
             />
-            <DialogFooter>
-              <Button type="submit" disabled={isSubmitting} className="w-full h-12 rounded-xl bg-primary hover:bg-primary/90 font-bold uppercase text-[10px] tracking-widest shadow-xl">
-                {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+            <DialogFooter className="pt-2">
+              <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all">
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
                 Envoyer ma question
               </Button>
             </DialogFooter>

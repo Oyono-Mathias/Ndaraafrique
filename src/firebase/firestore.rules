@@ -13,14 +13,12 @@ service cloud.firestore {
     }
 
     // --- RÈGLES DE DÉVELOPPEMENT (DÉVERROUILLAGE) ---
-    // Autorise tout pour les utilisateurs connectés pendant la phase de modification
     match /{document=**} {
       allow read, write: if isSignedIn();
     }
 
     // --- PROFIL UTILISATEUR ---
     match /users/{userId} {
-      // Autorise la création de son propre profil
       allow create: if isOwner(userId);
       allow read, update: if isOwner(userId);
       
@@ -31,6 +29,13 @@ service cloud.firestore {
       match /chatHistory/{msgId} {
         allow read, write: if isOwner(userId);
       }
+    }
+
+    // --- QUESTIONS & RÉPONSES ---
+    match /questions/{questionId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId);
+      allow update: if isSignedIn() && request.auth.uid == resource.data.instructorId;
     }
 
     // --- ACCÈS PUBLICS ---
