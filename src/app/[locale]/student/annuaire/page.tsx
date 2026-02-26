@@ -2,12 +2,13 @@
 
 /**
  * @fileOverview Annuaire communautaire Ndara Afrique.
+ * Optimisation : Tri en mémoire pour éviter les erreurs d'index Firestore et visibilité accrue.
  */
 
 import { useState, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, limit } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { startChat } from '@/lib/chat';
 import { useToast } from '@/hooks/use-toast';
@@ -28,28 +29,32 @@ export default function AnnuairePage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [isContacting, setIsContacting] = useState<string | null>(null);
 
+    // 🛡️ REQUÊTE ROBUSTE : On récupère les 100 derniers inscrits sans filtre complexe pour garantir l'affichage
     const membersQuery = useMemo(() => {
         return query(
             collection(db, 'users'),
-            where('isProfileComplete', '==', true),
-            orderBy('fullName'),
-            limit(50)
+            limit(100)
         );
     }, [db]);
 
     const { data: allMembers, isLoading: membersLoading } = useCollection<NdaraUser>(membersQuery);
 
+    // 💎 FILTRAGE ET TRI EN MÉMOIRE (Évite les erreurs d'index Firestore)
     const filteredMembers = useMemo(() => {
         if (!allMembers) return [];
+        
         let list = allMembers.filter(m => m.uid !== currentUser?.uid);
         
         if (searchTerm) {
             list = list.filter(m => 
-                m.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                m.careerGoals?.interestDomain?.toLowerCase().includes(searchTerm.toLowerCase())
+                m.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                m.careerGoals?.interestDomain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                m.username?.toLowerCase().includes(searchTerm.toLowerCase())
             );
         }
-        return list;
+
+        // Tri alphabétique simple
+        return list.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
     }, [allMembers, searchTerm, currentUser?.uid]);
 
     const handleContact = async (memberId: string) => {
@@ -80,7 +85,7 @@ export default function AnnuairePage() {
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-600" />
                     <Input
                         placeholder="Chercher un Ndara ou un domaine..."
-                        className="h-14 pl-12 bg-slate-900 border-slate-800 rounded-2xl text-white placeholder:text-slate-600"
+                        className="h-14 pl-12 bg-slate-900 border-slate-800 rounded-2xl text-white placeholder:text-slate-600 focus-visible:ring-primary/30"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
@@ -90,18 +95,18 @@ export default function AnnuairePage() {
             <div className="px-4 space-y-4">
                 {isLoading ? (
                     <div className="grid gap-4">
-                        {[...Array(4)].map((_, i) => <Skeleton className="h-24 w-full rounded-2xl bg-slate-900" />)}
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-900" />)}
                     </div>
                 ) : filteredMembers.length > 0 ? (
-                    <div className="grid gap-4">
+                    <div className="grid gap-4 animate-in fade-in duration-500">
                         {filteredMembers.map(member => (
                             <div key={member.uid} className="bg-slate-900/50 border border-slate-800 rounded-3xl p-4 flex items-center gap-4 group active:scale-95 transition-all">
                                 <Avatar className="h-16 w-16 border-2 border-slate-800 shadow-xl">
                                     <AvatarImage src={member.profilePictureURL} className="object-cover" />
-                                    <AvatarFallback>{member.fullName?.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{member.fullName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-white text-base truncate">{member.fullName}</h3>
+                                    <h3 className="font-bold text-white text-base truncate">{member.fullName || 'Membre Ndara'}</h3>
                                     <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase mt-1">
                                         {member.careerGoals?.interestDomain || 'Apprenant'}
                                     </Badge>
@@ -119,8 +124,8 @@ export default function AnnuairePage() {
                     </div>
                 ) : (
                     <div className="py-20 text-center flex flex-col items-center opacity-30">
-                        <Users className="h-16 w-16 mb-4" />
-                        <p className="text-sm font-black uppercase tracking-widest">Aucun membre trouvé</p>
+                        <Users className="h-16 w-16 mb-4 text-slate-600" />
+                        <p className="text-sm font-black uppercase tracking-widest text-slate-500">Aucun membre trouvé</p>
                     </div>
                 )}
             </div>

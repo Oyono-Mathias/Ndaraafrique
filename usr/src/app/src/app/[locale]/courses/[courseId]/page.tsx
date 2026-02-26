@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours (Copie de sécurité synchronisée).
- * Correction : Ajout des paramètres courseId et userId au CertificateModal pour le build Vercel.
+ * Correction Build Vercel : Ajout des paramètres obligatoires courseId et userId.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';

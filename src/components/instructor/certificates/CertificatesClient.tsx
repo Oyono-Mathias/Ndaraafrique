@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Liste des certificats de l'étudiant optimisée pour les formateurs.
- * Correction : Ajout des propriétés obligatoires courseId et userId au CertificateModal.
+ * @fileOverview Liste des certificats décernés (Vue Formateur).
+ * Correction Build Vercel : Ajout des propriétés obligatoires au CertificateModal.
  */
 
 import { useState, useMemo, useEffect } from 'react';

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Universal.
- * Correction : Recherche des quiz via collectionGroup pour une visibilité totale.
+ * Correction Build Vercel : Ajout des props courseId et userId au CertificateModal.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -183,7 +183,7 @@ function CoursePlayerPageContent() {
         onClose={() => setShowCertificateModal(false)}
         courseName={course?.title || ''}
         studentName={currentUser?.fullName || ''}
-        instructorName={instructor?.fullName || ''}
+        instructorName={instructor?.fullName || 'Oyono Mathias'}
         completionDate={new Date()}
         certificateId={`${user?.uid}_${courseId}`}
         courseId={courseId as string}

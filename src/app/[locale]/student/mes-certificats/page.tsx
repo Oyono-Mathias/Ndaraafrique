@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * ✅ RÉSOLU : Erreur de build Vercel (Propriétés manquantes dans CertificateModal).
- * ✅ RÉSOLU : Stabilité de l'affichage avec tri en mémoire.
+ * Correction Build Vercel : Ajout des props courseId et userId au CertificateModal.
  */
 
 import { useState, useMemo, useEffect } from 'react';
