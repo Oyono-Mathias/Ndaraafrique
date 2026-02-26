@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,12 +12,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Frown, ClipboardCheck } from 'lucide-react';
+import { Edit, Frown, ClipboardCheck, PlusCircle, ArrowRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { GradingModal } from './GradingModal';
 import type { AssignmentSubmission, Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 export function AssignmentsClient() {
   const db = getFirestore();
@@ -68,6 +70,16 @@ export function AssignmentsClient() {
     <>
       <GradingModal submission={selectedSubmission} isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
       
+      <div className="flex justify-end mb-6">
+          <Button asChild className="h-12 rounded-xl bg-slate-900 border-slate-800 hover:bg-slate-800 text-white font-bold gap-2">
+              <Link href="/instructor/courses">
+                  <PlusCircle className="h-4 w-4 text-primary" />
+                  Créer un devoir (via l'éditeur de cours)
+                  <ArrowRight className="h-4 w-4 ml-1 opacity-50" />
+              </Link>
+          </Button>
+      </div>
+
       <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
         <CardContent className="p-6 space-y-6">
           <div className="flex flex-col sm:flex-row gap-4 items-end">
