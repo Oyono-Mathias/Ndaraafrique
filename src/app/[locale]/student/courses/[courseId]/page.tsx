@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Universal (YouTube Optimisé).
- * ✅ RÉSOLU : Support total des vidéos YouTube via ReactPlayer.
+ * ✅ RÉSOLU : Support total des vidéos YouTube (Correction écran noir).
  * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
@@ -47,7 +47,7 @@ function CoursePlayerPageContent() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const [hasWindow, setHasWindow] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
@@ -56,7 +56,7 @@ function CoursePlayerPageContent() {
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
   useEffect(() => {
-    setHasWindow(true);
+    setIsMounted(true);
   }, []);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
@@ -206,17 +206,17 @@ function CoursePlayerPageContent() {
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
                 {activeLecture.type === 'video' ? (
                   <div className="relative pt-[56.25%] bg-black shadow-2xl overflow-hidden lg:rounded-2xl">
-                    {hasWindow && activeLecture.contentUrl && (
+                    {isMounted && activeLecture.contentUrl && (
                       <ReactPlayer
                         url={activeLecture.contentUrl}
                         width="100%"
                         height="100%"
                         className="absolute top-0 left-0"
                         controls
-                        pip
+                        playing={false}
                         config={{ 
                           youtube: {
-                            playerVars: { showinfo: 1, rel: 0 }
+                            playerVars: { rel: 0 }
                           }
                         }}
                       />

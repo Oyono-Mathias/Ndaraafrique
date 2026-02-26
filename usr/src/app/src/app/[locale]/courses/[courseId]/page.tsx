@@ -3,7 +3,7 @@
 /**
  * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours synchronisée).
  * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
- * ✅ RÉSOLU : Support YouTube complet.
+ * ✅ RÉSOLU : Support YouTube complet (Correction écran noir).
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -41,11 +41,16 @@ function CoursePlayerPageContent() {
   const db = getFirestore();
   const { toast } = useToast();
 
+  const [isMounted, setIsMounted] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -181,17 +186,20 @@ function CoursePlayerPageContent() {
                       <PdfViewerClient fileUrl={course.ebookUrl} />
                   ) : activeLecture?.type === 'video' && activeLecture.contentUrl ? (
                     <div className="absolute inset-0">
-                       <ReactPlayer
-                           url={activeLecture.contentUrl}
-                           width="100%"
-                           height="100%"
-                           controls={true}
-                           config={{
-                             youtube: {
-                               playerVars: { rel: 0, showinfo: 1 }
-                             }
-                           }}
-                       />
+                       {isMounted && (
+                         <ReactPlayer
+                             url={activeLecture.contentUrl}
+                             width="100%"
+                             height="100%"
+                             controls={true}
+                             playing={false}
+                             config={{
+                               youtube: {
+                                 playerVars: { rel: 0 }
+                               }
+                             }}
+                         />
+                       )}
                     </div>
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (
                       <div className="p-8 text-slate-300 prose prose-invert max-w-none">

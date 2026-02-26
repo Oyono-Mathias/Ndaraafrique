@@ -1,3 +1,6 @@
+git add .
+git commit -m "fix: total build resolution and youtube player optimization"
+git push origin main
 
 
 # 🚀 Ndara Afrique - Plateforme d'E-learning Pan-Africaine
