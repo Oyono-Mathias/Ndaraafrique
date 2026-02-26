@@ -56,7 +56,6 @@ export function CertificatesClient() {
 
         const studentsMap = new Map<string, NdaraUser>();
         const coursesMap = new Map<string, Course>();
-        const instructorsMap = new Map<string, string>();
 
         if (studentIds.length > 0) {
           for (let i = 0; i < studentIds.length; i += 30) {
@@ -80,7 +79,7 @@ export function CertificatesClient() {
                 ...e,
                 student: studentsMap.get(e.studentId),
                 course: course,
-                instructorName: currentUser?.fullName || "Formateur Ndara"
+                instructorName: currentUser?.fullName || "Oyono Mathias"
             };
         }).sort((a, b) => {
             const dateA = (a.lastAccessedAt as any)?.toDate?.() || (a.enrollmentDate as any)?.toDate?.() || new Date(0);
@@ -97,7 +96,7 @@ export function CertificatesClient() {
     };
 
     enrichData();
-  }, [enrollments, enrollmentsLoading, db, currentUser?.fullName]);
+  }, [enrollments, enrollmentsLoading, db, currentUser]);
 
   const filteredCerts = useMemo(() => {
     return enrichedCertificates.filter(c => 
@@ -119,9 +118,11 @@ export function CertificatesClient() {
           onClose={() => setIsModalOpen(false)}
           courseName={selectedCert.course?.title || ''}
           studentName={selectedCert.student?.fullName || 'Étudiant Ndara'}
-          instructorName={selectedCert.instructorName || 'Formateur Ndara'}
+          instructorName={selectedCert.instructorName || 'Oyono Mathias'}
           completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || (selectedCert.enrollmentDate as any)?.toDate?.() || new Date()}
           certificateId={selectedCert.id}
+          courseId={selectedCert.courseId}
+          userId={selectedCert.studentId}
         />
       )}
 
