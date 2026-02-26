@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Lecteur YouTube masqué (White Label).
+ * ✅ HYBRIDE : Supporte YouTube (Iframe masquée) et les fichiers MP4 directs (Firebase Storage).
  * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
@@ -24,7 +25,7 @@ import {
 } from 'firebase/firestore';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, MessageSquare } from 'lucide-react';
+import { Loader2, Bot, Play, MessageSquare, AlertCircle } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
 import { YoutubePlayer } from '@/components/ui/youtube-player';
@@ -92,9 +93,9 @@ function CoursePlayerPageContent() {
                 if (found) { startLecture = found; break; }
             }
         }
-        if (!startLecture && courseProgress?.lastLessonId) {
+        if (!startLecture && (courseProgress as any)?.lastLessonId) {
             for (const list of lMap.values()) {
-                const found = list.find(l => l.id === courseProgress.lastLessonId);
+                const found = list.find(l => l.id === (courseProgress as any).lastLessonId);
                 if (found) { startLecture = found; break; }
             }
         }
@@ -121,7 +122,7 @@ function CoursePlayerPageContent() {
   const handleMarkComplete = async () => {
     if (!user || !activeLecture || !course || !progressRef || totalLecturesCount === 0) return;
     
-    const completed = courseProgress?.completedLessons || [];
+    const completed = (courseProgress as any)?.completedLessons || [];
     if (!completed.includes(activeLecture.id)) {
       const updated = [...completed, activeLecture.id];
       const percent = Math.round((updated.length / totalLecturesCount) * 100);
@@ -168,7 +169,7 @@ function CoursePlayerPageContent() {
     );
   }
 
-  const completedLessons = courseProgress?.completedLessons || [];
+  const completedLessons = (courseProgress as any)?.completedLessons || [];
 
   return (
     <>
@@ -180,7 +181,7 @@ function CoursePlayerPageContent() {
         instructorName={instructor?.fullName || 'Oyono Mathias'}
         completionDate={new Date()}
         certificateId={`${user?.uid}_${courseId}`}
-        courseId={courseId as string}
+        courseId={(courseId as string)}
         userId={user?.uid || ''}
       />
 
@@ -198,7 +199,19 @@ function CoursePlayerPageContent() {
             {activeLecture ? (
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
                 {activeLecture.type === 'video' ? (
-                  <YoutubePlayer url={activeLecture.contentUrl || ''} />
+                  activeLecture.contentUrl?.includes('youtube') || activeLecture.contentUrl?.includes('youtu.be') ? (
+                    <YoutubePlayer url={activeLecture.contentUrl || ''} />
+                  ) : (
+                    <div className="w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+                        <video 
+                            src={activeLecture.contentUrl} 
+                            className="w-full h-full object-contain" 
+                            controls 
+                            playsInline
+                            controlsList="nodownload"
+                        />
+                    </div>
+                  )
                 ) : activeLecture.type === 'pdf' ? (
                   <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden">
                     <PdfViewerClient fileUrl={activeLecture.contentUrl || ''} />

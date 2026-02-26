@@ -2,8 +2,8 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours).
- * ✅ RÉSOLU : Passage en mode nocookie et support des Shorts.
+ * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours synchronisée).
+ * ✅ HYBRIDE : Supporte YouTube et les fichiers MP4 directs.
  * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
@@ -25,7 +25,7 @@ import {
 } from 'firebase/firestore';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, MessageSquare } from 'lucide-react';
+import { Loader2, Bot, Play, MessageSquare } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
 import { YoutubePlayer } from '@/components/ui/youtube-player';
@@ -181,7 +181,7 @@ function CoursePlayerPageContent() {
         instructorName={instructor?.fullName || 'Oyono Mathias'}
         completionDate={new Date()}
         certificateId={`${user?.uid}_${courseId}`}
-        courseId={courseId as string}
+        courseId={(courseId as string)}
         userId={user?.uid || ''}
       />
 
@@ -199,7 +199,19 @@ function CoursePlayerPageContent() {
             {activeLecture ? (
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
                 {activeLecture.type === 'video' ? (
-                  <YoutubePlayer url={activeLecture.contentUrl || ''} />
+                  activeLecture.contentUrl?.includes('youtube') || activeLecture.contentUrl?.includes('youtu.be') ? (
+                    <YoutubePlayer url={activeLecture.contentUrl || ''} />
+                  ) : (
+                    <div className="w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+                        <video 
+                            src={activeLecture.contentUrl} 
+                            className="w-full h-full object-contain" 
+                            controls 
+                            playsInline
+                            controlsList="nodownload"
+                        />
+                    </div>
+                  )
                 ) : activeLecture.type === 'pdf' ? (
                   <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden">
                     <PdfViewerClient fileUrl={activeLecture.contentUrl || ''} />
