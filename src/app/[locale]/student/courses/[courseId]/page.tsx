@@ -1,10 +1,8 @@
-
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Universal - Version Ultra-Moderne.
- * Structure 70/30 avec Sidebar interactive et gestion d'état fluide.
- * Design Dark-Mode par défaut.
+ * @fileOverview Lecteur de cours Ndara Universal.
+ * Intègre désormais la possibilité de poser des questions au formateur.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -20,14 +18,14 @@ import {
   orderBy,
   serverTimestamp,
   setDoc,
-  where,
-  updateDoc
+  where
 } from 'firebase/firestore';
 import dynamic from 'next/dynamic';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, CheckCircle, Bot, Play, BookOpen, ChevronRight, Lock, Award, ArrowLeft } from 'lucide-react';
+import { Loader2, CheckCircle, Bot, Play, MessageSquare } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
+import { AskQuestionModal } from '@/components/modals/ask-question-modal';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CourseSidebar } from '@/components/CourseSidebar'; 
@@ -35,7 +33,6 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 
-// Import dynamique du lecteur pour éviter les erreurs SSR
 const ReactPlayer = dynamic(() => import('react-player/lazy'), { ssr: false });
 
 function CoursePlayerPageContent() {
@@ -53,6 +50,7 @@ function CoursePlayerPageContent() {
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
   useEffect(() => {
@@ -131,7 +129,6 @@ function CoursePlayerPageContent() {
       const percent = Math.round((updated.length / totalLecturesCount) * 100);
       
       try {
-        // 1. Mise à jour de la progression détaillée
         await setDoc(progressRef, {
           userId: user.uid,
           courseId: courseId,
@@ -144,7 +141,6 @@ function CoursePlayerPageContent() {
           updatedAt: serverTimestamp(),
         }, { merge: true });
 
-        // 2. Synchronisation avec le document d'inscription (essentiel pour les certificats et la liste de cours)
         const enrollmentRef = doc(db, 'enrollments', `${user.uid}_${courseId}`);
         await setDoc(enrollmentRef, {
             progress: percent,
@@ -188,7 +184,15 @@ function CoursePlayerPageContent() {
         certificateId={`${user?.uid}_${courseId}`}
       />
 
-      <div className="flex flex-col lg:flex-row h-screen bg-black overflow-hidden font-sans">
+      <AskQuestionModal 
+        isOpen={showQuestionModal}
+        onOpenChange={setShowQuestionModal}
+        courseId={(courseId as string)}
+        courseTitle={course?.title || ''}
+        instructorId={course?.instructorId || ''}
+      />
+
+      <div className="flex flex-col h-screen bg-black overflow-hidden font-sans">
         <main className="flex-1 flex flex-col min-h-0 bg-[#050505]">
           <div className="flex-1 bg-black flex flex-col justify-center overflow-y-auto">
             {activeLecture ? (
@@ -240,8 +244,15 @@ function CoursePlayerPageContent() {
               <p className="text-[10px] font-bold text-primary uppercase tracking-[0.2em] mt-1">{course?.title}</p>
             </div>
             <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Button 
+                variant="outline" 
+                className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                onClick={() => setShowQuestionModal(true)}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" /> Question
+              </Button>
               <Button variant="secondary" asChild className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400">
-                <a href={`/student/tutor?context=${activeLecture?.id}`}><Bot className="mr-2 h-4 w-4" /> Aide Mathias</a>
+                <a href={`/student/tutor?context=${activeLecture?.id}`}><Bot className="mr-2 h-4 w-4" /> Mathias IA</a>
               </Button>
               {activeLecture && (
                 <Button 
