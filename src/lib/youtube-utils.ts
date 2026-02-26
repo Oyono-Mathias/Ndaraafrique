@@ -4,23 +4,16 @@
 
 /**
  * Extrait l'ID d'une vidéo YouTube depuis n'importe quel format d'URL.
- * Supporte : watch?v=, youtu.be/, embed/, shorts/
+ * Supporte : watch?v=, youtu.be/, embed/, shorts/, m.youtube.com
  */
 export function getYouTubeID(url: string): string | null {
   if (!url) return null;
   
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|shorts\/|&v=)([^#&?]*).*/;
-  const match = url.match(regExp);
+  // Regex exhaustive pour tous les formats YouTube connus (Standard, Shorts, Mobile, Embed)
+  const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+  const match = url.match(regex);
   
-  if (match && match[2].length === 11) {
-    return match[2];
-  }
-  
-  // Regex alternative de secours pour les formats complexes
-  const altRegExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
-  const altMatch = url.match(altRegExp);
-  
-  return altMatch ? altMatch[1] : null;
+  return match ? match[1] : null;
 }
 
 /**
