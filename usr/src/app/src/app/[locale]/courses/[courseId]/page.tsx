@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
+ * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours synchronisée).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (courseId, userId).
+ * ✅ RÉSOLU : Support YouTube complet.
  */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
@@ -185,6 +186,11 @@ function CoursePlayerPageContent() {
                            width="100%"
                            height="100%"
                            controls={true}
+                           config={{
+                             youtube: {
+                               playerVars: { rel: 0, showinfo: 1 }
+                             }
+                           }}
                        />
                     </div>
                   ) : activeLecture?.type === 'text' && activeLecture.textContent ? (

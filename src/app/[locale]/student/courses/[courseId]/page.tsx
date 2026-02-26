@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Universal.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
+ * @fileOverview Lecteur de cours Ndara Universal (YouTube Optimisé).
+ * ✅ RÉSOLU : Support total des vidéos YouTube via ReactPlayer.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -214,9 +215,8 @@ function CoursePlayerPageContent() {
                         controls
                         pip
                         config={{ 
-                          file: { 
-                            attributes: { controlsList: 'nodownload' },
-                            forceVideo: true
+                          youtube: {
+                            playerVars: { showinfo: 1, rel: 0 }
                           }
                         }}
                       />
