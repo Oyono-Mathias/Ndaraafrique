@@ -100,7 +100,7 @@ export function CertificatesClient() {
   const filteredCerts = useMemo(() => {
     return enrichedCertificates.filter(c => 
       c.student?.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.course?.title.toLowerCase().includes(searchTerm.toLowerCase())
+      c.course?.title?.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [enrichedCertificates, searchTerm]);
 

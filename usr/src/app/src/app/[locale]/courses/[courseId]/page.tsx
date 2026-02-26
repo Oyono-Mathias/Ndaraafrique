@@ -46,7 +46,7 @@ function CoursePlayerPageContent() {
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
 
-  // Initialisation Plyr
+  // Initialisation Plyr pour YouTube
   useEffect(() => {
     if (activeLecture?.type === 'video' && typeof window !== 'undefined') {
       let player: any;

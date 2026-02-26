@@ -54,7 +54,7 @@ function CoursePlayerPageContent() {
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
 
-  // Initialisation Plyr
+  // Initialisation Plyr pour YouTube
   useEffect(() => {
     if (activeLecture?.type === 'video' && typeof window !== 'undefined') {
       let player: any;
@@ -112,9 +112,9 @@ function CoursePlayerPageContent() {
                 if (found) { startLecture = found; break; }
             }
         }
-        if (!startLecture && (courseProgress as any)?.lastLessonId) {
+        if (!startLecture && courseProgress?.lastLessonId) {
             for (const list of lMap.values()) {
-                const found = list.find(l => l.id === (courseProgress as any).lastLessonId);
+                const found = list.find(l => l.id === courseProgress.lastLessonId);
                 if (found) { startLecture = found; break; }
             }
         }
@@ -132,7 +132,7 @@ function CoursePlayerPageContent() {
       }
     };
     fetchCurriculum();
-  }, [courseId, db, lessonIdFromUrl, (courseProgress as any)?.lastLessonId]);
+  }, [courseId, db, lessonIdFromUrl, courseProgress?.lastLessonId]);
 
   const totalLecturesCount = useMemo(() => {
     return Array.from(lecturesMap.values()).reduce((acc, curr) => acc + curr.length, 0);
@@ -141,7 +141,7 @@ function CoursePlayerPageContent() {
   const handleMarkComplete = async () => {
     if (!user || !activeLecture || !course || !progressRef || totalLecturesCount === 0) return;
     
-    const completed = (courseProgress as any)?.completedLessons || [];
+    const completed = courseProgress?.completedLessons || [];
     if (!completed.includes(activeLecture.id)) {
       const updated = [...completed, activeLecture.id];
       const percent = Math.round((updated.length / totalLecturesCount) * 100);
@@ -188,7 +188,7 @@ function CoursePlayerPageContent() {
     );
   }
 
-  const completedLessons = (courseProgress as any)?.completedLessons || [];
+  const completedLessons = courseProgress?.completedLessons || [];
 
   return (
     <>
