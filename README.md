@@ -39,7 +39,10 @@ npm run dev
 
 ### Déploiement sur Firebase
 ```bash
-# Pour le frontend (Hosting)
+# Pour le frontend (Hosting)git add .
+git commit -m "fix: total build resolution and hybrid video player support"
+git push origin main
+
 npm run build
 firebase deploy --only hosting
 
