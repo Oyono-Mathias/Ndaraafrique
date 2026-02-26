@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de Plyr pour habiller YouTube.
+ * ✅ RÉSOLU : Utilisation de react-player avec config Premium.
  * ✅ RÉSOLU : Correction Type Error pour build Vercel (CertificateModal props).
  */
 
