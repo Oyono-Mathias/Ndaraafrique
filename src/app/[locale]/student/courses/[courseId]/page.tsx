@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de react-player avec config Premium.
- * ✅ RÉSOLU : Correction Type Error pour build Vercel (CertificateModal props).
+ * ✅ RÉSOLU : Lecteur YouTube masqué (White Label).
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';

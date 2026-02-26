@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Gère le profil public, la bio, les liens sociaux et la photo de profil (Upload + Galerie Avatars).
+ * Gère le profil public, la bio, les liens sociaux et la photo de profil.
+ * ✅ AJOUT : Galerie d'avatars Cartoon Africains.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -38,20 +39,20 @@ const domains = [
     "Autre"
 ];
 
-// ✅ Avatars stylisés avec des seeds reflétant la diversité africaine (Style Cartoon)
+// ✅ Avatars Cartoon reflétant l'élégance africaine
 const PRESET_AVATARS = [
-    { id: 'av1', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Amina' },
-    { id: 'av2', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kwame' },
-    { id: 'av3', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Fatou' },
-    { id: 'av4', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Malik' },
-    { id: 'av5', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Zainab' },
-    { id: 'av6', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Idriss' },
-    { id: 'av7', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Nia' },
-    { id: 'av8', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kofi' },
-    { id: 'av9', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Zola' },
-    { id: 'av10', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jabari' },
-    { id: 'av11', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Sekai' },
-    { id: 'av12', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Thabo' },
+    { id: 'av1', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Amina&skinColor=ae5d29&top=longHair&topColor=2c1b18' },
+    { id: 'av2', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kwame&skinColor=614335&top=shortHair&topColor=2c1b18' },
+    { id: 'av3', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Fatou&skinColor=ae5d29&top=turban&topColor=primary' },
+    { id: 'av4', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Malik&skinColor=614335&top=noHair&facialHair=magnum' },
+    { id: 'av5', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Zainab&skinColor=ae5d29&top=hijab&topColor=614335' },
+    { id: 'av6', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Idriss&skinColor=614335&top=shortCurly&topColor=2c1b18' },
+    { id: 'av7', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Nia&skinColor=ae5d29&top=braids&topColor=2c1b18' },
+    { id: 'av8', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kofi&skinColor=614335&top=shaggyMullet&topColor=2c1b18' },
+    { id: 'av9', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Zola&skinColor=ae5d29&top=bigHair&topColor=2c1b18' },
+    { id: 'av10', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jabari&skinColor=614335&top=shortHair&facialHair=beardLight' },
+    { id: 'av11', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Sekai&skinColor=ae5d29&top=longHairCurly&topColor=2c1b18' },
+    { id: 'av12', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Thabo&skinColor=614335&top=shortHair&topColor=2c1b18' },
 ];
 
 const accountSchema = z.object({
