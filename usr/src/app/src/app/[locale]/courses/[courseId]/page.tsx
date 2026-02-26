@@ -1,5 +1,9 @@
-
 'use client';
+
+/**
+ * @fileOverview Lecteur de cours (Copie de sécurité synchronisée).
+ * Correction : Ajout des paramètres courseId et userId au CertificateModal pour le build Vercel.
+ */
 
 import { useState, useMemo, useEffect, useCallback, Suspense } from 'react';
 import { useParams, useRouter } from 'next/navigation';
@@ -169,6 +173,7 @@ function CoursePlayerPageContent() {
                 quizzes={quizzes || []}
                 activeLecture={activeLecture}
                 onLessonClick={handleLessonClick}
+                completedLessons={(courseProgress as any)?.completedLessons || []}
               />
             </aside>
             <main className="flex-1 flex flex-col bg-black min-h-0">

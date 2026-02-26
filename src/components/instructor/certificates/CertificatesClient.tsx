@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant optimisée pour les formateurs.
- * Affiche la date d'obtention précise et permet la visualisation immédiate.
+ * Correction : Ajout des propriétés obligatoires courseId et userId au CertificateModal.
  */
 
 import { useState, useMemo, useEffect } from 'react';
