@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -6,12 +7,11 @@
  * et l'enregistrement de la performance dans Firestore.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import {
   getFirestore,
-  doc,
   collection,
   query,
   where,
@@ -25,8 +25,7 @@ import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, CheckCircle2, XCircle, Award, Trophy, ChevronRight, HelpCircle } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { Loader2, ArrowLeft, Award, Trophy, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
@@ -47,14 +46,13 @@ export default function TakeQuizPage() {
   const [finalResult, setFinalResult] = useState<{ score: number; total: number; percentage: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 1. Récupération du quiz et de ses questions via collectionGroup
   useEffect(() => {
     if (!quizId) return;
 
     const fetchQuizData = async () => {
       setIsLoading(true);
       try {
-        const quizQuery = query(collectionGroup(db, 'quizzes'), where('__name__', '==', quizId));
+        const quizQuery = query(collectionGroup(db, 'quizzes'), where('id', '==', quizId));
         const quizSnap = await getDocs(quizQuery);
 
         if (quizSnap.empty) {
@@ -67,6 +65,7 @@ export default function TakeQuizPage() {
         const quizData = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuiz(quizData);
 
+        // Fetch questions ordered by 'order'
         const questionsSnap = await getDocs(query(collection(quizDoc.ref, 'questions'), orderBy('order', 'asc')));
         const fetchedQuestions = questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question));
         setQuestions(fetchedQuestions);
@@ -179,7 +178,7 @@ export default function TakeQuizPage() {
             </p>
           </CardContent>
           <CardFooter className="bg-slate-900/50 p-6 flex flex-col gap-3">
-            <Button onClick={() => router.push(`/student/courses/${quiz?.courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-xl active:scale-[0.98] transition-all">
+            <Button onClick={() => router.push(`/student/courses/${quiz?.courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl active:scale-[0.98] transition-all">
               Continuer la formation
             </Button>
             {!isSuccess && (

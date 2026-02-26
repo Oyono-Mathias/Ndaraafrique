@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -13,7 +14,6 @@ import { getFirestore, collection, query, where, getDocs, documentId, doc, setDo
 import { useRole } from '@/context/RoleContext';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Award, Trophy, Share2, Eye, BookOpen, ArrowRight, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -51,7 +51,7 @@ export default function MesCertificatsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const repairPerformed = useRef(false);
 
-  // 1. Stabilisation de la requête Firestore
+  // 1. Stabilisation de la requête Firestore par ID utilisateur unique
   const userId = currentUser?.uid;
   const enrollmentsQuery = useMemo(() =>
     userId ? query(collection(db, 'enrollments'), where('studentId', '==', userId)) : null,
@@ -63,7 +63,7 @@ export default function MesCertificatsPage() {
   const [enrichedData, setEnrichedData] = useState<EnrichedCertificate[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  // 🛡️ Réparation automatique unique pour les anciens certificats
+  // 🛡️ Réparation automatique unique pour les anciens certificats (s'exécute 1 fois)
   useEffect(() => {
     if (!userId || !enrollments || enrollmentsLoading || repairPerformed.current) return;
 
@@ -87,7 +87,7 @@ export default function MesCertificatsPage() {
     checkAndRepair().catch(err => console.warn("Repair error:", err));
   }, [enrollments, userId, db, enrollmentsLoading]);
 
-  // 💎 Enrichissement des données avec filtrage en mémoire pour stabilité
+  // 💎 Enrichissement des données stable en mémoire
   useEffect(() => {
     if (enrollmentsLoading) return;
     
@@ -152,9 +152,7 @@ export default function MesCertificatsPage() {
           completionDate={
             selectedCertificate.lastAccessedAt && typeof (selectedCertificate.lastAccessedAt as any).toDate === 'function'
                 ? (selectedCertificate.lastAccessedAt as any).toDate()
-                : (selectedCertificate.enrollmentDate && typeof (selectedCertificate.enrollmentDate as any).toDate === 'function')
-                    ? (selectedCertificate.enrollmentDate as any).toDate()
-                    : new Date()
+                : new Date()
           }
           certificateId={selectedCertificate.id}
         />
@@ -196,9 +194,7 @@ export default function MesCertificatsPage() {
                             <p className="text-xs text-slate-500 font-medium italic">
                                 Obtenu le {cert.lastAccessedAt && typeof (cert.lastAccessedAt as any).toDate === 'function' 
                                     ? format((cert.lastAccessedAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) 
-                                    : cert.enrollmentDate && typeof (cert.enrollmentDate as any).toDate === 'function'
-                                        ? format((cert.enrollmentDate as any).toDate(), 'dd MMM yyyy', { locale: fr })
-                                        : 'Récemment'}
+                                    : 'Récemment'}
                             </p>
                         </div>
                     </div>
@@ -217,7 +213,7 @@ export default function MesCertificatsPage() {
                             className="h-12 w-12 rounded-xl border-slate-800 bg-slate-900 text-slate-400"
                             onClick={() => {
                                 const url = `${window.location.origin}/verify/${cert.id}`;
-                                window.open(`https://wa.me/?text=Je suis fier de vous partager mon nouveau certificat Ndara Afrique ! Vérifiez-le ici : ${url}`, '_blank');
+                                window.open(`https://wa.me/?text=Je suis fier de vous partager mon nouveau certificat Ndara Afrique !🚀 ${url}`, '_blank');
                             }}
                         >
                             <Share2 className="h-4 w-4" />
