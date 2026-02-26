@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Gère le profil public, la bio, les liens sociaux et la photo de profil.
+ * Gère le profil public, la bio, les liens sociaux et la photo de profil (Upload + Galerie Avatars).
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -23,9 +23,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link as LinkIcon, Sparkles } from 'lucide-react';
+import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link as LinkIcon, Sparkles, Image as ImageIcon } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const domains = [
     "Développement Web",
@@ -35,6 +36,21 @@ const domains = [
     "Entrepreneuriat",
     "AgriTech",
     "Autre"
+];
+
+const PRESET_AVATARS = [
+    { id: 'av1', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Felix' },
+    { id: 'av2', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Aneka' },
+    { id: 'av3', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Buddy' },
+    { id: 'av4', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Molly' },
+    { id: 'av5', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jasper' },
+    { id: 'av6', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Luna' },
+    { id: 'av7', url: 'https://api.dicebear.com/8.x/bottts/svg?seed=NdaraBot1' },
+    { id: 'av8', url: 'https://api.dicebear.com/8.x/bottts/svg?seed=NdaraBot2' },
+    { id: 'av9', url: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Adventure1' },
+    { id: 'av10', url: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Adventure2' },
+    { id: 'av11', url: 'https://api.dicebear.com/8.x/notionists/svg?seed=Ndara1' },
+    { id: 'av12', url: 'https://api.dicebear.com/8.x/notionists/svg?seed=Ndara2' },
 ];
 
 const accountSchema = z.object({
@@ -54,6 +70,7 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<z.infer<typeof accountSchema>>({
@@ -78,6 +95,30 @@ export default function AccountPage() {
   const handleImageClick = () => {
     if (isUploading) return;
     fileInputRef.current?.click();
+  };
+
+  const handleAvatarSelect = async (url: string) => {
+    if (!currentUser || isUploading) return;
+    setIsUploading(true);
+    setIsAvatarModalOpen(false);
+
+    try {
+        const result = await updateUserProfileAction({
+            userId: currentUser.uid,
+            data: { profilePictureURL: url },
+            requesterId: currentUser.uid
+        });
+
+        if (result.success) {
+            toast({ title: "Avatar mis à jour !" });
+        } else {
+            throw new Error(result.error);
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Échec de la mise à jour" });
+    } finally {
+        setIsUploading(false);
+    }
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,9 +224,9 @@ export default function AccountPage() {
           <TabsContent value="profile" className="mt-8 px-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
               <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-                      <div className="flex flex-col items-center gap-4">
+                      <div className="flex flex-col items-center gap-6">
                           <div className="relative group cursor-pointer" onClick={handleImageClick}>
-                              <Avatar className="h-28 w-28 border-4 border-slate-800 shadow-2xl transition-transform group-hover:scale-105">
+                              <Avatar className="h-32 w-32 border-4 border-slate-800 shadow-2xl transition-transform group-hover:scale-105">
                                   <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
                                   <AvatarFallback className="text-3xl bg-slate-800 text-slate-500 font-black">{currentUser.fullName?.charAt(0)}</AvatarFallback>
                               </Avatar>
@@ -194,8 +235,8 @@ export default function AccountPage() {
                                       <Loader2 className="h-8 w-8 animate-spin text-white" />
                                   </div>
                               )}
-                              <div className="absolute bottom-0 right-0 h-9 w-9 rounded-full bg-primary shadow-xl border-4 border-slate-950 flex items-center justify-center text-white">
-                                  <Camera className="h-4 w-4" />
+                              <div className="absolute bottom-0 right-0 h-10 w-10 rounded-full bg-primary shadow-xl border-4 border-slate-950 flex items-center justify-center text-white">
+                                  <Camera className="h-5 w-5" />
                               </div>
                               <input 
                                   type="file" 
@@ -206,7 +247,31 @@ export default function AccountPage() {
                                   disabled={isUploading}
                               />
                           </div>
-                          <p className="text-[10px] font-black uppercase text-slate-600 tracking-widest">Cliquez pour changer la photo</p>
+                          
+                          <Dialog open={isAvatarModalOpen} onOpenChange={setIsAvatarModalOpen}>
+                              <DialogTrigger asChild>
+                                  <Button variant="outline" className="rounded-xl border-slate-800 h-10 px-6 font-bold uppercase text-[10px] tracking-widest gap-2">
+                                      <ImageIcon className="h-4 w-4" />
+                                      Choisir un avatar Ndara
+                                  </Button>
+                              </DialogTrigger>
+                              <DialogContent className="bg-slate-900 border-slate-800 max-w-md rounded-[2rem]">
+                                  <DialogHeader>
+                                      <DialogTitle className="text-xl font-black text-white uppercase tracking-tight">Galerie d'Avatars</DialogTitle>
+                                  </DialogHeader>
+                                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-4 py-6">
+                                      {PRESET_AVATARS.map((av) => (
+                                          <button
+                                              key={av.id}
+                                              onClick={() => handleAvatarSelect(av.url)}
+                                              className="relative aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-primary transition-all active:scale-90"
+                                          >
+                                              <img src={av.url} alt="Avatar" className="w-full h-full object-cover" />
+                                          </button>
+                                      ))}
+                                  </div>
+                              </DialogContent>
+                          </Dialog>
                       </div>
 
                       <div className="grid gap-6">

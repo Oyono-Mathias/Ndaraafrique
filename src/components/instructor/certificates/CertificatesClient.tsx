@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Liste des certificats décernés (Vue Formateur).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel.
+ * ✅ RÉSOLU : Correction Type Error pour build Vercel (Propriétés courseId et userId ajoutées).
  */
 
 import { useState, useMemo, useEffect } from 'react';

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de présentation détaillée d'un cours (Preview).
- * Gère l'inscription instantanée pour les cours gratuits et l'accès permanent.
+ * ✅ RÉSOLU : Build Vercel fix (CertificateModal props).
  */
 
 import { useState, useMemo, useEffect } from 'react';
