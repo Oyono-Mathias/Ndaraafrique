@@ -99,10 +99,11 @@ export default function MesCertificatsPage() {
           onClose={() => setIsModalOpen(false)}
           courseName={selectedCertificate.course?.title || ''}
           studentName={selectedCertificate.student?.fullName || 'Étudiant'}
-          instructorName={selectedCertificate.instructor?.fullName || ''}
-          // ✅ Sécurisation de la date Firestore
+          instructorName={selectedCertificate.instructor?.fullName || 'Oyono Mathias'}
           completionDate={(selectedCertificate.lastAccessedAt as any)?.toDate?.() || new Date()}
           certificateId={selectedCertificate.id}
+          courseId={selectedCertificate.courseId}
+          userId={selectedCertificate.studentId}
         />
       )}
       <header>
@@ -134,7 +135,6 @@ export default function MesCertificatsPage() {
                     </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {/* ✅ Sécurisation de la date Firestore */}
                     {(cert.lastAccessedAt as any)?.toDate?.() 
                         ? format((cert.lastAccessedAt as any).toDate(), 'd MMM yyyy', { locale: fr }) 
                         : 'N/A'}

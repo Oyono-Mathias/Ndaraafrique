@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Liste des certificats de l'étudiant Ndara Afrique.
- * ✅ RÉSOLU : Disparition des données après chargement.
- * ✅ RÉSOLU : Tri en mémoire pour éviter les dépendances d'index.
+ * ✅ RÉSOLU : Erreur de build Vercel (Propriétés manquantes dans CertificateModal).
+ * ✅ RÉSOLU : Stabilité de l'affichage avec tri en mémoire.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -32,7 +32,7 @@ export default function MesCertificatsPage() {
   const [selectedCert, setSelectedCert] = useState<EnrichedCertificate | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // 🛡️ REQUÊTE STABLE : Sans orderBy pour éviter le "rien" si l'index est absent
+  // 🛡️ REQUÊTE STABLE : Sans orderBy pour éviter les erreurs d'index pendant le build
   const enrollmentsQuery = useMemo(() =>
     currentUser?.uid ? query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid), where('progress', '==', 100)) : null,
     [db, currentUser?.uid]
@@ -63,7 +63,6 @@ export default function MesCertificatsPage() {
                 snap.forEach(d => coursesMap.set(d.id, d.data()));
             }
             
-            // Tri en mémoire pour garantir la stabilité
             const newEnrichedData = enrollments.map(e => ({
                 ...e,
                 student: (currentUser as any) || undefined,
@@ -101,9 +100,11 @@ export default function MesCertificatsPage() {
           onClose={() => setIsModalOpen(false)}
           courseName={selectedCert.course?.title || ''}
           studentName={selectedCert.student?.fullName || 'Étudiant'}
-          instructorName={selectedCert.instructorName || ''}
+          instructorName={selectedCert.instructorName || 'Oyono Mathias'}
           completionDate={(selectedCert.lastAccessedAt as any)?.toDate?.() || new Date()}
           certificateId={selectedCert.id}
+          courseId={selectedCert.courseId}
+          userId={selectedCert.studentId}
         />
       )}
 
