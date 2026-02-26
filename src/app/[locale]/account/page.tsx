@@ -38,19 +38,20 @@ const domains = [
     "Autre"
 ];
 
+// ✅ Avatars stylisés avec des seeds reflétant la diversité africaine (Style Cartoon)
 const PRESET_AVATARS = [
-    { id: 'av1', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Felix' },
-    { id: 'av2', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Aneka' },
-    { id: 'av3', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Buddy' },
-    { id: 'av4', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Molly' },
-    { id: 'av5', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jasper' },
-    { id: 'av6', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Luna' },
-    { id: 'av7', url: 'https://api.dicebear.com/8.x/bottts/svg?seed=NdaraBot1' },
-    { id: 'av8', url: 'https://api.dicebear.com/8.x/bottts/svg?seed=NdaraBot2' },
-    { id: 'av9', url: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Adventure1' },
-    { id: 'av10', url: 'https://api.dicebear.com/8.x/adventurer/svg?seed=Adventure2' },
-    { id: 'av11', url: 'https://api.dicebear.com/8.x/notionists/svg?seed=Ndara1' },
-    { id: 'av12', url: 'https://api.dicebear.com/8.x/notionists/svg?seed=Ndara2' },
+    { id: 'av1', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Amina' },
+    { id: 'av2', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kwame' },
+    { id: 'av3', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Fatou' },
+    { id: 'av4', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Malik' },
+    { id: 'av5', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Zainab' },
+    { id: 'av6', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Idriss' },
+    { id: 'av7', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Nia' },
+    { id: 'av8', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kofi' },
+    { id: 'av9', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Zola' },
+    { id: 'av10', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Jabari' },
+    { id: 'av11', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Sekai' },
+    { id: 'av12', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Thabo' },
 ];
 
 const accountSchema = z.object({
@@ -263,6 +264,7 @@ export default function AccountPage() {
                                       {PRESET_AVATARS.map((av) => (
                                           <button
                                               key={av.id}
+                                              type="button"
                                               onClick={() => handleAvatarSelect(av.url)}
                                               className="relative aspect-square rounded-2xl overflow-hidden border-2 border-transparent hover:border-primary transition-all active:scale-90"
                                           >
