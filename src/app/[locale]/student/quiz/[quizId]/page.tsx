@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -27,8 +26,8 @@ import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
 /**
- * @fileOverview Interface de passage de quiz.
- * Correction : Ajout de l'importation 'orderBy' pour le build Vercel.
+ * @fileOverview Interface de passage de quiz optimisée.
+ * Correction Build Vercel : Ajout de l'importation 'orderBy'.
  */
 export default function TakeQuizPage() {
   const params = useParams();
@@ -50,9 +49,13 @@ export default function TakeQuizPage() {
   useEffect(() => {
     if (quiz) {
       const fetchQuestions = async () => {
-        const questionsQuery = query(collection(db, `quizzes/${quizId}/questions`), orderBy('order', 'asc'));
-        const questionsSnap = await getDocs(questionsQuery);
-        setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
+        try {
+            const questionsQuery = query(collection(db, `quizzes/${quizId}/questions`), orderBy('order', 'asc'));
+            const questionsSnap = await getDocs(questionsQuery);
+            setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));
+        } catch (e) {
+            console.error("Erreur chargement questions:", e);
+        }
       };
       fetchQuestions();
     }
@@ -88,7 +91,7 @@ export default function TakeQuizPage() {
     const percentageScore = Math.round((score / questions.length) * 100);
     setFinalScore(percentageScore);
     
-    if (percentageScore >= 50) {
+    if (percentageScore >= 70) {
         confetti({
             particleCount: 150,
             spread: 70,
@@ -98,18 +101,20 @@ export default function TakeQuizPage() {
 
     try {
       const attemptId = `${user.uid}_${quizId}`;
-      const attemptRef = doc(db, `quizzes/${quizId}/attempts`, attemptId);
+      const attemptRef = doc(db, `quiz_submissions`, attemptId);
       await setDoc(attemptRef, {
-        userId: user.uid,
+        id: attemptId,
+        studentId: user.uid,
         quizId,
+        quizTitle: quiz?.title || 'Quiz',
         courseId,
+        courseTitle: quiz?.title || 'Formation',
         answers,
         score: percentageScore,
         submittedAt: serverTimestamp(),
       });
     } catch (error) {
       console.error("Error saving quiz attempt:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder vos résultats.' });
     } finally {
       setIsSubmitting(false);
     }
@@ -118,35 +123,33 @@ export default function TakeQuizPage() {
   const currentQuestion = questions[currentQuestionIndex];
 
   if (isLoading) {
-    return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return <div className="flex h-screen w-full items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
   
   if (finalScore !== null) {
       return (
-          <div className="flex flex-col items-center justify-center h-full p-4">
-              <Card className="w-full max-w-lg text-center dark:bg-slate-800 dark:border-slate-700 rounded-3xl overflow-hidden shadow-2xl">
+          <div className="flex flex-col items-center justify-center h-screen p-4 bg-slate-950">
+              <Card className="w-full max-w-lg text-center bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
                   <CardHeader className="pt-10">
                       <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
                       <CardTitle className="text-2xl font-black text-white uppercase tracking-tight">Résultats du Quiz</CardTitle>
                       <CardDescription className="text-slate-400 font-medium">{quiz?.title}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4 pb-10">
-                      <p className="text-7xl font-black text-primary tracking-tighter">{finalScore}%</p>
-                      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{finalScore >= 50 ? "Félicitations, vous avez réussi !" : "Vous pouvez faire mieux, réessayez !"}</p>
+                      <p className={cn("text-7xl font-black tracking-tighter", finalScore >= 70 ? "text-green-400" : "text-amber-400")}>{finalScore}%</p>
+                      <p className="text-slate-400 font-bold uppercase text-[10px] tracking-widest">{finalScore >= 70 ? "Félicitations, vous avez réussi !" : "Vous pouvez faire mieux, réessayez !"}</p>
                   </CardContent>
-                  <CardFooter className="flex-col gap-3 p-6 bg-slate-900/50 border-t border-white/5">
-                      <Button onClick={() => router.push(`/student/courses/${courseId}`)} className="w-full h-14 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">
+                  <CardFooter className="flex flex-col gap-3 p-6 bg-slate-950/50 border-t border-white/5">
+                      <Button onClick={() => router.push(`/student/courses/${courseId}`)} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl">
                           Retourner au cours
                       </Button>
-                      {finalScore < 100 && (
-                          <Button variant="ghost" onClick={() => {
-                            setFinalScore(null);
-                            setCurrentQuestionIndex(0);
-                            setAnswers({});
-                          }} className="w-full h-12 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
-                            Réessayer le quiz
-                          </Button>
-                      )}
+                      <Button variant="ghost" onClick={() => {
+                        setFinalScore(null);
+                        setCurrentQuestionIndex(0);
+                        setAnswers({});
+                      }} className="w-full h-12 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                        Réessayer le quiz
+                      </Button>
                   </CardFooter>
               </Card>
           </div>
@@ -154,13 +157,13 @@ export default function TakeQuizPage() {
   }
 
   return (
-    <div className="flex flex-col h-full bg-slate-950">
+    <div className="flex flex-col h-screen bg-slate-950">
       <header className="flex items-center justify-between p-4 border-b border-white/5 bg-slate-900/50 backdrop-blur-xl">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-slate-400">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="text-center">
-            <h1 className="text-sm font-bold text-white uppercase tracking-widest line-clamp-1">{quiz?.title}</h1>
+        <div className="text-center overflow-hidden">
+            <h1 className="text-sm font-bold text-white uppercase tracking-widest truncate max-w-[200px]">{quiz?.title}</h1>
             <p className="text-[10px] font-black text-primary uppercase mt-0.5 tracking-tighter">Question {currentQuestionIndex + 1} / {questions.length}</p>
         </div>
         <div className="w-10" />
