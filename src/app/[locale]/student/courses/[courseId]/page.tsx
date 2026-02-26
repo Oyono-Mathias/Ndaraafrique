@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ RÉSOLU : Lecteur YouTube via Iframe Responsive (plus d'écran noir).
+ * ✅ RÉSOLU : Utilisation de nocookie et extraction ID étendue (incl. Shorts).
  * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
@@ -113,7 +113,7 @@ function CoursePlayerPageContent() {
       }
     };
     fetchCurriculum();
-  }, [courseId, db, lessonIdFromUrl, courseProgress?.lastLessonId]);
+  }, [courseId, db, lessonIdFromUrl, courseProgress]);
 
   const totalLecturesCount = useMemo(() => {
     return Array.from(lecturesMap.values()).reduce((acc, curr) => acc + curr.length, 0);

@@ -11,8 +11,9 @@ interface YoutubePlayerProps {
 }
 
 /**
- * Lecteur vidéo YouTube optimisé pour Ndara Afrique.
- * Gère l'extraction d'ID et l'affichage responsive sans écran noir.
+ * Lecteur vidéo YouTube robuste pour Ndara Afrique.
+ * Supporte : watch, youtu.be, embed et Shorts.
+ * Utilise nocookie.com pour contourner les restrictions de compte.
  */
 export function YoutubePlayer({ url, className }: YoutubePlayerProps) {
   const videoId = getYouTubeID(url);
@@ -33,6 +34,8 @@ export function YoutubePlayer({ url, className }: YoutubePlayerProps) {
       <iframe
         src={embedUrl}
         title="Ndara Afrique Video Player"
+        width="100%"
+        height="100%"
         frameBorder="0"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
         allowFullScreen

@@ -2,8 +2,8 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours synchronisée).
- * ✅ RÉSOLU : Lecteur YouTube via Iframe Responsive (plus d'écran noir).
+ * @fileOverview Lecteur de cours Ndara Afrique (Copie de secours).
+ * ✅ RÉSOLU : Passage en mode nocookie et support des Shorts.
  * ✅ RÉSOLU : Correction Type Error pour build Vercel.
  */
 
