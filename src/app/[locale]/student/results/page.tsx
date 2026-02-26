@@ -1,20 +1,20 @@
-
 'use client';
 
 /**
  * @fileOverview Page récapitulative des résultats de quiz pour l'étudiant.
- * Affiche l'historique des scores et propose l'aide de MATHIAS.
+ * ✅ RÉSOLU : Utilisation du tri en mémoire pour éviter les blocages d'index Firestore.
+ * ✅ RÉSOLU : Intégration du mentorat IA Mathias pour les scores faibles.
  */
 
 import { useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase/firestore/use-collection';
-import { collection, query, where, getFirestore, orderBy } from 'firebase/firestore';
+import { collection, query, where, getFirestore } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Trophy, MessageSquare, Clock, ArrowRight, Frown, BookOpen, Sparkles } from 'lucide-react';
+import { Trophy, MessageSquare, Clock, BookOpen, Sparkles, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -24,19 +24,28 @@ export default function StudentResultsPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
-  // 1. Récupération des soumissions de quiz
+  // 🛡️ REQUÊTE ULTRA-STABLE : On n'utilise pas orderBy côté serveur pour éviter les erreurs d'index
   const resultsQuery = useMemo(() => 
     currentUser?.uid 
       ? query(
           collection(db, 'quiz_submissions'), 
-          where('studentId', '==', currentUser.uid),
-          orderBy('submittedAt', 'desc')
+          where('studentId', '==', currentUser.uid)
         )
       : null,
-    [db, currentUser]
+    [db, currentUser?.uid]
   );
 
-  const { data: results, isLoading: resultsLoading } = useCollection<any>(resultsQuery);
+  const { data: rawResults, isLoading: resultsLoading } = useCollection<any>(resultsQuery);
+
+  // 💎 TRI EN MÉMOIRE : Garantit l'affichage immédiat des résultats
+  const results = useMemo(() => {
+    if (!rawResults) return [];
+    return [...rawResults].sort((a, b) => {
+      const dateA = (a.submittedAt as any)?.toDate?.() || new Date(0);
+      const dateB = (b.submittedAt as any)?.toDate?.() || new Date(0);
+      return dateB.getTime() - dateA.getTime();
+    });
+  }, [rawResults]);
 
   const isLoading = isUserLoading || resultsLoading;
 
@@ -59,7 +68,7 @@ export default function StudentResultsPage() {
             ))}
           </div>
         ) : results && results.length > 0 ? (
-          <div className="grid gap-4">
+          <div className="grid gap-4 animate-in fade-in duration-700">
             {results.map((result) => (
               <ResultItem key={result.id} result={result} />
             ))}
@@ -85,15 +94,15 @@ function ResultItem({ result }: { result: any }) {
   const isSuccess = result.score >= 70;
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl active:scale-[0.98] transition-all">
+    <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl transition-all active:scale-[0.98]">
       <CardContent className="p-5 space-y-4">
         <div className="flex justify-between items-start gap-4">
           <div className="space-y-1 flex-1">
-            <div className="flex items-center gap-2 text-[9px] font-black text-primary uppercase tracking-widest mb-1">
+            <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">
               <BookOpen className="h-3 w-3" />
               <span className="truncate max-w-[150px]">{result.courseTitle}</span>
             </div>
-            <h3 className="text-sm font-bold text-white leading-snug">{result.quizTitle}</h3>
+            <h3 className="text-sm font-bold text-white leading-snug uppercase tracking-tight">{result.quizTitle}</h3>
           </div>
           <div className="text-right">
             <p className={cn(
@@ -122,7 +131,7 @@ function ResultItem({ result }: { result: any }) {
             </Button>
           ) : (
             <Badge className="bg-green-500/10 text-green-500 border-none font-black text-[8px] uppercase px-3 py-1">
-                Excellent
+                Maîtrise validée
             </Badge>
           )}
         </div>
