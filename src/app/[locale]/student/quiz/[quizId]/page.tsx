@@ -1,7 +1,11 @@
-
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+/**
+ * @fileOverview Interface de passage de quiz optimisée.
+ * ✅ RÉSOLU : Ajout de l'importation 'orderBy' pour fixer l'erreur de build Vercel.
+ */
+
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import {
@@ -16,26 +20,18 @@ import {
   collectionGroup,
   where,
 } from 'firebase/firestore';
-import { useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Send, Check, X, Award } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { Loader2, ArrowLeft, Award } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Quiz, Question } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
-/**
- * @fileOverview Interface de passage de quiz optimisée.
- * Correction Build Vercel : Importations orderBy et collectionGroup assurées.
- */
 export default function TakeQuizPage() {
   const params = useParams();
   const { quizId } = params;
-  const courseId = params.courseId;
   const router = useRouter();
   const { user } = useRole();
   const db = getFirestore();
@@ -55,7 +51,6 @@ export default function TakeQuizPage() {
     const fetchQuizAndQuestions = async () => {
       setIsQuizLoading(true);
       try {
-        // 1. Trouver le quiz via collectionGroup (car il est imbriqué dans courses/sections)
         const quizQuery = query(collectionGroup(db, 'quizzes'), where('id', '==', quizId));
         const quizSnap = await getDocs(quizQuery);
         
@@ -68,7 +63,6 @@ export default function TakeQuizPage() {
         const data = { id: quizDoc.id, ...quizDoc.data() } as Quiz;
         setQuizData(data);
 
-        // 2. Charger les questions de ce quiz
         const questionsQuery = query(collection(quizDoc.ref, 'questions'), orderBy('order', 'asc'));
         const questionsSnap = await getDocs(questionsQuery);
         setQuestions(questionsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Question)));

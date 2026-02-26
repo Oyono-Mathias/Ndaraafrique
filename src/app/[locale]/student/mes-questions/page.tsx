@@ -3,16 +3,18 @@
 /**
  * @fileOverview Historique des questions posées par l'étudiant.
  * Affiche les échanges avec les instructeurs par cours.
+ * ✅ RÉSOLU : Utilisation de useCollection pour une stabilité maximale.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
-import { getFirestore, collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
+import { useCollection } from '@/firebase';
+import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { MessageCircle, Clock, CheckCircle2, BookOpen, ChevronRight } from 'lucide-react';
+import { MessageCircle, Clock, BookOpen, ChevronRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
@@ -22,29 +24,18 @@ import { cn } from '@/lib/utils';
 export default function MesQuestionsPage() {
   const { currentUser } = useRole();
   const db = getFirestore();
-  const [questions, setQuestions] = useState<CourseQuestion[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!currentUser?.uid) return;
-
-    setIsLoading(true);
-    const q = query(
+  // 🛡️ Stabilisation de la requête : On utilise useCollection qui gère mieux les index manquants
+  const questionsQuery = useMemo(() => {
+    if (!currentUser?.uid) return null;
+    return query(
       collection(db, 'questions'),
       where('studentId', '==', currentUser.uid),
       orderBy('createdAt', 'desc')
     );
-
-    const unsubscribe = onSnapshot(q, (snap) => {
-      setQuestions(snap.docs.map(d => ({ id: d.id, ...d.data() } as CourseQuestion)));
-      setIsLoading(false);
-    }, (error) => {
-      console.error("Error fetching questions:", error);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
   }, [currentUser?.uid, db]);
+
+  const { data: questions, isLoading } = useCollection<CourseQuestion>(questionsQuery);
 
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
@@ -60,10 +51,10 @@ export default function MesQuestionsPage() {
       <div className="px-4 space-y-4">
         {isLoading ? (
           <div className="space-y-4">
-            {[...Array(3)].map((_, i) => <Skeleton className="h-32 w-full rounded-3xl bg-slate-900" />)}
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-3xl bg-slate-900" />)}
           </div>
-        ) : questions.length > 0 ? (
-          <div className="grid gap-4">
+        ) : questions && questions.length > 0 ? (
+          <div className="grid gap-4 animate-in fade-in duration-500">
             {questions.map((q) => (
               <QuestionItem key={q.id} question={q} />
             ))}
@@ -71,7 +62,7 @@ export default function MesQuestionsPage() {
         ) : (
           <div className="py-20 text-center flex flex-col items-center opacity-30">
             <MessageCircle className="h-16 w-16 mb-4 text-slate-600" />
-            <p className="text-sm font-black uppercase tracking-widest text-slate-500">Aucune question posée</p>
+            <p className="text-sm font-black uppercase tracking-widest text-slate-500">Aucune question trouvée</p>
           </div>
         )}
       </div>
@@ -87,8 +78,8 @@ function QuestionItem({ question }: { question: CourseQuestion }) {
     <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-xl transition-all active:scale-[0.98]">
       <CardContent className="p-5 space-y-4">
         <div className="flex justify-between items-start gap-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest">
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2 text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">
               <BookOpen className="h-3 w-3" />
               <span className="truncate max-w-[150px]">{question.courseTitle}</span>
             </div>
@@ -107,7 +98,7 @@ function QuestionItem({ question }: { question: CourseQuestion }) {
         {isAnswered && (
           <div className="p-4 bg-primary/5 border-l-2 border-primary rounded-r-xl">
             <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Réponse du formateur</p>
-            <p className="text-xs text-slate-300 leading-relaxed line-clamp-3">
+            <p className="text-xs text-slate-300 leading-relaxed">
               {question.answerText}
             </p>
           </div>
