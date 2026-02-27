@@ -3,7 +3,7 @@
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
  * ✅ HYBRIDE : Supporte YouTube (Iframe masquée) et les fichiers MP4 directs (Firebase Storage).
- * ✅ RÉSOLU : Correction Type Error pour build Vercel.
+ * ✅ SÉCURITÉ : Protection contre le téléchargement direct sur les fichiers MP4.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -24,7 +24,7 @@ import {
 } from 'firebase/firestore';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Bot, Play, MessageSquare, AlertCircle } from 'lucide-react';
+import { Loader2, Bot, Play, MessageSquare, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
 import { YoutubePlayer } from '@/components/ui/youtube-player';
@@ -201,7 +201,7 @@ function CoursePlayerPageContent() {
                   activeLecture.contentUrl?.includes('youtube') || activeLecture.contentUrl?.includes('youtu.be') ? (
                     <YoutubePlayer url={activeLecture.contentUrl || ''} />
                   ) : (
-                    <div className="w-full aspect-video bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10 relative">
+                    <div className="w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative">
                         <video 
                             src={activeLecture.contentUrl} 
                             className="w-full h-full object-contain" 
@@ -225,8 +225,8 @@ function CoursePlayerPageContent() {
             ) : (
               <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
                 <Play className="h-16 w-16 mb-4 opacity-20 animate-pulse" />
-                <h3 className="text-xl font-bold">Prêt pour votre leçon ?</h3>
-                <p className="mt-2">Sélectionnez un chapitre dans le menu à droite.</p>
+                <h3 className="text-xl font-bold uppercase tracking-tight">Prêt pour votre leçon ?</h3>
+                <p className="mt-2 text-xs font-bold uppercase tracking-widest opacity-40">Sélectionnez un chapitre dans le menu.</p>
               </div>
             )}
           </div>
@@ -241,12 +241,12 @@ function CoursePlayerPageContent() {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button 
                 variant="outline" 
-                className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
+                className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 hover:text-white font-bold"
                 onClick={() => setShowQuestionModal(true)}
               >
                 <MessageSquare className="mr-2 h-4 w-4" /> Question
               </Button>
-              <Button variant="secondary" asChild className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400">
+              <Button variant="secondary" asChild className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 font-bold">
                 <a href={`/student/tutor?context=${activeLecture?.id}`}><Bot className="mr-2 h-4 w-4" /> Mathias IA</a>
               </Button>
               {activeLecture && (
@@ -258,7 +258,9 @@ function CoursePlayerPageContent() {
                     completedLessons.includes(activeLecture.id) ? "bg-green-500/10 text-green-500" : "bg-primary text-white shadow-lg shadow-primary/20"
                   )}
                 >
-                  {completedLessons.includes(activeLecture.id) ? "Validée" : "Terminer la leçon"}
+                  {completedLessons.includes(activeLecture.id) ? (
+                      <><CheckCircle2 className="mr-2 h-4 w-4" /> Validée</>
+                  ) : "Terminer la leçon"}
                 </Button>
               )}
             </div>

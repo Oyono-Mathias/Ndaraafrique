@@ -1,6 +1,3 @@
-git add .
-git commit -m "fix: resolve youtube black screen and final Vercel build type errors"
-git push origin main
 
 
 # 🚀 Ndara Afrique - Plateforme d'E-learning Pan-Africaine
