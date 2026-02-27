@@ -44,7 +44,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const [isPending, startTransition] = useTransition();
     const [isAiLoading, setIsAiLoading] = useState(false);
     
-    // États pour les uploads (Firebase & Bunny)
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
     const [isUploadingToBunny, setIsUploadingToBunny] = useState(false);
@@ -98,9 +97,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         }
     };
 
-    /**
-     * Gère l'upload direct vers Bunny Stream via l'API REST.
-     */
     const handleBunnyUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         const title = form.getValues('title');
@@ -115,13 +111,13 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         setUploadedFileName(file.name);
 
         try {
-            // 1. Créer le placeholder sur Bunny.net
             const prep = await createBunnyVideo(title);
-            if (!prep.success) throw new Error(prep.error);
+            if (!prep.success || !prep.apiKey || !prep.libraryId || !prep.guid) {
+                throw new Error(prep.error || "Impossible d'initialiser l'upload vers Bunny.net");
+            }
 
             const { guid, libraryId, apiKey } = prep;
 
-            // 2. Upload binaire direct via XMLHttpRequest (pour le suivi de progression)
             const xhr = new XMLHttpRequest();
             const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`;
 
@@ -318,6 +314,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         <FormControl>
                                             <Input readOnly placeholder="ID automatique..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
                                         </FormControl>
+                                        <FormDescription className="text-[10px] italic">L'ID est généré automatiquement après l'upload.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -339,7 +336,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all"
                                     >
                                         {uploadProgress !== null ? (
-                                            <div className="w-full max-w-[200px] text-center space-y-3">
+                                            <div className="w-full max-w-[250px] text-center space-y-3">
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
                                                 <Progress value={uploadProgress} className="h-1.5" />
                                                 <p className="text-[10px] font-black text-white uppercase tracking-widest">{Math.round(uploadProgress)}%</p>
