@@ -101,21 +101,18 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         const file = event.target.files?.[0];
         if (!file) return;
 
-        const title = form.getValues('title') || "Nouvelle Leçon";
+        const title = form.getValues('title') || "Nouvelle Leçon Ndara";
         setIsUploadingToBunny(true);
         setUploadProgress(0);
         setUploadedFileName(file.name);
 
         try {
-            // 1. Préparation du placeholder sur Bunny
             const prep = await createBunnyVideo(title);
             if (!prep.success || !prep.apiKey || !prep.libraryId || !prep.guid) {
-                throw new Error(prep.error || "Le serveur Bunny.net ne répond pas.");
+                throw new Error(prep.error || "Le serveur de vidéo ne répond pas.");
             }
 
             const { guid, libraryId, apiKey } = prep;
-
-            // 2. Upload direct via XMLHttpRequest pour avoir la progression
             const xhr = new XMLHttpRequest();
             const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`;
 
@@ -134,17 +131,21 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         setIsUploadingToBunny(false);
                         toast({ title: "Vidéo Ndara prête !", description: "Le fichier est sécurisé sur Bunny Stream." });
                     } else {
-                        throw new Error("Échec du transfert vers le Cloud.");
+                        toast({ variant: 'destructive', title: "Échec de l'envoi", description: "Veuillez réessayer l'importation." });
+                        setIsUploadingToBunny(false);
+                        setUploadProgress(null);
                     }
                 }
             };
 
             xhr.onerror = () => {
-                throw new Error("Erreur réseau lors du transfert.");
+                toast({ variant: 'destructive', title: "Erreur réseau", description: "La connexion avec Bunny.net a été coupée." });
+                setIsUploadingToBunny(false);
+                setUploadProgress(null);
             };
 
             xhr.open("PUT", url, true);
-            xhr.setRequestHeader("AccessKey", apiKey);
+            xhr.setRequestHeader("AccessKey", apiKey as string);
             xhr.setRequestHeader("Accept", "application/json");
             xhr.setRequestHeader("Content-Type", "application/octet-stream");
             xhr.send(file);
@@ -154,7 +155,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             setIsUploadingToBunny(false);
             setUploadProgress(null);
             setUploadedFileName(null);
-            // Réinitialiser l'input pour permettre de réessayer
             event.target.value = "";
         }
     };
@@ -197,6 +197,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                     onOpenChange(false);
                 } else {
+                    // SÉCURISATION DU MESSAGE D'ERREUR POUR VERCEL BUILD
                     const errorMsg = typeof result?.error === 'string' 
                         ? result.error 
                         : "Erreur de validation. Veuillez vérifier les champs.";
@@ -204,7 +205,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
                 }
             } catch (e: any) {
-                toast({ variant: 'destructive', title: 'Erreur système', description: "Action impossible pour le moment." });
+                toast({ variant: 'destructive', title: 'Erreur système', description: "Le serveur n'a pas pu traiter la demande." });
             }
         });
     };
@@ -269,7 +270,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             )}/>
                         ) : selectedType === 'video' ? (
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo (Importation Directe)</Label>
+                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo (Direct Upload Bunny)</Label>
                                 <div className="relative">
                                     <Input 
                                         type="file" 
@@ -317,11 +318,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 </div>
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
-                                        <FormLabel className="text-[9px] font-bold text-slate-600 uppercase">ID Vidéo Bunny (Auto-généré)</FormLabel>
+                                        <FormLabel className="text-[9px] font-bold text-slate-600 uppercase">ID Vidéo Bunny</FormLabel>
                                         <FormControl>
                                             <Input readOnly placeholder="L'ID apparaîtra ici après l'envoi..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
                                         </FormControl>
-                                        <FormDescription className="text-[10px] italic">Plus besoin de copier-coller l'ID, il s'inscrit tout seul.</FormDescription>
+                                        <FormDescription className="text-[10px] italic">Copiez l'ID depuis votre bibliothèque Bunny Stream (ID: 382715).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
