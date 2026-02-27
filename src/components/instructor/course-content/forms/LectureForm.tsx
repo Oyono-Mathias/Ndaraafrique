@@ -101,6 +101,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         const file = event.target.files?.[0];
         if (!file) return;
 
+        toast({ title: "Préparation de l'envoi...", description: "Connexion aux serveurs Bunny Stream." });
+        
         const title = form.getValues('title') || "Nouvelle Leçon Ndara";
         setIsUploadingToBunny(true);
         setUploadProgress(0);
@@ -131,7 +133,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         setIsUploadingToBunny(false);
                         toast({ title: "Vidéo Ndara prête !", description: "Le fichier est sécurisé sur Bunny Stream." });
                     } else {
-                        toast({ variant: 'destructive', title: "Échec de l'envoi", description: "Veuillez réessayer l'importation." });
+                        console.error("Bunny Upload Error Status:", xhr.status, xhr.responseText);
+                        toast({ variant: 'destructive', title: "Échec de l'envoi", description: "Le serveur Bunny a refusé le fichier. Vérifiez votre connexion." });
                         setIsUploadingToBunny(false);
                         setUploadProgress(null);
                     }
@@ -151,6 +154,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             xhr.send(file);
 
         } catch (error: any) {
+            console.error("Direct Upload Failed:", error);
             toast({ variant: 'destructive', title: "Erreur d'importation", description: error.message });
             setIsUploadingToBunny(false);
             setUploadProgress(null);
@@ -197,7 +201,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                     onOpenChange(false);
                 } else {
-                    // SÉCURISATION DU MESSAGE D'ERREUR POUR VERCEL BUILD
                     const errorMsg = typeof result?.error === 'string' 
                         ? result.error 
                         : "Erreur de validation. Veuillez vérifier les champs.";
@@ -276,7 +279,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         type="file" 
                                         accept="video/*" 
                                         onChange={handleBunnyUpload} 
-                                        className="hidden" 
+                                        className="sr-only" 
                                         id="lecture-video-upload"
                                         disabled={isUploadingToBunny}
                                     />
@@ -335,7 +338,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         type="file" 
                                         accept=".pdf" 
                                         onChange={handlePdfUpload} 
-                                        className="hidden" 
+                                        className="sr-only" 
                                         id="lecture-pdf-upload"
                                         disabled={uploadProgress !== null}
                                     />
