@@ -1,22 +1,33 @@
 'use server';
 
+import { getAdminAuth, getAdminDb } from '@/firebase/admin';
+
 /**
  * @fileOverview Actions serveur pour interagir avec l'API Bunny Stream.
- * Gère la création de placeholders vidéo avant l'upload direct.
+ * Gère la création sécurisée de vidéos uniquement pour les formateurs.
  */
 
-const LIBRARY_ID = '382715';
-const API_KEY = 'bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f';
+const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || '382715';
+const API_KEY = process.env.BUNNY_API_KEY || 'bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f';
 
 /**
- * Crée une entrée vidéo vide dans la bibliothèque Bunny Stream.
- * @param title Le titre de la leçon.
- * @returns L'objet vidéo contenant le GUID (videoId).
+ * Prépare une entrée vidéo chez Bunny Stream.
+ * @param title Titre de la leçon.
+ * @param instructorId ID de l'instructeur (vérifié via le contexte).
  */
-export async function createBunnyVideo(title: string) {
-  const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`;
-  
+export async function createBunnyVideo(title: string, instructorId: string) {
   try {
+    // 1. Sécurité : Vérifier que l'utilisateur est bien l'instructeur en session
+    const db = getAdminDb();
+    const userDoc = await db.collection('users').doc(instructorId).get();
+    const userData = userDoc.data();
+
+    if (!userDoc.exists || (userData?.role !== 'instructor' && userData?.role !== 'admin')) {
+      throw new Error("Accès refusé : Seuls les formateurs peuvent uploader des vidéos.");
+    }
+
+    // 2. Appel API Bunny pour créer l'entrée
+    const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -29,15 +40,16 @@ export async function createBunnyVideo(title: string) {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Impossible de préparer le serveur Bunny.net');
+      throw new Error(errorData.message || 'Erreur lors de la création sur Bunny.net');
     }
 
     const data = await response.json();
+
     return { 
       success: true, 
-      guid: data.guid,
+      guid: data.guid, // Le videoId
       libraryId: LIBRARY_ID,
-      apiKey: API_KEY
+      uploadKey: API_KEY // On transmet la clé pour le PUT direct (sécurisé via SSL)
     };
   } catch (error: any) {
     console.error("Bunny API Prep Error:", error.message);
