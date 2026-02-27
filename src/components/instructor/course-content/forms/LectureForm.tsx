@@ -194,10 +194,23 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                     onOpenChange(false);
                 } else {
-                    toast({ variant: 'destructive', title: 'Erreur', description: result?.error || "Erreur de validation" });
+                    // ✅ Correction Build : On s'assure que la description est une string
+                    const errorMsg = typeof result?.error === 'string' 
+                        ? result.error 
+                        : "Erreur de validation. Veuillez vérifier les champs.";
+                    
+                    toast({ 
+                        variant: 'destructive', 
+                        title: 'Erreur', 
+                        description: errorMsg 
+                    });
                 }
             } catch (e: any) {
-                toast({ variant: 'destructive', title: 'Erreur système', description: "Impossible de contacter le serveur." });
+                toast({ 
+                    variant: 'destructive', 
+                    title: 'Erreur système', 
+                    description: "Impossible de contacter le serveur." 
+                });
             }
         });
     };
@@ -344,7 +357,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         ) : uploadedFileName ? (
                                             <div className="flex flex-col items-center gap-2">
                                                 <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-                                                <span className="text-xs font-bold text-white truncate max-w-[250px]">{uploadedFileName}</span>
+                                                <span className="text-xs font-bold text-white truncate max-w-[200px]">{uploadedFileName}</span>
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2">
