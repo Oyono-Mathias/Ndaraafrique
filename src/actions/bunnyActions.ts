@@ -24,12 +24,12 @@ export async function createBunnyVideo(title: string) {
         'Content-Type': 'application/json',
         'accept': 'application/json',
       },
-      body: JSON.stringify({ title }),
+      body: JSON.stringify({ title: title || "Nouvelle Vidéo Ndara" }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || 'Impossible de créer le placeholder sur Bunny.net');
+      throw new Error(errorData.message || 'Impossible de préparer le serveur Bunny.net');
     }
 
     const data = await response.json();
@@ -37,10 +37,10 @@ export async function createBunnyVideo(title: string) {
       success: true, 
       guid: data.guid,
       libraryId: LIBRARY_ID,
-      apiKey: API_KEY // On transmet la clé pour le PUT client-side (sécurisé par le contexte admin)
+      apiKey: API_KEY
     };
   } catch (error: any) {
-    console.error("Bunny API Error:", error.message);
+    console.error("Bunny API Prep Error:", error.message);
     return { success: false, error: error.message };
   }
 }
