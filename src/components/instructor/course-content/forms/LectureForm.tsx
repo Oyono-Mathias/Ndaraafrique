@@ -9,6 +9,7 @@ import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { createLecture, updateLecture } from '@/actions/lectureActions';
 import { assistLectureCreation } from '@/ai/flows/assist-lecture-creation';
+import { createBunnyVideo } from '@/actions/bunnyActions';
 import type { Lecture } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -18,7 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
-import { Loader2, Bot, Sparkles, FileVideo, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Loader2, Bot, Sparkles, FileVideo, CheckCircle2, ShieldCheck, UploadCloud } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -41,8 +43,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [isAiLoading, setIsAiLoading] = useState(false);
+    
+    // États pour les uploads (Firebase & Bunny)
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+    const [isUploadingToBunny, setIsUploadingToBunny] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -93,7 +98,69 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         }
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    /**
+     * Gère l'upload direct vers Bunny Stream via l'API REST.
+     */
+    const handleBunnyUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        const title = form.getValues('title');
+
+        if (!file || !title) {
+            toast({ variant: 'destructive', title: "Titre requis", description: "Veuillez d'abord saisir le titre de la leçon." });
+            return;
+        }
+
+        setIsUploadingToBunny(true);
+        setUploadProgress(0);
+        setUploadedFileName(file.name);
+
+        try {
+            // 1. Créer le placeholder sur Bunny.net
+            const prep = await createBunnyVideo(title);
+            if (!prep.success) throw new Error(prep.error);
+
+            const { guid, libraryId, apiKey } = prep;
+
+            // 2. Upload binaire direct via XMLHttpRequest (pour le suivi de progression)
+            const xhr = new XMLHttpRequest();
+            const url = `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`;
+
+            xhr.upload.addEventListener("progress", (evt) => {
+                if (evt.lengthComputable) {
+                    const percentComplete = (evt.loaded / evt.total) * 100;
+                    setUploadProgress(percentComplete);
+                }
+            }, false);
+
+            xhr.onreadystatechange = () => {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200 || xhr.status === 201) {
+                        form.setValue('contentUrl', guid);
+                        setUploadProgress(null);
+                        setIsUploadingToBunny(false);
+                        toast({ title: "Vidéo importée !", description: "Le fichier est prêt sur Bunny Stream." });
+                    } else {
+                        toast({ variant: 'destructive', title: "Échec de l'upload", description: "Erreur lors de l'envoi à Bunny.net" });
+                        setIsUploadingToBunny(false);
+                        setUploadProgress(null);
+                    }
+                }
+            };
+
+            xhr.open("PUT", url, true);
+            xhr.setRequestHeader("AccessKey", apiKey);
+            xhr.setRequestHeader("Accept", "application/json");
+            xhr.setRequestHeader("Content-Type", "application/octet-stream");
+            xhr.send(file);
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Erreur", description: error.message });
+            setIsUploadingToBunny(false);
+            setUploadProgress(null);
+        }
+    };
+
+    const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !currentUser) return;
         
@@ -105,20 +172,16 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         const uploadTask = uploadBytesResumable(storageRef, file);
 
         uploadTask.on('state_changed',
-            (snapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                setUploadProgress(progress);
-            },
+            (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
             (error) => {
                 toast({ variant: 'destructive', title: 'Erreur d\'upload', description: error.message });
                 setUploadProgress(null);
-                setUploadedFileName(null);
             },
             () => {
                 getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                     form.setValue('contentUrl', downloadURL);
                     setUploadProgress(null);
-                    toast({ title: 'Fichier importé avec succès !' });
+                    toast({ title: 'PDF importé avec succès !' });
                 });
             }
         );
@@ -135,22 +198,10 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
                     onOpenChange(false);
                 } else {
-                    const errorMsg = typeof result?.error === 'string' 
-                        ? result.error 
-                        : "Une erreur est survenue lors de la validation.";
-                    
-                    toast({ 
-                        variant: 'destructive', 
-                        title: 'Erreur', 
-                        description: errorMsg 
-                    });
+                    toast({ variant: 'destructive', title: 'Erreur', description: result?.error || "Erreur de validation" });
                 }
             } catch (e: any) {
-                toast({ 
-                    variant: 'destructive', 
-                    title: 'Erreur système', 
-                    description: "Impossible de contacter le serveur." 
-                });
+                toast({ variant: 'destructive', title: 'Erreur système', description: "Impossible de contacter le serveur." });
             }
         });
     };
@@ -196,7 +247,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="video" className="py-3">🎥 Vidéo Sécurisée (Bunny.net)</SelectItem>
+                                        <SelectItem value="video" className="py-3">🎥 Vidéo (Bunny Stream)</SelectItem>
                                         <SelectItem value="text" className="py-3">✍️ Texte (Article/Guide)</SelectItem>
                                         <SelectItem value="pdf" className="py-3">📄 PDF (Support de cours)</SelectItem>
                                     </SelectContent>
@@ -214,22 +265,59 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 </FormItem> 
                             )}/>
                         ) : selectedType === 'video' ? (
-                            <div className="space-y-4 p-6 bg-slate-950/50 rounded-3xl border border-slate-800">
-                                <div className="flex items-center gap-3 text-primary mb-2">
-                                    <ShieldCheck className="h-5 w-5" />
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Flux Bunny.net Stream</span>
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo</Label>
+                                <div className="relative">
+                                    <Input 
+                                        type="file" 
+                                        accept="video/*" 
+                                        onChange={handleBunnyUpload} 
+                                        className="hidden" 
+                                        id="lecture-video-upload"
+                                        disabled={isUploadingToBunny}
+                                    />
+                                    <label 
+                                        htmlFor="lecture-video-upload"
+                                        className={cn(
+                                            "flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all",
+                                            isUploadingToBunny && "pointer-events-none"
+                                        )}
+                                    >
+                                        {isUploadingToBunny ? (
+                                            <div className="w-full max-w-[250px] text-center space-y-4 px-4">
+                                                <div className="flex items-center justify-center gap-2 text-primary">
+                                                    <Loader2 className="h-6 w-6 animate-spin" />
+                                                    <span className="text-xs font-black uppercase tracking-widest">Envoi vers Bunny...</span>
+                                                </div>
+                                                <Progress value={uploadProgress || 0} className="h-2 shadow-inner" />
+                                                <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">{Math.round(uploadProgress || 0)}%</p>
+                                            </div>
+                                        ) : uploadedFileName ? (
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="p-4 bg-emerald-500/10 rounded-full">
+                                                    <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+                                                </div>
+                                                <div className="text-center">
+                                                    <p className="text-xs font-bold text-white truncate max-w-[200px]">{uploadedFileName}</p>
+                                                    <p className="text-[9px] text-emerald-500 font-black uppercase tracking-widest mt-1">Prêt sur le Cloud</p>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-3">
+                                                <div className="p-4 bg-primary/10 rounded-full group-hover:bg-primary/20 transition-colors">
+                                                    <UploadCloud className="h-8 w-8 text-primary" />
+                                                </div>
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sélectionner une vidéo</span>
+                                            </div>
+                                        )}
+                                    </label>
                                 </div>
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny</FormLabel>
+                                        <FormLabel className="text-[9px] font-bold text-slate-600 uppercase">ID Vidéo (Généré)</FormLabel>
                                         <FormControl>
-                                            <Input 
-                                                placeholder="Ex: 8a2b3c4d-5e6f-..." 
-                                                {...field} 
-                                                className="h-12 bg-slate-950 border-slate-800 rounded-xl font-mono text-sm"
-                                            />
+                                            <Input readOnly placeholder="ID automatique..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
                                         </FormControl>
-                                        <FormDescription className="text-[10px] italic">Copiez l'ID depuis votre bibliothèque Bunny Stream (ID: 382715).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -241,7 +329,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <Input 
                                         type="file" 
                                         accept=".pdf" 
-                                        onChange={handleFileChange} 
+                                        onChange={handlePdfUpload} 
                                         className="hidden" 
                                         id="lecture-pdf-upload"
                                         disabled={uploadProgress !== null}
@@ -288,7 +376,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         <DialogFooter className="pt-6 border-t border-white/5 gap-3 sm:gap-0">
                             <DialogClose asChild><Button type="button" variant="ghost" className="rounded-xl font-bold text-slate-500">Annuler</Button></DialogClose>
-                            <Button type="submit" disabled={isPending || uploadProgress !== null} className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
+                            <Button type="submit" disabled={isPending || isUploadingToBunny || uploadProgress !== null} className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
                                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>} 
                                 Enregistrer la leçon
                             </Button>
