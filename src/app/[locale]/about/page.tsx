@@ -26,7 +26,7 @@ const SangoQuote = ({ children }: { children: React.ReactNode }) => {
 
 const Section = ({ title, frenchText, sangoText, children }: { title: string, frenchText?: string, sangoText?: string, children?: React.ReactNode }) => (
     <section className="mb-12 md:mb-16">
-        <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 border-l-4 border-primary pl-4">{title}</h2>
+        <h2 className="text-3xl md:text-4xl font-bold text-white mb-6 border-l-4 border-primary pl-4 uppercase tracking-tighter">{title}</h2>
         {frenchText && sangoText && (
             <div className="prose prose-lg prose-invert max-w-none text-slate-300">
                 <p>{frenchText}</p>
@@ -39,7 +39,7 @@ const Section = ({ title, frenchText, sangoText, children }: { title: string, fr
 
 const TeamMember = ({ name, role, imageUrl, bio }: TeamMemberType) => (
     <div className="text-center group">
-        <Avatar className="w-32 h-32 mx-auto mb-4 border-4 border-slate-700 transition-all duration-500 group-hover:border-primary group-hover:scale-105">
+        <Avatar className="w-32 h-32 mx-auto mb-4 border-4 border-slate-700 transition-all duration-500 group-hover:border-primary group-hover:scale-105 shadow-2xl">
             <AvatarImage src={imageUrl} alt={name} className="grayscale group-hover:grayscale-0 transition-all" />
             <AvatarFallback className="bg-slate-800 text-3xl font-black">{name.charAt(0)}</AvatarFallback>
         </Avatar>
@@ -51,22 +51,22 @@ const TeamMember = ({ name, role, imageUrl, bio }: TeamMemberType) => (
 
 const defaultTeam: TeamMemberType[] = [
     { 
-        name: "Mathias Oyono", 
-        role: "CEO & Visionnaire",
-        imageUrl: "/placeholder-avatars/mathias.jpg", 
-        bio: "Passionné par l'éducation et la technologie, Mathias rêve d'une Afrique leader de l'innovation."
+        name: "Oyono Mathias", 
+        role: "CEO & Fondateur Visionnaire",
+        imageUrl: "https://api.dicebear.com/8.x/avataaars/svg?seed=Mathias&skinColor=614335&top=shortHair&topColor=2c1b18", 
+        bio: "Passionné par l'éducation et la technologie souveraine, Mathias bâtit l'infrastructure du savoir pour l'Afrique de demain."
     },
     { 
         name: "Amina Diallo", 
         role: "Directrice Pédagogique",
-        imageUrl: "/placeholder-avatars/amina.jpg", 
-        bio: "Experte en ingénierie pédagogique, Amina s'assure que chaque cours est une expérience d'apprentissage exceptionnelle."
+        imageUrl: "https://api.dicebear.com/8.x/avataaars/svg?seed=Amina&skinColor=ae5d29&top=longHair&topColor=2c1b18", 
+        bio: "Experte en ingénierie pédagogique, Amina s'assure que chaque formation est une expérience d'excellence panafricaine."
     },
     { 
         name: "Kwame Nkrumah", 
         role: "Responsable Technologique",
-        imageUrl: "/placeholder-avatars/kwame.jpg", 
-        bio: "Architecte de la plateforme, Kwame est obsédé par la création d'une expérience utilisateur fluide et robuste."
+        imageUrl: "https://api.dicebear.com/8.x/avataaars/svg?seed=Kwame&skinColor=614335&top=shortHair&topColor=2c1b18", 
+        bio: "Architecte de la plateforme, Kwame est obsédé par la création d'une expérience utilisateur robuste et sécurisée."
     }
 ];
 
@@ -98,7 +98,6 @@ export default function AboutPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-white relative overflow-hidden bg-grainy">
-        {/* Subtle background pattern */}
         <div 
             className="absolute inset-0 z-0 opacity-[0.03]"
             style={{
@@ -119,19 +118,19 @@ export default function AboutPage() {
             <main className="max-w-4xl mx-auto">
                 <Section
                     title={content?.historyTitle || "Notre Histoire"}
-                    frenchText={content?.historyFrench || "Ndara Afrique est né d'une conviction profonde : le savoir est le levier le plus puissant pour le changement. Face à un continent en pleine mutation, nous avons vu un besoin urgent de formations accessibles, pertinentes et créées par des experts locaux pour des talents locaux."}
-                    sangoText={content?.historySango || "Tene ti Ndara Afrique a lîngbi na ndö ti mbeni kpengba pensé: Ndara ayeke kpengba lege ti changement. Na lê ti mbeni kontinän so ayeke changé, e bâ so a yeke kota ye ti wara afango ye so alingbi na azo, so a leke ni na lege ti azo ti kodoro ndali ti azo ti kodoro."}
+                    frenchText={content?.historyFrench || "Ndara Afrique est né d'une conviction profonde portée par Oyono Mathias : le savoir est le levier le plus puissant pour le changement. Face à un continent en pleine mutation, nous avons bâti un écosystème de formations accessibles, pertinentes et créées par des experts locaux pour des talents locaux."}
+                    sangoText={content?.historySango || "Tene ti Ndara Afrique a lîngbi na ndö ti mbeni kpengba pensé: Ndara ayeke kpengba lege ti changement. Na lê ti mbeni kontinän so ayeke changé, e bâ so a yeke kota ye ti wara afango ye so alingbi na azo."}
                 />
 
                 <SangoQuote>Bara ala, Tonga na ndara.</SangoQuote>
                 
                 <Section
                     title={content?.visionTitle || "Notre Vision"}
-                    frenchText={content?.visionFrench || "Notre ambition est de faire de l'Afrique non plus un consommateur, mais un créateur de technologie de premier plan. Nous bâtissons un écosystème où chaque jeune talent a les outils pour innover, pour construire les solutions de demain, et pour devenir un leader dans l'économie numérique mondiale."}
-                    sangoText={content?.visionSango || "Vision ti e ayeke ti tene que Afrique aga pëpe mbeni zo so ayeke vo ye senge, me mbeni kota zo so ayeke leke aye ti technologie. E yeke leke mbeni lege so na yâ ni, amaseka kue so ayeke na ndara awara aye so alingbi ti tene ala leke aye ti kekereke, na ala ga akozo zo na yâ ti économie numérique ti dunia."}
+                    frenchText={content?.visionFrench || "Notre ambition est de faire de l'Afrique non plus un consommateur, mais un créateur de technologie de premier plan. Sous la direction d'Oyono Mathias, nous bâtissons une infrastructure où chaque jeune talent a les outils pour innover et devenir un leader dans l'économie numérique mondiale."}
+                    sangoText={content?.visionSango || "Vision ti e ayeke ti tene que Afrique aga pëpe mbeni zo so ayeke vo ye senge, me mbeni kota zo so ayeke leke aye ti technologie."}
                 />
                 
-                <Section title="L'Équipe">
+                <Section title="L'Équipe Fondatrice">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12 mt-12">
                         {teamMembers.map((member, index) => (
                             <TeamMember 

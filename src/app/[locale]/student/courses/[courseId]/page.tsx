@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ HYBRIDE : Supporte YouTube (Iframe masquée) et les fichiers MP4 directs (Firebase Storage).
- * ✅ SÉCURITÉ : Protection contre le téléchargement direct sur les fichiers MP4.
+ * ✅ MIGRATION : Intégration Bunny.net Stream pour une expérience Premium.
+ * ✅ SÉCURITÉ : Protection DRM native via Bunny.net.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -24,10 +24,10 @@ import {
 } from 'firebase/firestore';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Bot, Play, MessageSquare, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Bot, Play, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
-import { YoutubePlayer } from '@/components/ui/youtube-player';
+import { BunnyPlayer } from '@/components/ui/bunny-player';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CourseSidebar } from '@/components/CourseSidebar'; 
@@ -160,7 +160,7 @@ function CoursePlayerPageContent() {
     return (
       <div className="flex flex-col lg:flex-row h-screen bg-slate-950 overflow-hidden">
         <div className="flex-1 p-4 lg:p-8 space-y-4">
-          <Skeleton className="w-full aspect-video bg-slate-900 rounded-2xl" />
+          <Skeleton className="w-full aspect-video bg-slate-900 rounded-[2.5rem]" />
           <Skeleton className="h-10 w-1/2 bg-slate-900" />
         </div>
         <Skeleton className="w-full lg:w-[350px] h-full bg-slate-900" />
@@ -194,39 +194,26 @@ function CoursePlayerPageContent() {
 
       <div className="flex flex-col h-screen bg-black overflow-hidden font-sans">
         <main className="flex-1 flex flex-col min-h-0 bg-[#050505]">
-          <div className="flex-1 bg-black flex flex-col justify-center overflow-y-auto">
+          <div className="flex-1 bg-black flex flex-col justify-center overflow-y-auto custom-scrollbar">
             {activeLecture ? (
-              <div className="w-full max-w-6xl mx-auto px-0 lg:px-4">
+              <div className="w-full max-w-6xl mx-auto px-0 lg:px-4 py-4 md:py-8">
                 {activeLecture.type === 'video' ? (
-                  activeLecture.contentUrl?.includes('youtube') || activeLecture.contentUrl?.includes('youtu.be') ? (
-                    <YoutubePlayer url={activeLecture.contentUrl || ''} />
-                  ) : (
-                    <div className="w-full aspect-video bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-white/10 relative">
-                        <video 
-                            src={activeLecture.contentUrl} 
-                            className="w-full h-full object-contain" 
-                            controls 
-                            playsInline
-                            controlsList="nodownload"
-                        />
-                    </div>
-                  )
+                  <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
                 ) : activeLecture.type === 'pdf' ? (
-                  <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden">
+                  <div className="h-[75vh] w-full bg-slate-900 lg:rounded-[2rem] overflow-hidden shadow-2xl border border-white/5">
                     <PdfViewerClient fileUrl={activeLecture.contentUrl || ''} />
                   </div>
                 ) : (
-                  <div className="p-6 md:p-12 lg:p-16 text-slate-300 prose prose-invert max-w-4xl mx-auto">
-                    <h2 className="text-3xl font-black text-white mb-8 border-b border-white/5 pb-6">{activeLecture.title}</h2>
+                  <div className="p-6 md:p-12 lg:p-16 text-slate-300 prose prose-invert max-w-4xl mx-auto bg-slate-900/20 rounded-[3rem] border border-white/5">
+                    <h2 className="text-3xl font-black text-white mb-8 border-b border-white/5 pb-6 uppercase tracking-tight">{activeLecture.title}</h2>
                     <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent || '' }} />
                   </div>
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
-                <Play className="h-16 w-16 mb-4 opacity-20 animate-pulse" />
-                <h3 className="text-xl font-bold uppercase tracking-tight">Prêt pour votre leçon ?</h3>
-                <p className="mt-2 text-xs font-bold uppercase tracking-widest opacity-40">Sélectionnez un chapitre dans le menu.</p>
+              <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500 animate-pulse">
+                <Play className="h-20 w-20 mb-6 opacity-10" />
+                <h3 className="text-xl font-black uppercase tracking-widest opacity-20">Sélectionnez une leçon</h3>
               </div>
             )}
           </div>
@@ -241,12 +228,12 @@ function CoursePlayerPageContent() {
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button 
                 variant="outline" 
-                className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 hover:text-white font-bold"
+                className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 hover:text-white font-bold uppercase text-[10px] tracking-widest"
                 onClick={() => setShowQuestionModal(true)}
               >
                 <MessageSquare className="mr-2 h-4 w-4" /> Question
               </Button>
-              <Button variant="secondary" asChild className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 font-bold">
+              <Button variant="secondary" asChild className="h-11 rounded-xl bg-slate-900 border-slate-800 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
                 <a href={`/student/tutor?context=${activeLecture?.id}`}><Bot className="mr-2 h-4 w-4" /> Mathias IA</a>
               </Button>
               {activeLecture && (
@@ -254,13 +241,13 @@ function CoursePlayerPageContent() {
                   onClick={handleMarkComplete} 
                   disabled={completedLessons.includes(activeLecture.id)}
                   className={cn(
-                    "h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all",
-                    completedLessons.includes(activeLecture.id) ? "bg-green-500/10 text-green-500" : "bg-primary text-white shadow-lg shadow-primary/20"
+                    "h-11 px-8 rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl",
+                    completedLessons.includes(activeLecture.id) ? "bg-green-500/10 text-green-500" : "bg-primary text-white shadow-primary/20"
                   )}
                 >
                   {completedLessons.includes(activeLecture.id) ? (
                       <><CheckCircle2 className="mr-2 h-4 w-4" /> Validée</>
-                  ) : "Terminer la leçon"}
+                  ) : "Terminer"}
                 </Button>
               )}
             </div>

@@ -18,12 +18,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
-import { Loader2, Bot, Sparkles, FileVideo, CheckCircle2, Globe } from 'lucide-react';
+import { Loader2, Bot, Sparkles, FileVideo, CheckCircle2, ShieldCheck } from 'lucide-react';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
   type: z.enum(['video', 'text', 'pdf']),
-  contentUrl: z.string().url().optional(),
+  contentUrl: z.string().min(1, "L'identifiant ou l'URL est requis."),
   textContent: z.string().optional(),
   duration: z.coerce.number().min(0).optional(),
 });
@@ -127,9 +127,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {
             try {
-                const result = lecture
-                    ? await updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
-                    : await createLecture({ courseId, sectionId, formData: values });
+                const result = await (lecture
+                    ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
+                    : createLecture({ courseId, sectionId, formData: values }));
                 
                 if(result && result.success){
                     toast({ title: lecture ? 'Leçon modifiée' : 'Leçon créée' });
@@ -157,10 +157,10 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden">
-                <DialogHeader className="p-6 pb-0">
+            <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                <DialogHeader className="p-8 pb-0">
                     <div className="flex justify-between items-center pr-8">
-                        <DialogTitle className="text-xl font-black text-white uppercase tracking-tight">
+                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">
                             {lecture ? "Modifier" : "Ajouter"} une leçon
                         </DialogTitle>
                         <Button 
@@ -169,7 +169,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             size="sm" 
                             onClick={handleMathiasHelp} 
                             disabled={isAiLoading}
-                            className="bg-primary/5 border-primary/20 text-primary h-9 rounded-xl font-bold"
+                            className="bg-primary/5 border-primary/20 text-primary h-10 px-4 rounded-xl font-bold uppercase text-[10px] tracking-widest"
                         >
                             {isAiLoading ? <Loader2 className="h-3 w-3 animate-spin mr-2"/> : <Bot className="h-4 w-4 mr-2" />}
                             Mathias IA
@@ -177,11 +177,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     </div>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-6">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-8">
                         <FormField control={form.control} name="title" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
-                                <FormControl><Input placeholder="Ex: Maîtriser les bases de l'IA" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                <FormControl><Input placeholder="Ex: Maîtriser les bases du sujet" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
                                 <FormMessage />
                             </FormItem> 
                         )}/>
@@ -196,9 +196,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="video">🎥 Vidéo (Cours)</SelectItem>
-                                        <SelectItem value="text">✍️ Texte (Article/Guide)</SelectItem>
-                                        <SelectItem value="pdf">📄 PDF (Support)</SelectItem>
+                                        <SelectItem value="video" className="py-3">🎥 Vidéo Sécurisée (Bunny.net)</SelectItem>
+                                        <SelectItem value="text" className="py-3">✍️ Texte (Article/Guide)</SelectItem>
+                                        <SelectItem value="pdf" className="py-3">📄 PDF (Support de cours)</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -213,79 +213,84 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
+                        ) : selectedType === 'video' ? (
+                            <div className="space-y-4 p-6 bg-slate-950/50 rounded-3xl border border-slate-800">
+                                <div className="flex items-center gap-3 text-primary mb-2">
+                                    <ShieldCheck className="h-5 w-5" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest">Flux Bunny.net Stream</span>
+                                </div>
+                                <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny</FormLabel>
+                                        <FormControl>
+                                            <Input 
+                                                placeholder="Ex: 8a2b3c4d-5e6f-..." 
+                                                {...field} 
+                                                className="h-12 bg-slate-950 border-slate-800 rounded-xl font-mono text-sm"
+                                            />
+                                        </FormControl>
+                                        <FormDescription className="text-[10px] italic">Copiez l'ID depuis votre bibliothèque Bunny Stream (ID: 382715).</FormDescription>
+                                        <FormMessage />
+                                    </FormItem> 
+                                )}/>
+                            </div>
                         ) : (
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Source du fichier ({selectedType === 'video' ? 'Vidéo' : 'PDF'})</Label>
-                                
-                                <div className="space-y-4">
-                                    <div className="relative">
-                                        <Input 
-                                            type="file" 
-                                            accept={selectedType === 'video' ? 'video/*' : '.pdf'} 
-                                            onChange={handleFileChange} 
-                                            className="hidden" 
-                                            id="lecture-file-upload"
-                                            disabled={uploadProgress !== null}
-                                        />
-                                        <label 
-                                            htmlFor="lecture-file-upload"
-                                            className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all"
-                                        >
-                                            {uploadProgress !== null ? (
-                                                <div className="w-full max-w-[200px] text-center space-y-3">
-                                                    <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                                                    <Progress value={uploadProgress} className="h-1.5" />
-                                                    <p className="text-[10px] font-black text-white uppercase tracking-widest">{Math.round(uploadProgress)}%</p>
-                                                </div>
-                                            ) : uploadedFileName ? (
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <CheckCircle2 className="h-10 w-10 text-emerald-500" />
-                                                    <span className="text-xs font-bold text-white truncate max-w-[250px]">{uploadedFileName}</span>
-                                                    <span className="text-[9px] font-black uppercase text-slate-500">Cliquez pour changer</span>
-                                                </div>
-                                            ) : (
-                                                <div className="flex flex-col items-center gap-2">
-                                                    <FileVideo className="h-10 w-10 text-slate-700" />
-                                                    <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir depuis ma galerie</span>
-                                                </div>
-                                            )}
-                                        </label>
-                                    </div>
-
-                                    <div className="relative flex items-center gap-3">
-                                        <div className="h-px bg-slate-800 flex-1" />
-                                        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Ou lien externe</span>
-                                        <div className="h-px bg-slate-800 flex-1" />
-                                    </div>
-
-                                    <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
-                                        <FormItem>
-                                            <FormControl>
-                                                <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-2xl p-1 pr-4">
-                                                    <div className="p-2.5 bg-slate-900 rounded-xl text-slate-500"><Globe className="h-4 w-4"/></div>
-                                                    <Input placeholder="Lien YouTube ou URL directe..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-10 text-xs" />
-                                                </div>
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem> 
-                                    )}/>
+                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Support PDF</Label>
+                                <div className="relative">
+                                    <Input 
+                                        type="file" 
+                                        accept=".pdf" 
+                                        onChange={handleFileChange} 
+                                        className="hidden" 
+                                        id="lecture-pdf-upload"
+                                        disabled={uploadProgress !== null}
+                                    />
+                                    <label 
+                                        htmlFor="lecture-pdf-upload"
+                                        className="flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all"
+                                    >
+                                        {uploadProgress !== null ? (
+                                            <div className="w-full max-w-[200px] text-center space-y-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                                                <Progress value={uploadProgress} className="h-1.5" />
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">{Math.round(uploadProgress)}%</p>
+                                            </div>
+                                        ) : uploadedFileName ? (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+                                                <span className="text-xs font-bold text-white truncate max-w-[250px]">{uploadedFileName}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <FileVideo className="h-10 w-10 text-slate-700" />
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir un PDF</span>
+                                            </div>
+                                        )}
+                                    </label>
                                 </div>
+                                <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                    <FormItem>
+                                        <FormControl><Input placeholder="Ou URL directe du PDF..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem> 
+                                )}/>
                             </div>
                         )}
 
                         <FormField control={form.control} name="duration" render={({ field }) => ( 
                             <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée (minutes)</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée estimée (min)</FormLabel>
                                 <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
                                 <FormMessage />
                             </FormItem> 
                         )}/>
 
-                        <DialogFooter className="pt-4 border-t border-white/5 gap-2 sm:gap-0">
+                        <DialogFooter className="pt-6 border-t border-white/5 gap-3 sm:gap-0">
                             <DialogClose asChild><Button type="button" variant="ghost" className="rounded-xl font-bold text-slate-500">Annuler</Button></DialogClose>
                             <Button type="submit" disabled={isPending || uploadProgress !== null} className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
                                 {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4"/>} 
-                                Enregistrer
+                                Enregistrer la leçon
                             </Button>
                         </DialogFooter>
                     </form>
