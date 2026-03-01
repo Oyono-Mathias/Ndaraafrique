@@ -176,7 +176,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 toast({ title: 'Leçon enregistrée !' });
                 onOpenChange(false);
             } else {
-                const errorMsg = typeof result.error === 'string' ? result.error : "Erreur de validation des données.";
+                const errorMsg = typeof result.error === 'string' ? result.error : "Erreur de validation.";
                 toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
             }
         });
@@ -274,9 +274,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
                                         <FormControl>
-                                            <Input readOnly placeholder="Identifiant technique..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
+                                            <Input readOnly placeholder="ID Vidéo Bunny..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
                                         </FormControl>
-                                        <FormDescription className="text-[10px] italic">Cet ID lie votre vidéo Bunny Stream à cette leçon.</FormDescription>
+                                        <FormDescription className="text-[10px] italic">Identifiant technique pour votre bibliothèque Bunny Stream (ID: 382715).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
