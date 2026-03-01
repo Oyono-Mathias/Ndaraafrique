@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useTransition } from 'react';
+import { useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +8,6 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { createLecture, updateLecture } from '@/actions/lectureActions';
-import { createBunnyVideo } from '@/actions/bunnyActions';
 import type { Lecture } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -17,9 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle2, UploadCloud, AlertCircle, FileVideo, FileText } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, CheckCircle2, UploadCloud, Link as LinkIcon, FileVideo, FileText, Info } from 'lucide-react';
+import { useState } from 'react';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -41,26 +39,20 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const { currentUser } = useRole();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
-    
-    // États d'upload
-    const [isPreparing, setIsPreparing] = useState(false);
-    const [isUploadingToBunny, setIsUploadingToBunny] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
-    const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            title: lecture?.title || '',
-            type: lecture?.type || 'video',
-            contentUrl: lecture?.contentUrl || '',
-            textContent: lecture?.textContent || '',
-            duration: lecture?.duration || 0,
+            title: '',
+            type: 'video',
+            contentUrl: '',
+            textContent: '',
+            duration: 0,
         },
     });
 
     const selectedType = form.watch('type');
-    const currentContentUrl = form.watch('contentUrl');
     
     useEffect(() => {
         if(lecture && isOpen) {
@@ -71,97 +63,17 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 textContent: lecture.textContent || '',
                 duration: lecture.duration || 0,
             });
-            setUploadedFileName(null);
         } else if (isOpen) {
             form.reset({ title: '', type: 'video', contentUrl: '', textContent: '', duration: 0 });
-            setUploadedFileName(null);
         }
         setUploadProgress(null);
-        setIsUploadingToBunny(false);
-        setIsPreparing(false);
     }, [lecture, form, isOpen]);
-
-    const handleBunnyUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file || !currentUser) return;
-
-        const videoTitle = form.getValues('title') || "Leçon sans titre";
-        
-        setIsPreparing(true);
-        setUploadedFileName(file.name);
-        
-        try {
-            // 1. Appel serveur pour préparer l'upload (Placeholder Bunny)
-            const prep = await createBunnyVideo(videoTitle, currentUser.uid);
-            
-            if (!prep.success || !prep.guid || !prep.uploadKey) {
-                throw new Error(prep.error || "Impossible d'initialiser Bunny.net");
-            }
-
-            const { guid, libraryId, uploadKey } = prep;
-            const uploadUrl = `https://video.bunnycdn.com/library/${libraryId}/videos/${guid}`;
-
-            setIsPreparing(false);
-            setIsUploadingToBunny(true);
-            setUploadProgress(0);
-
-            // 2. Transfert direct XMLHttpRequest (pour la progression réelle)
-            const xhr = new XMLHttpRequest();
-            
-            xhr.upload.addEventListener("progress", (evt) => {
-                if (evt.lengthComputable) {
-                    const percent = (evt.loaded / evt.total) * 100;
-                    setUploadProgress(percent);
-                }
-            }, false);
-
-            xhr.onreadystatechange = () => {
-                if (xhr.readyState === 4) {
-                    if (xhr.status === 200 || xhr.status === 201) {
-                        // SUCCÈS : On injecte le GUID dans le champ caché
-                        form.setValue('contentUrl', guid, { shouldValidate: true });
-                        setUploadProgress(null);
-                        setIsUploadingToBunny(false);
-                        toast({ title: "Vidéo prête !", description: "Le fichier est sécurisé sur Bunny Stream." });
-                    } else {
-                        // ÉCHEC : Souvent un problème de CORS (Allowed Domains)
-                        const msg = xhr.status === 0 
-                            ? "Connexion bloquée (CORS). Vérifie 'Allowed domains' sur ta console Bunny.net."
-                            : `Erreur serveur : ${xhr.status}`;
-                        toast({ variant: 'destructive', title: "Échec de l'importation", description: msg });
-                        setIsUploadingToBunny(false);
-                        setUploadProgress(null);
-                        setUploadedFileName(null);
-                    }
-                }
-            };
-
-            xhr.onerror = () => {
-                toast({ variant: 'destructive', title: "Erreur réseau", description: "Vérifie ta connexion ou les réglages Bunny." });
-                setIsUploadingToBunny(false);
-                setUploadProgress(null);
-            };
-
-            xhr.open("PUT", uploadUrl, true);
-            xhr.setRequestHeader("AccessKey", uploadKey);
-            xhr.setRequestHeader("Accept", "application/json");
-            xhr.setRequestHeader("Content-Type", "application/octet-stream");
-            xhr.send(file);
-
-        } catch (error: any) {
-            toast({ variant: 'destructive', title: "Erreur de préparation", description: error.message });
-            setIsPreparing(false);
-            setUploadedFileName(null);
-        }
-    };
 
     const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !currentUser) return;
         
-        setUploadedFileName(file.name);
         setUploadProgress(0);
-        setIsUploadingToBunny(true);
         
         const storage = getStorage();
         const storageRef = ref(storage, `course_resources/${currentUser.uid}/${Date.now()}_${file.name}`);
@@ -172,13 +84,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             (error) => {
                 toast({ variant: 'destructive', title: 'Erreur PDF', description: error.message });
                 setUploadProgress(null);
-                setIsUploadingToBunny(false);
             },
             () => {
                 getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                     form.setValue('contentUrl', downloadURL, { shouldValidate: true });
                     setUploadProgress(null);
-                    setIsUploadingToBunny(false);
                     toast({ title: 'PDF importé avec succès !' });
                 });
             }
@@ -196,8 +106,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: 'Leçon enregistrée !' });
                     onOpenChange(false);
                 } else {
-                    const errorMsg = typeof result.error === 'string' ? result.error : "Vérifie les champs du formulaire.";
-                    toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+                    toast({ variant: 'destructive', title: 'Erreur', description: "Veuillez vérifier les informations saisies." });
                 }
             } catch (e) {
                 toast({ variant: 'destructive', title: 'Erreur système', description: "Impossible de joindre le serveur." });
@@ -226,14 +135,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         <FormField control={form.control} name="type" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
+                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white">
                                             <SelectValue />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="video" className="py-3 cursor-pointer">🎥 Vidéo Premium (Bunny Stream)</SelectItem>
+                                        <SelectItem value="video" className="py-3 cursor-pointer">🎥 Vidéo (ID Bunny ou YouTube)</SelectItem>
                                         <SelectItem value="text" className="py-3 cursor-pointer">✍️ Texte / Article</SelectItem>
                                         <SelectItem value="pdf" className="py-3 cursor-pointer">📄 Document PDF</SelectItem>
                                     </SelectContent>
@@ -242,7 +151,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             </FormItem> 
                         )}/>
                         
-                        {selectedType === 'text' ? (
+                        {selectedType === 'text' && (
                             <FormField control={form.control} name="textContent" render={({ field }) => ( 
                                 <FormItem>
                                     <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu de l'article</FormLabel>
@@ -250,70 +159,65 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
-                        ) : (
+                        )}
+
+                        {selectedType === 'video' && (
+                            <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Bunny Stream ou Lien YouTube</FormLabel>
+                                    <FormControl>
+                                        <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
+                                            <div className="p-3 bg-slate-800 rounded-xl text-primary"><LinkIcon className="h-5 w-5"/></div>
+                                            <Input placeholder="Ex: 8a7b6c... (GUID Bunny) ou lien YouTube" {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
+                                        </div>
+                                    </FormControl>
+                                    <FormDescription className="text-[10px] text-slate-500 flex items-start gap-2 mt-2 leading-relaxed">
+                                        <Info className="h-3 w-3 shrink-0 text-primary" />
+                                        Copiez l'ID de votre vidéo depuis votre tableau de bord Bunny.net ou collez simplement l'URL d'une vidéo YouTube.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem> 
+                            )}/>
+                        )}
+
+                        {selectedType === 'pdf' && (
                             <div className="space-y-4">
-                                <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
-                                    Fichier {selectedType === 'video' ? 'Vidéo' : 'PDF'}
-                                </Label>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Document PDF</FormLabel>
                                 <div className="relative">
                                     <Input 
                                         type="file" 
-                                        accept={selectedType === 'video' ? "video/*" : ".pdf"} 
-                                        onChange={selectedType === 'video' ? handleBunnyUpload : handlePdfUpload} 
+                                        accept=".pdf" 
+                                        onChange={handlePdfUpload} 
                                         className="sr-only" 
-                                        id="lecture-file-upload"
-                                        disabled={isPreparing || isUploadingToBunny}
+                                        id="lecture-pdf-upload"
+                                        disabled={uploadProgress !== null}
                                     />
                                     <label 
-                                        htmlFor="lecture-file-upload"
+                                        htmlFor="lecture-pdf-upload"
                                         className={cn(
-                                            "flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98] relative",
-                                            (isPreparing || isUploadingToBunny) && "pointer-events-none opacity-50"
+                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
+                                            uploadProgress !== null && "pointer-events-none opacity-50"
                                         )}
                                     >
-                                        {isPreparing ? (
-                                            <div className="text-center space-y-3 animate-pulse">
-                                                <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
-                                                <span className="text-[10px] uppercase font-black tracking-widest text-primary">Préparation du tunnel...</span>
-                                            </div>
-                                        ) : isUploadingToBunny ? (
-                                            <div className="w-full max-w-[250px] text-center space-y-4 px-4">
-                                                <div className="flex items-center justify-center gap-2 text-primary font-bold">
-                                                    <Loader2 className="h-5 w-5 animate-spin" />
-                                                    <span className="text-[10px] uppercase tracking-widest">Envoi vers Bunny...</span>
-                                                </div>
-                                                <Progress value={uploadProgress || 0} className="h-1.5" />
-                                                <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">{Math.round(uploadProgress || 0)}%</p>
-                                            </div>
-                                        ) : uploadedFileName ? (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <CheckCircle2 className="h-8 w-8 text-emerald-500" />
-                                                <p className="text-xs font-bold text-white truncate max-w-[200px]">{uploadedFileName}</p>
-                                                <span className="text-[10px] text-slate-500 uppercase font-black">Changer de fichier</span>
+                                        {uploadProgress !== null ? (
+                                            <div className="w-full max-w-[200px] text-center space-y-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                                                <Progress value={uploadProgress} className="h-1.5" />
+                                                <p className="text-[10px] font-black text-white uppercase">{Math.round(uploadProgress)}%</p>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col items-center gap-3">
+                                            <div className="flex flex-col items-center gap-2">
                                                 <UploadCloud className="h-10 w-10 text-slate-700" />
-                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir le fichier</span>
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Téléverser le PDF</span>
                                             </div>
                                         )}
                                     </label>
                                 </div>
-                                
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
                                         <FormControl>
-                                            <div className={cn(
-                                                "flex items-center gap-3 bg-slate-950 border rounded-xl p-1 pr-4 transition-all",
-                                                field.value ? "border-emerald-500/30" : "border-slate-800"
-                                            )}>
-                                                <div className={cn("p-2 rounded-lg", field.value ? "bg-emerald-500/10 text-emerald-500" : "bg-slate-800 text-slate-500")}>
-                                                    {selectedType === 'video' ? <FileVideo className="h-4 w-4"/> : <FileText className="h-4 w-4"/>}
-                                                </div>
-                                                <Input readOnly placeholder="Identifiant technique (GUID)..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-10 text-[10px] font-mono text-white opacity-70" />
-                                            </div>
+                                            <Input readOnly placeholder="Lien du fichier généré..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" />
                                         </FormControl>
-                                        <FormDescription className="text-[10px] italic">Cet identifiant est généré automatiquement après l'upload.</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -332,8 +236,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button></DialogClose>
                             <Button 
                                 type="submit" 
-                                disabled={isPending || isPreparing || isUploadingToBunny || !currentContentUrl} 
-                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95 disabled:opacity-50"
+                                disabled={isPending || uploadProgress !== null} 
+                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95"
                             >
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
                                 {lecture ? "Mettre à jour" : "Publier la leçon"}
