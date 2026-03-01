@@ -1,9 +1,14 @@
+
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
  
+export function generateStaticParams() {
+  return [{locale: 'en'}, {locale: 'fr'}];
+}
+
 export default async function LocaleLayout({
   children,
   params: {locale}
