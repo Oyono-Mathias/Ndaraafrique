@@ -2,7 +2,6 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Bunny/YouTube).
- * Correction : Ajout de logs et de retours visuels pour la publication.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -21,7 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -123,7 +122,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     };
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
-        console.log("Submitting lecture form...", values);
         startTransition(async () => {
             try {
                 const result = await (lecture
@@ -138,23 +136,17 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
                 }
             } catch (err: any) {
-                console.error("Submission error:", err);
                 toast({ variant: 'destructive', title: 'Erreur Critique', description: "Impossible de contacter le serveur." });
             }
         });
     };
 
-    // Aide au débogage visuel si le formulaire est invalide
     const handleInvalid = () => {
-        const errors = form.formState.errors;
-        if (Object.keys(errors).length > 0) {
-            console.warn("Form validation errors:", errors);
-            toast({ 
-                variant: 'destructive', 
-                title: 'Formulaire incomplet', 
-                description: 'Veuillez remplir tous les champs obligatoires avant de publier.' 
-            });
-        }
+        toast({ 
+            variant: 'destructive', 
+            title: 'Formulaire incomplet', 
+            description: 'Veuillez remplir tous les champs obligatoires avant de publier.' 
+        });
     };
 
     return (
@@ -188,7 +180,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <SelectValue placeholder="Choisir un format" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white z-[10001]">
                                         {adminSettings.allowBunny && (
                                             <SelectItem value="video" className="py-3">
                                                 <div className="flex items-center gap-2">

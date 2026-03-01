@@ -2,7 +2,6 @@
 
 /**
  * @fileOverview Formulaire de création de devoirs.
- * Résout l'erreur de build Vercel (Syntaxe JSX et imports).
  */
 
 import { useState, useEffect, useTransition } from 'react';
@@ -135,7 +134,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
+            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800 z-[10000]">
                 <DialogHeader>
                     <DialogTitle className="text-white">{assignment ? "Modifier" : "Ajouter"} un devoir</DialogTitle>
                 </DialogHeader>
@@ -156,7 +155,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                                            </Button>
                                        </FormControl>
                                    </PopoverTrigger>
-                                   <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start">
+                                   <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800 z-[10001]" align="start">
                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
                                    </PopoverContent>
                                </Popover>
