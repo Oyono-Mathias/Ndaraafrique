@@ -1,10 +1,14 @@
-
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages } from 'next-intl/server';
+import { getMessages, unstable_setRequestLocale } from 'next-intl/server';
  
+/**
+ * @fileOverview Layout racine pour les routes internationalisées.
+ * Optimisé pour le rendu statique (SSG) sur Vercel.
+ */
+
 export function generateStaticParams() {
   return [{locale: 'en'}, {locale: 'fr'}];
 }
@@ -16,6 +20,10 @@ export default async function LocaleLayout({
   children: React.ReactNode;
   params: {locale: string};
 }) {
+  // ✅ Correction critique pour permettre le rendu statique (SSG)
+  // Cette fonction indique à next-intl quel locale utiliser sans consulter les headers dynamiques.
+  unstable_setRequestLocale(locale);
+  
   const messages = await getMessages();
   
   return (
