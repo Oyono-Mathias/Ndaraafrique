@@ -4,10 +4,10 @@ import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import type { Lecture } from '@/lib/types';
-import { getStorage } from 'firebase-admin/storage';
 
 /**
  * @fileOverview Actions pour la gestion des leçons.
+ * Corrigé pour accepter les IDs Bunny (GUID) et les liens YouTube.
  */
 
 function handleServerError(error: any) {
@@ -19,10 +19,11 @@ function handleServerError(error: any) {
     return "Erreur lors de la gestion de la leçon : " + msg;
 }
 
+// Schéma assoupli pour accepter GUID Bunny et URL YouTube
 const lectureSchema = z.object({
-  title: z.string().min(3, "Le titre est requis."),
-  type: z.enum(['video', 'text', 'pdf']),
-  contentUrl: z.string().url().optional(),
+  title: z.string().min(3, "Le titre est requis (min 3 caract.)."),
+  type: z.enum(['video', 'youtube', 'text', 'pdf']),
+  contentUrl: z.string().min(1, "L'identifiant ou l'URL est requis."),
   textContent: z.string().optional(),
   duration: z.coerce.number().min(0).optional(),
 });
@@ -30,7 +31,9 @@ const lectureSchema = z.object({
 export async function createLecture({ courseId, sectionId, formData }: { courseId: string; sectionId: string; formData: any }) {
   const validatedFields = lectureSchema.safeParse(formData);
   if (!validatedFields.success) {
-    return { success: false, error: validatedFields.error.flatten().fieldErrors };
+    // Retourne la première erreur de validation sous forme de chaîne
+    const firstError = Object.values(validatedFields.error.flatten().fieldErrors)[0]?.[0];
+    return { success: false, error: firstError || "Données invalides" };
   }
   
   try {
@@ -54,7 +57,8 @@ export async function createLecture({ courseId, sectionId, formData }: { courseI
 export async function updateLecture({ courseId, sectionId, lectureId, formData }: { courseId: string; sectionId: string; lectureId: string; formData: any }) {
     const validatedFields = lectureSchema.safeParse(formData);
     if (!validatedFields.success) {
-        return { success: false, error: validatedFields.error.flatten().fieldErrors };
+        const firstError = Object.values(validatedFields.error.flatten().fieldErrors)[0]?.[0];
+        return { success: false, error: firstError || "Données invalides" };
     }
     
     try {

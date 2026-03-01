@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Bunny/YouTube).
+ * Correction : Ajout de l'importation 'cn' et gestion robuste des erreurs serveur.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -132,20 +133,12 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: 'Leçon enregistrée !' });
                     onOpenChange(false);
                 } else {
-                    const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement.";
-                    toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+                    const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement. Vérifiez les champs.";
+                    toast({ variant: 'destructive', title: 'Échec de publication', description: errorMsg });
                 }
             } catch (err: any) {
-                toast({ variant: 'destructive', title: 'Erreur Critique', description: "Impossible de contacter le serveur." });
+                toast({ variant: 'destructive', title: 'Erreur Serveur', description: "Le service est temporairement indisponible." });
             }
-        });
-    };
-
-    const handleInvalid = () => {
-        toast({ 
-            variant: 'destructive', 
-            title: 'Formulaire incomplet', 
-            description: 'Veuillez remplir tous les champs obligatoires avant de publier.' 
         });
     };
 
@@ -158,7 +151,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit, handleInvalid)} className="space-y-6 p-8">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-8">
                         <FormField control={form.control} name="title" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
@@ -232,7 +225,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <FormControl>
                                         <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
                                             <div className="p-3 bg-slate-800 rounded-xl text-primary"><Info className="h-5 w-5"/></div>
-                                            <Input placeholder="Ex: 8a7b6c..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
+                                            <Input placeholder="Ex: 8a7b6c..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white font-mono" />
                                         </div>
                                     </FormControl>
                                     <FormDescription className="text-[10px] text-slate-500 mt-2">Copiez l'ID technique depuis votre console Bunny.net.</FormDescription>
