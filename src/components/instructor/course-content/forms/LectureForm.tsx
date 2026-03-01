@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Admin).
- * Gère les options dynamiquement selon les réglages globaux de l'administrateur.
+ * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Bunny/YouTube).
+ * Résout l'erreur de build 'cn' et gère les réglages admin.
  */
 
-import { useEffect, useTransition, useState, useMemo } from 'react';
+import { useEffect, useTransition, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -48,7 +48,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const db = getFirestore();
 
-    // ✅ États pour les permissions Admin
     const [adminSettings, setAdminSettings] = useState({
         allowYoutube: true,
         allowBunny: true,
@@ -68,7 +67,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const selectedType = form.watch('type');
     
-    // 🛡️ Écouter les réglages Admin
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
             if (snap.exists()) {
@@ -87,7 +85,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         if(lecture && isOpen) {
             form.reset({
                 title: lecture.title,
-                type: (lecture.type as any) === 'video' ? 'video' : (lecture.type as any) === 'youtube' ? 'youtube' : (lecture.type as any) === 'pdf' ? 'pdf' : 'text',
+                type: lecture.type,
                 contentUrl: lecture.contentUrl || '',
                 textContent: lecture.textContent || '',
                 duration: lecture.duration || 0,
@@ -126,20 +124,16 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {
-            try {
-                const result = await (lecture
-                    ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
-                    : createLecture({ courseId, sectionId, formData: values }));
-                
-                if (result.success) {
-                    toast({ title: 'Leçon enregistrée !' });
-                    onOpenChange(false);
-                } else {
-                    const errorMsg = typeof result.error === 'string' ? result.error : "Veuillez vérifier les informations.";
-                    toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
-                }
-            } catch (e) {
-                toast({ variant: 'destructive', title: 'Erreur système', description: "Impossible de joindre le serveur." });
+            const result = await (lecture
+                ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
+                : createLecture({ courseId, sectionId, formData: values }));
+            
+            if (result.success) {
+                toast({ title: 'Leçon enregistrée !' });
+                onOpenChange(false);
+            } else {
+                const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement.";
+                toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
             }
         });
     };
@@ -173,7 +167,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                                         {adminSettings.allowBunny && (
-                                            <SelectItem value="video" className="py-3 cursor-pointer">
+                                            <SelectItem value="video" className="py-3">
                                                 <div className="flex items-center gap-2">
                                                     <PlaySquare className="h-4 w-4 text-primary" />
                                                     <span>Vidéo Premium (Bunny)</span>
@@ -181,20 +175,20 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             </SelectItem>
                                         )}
                                         {adminSettings.allowYoutube && (
-                                            <SelectItem value="youtube" className="py-3 cursor-pointer">
+                                            <SelectItem value="youtube" className="py-3">
                                                 <div className="flex items-center gap-2">
                                                     <Youtube className="h-4 w-4 text-red-500" />
                                                     <span>Vidéo YouTube</span>
                                                 </div>
                                             </SelectItem>
                                         )}
-                                        <SelectItem value="text" className="py-3 cursor-pointer">
+                                        <SelectItem value="text" className="py-3">
                                             <div className="flex items-center gap-2">
                                                 <MessageSquareText className="h-4 w-4 text-emerald-500" />
                                                 <span>Texte / Article</span>
                                             </div>
                                         </SelectItem>
-                                        <SelectItem value="pdf" className="py-3 cursor-pointer">
+                                        <SelectItem value="pdf" className="py-3">
                                             <div className="flex items-center gap-2">
                                                 <FileText className="h-4 w-4 text-amber-500" />
                                                 <span>Document PDF</span>
@@ -210,7 +204,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <FormField control={form.control} name="textContent" render={({ field }) => ( 
                                 <FormItem>
                                     <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu de l'article</FormLabel>
-                                    <FormControl><Textarea rows={10} placeholder="Rédigez ou collez votre texte ici..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white" /></FormControl>
+                                    <FormControl><Textarea rows={10} placeholder="Rédigez votre texte ici..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white" /></FormControl>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
@@ -219,16 +213,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         {selectedType === 'video' && adminSettings.allowBunny && (
                             <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny Stream</FormLabel>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny Stream (GUID)</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
                                             <div className="p-3 bg-slate-800 rounded-xl text-primary"><Info className="h-5 w-5"/></div>
-                                            <Input placeholder="Ex: 8a7b6c... (Copiez le GUID depuis Bunny)" {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
+                                            <Input placeholder="Ex: 8a7b6c..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
                                         </div>
                                     </FormControl>
-                                    <FormDescription className="text-[10px] text-slate-500 mt-2">
-                                        Utilisez l'identifiant technique (GUID) de votre vidéo sur Bunny.net.
-                                    </FormDescription>
+                                    <FormDescription className="text-[10px] text-slate-500 mt-2">Copiez l'ID technique depuis votre console Bunny.net.</FormDescription>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
@@ -285,7 +277,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
                                         <FormControl>
-                                            <Input readOnly placeholder="Lien du fichier généré..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" />
+                                            <Input readOnly placeholder="Lien du fichier..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem> 

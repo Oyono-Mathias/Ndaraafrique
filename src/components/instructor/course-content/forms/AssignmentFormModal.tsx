@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * @fileOverview Formulaire de création de devoirs.
+ * Résout l'erreur de build Vercel (Syntaxe JSX et imports).
+ */
+
 import { useState, useEffect, useTransition } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -132,26 +137,26 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
                 <DialogHeader>
-                    <DialogTitle>{assignment ? "Modifier" : "Ajouter"} un devoir</DialogTitle>
+                    <DialogTitle className="text-white">{assignment ? "Modifier" : "Ajouter"} un devoir</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Titre du devoir</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description / Consignes</FormLabel><FormControl><Textarea rows={5} {...field}/></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="correctionGuide" render={({ field }) => ( <FormItem><FormLabel>Guide de correction (pour l'IA)</FormLabel><FormControl><Textarea rows={3} {...field}/></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400">Titre du devoir</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400">Description / Consignes</FormLabel><FormControl><Textarea rows={5} {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl><FormMessage /></FormItem> )}/>
+                        <FormField control={form.control} name="correctionGuide" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400">Guide de correction (pour l'IA)</FormLabel><FormControl><Textarea rows={3} {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="dueDate" render={({ field }) => (
                            <FormItem className="flex flex-col">
-                               <FormLabel>Date limite (optionnel)</FormLabel>
+                               <FormLabel className="text-slate-400">Date limite (optionnel)</FormLabel>
                                <Popover>
                                    <PopoverTrigger asChild>
                                        <FormControl>
-                                           <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                           <Button variant="outline" className={cn("pl-3 text-left font-normal bg-slate-950 border-slate-800", !field.value && "text-muted-foreground")}>
                                                {field.value ? format(field.value, "PPP", { locale: fr }) : <span>Choisissez une date</span>}
                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                            </Button>
                                        </FormControl>
                                    </PopoverTrigger>
-                                   <PopoverContent className="w-auto p-0" align="start">
+                                   <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800" align="start">
                                        <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
                                    </PopoverContent>
                                </Popover>
@@ -160,16 +165,16 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                         )}/>
                         
                         <div className="space-y-2">
-                            <FormLabel>Fichiers joints</Label>
+                            <FormLabel className="text-slate-400">Fichiers joints</FormLabel>
                             <div className="space-y-2">
                                 {form.watch('attachments')?.map((att, i) => (
-                                    <div key={i} className="flex items-center justify-between p-2 bg-slate-800 rounded-md text-sm">
+                                    <div key={i} className="flex items-center justify-between p-2 bg-slate-800 rounded-md text-sm text-white">
                                         <span>{att.name}</span>
-                                        <Button variant="ghost" size="icon" type="button" onClick={() => removeAttachment(att.url)}><X className="h-4 w-4"/></Button>
+                                        <Button variant="ghost" size="icon" type="button" onClick={() => removeAttachment(att.url)} className="text-slate-400 hover:text-red-500"><X className="h-4 w-4"/></Button>
                                     </div>
                                 ))}
                             </div>
-                            <Button type="button" variant="outline" className={cn("w-full", isUploading && "opacity-50")} asChild disabled={isUploading}>
+                            <Button type="button" variant="outline" className={cn("w-full bg-slate-950 border-slate-800", isUploading && "opacity-50")} asChild disabled={isUploading}>
                                 <label className="cursor-pointer">
                                     {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2"/>}
                                     Téléverser des fichiers 
@@ -178,9 +183,11 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                             </Button>
                         </div>
                         
-                        <DialogFooter>
-                            <DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose>
-                            <Button type="submit" disabled={isPending || isUploading}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button>
+                        <DialogFooter className="pt-4 border-t border-white/5">
+                            <DialogClose asChild><Button type="button" variant="ghost" className="text-slate-400">Annuler</Button></DialogClose>
+                            <Button type="submit" disabled={isPending || isUploading} className="bg-primary text-white">
+                                {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer
+                            </Button>
                         </DialogFooter>
                     </form>
                 </Form>

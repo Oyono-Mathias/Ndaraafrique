@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ MIGRATION : Intégration Bunny.net Stream et YouTube native.
- * ✅ SÉCURITÉ : Protection DRM native via Bunny.net.
+ * ✅ LECTEUR BUNNY : Utilisation prioritaire du lecteur Bunny Stream pour le type 'video'.
+ * ✅ HYBRIDE : Supporte aussi YouTube et les fichiers PDF.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
