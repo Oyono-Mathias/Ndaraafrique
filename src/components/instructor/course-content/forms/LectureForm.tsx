@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Bunny/YouTube).
- * Correction : Ajout de l'importation 'cn' et gestion robuste des erreurs serveur.
+ * ✅ RÉSOLU : Distinction claire entre Library ID et Video ID.
+ * ✅ RÉSOLU : Z-index forcé pour le sélecteur.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -173,7 +174,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <SelectValue placeholder="Choisir un format" />
                                         </SelectTrigger>
                                     </FormControl>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white z-[10001]">
+                                    <SelectContent className="bg-slate-900 border-slate-800 text-white z-[10006]">
                                         {adminSettings.allowBunny && (
                                             <SelectItem value="video" className="py-3">
                                                 <div className="flex items-center gap-2">
@@ -221,14 +222,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         {selectedType === 'video' && adminSettings.allowBunny && (
                             <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny Stream (GUID)</FormLabel>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID) Bunny Stream</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
                                             <div className="p-3 bg-slate-800 rounded-xl text-primary"><Info className="h-5 w-5"/></div>
-                                            <Input placeholder="Ex: 8a7b6c..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white font-mono" />
+                                            <Input placeholder="Ex: 437b7753-..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white font-mono" />
                                         </div>
                                     </FormControl>
-                                    <FormDescription className="text-[10px] text-slate-500 mt-2">Copiez l'ID technique depuis votre console Bunny.net.</FormDescription>
+                                    <FormDescription className="text-[10px] text-slate-500 mt-2">Collez l'identifiant long avec des tirets trouvé sur votre vidéo Bunny.</FormDescription>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
