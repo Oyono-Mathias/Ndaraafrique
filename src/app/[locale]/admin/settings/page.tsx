@@ -39,7 +39,8 @@ import {
   Trash2,
   Award,
   Youtube,
-  PlaySquare
+  PlaySquare,
+  Key
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -60,6 +61,7 @@ const settingsSchema = z.object({
   allowInstructorSignup: z.boolean().default(true),
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
+  bunnyLibraryId: z.string().optional(),
   // Contenu Landing Page
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
@@ -124,6 +126,7 @@ export default function AdminSettingsPage() {
           allowInstructorSignup: data.platform?.allowInstructorSignup ?? true,
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
+          bunnyLibraryId: data.platform?.bunnyLibraryId || '',
           // Landing
           landingHeroTitle: data.content?.landingPage?.heroTitle || "Apprenez. Construisez. Prospérez.",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
@@ -210,6 +213,7 @@ export default function AdminSettingsPage() {
           allowInstructorSignup: values.allowInstructorSignup,
           allowYoutube: values.allowYoutube,
           allowBunny: values.allowBunny,
+          bunnyLibraryId: values.bunnyLibraryId,
           autoApproveCourses: false,
           enableInternalMessaging: true
         },
@@ -366,6 +370,22 @@ export default function AdminSettingsPage() {
                             </div>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                  
+                  <div className="pt-6 border-t border-white/5">
+                    <FormField control={form.control} name="bunnyLibraryId" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID de Bibliothèque Bunny (Library ID)</FormLabel>
+                        <FormControl>
+                            <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-2xl p-1 pr-4">
+                                <div className="p-3 bg-slate-700 rounded-xl text-primary"><Key className="h-5 w-5"/></div>
+                                <Input placeholder="Ex: 382715" {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white font-mono" />
+                            </div>
+                        </FormControl>
+                        <FormDescription className="text-[10px] text-slate-500 italic">Trouvez cet ID dans votre tableau de bord Bunny.net Stream.</FormDescription>
+                        <FormMessage />
                       </FormItem>
                     )} />
                   </div>

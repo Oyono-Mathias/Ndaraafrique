@@ -361,6 +361,7 @@ export interface Settings {
     enableInternalMessaging: boolean;
     allowYoutube?: boolean;
     allowBunny?: boolean;
+    bunnyLibraryId?: string;
   };
   legal: {
     termsOfService: string;
