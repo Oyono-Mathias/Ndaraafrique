@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useTransition } from 'react';
+import { useEffect, useTransition, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -16,8 +16,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Link as LinkIcon, FileVideo, FileText, Info } from 'lucide-react';
-import { useState } from 'react';
+import { Loader2, CheckCircle2, UploadCloud, Link as LinkIcon, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -106,7 +106,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: 'Leçon enregistrée !' });
                     onOpenChange(false);
                 } else {
-                    toast({ variant: 'destructive', title: 'Erreur', description: "Veuillez vérifier les informations saisies." });
+                    const errorMsg = typeof result.error === 'string' ? result.error : "Veuillez vérifier les informations.";
+                    toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
                 }
             } catch (e) {
                 toast({ variant: 'destructive', title: 'Erreur système', description: "Impossible de joindre le serveur." });

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useTransition } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -10,7 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { createAssignment, updateAssignment } from '@/actions/assignmentActions';
 import type { Assignment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,6 +19,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Loader2, CalendarIcon, FileUp, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -40,7 +41,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
     const { currentUser } = useRole();
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
-    const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({});
+    const [isUploading, setIsUploading] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -66,18 +67,23 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
         const files = event.target.files;
         if (!files || !currentUser) return;
 
+        setIsUploading(true);
         Array.from(files).forEach(file => {
             const storage = getStorage();
             const storageRef = ref(storage, `assignment_attachments/${currentUser.uid}/${Date.now()}_${file.name}`);
             const uploadTask = uploadBytesResumable(storageRef, file);
 
             uploadTask.on('state_changed',
-                (snapshot) => setUploadProgress(prev => ({ ...prev, [file.name]: (snapshot.bytesTransferred / snapshot.totalBytes) * 100 })),
-                (error) => toast({ variant: 'destructive', title: `Erreur d'upload: ${file.name}`, description: error.message }),
+                null,
+                (error) => {
+                    toast({ variant: 'destructive', title: `Erreur d'upload: ${file.name}` });
+                    setIsUploading(false);
+                },
                 () => {
                     getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                         const currentAttachments = form.getValues('attachments') || [];
                         form.setValue('attachments', [...currentAttachments, { name: file.name, url: downloadURL }]);
+                        setIsUploading(false);
                     });
                 }
             );
@@ -101,7 +107,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
             } else {
                 const errorMsg = typeof result.error === 'string' 
                     ? result.error 
-                    : 'Certains champs sont invalides. Veuillez vérifier le formulaire.';
+                    : 'Certains champs sont invalides.';
                 
                 toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
             }
@@ -131,12 +137,16 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                                     </div>
                                 ))}
                             </div>
-                            <Button type="button" variant="outline" className="w-full" asChild>
-                                <label><FileUp className="h-4 w-4 mr-2"/> Téléverser des fichiers <input type="file" multiple onChange={handleFileChange} className="hidden"/></label>
+                            <Button type="button" variant="outline" className={cn("w-full", isUploading && "opacity-50")} asChild disabled={isUploading}>
+                                <label>
+                                    {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2"/>}
+                                    Téléverser des fichiers 
+                                    <input type="file" multiple onChange={handleFileChange} className="hidden" disabled={isUploading}/>
+                                </label>
                             </Button>
                         </div>
                         
-                        <DialogFooter><DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose><Button type="submit" disabled={isPending}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button></DialogFooter>
+                        <DialogFooter><DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose><Button type="submit" disabled={isPending || isUploading}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button></DialogFooter>
                     </form>
                 </Form>
             </DialogContent>
