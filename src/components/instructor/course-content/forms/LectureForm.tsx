@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Bunny/YouTube).
- * Résout l'erreur de build 'cn' et gère les réglages admin.
+ * Correction : Ajout de logs et de retours visuels pour la publication.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -21,7 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -123,31 +123,50 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     };
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
+        console.log("Submitting lecture form...", values);
         startTransition(async () => {
-            const result = await (lecture
-                ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
-                : createLecture({ courseId, sectionId, formData: values }));
-            
-            if (result.success) {
-                toast({ title: 'Leçon enregistrée !' });
-                onOpenChange(false);
-            } else {
-                const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement.";
-                toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+            try {
+                const result = await (lecture
+                    ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
+                    : createLecture({ courseId, sectionId, formData: values }));
+                
+                if (result.success) {
+                    toast({ title: 'Leçon enregistrée !' });
+                    onOpenChange(false);
+                } else {
+                    const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement.";
+                    toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+                }
+            } catch (err: any) {
+                console.error("Submission error:", err);
+                toast({ variant: 'destructive', title: 'Erreur Critique', description: "Impossible de contacter le serveur." });
             }
         });
     };
 
+    // Aide au débogage visuel si le formulaire est invalide
+    const handleInvalid = () => {
+        const errors = form.formState.errors;
+        if (Object.keys(errors).length > 0) {
+            console.warn("Form validation errors:", errors);
+            toast({ 
+                variant: 'destructive', 
+                title: 'Formulaire incomplet', 
+                description: 'Veuillez remplir tous les champs obligatoires avant de publier.' 
+            });
+        }
+    };
+
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+            <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden z-[10000]">
                 <DialogHeader className="p-8 pb-0">
                     <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">
                         {lecture ? "Modifier" : "Ajouter"} une leçon
                     </DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-8">
+                    <form onSubmit={form.handleSubmit(onSubmit, handleInvalid)} className="space-y-6 p-8">
                         <FormField control={form.control} name="title" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
@@ -159,10 +178,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         <FormField control={form.control} name="type" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
-                                <Select onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); }} defaultValue={field.value} value={field.value}>
+                                <Select 
+                                    onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); }} 
+                                    defaultValue={field.value} 
+                                    value={field.value}
+                                >
                                     <FormControl>
                                         <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white">
-                                            <SelectValue />
+                                            <SelectValue placeholder="Choisir un format" />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
