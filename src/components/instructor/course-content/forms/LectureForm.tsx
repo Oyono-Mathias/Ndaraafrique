@@ -112,9 +112,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         setIsUploadingToBunny(false);
                         toast({ title: "Vidéo transmise !", description: "Le fichier est prêt sur Bunny Stream." });
                     } else {
-                        // Diagnostic précis en cas d'échec
                         const errorMsg = xhr.status === 0 
-                            ? "Erreur CORS : Veuillez ajouter 'ndara-afrique.web.app' dans Security > Allowed Origins sur Bunny.net"
+                            ? "Erreur CORS : Vérifiez que 'ndara-afrique.vercel.app' est bien dans les Allowed Domains sur Bunny.net"
                             : `Erreur serveur : ${xhr.status}`;
                         
                         toast({ variant: 'destructive', title: "Échec du transfert", description: errorMsg });
@@ -128,7 +127,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 toast({ 
                     variant: 'destructive', 
                     title: "Erreur de connexion", 
-                    description: "Vérifiez vos réglages Security > Allowed Origins sur Bunny.net" 
+                    description: "Vérifiez vos réglages Security > Allowed domains sur Bunny.net" 
                 });
                 setIsUploadingToBunny(false);
                 setUploadProgress(null);
@@ -186,8 +185,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: 'Leçon enregistrée !' });
                     onOpenChange(false);
                 } else {
-                    // Conversion de l'erreur en chaîne simple pour le toast (Vercel Fix)
-                    const errorMsg = typeof result.error === 'string' ? result.error : "Données invalides.";
+                    const errorMsg = typeof result.error === 'string' ? result.error : "Données invalides. Vérifiez le formulaire.";
                     toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
                 }
             } catch (e) {
