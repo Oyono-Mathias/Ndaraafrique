@@ -4,7 +4,7 @@ import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Actions serveur pour l'API Bunny Stream.
- * Utilise les variables d'environnement pour plus de sécurité sur Vercel.
+ * Gère la création d'un emplacement vidéo avant le téléversement direct.
  */
 
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || '382715';
