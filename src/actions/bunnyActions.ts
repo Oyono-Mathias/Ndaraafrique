@@ -5,6 +5,7 @@ import { getAdminDb } from '@/firebase/admin';
 /**
  * @fileOverview Actions serveur pour l'API Bunny Stream.
  * Gère la création d'un emplacement vidéo avant le téléversement direct.
+ * Utilise les variables d'environnement pour une sécurité maximale sur Vercel.
  */
 
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || '382715';
@@ -16,6 +17,7 @@ export async function createBunnyVideo(title: string, instructorId: string) {
     const userDoc = await db.collection('users').doc(instructorId).get();
     const userData = userDoc.data();
 
+    // Sécurité : Seuls les instructeurs ou admins Ndara peuvent uploader
     if (!userDoc.exists || (userData?.role !== 'instructor' && userData?.role !== 'admin')) {
       throw new Error("Accès refusé : Seuls les formateurs peuvent uploader.");
     }

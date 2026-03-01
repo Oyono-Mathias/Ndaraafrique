@@ -110,11 +110,13 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         form.setValue('contentUrl', guid);
                         setUploadProgress(null);
                         setIsUploadingToBunny(false);
-                        toast({ title: "Vidéo transmise !", description: "Le fichier est prêt." });
+                        toast({ title: "Vidéo transmise !", description: "Le fichier est prêt sur Bunny Stream." });
                     } else {
+                        // Diagnostic précis en cas d'échec
                         const errorMsg = xhr.status === 0 
-                            ? "Erreur CORS : Vérifiez que votre domaine est autorisé dans Bunny > Security > Allowed Origins."
+                            ? "Erreur CORS : Veuillez ajouter 'ndara-afrique.web.app' dans Security > Allowed Origins sur Bunny.net"
                             : `Erreur serveur : ${xhr.status}`;
+                        
                         toast({ variant: 'destructive', title: "Échec du transfert", description: errorMsg });
                         setIsUploadingToBunny(false);
                         setUploadProgress(null);
@@ -125,8 +127,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             xhr.onerror = () => {
                 toast({ 
                     variant: 'destructive', 
-                    title: "Erreur Réseau / CORS", 
-                    description: "Le navigateur a bloqué l'envoi. Vérifiez la section 'Security' de votre bibliothèque Bunny." 
+                    title: "Erreur de connexion", 
+                    description: "Vérifiez vos réglages Security > Allowed Origins sur Bunny.net" 
                 });
                 setIsUploadingToBunny(false);
                 setUploadProgress(null);
@@ -175,16 +177,21 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {
-            const result = await (lecture
-                ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
-                : createLecture({ courseId, sectionId, formData: values }));
-            
-            if(result.success){
-                toast({ title: 'Leçon enregistrée !' });
-                onOpenChange(false);
-            } else {
-                const errorMsg = typeof result.error === 'string' ? result.error : "Erreur de validation.";
-                toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+            try {
+                const result = await (lecture
+                    ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
+                    : createLecture({ courseId, sectionId, formData: values }));
+                
+                if (result.success) {
+                    toast({ title: 'Leçon enregistrée !' });
+                    onOpenChange(false);
+                } else {
+                    // Conversion de l'erreur en chaîne simple pour le toast (Vercel Fix)
+                    const errorMsg = typeof result.error === 'string' ? result.error : "Données invalides.";
+                    toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+                }
+            } catch (e) {
+                toast({ variant: 'destructive', title: 'Erreur système', description: "Impossible de contacter le serveur." });
             }
         });
     };
@@ -202,24 +209,24 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         <FormField control={form.control} name="title" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
-                                <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
                                 <FormMessage />
                             </FormItem> 
                         )}/>
                         
                         <FormField control={form.control} name="type" render={({ field }) => ( 
                             <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
                                 <Select onValueChange={field.onChange} value={field.value}>
                                     <FormControl>
-                                        <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl">
+                                        <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white">
                                             <SelectValue />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="video" className="py-3">🎥 Vidéo Premium (Bunny)</SelectItem>
-                                        <SelectItem value="text" className="py-3">✍️ Texte / Article</SelectItem>
-                                        <SelectItem value="pdf" className="py-3">📄 Document PDF</SelectItem>
+                                        <SelectItem value="video" className="py-3 cursor-pointer">🎥 Vidéo Premium (Bunny Stream)</SelectItem>
+                                        <SelectItem value="text" className="py-3 cursor-pointer">✍️ Texte / Article</SelectItem>
+                                        <SelectItem value="pdf" className="py-3 cursor-pointer">📄 Document PDF</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -229,8 +236,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         {selectedType === 'text' ? (
                             <FormField control={form.control} name="textContent" render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu</FormLabel>
-                                    <FormControl><Textarea rows={10} placeholder="Rédigez ici..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4" /></FormControl>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu de l'article</FormLabel>
+                                    <FormControl><Textarea rows={10} placeholder="Rédigez ou collez votre texte ici..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white" /></FormControl>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
@@ -251,7 +258,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <label 
                                         htmlFor="lecture-file-upload"
                                         className={cn(
-                                            "flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all",
+                                            "flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
                                             (isUploadingToBunny || uploadProgress !== null) && "pointer-events-none opacity-50"
                                         )}
                                     >
@@ -259,7 +266,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <div className="w-full max-w-[250px] text-center space-y-4 px-4">
                                                 <div className="flex items-center justify-center gap-2 text-primary font-bold">
                                                     <Loader2 className="h-5 w-5 animate-spin" />
-                                                    <span className="text-[10px] uppercase tracking-widest">Envoi en cours...</span>
+                                                    <span className="text-[10px] uppercase tracking-widest">Téléversement...</span>
                                                 </div>
                                                 <Progress value={uploadProgress || 0} className="h-1.5" />
                                                 <p className="text-[10px] font-black text-white uppercase tracking-[0.3em]">{Math.round(uploadProgress || 0)}%</p>
@@ -268,11 +275,12 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <div className="flex flex-col items-center gap-2">
                                                 <CheckCircle2 className="h-8 w-8 text-emerald-500" />
                                                 <p className="text-xs font-bold text-white truncate max-w-[200px]">{uploadedFileName}</p>
+                                                <span className="text-[10px] text-slate-500 uppercase font-black">Cliquez pour changer</span>
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-3">
                                                 <UploadCloud className="h-8 w-8 text-slate-700" />
-                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sélectionner le fichier</span>
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir le fichier</span>
                                             </div>
                                         )}
                                     </label>
@@ -281,9 +289,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
                                         <FormControl>
-                                            <Input readOnly placeholder="ID Vidéo Bunny..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
+                                            <Input readOnly placeholder="Identifiant technique (GUID)..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50 text-white" />
                                         </FormControl>
-                                        <FormDescription className="text-[10px] italic">Identifiant technique Bunny Stream (ID: 382715).</FormDescription>
+                                        <FormDescription className="text-[10px] italic">Identifiant auto-généré après l'upload vers votre bibliothèque Bunny Stream (ID: 382715).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -292,17 +300,17 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         <FormField control={form.control} name="duration" render={({ field }) => ( 
                             <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée (min)</FormLabel>
-                                <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée estimée (minutes)</FormLabel>
+                                <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
                                 <FormMessage />
                             </FormItem> 
                         )}/>
 
                         <DialogFooter className="pt-6 border-t border-white/5">
-                            <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500">Annuler</Button></DialogClose>
+                            <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button></DialogClose>
                             <Button type="submit" disabled={isPending || isUploadingToBunny || uploadProgress !== null} className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95">
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
-                                {lecture ? "Mettre à jour" : "Créer la leçon"}
+                                {lecture ? "Mettre à jour" : "Publier la leçon"}
                             </Button>
                         </DialogFooter>
                     </form>
