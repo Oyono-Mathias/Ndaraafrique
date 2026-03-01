@@ -37,7 +37,9 @@ import {
   AlertTriangle,
   Plus,
   Trash2,
-  Award
+  Award,
+  Youtube,
+  PlaySquare
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -56,6 +58,8 @@ const settingsSchema = z.object({
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
+  allowYoutube: z.boolean().default(true),
+  allowBunny: z.boolean().default(true),
   // Contenu Landing Page
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
@@ -118,6 +122,8 @@ export default function AdminSettingsPage() {
           announcementMessage: data.platform?.announcementMessage || '',
           maintenanceMode: data.platform?.maintenanceMode || false,
           allowInstructorSignup: data.platform?.allowInstructorSignup ?? true,
+          allowYoutube: data.platform?.allowYoutube ?? true,
+          allowBunny: data.platform?.allowBunny ?? true,
           // Landing
           landingHeroTitle: data.content?.landingPage?.heroTitle || "Apprenez. Construisez. Prospérez.",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
@@ -202,6 +208,8 @@ export default function AdminSettingsPage() {
           announcementMessage: values.announcementMessage, 
           maintenanceMode: values.maintenanceMode,
           allowInstructorSignup: values.allowInstructorSignup,
+          allowYoutube: values.allowYoutube,
+          allowBunny: values.allowBunny,
           autoApproveCourses: false,
           enableInternalMessaging: true
         },
@@ -270,6 +278,7 @@ export default function AdminSettingsPage() {
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1 overflow-x-auto flex-nowrap gap-1">
               <TabsTrigger value="general" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Globe className="h-3 w-3 mr-2" />Général</TabsTrigger>
               <TabsTrigger value="platform" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><ShieldCheck className="h-3 w-3 mr-2" />Plateforme</TabsTrigger>
+              <TabsTrigger value="video" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><PlaySquare className="h-3 w-3 mr-2" />Hébergement Vidéo</TabsTrigger>
               <TabsTrigger value="content" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Layout className="h-3 w-3 mr-2" />Textes & SEO</TabsTrigger>
               <TabsTrigger value="team" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><UsersIcon className="h-3 w-3 mr-2" />L'Équipe</TabsTrigger>
               <TabsTrigger value="legal" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><FileText className="h-3 w-3 mr-2" />Légal</TabsTrigger>
@@ -319,6 +328,43 @@ export default function AdminSettingsPage() {
                     <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
                         <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white">Recrutement Formateurs</FormLabel><FormDescription className="text-xs">Affiche le lien "Devenir Instructeur".</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="video">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5">
+                  <CardTitle className="text-lg font-bold">Options d'Hébergement</CardTitle>
+                  <CardDescription>Choisissez les méthodes de diffusion autorisées pour vos formateurs.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6 pt-6">
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <FormField control={form.control} name="allowBunny" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-5 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-primary/10 rounded-xl"><PlaySquare className="h-6 w-6 text-primary" /></div>
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-sm font-bold text-white uppercase tracking-tight">Bunny Stream</FormLabel>
+                                <FormDescription className="text-[10px]">Hébergement premium sécurisé par DRM.</FormDescription>
+                            </div>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="allowYoutube" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-5 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-red-500/10 rounded-xl"><Youtube className="h-6 w-6 text-red-500" /></div>
+                            <div className="space-y-0.5">
+                                <FormLabel className="text-sm font-bold text-white uppercase tracking-tight">YouTube</FormLabel>
+                                <FormDescription className="text-[10px]">Diffusion gratuite via liens externes.</FormDescription>
+                            </div>
+                        </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />

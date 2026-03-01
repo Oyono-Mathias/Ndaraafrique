@@ -359,6 +359,8 @@ export interface Settings {
     allowInstructorSignup: boolean;
     autoApproveCourses: boolean;
     enableInternalMessaging: boolean;
+    allowYoutube?: boolean;
+    allowBunny?: boolean;
   };
   legal: {
     termsOfService: string;

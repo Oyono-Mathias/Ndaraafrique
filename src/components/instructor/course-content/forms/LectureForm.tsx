@@ -1,6 +1,11 @@
 'use client';
 
-import { useEffect, useTransition, useState } from 'react';
+/**
+ * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Admin).
+ * Gère les options dynamiquement selon les réglages globaux de l'administrateur.
+ */
+
+import { useEffect, useTransition, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -8,7 +13,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { createLecture, updateLecture } from '@/actions/lectureActions';
-import type { Lecture } from '@/lib/types';
+import type { Lecture, Settings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
@@ -16,8 +21,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, Globe } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -40,6 +46,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const db = getFirestore();
+
+    // ✅ États pour les permissions Admin
+    const [adminSettings, setAdminSettings] = useState({
+        allowYoutube: true,
+        allowBunny: true,
+        isLoading: true
+    });
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -54,11 +68,26 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const selectedType = form.watch('type');
     
+    // 🛡️ Écouter les réglages Admin
+    useEffect(() => {
+        const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data() as Settings;
+                setAdminSettings({
+                    allowYoutube: data.platform?.allowYoutube ?? true,
+                    allowBunny: data.platform?.allowBunny ?? true,
+                    isLoading: false
+                });
+            }
+        });
+        return () => unsub();
+    }, [db]);
+
     useEffect(() => {
         if(lecture && isOpen) {
             form.reset({
                 title: lecture.title,
-                type: lecture.type as any,
+                type: (lecture.type as any) === 'video' ? 'video' : (lecture.type as any) === 'youtube' ? 'youtube' : (lecture.type as any) === 'pdf' ? 'pdf' : 'text',
                 contentUrl: lecture.contentUrl || '',
                 textContent: lecture.textContent || '',
                 duration: lecture.duration || 0,
@@ -143,10 +172,34 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="video" className="py-3 cursor-pointer">🎥 Vidéo Premium (Bunny)</SelectItem>
-                                        <SelectItem value="youtube" className="py-3 cursor-pointer">📺 Vidéo YouTube</SelectItem>
-                                        <SelectItem value="text" className="py-3 cursor-pointer">✍️ Texte / Article</SelectItem>
-                                        <SelectItem value="pdf" className="py-3 cursor-pointer">📄 Document PDF</SelectItem>
+                                        {adminSettings.allowBunny && (
+                                            <SelectItem value="video" className="py-3 cursor-pointer">
+                                                <div className="flex items-center gap-2">
+                                                    <PlaySquare className="h-4 w-4 text-primary" />
+                                                    <span>Vidéo Premium (Bunny)</span>
+                                                </div>
+                                            </SelectItem>
+                                        )}
+                                        {adminSettings.allowYoutube && (
+                                            <SelectItem value="youtube" className="py-3 cursor-pointer">
+                                                <div className="flex items-center gap-2">
+                                                    <Youtube className="h-4 w-4 text-red-500" />
+                                                    <span>Vidéo YouTube</span>
+                                                </div>
+                                            </SelectItem>
+                                        )}
+                                        <SelectItem value="text" className="py-3 cursor-pointer">
+                                            <div className="flex items-center gap-2">
+                                                <MessageSquareText className="h-4 w-4 text-emerald-500" />
+                                                <span>Texte / Article</span>
+                                            </div>
+                                        </SelectItem>
+                                        <SelectItem value="pdf" className="py-3 cursor-pointer">
+                                            <div className="flex items-center gap-2">
+                                                <FileText className="h-4 w-4 text-amber-500" />
+                                                <span>Document PDF</span>
+                                            </div>
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <FormMessage />
@@ -163,7 +216,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             )}/>
                         )}
 
-                        {selectedType === 'video' && (
+                        {selectedType === 'video' && adminSettings.allowBunny && (
                             <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                 <FormItem>
                                     <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny Stream</FormLabel>
@@ -181,7 +234,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             )}/>
                         )}
 
-                        {selectedType === 'youtube' && (
+                        {selectedType === 'youtube' && adminSettings.allowYoutube && (
                             <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                 <FormItem>
                                     <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Lien de la vidéo YouTube</FormLabel>
