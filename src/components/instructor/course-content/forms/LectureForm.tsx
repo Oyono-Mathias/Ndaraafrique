@@ -16,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Link as LinkIcon, Info, Youtube } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
@@ -174,7 +174,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         </div>
                                     </FormControl>
                                     <FormDescription className="text-[10px] text-slate-500 mt-2">
-                                        Utilisez l'identifiant technique (GUID) de votre vidéo sur Bunny.net pour une protection DRM optimale.
+                                        Utilisez l'identifiant technique (GUID) de votre vidéo sur Bunny.net.
                                     </FormDescription>
                                     <FormMessage />
                                 </FormItem> 

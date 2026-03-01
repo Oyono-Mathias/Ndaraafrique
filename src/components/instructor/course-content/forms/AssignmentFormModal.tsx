@@ -10,8 +10,22 @@ import { useToast } from '@/hooks/use-toast';
 import { createAssignment, updateAssignment } from '@/actions/assignmentActions';
 import type { Assignment } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { 
+    Dialog, 
+    DialogContent, 
+    DialogHeader, 
+    DialogTitle, 
+    DialogFooter, 
+    DialogClose 
+} from '@/components/ui/dialog';
+import { 
+    Form, 
+    FormControl, 
+    FormField, 
+    FormItem, 
+    FormLabel, 
+    FormMessage 
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Calendar } from '@/components/ui/calendar';
@@ -48,7 +62,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
     });
 
     useEffect(() => {
-        if (assignment) {
+        if (assignment && isOpen) {
             form.reset({
                 title: assignment.title || '',
                 description: assignment.description || '',
@@ -58,7 +72,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                     : undefined,
                 attachments: assignment.attachments || [],
             });
-        } else {
+        } else if (isOpen) {
             form.reset({ title: '', description: '', correctionGuide: '', attachments: [] });
         }
     }, [assignment, form, isOpen]);
@@ -117,14 +131,32 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800">
-                <DialogHeader><DialogTitle>{assignment ? "Modifier" : "Ajouter"} un devoir</DialogTitle></DialogHeader>
+                <DialogHeader>
+                    <DialogTitle>{assignment ? "Modifier" : "Ajouter"} un devoir</DialogTitle>
+                </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                         <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel>Titre du devoir</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel>Description / Consignes</FormLabel><FormControl><Textarea rows={5} {...field}/></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="correctionGuide" render={({ field }) => ( <FormItem><FormLabel>Guide de correction (pour l'IA)</FormLabel><FormControl><Textarea rows={3} {...field}/></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="dueDate" render={({ field }) => (
-                           <FormItem className="flex flex-col"><FormLabel>Date limite (optionnel)</FormLabel><Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className="pl-3 text-left font-normal">{field.value ? format(field.value, "PPP", { locale: fr }) : <span>Choisissez une date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover><FormMessage /></FormItem>
+                           <FormItem className="flex flex-col">
+                               <FormLabel>Date limite (optionnel)</FormLabel>
+                               <Popover>
+                                   <PopoverTrigger asChild>
+                                       <FormControl>
+                                           <Button variant="outline" className={cn("pl-3 text-left font-normal", !field.value && "text-muted-foreground")}>
+                                               {field.value ? format(field.value, "PPP", { locale: fr }) : <span>Choisissez une date</span>}
+                                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                           </Button>
+                                       </FormControl>
+                                   </PopoverTrigger>
+                                   <PopoverContent className="w-auto p-0" align="start">
+                                       <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
+                                   </PopoverContent>
+                               </Popover>
+                               <FormMessage />
+                           </FormItem>
                         )}/>
                         
                         <div className="space-y-2">
@@ -138,7 +170,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                                 ))}
                             </div>
                             <Button type="button" variant="outline" className={cn("w-full", isUploading && "opacity-50")} asChild disabled={isUploading}>
-                                <label>
+                                <label className="cursor-pointer">
                                     {isUploading ? <Loader2 className="h-4 w-4 mr-2 animate-spin"/> : <FileUp className="h-4 w-4 mr-2"/>}
                                     Téléverser des fichiers 
                                     <input type="file" multiple onChange={handleFileChange} className="hidden" disabled={isUploading}/>
@@ -146,7 +178,10 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                             </Button>
                         </div>
                         
-                        <DialogFooter><DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose><Button type="submit" disabled={isPending || isUploading}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button></DialogFooter>
+                        <DialogFooter>
+                            <DialogClose asChild><Button type="button" variant="ghost">Annuler</Button></DialogClose>
+                            <Button type="submit" disabled={isPending || isUploading}>{isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin"/>} Enregistrer</Button>
+                        </DialogFooter>
                     </form>
                 </Form>
             </DialogContent>
