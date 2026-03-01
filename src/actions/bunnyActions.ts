@@ -45,12 +45,12 @@ export async function createBunnyVideo(title: string, instructorId: string) {
 
     return { 
       success: true, 
-      guid: data.guid, 
+      guid: data.guid as string, 
       libraryId: LIBRARY_ID,
       uploadKey: API_KEY // On transmet la clé pour le PUT direct (sécurisé via SSL)
     };
   } catch (error: any) {
     console.error("Bunny API Prep Error:", error.message);
-    return { success: false, error: error.message };
+    return { success: false, error: error.message as string };
   }
 }
