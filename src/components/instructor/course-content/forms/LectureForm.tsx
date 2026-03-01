@@ -16,12 +16,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Link as LinkIcon, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Link as LinkIcon, Info, Youtube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
-  type: z.enum(['video', 'text', 'pdf']),
+  type: z.enum(['video', 'youtube', 'text', 'pdf']),
   contentUrl: z.string().min(1, "L'identifiant ou l'URL est requis."),
   textContent: z.string().optional(),
   duration: z.coerce.number().min(0).optional(),
@@ -58,7 +58,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         if(lecture && isOpen) {
             form.reset({
                 title: lecture.title,
-                type: lecture.type,
+                type: lecture.type as any,
                 contentUrl: lecture.contentUrl || '',
                 textContent: lecture.textContent || '',
                 duration: lecture.duration || 0,
@@ -136,14 +136,15 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         <FormField control={form.control} name="type" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                                <Select onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); }} defaultValue={field.value} value={field.value}>
                                     <FormControl>
                                         <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white">
                                             <SelectValue />
                                         </SelectTrigger>
                                     </FormControl>
                                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                                        <SelectItem value="video" className="py-3 cursor-pointer">🎥 Vidéo (ID Bunny ou YouTube)</SelectItem>
+                                        <SelectItem value="video" className="py-3 cursor-pointer">🎥 Vidéo Premium (Bunny)</SelectItem>
+                                        <SelectItem value="youtube" className="py-3 cursor-pointer">📺 Vidéo YouTube</SelectItem>
                                         <SelectItem value="text" className="py-3 cursor-pointer">✍️ Texte / Article</SelectItem>
                                         <SelectItem value="pdf" className="py-3 cursor-pointer">📄 Document PDF</SelectItem>
                                     </SelectContent>
@@ -165,17 +166,31 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         {selectedType === 'video' && (
                             <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Bunny Stream ou Lien YouTube</FormLabel>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">ID Vidéo Bunny Stream</FormLabel>
                                     <FormControl>
                                         <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
-                                            <div className="p-3 bg-slate-800 rounded-xl text-primary"><LinkIcon className="h-5 w-5"/></div>
-                                            <Input placeholder="Ex: 8a7b6c... (GUID Bunny) ou lien YouTube" {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
+                                            <div className="p-3 bg-slate-800 rounded-xl text-primary"><Info className="h-5 w-5"/></div>
+                                            <Input placeholder="Ex: 8a7b6c... (Copiez le GUID depuis Bunny)" {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
                                         </div>
                                     </FormControl>
-                                    <FormDescription className="text-[10px] text-slate-500 flex items-start gap-2 mt-2 leading-relaxed">
-                                        <Info className="h-3 w-3 shrink-0 text-primary" />
-                                        Copiez l'ID de votre vidéo depuis votre tableau de bord Bunny.net ou collez simplement l'URL d'une vidéo YouTube.
+                                    <FormDescription className="text-[10px] text-slate-500 mt-2">
+                                        Utilisez l'identifiant technique (GUID) de votre vidéo sur Bunny.net pour une protection DRM optimale.
                                     </FormDescription>
+                                    <FormMessage />
+                                </FormItem> 
+                            )}/>
+                        )}
+
+                        {selectedType === 'youtube' && (
+                            <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Lien de la vidéo YouTube</FormLabel>
+                                    <FormControl>
+                                        <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
+                                            <div className="p-3 bg-slate-800 rounded-xl text-red-500"><Youtube className="h-5 w-5"/></div>
+                                            <Input placeholder="https://www.youtube.com/watch?v=..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
+                                        </div>
+                                    </FormControl>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>

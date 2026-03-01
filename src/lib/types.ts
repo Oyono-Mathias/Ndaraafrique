@@ -157,7 +157,7 @@ export interface Lecture {
   title: string;
   description?: string;
   order: number;
-  type: 'video' | 'text' | 'pdf';
+  type: 'video' | 'youtube' | 'text' | 'pdf';
   contentUrl?: string; // For video & PDF
   textContent?: string; // For text
   duration?: number; // in minutes

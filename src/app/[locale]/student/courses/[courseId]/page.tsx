@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur de cours Ndara Afrique.
- * ✅ MIGRATION : Intégration Bunny.net Stream pour une expérience Premium.
+ * ✅ MIGRATION : Intégration Bunny.net Stream et YouTube native.
  * ✅ SÉCURITÉ : Protection DRM native via Bunny.net.
  */
 
@@ -28,6 +28,7 @@ import { Loader2, Bot, Play, MessageSquare, CheckCircle2 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
 import { BunnyPlayer } from '@/components/ui/bunny-player';
+import { YoutubePlayer } from '@/components/ui/youtube-player';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { CourseSidebar } from '@/components/CourseSidebar'; 
@@ -199,6 +200,8 @@ function CoursePlayerPageContent() {
               <div className="w-full max-w-6xl mx-auto px-0 lg:px-4 py-4 md:py-8">
                 {activeLecture.type === 'video' ? (
                   <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
+                ) : activeLecture.type === 'youtube' ? (
+                  <YoutubePlayer url={activeLecture.contentUrl || ''} />
                 ) : activeLecture.type === 'pdf' ? (
                   <div className="h-[75vh] w-full bg-slate-900 lg:rounded-[2rem] overflow-hidden shadow-2xl border border-white/5">
                     <PdfViewerClient fileUrl={activeLecture.contentUrl || ''} />

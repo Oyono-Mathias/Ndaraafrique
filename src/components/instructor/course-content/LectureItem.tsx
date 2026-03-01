@@ -1,11 +1,10 @@
-
 'use client';
 
 import { useState, useTransition } from 'react';
 import type { Lecture } from '@/lib/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FileText, Video, MessageSquareText, Pencil, Trash2 } from 'lucide-react';
+import { FileText, Video, MessageSquareText, Pencil, Trash2, Youtube } from 'lucide-react';
 import { deleteLecture } from '@/actions/lectureActions';
 import { useToast } from '@/hooks/use-toast';
 import { LectureFormModal } from './forms/LectureForm';
@@ -13,13 +12,14 @@ import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader,
 
 
 const typeConfig = {
-  video: { icon: Video, label: 'Vidéo' },
+  video: { icon: Video, label: 'Vidéo Premium' },
+  youtube: { icon: Youtube, label: 'Vidéo YouTube' },
   text: { icon: MessageSquareText, label: 'Texte' },
   pdf: { icon: FileText, label: 'PDF' },
 };
 
 export function LectureItem({ courseId, sectionId, lecture }: { courseId: string; sectionId: string; lecture: Lecture }) {
-  const Icon = typeConfig[lecture.type].icon;
+  const Icon = typeConfig[lecture.type as keyof typeof typeConfig]?.icon || Video;
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isEditing, setIsEditing] = useState(false);
@@ -28,7 +28,7 @@ export function LectureItem({ courseId, sectionId, lecture }: { courseId: string
     startTransition(async () => {
         const result = await deleteLecture({ courseId, sectionId, lectureId: lecture.id });
         if(result.success) toast({ title: 'Leçon supprimée' });
-        else toast({ variant: 'destructive', title: 'Erreur', description: result.error });
+        else toast({ variant: 'destructive', title: 'Erreur', description: result.error as string });
     });
   }
 
