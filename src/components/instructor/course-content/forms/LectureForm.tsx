@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Label } from '@/components/ui/label';
-import { Loader2, CheckCircle2, UploadCloud, Globe } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
@@ -84,7 +84,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         setUploadProgress(0);
         setUploadedFileName(file.name);
         
-        toast({ title: "Connexion à Bunny Stream...", description: "Préparation du transfert sécurisé." });
+        toast({ title: "Connexion à Bunny Stream..." });
 
         try {
             const prep = await createBunnyVideo(videoTitle, currentUser.uid);
@@ -110,9 +110,12 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         form.setValue('contentUrl', guid);
                         setUploadProgress(null);
                         setIsUploadingToBunny(false);
-                        toast({ title: "Vidéo transmise !", description: "Le fichier est en cours d'encodage." });
+                        toast({ title: "Vidéo transmise !", description: "Le fichier est prêt." });
                     } else {
-                        toast({ variant: 'destructive', title: "Échec Bunny", description: `Erreur serveur : ${xhr.status}` });
+                        const errorMsg = xhr.status === 0 
+                            ? "Erreur CORS : Vérifiez que votre domaine est autorisé dans Bunny > Security > Allowed Origins."
+                            : `Erreur serveur : ${xhr.status}`;
+                        toast({ variant: 'destructive', title: "Échec du transfert", description: errorMsg });
                         setIsUploadingToBunny(false);
                         setUploadProgress(null);
                     }
@@ -120,7 +123,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             };
 
             xhr.onerror = () => {
-                toast({ variant: 'destructive', title: "Erreur réseau", description: "Vérifiez votre connexion et l'autorisation CORS sur Bunny.net." });
+                toast({ 
+                    variant: 'destructive', 
+                    title: "Erreur Réseau / CORS", 
+                    description: "Le navigateur a bloqué l'envoi. Vérifiez la section 'Security' de votre bibliothèque Bunny." 
+                });
                 setIsUploadingToBunny(false);
                 setUploadProgress(null);
             };
@@ -276,7 +283,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         <FormControl>
                                             <Input readOnly placeholder="ID Vidéo Bunny..." {...field} className="h-10 bg-slate-950/50 border-slate-800 rounded-xl text-[10px] font-mono opacity-50" />
                                         </FormControl>
-                                        <FormDescription className="text-[10px] italic">Identifiant technique pour votre bibliothèque Bunny Stream (ID: 382715).</FormDescription>
+                                        <FormDescription className="text-[10px] italic">Identifiant technique Bunny Stream (ID: 382715).</FormDescription>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
