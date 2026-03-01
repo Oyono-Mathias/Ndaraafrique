@@ -128,7 +128,7 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                         )}/>
                         
                         <div className="space-y-2">
-                            <FormLabel>Fichiers joints</FormLabel>
+                            <FormLabel>Fichiers joints</Label>
                             <div className="space-y-2">
                                 {form.watch('attachments')?.map((att, i) => (
                                     <div key={i} className="flex items-center justify-between p-2 bg-slate-800 rounded-md text-sm">
