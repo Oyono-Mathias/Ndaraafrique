@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
- * Optimisé pour la performance et la compatibilité mobile (Android-First).
+ * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream pure.
+ * Utilise le format direct recommandé par le CEO.
  */
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
 
@@ -24,7 +24,6 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as Settings;
-        // Utilisation du Library ID paramétré ou valeur par défaut
         const id = data.platform?.bunnyLibraryId || "382715";
         setLibraryId(id);
       }
@@ -32,14 +31,6 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     });
     return () => unsub();
   }, [db]);
-
-  // Extraction propre du GUID au cas où le formateur colle une URL entière
-  const cleanVideoId = React.useMemo(() => {
-    if (!videoId) return "";
-    const guidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
-    const match = videoId.match(guidRegex);
-    return match ? match[0] : videoId;
-  }, [videoId]);
 
   if (isLoading) {
     return (
@@ -49,20 +40,8 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     );
   }
 
-  if (!cleanVideoId || !libraryId) {
-    return (
-      <div className="flex flex-col items-center justify-center aspect-video w-full bg-slate-900 rounded-[2rem] border-2 border-dashed border-slate-800 p-6 text-center">
-        <AlertCircle className="h-12 w-12 text-amber-500 mb-4 opacity-50" />
-        <h3 className="text-white font-bold uppercase text-sm tracking-tight">Configuration Requise</h3>
-        <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto font-bold uppercase tracking-widest leading-relaxed">
-          L'ID de bibliothèque (Admin) ou l'ID de vidéo (Leçon) est manquant.
-        </p>
-      </div>
-    );
-  }
-
-  // URL d'intégration Bunny standard
-  const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${cleanVideoId}`;
+  // Format : https://iframe.mediadelivery.net/embed/LIBRARY_ID/VIDEO_ID
+  const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
 
   return (
     <div className="w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black">

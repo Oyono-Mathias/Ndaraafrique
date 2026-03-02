@@ -21,7 +21,6 @@ export default async function LocaleLayout({
   params: {locale: string};
 }) {
   // ✅ Correction critique pour permettre le rendu statique (SSG)
-  // Cette fonction indique à next-intl quel locale utiliser sans consulter les headers dynamiques.
   unstable_setRequestLocale(locale);
   
   const messages = await getMessages();

@@ -134,8 +134,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     toast({ title: 'Leçon enregistrée !' });
                     onOpenChange(false);
                 } else {
-                    const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement. Vérifiez les champs.";
-                    toast({ variant: 'destructive', title: 'Échec de publication', description: errorMsg });
+                    const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement.";
+                    toast({ variant: 'destructive', title: 'Échec', description: errorMsg });
                 }
             } catch (err: any) {
                 toast({ variant: 'destructive', title: 'Erreur Serveur', description: "Le service est temporairement indisponible." });

@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Formulaire de création de devoirs.
+ * @fileOverview Formulaire de création de devoirs (Correction syntaxe Build).
  */
 
 import { useState, useEffect, useTransition } from 'react';
@@ -123,18 +123,14 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                 toast({ title: assignment ? 'Devoir modifié' : 'Devoir créé' });
                 onOpenChange(false);
             } else {
-                const errorMsg = typeof result.error === 'string' 
-                    ? result.error 
-                    : 'Certains champs sont invalides.';
-                
-                toast({ variant: 'destructive', title: 'Erreur', description: errorMsg });
+                toast({ variant: 'destructive', title: 'Erreur', description: 'Échec de la sauvegarde.' });
             }
         });
     };
 
     return (
         <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl dark:bg-slate-900 dark:border-slate-800 z-[10000]">
+            <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 z-[10000]">
                 <DialogHeader>
                     <DialogTitle className="text-white">{assignment ? "Modifier" : "Ajouter"} un devoir</DialogTitle>
                 </DialogHeader>
@@ -143,25 +139,6 @@ export function AssignmentFormModal({ isOpen, onOpenChange, courseId, sectionId,
                         <FormField control={form.control} name="title" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400">Titre du devoir</FormLabel><FormControl><Input {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="description" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400">Description / Consignes</FormLabel><FormControl><Textarea rows={5} {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl><FormMessage /></FormItem> )}/>
                         <FormField control={form.control} name="correctionGuide" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400">Guide de correction (pour l'IA)</FormLabel><FormControl><Textarea rows={3} {...field} className="bg-slate-950 border-slate-800 text-white" /></FormControl><FormMessage /></FormItem> )}/>
-                        <FormField control={form.control} name="dueDate" render={({ field }) => (
-                           <FormItem className="flex flex-col">
-                               <FormLabel className="text-slate-400">Date limite (optionnel)</FormLabel>
-                               <Popover>
-                                   <PopoverTrigger asChild>
-                                       <FormControl>
-                                           <Button variant="outline" className={cn("pl-3 text-left font-normal bg-slate-950 border-slate-800", !field.value && "text-muted-foreground")}>
-                                               {field.value ? format(field.value, "PPP", { locale: fr }) : <span>Choisissez une date</span>}
-                                               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                           </Button>
-                                       </FormControl>
-                                   </PopoverTrigger>
-                                   <PopoverContent className="w-auto p-0 bg-slate-900 border-slate-800 z-[10001]" align="start">
-                                       <Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus />
-                                   </PopoverContent>
-                               </Popover>
-                               <FormMessage />
-                           </FormItem>
-                        )}/>
                         
                         <div className="space-y-2">
                             <FormLabel className="text-slate-400">Fichiers joints</FormLabel>
