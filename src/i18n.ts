@@ -1,14 +1,12 @@
-import {notFound} from 'next/navigation';
 import {getRequestConfig} from 'next-intl/server';
  
-// Can be imported from a shared config
-const locales = ['en', 'fr'];
- 
+/**
+ * Configuration i18n pour Ndara Afrique (Source).
+ * Garantit la cohérence avec le fichier racine pour éviter les erreurs de build.
+ */
 export default getRequestConfig(async ({locale}) => {
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
- 
   return {
+    locale,
     messages: (await import(`./messages/${locale}.json`)).default
   };
 });

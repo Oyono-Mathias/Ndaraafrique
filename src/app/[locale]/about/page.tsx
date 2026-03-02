@@ -3,13 +3,14 @@
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { ChevronsRight } from 'lucide-react';
+import { ChevronsRight, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Settings, TeamMember as TeamMemberType } from '@/lib/types';
+import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
  * @fileOverview Page "À Propos" - Manifeste Ndara Afrique.
@@ -48,7 +49,8 @@ const TeamMember = ({ name, role, imageUrl, bio }: TeamMemberType) => (
     </div>
 );
 
-export default function AboutPage() {
+export default function AboutPage({ params: { locale } }: { params: { locale: string } }) {
+  unstable_setRequestLocale(locale);
   const db = getFirestore();
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
@@ -102,5 +104,3 @@ export default function AboutPage() {
     </div>
   );
 }
-
-import { Loader2 } from 'lucide-react';

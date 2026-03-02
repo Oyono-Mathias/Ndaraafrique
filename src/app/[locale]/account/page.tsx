@@ -28,6 +28,7 @@ import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link a
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { unstable_setRequestLocale } from 'next-intl/server';
 
 const domains = [
     "Développement Web",
@@ -66,7 +67,8 @@ const accountSchema = z.object({
   website: z.string().url("URL invalide").or(z.literal('')).optional(),
 });
 
-export default function AccountPage() {
+export default function AccountPage({ params: { locale } }: { params: { locale: string } }) {
+  unstable_setRequestLocale(locale);
   const { currentUser, isUserLoading, secureSignOut } = useRole();
   const firebaseApp = useFirebaseApp();
   const { toast } = useToast();

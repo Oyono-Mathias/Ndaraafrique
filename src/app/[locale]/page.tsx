@@ -22,6 +22,7 @@ import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
 import { useDoc } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { unstable_setRequestLocale } from 'next-intl/server';
 
 const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }) => {
     const [scrolled, setScrolled] = useState(false);
@@ -287,7 +288,8 @@ const TrustSection = ({ title, subtitle }: { title?: string, subtitle?: string }
     );
 };
 
-export default function LandingPage() {
+export default function LandingPage({ params: { locale } }: { params: { locale: string } }) {
+  unstable_setRequestLocale(locale);
   const { user, role } = useRole();
   const db = getFirestore();
   const [courses, setCourses] = useState<Course[]>([]);
