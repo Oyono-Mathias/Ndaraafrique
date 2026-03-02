@@ -1,17 +1,15 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { Loader2 } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { useEffect } from 'react';
 
-const TutorClient = dynamic(() => import('@/app/[locale]/student/tutor/TutorClient'), { 
-  ssr: false,
-  loading: () => (
-    <div className="flex h-screen items-center justify-center bg-slate-900">
-      <Loader2 className="h-8 w-8 animate-spin text-primary" />
-    </div>
-  )
-});
+/**
+ * @fileOverview Page de redirection pour éviter les conflits de routage hors locale.
+ */
+export default function TutorRedirect() {
+  useEffect(() => {
+    redirect('/fr/student/tutor');
+  }, []);
 
-export default function TutorPage() {
-  return <TutorClient />;
+  return null;
 }
