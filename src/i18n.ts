@@ -1,8 +1,9 @@
 import {getRequestConfig} from 'next-intl/server';
  
 /**
- * Configuration i18n pour Ndara Afrique (Source).
- * Garantit la cohérence avec le fichier racine pour éviter les erreurs de build.
+ * Configuration i18n pour Ndara Afrique.
+ * Gère le chargement des messages selon la locale détectée.
+ * Retourne explicitement la locale pour stabiliser le build Vercel.
  */
 export default getRequestConfig(async ({locale}) => {
   return {

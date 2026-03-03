@@ -2,7 +2,6 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique.
- * ✅ TEMPS RÉEL : Le compteur d'inscriptions global est synchronisé en direct.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -22,7 +21,6 @@ import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
 import { useDoc } from '@/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { unstable_setRequestLocale } from 'next-intl/server';
 
 const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }) => {
     const [scrolled, setScrolled] = useState(false);
@@ -80,7 +78,6 @@ const EnrollmentCounter = () => {
 
     useEffect(() => {
         const q = collection(db, 'enrollments');
-        // ✅ Passage en temps réel (onSnapshot)
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setCount(snapshot.size);
         });
@@ -288,8 +285,7 @@ const TrustSection = ({ title, subtitle }: { title?: string, subtitle?: string }
     );
 };
 
-export default function LandingPage({ params: { locale } }: { params: { locale: string } }) {
-  unstable_setRequestLocale(locale);
+export default function LandingPage() {
   const { user, role } = useRole();
   const db = getFirestore();
   const [courses, setCourses] = useState<Course[]>([]);

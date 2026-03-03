@@ -2,8 +2,6 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Gère le profil public, la bio, les liens sociaux et la photo de profil.
- * ✅ AJOUT : Galerie d'avatars Cartoon Africains.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -28,7 +26,6 @@ import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link a
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { unstable_setRequestLocale } from 'next-intl/server';
 
 const domains = [
     "Développement Web",
@@ -40,7 +37,6 @@ const domains = [
     "Autre"
 ];
 
-// ✅ Avatars Cartoon reflétant l'élégance africaine
 const PRESET_AVATARS = [
     { id: 'av1', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Amina&skinColor=ae5d29&top=longHair&topColor=2c1b18' },
     { id: 'av2', url: 'https://api.dicebear.com/8.x/avataaars/svg?seed=Kwame&skinColor=614335&top=shortHair&topColor=2c1b18' },
@@ -67,8 +63,7 @@ const accountSchema = z.object({
   website: z.string().url("URL invalide").or(z.literal('')).optional(),
 });
 
-export default function AccountPage({ params: { locale } }: { params: { locale: string } }) {
-  unstable_setRequestLocale(locale);
+export default function AccountPage() {
   const { currentUser, isUserLoading, secureSignOut } = useRole();
   const firebaseApp = useFirebaseApp();
   const { toast } = useToast();
@@ -195,16 +190,6 @@ export default function AccountPage({ params: { locale } }: { params: { locale: 
       toast({ variant: 'destructive', title: 'Erreur', description: error.message });
     } finally {
       setIsSaving(false);
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!currentUser?.email) return;
-    try {
-        await sendPasswordResetEmail(getAuth(), currentUser.email);
-        toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception." });
-    } catch (e) {
-        toast({ variant: 'destructive', title: "Erreur technique" });
     }
   };
 

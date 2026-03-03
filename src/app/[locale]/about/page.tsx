@@ -10,7 +10,6 @@ import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Settings, TeamMember as TeamMemberType } from '@/lib/types';
-import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
  * @fileOverview Page "À Propos" - Manifeste Ndara Afrique.
@@ -49,8 +48,7 @@ const TeamMember = ({ name, role, imageUrl, bio }: TeamMemberType) => (
     </div>
 );
 
-export default function AboutPage({ params: { locale } }: { params: { locale: string } }) {
-  unstable_setRequestLocale(locale);
+export default function AboutPage() {
   const db = getFirestore();
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings, isLoading } = useDoc<Settings>(settingsRef);
