@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
+ * Correction : Ajout de la fonction handlePasswordReset manquante.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -155,6 +156,24 @@ export default function AccountPage() {
     } finally {
         setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!currentUser?.email) return;
+    const auth = getAuth();
+    try {
+      await sendPasswordResetEmail(auth, currentUser.email);
+      toast({
+        title: "E-mail envoyé !",
+        description: "Suivez les instructions envoyées à votre adresse e-mail.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: "Erreur",
+        description: "Impossible d'envoyer l'e-mail de réinitialisation.",
+      });
     }
   };
 
