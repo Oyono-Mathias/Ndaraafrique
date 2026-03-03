@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream pure.
- * Utilise le format direct recommandé par le CEO.
+ * Utilise le format direct recommandé pour une performance maximale.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -20,10 +20,11 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
   const db = getFirestore();
 
   useEffect(() => {
-    // Récupération de l'ID de bibliothèque configuré par l'admin
+    // Récupération de l'ID de bibliothèque configuré par l'admin dans Firestore
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as Settings;
+        // ID par défaut (382715) ou celui configuré en admin
         const id = data.platform?.bunnyLibraryId || "382715";
         setLibraryId(id);
       }
@@ -34,27 +35,28 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   if (isLoading) {
     return (
-      <div className="aspect-video w-full bg-slate-900 rounded-[2rem] flex items-center justify-center">
+      <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex items-center justify-center border border-white/5">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  // Format : https://iframe.mediadelivery.net/embed/LIBRARY_ID/VIDEO_ID
+  // Construction de l'URL d'intégration directe
   const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
 
   return (
-    <div className="w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black">
-      <div className="relative" style={{ paddingBottom: '56.25%', height: 0 }}>
-        <iframe
-          src={embedUrl}
-          loading="lazy"
-          className="absolute top-0 left-0 w-full h-full border-none"
-          allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture; fullscreen;"
-          allowFullScreen={true}
-          title="Lecteur Vidéo Ndara Afrique"
-        ></iframe>
-      </div>
+    <div 
+      className="relative w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black" 
+      style={{ aspectRatio: "16/9" }}
+    >
+      <iframe
+        src={embedUrl}
+        loading="lazy"
+        style={{ border: 0, position: "absolute", top: 0, height: "100%", width: "100%" }}
+        allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+        allowFullScreen={true}
+        title="Lecteur Vidéo Ndara Afrique"
+      ></iframe>
     </div>
   );
 }
