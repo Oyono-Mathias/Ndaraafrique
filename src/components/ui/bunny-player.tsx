@@ -2,11 +2,11 @@
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream pure.
- * Utilise le format direct recommandé pour une performance maximale.
+ * Utilise le format direct recommandé : https://iframe.mediadelivery.net/embed/LIBRARY_ID/VIDEO_ID
  */
 
 import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
 
@@ -24,9 +24,8 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as Settings;
-        // ID par défaut (382715) ou celui configuré en admin
-        const id = data.platform?.bunnyLibraryId || "382715";
-        setLibraryId(id);
+        // On récupère l'ID configuré en admin
+        setLibraryId(data.platform?.bunnyLibraryId || null);
       }
       setIsLoading(false);
     });
@@ -41,7 +40,21 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     );
   }
 
-  // Construction de l'URL d'intégration directe
+  // Si l'ID de bibliothèque n'est pas configuré, on affiche une aide au lieu d'une erreur 404
+  if (!libraryId) {
+    return (
+      <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed border-amber-500/20 p-6 text-center shadow-2xl">
+        <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
+        <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
+        <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest">
+          L'ID de bibliothèque Bunny n'est pas configuré. <br/> 
+          Allez dans : Admin > Paramètres > Hébergement Vidéo.
+        </p>
+      </div>
+    );
+  }
+
+  // Format exact demandé par le CEO
   const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
 
   return (

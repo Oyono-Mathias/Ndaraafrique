@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Correction : Ajout de la fonction handlePasswordReset manquante.
+ * Correction : Ajout de la fonction handlePasswordReset manquante pour le build Vercel.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -92,6 +92,24 @@ export default function AccountPage() {
     }
   }, [currentUser, form]);
 
+  const handlePasswordReset = async () => {
+    if (!currentUser?.email) return;
+    const auth = getAuth();
+    try {
+      await sendPasswordResetEmail(auth, currentUser.email);
+      toast({
+        title: "E-mail envoyé !",
+        description: "Suivez les instructions envoyées à votre adresse e-mail.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: "Erreur",
+        description: "Impossible d'envoyer l'e-mail de réinitialisation.",
+      });
+    }
+  };
+
   const handleImageClick = () => {
     if (isUploading) return;
     fileInputRef.current?.click();
@@ -156,24 +174,6 @@ export default function AccountPage() {
     } finally {
         setIsUploading(false);
         if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handlePasswordReset = async () => {
-    if (!currentUser?.email) return;
-    const auth = getAuth();
-    try {
-      await sendPasswordResetEmail(auth, currentUser.email);
-      toast({
-        title: "E-mail envoyé !",
-        description: "Suivez les instructions envoyées à votre adresse e-mail.",
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: "Erreur",
-        description: "Impossible d'envoyer l'e-mail de réinitialisation.",
-      });
     }
   };
 
@@ -263,7 +263,7 @@ export default function AccountPage() {
                                       Choisir un avatar Ndara
                                   </Button>
                               </DialogTrigger>
-                              <DialogContent className="bg-slate-900 border-slate-800 max-w-md rounded-[2rem]">
+                              <DialogContent className="bg-slate-900 border-slate-800 max-w-md rounded-[2rem] z-[10005]">
                                   <DialogHeader>
                                       <DialogTitle className="text-xl font-black text-white uppercase tracking-tight">Galerie d'Avatars</DialogTitle>
                                   </DialogHeader>
@@ -305,7 +305,7 @@ export default function AccountPage() {
                                       <FormLabel className="text-[10px] font-black uppercase text-slate-500 ml-1">Spécialité</FormLabel>
                                       <Select onValueChange={field.onChange} value={field.value}>
                                           <FormControl><SelectTrigger className="h-12 bg-slate-900 border-slate-800 rounded-2xl"><SelectValue /></SelectTrigger></FormControl>
-                                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                                          <SelectContent className="bg-slate-900 border-slate-800 text-white z-[10006]">
                                               {domains.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
                                           </SelectContent>
                                       </Select>
