@@ -23,7 +23,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, KeyRound, Globe, Camera, LogOut, Linkedin, Link as LinkIcon, Sparkles, Image as ImageIcon } from 'lucide-react';
+import { Loader2, ShieldCheck, KeyRound, Camera, Image as ImageIcon, Sparkles, LogOut } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -84,7 +84,6 @@ export default function AccountPage() {
     }
   }, [currentUser, form]);
 
-  // ✅ Correction : handlePasswordReset est maintenant défini correctement pour le build
   const handlePasswordReset = async () => {
     if (!currentUser?.email) return;
     const auth = getAuth();

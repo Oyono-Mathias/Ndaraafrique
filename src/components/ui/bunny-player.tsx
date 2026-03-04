@@ -33,6 +33,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
+    // Si l'utilisateur colle une URL entière, on extrait juste l'ID (le GUID)
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
       return parts[parts.length - 1].split('?')[0];
@@ -53,10 +54,10 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
       <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed border-amber-500/20 p-6 text-center shadow-2xl">
         <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
         <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
-        <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest">
-          L&apos;ID de bibliothèque Bunny n&apos;est pas configuré. <br/> 
-          Allez dans : Admin &gt; Paramètres &gt; Hébergement Vidéo.
-        </p>
+        <div className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest">
+          L&apos;ID de bibliothèque Bunny n&apos;est pas configuré.<br/>
+          Allez dans : Panneau Admin {"->"} Paramètres {"->"} Hébergement Vidéo.
+        </div>
       </div>
     );
   }
