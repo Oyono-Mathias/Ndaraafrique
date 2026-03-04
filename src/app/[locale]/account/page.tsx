@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * ✅ RÉSOLU : Erreur de compilation handlePasswordReset réintégrée.
+ * Gère le profil utilisateur et les actions de sécurité.
  */
 
 import { useState, useEffect, useRef } from 'react';

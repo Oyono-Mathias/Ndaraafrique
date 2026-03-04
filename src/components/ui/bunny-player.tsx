@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
- * ✅ RÉSOLU : Correction des entités HTML pour le build Vercel.
- * ✅ RÉSOLU : Extraction automatique du Video ID (GUID) depuis une URL.
+ * Gère l'extraction automatique du GUID et la configuration du Library ID.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -33,10 +32,11 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
-    // Si l'utilisateur colle une URL entière, on extrait juste l'ID (le GUID)
+    // Extraction automatique du GUID si une URL est saisie au lieu de l'ID seul
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
-      return parts[parts.length - 1].split('?')[0];
+      const lastPart = parts[parts.length - 1].split('?')[0];
+      return lastPart;
     }
     return videoId;
   }, [videoId]);
@@ -54,9 +54,9 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
       <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed border-amber-500/20 p-6 text-center shadow-2xl">
         <AlertCircle className="h-12 w-12 text-amber-500 mb-4 opacity-50" />
         <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
-        <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest">
-          L'ID de bibliothèque Bunny n'est pas configuré.<br/>
-          Allez dans : Panneau Admin {"->"} Paramètres {"->"} Hébergement Vidéo.
+        <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest leading-relaxed">
+          L'ID de bibliothèque Bunny n'est pas configuré. {'\n'}
+          Allez dans : Admin {'->'} Paramètres {'->'} Hébergement Vidéo.
         </p>
       </div>
     );
