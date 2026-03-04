@@ -2,10 +2,11 @@
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream pure.
- * Utilise le format direct recommandé : https://iframe.mediadelivery.net/embed/LIBRARY_ID/VIDEO_ID
+ * ✅ RÉSOLU : Erreur de syntaxe build (symboles réservés).
+ * ✅ RÉSOLU : Extraction automatique du Video ID (GUID) depuis une URL.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
@@ -24,13 +25,24 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as Settings;
-        // On récupère l'ID configuré en admin
         setLibraryId(data.platform?.bunnyLibraryId || null);
       }
       setIsLoading(false);
     });
     return () => unsub();
   }, [db]);
+
+  // Extraction robuste du Video ID (GUID)
+  const cleanVideoId = useMemo(() => {
+    if (!videoId) return '';
+    // Si c'est une URL complète, on extrait la dernière partie (le GUID)
+    if (videoId.includes('/')) {
+      const parts = videoId.split('/');
+      // On prend le dernier segment et on nettoie les paramètres de requête éventuels
+      return parts[parts.length - 1].split('?')[0];
+    }
+    return videoId;
+  }, [videoId]);
 
   if (isLoading) {
     return (
@@ -47,15 +59,15 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
         <AlertCircle className="h-12 w-12 text-amber-500 mb-4" />
         <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
         <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest">
-          L'ID de bibliothèque Bunny n'est pas configuré. <br/> 
-          Allez dans : Admin > Paramètres > Hébergement Vidéo.
+          L&apos;ID de bibliothèque Bunny n&apos;est pas configuré. <br/> 
+          Allez dans : Admin &gt; Paramètres &gt; Hébergement Vidéo.
         </p>
       </div>
     );
   }
 
   // Format exact demandé par le CEO
-  const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${videoId}`;
+  const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${cleanVideoId}`;
 
   return (
     <div 

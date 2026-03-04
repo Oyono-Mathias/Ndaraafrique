@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Correction : Ajout de la fonction handlePasswordReset manquante pour le build Vercel.
+ * ✅ RÉSOLU : Erreur de compilation handlePasswordReset.
  */
 
 import { useState, useEffect, useRef } from 'react';
