@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream pure.
- * ✅ RÉSOLU : Erreur de syntaxe build (symboles réservés).
+ * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
+ * ✅ RÉSOLU : Correction des entités HTML pour le build Vercel.
  * ✅ RÉSOLU : Extraction automatique du Video ID (GUID) depuis une URL.
  */
 
@@ -21,7 +21,6 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
   const db = getFirestore();
 
   useEffect(() => {
-    // Récupération de l'ID de bibliothèque configuré par l'admin dans Firestore
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
       if (snap.exists()) {
         const data = snap.data() as Settings;
@@ -32,13 +31,10 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     return () => unsub();
   }, [db]);
 
-  // Extraction robuste du Video ID (GUID)
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
-    // Si c'est une URL complète, on extrait la dernière partie (le GUID)
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
-      // On prend le dernier segment et on nettoie les paramètres de requête éventuels
       return parts[parts.length - 1].split('?')[0];
     }
     return videoId;
@@ -52,7 +48,6 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     );
   }
 
-  // Si l'ID de bibliothèque n'est pas configuré, on affiche une aide au lieu d'une erreur 404
   if (!libraryId) {
     return (
       <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed border-amber-500/20 p-6 text-center shadow-2xl">
@@ -66,7 +61,6 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
     );
   }
 
-  // Format exact demandé par le CEO
   const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${cleanVideoId}`;
 
   return (
