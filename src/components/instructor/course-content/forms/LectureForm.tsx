@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, AlertCircle, RefreshCw } from 'lucide-react';
+import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, RefreshCw, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -102,15 +102,21 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         setErrorMessage(null);
     }, [lecture, form, isOpen]);
 
+    /**
+     * Synchronise la durée depuis Bunny.net
+     */
     const syncDuration = async (videoId: string) => {
         if (!videoId) return;
         setIsSyncingDuration(true);
         try {
             const result = await getBunnyVideoMetadata(videoId);
             if (result.success && result.length > 0) {
+                // Bunny renvoie des secondes, on convertit en minutes (plafond)
                 const durationMinutes = Math.ceil(result.length / 60);
                 form.setValue('duration', durationMinutes);
-                toast({ title: "Métadonnées synchronisées", description: `${durationMinutes} min détectées.` });
+                toast({ title: "Durée synchronisée", description: `${durationMinutes} min détectées.` });
+            } else if (result.status === 2 || result.status === 3) {
+                toast({ title: "Encodage en cours", description: "Réessayez dans quelques secondes pour la durée." });
             }
         } catch (e) {
             console.error("Sync Duration Error:", e);
@@ -154,8 +160,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             form.setValue('contentUrl', data.videoId, { shouldValidate: true });
             toast({ title: "Vidéo transmise !", description: "Optimisation en cours chez Bunny.net." });
             
-            // Attendre un peu l'encodage avant de tenter la synchro de durée
-            setTimeout(() => syncDuration(data.videoId), 5000);
+            // Tentative de récupération de la durée après un court délai pour laisser l'encodage démarrer
+            setTimeout(() => syncDuration(data.videoId), 8000);
 
         } catch (error: any) {
             setErrorMessage(error.message);
@@ -221,7 +227,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         <FormField control={form.control} name="title" render={({ field }) => ( 
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
-                                <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
+                                <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
                                 <FormMessage />
                             </FormItem> 
                         )}/>
@@ -244,7 +250,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <SelectItem value="video" className="py-3">
                                                 <div className="flex items-center gap-2">
                                                     <PlaySquare className="h-4 w-4 text-primary" />
-                                                    <span>Vidéo Premium (Anti-Copie)</span>
+                                                    <span>Vidéo Premium (Bunny Stream)</span>
                                                 </div>
                                             </SelectItem>
                                         )}
@@ -276,7 +282,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         
                         {selectedType === 'video' && (
                             <div className="space-y-4">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Téléversement Sécurisé</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo (Bunny Stream)</FormLabel>
                                 <div className="relative">
                                     <Input 
                                         type="file" 
@@ -297,7 +303,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         {isUploading ? (
                                             <div className="text-center space-y-3">
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Transfert sécurisé en cours...</p>
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Analyse et transfert...</p>
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2 text-center px-6">
@@ -312,10 +318,18 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <FormItem>
                                         <FormControl>
                                             <div className="flex items-center gap-2">
-                                                <Input {...field} readOnly placeholder="ID Vidéo généré" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono flex-1" />
+                                                <Input {...field} readOnly placeholder="ID Vidéo Bunny" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono flex-1" />
                                                 {field.value && (
-                                                    <Button type="button" variant="outline" size="sm" onClick={() => syncDuration(field.value)} disabled={isSyncingDuration} className="h-10 rounded-xl border-slate-800">
-                                                        {isSyncingDuration ? <Loader2 className="h-3 w-3 animate-spin"/> : <RefreshCw className="h-3 w-3"/>}
+                                                    <Button 
+                                                        type="button" 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        onClick={() => syncDuration(field.value)} 
+                                                        disabled={isSyncingDuration} 
+                                                        className="h-10 rounded-xl border-slate-800 hover:bg-primary/10 hover:text-primary transition-colors"
+                                                        title="Actualiser la durée depuis Bunny"
+                                                    >
+                                                        {isSyncingDuration ? <Loader2 className="h-3.5 w-3.5 animate-spin"/> : <RefreshCw className="h-3.5 w-3.5"/>}
                                                     </Button>
                                                 )}
                                             </div>
@@ -341,8 +355,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         {selectedType === 'text' && (
                             <FormField control={form.control} name="textContent" render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu</FormLabel>
-                                    <FormControl><Textarea rows={10} placeholder="Rédigez votre leçon..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white" /></FormControl>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu de la leçon</FormLabel>
+                                    <FormControl><Textarea rows={10} placeholder="Rédigez votre leçon ici..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white leading-relaxed" /></FormControl>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
@@ -351,10 +365,10 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         {selectedType === 'pdf' && (
                             <div className="space-y-4">
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier PDF</FormLabel>
-                                <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="h-12 bg-slate-950 border-slate-800 text-white" />
+                                <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="h-12 bg-slate-950 border-slate-800 text-white rounded-xl" />
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
-                                        <FormControl><Input readOnly placeholder="Lien du PDF..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" /></FormControl>
+                                        <FormControl><Input readOnly placeholder="URL du document..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500 truncate" /></FormControl>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -363,12 +377,22 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         <FormField control={form.control} name="duration" render={({ field }) => ( 
                             <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée estimée (minutes)</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex items-center gap-2">
+                                    <Clock className="h-3 w-3" />
+                                    Durée de la leçon (minutes)
+                                </FormLabel>
                                 <FormControl>
                                     <div className="relative">
-                                        <Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" />
+                                        <Input 
+                                            type="number" 
+                                            {...field} 
+                                            className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-black text-lg" 
+                                            readOnly={selectedType === 'video'}
+                                        />
                                         {selectedType === 'video' && (
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-primary uppercase tracking-tighter">Auto-détecté</div>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-2 py-1 bg-primary/10 rounded-lg border border-primary/20">
+                                                <span className="text-[8px] font-black text-primary uppercase tracking-tighter">Auto-sync Bunny</span>
+                                            </div>
                                         )}
                                     </div>
                                 </FormControl>
@@ -376,15 +400,15 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             </FormItem> 
                         )}/>
 
-                        <DialogFooter className="pt-6 border-t border-white/5">
+                        <DialogFooter className="pt-6 border-t border-white/5 bg-slate-900">
                             <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button></DialogClose>
                             <Button 
                                 type="submit" 
-                                disabled={isPending || isUploading} 
-                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95"
+                                disabled={isPending || isUploading || isSyncingDuration} 
+                                className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95"
                             >
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
-                                {lecture ? "Mettre à jour" : "Ajouter la leçon"}
+                                {lecture ? "Enregistrer les modifications" : "Valider la leçon"}
                             </Button>
                         </DialogFooter>
                     </form>

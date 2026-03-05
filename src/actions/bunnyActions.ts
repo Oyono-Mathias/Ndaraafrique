@@ -6,9 +6,9 @@ import { createHash } from 'crypto';
  * @fileOverview Actions serveur pour l'API Bunny Stream.
  */
 
-const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
-const API_KEY = process.env.BUNNY_API_KEY; // Stream API Key
-const SECURITY_KEY = process.env.BUNNY_SECURITY_KEY; // Token Authentication Key
+const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || "607753";
+const API_KEY = process.env.BUNNY_API_KEY || "bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f"; 
+const SECURITY_KEY = process.env.BUNNY_SECURITY_KEY || "810ccb8b-3439-45f1-9b94-21d4e3f800af";
 
 /**
  * Génère un jeton de sécurité (Signed URL) pour le lecteur Bunny Stream.
@@ -20,7 +20,7 @@ export async function getVideoToken(videoId: string) {
   }
 
   try {
-    const expires = Math.floor(Date.now() / 1000) + 7200;
+    const expires = Math.floor(Date.now() / 1000) + 7200; // 2 heures
     const input = SECURITY_KEY + videoId + expires;
     const token = createHash('sha256').update(input).digest('hex');
 
@@ -38,6 +38,7 @@ export async function getVideoToken(videoId: string) {
 
 /**
  * Récupère les métadonnées d'une vidéo (Durée, Statut).
+ * Bunny renvoie la durée en secondes dans le champ 'length'.
  */
 export async function getBunnyVideoMetadata(videoId: string) {
     try {
@@ -45,21 +46,35 @@ export async function getBunnyVideoMetadata(videoId: string) {
 
         const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos/${videoId}`;
         const response = await fetch(url, {
-            headers: { 'AccessKey': API_KEY, 'accept': 'application/json' },
+            headers: { 
+                'AccessKey': API_KEY, 
+                'accept': 'application/json' 
+            },
+            cache: 'no-store'
         });
 
-        if (!response.ok) throw new Error(`Erreur Bunny (${response.status})`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Erreur Bunny (${response.status}): ${errorText}`);
+        }
 
         const data = await response.json();
-        return { success: true, length: data.length || 0, status: data.status, title: data.title };
+        
+        // Status 4 = Finished (vidéo prête et durée finale calculée)
+        return { 
+            success: true, 
+            length: data.length || 0, 
+            status: data.status, 
+            title: data.title 
+        };
     } catch (error: any) {
+        console.error("METADATA_FETCH_ERROR:", error.message);
         return { success: false, error: error.message };
     }
 }
 
 /**
  * Supprime définitivement une vidéo de Bunny Stream.
- * Appelé quand un formateur supprime une leçon.
  */
 export async function deleteBunnyVideo(videoId: string) {
     try {
