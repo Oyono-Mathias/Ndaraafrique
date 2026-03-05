@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Utilise l'API Proxy sécurisée pour l'upload Bunny sans exposer les clés.
+ * Amélioré : Titrage automatique et récupération de la durée depuis Bunny Stream.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -13,6 +13,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { createLecture, updateLecture } from '@/actions/lectureActions';
+import { getBunnyVideoMetadata } from '@/actions/bunnyActions';
 import type { Lecture, Settings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -21,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, AlertCircle, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -48,6 +49,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    const [isSyncingDuration, setIsSyncingDuration] = useState(false);
     const db = getFirestore();
 
     const [adminSettings, setAdminSettings] = useState({
@@ -68,6 +70,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     });
 
     const selectedType = form.watch('type');
+    const currentVideoId = form.watch('contentUrl');
     
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
@@ -100,8 +103,34 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         setErrorMessage(null);
     }, [lecture, form, isOpen]);
 
+    // ✅ Action pour récupérer la durée réelle depuis Bunny
+    const syncDuration = async (videoId: string) => {
+        if (!videoId) return;
+        setIsSyncingDuration(true);
+        try {
+            const result = await getBunnyVideoMetadata(videoId);
+            if (result.success && result.length > 0) {
+                // Bunny renvoie des secondes, on convertit en minutes (arrondi supérieur)
+                const durationMinutes = Math.ceil(result.length / 60);
+                form.setValue('duration', durationMinutes);
+                toast({ title: "Durée synchronisée", description: `${durationMinutes} min détectées.` });
+            }
+        } catch (e) {
+            console.error("Sync Duration Error:", e);
+        } finally {
+            setIsSyncingDuration(false);
+        }
+    };
+
     const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
+        const lectureTitle = form.getValues('title');
+
+        if (!lectureTitle || lectureTitle.length < 3) {
+            toast({ variant: 'destructive', title: "Titre requis", description: "Veuillez saisir un titre de leçon avant de téléverser la vidéo." });
+            return;
+        }
+
         if (!file || !currentUser) return;
 
         setIsUploading(true);
@@ -112,6 +141,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             const formData = new FormData();
             formData.append('file', file);
             formData.append('instructorId', currentUser.uid);
+            formData.append('title', lectureTitle); // ✅ Transmission du titre !
 
             const response = await fetch('/api/video/upload', {
                 method: 'POST',
@@ -126,6 +156,10 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
             form.setValue('contentUrl', data.videoId, { shouldValidate: true });
             toast({ title: "Vidéo transmise !", description: "Votre contenu est prêt chez Bunny.net." });
+            
+            // ✅ Lancer la synchro de la durée juste après
+            setTimeout(() => syncDuration(data.videoId), 2000);
+
         } catch (error: any) {
             setErrorMessage(error.message);
             toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
@@ -301,7 +335,14 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <FormItem>
                                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID Bunny)</FormLabel>
                                         <FormControl>
-                                            <Input {...field} readOnly placeholder="Généré après l'envoi" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono" />
+                                            <div className="flex items-center gap-2">
+                                                <Input {...field} readOnly placeholder="Généré après l'envoi" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono flex-1" />
+                                                {field.value && (
+                                                    <Button type="button" variant="outline" size="sm" onClick={() => syncDuration(field.value)} disabled={isSyncingDuration} className="h-10 rounded-xl border-slate-800">
+                                                        {isSyncingDuration ? <Loader2 className="h-3 w-3 animate-spin"/> : <RefreshCw className="h-3 w-3"/>}
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem> 
@@ -370,8 +411,25 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         <FormField control={form.control} name="duration" render={({ field }) => ( 
                             <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée estimée (minutes)</FormLabel>
-                                <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée (minutes)</FormLabel>
+                                <FormControl>
+                                    <div className="relative">
+                                        <Input 
+                                            type="number" 
+                                            {...field} 
+                                            readOnly={selectedType === 'video'} // ✅ On empêche la saisie manuelle pour les vidéos Bunny
+                                            className={cn(
+                                                "h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold",
+                                                selectedType === 'video' && "opacity-70 bg-slate-900 cursor-not-allowed"
+                                            )} 
+                                        />
+                                        {selectedType === 'video' && (
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-primary uppercase tracking-tighter">
+                                                Auto-détecté
+                                            </div>
+                                        )}
+                                    </div>
+                                </FormControl>
                                 <FormMessage />
                             </FormItem> 
                         )}/>

@@ -3,22 +3,22 @@ import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Route API sécurisée pour le téléversement de vidéos vers Bunny Stream.
- * Utilise les identifiants spécifiques fournis (Library: 607753).
+ * Amélioré pour inclure le titre de la vidéo dès la création.
  */
 
-const BUNNY_API_KEY = process.env.BUNNY_API_KEY || "bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f";
-const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || "607753";
+const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
+const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 
 export async function POST(req: Request) {
   try {
     if (!BUNNY_API_KEY || !BUNNY_LIBRARY_ID) {
-      console.error("CRITICAL_BUNNY_CONFIG_MISSING");
       return NextResponse.json({ error: "Configuration Bunny manquante sur le serveur." }, { status: 500 });
     }
 
     const formData = await req.formData();
     const file = formData.get('file') as File;
     const instructorId = formData.get('instructorId') as string;
+    const title = formData.get('title') as string || file.name; // On récupère le titre du formulaire
 
     if (!file || !instructorId) {
       return NextResponse.json({ error: "Données de fichier ou d'instructeur manquantes." }, { status: 400 });
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Accès refusé : Autorisation formateur requise." }, { status: 403 });
     }
 
-    // 1. Créer l'entrée vidéo chez Bunny
+    // 1. Créer l'entrée vidéo chez Bunny AVEC LE TITRE
     const createUrl = `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos`;
     const createRes = await fetch(createUrl, {
       method: 'POST',
@@ -41,16 +41,11 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
         'accept': 'application/json',
       },
-      body: JSON.stringify({ title: file.name || "Vidéo Ndara" }),
+      body: JSON.stringify({ title: title }), // TRANSMISSION DU TITRE ICI
     });
 
     if (!createRes.ok) {
       const errorBody = await createRes.text();
-      console.error("BUNNY_API_CREATE_ERROR:", {
-        status: createRes.status,
-        body: errorBody,
-        libraryId: BUNNY_LIBRARY_ID
-      });
       return NextResponse.json({ error: `Erreur Bunny (Statut ${createRes.status})`, details: errorBody }, { status: createRes.status });
     }
 
@@ -70,11 +65,6 @@ export async function POST(req: Request) {
     });
 
     if (!uploadRes.ok) {
-      const errorBody = await uploadRes.text();
-      console.error("BUNNY_API_UPLOAD_ERROR:", {
-        status: uploadRes.status,
-        videoId: guid
-      });
       return NextResponse.json({ error: "Échec du transfert vers les serveurs de Bunny Stream." }, { status: uploadRes.status });
     }
 
