@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Gère le profil utilisateur et les actions de sécurité.
+ * Fix Build: Réintégration de handlePasswordReset et suppression unstable_setRequestLocale.
  */
 
 import { useState, useEffect, useRef } from 'react';

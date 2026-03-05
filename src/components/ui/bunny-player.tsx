@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
- * Gère l'extraction automatique du GUID et la configuration du Library ID.
+ * Fix Build: Correction des caractères spéciaux TSX.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -33,11 +33,9 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
-    // Extraction automatique du GUID si une URL est saisie au lieu de l'ID seul
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
-      const lastPart = parts[parts.length - 1].split('?')[0];
-      return lastPart;
+      return parts[parts.length - 1].split('?')[0];
     }
     return videoId;
   }, [videoId]);

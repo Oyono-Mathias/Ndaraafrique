@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Mis à jour pour utiliser la Cloud Function sécurisée pour l'upload.
+ * Mis à jour pour utiliser l'API Proxy sécurisée pour l'upload Bunny.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -111,7 +111,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             formData.append('file', file);
             formData.append('instructorId', currentUser.uid);
 
-            // Appel à notre API Proxy sécurisée
             const response = await fetch('/api/video/upload', {
                 method: 'POST',
                 body: formData,
@@ -124,7 +123,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
             const data = await response.json();
             form.setValue('contentUrl', data.videoId, { shouldValidate: true });
-            toast({ title: "Vidéo transmise !", description: "Votre contenu est en cours d'optimisation." });
+            toast({ title: "Vidéo transmise !", description: "Votre contenu est prêt." });
         } catch (error: any) {
             toast({ variant: 'destructive', title: "Erreur d'upload", description: error.message });
         } finally {
@@ -271,7 +270,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         {isUploading ? (
                                             <div className="text-center space-y-3">
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Envoi sécurisé en cours...</p>
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Envoi sécurisé vers Bunny...</p>
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2">
@@ -283,9 +282,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 </div>
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (Auto-généré)</FormLabel>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID Bunny)</FormLabel>
                                         <FormControl>
-                                            <Input {...field} readOnly placeholder="Identifiant unique" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono" />
+                                            <Input {...field} readOnly placeholder="Généré après l'envoi" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono" />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem> 
