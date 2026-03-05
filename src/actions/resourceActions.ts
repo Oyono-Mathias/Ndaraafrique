@@ -5,6 +5,10 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { z } from 'zod';
 import { getStorage } from 'firebase-admin/storage';
 
+/**
+ * @fileOverview Actions pour les ressources (PDF, fichiers) avec suppression synchronisée Storage.
+ */
+
 const resourceSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
   courseId: z.string().min(1, "Veuillez sélectionner un cours."),
@@ -45,16 +49,24 @@ export async function deleteResourceAction({ resourceId, instructorId }: { resou
     }
     
     const resourceData = resourceDoc.data();
+
+    // 1. Suppression du fichier physique dans Firebase Storage si ce n'est pas un simple lien
     if (resourceData?.url && resourceData?.type !== 'link') {
         try {
+            // Extraction du chemin du fichier à partir de l'URL Firebase
             const fileUrl = new URL(resourceData.url);
-            const path = decodeURIComponent(fileUrl.pathname.split('/o/')[1].split('?')[0]);
-            await getStorage().bucket().file(path).delete();
+            // Les URLs Firebase sont formatées comme : .../o/path%2Fto%2Ffile?alt=media
+            const encodedPath = fileUrl.pathname.split('/o/')[1];
+            if (encodedPath) {
+                const path = decodeURIComponent(encodedPath);
+                await getStorage().bucket().file(path).delete();
+            }
         } catch(e) {
             console.warn(`Could not delete file from storage: ${resourceData.url}`, e);
         }
     }
 
+    // 2. Suppression du document dans Firestore
     await resourceRef.delete();
     
     return { success: true };
