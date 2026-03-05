@@ -4,6 +4,7 @@
  * @fileOverview Lecteur de cours Ndara Afrique.
  * ✅ LECTEUR BUNNY : Utilisation prioritaire du lecteur Bunny Stream pour le type 'video'.
  * ✅ HYBRIDE : Supporte aussi YouTube et les fichiers PDF.
+ * ✅ ROBUSTESSE : Déclenchement du certificat basé sur le comptage exact (essentiel pour 100+ sections).
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -125,6 +126,7 @@ function CoursePlayerPageContent() {
     const completed = (courseProgress as any)?.completedLessons || [];
     if (!completed.includes(activeLecture.id)) {
       const updated = [...completed, activeLecture.id];
+      // On garde le pourcentage pour l'UI
       const percent = Math.round((updated.length / totalLecturesCount) * 100);
       
       try {
@@ -147,7 +149,11 @@ function CoursePlayerPageContent() {
         }, { merge: true });
         
         toast({ title: "Leçon terminée !", description: "Votre progression est à jour." });
-        if (percent >= 100) setShowCertificateModal(true);
+        
+        // DÉCLENCHEUR SÉCURISÉ : On compare les longueurs réelles, pas l'arrondi
+        if (updated.length === totalLecturesCount) {
+            setShowCertificateModal(true);
+        }
       } catch (e) {
         console.error("Error updating progress:", e);
         toast({ variant: 'destructive', title: "Erreur", description: "Impossible de mettre à jour votre progression." });
