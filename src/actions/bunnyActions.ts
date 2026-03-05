@@ -4,11 +4,11 @@ import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Actions serveur pour l'API Bunny Stream.
- * Fournit un diagnostic détaillé en cas d'échec de communication.
+ * Gère la création de l'entrée vidéo avant le téléversement direct.
  */
 
-const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || '382715';
-const API_KEY = process.env.BUNNY_API_KEY || 'bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f';
+const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
+const API_KEY = process.env.BUNNY_API_KEY;
 
 export async function createBunnyVideo(title: string, instructorId: string) {
   try {
@@ -21,9 +21,13 @@ export async function createBunnyVideo(title: string, instructorId: string) {
       throw new Error("Accès refusé : Seuls les formateurs peuvent uploader.");
     }
 
-    // Diagnostic : Vérifier si la clé API semble configurée
+    // Diagnostic : Vérifier si la configuration est présente
     if (!API_KEY || API_KEY.length < 10) {
-        throw new Error("Configuration Bunny.net manquante : Vérifiez BUNNY_API_KEY dans vos variables d'environnement.");
+        throw new Error("Configuration Bunny.net manquante : Assurez-vous que BUNNY_API_KEY est configurée dans Vercel.");
+    }
+
+    if (!LIBRARY_ID) {
+        throw new Error("ID de bibliothèque Bunny manquant (BUNNY_LIBRARY_ID).");
     }
 
     const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`;
@@ -39,18 +43,13 @@ export async function createBunnyVideo(title: string, instructorId: string) {
 
     if (!response.ok) {
       const status = response.status;
-      let errorMsg = `Erreur API Bunny (Statut ${status})`;
-      
-      try {
-          const errorData = await response.json();
-          errorMsg = errorData.message || errorMsg;
-      } catch (e) {
-          // Si pas de JSON, on gère les codes d'état standards
-          if (status === 401) errorMsg = "Clé API Bunny invalide ou refusée (401 Unauthorized).";
-          if (status === 404) errorMsg = "Bibliothèque Bunny introuvable (404 Not Found).";
+      if (status === 401) {
+          throw new Error("Clé API Bunny invalide (401). Vérifiez votre AccessKey dans les paramètres Bunny.net.");
       }
-      
-      throw new Error(errorMsg);
+      if (status === 404) {
+          throw new Error("Bibliothèque Bunny introuvable (404). Vérifiez votre Library ID.");
+      }
+      throw new Error(`Erreur API Bunny (Statut ${status})`);
     }
 
     const data = await response.json();
