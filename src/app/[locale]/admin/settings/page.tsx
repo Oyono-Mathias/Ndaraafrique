@@ -35,7 +35,10 @@ import {
   Megaphone,
   Scale,
   Smartphone,
-  Info
+  Info,
+  Wrench,
+  History,
+  Eye
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -390,43 +393,61 @@ export default function AdminSettingsPage() {
             <TabsContent value="about" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
-                  <CardTitle className="text-lg font-bold">Le Manifeste Ndara</CardTitle>
+                  <div className="flex items-center gap-3">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <CardTitle className="text-lg font-bold">Le Manifeste Ndara</CardTitle>
+                  </div>
                 </CardHeader>
                 <CardContent className="p-6 space-y-8">
-                  <div className="space-y-4">
+                  <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="aboutMainTitle" render={({ field }) => (
-                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Manifeste</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Titre Manifeste</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl" /></FormControl></FormItem>
                     )} />
-                    
-                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Histoire (FR)</h4>
-                            <FormField control={form.control} name="historyFrench" render={({ field }) => (
-                                <FormItem><FormControl><Textarea {...field} rows={6} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
-                            )} />
-                        </div>
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Histoire (Sango)</h4>
-                            <FormField control={form.control} name="historySango" render={({ field }) => (
-                                <FormItem><FormControl><Textarea {...field} rows={6} className="bg-slate-800 border-slate-700 italic" /></FormControl></FormItem>
-                            )} />
-                        </div>
+                    <FormField control={form.control} name="aboutMainSubtitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sous-titre Manifeste</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl" /></FormControl></FormItem>
+                    )} />
+                  </div>
+                  
+                  <div className="pt-6 border-t border-white/5 space-y-6">
+                    <div className="flex items-center gap-2 text-primary">
+                        <History className="h-4 w-4" />
+                        <h3 className="text-xs font-black uppercase tracking-widest">Notre Histoire</h3>
                     </div>
+                    <FormField control={form.control} name="historyTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Section Histoire</FormLabel><FormControl><Input {...field} placeholder="Ex: Notre Histoire" className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="historyFrench" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Texte (FR)</FormLabel><FormControl><Textarea {...field} rows={6} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="historySango" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Texte (Sango)</FormLabel><FormControl><Textarea {...field} rows={6} className="bg-slate-800 border-slate-700 italic" /></FormControl></FormItem>
+                        )} />
+                    </div>
+                  </div>
 
-                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Vision (FR)</h4>
-                            <FormField control={form.control} name="visionFrench" render={({ field }) => (
-                                <FormItem><FormControl><Textarea {...field} rows={4} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
-                            )} />
-                        </div>
-                        <div className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Vision (Sango)</h4>
-                            <FormField control={form.control} name="visionSango" render={({ field }) => (
-                                <FormItem><FormControl><Textarea {...field} rows={4} className="bg-slate-800 border-slate-700 italic" /></FormControl></FormItem>
-                            )} />
-                        </div>
+                  <div className="pt-6 border-t border-white/5 space-y-6">
+                    <div className="flex items-center gap-2 text-primary">
+                        <Eye className="h-4 w-4" />
+                        <h3 className="text-xs font-black uppercase tracking-widest">Notre Vision</h3>
                     </div>
+                    <FormField control={form.control} name="visionTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Section Vision</FormLabel><FormControl><Input {...field} placeholder="Ex: Notre Vision" className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="visionFrench" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Texte (FR)</FormLabel><FormControl><Textarea {...field} rows={4} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="visionSango" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Texte (Sango)</FormLabel><FormControl><Textarea {...field} rows={4} className="bg-slate-800 border-slate-700 italic" /></FormControl></FormItem>
+                        )} />
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5">
+                    <FormField control={form.control} name="aboutCtaTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Titre Appel à l'action final</FormLabel><FormControl><Input {...field} placeholder="Ex: Ga, mo mû mbage ti mo." className="bg-slate-800 border-slate-700 h-12 rounded-xl" /></FormControl></FormItem>
+                    )} />
                   </div>
                 </CardContent>
               </Card>
@@ -534,5 +555,3 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
-
-import { Wrench } from 'lucide-react';

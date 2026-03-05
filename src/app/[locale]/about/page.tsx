@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
-import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { Settings } from '@/lib/types';
 
@@ -71,7 +70,6 @@ export default function AboutPage() {
                     sangoText={content?.visionSango || "Vision ti e ayeke ti tene Afrique aga mbeni kota zo ti technologie na sese mobimba."}
                 />
 
-                {/* --- ÉQUIPE DYNAMIQUE --- */}
                 {team.length > 0 && (
                     <section className="mb-24">
                         <div className="flex items-center gap-3 mb-12">
