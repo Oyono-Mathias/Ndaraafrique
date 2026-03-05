@@ -56,7 +56,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
         <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
         <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest leading-relaxed">
           L'ID de bibliothèque Bunny n'est pas configuré. {'\n'}
-          Allez dans : Admin {'->'} Paramètres {'->'} Hébergement Vidéo.
+          Allez dans : Admin {`->`} Paramètres {`->`} Hébergement Vidéo.
         </p>
       </div>
     );
