@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
- * Fix Build: Correction des caractères spéciaux TSX.
+ * Résolution des erreurs de syntaxe TSX pour le build Vercel.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -33,6 +33,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
+    // Si une URL complète est fournie, on extrait le dernier segment (le GUID)
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
       return parts[parts.length - 1].split('?')[0];

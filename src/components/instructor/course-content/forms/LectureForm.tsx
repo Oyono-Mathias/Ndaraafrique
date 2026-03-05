@@ -3,7 +3,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Mis à jour pour utiliser l'API Proxy sécurisée pour l'upload Bunny.
+ * Mis à jour pour utiliser l'API Proxy sécurisée pour l'upload Bunny avec gestion d'erreurs précise.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -48,6 +48,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const [isPending, startTransition] = useTransition();
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const db = getFirestore();
 
     const [adminSettings, setAdminSettings] = useState({
@@ -97,6 +98,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         }
         setUploadProgress(null);
         setIsUploading(false);
+        setErrorMessage(null);
     }, [lecture, form, isOpen]);
 
     const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,6 +107,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
         setIsUploading(true);
         setUploadProgress(0);
+        setErrorMessage(null);
 
         try {
             const formData = new FormData();
@@ -116,16 +119,17 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 body: formData,
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || "Erreur lors de l'upload");
+                throw new Error(data.error || "Erreur lors de l'upload vers Bunny.net");
             }
 
-            const data = await response.json();
             form.setValue('contentUrl', data.videoId, { shouldValidate: true });
-            toast({ title: "Vidéo transmise !", description: "Votre contenu est prêt." });
+            toast({ title: "Vidéo transmise !", description: "Votre contenu est prêt chez Bunny.net." });
         } catch (error: any) {
-            toast({ variant: 'destructive', title: "Erreur d'upload", description: error.message });
+            setErrorMessage(error.message);
+            toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
         } finally {
             setIsUploading(false);
             setUploadProgress(null);
@@ -137,6 +141,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         if (!file || !currentUser) return;
         
         setUploadProgress(0);
+        setErrorMessage(null);
         const storage = getStorage();
         const storageRef = ref(storage, `course_resources/${currentUser.uid}/${Date.now()}_${file.name}`);
         const uploadTask = uploadBytesResumable(storageRef, file);
@@ -144,6 +149,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         uploadTask.on('state_changed',
             (snapshot) => setUploadProgress((snapshot.bytesTransferred / snapshot.totalBytes) * 100),
             (error) => {
+                setErrorMessage(error.message);
                 toast({ variant: 'destructive', title: 'Erreur PDF', description: error.message });
                 setUploadProgress(null);
             },
@@ -194,7 +200,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
                                 <Select 
-                                    onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); }} 
+                                    onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); setErrorMessage(null); }} 
                                     defaultValue={field.value} 
                                     value={field.value}
                                 >
@@ -264,7 +270,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         htmlFor="video-upload-input"
                                         className={cn(
                                             "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
-                                            isUploading && "pointer-events-none opacity-50"
+                                            isUploading && "pointer-events-none opacity-50",
+                                            errorMessage && "border-red-500/50"
                                         )}
                                     >
                                         {isUploading ? (
@@ -273,13 +280,24 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                                 <p className="text-[10px] font-black text-white uppercase tracking-widest">Envoi sécurisé vers Bunny...</p>
                                             </div>
                                         ) : (
-                                            <div className="flex flex-col items-center gap-2">
+                                            <div className="flex flex-col items-center gap-2 text-center px-6">
                                                 <FileVideo className="h-10 w-10 text-slate-700" />
-                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest text-center px-4">Choisir la vidéo à sécuriser</span>
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir la vidéo à sécuriser</span>
                                             </div>
                                         )}
                                     </label>
                                 </div>
+
+                                {errorMessage && (
+                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in fade-in zoom-in duration-300">
+                                        <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                                        <div className="space-y-1">
+                                            <p className="text-xs font-bold text-red-500 uppercase tracking-tight">Erreur de téléversement</p>
+                                            <p className="text-[10px] text-slate-400 leading-relaxed font-medium uppercase">{errorMessage}</p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
                                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID Bunny)</FormLabel>
