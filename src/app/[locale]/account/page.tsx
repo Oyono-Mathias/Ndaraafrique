@@ -306,7 +306,7 @@ export default function AccountPage() {
                           )}/>
                       </div>
 
-                      <Button type="submit" disabled={isSaving || isUploading} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
+                      <Button type="submit" disabled={isSaving || isUploading} className="w-full h-16 rounded-2xl bg-primary font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
                           {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : <><Sparkles className="mr-2 h-4 w-4" /> Mettre à jour mon profil</>}
                       </Button>
                   </form>
