@@ -33,7 +33,9 @@ import {
   LayoutGrid,
   FileText,
   Megaphone,
-  Scale
+  Scale,
+  Smartphone,
+  Info
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -443,24 +445,31 @@ export default function AdminSettingsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4 p-6">
-                  {fields.map((field, index) => (
-                    <div key={field.id} className="p-5 bg-slate-950/50 rounded-2xl border border-slate-800 relative group animate-in slide-in-from-top-2">
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2 text-slate-600 hover:text-red-500">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <div className="grid md:grid-cols-3 gap-4">
-                        <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Nom</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Photo URL</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800 font-mono text-[9px]" /></FormControl></FormItem>
-                        )} />
+                  {fields.length > 0 ? (
+                    fields.map((field, index) => (
+                      <div key={field.id} className="p-5 bg-slate-950/50 rounded-2xl border border-slate-800 relative group animate-in slide-in-from-top-2">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2 text-slate-600 hover:text-red-500">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <div className="grid md:grid-cols-3 gap-4">
+                          <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Nom</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
+                          )} />
+                          <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
+                          )} />
+                          <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Photo URL</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800 font-mono text-[9px]" /></FormControl></FormItem>
+                          )} />
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-12 bg-slate-950/20 border-2 border-dashed border-slate-800 rounded-[2rem]">
+                        <UsersIcon className="mx-auto h-12 w-12 text-slate-700 mb-4" />
+                        <p className="text-xs font-black uppercase text-slate-500 tracking-widest">Aucun membre enregistré</p>
                     </div>
-                  ))}
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -496,7 +505,7 @@ export default function AdminSettingsPage() {
             {/* --- MAINTENANCE --- */}
             <TabsContent value="maintenance" className="space-y-4 animate-in fade-in duration-500">
                 <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] flex items-start gap-4 mb-4">
-                    <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
+                    <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
                     <p className="text-amber-500/70 text-[10px] font-bold uppercase leading-relaxed">
                         Outils de régularisation massive. À utiliser avec précaution. Ces actions modifient des milliers de documents simultanément.
                     </p>
