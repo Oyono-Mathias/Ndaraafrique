@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * @fileOverview AppShell Ndara Afrique.
+ * Gère le Mode Maintenance, la Bannière d'Annonce et la visibilité des NavBars.
+ */
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
@@ -8,12 +13,39 @@ import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
 import { Button } from '@/components/ui/button';
-import { Wrench, PanelLeft, Loader2 } from 'lucide-react';
+import { Wrench, PanelLeft, Loader2, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
+
+function AnnouncementBanner({ message }: { message: string }) {
+    const [isVisible, setIsVisible] = useState(false);
+
+    useEffect(() => {
+        if (message && sessionStorage.getItem('ndara-announcement-dismissed') !== message) {
+            setIsVisible(true);
+        }
+    }, [message]);
+
+    const handleDismiss = () => {
+        setIsVisible(false);
+        sessionStorage.setItem('ndara-announcement-dismissed', message);
+    };
+
+    if (!isVisible || !message) return null;
+
+    return (
+        <div className="bg-primary/95 text-primary-foreground p-3 flex items-center justify-center gap-4 text-[11px] font-black uppercase tracking-wider relative z-[100]">
+            <Megaphone className="h-4 w-4 hidden sm:block flex-shrink-0" />
+            <p className="text-center px-8">{message}</p>
+            <Button variant="ghost" size="icon" onClick={handleDismiss} className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 hover:bg-black/20 text-white">
+                <X className="h-4 w-4" />
+            </Button>
+        </div>
+    );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
@@ -25,19 +57,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   const [siteSettings, setSiteSettings] = useState({
       maintenanceMode: false,
+      announcementMessage: '',
   });
 
   useEffect(() => {
     setMounted(true);
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
         if (snap.exists()) {
-            setSiteSettings({ maintenanceMode: snap.data().platform?.maintenanceMode || false });
+            const data = snap.data();
+            setSiteSettings({ 
+                maintenanceMode: data.platform?.maintenanceMode || false,
+                announcementMessage: data.platform?.announcementMessage || '',
+            });
         }
     });
     return () => unsub();
   }, [db]);
 
-  // Nettoyage de l'URL pour la redirection
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
@@ -47,8 +83,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir'];
     
-    // Détection d'un profil instructeur public : /instructor/[id]
-    // Mais on doit exclure les routes privées comme /instructor/dashboard
     const instructorPrivateRoutes = ['dashboard', 'courses', 'students', 'revenus', 'annonces', 'avis', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'certificats'];
     const isInstructorPublicProfile = cleanPath.startsWith('/instructor/') && !instructorPrivateRoutes.some(sub => cleanPath.includes(`/instructor/${sub}`));
 
@@ -59,10 +93,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    // Autoriser la navigation vers les pages communes sans redirection forcée
     if (cleanPath === '/account' || cleanPath === '/search' || isInstructorPublicProfile) return;
 
-    // Redirection basée sur le rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
@@ -81,8 +113,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
             <Wrench className="h-16 w-16 text-primary mb-4" />
-            <h1 className="text-2xl font-black text-white uppercase">Maintenance Ndara</h1>
-            <p className="text-slate-500 mt-2">Nous revenons dans quelques instants.</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance Ndara</h1>
+            <p className="text-slate-500 mt-2 font-medium">Nous effectuons des mises à jour techniques. Nous revenons dans quelques instants.</p>
         </div>
       );
   }
@@ -90,7 +122,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
   const isLandingPage = cleanPath === '/';
   
-  // Re-calcul pour l'affichage de la nav
   const instructorPrivateRoutes = ['dashboard', 'courses', 'students', 'revenus', 'annonces', 'avis', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'certificats'];
   const isInstructorPublicProfile = cleanPath.startsWith('/instructor/') && !instructorPrivateRoutes.some(sub => cleanPath.includes(`/instructor/${sub}`));
   
@@ -113,12 +144,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </aside>
         )}
         <div className="flex flex-col flex-1">
+          {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           {showNav && !isFullScreen && (
-            <header className="flex h-16 items-center justify-between border-b border-slate-800 px-4 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-30">
+            <header className="flex h-16 items-center justify-between border-b border-white/5 px-4 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-30">
               <div className="md:hidden">
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="outline" size="icon" className="bg-transparent border-slate-700"><PanelLeft className="h-5 w-5" /></Button>
+                        <Button variant="outline" size="icon" className="bg-transparent border-slate-800"><PanelLeft className="h-5 w-5 text-white" /></Button>
                     </SheetTrigger>
                     <SheetContent side="left" className="p-0 w-[300px] bg-[#111827] border-none">
                         {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}

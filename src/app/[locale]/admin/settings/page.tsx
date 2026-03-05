@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { updateGlobalSettings } from '@/actions/settingsActions';
-import { migrateUserProfilesAction, syncUsersWithAuthAction, repairAllCertificatesAction } from '@/actions/userActions';
+import { repairAllCertificatesAction, syncUsersWithAuthAction } from '@/actions/userActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,6 +30,9 @@ import {
   Plus,
   Trash2,
   Sparkles,
+  LayoutGrid,
+  FileText,
+  Megaphone
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -41,21 +44,45 @@ const teamMemberSchema = z.object({
 });
 
 const settingsSchema = z.object({
+  // Général
   siteName: z.string().min(2, "Le nom est trop court."),
   logoUrl: z.string().url("URL invalide.").or(z.literal('')),
   contactEmail: z.string().email("Email invalide."),
   commission: z.coerce.number().min(0).max(100),
+  
+  // Plateforme
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
   bunnyLibraryId: z.string().optional(),
+
+  // Landing Page
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
   landingHeroCta: z.string().optional(),
+  howItWorksTitle: z.string().optional(),
+  howItWorksSubtitle: z.string().optional(),
+  securitySectionTitle: z.string().optional(),
+  securitySectionSubtitle: z.string().optional(),
+  finalCtaTitle: z.string().optional(),
+  finalCtaSubtitle: z.string().optional(),
+  finalCtaButtonText: z.string().optional(),
+
+  // About Page
   aboutMainTitle: z.string().optional(),
+  aboutMainSubtitle: z.string().optional(),
+  historyTitle: z.string().optional(),
+  historyFrench: z.string().optional(),
+  historySango: z.string().optional(),
+  visionTitle: z.string().optional(),
+  visionFrench: z.string().optional(),
+  visionSango: z.string().optional(),
+  aboutCtaTitle: z.string().optional(),
   teamMembers: z.array(teamMemberSchema).optional(),
+
+  // Légal
   termsOfService: z.string().optional(),
   privacyPolicy: z.string().optional(),
 });
@@ -95,11 +122,29 @@ export default function AdminSettingsPage() {
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
           bunnyLibraryId: data.platform?.bunnyLibraryId || '',
+          
           landingHeroTitle: data.content?.landingPage?.heroTitle || "",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
           landingHeroCta: data.content?.landingPage?.heroCtaText || "",
+          howItWorksTitle: data.content?.landingPage?.howItWorksTitle || "",
+          howItWorksSubtitle: data.content?.landingPage?.howItWorksSubtitle || "",
+          securitySectionTitle: data.content?.landingPage?.securitySectionTitle || "",
+          securitySectionSubtitle: data.content?.landingPage?.securitySectionSubtitle || "",
+          finalCtaTitle: data.content?.landingPage?.finalCtaTitle || "",
+          finalCtaSubtitle: data.content?.landingPage?.finalCtaSubtitle || "",
+          finalCtaButtonText: data.content?.landingPage?.finalCtaButtonText || "",
+
           aboutMainTitle: data.content?.aboutPage?.mainTitle || "",
+          aboutMainSubtitle: data.content?.aboutPage?.mainSubtitle || "",
+          historyTitle: data.content?.aboutPage?.historyTitle || "",
+          historyFrench: data.content?.aboutPage?.historyFrench || "",
+          historySango: data.content?.aboutPage?.historySango || "",
+          visionTitle: data.content?.aboutPage?.visionTitle || "",
+          visionFrench: data.content?.aboutPage?.visionFrench || "",
+          visionSango: data.content?.aboutPage?.visionSango || "",
+          aboutCtaTitle: data.content?.aboutPage?.ctaTitle || "",
           teamMembers: data.content?.aboutPage?.teamMembers || [],
+
           termsOfService: data.legal?.termsOfService || '',
           privacyPolicy: data.legal?.privacyPolicy || '',
         });
@@ -133,17 +178,31 @@ export default function AdminSettingsPage() {
             heroTitle: values.landingHeroTitle,
             heroSubtitle: values.landingHeroSubtitle,
             heroCtaText: values.landingHeroCta,
+            howItWorksTitle: values.howItWorksTitle,
+            howItWorksSubtitle: values.howItWorksSubtitle,
+            securitySectionTitle: values.securitySectionTitle,
+            securitySectionSubtitle: values.securitySectionSubtitle,
+            finalCtaTitle: values.finalCtaTitle,
+            finalCtaSubtitle: values.finalCtaSubtitle,
+            finalCtaButtonText: values.finalCtaButtonText,
           },
           aboutPage: {
             mainTitle: values.aboutMainTitle || '',
-            mainSubtitle: '',
+            mainSubtitle: values.aboutMainSubtitle || '',
+            historyTitle: values.historyTitle || '',
+            historyFrench: values.historyFrench || '',
+            historySango: values.historySango || '',
+            visionTitle: values.visionTitle || '',
+            visionFrench: values.visionFrench || '',
+            visionSango: values.visionSango || '',
+            ctaTitle: values.aboutCtaTitle || '',
             teamMembers: (values.teamMembers || []).map(m => ({
               name: m.name,
               role: m.role,
               imageUrl: m.imageUrl,
               bio: m.bio || ''
             })),
-            historyTitle: '', historyFrench: '', historySango: '', visionTitle: '', visionFrench: '', visionSango: '', ctaTitle: '', ctaSubtitle: ''
+            ctaSubtitle: ''
           }
         },
         legal: {
@@ -154,7 +213,7 @@ export default function AdminSettingsPage() {
     });
 
     if (result.success) {
-      toast({ title: "Paramètres mis à jour !" });
+      toast({ title: "Configuration Ndara enregistrée !" });
     } else {
       toast({ variant: 'destructive', title: "Erreur", description: result.error });
     }
@@ -180,27 +239,37 @@ export default function AdminSettingsPage() {
               <TabsTrigger value="general" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Général</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Plateforme</TabsTrigger>
               <TabsTrigger value="video" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Vidéo</TabsTrigger>
+              <TabsTrigger value="landing" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Accueil</TabsTrigger>
+              <TabsTrigger value="about" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">À Propos</TabsTrigger>
               <TabsTrigger value="team" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">L'Équipe</TabsTrigger>
               <TabsTrigger value="legal" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Légal</TabsTrigger>
               <TabsTrigger value="maintenance" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0 text-amber-500">Outils</TabsTrigger>
             </TabsList>
 
+            {/* --- GÉNÉRAL --- */}
             <TabsContent value="general" className="space-y-4 animate-in fade-in duration-500">
-              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
-                <CardHeader className="p-6 border-b border-white/5">
-                  <CardTitle className="text-lg font-bold">Identité & Commerce</CardTitle>
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                  <CardTitle className="text-lg font-bold">Identité & Contact</CardTitle>
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6 p-6">
                   <FormField control={form.control} name="siteName" render={({ field }) => (
                     <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom du site</FormLabel>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom de la plateforme</FormLabel>
+                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="contactEmail" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Email de contact</FormLabel>
                         <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
                         <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="commission" render={({ field }) => (
                     <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Commission (%)</FormLabel>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Commission plateforme (%)</FormLabel>
                         <FormControl><Input type="number" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
                         <FormMessage />
                     </FormItem>
@@ -209,6 +278,49 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
+            {/* --- PLATEFORME --- */}
+            <TabsContent value="platform" className="space-y-4 animate-in fade-in duration-500">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                  <CardTitle className="text-lg font-bold">État de la Plateforme</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-bold text-white">Mode Maintenance</FormLabel>
+                          <FormDescription className="text-[10px] uppercase">Désactiver le site pour le public</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-bold text-white">Inscriptions Formateurs</FormLabel>
+                          <FormDescription className="text-[10px] uppercase">Autoriser les nouvelles demandes</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+
+                  <FormField control={form.control} name="announcementMessage" render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                            <Megaphone className="h-3 w-3" /> Message d'annonce global
+                        </FormLabel>
+                        <FormControl><Textarea {...field} placeholder="Ex: Flash Sale ! -20% ce week-end..." rows={3} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                        <FormDescription className="text-[10px] italic">Ce message apparaîtra en haut de chaque page.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                  )} />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* --- VIDÉO --- */}
             <TabsContent value="video" className="space-y-4 animate-in fade-in duration-500">
                 <Card className="bg-slate-900 border-slate-800 rounded-3xl p-6">
                     <div className="space-y-6">
@@ -242,11 +354,88 @@ export default function AdminSettingsPage() {
                 </Card>
             </TabsContent>
 
+            {/* --- ACCUEIL (LANDING) --- */}
+            <TabsContent value="landing" className="space-y-4 animate-in fade-in duration-500">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                  <CardTitle className="text-lg font-bold">Édition Page d'Accueil</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase text-primary tracking-widest border-b border-primary/10 pb-2">Hero Section</h3>
+                    <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Principal</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre</FormLabel><FormControl><Textarea {...field} rows={2} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                  </div>
+
+                  <div className="space-y-4 pt-4">
+                    <h3 className="text-xs font-black uppercase text-primary tracking-widest border-b border-primary/10 pb-2">Sections Impact</h3>
+                    <FormField control={form.control} name="howItWorksTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre "Comment ça marche"</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="securitySectionTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Section Sécurité</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* --- À PROPOS --- */}
+            <TabsContent value="about" className="space-y-4 animate-in fade-in duration-500">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                  <CardTitle className="text-lg font-bold">Le Manifeste Ndara</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-8">
+                  <div className="space-y-4">
+                    <FormField control={form.control} name="aboutMainTitle" render={({ field }) => (
+                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Manifeste</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                    )} />
+                    
+                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Histoire (FR)</h4>
+                            <FormField control={form.control} name="historyFrench" render={({ field }) => (
+                                <FormItem><FormControl><Textarea {...field} rows={6} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                            )} />
+                        </div>
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Histoire (Sango)</h4>
+                            <FormField control={form.control} name="historySango" render={({ field }) => (
+                                <FormItem><FormControl><Textarea {...field} rows={6} className="bg-slate-800 border-slate-700 italic" /></FormControl></FormItem>
+                            )} />
+                        </div>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6 pt-4 border-t border-white/5">
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Vision (FR)</h4>
+                            <FormField control={form.control} name="visionFrench" render={({ field }) => (
+                                <FormItem><FormControl><Textarea {...field} rows={4} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
+                            )} />
+                        </div>
+                        <div className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase text-primary tracking-widest">Vision (Sango)</h4>
+                            <FormField control={form.control} name="visionSango" render={({ field }) => (
+                                <FormItem><FormControl><Textarea {...field} rows={4} className="bg-slate-800 border-slate-700 italic" /></FormControl></FormItem>
+                            )} />
+                        </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* --- L'ÉQUIPE --- */}
             <TabsContent value="team" className="space-y-4 animate-in fade-in duration-500">
-              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
-                <CardHeader className="p-6 border-b border-white/5">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <CardTitle className="text-lg font-bold">L'Équipe Ndara</CardTitle>
+                    <CardTitle className="text-lg font-bold">Équipe de Direction</CardTitle>
                     <Button type="button" size="sm" onClick={() => append({ name: '', role: '', imageUrl: '', bio: '' })} className="rounded-xl h-10 w-full sm:w-auto px-6 font-black uppercase text-[10px] tracking-widest">
                         <Plus className="h-4 w-4 mr-2" /> Ajouter un membre
                     </Button>
@@ -275,16 +464,17 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
+            {/* --- MAINTENANCE --- */}
             <TabsContent value="maintenance" className="space-y-4 animate-in fade-in duration-500">
                 <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] flex items-start gap-4 mb-4">
                     <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
                     <p className="text-amber-500/70 text-[10px] font-bold uppercase leading-relaxed">
-                        Outils de régularisation massive. À utiliser avec précaution.
+                        Outils de régularisation massive. À utiliser avec précaution. Ces actions modifient des milliers de documents simultanément.
                     </p>
                 </div>
-                <div className="grid gap-3">
-                    <Button type="button" onClick={() => repairAllCertificatesAction(currentUser!.uid)} className="h-14 bg-slate-900 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors">Réparer les Certificats</Button>
-                    <Button type="button" onClick={() => syncUsersWithAuthAction(currentUser!.uid)} className="h-14 bg-slate-900 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors">Importer membres Auth</Button>
+                <div className="grid sm:grid-cols-2 gap-4">
+                    <Button type="button" onClick={() => repairAllCertificatesAction(currentUser!.uid)} className="h-16 bg-slate-900 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
+                    <Button type="button" onClick={() => syncUsersWithAuthAction(currentUser!.uid)} className="h-16 bg-slate-900 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Importer membres Firebase Auth</Button>
                 </div>
             </TabsContent>
           </Tabs>
@@ -292,7 +482,7 @@ export default function AdminSettingsPage() {
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-40 safe-area-pb md:relative md:bg-transparent md:border-none md:p-0">
             <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all">
                 {isSaving ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <Save className="mr-3 h-5 w-5" />}
-                Enregistrer tout
+                Enregistrer la configuration globale
             </Button>
           </div>
         </form>
