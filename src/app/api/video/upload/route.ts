@@ -47,7 +47,7 @@ export async function POST(req: Request) {
 
     if (!createRes.ok) {
       const errorBody = await createRes.text();
-      console.error("BUNNY_CREATE_ERROR:", response.status, errorBody);
+      console.error("BUNNY_CREATE_ERROR:", createRes.status, errorBody);
       return NextResponse.json({ error: `Erreur Bunny Stream (Status ${createRes.status})` }, { status: createRes.status });
     }
 
