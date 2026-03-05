@@ -1,4 +1,3 @@
-
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 
@@ -13,6 +12,7 @@ const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || "607753";
 export async function POST(req: Request) {
   try {
     if (!BUNNY_API_KEY || !BUNNY_LIBRARY_ID) {
+      console.error("CRITICAL_BUNNY_CONFIG_MISSING");
       return NextResponse.json({ error: "Configuration Bunny manquante sur le serveur." }, { status: 500 });
     }
 
@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const instructorId = formData.get('instructorId') as string;
 
     if (!file || !instructorId) {
-      return NextResponse.json({ error: "Données manquantes." }, { status: 400 });
+      return NextResponse.json({ error: "Données de fichier ou d'instructeur manquantes." }, { status: 400 });
     }
 
     const db = getAdminDb();
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     const userData = userDoc.data();
 
     if (!userDoc.exists || (userData?.role !== 'instructor' && userData?.role !== 'admin')) {
-      return NextResponse.json({ error: "Accès refusé." }, { status: 403 });
+      return NextResponse.json({ error: "Accès refusé : Autorisation formateur requise." }, { status: 403 });
     }
 
     // 1. Créer l'entrée vidéo chez Bunny
@@ -46,7 +46,11 @@ export async function POST(req: Request) {
 
     if (!createRes.ok) {
       const errorBody = await createRes.text();
-      console.error("BUNNY_CREATE_ERROR:", { status: createRes.status, body: errorBody, libraryId: BUNNY_LIBRARY_ID });
+      console.error("BUNNY_API_CREATE_ERROR:", {
+        status: createRes.status,
+        body: errorBody,
+        libraryId: BUNNY_LIBRARY_ID
+      });
       return NextResponse.json({ error: `Erreur Bunny (Statut ${createRes.status})`, details: errorBody }, { status: createRes.status });
     }
 
@@ -67,14 +71,17 @@ export async function POST(req: Request) {
 
     if (!uploadRes.ok) {
       const errorBody = await uploadRes.text();
-      console.error("BUNNY_UPLOAD_ERROR:", { status: uploadRes.status, videoId: guid });
-      return NextResponse.json({ error: "Échec du transfert vers Bunny Stream." }, { status: uploadRes.status });
+      console.error("BUNNY_API_UPLOAD_ERROR:", {
+        status: uploadRes.status,
+        videoId: guid
+      });
+      return NextResponse.json({ error: "Échec du transfert vers les serveurs de Bunny Stream." }, { status: uploadRes.status });
     }
 
     return NextResponse.json({ success: true, videoId: guid });
 
   } catch (error: any) {
-    console.error("SECURE_UPLOAD_ERROR:", error.message);
+    console.error("SERVER_VIDEO_UPLOAD_FATAL:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

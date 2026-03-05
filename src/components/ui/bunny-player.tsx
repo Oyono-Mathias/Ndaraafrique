@@ -1,8 +1,7 @@
-
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { Loader2, AlertCircle } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import type { Settings } from '@/lib/types';
 
@@ -10,6 +9,10 @@ interface BunnyPlayerProps {
   videoId: string;
 }
 
+/**
+ * @fileOverview Lecteur Vidéo Ndara Afrique optimisé pour Bunny Stream.
+ * Gère l'extraction propre de l'ID vidéo et utilise l'iframe officielle.
+ */
 export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
   const [libraryId, setLibraryId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,6 +31,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
+    // Si c'est une URL complète, on extrait le GUID
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
       return parts[parts.length - 1].split('?')[0];
@@ -44,10 +48,10 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
   }
 
   const activeLibraryId = libraryId || "607753";
-  const embedUrl = `https://iframe.mediadelivery.net/embed/${activeLibraryId}/${cleanVideoId}`;
+  const embedUrl = `https://iframe.mediadelivery.net/embed/${activeLibraryId}/${cleanVideoId}?autoplay=false&loop=false&muted=false&preload=true&responsive=true`;
 
   return (
-    <div className="relative w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black" style={{ aspectRatio: "16/9" }}>
+    <div className="relative w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black" style={{ paddingTop: '56.25%' }}>
       <iframe
         src={embedUrl}
         loading="lazy"
