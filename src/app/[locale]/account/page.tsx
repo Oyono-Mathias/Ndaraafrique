@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -19,6 +18,7 @@ import { Loader2, KeyRound, Sparkles, LogOut, Camera, User, CheckCircle2 } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 const accountSchema = z.object({
