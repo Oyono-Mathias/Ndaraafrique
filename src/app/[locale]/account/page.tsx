@@ -6,15 +6,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
-import { Loader2, KeyRound, Sparkles, LogOut, Camera, User, CheckCircle2 } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Loader2, KeyRound, LogOut, Camera, CheckCircle2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
@@ -37,7 +36,6 @@ export default function AccountPage() {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -81,36 +79,41 @@ export default function AccountPage() {
     }
   };
 
+  /**
+   * Téléversement vers Bunny Storage au lieu de Firebase Storage
+   */
   const onCropComplete = async (croppedFile: File) => {
     if (!user) return;
     setSelectedImage(null);
     setIsUploading(true);
-    setUploadProgress(0);
 
-    const storage = getStorage();
-    const storageRef = ref(storage, `profiles/${user.uid}/avatar.webp`);
-    const uploadTask = uploadBytesResumable(storageRef, croppedFile);
+    try {
+        const formData = new FormData();
+        formData.append('file', croppedFile);
+        formData.append('userId', user.uid);
+        formData.append('folder', 'avatars');
 
-    uploadTask.on('state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-      },
-      (error) => {
-        toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
-        setIsUploading(false);
-      },
-      async () => {
-        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) throw new Error(data.error || "Erreur Bunny Storage");
+
         await updateUserProfileAction({
           userId: user.uid,
-          data: { profilePictureURL: downloadURL },
+          data: { profilePictureURL: data.url },
           requesterId: user.uid
         });
+
+        toast({ title: "Photo mise à jour !", description: "Votre nouvel avatar est en ligne sur Bunny CDN." });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
+    } finally {
         setIsUploading(false);
-        toast({ title: "Photo mise à jour !" });
-      }
-    );
+    }
   };
 
   const onSubmit = async (values: z.infer<typeof accountSchema>) => {

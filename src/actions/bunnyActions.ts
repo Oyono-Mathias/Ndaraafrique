@@ -3,12 +3,17 @@
 import { createHash } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour l'API Bunny Stream.
+ * @fileOverview Actions serveur pour l'API Bunny (Stream & Storage).
  */
 
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || "607753";
 const API_KEY = process.env.BUNNY_API_KEY || "bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f"; 
 const SECURITY_KEY = process.env.BUNNY_SECURITY_KEY || "810ccb8b-3439-45f1-9b94-21d4e3f800af";
+
+// --- CONFIGURATION BUNNY STORAGE ---
+const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-afrique-storage";
+const STORAGE_PASSWORD = process.env.BUNNY_STORAGE_PASSWORD; // Doit être configuré dans .env
+const PULL_ZONE_URL = process.env.BUNNY_PULL_ZONE_URL || "https://ndara-assets.b-cdn.net";
 
 /**
  * Génère un jeton de sécurité (Signed URL) pour le lecteur Bunny Stream.
@@ -38,7 +43,6 @@ export async function getVideoToken(videoId: string) {
 
 /**
  * Récupère les métadonnées d'une vidéo (Durée, Statut).
- * Bunny renvoie la durée en secondes dans le champ 'length'.
  */
 export async function getBunnyVideoMetadata(videoId: string) {
     try {
@@ -60,7 +64,6 @@ export async function getBunnyVideoMetadata(videoId: string) {
 
         const data = await response.json();
         
-        // Status 4 = Finished (vidéo prête et durée finale calculée)
         return { 
             success: true, 
             length: data.length || 0, 
@@ -78,29 +81,28 @@ export async function getBunnyVideoMetadata(videoId: string) {
  */
 export async function deleteBunnyVideo(videoId: string) {
     try {
-        if (!API_KEY || !LIBRARY_ID) {
-            console.error("BUNNY_DELETE_CONFIG_MISSING");
-            return { success: false, error: "Configuration API Bunny manquante." };
-        }
+        if (!API_KEY || !LIBRARY_ID) return { success: false, error: "Configuration API Bunny manquante." };
 
         const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos/${videoId}`;
         const response = await fetch(url, {
             method: 'DELETE',
-            headers: {
-                'AccessKey': API_KEY,
-                'accept': 'application/json',
-            },
+            headers: { 'AccessKey': API_KEY, 'accept': 'application/json' },
         });
 
-        if (!response.ok) {
-            const errorBody = await response.text();
-            console.error("BUNNY_DELETE_API_ERROR:", response.status, errorBody);
-            return { success: false, error: `Erreur Bunny Stream: ${response.status}` };
-        }
-
+        if (!response.ok) return { success: false, error: `Erreur Bunny Stream: ${response.status}` };
         return { success: true };
     } catch (error: any) {
-        console.error("BUNNY_DELETE_FATAL:", error.message);
         return { success: false, error: error.message };
     }
+}
+
+/**
+ * Retourne les infos pour l'accès public aux fichiers du Storage Bunny.
+ */
+export async function getBunnyStorageConfig() {
+    return {
+        zoneName: STORAGE_ZONE_NAME,
+        pullZoneUrl: PULL_ZONE_URL,
+        hasPassword: !!STORAGE_PASSWORD
+    };
 }
