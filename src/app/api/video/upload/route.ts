@@ -4,6 +4,7 @@ import { getAdminDb } from '@/firebase/admin';
 /**
  * @fileOverview Route API sécurisée pour le téléversement de vidéos vers Bunny Stream.
  * Agit comme un proxy serveur pour protéger la clé API Bunny.
+ * Diagnostic renforcé pour tracer les erreurs API.
  */
 
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
@@ -13,10 +14,12 @@ export async function POST(req: Request) {
   try {
     // 1. Vérification de la configuration serveur
     if (!BUNNY_API_KEY || BUNNY_API_KEY.length < 10) {
-      return NextResponse.json({ error: "Configuration serveur incomplète (BUNNY_API_KEY manquante)" }, { status: 500 });
+      console.error("BUNNY_CONFIG_ERROR: Missing or invalid BUNNY_API_KEY");
+      return NextResponse.json({ error: "Configuration serveur incomplète (BUNNY_API_KEY manquante ou invalide)" }, { status: 500 });
     }
 
     if (!BUNNY_LIBRARY_ID) {
+      console.error("BUNNY_CONFIG_ERROR: Missing BUNNY_LIBRARY_ID");
       return NextResponse.json({ error: "Configuration serveur incomplète (BUNNY_LIBRARY_ID manquant)" }, { status: 500 });
     }
 
@@ -51,8 +54,18 @@ export async function POST(req: Request) {
     });
 
     if (!createRes.ok) {
-      const errorData = await createRes.json().catch(() => ({}));
-      throw new Error(errorData.message || "Impossible de créer l'entrée vidéo chez Bunny.");
+      const errorBody = await createRes.text();
+      console.error("BUNNY_API_CREATE_FAILURE:", {
+        status: createRes.status,
+        body: errorBody,
+        libraryId: BUNNY_LIBRARY_ID,
+        endpoint: createUrl
+      });
+      return NextResponse.json({ 
+        error: "Erreur API Bunny lors de la création de l'entrée vidéo.",
+        details: errorBody,
+        status: createRes.status
+      }, { status: createRes.status });
     }
 
     const { guid } = await createRes.json();
@@ -71,13 +84,25 @@ export async function POST(req: Request) {
     });
 
     if (!uploadRes.ok) {
-      throw new Error("Le transfert du fichier vers Bunny a échoué.");
+      const errorBody = await uploadRes.text();
+      console.error("BUNNY_API_UPLOAD_FAILURE:", {
+        status: uploadRes.status,
+        body: errorBody,
+        libraryId: BUNNY_LIBRARY_ID,
+        videoId: guid,
+        endpoint: uploadUrl
+      });
+      return NextResponse.json({ 
+        error: "Échec du transfert du flux vers Bunny.net.",
+        details: errorBody,
+        status: uploadRes.status
+      }, { status: uploadRes.status });
     }
 
     return NextResponse.json({ success: true, videoId: guid });
 
   } catch (error: any) {
-    console.error("SECURE_UPLOAD_ERROR:", error.message);
+    console.error("SECURE_UPLOAD_CRITICAL_ERROR:", error.message);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
