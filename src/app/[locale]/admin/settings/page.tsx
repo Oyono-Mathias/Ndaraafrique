@@ -32,7 +32,8 @@ import {
   Sparkles,
   LayoutGrid,
   FileText,
-  Megaphone
+  Megaphone,
+  Scale
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -460,6 +461,34 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* --- LÉGAL --- */}
+            <TabsContent value="legal" className="space-y-4 animate-in fade-in duration-500">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                  <div className="flex items-center gap-3">
+                    <Scale className="h-6 w-6 text-primary" />
+                    <CardTitle className="text-lg font-bold">Documents Légaux</CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-8">
+                  <FormField control={form.control} name="termsOfService" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Conditions Générales d'Utilisation (CGU)</FormLabel>
+                      <FormControl><Textarea rows={12} {...field} className="bg-slate-800/50 border-slate-700 rounded-xl font-sans text-sm leading-relaxed" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="privacyPolicy" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Politique de Confidentialité</FormLabel>
+                      <FormControl><Textarea rows={12} {...field} className="bg-slate-800/50 border-slate-700 rounded-xl font-sans text-sm leading-relaxed" /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
                 </CardContent>
               </Card>
             </TabsContent>
