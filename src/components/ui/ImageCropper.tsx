@@ -6,7 +6,7 @@ import Cropper from 'react-easy-crop';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import getCroppedImg from '@/lib/crop-image';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 interface ImageCropperProps {
   image: string | null;
@@ -20,11 +20,11 @@ export function ImageCropper({ image, onCropComplete, onClose }: ImageCropperPro
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null);
   const [isCropping, setIsCropping] = useState(false);
 
-  const onCropChange = useCallback((crop: any) => {
+  const onCropChange = useCallback((crop: { x: number, y: number }) => {
     setCrop(crop);
   }, []);
 
-  const onZoomChange = useCallback((zoom: any) => {
+  const onZoomChange = useCallback((zoom: number) => {
     setZoom(zoom);
   }, []);
 
@@ -39,7 +39,7 @@ export function ImageCropper({ image, onCropComplete, onClose }: ImageCropperPro
       const croppedImageFile = await getCroppedImg(image, croppedAreaPixels);
       onCropComplete(croppedImageFile);
     } catch (e) {
-      console.error(e);
+      console.error("Cropping Error:", e);
     } finally {
       setIsCropping(false);
     }
@@ -49,11 +49,11 @@ export function ImageCropper({ image, onCropComplete, onClose }: ImageCropperPro
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0 gap-0 dark:bg-slate-900 dark:border-slate-800">
-        <DialogHeader className="p-4 border-b dark:border-slate-700">
-          <DialogTitle className="dark:text-white">Recadrer l'image</DialogTitle>
+      <DialogContent className="max-w-xl h-[80vh] flex flex-col p-0 gap-0 bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden z-[10001]">
+        <DialogHeader className="p-6 border-b border-white/5 bg-slate-900">
+          <DialogTitle className="text-white uppercase font-black tracking-tight text-xl">Ajuster la photo</DialogTitle>
         </DialogHeader>
-        <div className="relative flex-1">
+        <div className="relative flex-1 bg-black">
           <Cropper
             image={image}
             crop={crop}
@@ -66,11 +66,15 @@ export function ImageCropper({ image, onCropComplete, onClose }: ImageCropperPro
             onCropComplete={onCropFull}
           />
         </div>
-        <DialogFooter className="p-4 border-t dark:border-slate-700">
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleCrop} disabled={isCropping}>
-            {isCropping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-            Enregistrer
+        <DialogFooter className="p-6 bg-slate-900 border-t border-white/5 flex gap-3">
+          <Button variant="ghost" onClick={onClose} className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
+          <Button 
+            onClick={handleCrop} 
+            disabled={isCropping}
+            className="rounded-xl h-12 px-8 font-black uppercase text-[10px] tracking-widest bg-primary hover:bg-primary/90"
+          >
+            {isCropping ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+            Valider le recadrage
           </Button>
         </DialogFooter>
       </DialogContent>

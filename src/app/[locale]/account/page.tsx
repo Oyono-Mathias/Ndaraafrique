@@ -1,20 +1,25 @@
+
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, KeyRound, Sparkles, LogOut } from 'lucide-react';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Loader2, KeyRound, Sparkles, LogOut, Camera, User, CheckCircle2 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { ImageCropper } from '@/components/ui/ImageCropper';
+import { cn } from '@/lib/utils';
 
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/),
@@ -28,9 +33,15 @@ const accountSchema = z.object({
 });
 
 export default function AccountPage() {
-  const { currentUser, isUserLoading, secureSignOut } = useRole();
+  const { currentUser, isUserLoading, secureSignOut, user } = useRole();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  
+  // Cropper State
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<z.infer<typeof accountSchema>>({
     resolver: zodResolver(accountSchema),
@@ -61,6 +72,47 @@ export default function AccountPage() {
       toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'envoyer l'e-mail." });
     }
   }, [currentUser, toast]);
+
+  const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => setSelectedImage(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const onCropComplete = async (croppedFile: File) => {
+    if (!user) return;
+    setSelectedImage(null);
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    const storage = getStorage();
+    const storageRef = ref(storage, `profiles/${user.uid}/avatar.webp`);
+    const uploadTask = uploadBytesResumable(storageRef, croppedFile);
+
+    uploadTask.on('state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        setUploadProgress(progress);
+      },
+      (error) => {
+        toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
+        setIsUploading(false);
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        await updateUserProfileAction({
+          userId: user.uid,
+          data: { profilePictureURL: downloadURL },
+          requesterId: user.uid
+        });
+        setIsUploading(false);
+        toast({ title: "Photo mise à jour !" });
+      }
+    );
+  };
 
   const onSubmit = async (values: z.infer<typeof accountSchema>) => {
     if (!currentUser) return;
@@ -95,10 +147,53 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 pb-24 bg-grainy min-h-screen">
-      <header className="px-4 pt-8 text-center space-y-2">
-          <h1 className="text-3xl font-black text-white uppercase tracking-tight">Mon Identité</h1>
-          <p className="text-slate-500 text-sm font-medium">Gérez votre présence sur Ndara Afrique.</p>
+    <div className="max-w-2xl mx-auto space-y-8 pb-32 bg-grainy min-h-screen">
+      {selectedImage && (
+        <ImageCropper 
+          image={selectedImage} 
+          onCropComplete={onCropComplete} 
+          onClose={() => setSelectedImage(null)} 
+        />
+      )}
+
+      <header className="px-4 pt-12 text-center space-y-6 flex flex-col items-center">
+          <div className="relative group">
+            <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-blue-400 rounded-full blur opacity-20" />
+            <Avatar className="h-32 w-32 border-4 border-slate-900 shadow-2xl relative">
+              <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
+              <AvatarFallback className="bg-slate-800 text-4xl font-black text-slate-500">
+                  {currentUser.fullName?.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
+            
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={onFileSelect} 
+            />
+            
+            <Button 
+              size="icon" 
+              className="absolute bottom-1 right-1 h-10 w-10 rounded-full shadow-xl bg-primary hover:bg-primary/90 border-4 border-slate-950"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+            </Button>
+
+            {isUploading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
+                <span className="text-white text-xs font-black">{Math.round(uploadProgress)}%</span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tight">Mon Identité</h1>
+            <p className="text-slate-500 text-sm font-medium mt-1">Gérez votre présence sur Ndara Afrique.</p>
+          </div>
       </header>
 
       <Tabs defaultValue="profile" className="w-full">
@@ -113,37 +208,58 @@ export default function AccountPage() {
                       <div className="grid gap-6">
                           <FormField control={form.control} name="fullName" render={({ field }) => (
                               <FormItem>
-                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom Complet</FormLabel>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom Complet</FormLabel>
                                   <FormControl><Input {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                  <FormMessage />
+                              </FormItem>
+                          )}/>
+                          <FormField control={form.control} name="username" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom d'utilisateur</FormLabel>
+                                  <div className="flex items-center bg-slate-900 border border-slate-800 rounded-2xl pl-4 overflow-hidden">
+                                    <span className="text-primary font-bold">@</span>
+                                    <FormControl><Input {...field} className="border-none bg-transparent focus-visible:ring-0" /></FormControl>
+                                  </div>
+                                  <FormMessage />
+                              </FormItem>
+                          )}/>
+                          <FormField control={form.control} name="interestDomain" render={({ field }) => (
+                              <FormItem>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Votre domaine d'expertise</FormLabel>
+                                  <FormControl><Input placeholder="Ex: Finance, Agriculture, Code..." {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>
                           <FormField control={form.control} name="bio" render={({ field }) => (
                               <FormItem>
-                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500">Biographie</FormLabel>
-                                  <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Biographie</FormLabel>
+                                  <FormControl><Textarea {...field} rows={4} placeholder="Dites-en un peu plus sur vous..." className="bg-slate-900 border-slate-800 rounded-2xl resize-none" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>
                       </div>
-                      <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary font-black uppercase text-xs tracking-widest shadow-2xl">
-                          {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : <><Sparkles className="mr-2 h-4 w-4" /> Enregistrer</>}
+                      <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98]">
+                          {isSaving ? <Loader2 className="h-5 w-5 animate-spin"/> : <><CheckCircle2 className="mr-2 h-5 w-5" /> Enregistrer les changements</>}
                       </Button>
                   </form>
               </Form>
           </TabsContent>
 
           <TabsContent value="security" className="mt-8 px-4 space-y-6">
-              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-6">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl p-6 shadow-xl">
                   <div className="flex items-center justify-between">
                       <div className="flex items-center gap-4">
                           <div className="p-3 bg-slate-800 rounded-2xl text-slate-400"><KeyRound className="h-6 w-6"/></div>
-                          <div><p className="text-sm font-bold text-white">Mot de passe</p><p className="text-[10px] text-slate-500 uppercase">Sécurité standard</p></div>
+                          <div>
+                            <p className="text-sm font-bold text-white">Mot de passe</p>
+                            <p className="text-[10px] text-slate-500 uppercase font-black tracking-tighter">Réinitialisation via email</p>
+                          </div>
                       </div>
-                      <Button variant="outline" size="sm" onClick={handlePasswordReset} className="rounded-xl border-slate-700 h-10 px-4 font-bold">Modifier</Button>
+                      <Button variant="outline" size="sm" onClick={handlePasswordReset} className="rounded-xl border-slate-700 h-10 px-4 font-bold text-xs uppercase tracking-widest">Modifier</Button>
                   </div>
-              </div>
-              <Button variant="destructive" className="w-full h-16 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl" onClick={secureSignOut}>
+              </Card>
+              
+              <Button variant="destructive" className="w-full h-16 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl active:scale-[0.98] transition-all" onClick={secureSignOut}>
                   <LogOut className="mr-3 h-5 w-5" /> Se déconnecter
               </Button>
           </TabsContent>
