@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Amélioré : Titrage automatique et récupération de la durée depuis Bunny Stream.
+ * Amélioré : Synchronisation automatique du titre et de la durée depuis Bunny.net.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -70,7 +70,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     });
 
     const selectedType = form.watch('type');
-    const currentVideoId = form.watch('contentUrl');
     
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
@@ -103,17 +102,15 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         setErrorMessage(null);
     }, [lecture, form, isOpen]);
 
-    // ✅ Action pour récupérer la durée réelle depuis Bunny
     const syncDuration = async (videoId: string) => {
         if (!videoId) return;
         setIsSyncingDuration(true);
         try {
             const result = await getBunnyVideoMetadata(videoId);
             if (result.success && result.length > 0) {
-                // Bunny renvoie des secondes, on convertit en minutes (arrondi supérieur)
                 const durationMinutes = Math.ceil(result.length / 60);
                 form.setValue('duration', durationMinutes);
-                toast({ title: "Durée synchronisée", description: `${durationMinutes} min détectées.` });
+                toast({ title: "Métadonnées synchronisées", description: `${durationMinutes} min détectées.` });
             }
         } catch (e) {
             console.error("Sync Duration Error:", e);
@@ -141,7 +138,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             const formData = new FormData();
             formData.append('file', file);
             formData.append('instructorId', currentUser.uid);
-            formData.append('title', lectureTitle); // ✅ Transmission du titre !
+            formData.append('title', lectureTitle);
 
             const response = await fetch('/api/video/upload', {
                 method: 'POST',
@@ -155,10 +152,10 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             }
 
             form.setValue('contentUrl', data.videoId, { shouldValidate: true });
-            toast({ title: "Vidéo transmise !", description: "Votre contenu est prêt chez Bunny.net." });
+            toast({ title: "Vidéo transmise !", description: "Optimisation en cours chez Bunny.net." });
             
-            // ✅ Lancer la synchro de la durée juste après
-            setTimeout(() => syncDuration(data.videoId), 2000);
+            // Attendre un peu l'encodage avant de tenter la synchro de durée
+            setTimeout(() => syncDuration(data.videoId), 5000);
 
         } catch (error: any) {
             setErrorMessage(error.message);
@@ -247,7 +244,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <SelectItem value="video" className="py-3">
                                                 <div className="flex items-center gap-2">
                                                     <PlaySquare className="h-4 w-4 text-primary" />
-                                                    <span>Vidéo Premium (Sécurisée)</span>
+                                                    <span>Vidéo Premium (Anti-Copie)</span>
                                                 </div>
                                             </SelectItem>
                                         )}
@@ -255,7 +252,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                             <SelectItem value="youtube" className="py-3">
                                                 <div className="flex items-center gap-2">
                                                     <Youtube className="h-4 w-4 text-red-500" />
-                                                    <span>Vidéo YouTube</span>
+                                                    <span>Lien YouTube</span>
                                                 </div>
                                             </SelectItem>
                                         )}
@@ -277,19 +274,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             </FormItem> 
                         )}/>
                         
-                        {selectedType === 'text' && (
-                            <FormField control={form.control} name="textContent" render={({ field }) => ( 
-                                <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu de l'article</FormLabel>
-                                    <FormControl><Textarea rows={10} placeholder="Rédigez votre texte ici..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white" /></FormControl>
-                                    <FormMessage />
-                                </FormItem> 
-                            )}/>
-                        )}
-
-                        {selectedType === 'video' && adminSettings.allowBunny && (
+                        {selectedType === 'video' && (
                             <div className="space-y-4">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Téléversement Sécurisé</FormLabel>
                                 <div className="relative">
                                     <Input 
                                         type="file" 
@@ -310,33 +297,22 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         {isUploading ? (
                                             <div className="text-center space-y-3">
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Envoi sécurisé vers Bunny...</p>
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Transfert sécurisé en cours...</p>
                                             </div>
                                         ) : (
                                             <div className="flex flex-col items-center gap-2 text-center px-6">
                                                 <FileVideo className="h-10 w-10 text-slate-700" />
-                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir la vidéo à sécuriser</span>
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir le fichier vidéo</span>
                                             </div>
                                         )}
                                     </label>
                                 </div>
 
-                                {errorMessage && (
-                                    <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-3 animate-in fade-in zoom-in duration-300">
-                                        <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold text-red-500 uppercase tracking-tight">Erreur de téléversement</p>
-                                            <p className="text-[10px] text-slate-400 leading-relaxed font-medium uppercase">{errorMessage}</p>
-                                        </div>
-                                    </div>
-                                )}
-
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
-                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID Bunny)</FormLabel>
                                         <FormControl>
                                             <div className="flex items-center gap-2">
-                                                <Input {...field} readOnly placeholder="Généré après l'envoi" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono flex-1" />
+                                                <Input {...field} readOnly placeholder="ID Vidéo généré" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono flex-1" />
                                                 {field.value && (
                                                     <Button type="button" variant="outline" size="sm" onClick={() => syncDuration(field.value)} disabled={isSyncingDuration} className="h-10 rounded-xl border-slate-800">
                                                         {isSyncingDuration ? <Loader2 className="h-3 w-3 animate-spin"/> : <RefreshCw className="h-3 w-3"/>}
@@ -350,16 +326,23 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             </div>
                         )}
 
-                        {selectedType === 'youtube' && adminSettings.allowYoutube && (
+                        {selectedType === 'youtube' && (
                             <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                 <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Lien de la vidéo YouTube</FormLabel>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Lien Vidéo</FormLabel>
                                     <FormControl>
-                                        <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
-                                            <div className="p-3 bg-slate-800 rounded-xl text-red-500"><Youtube className="h-5 w-5"/></div>
-                                            <Input placeholder="https://www.youtube.com/watch?v=..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" />
-                                        </div>
+                                        <Input placeholder="https://www.youtube.com/watch?v=..." {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" />
                                     </FormControl>
+                                    <FormMessage />
+                                </FormItem> 
+                            )}/>
+                        )}
+
+                        {selectedType === 'text' && (
+                            <FormField control={form.control} name="textContent" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Contenu</FormLabel>
+                                    <FormControl><Textarea rows={10} placeholder="Rédigez votre leçon..." {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none p-4 text-white" /></FormControl>
                                     <FormMessage />
                                 </FormItem> 
                             )}/>
@@ -367,42 +350,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         {selectedType === 'pdf' && (
                             <div className="space-y-4">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Document PDF</FormLabel>
-                                <div className="relative">
-                                    <Input 
-                                        type="file" 
-                                        accept=".pdf" 
-                                        onChange={handlePdfUpload} 
-                                        className="sr-only" 
-                                        id="lecture-pdf-upload"
-                                        disabled={uploadProgress !== null}
-                                    />
-                                    <label 
-                                        htmlFor="lecture-pdf-upload"
-                                        className={cn(
-                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
-                                            uploadProgress !== null && "pointer-events-none opacity-50"
-                                        )}
-                                    >
-                                        {uploadProgress !== null ? (
-                                            <div className="w-full max-w-[200px] text-center space-y-3">
-                                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
-                                                <Progress value={uploadProgress} className="h-1.5" />
-                                                <p className="text-[10px] font-black text-white uppercase">{Math.round(uploadProgress)}%</p>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col items-center gap-2">
-                                                <UploadCloud className="h-10 w-10 text-slate-700" />
-                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Téléverser le PDF</span>
-                                            </div>
-                                        )}
-                                    </label>
-                                </div>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier PDF</FormLabel>
+                                <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="h-12 bg-slate-950 border-slate-800 text-white" />
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
                                     <FormItem>
-                                        <FormControl>
-                                            <Input readOnly placeholder="Lien du fichier..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" />
-                                        </FormControl>
+                                        <FormControl><Input readOnly placeholder="Lien du PDF..." {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" /></FormControl>
                                         <FormMessage />
                                     </FormItem> 
                                 )}/>
@@ -411,22 +363,12 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         <FormField control={form.control} name="duration" render={({ field }) => ( 
                             <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée (minutes)</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Durée estimée (minutes)</FormLabel>
                                 <FormControl>
                                     <div className="relative">
-                                        <Input 
-                                            type="number" 
-                                            {...field} 
-                                            readOnly={selectedType === 'video'} // ✅ On empêche la saisie manuelle pour les vidéos Bunny
-                                            className={cn(
-                                                "h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold",
-                                                selectedType === 'video' && "opacity-70 bg-slate-900 cursor-not-allowed"
-                                            )} 
-                                        />
+                                        <Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" />
                                         {selectedType === 'video' && (
-                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-primary uppercase tracking-tighter">
-                                                Auto-détecté
-                                            </div>
+                                            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-black text-primary uppercase tracking-tighter">Auto-détecté</div>
                                         )}
                                     </div>
                                 </FormControl>
@@ -438,11 +380,11 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button></DialogClose>
                             <Button 
                                 type="submit" 
-                                disabled={isPending || isUploading || uploadProgress !== null} 
+                                disabled={isPending || isUploading} 
                                 className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95"
                             >
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
-                                {lecture ? "Mettre à jour" : "Publier la leçon"}
+                                {lecture ? "Mettre à jour" : "Ajouter la leçon"}
                             </Button>
                         </DialogFooter>
                     </form>
