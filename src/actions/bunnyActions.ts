@@ -4,26 +4,28 @@ import { getAdminDb } from '@/firebase/admin';
 import { createHash } from 'crypto';
 
 /**
- * @fileOverview Actions serveur pour l'API Bunny Stream et la sécurité des vidéos.
+ * @fileOverview Actions serveur pour l'API Bunny Stream et la génération de Signed URLs.
  */
 
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
-const API_KEY = process.env.BUNNY_API_KEY; // Account API Key
-const SECURITY_KEY = process.env.BUNNY_SECURITY_KEY; // Token Authentication Key
+const API_KEY = process.env.BUNNY_API_KEY; // Stream API Key
+const SECURITY_KEY = process.env.BUNNY_SECURITY_KEY; // Token Authentication Key (Library > Security)
 
 /**
- * Génère un token de sécurité (URL Signée) pour le lecteur Bunny Stream.
- * Empêche l'accès non autorisé et le partage de liens.
+ * Génère un jeton de sécurité (Signed URL) pour le lecteur Bunny Stream.
+ * Algorithme : SHA256(SecurityKey + VideoID + Expires)
  */
 export async function getVideoToken(videoId: string) {
   if (!SECURITY_KEY || !LIBRARY_ID) {
-    console.warn("BUNNY_SECURITY_KEY non configurée. Accès non sécurisé.");
+    console.warn("BUNNY_SECURITY_KEY ou LIBRARY_ID non configurés sur Vercel.");
     return { success: false, token: null };
   }
 
   try {
-    // Expiration dans 2 heures
+    // Expiration dans 2 heures (7200 secondes)
     const expires = Math.floor(Date.now() / 1000) + 7200;
+    
+    // Construction de la chaîne de signature selon la spec Bunny
     const input = SECURITY_KEY + videoId + expires;
     const token = createHash('sha256').update(input).digest('hex');
 
@@ -34,17 +36,18 @@ export async function getVideoToken(videoId: string) {
       libraryId: LIBRARY_ID 
     };
   } catch (error) {
-    return { success: false, error: "Erreur lors de la génération du jeton." };
+    console.error("TOKEN_GEN_ERROR:", error);
+    return { success: false, error: "Échec de sécurisation de la vidéo." };
   }
 }
 
 /**
- * Récupère les métadonnées d'une vidéo (incluant la durée en secondes).
+ * Récupère les métadonnées réelles d'une vidéo depuis Bunny (Titre, Durée...).
  */
 export async function getBunnyVideoMetadata(videoId: string) {
     try {
         if (!API_KEY || !LIBRARY_ID) {
-            throw new Error("Configuration Bunny.net manquante.");
+            throw new Error("Configuration Bunny.net (API Key) manquante.");
         }
 
         const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos/${videoId}`;
@@ -56,11 +59,12 @@ export async function getBunnyVideoMetadata(videoId: string) {
         });
 
         if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("BUNNY_METADATA_ERROR:", response.status, errorBody);
             throw new Error(`Erreur Bunny Metadata (${response.status})`);
         }
 
         const data = await response.json();
-        // data.length contient la durée en secondes
         return { 
             success: true, 
             length: data.length || 0,
