@@ -1,8 +1,5 @@
-'use client';
 
-/**
- * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
- */
+'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
@@ -62,10 +59,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
   const embedUrl = `https://iframe.mediadelivery.net/embed/${libraryId}/${cleanVideoId}`;
 
   return (
-    <div 
-      className="relative w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black" 
-      style={{ aspectRatio: "16/9" }}
-    >
+    <div className="relative w-full shadow-2xl rounded-[2rem] overflow-hidden border border-white/5 bg-black" style={{ aspectRatio: "16/9" }}>
       <iframe
         src={embedUrl}
         loading="lazy"

@@ -1,9 +1,10 @@
+
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Route API sécurisée pour le téléversement de vidéos vers Bunny Stream.
- * Agit comme un proxy serveur pour protéger la clé API Bunny.
+ * Agit comme un tunnel serveur pour protéger la clé API Bunny.
  * Diagnostic renforcé pour tracer les erreurs API.
  */
 
@@ -15,12 +16,12 @@ export async function POST(req: Request) {
     // 1. Vérification de la configuration serveur
     if (!BUNNY_API_KEY || BUNNY_API_KEY.length < 10) {
       console.error("BUNNY_CONFIG_ERROR: Missing or invalid BUNNY_API_KEY");
-      return NextResponse.json({ error: "Configuration serveur incomplète (BUNNY_API_KEY manquante ou invalide)" }, { status: 500 });
+      return NextResponse.json({ error: "Clé API Bunny manquante sur le serveur." }, { status: 500 });
     }
 
     if (!BUNNY_LIBRARY_ID) {
       console.error("BUNNY_CONFIG_ERROR: Missing BUNNY_LIBRARY_ID");
-      return NextResponse.json({ error: "Configuration serveur incomplète (BUNNY_LIBRARY_ID manquant)" }, { status: 500 });
+      return NextResponse.json({ error: "ID de bibliothèque Bunny manquant." }, { status: 500 });
     }
 
     const formData = await req.formData();
@@ -28,19 +29,19 @@ export async function POST(req: Request) {
     const instructorId = formData.get('instructorId') as string;
 
     if (!file || !instructorId) {
-      return NextResponse.json({ error: "Fichier ou ID instructeur manquant" }, { status: 400 });
+      return NextResponse.json({ error: "Données manquantes (Fichier ou ID)." }, { status: 400 });
     }
 
-    // 2. Sécurité : Vérifier le rôle via Admin DB
+    // 2. Sécurité : Vérifier le rôle de l'utilisateur
     const db = getAdminDb();
     const userDoc = await db.collection('users').doc(instructorId).get();
     const userData = userDoc.data();
 
     if (!userDoc.exists || (userData?.role !== 'instructor' && userData?.role !== 'admin')) {
-      return NextResponse.json({ error: "Accès refusé : Autorisation formateur requise." }, { status: 403 });
+      return NextResponse.json({ error: "Accès refusé : Droits de formateur requis." }, { status: 403 });
     }
 
-    // 3. Étape 1 chez Bunny : Créer l'entrée vidéo (POST)
+    // 3. Étape 1 : Créer l'entrée vidéo chez Bunny
     const createUrl = `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos`;
     
     const createRes = await fetch(createUrl, {
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
         'Content-Type': 'application/json',
         'accept': 'application/json',
       },
-      body: JSON.stringify({ title: file.name || "Nouvelle Vidéo Ndara" }),
+      body: JSON.stringify({ title: file.name || "Vidéo Ndara" }),
     });
 
     if (!createRes.ok) {
@@ -62,15 +63,14 @@ export async function POST(req: Request) {
         endpoint: createUrl
       });
       return NextResponse.json({ 
-        error: "Erreur API Bunny lors de la création de l'entrée vidéo.",
-        details: errorBody,
-        status: createRes.status
+        error: `Erreur Bunny (Statut ${createRes.status})`,
+        details: errorBody
       }, { status: createRes.status });
     }
 
     const { guid } = await createRes.json();
 
-    // 4. Étape 2 chez Bunny : Téléverser le binaire (PUT)
+    // 4. Étape 2 : Téléverser le binaire vers Bunny (via PUT)
     const uploadUrl = `https://video.bunnycdn.com/library/${BUNNY_LIBRARY_ID}/videos/${guid}`;
     const fileBuffer = await file.arrayBuffer();
 
@@ -93,9 +93,8 @@ export async function POST(req: Request) {
         endpoint: uploadUrl
       });
       return NextResponse.json({ 
-        error: "Échec du transfert du flux vers Bunny.net.",
-        details: errorBody,
-        status: uploadRes.status
+        error: "Échec du transfert vers le serveur de streaming.",
+        details: errorBody
       }, { status: uploadRes.status });
     }
 
