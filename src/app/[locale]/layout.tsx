@@ -1,3 +1,4 @@
+
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 import { RoleProvider } from "@/context/RoleContext";
 import { AppShell } from "@/components/layout/app-shell";

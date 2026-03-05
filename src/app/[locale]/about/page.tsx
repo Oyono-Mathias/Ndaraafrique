@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,6 @@ import Link from 'next/link';
 import { useDoc } from '@/firebase';
 import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { Settings, TeamMember as TeamMemberType } from '@/lib/types';
 
 /**

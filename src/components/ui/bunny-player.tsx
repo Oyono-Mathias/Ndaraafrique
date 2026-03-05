@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -55,8 +56,8 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
         <AlertCircle className="h-12 w-12 text-amber-500 mb-4 opacity-50" />
         <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
         <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest leading-relaxed">
-          L'ID de bibliothèque Bunny n'est pas configuré. {'\n'}
-          Allez dans : Admin {`->`} Paramètres {`->`} Hébergement Vidéo.
+          L'ID de bibliothèque Bunny n'est pas configuré. <br/>
+          Allez dans : Admin &gt; Paramètres &gt; Hébergement Vidéo.
         </p>
       </div>
     );
