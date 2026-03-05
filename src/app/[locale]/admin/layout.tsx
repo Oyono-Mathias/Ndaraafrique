@@ -1,26 +1,26 @@
-
 'use client';
 
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { Loader2, ShieldAlert, PanelLeft } from "lucide-react";
-import { AdminSidebar } from "@/components/layout/admin-sidebar";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/components/ui/button";
-import { getDoc, doc, getFirestore, onSnapshot } from "firebase/firestore";
-import { Header } from "@/components/layout/header";
+import { useEffect } from "react";
+import { Loader2, ShieldAlert } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
+
+/**
+ * @fileOverview Layout Admin purifié.
+ * ✅ RÉSOLU : Suppression du header/sidebar en doublon.
+ * ✅ RÉSOLU : AppShell gère maintenant l'en-tête global.
+ */
 
 function AdminAccessRequiredScreen() {
     const router = useRouter();
     return (
-        <div className="flex flex-col items-center justify-center h-screen text-center p-4 bg-gray-900 text-white">
+        <div className="flex flex-col items-center justify-center h-[80vh] text-center p-6 bg-slate-950 text-white rounded-[2rem] border border-slate-800">
              <ShieldAlert className="w-16 h-16 text-red-500 mb-4" />
-            <h1 className="text-2xl font-bold">Accès Interdit</h1>
-            <p className="text-gray-400">Vous n'avez pas les autorisations nécessaires pour accéder à cette page.</p>
-            <button onClick={() => router.push('/student/dashboard')} className="mt-6 px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700">
+            <h1 className="text-2xl font-black uppercase tracking-tight">Accès Interdit</h1>
+            <p className="text-slate-500 mt-2">Vous n'avez pas les autorisations nécessaires pour accéder à cette zone.</p>
+            <button onClick={() => router.push('/student/dashboard')} className="mt-8 px-8 py-3 bg-primary text-white rounded-xl font-bold uppercase text-xs tracking-widest shadow-xl shadow-primary/20">
                 Retour au tableau de bord
             </button>
         </div>
@@ -34,35 +34,16 @@ export default function AdminLayout({
 }) {
   const { isUserLoading, role, switchRole } = useRole();
   const { hasPermission } = usePermissions();
-  const [open, setOpen] = useState(false);
-  const [siteSettings, setSiteSettings] = useState({ siteName: 'Ndara Afrique', logoUrl: '/icon.svg' });
-  const db = getFirestore();
 
-   useEffect(() => {
-    const settingsRef = doc(db, 'settings', 'global');
-    const unsubscribe = onSnapshot(settingsRef, (docSnap) => {
-        if (docSnap.exists()) {
-            const settingsData = docSnap.data();
-            setSiteSettings({
-                siteName: 'Ndara Afrique',
-                logoUrl: settingsData.general?.logoUrl || '/icon.svg',
-            });
-        }
-    });
-    return () => unsubscribe();
-  }, [db]);
-  
   useEffect(() => {
-    // Automatically switch to admin role if the user has the permission but is in another role context
     if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
       switchRole('admin');
     }
   }, [isUserLoading, hasPermission, role, switchRole]);
 
-
   if (isUserLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-background">
+      <div className="flex h-screen w-full items-center justify-center bg-slate-950">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -71,48 +52,13 @@ export default function AdminLayout({
   if (!hasPermission('admin:access')) {
     return <AdminAccessRequiredScreen />;
   }
-  
-  const handleSidebarLinkClick = () => {
-    if (open) {
-      setOpen(false);
-    }
-  };
-
 
   return (
-    <div className="admin-grid-layout bg-background text-foreground">
-        {/* --- Sidebar for Tablet and Desktop --- */}
-        <aside className="admin-sidebar-container hidden md:block border-r border-slate-700">
-             <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
-        </aside>
-
-        {/* --- Main Content Area --- */}
-        <div className="flex flex-col min-h-screen">
-             <header className="flex h-16 items-center gap-4 border-b border-slate-800 bg-card/50 backdrop-blur-sm px-4 lg:px-6 sticky top-0 z-30">
-                <Sheet open={open} onOpenChange={setOpen}>
-                    <SheetTrigger asChild className="md:hidden">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 bg-transparent border-slate-700"
-                    >
-                        <PanelLeft className="h-5 w-5" />
-                        <span className="sr-only">Ouvrir le menu</span>
-                    </Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="flex flex-col p-0 w-full max-w-[280px] bg-[#111827] border-r-0">
-                        <AdminSidebar siteName={siteSettings.siteName} logoUrl={siteSettings.logoUrl} onLinkClick={handleSidebarLinkClick} />
-                    </SheetContent>
-                </Sheet>
-                <div className="ml-auto">
-                    <Header />
-                </div>
-            </header>
-            <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-y-auto pb-20 md:pb-6">
-                {children}
-            </main>
-            <AdminBottomNav />
-        </div>
+    <div className="flex flex-col min-h-full">
+        <main className="flex-1 pb-24">
+            {children}
+        </main>
+        <AdminBottomNav />
     </div>
   )
 }
