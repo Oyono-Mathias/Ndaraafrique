@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Formulaire de création de leçon Ndara Afrique (Optimisé Bunny/YouTube).
- * ✅ RÉSOLU : Distinction claire entre Library ID et Video ID.
- * ✅ RÉSOLU : Z-index forcé pour le sélecteur.
+ * @fileOverview Formulaire de création de leçon Ndara Afrique.
+ * Gère le téléversement direct vers Bunny Stream et Firebase Storage (PDF).
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -14,6 +13,7 @@ import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { createLecture, updateLecture } from '@/actions/lectureActions';
+import { createBunnyVideo } from '@/actions/bunnyActions';
 import type { Lecture, Settings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
@@ -22,7 +22,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText } from 'lucide-react';
+import { Loader2, CheckCircle2, UploadCloud, Youtube, Info, PlaySquare, FileText, MessageSquareText, FileVideo } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -47,6 +47,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
     const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+    const [videoUploadProgress, setVideoUploadProgress] = useState<number | null>(null);
     const db = getFirestore();
 
     const [adminSettings, setAdminSettings] = useState({
@@ -95,14 +96,59 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             form.reset({ title: '', type: 'video', contentUrl: '', textContent: '', duration: 0 });
         }
         setUploadProgress(null);
+        setVideoUploadProgress(null);
     }, [lecture, form, isOpen]);
+
+    const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file || !currentUser) return;
+
+        setVideoUploadProgress(0);
+        try {
+            // 1. Préparer la vidéo sur Bunny (Action Serveur)
+            const prep = await createBunnyVideo(file.name, currentUser.uid);
+            if (!prep.success || !prep.guid) throw new Error(prep.error || "Erreur de préparation Bunny");
+
+            // 2. Upload Direct vers Bunny via XHR (pour le suivi de progression)
+            const xhr = new XMLHttpRequest();
+            xhr.open('PUT', `https://video.bunnycdn.com/library/${prep.libraryId}/videos/${prep.guid}`, true);
+            xhr.setRequestHeader('AccessKey', prep.uploadKey!);
+            xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    setVideoUploadProgress((e.loaded / e.total) * 100);
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    form.setValue('contentUrl', prep.guid!, { shouldValidate: true });
+                    toast({ title: "Vidéo transmise !", description: "Bunny.net prépare maintenant votre diffusion." });
+                } else {
+                    toast({ variant: 'destructive', title: "Échec Bunny", description: "Le serveur de streaming a rejeté le fichier." });
+                }
+                setVideoUploadProgress(null);
+            };
+
+            xhr.onerror = () => {
+                toast({ variant: 'destructive', title: "Erreur réseau", description: "Connexion perdue avec Bunny.net." });
+                setVideoUploadProgress(null);
+            };
+
+            xhr.send(file);
+
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Erreur de téléversement", description: error.message });
+            setVideoUploadProgress(null);
+        }
+    };
 
     const handlePdfUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !currentUser) return;
         
         setUploadProgress(0);
-        
         const storage = getStorage();
         const storageRef = ref(storage, `course_resources/${currentUser.uid}/${Date.now()}_${file.name}`);
         const uploadTask = uploadBytesResumable(storageRef, file);
@@ -125,20 +171,15 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const onSubmit = (values: z.infer<typeof formSchema>) => {
         startTransition(async () => {
-            try {
-                const result = await (lecture
-                    ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
-                    : createLecture({ courseId, sectionId, formData: values }));
-                
-                if (result.success) {
-                    toast({ title: 'Leçon enregistrée !' });
-                    onOpenChange(false);
-                } else {
-                    const errorMsg = typeof result.error === 'string' ? result.error : "Erreur lors de l'enregistrement.";
-                    toast({ variant: 'destructive', title: 'Échec', description: errorMsg });
-                }
-            } catch (err: any) {
-                toast({ variant: 'destructive', title: 'Erreur Serveur', description: "Le service est temporairement indisponible." });
+            const result = await (lecture
+                ? updateLecture({ courseId, sectionId, lectureId: lecture.id, formData: values })
+                : createLecture({ courseId, sectionId, formData: values }));
+            
+            if (result.success) {
+                toast({ title: 'Leçon enregistrée !' });
+                onOpenChange(false);
+            } else {
+                toast({ variant: 'destructive', title: 'Échec', description: result.error as string });
             }
         });
     };
@@ -220,19 +261,48 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         )}
 
                         {selectedType === 'video' && adminSettings.allowBunny && (
-                            <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
-                                <FormItem>
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID) Bunny Stream</FormLabel>
-                                    <FormControl>
-                                        <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl p-1 pr-4">
-                                            <div className="p-3 bg-slate-800 rounded-xl text-primary"><Info className="h-5 w-5"/></div>
-                                            <Input placeholder="Ex: 437b7753-..." {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white font-mono" />
-                                        </div>
-                                    </FormControl>
-                                    <FormDescription className="text-[10px] text-slate-500 mt-2">Collez l'identifiant long avec des tirets trouvé sur votre vidéo Bunny.</FormDescription>
-                                    <FormMessage />
-                                </FormItem> 
-                            )}/>
+                            <div className="space-y-4">
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo</FormLabel>
+                                <div className="relative">
+                                    <Input 
+                                        type="file" 
+                                        accept="video/*" 
+                                        onChange={handleVideoUpload} 
+                                        className="sr-only" 
+                                        id="video-upload-input"
+                                        disabled={videoUploadProgress !== null}
+                                    />
+                                    <label 
+                                        htmlFor="video-upload-input"
+                                        className={cn(
+                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
+                                            videoUploadProgress !== null && "pointer-events-none opacity-50"
+                                        )}
+                                    >
+                                        {videoUploadProgress !== null ? (
+                                            <div className="w-full max-w-[250px] text-center space-y-3">
+                                                <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
+                                                <Progress value={videoUploadProgress} className="h-1.5" />
+                                                <p className="text-[10px] font-black text-white uppercase tracking-widest">Envoi vers Bunny... {Math.round(videoUploadProgress)}%</p>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-2">
+                                                <FileVideo className="h-10 w-10 text-slate-700" />
+                                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest text-center px-4">Cliquer pour choisir la vidéo</span>
+                                            </div>
+                                        )}
+                                    </label>
+                                </div>
+                                <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Video ID (GUID)</FormLabel>
+                                        <FormControl>
+                                            <Input {...field} placeholder="Identifiant auto-généré" className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono" />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem> 
+                                )}/>
+                            </div>
                         )}
 
                         {selectedType === 'youtube' && adminSettings.allowYoutube && (
@@ -306,7 +376,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button></DialogClose>
                             <Button 
                                 type="submit" 
-                                disabled={isPending || uploadProgress !== null} 
+                                disabled={isPending || uploadProgress !== null || videoUploadProgress !== null} 
                                 className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all active:scale-95"
                             >
                                 {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
