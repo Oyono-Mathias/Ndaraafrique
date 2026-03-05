@@ -11,10 +11,6 @@ import { useMemo } from 'react';
 import { doc, getFirestore } from 'firebase/firestore';
 import type { Settings, TeamMember as TeamMemberType } from '@/lib/types';
 
-/**
- * @fileOverview Page "À Propos" - Manifeste Ndara Afrique.
- */
-
 const SangoQuote = ({ children }: { children: React.ReactNode }) => (
     <blockquote className="relative text-center my-12 md:my-16">
         <p className="text-2xl md:text-4xl font-bold text-white italic" style={{ textShadow: '0 0 10px hsl(var(--primary)/0.5)' }}>
@@ -34,18 +30,6 @@ const Section = ({ title, frenchText, sangoText, children }: { title: string, fr
         )}
         {children}
     </section>
-);
-
-const TeamMember = ({ name, role, imageUrl, bio }: TeamMemberType) => (
-    <div className="text-center group">
-        <Avatar className="w-32 h-32 mx-auto mb-4 border-4 border-slate-700 transition-all duration-500 group-hover:border-primary group-hover:scale-105 shadow-2xl">
-            <AvatarImage src={imageUrl} alt={name} className="grayscale group-hover:grayscale-0 transition-all" />
-            <AvatarFallback className="bg-slate-800 text-3xl font-black">{name.charAt(0)}</AvatarFallback>
-        </Avatar>
-        <h3 className="font-bold text-xl text-white group-hover:text-primary transition-colors">{name}</h3>
-        <p className="text-primary font-black uppercase text-[10px] tracking-widest mt-1">{role}</p>
-        <p className="text-slate-400 text-sm mt-3 max-w-xs mx-auto leading-relaxed">{bio}</p>
-    </div>
 );
 
 export default function AboutPage() {

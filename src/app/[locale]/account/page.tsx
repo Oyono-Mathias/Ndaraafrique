@@ -7,7 +7,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
 import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
-import { getStorage, ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { useFirebaseApp } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
@@ -18,13 +17,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Loader2, ShieldCheck, KeyRound, Camera, Image as ImageIcon, Sparkles, LogOut } from 'lucide-react';
+import { Loader2, KeyRound, Sparkles, LogOut } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-const domains = ["Développement Web", "Intelligence Artificielle", "Design UI/UX", "Marketing Digital", "Entrepreneuriat", "AgriTech", "Autre"];
 
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/),
@@ -39,11 +33,8 @@ const accountSchema = z.object({
 
 export default function AccountPage() {
   const { currentUser, isUserLoading, secureSignOut } = useRole();
-  const firebaseApp = useFirebaseApp();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const form = useForm<z.infer<typeof accountSchema>>({
     resolver: zodResolver(accountSchema),

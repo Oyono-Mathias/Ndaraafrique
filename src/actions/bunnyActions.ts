@@ -5,11 +5,11 @@ import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Actions serveur pour l'API Bunny Stream.
- * Diagnostic renforcé pour tracer les erreurs dans les logs Vercel.
+ * Configuré avec les identifiants spécifiques (Library: 607753).
  */
 
-const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
-const API_KEY = process.env.BUNNY_API_KEY;
+const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || "607753";
+const API_KEY = process.env.BUNNY_API_KEY || "bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f";
 
 export async function createBunnyVideo(title: string, instructorId: string) {
   try {
@@ -38,7 +38,7 @@ export async function createBunnyVideo(title: string, instructorId: string) {
 
     if (!response.ok) {
       const errorBody = await response.text();
-      console.error("BUNNY_API_ERROR_DETAILS:", {
+      console.error("BUNNY_API_ERROR:", {
         status: response.status,
         body: errorBody,
         libraryId: LIBRARY_ID,
