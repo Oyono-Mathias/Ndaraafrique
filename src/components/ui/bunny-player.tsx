@@ -1,9 +1,7 @@
-
 'use client';
 
 /**
  * @fileOverview Lecteur Vidéo Premium Ndara Afrique via Iframe Bunny.net Stream.
- * Résolution des erreurs de syntaxe TSX pour le build Vercel.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -33,7 +31,6 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   const cleanVideoId = useMemo(() => {
     if (!videoId) return '';
-    // Si une URL complète est fournie, on extrait le dernier segment (le GUID)
     if (videoId.includes('/')) {
       const parts = videoId.split('/');
       return parts[parts.length - 1].split('?')[0];
@@ -51,7 +48,7 @@ export function BunnyPlayer({ videoId }: BunnyPlayerProps) {
 
   if (!libraryId) {
     return (
-      <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed border-amber-500/20 p-6 text-center shadow-2xl">
+      <div className="w-full aspect-video bg-slate-900 rounded-[2rem] flex flex-col items-center justify-center border-2 border-dashed border-amber-500/20 p-6 text-center">
         <AlertCircle className="h-12 w-12 text-amber-500 mb-4 opacity-50" />
         <h3 className="text-white font-bold uppercase tracking-tight text-sm">Configuration Requise</h3>
         <p className="text-slate-500 text-[10px] mt-2 max-w-xs mx-auto uppercase font-bold tracking-widest leading-relaxed">

@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Mis à jour pour utiliser l'API Proxy sécurisée pour l'upload Bunny avec gestion d'erreurs précise.
+ * Utilise l'API Proxy sécurisée pour l'upload Bunny sans exposer les clés.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -17,7 +16,7 @@ import { createLecture, updateLecture } from '@/actions/lectureActions';
 import type { Lecture, Settings } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -122,7 +121,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             const data = await response.json();
 
             if (!response.ok) {
-                throw new Error(data.error || "Erreur lors de l'upload vers Bunny.net");
+                throw new Error(data.error || "Erreur lors de l'upload sécurisé.");
             }
 
             form.setValue('contentUrl', data.videoId, { shouldValidate: true });
@@ -269,7 +268,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                     <label 
                                         htmlFor="video-upload-input"
                                         className={cn(
-                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
+                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2.5rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all active:scale-[0.98]",
                                             isUploading && "pointer-events-none opacity-50",
                                             errorMessage && "border-red-500/50"
                                         )}

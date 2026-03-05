@@ -1,12 +1,11 @@
-
 'use client';
 
 /**
  * @fileOverview Page "Mon Compte" - Pivot central de l'identité Ndara.
- * Fix Build: Réintégration de handlePasswordReset et suppression unstable_setRequestLocale.
+ * Fix Build: Réintégration propre de handlePasswordReset.
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -85,7 +84,7 @@ export default function AccountPage() {
     }
   }, [currentUser, form]);
 
-  const handlePasswordReset = async () => {
+  const handlePasswordReset = useCallback(async () => {
     if (!currentUser?.email) return;
     const auth = getAuth();
     try {
@@ -101,7 +100,7 @@ export default function AccountPage() {
         description: "Impossible d'envoyer l'e-mail de réinitialisation.",
       });
     }
-  };
+  }, [currentUser, toast]);
 
   const handleImageClick = () => {
     if (isUploading) return;
