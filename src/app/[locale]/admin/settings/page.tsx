@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de configuration globale de la plateforme Ndara Afrique.
- * Permet à l'admin de piloter le site sans toucher au code.
+ * Pilotage centralisé de l'identité, de la technique et du contenu.
  */
 
 import { useState, useEffect } from 'react';
@@ -40,7 +40,8 @@ import {
   Award,
   Youtube,
   PlaySquare,
-  Key
+  Key,
+  Info
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -175,7 +176,7 @@ export default function AdminSettingsPage() {
     try {
         const result = await syncUsersWithAuthAction(currentUser.uid);
         if (result.success) {
-            toast({ title: "Synchronisation terminée", description: `${result.count} membres manquants importés de l'Authentification.` });
+            toast({ title: "Synchronisation terminée", description: `${result.count} membres manquants importés.` });
         } else {
             toast({ variant: 'destructive', title: "Échec", description: result.error });
         }
@@ -191,7 +192,7 @@ export default function AdminSettingsPage() {
     setIsRepairing(true);
     const result = await repairAllCertificatesAction(currentUser.uid);
     if (result.success) {
-        toast({ title: "Réparation terminée", description: `${result.count} dossiers d'inscriptions synchronisés avec succès.` });
+        toast({ title: "Réparation terminée", description: `${result.count} dossiers d'inscriptions synchronisés.` });
     } else {
         toast({ variant: 'destructive', title: "Échec", description: result.error });
     }
@@ -257,7 +258,7 @@ export default function AdminSettingsPage() {
     });
 
     if (result.success) {
-      toast({ title: "Paramètres mis à jour !" });
+      toast({ title: "Paramètres mis à jour avec succès !" });
     } else {
       toast({ variant: 'destructive', title: "Erreur", description: result.error });
     }
@@ -268,28 +269,29 @@ export default function AdminSettingsPage() {
 
   return (
     <div className="space-y-8 pb-24">
-      <header>
-        <h1 className="text-3xl font-black text-white flex items-center gap-3 uppercase tracking-tight">
-          <SettingsIcon className="h-8 w-8 text-primary" />
-          Configuration de Ndara
-        </h1>
-        <p className="text-slate-400 font-medium italic">Pilotez l'expérience utilisateur et les règles de gestion.</p>
+      <header className="flex flex-col gap-1">
+        <div className="flex items-center gap-2 text-primary">
+            <SettingsIcon className="h-5 w-5" />
+            <span className="text-[10px] font-black uppercase tracking-[0.3em]">Centre de Pilotage</span>
+        </div>
+        <h1 className="text-3xl font-black text-white uppercase tracking-tight">Configuration Ndara</h1>
+        <p className="text-slate-500 text-sm font-medium italic">Gérez l'identité, les règles métier et le contenu de votre plateforme.</p>
       </header>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="bg-slate-900 border-slate-800 mb-6 h-auto p-1 overflow-x-auto flex-nowrap gap-1">
-              <TabsTrigger value="general" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Globe className="h-3 w-3 mr-2" />Général</TabsTrigger>
-              <TabsTrigger value="platform" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><ShieldCheck className="h-3 w-3 mr-2" />Plateforme</TabsTrigger>
-              <TabsTrigger value="video" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><PlaySquare className="h-3 w-3 mr-2" />Hébergement Vidéo</TabsTrigger>
-              <TabsTrigger value="content" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Layout className="h-3 w-3 mr-2" />Textes & SEO</TabsTrigger>
-              <TabsTrigger value="team" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><UsersIcon className="h-3 w-3 mr-2" />L'Équipe</TabsTrigger>
-              <TabsTrigger value="legal" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><FileText className="h-3 w-3 mr-2" />Légal</TabsTrigger>
-              <TabsTrigger value="maintenance" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest text-amber-500 whitespace-nowrap bg-amber-500/5"><Wrench className="h-3 w-3 mr-2" />Maintenance</TabsTrigger>
+            <TabsList className="bg-slate-900 border-slate-800 mb-8 h-auto p-1 overflow-x-auto flex-nowrap gap-1">
+              <TabsTrigger value="general" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Globe className="h-3.5 w-3.5 mr-2" />Général</TabsTrigger>
+              <TabsTrigger value="platform" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><ShieldCheck className="h-3.5 w-3.5 mr-2" />Plateforme</TabsTrigger>
+              <TabsTrigger value="video" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><PlaySquare className="h-3.5 w-3.5 mr-2" />Hébergement Vidéo</TabsTrigger>
+              <TabsTrigger value="content" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><Layout className="h-3.5 w-3.5 mr-2" />Textes & SEO</TabsTrigger>
+              <TabsTrigger value="team" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><UsersIcon className="h-3.5 w-3.5 mr-2" />L'Équipe</TabsTrigger>
+              <TabsTrigger value="legal" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap"><FileText className="h-3.5 w-3.5 mr-2" />Légal</TabsTrigger>
+              <TabsTrigger value="maintenance" className="py-2.5 px-6 font-bold uppercase text-[10px] tracking-widest text-amber-500 whitespace-nowrap bg-amber-500/5 hover:bg-amber-500/10"><Wrench className="h-3.5 w-3.5 mr-2" />Maintenance</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="general">
+            <TabsContent value="general" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 border-b border-white/5">
                   <CardTitle className="text-lg font-bold">Identité du Site</CardTitle>
@@ -297,22 +299,39 @@ export default function AdminSettingsPage() {
                 </CardHeader>
                 <CardContent className="grid md:grid-cols-2 gap-6 pt-6">
                   <FormField control={form.control} name="siteName" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom de la marque</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom de la marque</FormLabel>
+                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="logoUrl" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">URL du Logo (.png)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">URL du Logo (.png)</FormLabel>
+                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl font-mono text-xs" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Email de contact public</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Email de contact public</FormLabel>
+                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                        <FormMessage />
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="commission" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Commission Ndara (%)</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Commission Ndara (%)</FormLabel>
+                        <FormControl><Input type="number" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl font-bold" /></FormControl>
+                        <FormDescription className="text-[10px] italic">Pourcentage prélevé sur les ventes des formateurs.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
                   )} />
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="platform">
+            <TabsContent value="platform" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 border-b border-white/5">
                   <CardTitle className="text-lg font-bold">Règles & État</CardTitle>
@@ -320,18 +339,29 @@ export default function AdminSettingsPage() {
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
                   <FormField control={form.control} name="announcementMessage" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Message d'annonce global (Haut de page)</FormLabel><FormControl><Textarea {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Message d'annonce global (Bandeau haut)</FormLabel>
+                        <FormControl><Textarea {...field} className="bg-slate-800/50 border-slate-700 rounded-xl resize-none" rows={3} /></FormControl>
+                        <FormDescription className="text-[10px] italic">Laissez vide pour masquer le bandeau.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
                   )} />
-                  <div className="grid md:grid-cols-2 gap-6">
+                  <div className="grid md:grid-cols-2 gap-6 pt-4">
                     <FormField control={form.control} name="maintenanceMode" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white">Mode Maintenance</FormLabel><FormDescription className="text-xs">Bloque l'accès aux non-admins.</FormDescription></div>
+                      <FormItem className="flex items-center justify-between p-5 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-sm font-bold text-white uppercase tracking-tight">Mode Maintenance</FormLabel>
+                            <FormDescription className="text-[10px] text-slate-500 uppercase tracking-tighter">Bloque l'accès aux utilisateurs non-admins.</FormDescription>
+                        </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="allowInstructorSignup" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white">Recrutement Formateurs</FormLabel><FormDescription className="text-xs">Affiche le lien "Devenir Instructeur".</FormDescription></div>
+                      <FormItem className="flex items-center justify-between p-5 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                        <div className="space-y-0.5">
+                            <FormLabel className="text-sm font-bold text-white uppercase tracking-tight">Recrutement Formateurs</FormLabel>
+                            <FormDescription className="text-[10px] text-slate-500 uppercase tracking-tighter">Affiche le lien "Devenir Instructeur" sur le site.</FormDescription>
+                        </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
@@ -340,13 +370,13 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="video">
+            <TabsContent value="video" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 border-b border-white/5">
-                  <CardTitle className="text-lg font-bold">Options d'Hébergement</CardTitle>
-                  <CardDescription>Choisissez les méthodes de diffusion autorisées pour vos formateurs.</CardDescription>
+                  <CardTitle className="text-lg font-bold">Options de Diffusion</CardTitle>
+                  <CardDescription>Choisissez les méthodes d'hébergement autorisées pour vos formateurs.</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6 pt-6">
+                <CardContent className="space-y-8 pt-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <FormField control={form.control} name="allowBunny" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-5 bg-slate-800/30 border border-slate-700 rounded-2xl">
@@ -354,7 +384,7 @@ export default function AdminSettingsPage() {
                             <div className="p-3 bg-primary/10 rounded-xl"><PlaySquare className="h-6 w-6 text-primary" /></div>
                             <div className="space-y-0.5">
                                 <FormLabel className="text-sm font-bold text-white uppercase tracking-tight">Bunny Stream</FormLabel>
-                                <FormDescription className="text-[10px]">Hébergement premium sécurisé par DRM.</FormDescription>
+                                <FormDescription className="text-[10px] text-slate-500">Flux Premium avec URLs signées.</FormDescription>
                             </div>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -366,7 +396,7 @@ export default function AdminSettingsPage() {
                             <div className="p-3 bg-red-500/10 rounded-xl"><Youtube className="h-6 w-6 text-red-500" /></div>
                             <div className="space-y-0.5">
                                 <FormLabel className="text-sm font-bold text-white uppercase tracking-tight">YouTube</FormLabel>
-                                <FormDescription className="text-[10px]">Diffusion gratuite via liens externes.</FormDescription>
+                                <FormDescription className="text-[10px] text-slate-500">Intégration via liens externes.</FormDescription>
                             </div>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -384,7 +414,7 @@ export default function AdminSettingsPage() {
                                 <Input placeholder="Ex: 382715" {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white font-mono" />
                             </div>
                         </FormControl>
-                        <FormDescription className="text-[10px] text-slate-500 italic">Trouvez cet ID dans votre tableau de bord Bunny.net Stream.</FormDescription>
+                        <FormDescription className="text-[10px] text-slate-500 italic">Identifiant requis pour le lecteur et les téléversements automatiques.</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )} />
@@ -393,108 +423,128 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="content">
+            <TabsContent value="content" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 border-b border-white/5">
                   <CardTitle className="text-lg font-bold">Textes Page d'Accueil</CardTitle>
+                  <CardDescription>Personnalisez le message principal de votre Landing Page.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
                   <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Hero</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre Principal (Hero)</FormLabel>
+                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre Hero</FormLabel><FormControl><Textarea {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Sous-titre (Hero)</FormLabel>
+                        <FormControl><Textarea {...field} className="bg-slate-800/50 border-slate-700 rounded-xl" rows={3} /></FormControl>
+                    </FormItem>
                   )} />
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="team">
-              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
+            <TabsContent value="team" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 border-b border-white/5 flex flex-row items-center justify-between">
                   <div>
                     <CardTitle className="text-lg font-bold">Équipe Ndara</CardTitle>
                     <CardDescription>Gérez les membres affichés sur la page "À Propos".</CardDescription>
                   </div>
-                  <Button type="button" size="sm" onClick={() => append({ name: '', role: '', imageUrl: '', bio: '' })} className="rounded-xl">
-                    <Plus className="h-4 w-4 mr-2" /> Ajouter
+                  <Button type="button" size="sm" onClick={() => append({ name: '', role: '', imageUrl: '', bio: '' })} className="rounded-xl h-10 px-4">
+                    <Plus className="h-4 w-4 mr-2" /> Ajouter un membre
                   </Button>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
                   {fields.map((field, index) => (
-                    <div key={field.id} className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 relative group">
-                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2 text-slate-500 hover:text-red-500">
+                    <div key={field.id} className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 relative group animate-in slide-in-from-top-2 duration-300">
+                      <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2 text-slate-500 hover:text-red-500 h-8 w-8 rounded-full">
                         <Trash2 className="h-4 w-4" />
                       </Button>
                       <div className="grid md:grid-cols-3 gap-4">
                         <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Nom</FormLabel><FormControl><Input {...field} className="bg-slate-900" /></FormControl></FormItem>
+                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Nom Complet</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
                         )} />
                         <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900" /></FormControl></FormItem>
+                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">Rôle / Titre</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
                         )} />
                         <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">URL Image</FormLabel><FormControl><Input {...field} className="bg-slate-900" /></FormControl></FormItem>
+                          <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500 tracking-widest">URL Photo</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800 font-mono text-xs" /></FormControl></FormItem>
                         )} />
                       </div>
                     </div>
                   ))}
+                  {fields.length === 0 && (
+                      <div className="text-center py-12 opacity-30">
+                          <UsersIcon className="h-12 w-12 mx-auto mb-2" />
+                          <p className="font-bold uppercase tracking-widest text-xs">Aucun membre ajouté</p>
+                      </div>
+                  )}
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="legal">
+            <TabsContent value="legal" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 border-b border-white/5">
                   <CardTitle className="text-lg font-bold">Documents Légaux</CardTitle>
+                  <CardDescription>Rédigez vos conditions d'utilisation et politique de vie privée.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6">
                   <FormField control={form.control} name="termsOfService" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Conditions Générales (HTML supporté)</FormLabel><FormControl><Textarea {...field} rows={10} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Conditions Générales (HTML supporté)</FormLabel>
+                        <FormControl><Textarea {...field} rows={10} className="bg-slate-800/50 border-slate-700 rounded-xl font-mono text-xs" /></FormControl>
+                    </FormItem>
                   )} />
                   <FormField control={form.control} name="privacyPolicy" render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Confidentialité (HTML supporté)</FormLabel><FormControl><Textarea {...field} rows={10} className="bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                    <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Confidentialité (HTML supporté)</FormLabel>
+                        <FormControl><Textarea {...field} rows={10} className="bg-slate-800/50 border-slate-700 rounded-xl font-mono text-xs" /></FormControl>
+                    </FormItem>
                   )} />
                 </CardContent>
               </Card>
             </TabsContent>
 
-            <TabsContent value="maintenance">
-                <div className="space-y-6">
-                    <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-start gap-4">
-                        <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
-                        <div>
-                            <h3 className="text-amber-500 font-bold uppercase text-sm tracking-tight">Espace de Maintenance Critique</h3>
-                            <p className="text-amber-500/70 text-xs mt-1 leading-relaxed">
-                                Utilisez ces outils si vous constatez un décalage entre vos membres inscrits et la liste affichée dans le Panel Admin.
-                            </p>
-                        </div>
+            <TabsContent value="maintenance" className="space-y-6 animate-in fade-in slide-in-from-bottom-2">
+                <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl flex items-start gap-4 mb-8">
+                    <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0" />
+                    <div>
+                        <h3 className="text-amber-500 font-bold uppercase text-sm tracking-tight">Espace de Maintenance Critique</h3>
+                        <p className="text-amber-500/70 text-xs mt-1 leading-relaxed">
+                            Ces outils effectuent des modifications massives sur la base de données. Utilisez-les uniquement en cas de besoin technique avéré.
+                        </p>
                     </div>
+                </div>
 
+                <div className="grid gap-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
                         <CardHeader className="bg-slate-800/30 border-b border-white/5">
                             <CardTitle className="text-white flex items-center gap-2">
                                 <Award className="h-5 w-5 text-primary" />
                                 Synchronisation des Certificats
                             </CardTitle>
-                            <CardDescription>Scanner les progressions à 100% et forcer la mise à jour des certificats pour tous les élèves.</CardDescription>
+                            <CardDescription>Scan global des progressions et régularisation des diplômes.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div className="flex-1 space-y-1">
-                                    <h3 className="text-white font-bold text-sm">Action : Réparation massive des diplômes</h3>
-                                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                                        Si des étudiants disent avoir fini un cours mais ne voient pas leur certificat, ce bouton synchronise tout globalement.
+                                    <h3 className="text-white font-bold text-sm uppercase tracking-tight">Réparation massive des diplômes</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                        Vérifie chaque étudiant ayant atteint 100% et s'assure que son certificat est prêt.
                                     </p>
                                 </div>
                                 <Button 
                                     type="button" 
                                     onClick={handleRepairCertificates} 
                                     disabled={isRepairing}
-                                    className="h-14 px-10 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 shrink-0 rounded-xl"
+                                    className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl rounded-xl shrink-0"
                                 >
                                     {isRepairing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
-                                    Réparer tous les certificats
+                                    Lancer la réparation
                                 </Button>
                             </div>
                         </CardContent>
@@ -504,23 +554,23 @@ export default function AdminSettingsPage() {
                         <CardHeader className="bg-slate-800/30 border-b border-white/5">
                             <CardTitle className="text-white flex items-center gap-2">
                                 <RefreshCw className="h-5 w-5 text-primary" />
-                                Synchronisation des Comptes
+                                Importation de l'Authentification
                             </CardTitle>
-                            <CardDescription>Scanner les comptes réels de l'Authentification et créer les profils Firestore manquants.</CardDescription>
+                            <CardDescription>Synchronise les comptes Firebase Auth avec les profils Firestore.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div className="flex-1 space-y-1">
-                                    <h3 className="text-white font-bold text-sm">Action : Importer les membres manquants</h3>
-                                    <p className="text-[11px] text-slate-500 leading-relaxed">
-                                        Si vous avez 10 membres dans la console Firebase mais qu'ils n'apparaissent pas ici, cet outil va générer les documents Firestore nécessaires.
+                                    <h3 className="text-white font-bold text-sm uppercase tracking-tight">Recréer les profils manquants</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
+                                        Utile si un utilisateur est inscrit dans Auth mais n'a pas de document Profil dans la base de données.
                                     </p>
                                 </div>
                                 <Button 
                                     type="button" 
                                     onClick={handleSyncAuth} 
                                     disabled={isSyncing}
-                                    className="h-14 px-10 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 shrink-0 rounded-xl"
+                                    className="h-12 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl rounded-xl shrink-0"
                                 >
                                     {isSyncing ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <RefreshCw className="h-4 w-4 mr-2" />}
                                     Lancer la synchronisation
@@ -533,15 +583,15 @@ export default function AdminSettingsPage() {
                         <CardHeader className="bg-slate-800/30 border-b border-white/5">
                             <CardTitle className="text-white flex items-center gap-2">
                                 <Wrench className="h-5 w-5 text-amber-500" />
-                                Réparation des Profils
+                                Régularisation des Champs
                             </CardTitle>
-                            <CardDescription>Initialise les données techniques manquantes sur tous les membres existants.</CardDescription>
+                            <CardDescription>Initialise les données techniques manquantes sur tous les membres.</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-6">
                             <div className="p-6 bg-slate-950/50 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
                                 <div className="flex-1 space-y-1">
-                                    <h3 className="text-white font-bold text-sm">Action : Régularisation massive</h3>
-                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                    <h3 className="text-white font-bold text-sm uppercase tracking-tight">Migration de structure (Lazy)</h3>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed font-medium">
                                         Vérifie chaque profil et ajoute les champs par défaut (rôle, statut, préférences) s'ils sont absents.
                                     </p>
                                 </div>
@@ -550,10 +600,10 @@ export default function AdminSettingsPage() {
                                     variant="outline" 
                                     onClick={handleMigration} 
                                     disabled={isMigrating}
-                                    className="h-14 px-10 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 font-black uppercase text-[10px] tracking-widest rounded-xl"
+                                    className="h-12 px-8 border-amber-500/30 text-amber-500 hover:bg-amber-500/10 font-black uppercase text-[10px] tracking-widest rounded-xl shrink-0"
                                 >
                                     {isMigrating ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <Sparkles className="h-4 w-4 mr-2" />}
-                                    Réparer les profils
+                                    Régulariser les profils
                                 </Button>
                             </div>
                         </CardContent>
@@ -562,9 +612,9 @@ export default function AdminSettingsPage() {
             </TabsContent>
           </Tabs>
 
-          <div className="flex justify-end pt-4 border-t border-slate-800 sticky bottom-6 z-30">
-            <Button type="submit" disabled={isSaving} className="px-12 h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all">
-              {isSaving ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Save className="mr-2 h-5 w-5" />}
+          <div className="flex justify-end pt-6 border-t border-slate-800 sticky bottom-6 z-30 pointer-events-none">
+            <Button type="submit" disabled={isSaving} className="pointer-events-auto px-12 h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all">
+              {isSaving ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <Save className="mr-3 h-5 w-5" />}
               Enregistrer les modifications
             </Button>
           </div>
