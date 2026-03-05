@@ -4,8 +4,7 @@ import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Actions serveur pour l'API Bunny Stream.
- * Gère la création d'un emplacement vidéo avant le téléversement direct.
- * Utilise les variables d'environnement pour une sécurité maximale sur Vercel.
+ * Fournit un diagnostic détaillé en cas d'échec de communication.
  */
 
 const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || '382715';
@@ -22,6 +21,11 @@ export async function createBunnyVideo(title: string, instructorId: string) {
       throw new Error("Accès refusé : Seuls les formateurs peuvent uploader.");
     }
 
+    // Diagnostic : Vérifier si la clé API semble configurée
+    if (!API_KEY || API_KEY.length < 10) {
+        throw new Error("Configuration Bunny.net manquante : Vérifiez BUNNY_API_KEY dans vos variables d'environnement.");
+    }
+
     const url = `https://video.bunnycdn.com/library/${LIBRARY_ID}/videos`;
     const response = await fetch(url, {
       method: 'POST',
@@ -34,8 +38,19 @@ export async function createBunnyVideo(title: string, instructorId: string) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Erreur API Bunny.net');
+      const status = response.status;
+      let errorMsg = `Erreur API Bunny (Statut ${status})`;
+      
+      try {
+          const errorData = await response.json();
+          errorMsg = errorData.message || errorMsg;
+      } catch (e) {
+          // Si pas de JSON, on gère les codes d'état standards
+          if (status === 401) errorMsg = "Clé API Bunny invalide ou refusée (401 Unauthorized).";
+          if (status === 404) errorMsg = "Bibliothèque Bunny introuvable (404 Not Found).";
+      }
+      
+      throw new Error(errorMsg);
     }
 
     const data = await response.json();
