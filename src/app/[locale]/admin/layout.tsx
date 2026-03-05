@@ -1,16 +1,15 @@
 'use client';
 
 import { useRole } from "@/context/RoleContext";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, usePathname } from "next/navigation";
+import { useEffect, useMemo } from "react";
 import { Loader2, ShieldAlert } from "lucide-react";
 import { usePermissions } from "@/hooks/use-permissions";
 import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
+import { cn } from "@/lib/utils";
 
 /**
- * @fileOverview Layout Admin purifié.
- * L'en-tête et la barre latérale sont désormais gérés uniquement par l'AppShell.
- * Ce layout se concentre uniquement sur la vérification des permissions et la navigation basse mobile.
+ * @fileOverview Layout Admin purifié avec gestion de visibilité intelligente de la Bottom Nav.
  */
 
 function AdminAccessRequiredScreen() {
@@ -34,6 +33,24 @@ export default function AdminLayout({
 }) {
   const { isUserLoading, role, switchRole } = useRole();
   const { hasPermission } = usePermissions();
+  const pathname = usePathname() || '';
+
+  const cleanPath = useMemo(() => {
+    return pathname.replace(/^\/(en|fr)/, '') || '/';
+  }, [pathname]);
+
+  const showNavigation = useMemo(() => {
+    // Masquage sur les pages complexes (Réglages avec bouton save collant, ou détails de ticket)
+    if (cleanPath === '/admin/settings') return false;
+    
+    // Détection d'un détail de ticket (ex: /admin/support/XYZ)
+    const pathSegments = cleanPath.split('/').filter(Boolean);
+    if (pathSegments[0] === 'admin' && pathSegments[1] === 'support' && pathSegments.length > 2) {
+        return false;
+    }
+
+    return true; // Visible par défaut ailleurs en admin
+  }, [cleanPath]);
 
   useEffect(() => {
     if (!isUserLoading && hasPermission('admin:access') && role !== 'admin') {
@@ -55,10 +72,12 @@ export default function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-full">
-        <main className="flex-1 pb-24">
-            {children}
+        <main className="flex-1 overflow-y-auto">
+            <div className={cn(showNavigation && "pb-24")}>
+                {children}
+            </div>
         </main>
-        <AdminBottomNav />
+        {showNavigation && <AdminBottomNav />}
     </div>
   )
 }

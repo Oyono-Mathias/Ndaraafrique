@@ -1,4 +1,3 @@
-
 'use client';
 
 import { StudentBottomNav } from '@/components/layout/student-bottom-nav';
@@ -24,7 +23,18 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
   }, [pathname]);
 
   const showNavigation = useMemo(() => {
-    const globalNavPaths = [
+    // 1. MASQUAGE CRITIQUE : Si on est dans un chat actif (chatId présent), on cache la barre
+    if (cleanPath === '/student/messages' && searchParams.get('chatId')) return false;
+
+    // 2. MASQUAGE CRITIQUE : Si on est dans le lecteur de cours (Full Screen), on cache la barre
+    // Le chemin est /student/courses/[courseId]
+    const pathSegments = cleanPath.split('/').filter(Boolean);
+    if (pathSegments[0] === 'student' && pathSegments[1] === 'courses' && pathSegments.length > 2) {
+        return false; 
+    }
+
+    // 3. Pages où la barre DOIT être affichée (Onglets principaux)
+    const mainTabs = [
       '/student/dashboard',
       '/search',
       '/student/courses',
@@ -40,18 +50,7 @@ function StudentLayoutContent({ children }: { children: React.ReactNode }) {
       '/student/liste-de-souhaits'
     ];
 
-    // ✅ MASQUAGE CRITIQUE : Si on est dans un chat sur mobile, on cache la barre de navigation
-    const isChatOpen = cleanPath === '/student/messages' && searchParams.get('chatId');
-    if (isChatOpen) return false;
-
-    // Vérifier si on est sur une page de détail de devoir (ex: /student/devoirs/XYZ)
-    const isAssignmentDetail = cleanPath.startsWith('/student/devoirs/') && cleanPath.split('/').length > 3;
-
-    // Sur mobile, on cache la barre si on est dans une soumission de devoir
-    const isMessageList = cleanPath === '/student/messages' && !searchParams.get('chatId');
-    const isGlobalPage = globalNavPaths.some(p => cleanPath === p);
-
-    return (isGlobalPage || isMessageList || isAssignmentDetail);
+    return mainTabs.some(p => cleanPath === p);
   }, [cleanPath, searchParams]);
 
   if (isUserLoading) {
