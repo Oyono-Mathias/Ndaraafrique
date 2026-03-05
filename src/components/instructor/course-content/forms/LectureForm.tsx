@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Optimisé : Téléversement des PDF vers Bunny Storage pour une meilleure diffusion CDN.
+ * Optimisé : Téléversement des PDF vers Bunny Storage via API Proxy.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -149,9 +149,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         }
     };
 
-    /**
-     * Téléversement de PDF vers Bunny Storage via notre API Proxy
-     */
     const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file || !currentUser) return;

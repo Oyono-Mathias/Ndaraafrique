@@ -2,11 +2,11 @@ import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 
 /**
- * @fileOverview Route API pour téléverser n'importe quel fichier vers Bunny Storage Zone.
- * Utilisé pour les avatars (JPG/PNG), les PDF de cours et les ressources.
+ * @fileOverview Route API pour téléverser vers Bunny Storage Zone (ndara-assets).
+ * Utilisé pour les avatars, les PDF de cours et les ressources.
  */
 
-const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-afrique-storage";
+const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-assets";
 const STORAGE_PASSWORD = process.env.BUNNY_STORAGE_PASSWORD;
 const PULL_ZONE_URL = process.env.BUNNY_PULL_ZONE_URL || "https://ndara-assets.b-cdn.net";
 

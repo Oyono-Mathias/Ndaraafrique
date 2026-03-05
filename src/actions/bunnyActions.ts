@@ -10,9 +10,9 @@ const LIBRARY_ID = process.env.BUNNY_LIBRARY_ID || "607753";
 const API_KEY = process.env.BUNNY_API_KEY || "bbdd6d9f-1b73-4228-9ba800bde9d1-942a-475f"; 
 const SECURITY_KEY = process.env.BUNNY_SECURITY_KEY || "810ccb8b-3439-45f1-9b94-21d4e3f800af";
 
-// --- CONFIGURATION BUNNY STORAGE ---
-const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-afrique-storage";
-const STORAGE_PASSWORD = process.env.BUNNY_STORAGE_PASSWORD; // Doit être configuré dans .env
+// --- CONFIGURATION BUNNY STORAGE (ASSETS) ---
+const STORAGE_ZONE_NAME = process.env.BUNNY_STORAGE_ZONE_NAME || "ndara-assets";
+const STORAGE_PASSWORD = process.env.BUNNY_STORAGE_PASSWORD; 
 const PULL_ZONE_URL = process.env.BUNNY_PULL_ZONE_URL || "https://ndara-assets.b-cdn.net";
 
 /**
