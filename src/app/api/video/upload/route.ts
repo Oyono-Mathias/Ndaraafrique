@@ -3,7 +3,6 @@ import { getAdminDb } from '@/firebase/admin';
 
 /**
  * @fileOverview Route API sécurisée pour le téléversement de vidéos vers Bunny Stream.
- * Utilise la Account API Key pour créer l'entrée vidéo de manière invisible.
  */
 
 const BUNNY_API_KEY = process.env.BUNNY_API_KEY;
@@ -12,7 +11,7 @@ const BUNNY_LIBRARY_ID = process.env.BUNNY_LIBRARY_ID;
 export async function POST(req: Request) {
   try {
     if (!BUNNY_API_KEY || !BUNNY_LIBRARY_ID) {
-      console.error("CONFIG_MISSING: API Key ou Library ID manquant dans les variables Vercel.");
+      console.error("CONFIG_MISSING: API Key ou Library ID manquant.");
       return NextResponse.json({ error: "Configuration serveur incomplète." }, { status: 500 });
     }
 
@@ -74,6 +73,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error("UPLOAD_PROXY_FATAL:", error.message);
-    return NextResponse.json({ error: "Une erreur interne est survenue lors du téléversement." }, { status: 500 });
+    return NextResponse.json({ error: "Une erreur interne est survenue." }, { status: 500 });
   }
 }

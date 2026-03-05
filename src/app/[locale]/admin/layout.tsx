@@ -9,8 +9,8 @@ import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
 
 /**
  * @fileOverview Layout Admin purifié.
- * ✅ RÉSOLU : Suppression du header/sidebar en doublon.
- * ✅ RÉSOLU : AppShell gère maintenant l'en-tête global.
+ * L'en-tête et la barre latérale sont désormais gérés uniquement par l'AppShell.
+ * Ce layout se concentre uniquement sur la vérification des permissions et la navigation basse mobile.
  */
 
 function AdminAccessRequiredScreen() {

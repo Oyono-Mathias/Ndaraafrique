@@ -39,7 +39,6 @@ export default function AccountPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   
-  // Cropper State
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -182,12 +181,6 @@ export default function AccountPage() {
             >
               {isUploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
             </Button>
-
-            {isUploading && (
-              <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full">
-                <span className="text-white text-xs font-black">{Math.round(uploadProgress)}%</span>
-              </div>
-            )}
           </div>
 
           <div>
@@ -225,7 +218,7 @@ export default function AccountPage() {
                           )}/>
                           <FormField control={form.control} name="interestDomain" render={({ field }) => (
                               <FormItem>
-                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Votre domaine d'expertise</FormLabel>
+                                  <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Domaine d'expertise</FormLabel>
                                   <FormControl><Input placeholder="Ex: Finance, Agriculture, Code..." {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
                                   <FormMessage />
                               </FormItem>
@@ -233,7 +226,7 @@ export default function AccountPage() {
                           <FormField control={form.control} name="bio" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Biographie</FormLabel>
-                                  <FormControl><Textarea {...field} rows={4} placeholder="Dites-en un peu plus sur vous..." className="bg-slate-900 border-slate-800 rounded-2xl resize-none" /></FormControl>
+                                  <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-2xl resize-none" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>
