@@ -249,7 +249,6 @@ export default function AdminSettingsPage() {
               <TabsTrigger value="maintenance" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0 text-amber-500">Outils</TabsTrigger>
             </TabsList>
 
-            {/* --- GÉNÉRAL --- */}
             <TabsContent value="general" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
@@ -281,7 +280,6 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* --- PLATEFORME --- */}
             <TabsContent value="platform" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
@@ -323,9 +321,12 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* --- VIDÉO --- */}
             <TabsContent value="video" className="space-y-4 animate-in fade-in duration-500">
-                <Card className="bg-slate-900 border-slate-800 rounded-3xl p-6">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl p-6 shadow-xl">
+                    <CardHeader className="px-0 pt-0">
+                        <CardTitle className="text-lg font-bold">Hébergement Vidéo</CardTitle>
+                        <CardDescription>Gérez les fournisseurs de streaming autorisés.</CardDescription>
+                    </CardHeader>
                     <div className="space-y-6">
                         <div className="grid md:grid-cols-2 gap-4">
                             <FormField control={form.control} name="allowBunny" render={({ field }) => (
@@ -350,14 +351,13 @@ export default function AdminSettingsPage() {
                         <FormField control={form.control} name="bunnyLibraryId" render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Library ID (Bunny)</FormLabel>
-                                <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl font-mono" /></FormControl>
+                                <FormControl><Input {...field} placeholder="Identifiant de votre bibliothèque" className="h-12 bg-slate-800/50 border-slate-700 rounded-xl font-mono" /></FormControl>
                             </FormItem>
                         )} />
                     </div>
                 </Card>
             </TabsContent>
 
-            {/* --- ACCUEIL (LANDING) --- */}
             <TabsContent value="landing" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
@@ -387,7 +387,6 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* --- À PROPOS --- */}
             <TabsContent value="about" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
@@ -433,7 +432,6 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* --- L'ÉQUIPE --- */}
             <TabsContent value="team" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
@@ -474,7 +472,6 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* --- LÉGAL --- */}
             <TabsContent value="legal" className="space-y-4 animate-in fade-in duration-500">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
@@ -487,14 +484,14 @@ export default function AdminSettingsPage() {
                   <FormField control={form.control} name="termsOfService" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Conditions Générales d'Utilisation (CGU)</FormLabel>
-                      <FormControl><Textarea rows={12} {...field} className="bg-slate-800/50 border-slate-700 rounded-xl font-sans text-sm leading-relaxed" /></FormControl>
+                      <FormControl><Textarea rows={12} {...field} placeholder="Rédigez vos CGU ici..." className="bg-slate-800/50 border-slate-700 rounded-xl font-sans text-sm leading-relaxed" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="privacyPolicy" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Politique de Confidentialité</FormLabel>
-                      <FormControl><Textarea rows={12} {...field} className="bg-slate-800/50 border-slate-700 rounded-xl font-sans text-sm leading-relaxed" /></FormControl>
+                      <FormControl><Textarea rows={12} {...field} placeholder="Rédigez votre politique de confidentialité..." className="bg-slate-800/50 border-slate-700 rounded-xl font-sans text-sm leading-relaxed" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />
@@ -502,18 +499,27 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            {/* --- MAINTENANCE --- */}
             <TabsContent value="maintenance" className="space-y-4 animate-in fade-in duration-500">
-                <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] flex items-start gap-4 mb-4">
-                    <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
-                    <p className="text-amber-500/70 text-[10px] font-bold uppercase leading-relaxed">
-                        Outils de régularisation massive. À utiliser avec précaution. Ces actions modifient des milliers de documents simultanément.
-                    </p>
-                </div>
-                <div className="grid sm:grid-cols-2 gap-4">
-                    <Button type="button" onClick={() => repairAllCertificatesAction(currentUser!.uid)} className="h-16 bg-slate-900 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
-                    <Button type="button" onClick={() => syncUsersWithAuthAction(currentUser!.uid)} className="h-16 bg-slate-900 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Importer membres Firebase Auth</Button>
-                </div>
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                    <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                        <div className="flex items-center gap-3">
+                            <Wrench className="h-6 w-6 text-amber-500" />
+                            <CardTitle className="text-lg font-bold">Outils de Maintenance</CardTitle>
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-6 space-y-6">
+                        <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-[2rem] flex items-start gap-4">
+                            <AlertTriangle className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
+                            <p className="text-amber-500/70 text-[10px] font-bold uppercase leading-relaxed">
+                                Outils de régularisation massive. À utiliser avec précaution. Ces actions modifient des milliers de documents simultanément.
+                            </p>
+                        </div>
+                        <div className="grid sm:grid-cols-2 gap-4">
+                            <Button type="button" onClick={() => repairAllCertificatesAction(currentUser!.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
+                            <Button type="button" onClick={() => syncUsersWithAuthAction(currentUser!.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Importer membres Firebase Auth</Button>
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
           </Tabs>
 
@@ -528,3 +534,5 @@ export default function AdminSettingsPage() {
     </div>
   );
 }
+
+import { Wrench } from 'lucide-react';

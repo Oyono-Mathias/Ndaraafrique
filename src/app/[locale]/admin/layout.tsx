@@ -9,7 +9,8 @@ import { AdminBottomNav } from "@/components/layout/admin-bottom-nav";
 import { cn } from "@/lib/utils";
 
 /**
- * @fileOverview Layout Admin purifié avec gestion de visibilité intelligente de la Bottom Nav.
+ * @fileOverview Layout Admin purifié.
+ * Laisse l'AppShell gérer le Header et la Sidebar unique.
  */
 
 function AdminAccessRequiredScreen() {
@@ -39,17 +40,16 @@ export default function AdminLayout({
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
+  // Masquer la barre de navigation sur certaines pages admin pour éviter les chevauchements
   const showNavigation = useMemo(() => {
-    // Masquage sur les pages complexes (Réglages avec bouton save collant, ou détails de ticket)
     if (cleanPath === '/admin/settings') return false;
     
-    // Détection d'un détail de ticket (ex: /admin/support/XYZ)
     const pathSegments = cleanPath.split('/').filter(Boolean);
     if (pathSegments[0] === 'admin' && pathSegments[1] === 'support' && pathSegments.length > 2) {
         return false;
     }
 
-    return true; // Visible par défaut ailleurs en admin
+    return true; 
   }, [cleanPath]);
 
   useEffect(() => {
@@ -72,8 +72,8 @@ export default function AdminLayout({
 
   return (
     <div className="flex flex-col min-h-full">
-        <main className="flex-1 overflow-y-auto">
-            <div className={cn(showNavigation && "pb-24")}>
+        <main className="flex-1">
+            <div className={cn(showNavigation && "pb-24 md:pb-0")}>
                 {children}
             </div>
         </main>
