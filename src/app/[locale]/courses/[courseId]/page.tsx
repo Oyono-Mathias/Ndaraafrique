@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Page de présentation détaillée d'un cours.
+ * ✅ SÉCURITÉ : Bloque l'accès si le profil n'est pas complété.
  * ✅ TEMPS RÉEL : Score d'avis et nombre d'inscrits connectés à Firestore.
- * ✅ RÉSOLU : Build Vercel fix (CertificateModal props).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -25,7 +25,9 @@ import {
   PlayCircle,
   ArrowLeft,
   Lock,
-  Loader2
+  Loader2,
+  UserCircle2,
+  Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -45,7 +47,7 @@ export default function CourseDetailPage() {
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
   
-  // ✅ Stats temps réel
+  // Stats temps réel
   const [stats, setStats] = useState({ rating: 0, reviewCount: 0, studentCount: 0 });
 
   // --- RÉCUPÉRATION DES DONNÉES ---
@@ -55,15 +57,13 @@ export default function CourseDetailPage() {
   const instructorRef = useMemo(() => course?.instructorId ? doc(db, 'users', course.instructorId) : null, [course, db]);
   const { data: instructor, isLoading: instructorLoading } = useDoc<NdaraUser>(instructorRef);
 
-  // Vérifier si l'étudiant est déjà inscrit
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment, isLoading: enrollmentLoading } = useDoc<Enrollment>(enrollmentRef);
 
-  // ✅ Écouteurs temps réel (Avis & Inscrits)
+  // Écouteurs temps réel (Avis & Inscrits)
   useEffect(() => {
     if (!courseId) return;
 
-    // Écouter les avis
     const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
     const unsubReviews = onSnapshot(qReviews, (snap) => {
         const reviews = snap.docs.map(d => d.data());
@@ -72,7 +72,6 @@ export default function CourseDetailPage() {
         setStats(prev => ({ ...prev, rating: avg, reviewCount: count }));
     });
 
-    // Écouter les inscrits
     const qEnrolls = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
     const unsubEnrolls = onSnapshot(qEnrolls, (snap) => {
         setStats(prev => ({ ...prev, studentCount: snap.size }));
@@ -108,6 +107,39 @@ export default function CourseDetailPage() {
   }, [courseId, db]);
 
   const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
+
+  // 🛡️ LOGIQUE DE BLOCAGE PROFIL INCOMPLET
+  // On laisse voir si l'utilisateur n'est pas connecté (vue publique)
+  // Mais s'il est connecté et incomplet, on bloque.
+  const isProfileBlocked = user && currentUser && !currentUser.isProfileComplete;
+
+  if (isLoading) return <CourseDetailSkeleton />;
+  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
+
+  if (isProfileBlocked) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
+        <div className="p-6 bg-amber-500/10 rounded-full border-4 border-amber-500/20 mb-8">
+          <UserCircle2 className="h-20 w-20 text-amber-500" />
+        </div>
+        <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-tight">
+          Finalisez votre <br/><span className="text-primary">Identité Ndara</span>
+        </h1>
+        <p className="text-slate-400 mt-4 max-w-md mx-auto leading-relaxed">
+          Pour garantir la qualité des échanges et la valeur de nos certificats, vous devez compléter votre profil avant d'accéder aux détails des formations.
+        </p>
+        <Button asChild className="mt-10 h-16 px-10 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95">
+          <Link href="/account">
+            Compléter mon profil
+            <ChevronRight className="ml-2 h-5 w-5" />
+          </Link>
+        </Button>
+        <Button variant="ghost" onClick={() => router.back()} className="mt-4 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+          Retourner au catalogue
+        </Button>
+      </div>
+    );
+  }
 
   const isEnrolled = !!enrollment;
 
@@ -151,9 +183,6 @@ export default function CourseDetailPage() {
       router.push(`/student/checkout/${courseId}`);
     }
   };
-
-  if (isLoading) return <CourseDetailSkeleton />;
-  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
 
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">

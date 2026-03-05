@@ -13,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, KeyRound, LogOut, Camera, CheckCircle2 } from 'lucide-react';
+import { Loader2, KeyRound, LogOut, Camera, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
@@ -112,6 +112,7 @@ export default function AccountPage() {
     } catch (error: any) {
         toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
     } finally {
+        setSelectedImage(null);
         setIsUploading(false);
     }
   };
@@ -131,12 +132,15 @@ export default function AccountPage() {
                 'socialLinks.linkedin': values.linkedin,
                 'socialLinks.twitter': values.twitter,
                 'socialLinks.website': values.website,
-                isProfileComplete: true
+                isProfileComplete: true // 🛡️ On valide le profil ici
             },
             requesterId: currentUser.uid
         });
-        if (result.success) toast({ title: "Profil mis à jour !" });
-        else throw new Error(result.error);
+        if (result.success) {
+            toast({ title: "Profil mis à jour !", description: "Vous avez maintenant accès à toutes les fonctionnalités." });
+        } else {
+            throw new Error(result.error);
+        }
     } catch (error: any) {
       toast({ variant: 'destructive', title: 'Erreur', description: error.message });
     } finally {
@@ -148,6 +152,8 @@ export default function AccountPage() {
     return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   }
 
+  const isProfileComplete = currentUser.isProfileComplete;
+
   return (
     <div className="max-w-2xl mx-auto space-y-8 pb-32 bg-grainy min-h-screen">
       {selectedImage && (
@@ -156,6 +162,17 @@ export default function AccountPage() {
           onCropComplete={onCropComplete} 
           onClose={() => setSelectedImage(null)} 
         />
+      )}
+
+      {!isProfileComplete && (
+        <div className="px-4 pt-8">
+            <div className="bg-amber-500/10 border border-amber-500/20 p-4 rounded-2xl flex items-start gap-3 shadow-lg">
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs font-bold text-amber-200/80 uppercase tracking-tight leading-relaxed">
+                    Votre profil est incomplet. Veuillez renseigner au moins votre <span className="text-white font-black">Nom d'utilisateur</span> et votre <span className="text-white font-black">Domaine d'expertise</span> pour débloquer l'accès aux formations.
+                </p>
+            </div>
+        </div>
       )}
 
       <header className="px-4 pt-12 text-center space-y-6 flex flex-col items-center">
@@ -205,16 +222,16 @@ export default function AccountPage() {
                           <FormField control={form.control} name="fullName" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom Complet</FormLabel>
-                                  <FormControl><Input {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                  <FormControl><Input {...field} className="h-12 bg-slate-900 border-slate-800 rounded-xl" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>
                           <FormField control={form.control} name="username" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom d'utilisateur</FormLabel>
-                                  <div className="flex items-center bg-slate-900 border border-slate-800 rounded-2xl pl-4 overflow-hidden">
+                                  <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl pl-4 overflow-hidden focus-within:border-primary/50 transition-colors">
                                     <span className="text-primary font-bold">@</span>
-                                    <FormControl><Input {...field} className="border-none bg-transparent focus-visible:ring-0" /></FormControl>
+                                    <FormControl><Input {...field} className="border-none bg-transparent focus-visible:ring-0 h-12" /></FormControl>
                                   </div>
                                   <FormMessage />
                               </FormItem>
@@ -222,14 +239,14 @@ export default function AccountPage() {
                           <FormField control={form.control} name="interestDomain" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Domaine d'expertise</FormLabel>
-                                  <FormControl><Input placeholder="Ex: Finance, Agriculture, Code..." {...field} className="h-12 bg-slate-900 border-slate-800 rounded-2xl" /></FormControl>
+                                  <FormControl><Input placeholder="Ex: Finance, Agriculture, Code..." {...field} className="h-12 bg-slate-900 border-slate-800 rounded-xl" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>
                           <FormField control={form.control} name="bio" render={({ field }) => (
                               <FormItem>
                                   <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Biographie</FormLabel>
-                                  <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-2xl resize-none" /></FormControl>
+                                  <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-xl resize-none p-4" /></FormControl>
                                   <FormMessage />
                               </FormItem>
                           )}/>

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * Optimisé : Téléversement des PDF vers Bunny Storage via API Proxy.
+ * ✅ SÉCURITÉ : Bloque l'upload si le titre est absent.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -20,7 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, RefreshCw, Clock } from 'lucide-react';
+import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, RefreshCw, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -66,6 +66,8 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     });
 
     const selectedType = form.watch('type');
+    const lectureTitle = form.watch('title');
+    const isTitleMissing = !lectureTitle || lectureTitle.trim().length < 3;
     
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
@@ -114,14 +116,19 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     };
 
     const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        const lectureTitle = form.getValues('title');
+        const title = form.getValues('title');
 
-        if (!lectureTitle || lectureTitle.length < 3) {
-            toast({ variant: 'destructive', title: "Titre requis", description: "Veuillez saisir un titre avant l'upload." });
+        if (!title || title.trim().length < 3) {
+            toast({ 
+                variant: 'destructive', 
+                title: "Titre manquant", 
+                description: "Veuillez saisir le titre de la leçon avant de choisir la vidéo." 
+            });
+            event.target.value = ''; // Reset input
             return;
         }
 
+        const file = event.target.files?.[0];
         if (!file || !currentUser) return;
 
         setIsUploading(true);
@@ -129,7 +136,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
             const formData = new FormData();
             formData.append('file', file);
             formData.append('instructorId', currentUser.uid);
-            formData.append('title', lectureTitle);
+            formData.append('title', title);
 
             const response = await fetch('/api/video/upload', {
                 method: 'POST',
@@ -150,6 +157,18 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     };
 
     const handlePdfUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const title = form.getValues('title');
+
+        if (!title || title.trim().length < 3) {
+            toast({ 
+                variant: 'destructive', 
+                title: "Titre manquant", 
+                description: "Veuillez saisir le titre de la leçon avant de choisir le PDF." 
+            });
+            event.target.value = ''; 
+            return;
+        }
+
         const file = event.target.files?.[0];
         if (!file || !currentUser) return;
         
@@ -260,12 +279,21 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                         
                         {selectedType === 'video' && (
                             <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier Vidéo</label>
+                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
+                                    Fichier Vidéo
+                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3"/> Titre requis avant upload</span>}
+                                </label>
                                 <div className="relative">
-                                    <Input type="file" accept="video/*" onChange={handleVideoUpload} className="sr-only" id="video-upload-input" disabled={isUploading} />
-                                    <label htmlFor="video-upload-input" className={cn("flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-[2.5rem] bg-slate-950/50 cursor-pointer hover:border-primary/50 transition-all", isUploading && "opacity-50")}>
+                                    <Input type="file" accept="video/*" onChange={handleVideoUpload} className="sr-only" id="video-upload-input" disabled={isUploading || isTitleMissing} />
+                                    <label 
+                                        htmlFor="video-upload-input" 
+                                        className={cn(
+                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-[2.5rem] bg-slate-950/50 transition-all", 
+                                            isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
+                                        )}
+                                    >
                                         {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileVideo className="h-10 w-10 text-slate-700" />}
-                                        <span className="text-[10px] font-black uppercase mt-2">Choisir la vidéo</span>
+                                        <span className="text-[10px] font-black uppercase mt-2">{isTitleMissing ? "Saisir un titre d'abord" : "Choisir la vidéo"}</span>
                                     </label>
                                 </div>
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
@@ -276,12 +304,21 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                         {selectedType === 'pdf' && (
                             <div className="space-y-4">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Fichier PDF (Bunny CDN)</FormLabel>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
+                                    Fichier PDF (Bunny CDN)
+                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3"/> Titre requis</span>}
+                                </FormLabel>
                                 <div className="relative">
-                                    <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading} />
-                                    <label htmlFor="pdf-upload-input" className={cn("flex flex-col items-center justify-center py-10 border-2 border-dashed border-slate-800 rounded-xl bg-slate-950/50 cursor-pointer", isUploading && "opacity-50")}>
+                                    <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading || isTitleMissing} />
+                                    <label 
+                                        htmlFor="pdf-upload-input" 
+                                        className={cn(
+                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-xl bg-slate-950/50 transition-all", 
+                                            isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
+                                        )}
+                                    >
                                         {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileText className="h-8 w-8 text-amber-500" />}
-                                        <span className="text-[10px] font-black uppercase mt-2">Téléverser le PDF</span>
+                                        <span className="text-[10px] font-black uppercase mt-2">{isTitleMissing ? "Saisir un titre d'abord" : "Téléverser le PDF"}</span>
                                     </label>
                                 </div>
                                 <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
