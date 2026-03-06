@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Interface de quiz sécurisée.
- * ✅ RÉSOLU : Suppression de l'import QuizAttempt inexistant pour le build.
+ * @fileOverview Interface de quiz sécurisée pour les étudiants.
+ * ✅ RÉSOLU : Suppression de l'import QuizAttempt erroné pour stabiliser le build.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -24,7 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Loader2, ArrowLeft, Award } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import type { Course, Quiz, Question } from '@/lib/types';
+import type { Quiz, Question } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
@@ -116,12 +116,12 @@ export default function TakeQuizPage() {
   const currentQuestion = questions[currentQuestionIndex];
 
   if (isLoading) {
-    return <div className="flex h-full w-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+    return <div className="flex h-full w-full items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
   
   if (finalScore !== null) {
       return (
-          <div className="flex flex-col items-center justify-center h-full p-4">
+          <div className="flex flex-col items-center justify-center h-full p-4 bg-slate-950">
               <Card className="w-full max-w-lg text-center dark:bg-slate-800 dark:border-slate-700">
                   <CardHeader>
                       <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
@@ -152,9 +152,9 @@ export default function TakeQuizPage() {
   }
 
   return (
-    <div className="flex flex-col h-full p-4">
+    <div className="flex flex-col h-full p-4 bg-slate-950">
       <header className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${courseId}`)}>
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${courseId}`)} className="text-slate-400">
           <ArrowLeft className="h-4 w-4 mr-2" /> Retour au cours
         </Button>
       </header>

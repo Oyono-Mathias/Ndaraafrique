@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Statistiques de la landing page en temps réel.
- * Écoute Firestore pour afficher les compteurs réels sans valeurs fictives.
- * ✅ RÉSOLU : Affiche le nombre total de membres pour plus de visibilité au lancement.
+ * Écoute Firestore pour afficher les compteurs réels.
+ * ✅ RÉSOLU : Affiche le nombre total de membres pour éviter le "0" au début.
  */
 
 import { useEffect, useState } from 'react';
@@ -18,7 +18,7 @@ export function Stats() {
     useEffect(() => {
         setIsLoading(true);
         
-        // 1. Écouter TOUS les membres réels (Admin + Formateurs + Étudiants) pour éviter le "0" au début
+        // 1. Écouter TOUS les membres réels (Admin + Formateurs + Étudiants)
         const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
             setStats(prev => ({ ...prev, memberCount: snapshot.size }));
         }, (err) => {

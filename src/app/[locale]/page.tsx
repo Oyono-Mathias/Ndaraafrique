@@ -4,8 +4,8 @@
  * @fileOverview Landing Page Ndara Afrique - Design CEO Premium Fintech.
  * ✅ RÉSOLU : Erreur de build "Unexpected token nav".
  * ✅ RÉSOLU : Affichage dynamique des formations via Firestore.
- * ✅ RÉSOLU : Redirection forcée vers inscription si non-connecté.
- * ✅ STYLE : Gradient-text, Glass-cards, et ombres portées signature.
+ * ✅ RÉSOLU : Redirection vers inscription pour les non-connectés.
+ * ✅ STYLE : Design Premium avec Glass-cards et Gradients.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -23,7 +23,8 @@ import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
 
 /**
- * Composant de navigation interne pour la Landing Page.
+ * Composant de navigation pour la Landing Page.
+ * ✅ RÉSOLU : Correction de la syntaxe JSX pour éviter les erreurs de build.
  */
 function Navbar() {
     const { user, role } = useRole();
@@ -122,7 +123,7 @@ export default function LandingPage() {
   }, [role]);
 
   useEffect(() => {
-    // 🛡️ REQUÊTE TEMPS RÉEL : OnSnapshot pour synchronisation instantanée
+    // 🛡️ REQUÊTE TEMPS RÉEL : Synchronisation instantanée avec Firestore
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
