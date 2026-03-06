@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -5,9 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Loader2, Sparkles, CheckCircle2, ShieldAlert, Database } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Page de débogage pour le CEO afin de tester manuellement le moteur de recommandation.
+ * ✅ RÉSOLU : Ajout de l'importation 'cn' pour le build.
  */
 export default function TestRecommendationsPage() {
     const [isLoading, setIsLoading] = useState(false);
@@ -95,8 +98,4 @@ export default function TestRecommendationsPage() {
             </div>
         </div>
     );
-}
-
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(' ');
 }

@@ -46,9 +46,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // Redirection vers la Landing Page au lieu du login pour une expérience plus fluide
-    window.location.href = '/';
-  }, [db]);
+    // Redirection vers la page de login par défaut
+    router.push('/login');
+  }, [db, router]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)
   useEffect(() => {

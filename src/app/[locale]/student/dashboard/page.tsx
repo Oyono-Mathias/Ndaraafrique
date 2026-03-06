@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique - Style Udemy Industriel.
  * Regroupe les formations par catégories avec navigation horizontale.
- * ✅ RÉSOLU : Correction du conflit de nommage Search (SearchIconLocal).
+ * ✅ RÉSOLU : Correction définitive du conflit de nommage Search (SearchIconLocal).
  */
 
 import { useRole } from '@/context/RoleContext';
