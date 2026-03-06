@@ -1,11 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
- * ✅ RÉSOLU : Suppression de toutes les données de simulation (Cours demo).
- * ✅ RÉSOLU : Affichage dynamique basé uniquement sur Firestore.
- * ✅ RÉSOLU : Correction du conflit de jeton 'nav' pour le build.
+ * ✅ RÉSOLU : Intégration de la section Témoignages Dynamiques.
+ * ✅ RÉSOLU : Zéro simulation, uniquement des données Firestore.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -21,6 +19,7 @@ import { useLocale } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
+import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 
 const Navbar = () => {
     const { user, role } = useRole();
@@ -274,8 +273,15 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- TEMOIGNAGES RÉELS --- */}
+      <section className="bg-slate-50 border-t border-slate-200 px-6 md:px-12">
+        <div className="max-w-7xl mx-auto">
+            <TestimonialsSection />
+        </div>
+      </section>
+
       {/* --- FORMATIONS (Vraies Données UNIQUEMENT) --- */}
-      <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
+      <section id="formations" className="py-24 bg-white relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
                 <div className="space-y-2">

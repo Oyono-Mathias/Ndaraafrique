@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium.
- * ✅ RÉSOLU : Suppression des notes (4.9) et nombres d'avis (1.2k) simulés.
+ * ✅ RÉSOLU : Suppression définitive des labels simulés (12h+).
  * ✅ DYNAMIQUE : Affiche la vraie note et le nombre de participants réels.
  */
 
@@ -12,7 +12,7 @@ import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart, Clock } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
@@ -112,11 +112,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          {course.id.startsWith('demo') && (
-            <div className="absolute top-4 left-4 z-20">
-                <span className="bg-brand-primary text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">Bientôt disponible</span>
-            </div>
-          )}
           {!course.id.startsWith('demo') && (
             <button 
                 onClick={toggleWishlist}
@@ -133,9 +128,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
         <div className="p-6 flex-1 flex flex-col">
             <div className="flex items-center gap-2 mb-3">
                 <span className="text-[10px] font-black text-brand-secondary bg-blue-50 px-2 py-1 rounded uppercase tracking-widest">{course.category || 'Formation'}</span>
-                <span className="flex items-center gap-1 text-[10px] text-slate-400 font-bold uppercase tracking-tighter">
-                    <Clock className="h-3 w-3" /> 12h+
-                </span>
             </div>
             
             <h3 className="text-lg font-black text-brand-dark mb-2 leading-tight uppercase tracking-tight group-hover:text-brand-primary transition-colors line-clamp-2">

@@ -1,11 +1,10 @@
-
 'use client';
 
 /**
  * @fileOverview Statistiques de la landing page en temps réel.
  * Écoute Firestore pour afficher les compteurs réels.
- * ✅ RÉSOLU : Affiche le nombre total de membres même pour les visiteurs publics.
- * ✅ RÉSOLU : Zéro simulation, uniquement des chiffres basés sur la collection 'users'.
+ * ✅ RÉSOLU : Note moyenne calculée dynamiquement sur l'ensemble des avis réels.
+ * ✅ RÉSOLU : Zéro simulation, uniquement des chiffres basés sur Firestore.
  */
 
 import { useEffect, useState } from 'react';
@@ -13,7 +12,7 @@ import { getFirestore, collection, query, where, onSnapshot } from 'firebase/fir
 import { cn } from "@/lib/utils";
 
 export function Stats() {
-    const [stats, setStats] = useState({ memberCount: 0, courseCount: 0 });
+    const [stats, setStats] = useState({ memberCount: 0, courseCount: 0, avgRating: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const db = getFirestore();
 
@@ -30,15 +29,26 @@ export function Stats() {
         // 2. Écouter les cours réellement publiés
         const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published')), (snapshot) => {
             setStats(prev => ({ ...prev, courseCount: snapshot.size }));
-            setIsLoading(false);
         }, (err) => {
             console.warn("Stats courses error:", err);
+        });
+
+        // 3. Calculer la note moyenne réelle sur TOUS les avis de la plateforme
+        const unsubReviews = onSnapshot(collection(db, 'reviews'), (snapshot) => {
+            const reviewsData = snapshot.docs.map(d => d.data());
+            const total = reviewsData.length;
+            const avg = total > 0 ? reviewsData.reduce((acc, curr) => acc + (curr.rating || 0), 0) / total : 0;
+            setStats(prev => ({ ...prev, avgRating: avg }));
+            setIsLoading(false);
+        }, (err) => {
+            console.warn("Stats reviews error:", err);
             setIsLoading(false);
         });
 
         return () => {
             unsubUsers();
             unsubCourses();
+            unsubReviews();
         };
     }, [db]);
 
@@ -57,7 +67,11 @@ export function Stats() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center animate-in fade-in duration-1000">
             <StatItem label="Membres Ndara" value={stats.memberCount} />
             <StatItem label="Formations Premium" value={stats.courseCount} />
-            <StatItem label="Note Moyenne" value="4.9/5" colorClass="text-brand-primary" />
+            <StatItem 
+                label="Note Moyenne" 
+                value={stats.avgRating > 0 ? `${stats.avgRating.toFixed(1)}/5` : "N/A"} 
+                colorClass="text-brand-primary" 
+            />
             <StatItem label="Support Mentor" value="24/7" colorClass="text-brand-primary" />
         </div>
     );
