@@ -19,6 +19,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'api.dicebear.com' },
       { protocol: 'https', hostname: 'i.postimg.cc' },
       { protocol: 'https', hostname: 'upload.wikimedia.org' },
+      { protocol: 'https', hostname: 'ndara-assets.b-cdn.net' },
     ],
   },
   webpack: (config, { isServer }) => {

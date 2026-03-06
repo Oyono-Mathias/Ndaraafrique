@@ -27,6 +27,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'upload.wikimedia.org',
       },
+      {
+        protocol: 'https',
+        hostname: 'ndara-assets.b-cdn.net',
+      },
     ],
   },
 };
