@@ -5,6 +5,7 @@
  * @fileOverview Dashboard Étudiant Ndara Afrique - Style Udemy Industriel.
  * Regroupe les formations par catégories avec navigation horizontale.
  * ✅ RÉSOLU : Correction définitive du conflit de nommage Search (SearchIconLocal).
+ * ✅ RÉSOLU : Toutes les redirections incluent désormais le préfixe de locale.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -18,12 +19,14 @@ import type { Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { useLocale } from 'next-intl';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 export default function StudentDashboardAndroid() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
+  const locale = useLocale();
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [allCourses, setAllCourses] = useState<Course[]>([]);
@@ -114,7 +117,7 @@ export default function StudentDashboardAndroid() {
             </div>
             <h2 className="text-2xl font-black text-white leading-none">Besoin d'aide, <br/>cher Ndara ?</h2>
             <Button asChild className="bg-white text-primary hover:bg-white/90 rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6">
-              <Link href="/student/tutor">Discuter avec Mathias</Link>
+              <Link href={`/${locale}/student/tutor`}>Discuter avec Mathias</Link>
             </Button>
           </div>
         </div>
@@ -143,7 +146,7 @@ export default function StudentDashboardAndroid() {
                             {category}
                         </h2>
                         <Button variant="ghost" size="sm" asChild className="text-primary font-bold text-[10px] uppercase tracking-widest">
-                            <Link href={`/search?q=${category}`}>Voir tout</Link>
+                            <Link href={`/${locale}/search?q=${category}`}>Voir tout</Link>
                         </Button>
                     </div>
                     <Carousel opts={{ align: "start", loop: false }} className="w-full">
@@ -169,7 +172,7 @@ export default function StudentDashboardAndroid() {
       </div>
 
       <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
-        <Link href="/search">
+        <Link href={`/${locale}/search`}>
           <SearchIconLocal className="h-6 w-6 text-primary-foreground" />
           <span className="sr-only">Explorer</span>
         </Link>

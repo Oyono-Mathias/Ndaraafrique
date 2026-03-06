@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -76,15 +77,12 @@ export default function LoginClient() {
   const { user, isUserLoading, role } = useRole();
   const locale = useLocale();
 
-  const loginForm = useForm<z.infer<typeof loginSchema>>({ resolver: zodResolver(loginSchema), defaultValues: { email: '', password: '' } });
-  const registerForm = useForm<z.infer<typeof registerSchema>>({ resolver: zodResolver(registerSchema), defaultValues: { fullName: '', email: '', password: '', terms: false } });
-  
   useEffect(() => {
     if (!isUserLoading && user) {
       const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-      router.push(target);
+      router.push(`/${locale}${target}`);
     }
-  }, [user, isUserLoading, role, router]);
+  }, [user, isUserLoading, role, router, locale]);
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -138,7 +136,7 @@ export default function LoginClient() {
           type: 'success',
           read: false,
           createdAt: serverTimestamp(),
-          link: '/student/dashboard'
+          link: `/${locale}/student/dashboard`
         });
 
         toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
@@ -194,7 +192,7 @@ export default function LoginClient() {
           type: 'success',
           read: false,
           createdAt: serverTimestamp(),
-          link: '/student/dashboard'
+          link: `/${locale}/student/dashboard`
         });
       }
       toast({ title: "Connexion Google réussie !" });
@@ -227,7 +225,7 @@ export default function LoginClient() {
                             <FormField control={loginForm.control} name="email" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('emailLabel')}</FormLabel><FormControl><Input placeholder="email@exemple.com" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem> )} />
                             <FormField control={loginForm.control} name="password" render={({ field }) => ( <FormItem><FormLabel className="text-slate-400 text-[10px] font-black uppercase ml-1">{t('passwordLabel')}</FormLabel><FormControl><PasswordInput field={field} /></FormControl><FormMessage /></FormItem> )} />
                             <div className="flex items-center justify-end">
-                              <Link href="/forgot-password" className="text-xs font-bold text-primary hover:underline">{t('password_forgot')}</Link>
+                              <Link href={`/${locale}/forgot-password`} className="text-xs font-bold text-primary hover:underline">{t('password_forgot')}</Link>
                             </div>
                             <Button type="submit" className="w-full h-14 rounded-2xl text-sm font-black uppercase tracking-widest shadow-xl" disabled={isLoading}>{isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} {t('loginButton')}</Button>
                         </form>
@@ -245,7 +243,7 @@ export default function LoginClient() {
                                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} className="mt-1 border-slate-600 data-[state=checked]:bg-primary" /></FormControl>
                                  <div className="space-y-1 leading-none">
                                     <FormLabel className="text-[10px] font-medium text-slate-500">
-                                      {t('i_agree_to')} <Link href="/cgu" className="underline text-slate-300">CGU</Link> et <Link href="/mentions-legales" className="underline text-slate-300">Confidentialité</Link>
+                                      {t('i_agree_to')} <Link href={`/${locale}/cgu`} className="underline text-slate-300">CGU</Link> et <Link href={`/${locale}/mentions-legales`} className="underline text-slate-300">Confidentialité</Link>
                                     </FormLabel>
                                     <FormMessage />
                                  </div>

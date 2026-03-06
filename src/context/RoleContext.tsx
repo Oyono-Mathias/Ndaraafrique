@@ -9,6 +9,7 @@ import { signOut, getAuth, onIdTokenChanged } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
 
 interface RoleContextType {
   role: UserRole;
@@ -32,6 +33,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
   const router = useRouter();
+  const locale = useLocale();
   const [currentUser, setCurrentUser] = useState<NdaraUser | null>(null);
   const [role, setRole] = useState<UserRole>('student');
   const [availableRoles, setAvailableRoles] = useState<UserRole[]>(['student']);
@@ -46,9 +48,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ CEO Request: Retour à la page de connexion après déconnexion
-    router.push('/login');
-  }, [db, router]);
+    // ✅ CEO Request: Retour à la page de connexion incluant la locale
+    router.push(`/${locale}/login`);
+  }, [db, router, locale]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)
   useEffect(() => {
@@ -164,10 +166,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       const target = newRole === 'admin' ? '/admin' : newRole === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-      router.push(target);
+      router.push(`/${locale}${target}`);
       toast({ title: `Mode ${newRole} activé` });
     }
-  }, [availableRoles, router, toast]);
+  }, [availableRoles, router, toast, locale]);
   
   const value = useMemo(() => ({
     role,
