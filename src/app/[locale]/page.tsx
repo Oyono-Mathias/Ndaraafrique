@@ -1,10 +1,10 @@
-
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Performance & Branding.
- * ✅ DESIGN : Header optimisé pour l'équilibre Logo / Titre.
- * ✅ PERF : next/image priority et Bunny Pull Zone.
+ * @fileOverview Landing Page Ndara Afrique - Version Mobile Optimisée.
+ * ✅ DESIGN : Header compact, logo corrigé et espacé.
+ * ✅ MOBILE : Typo réduite et paddings de sécurité augmentés.
+ * ✅ PERF : Suppression de la section superflue.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -47,27 +47,27 @@ const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }
     return (
         <nav className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-            scrolled ? "py-3 bg-slate-950/90 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "py-5 bg-transparent"
+            scrolled ? "py-2 bg-slate-950/95 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "py-4 bg-transparent"
         )}>
             <div className="container mx-auto px-4 flex justify-between items-center">
-                <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
-                    <div className="relative w-9 h-9 overflow-hidden rounded-lg shadow-xl bg-white/5 flex items-center justify-center border border-white/10">
+                <Link href={`/${locale}`} className="flex items-center gap-2 group">
+                    <div className="relative w-8 h-8 overflow-hidden rounded-lg bg-white/5 flex items-center justify-center border border-white/10">
                         <Image 
                             src={logoUrl} 
                             alt="Logo" 
-                            width={36} 
-                            height={36} 
+                            width={32} 
+                            height={32} 
                             className="object-contain"
                             priority
                         />
                     </div>
-                    <span className="text-lg font-bold tracking-tight text-white uppercase">{siteName}</span>
+                    <span className="text-base font-bold tracking-tight text-white">{siteName}</span>
                 </Link>
                 <div className="flex items-center gap-2">
                     <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login`}>
                         <Button 
                             variant="outline" 
-                            className="bg-white/5 backdrop-blur-md border-white/10 text-white hover:bg-primary hover:text-white hover:border-primary h-9 px-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="bg-white/5 backdrop-blur-md border-white/10 text-white hover:bg-primary hover:text-white hover:border-primary h-8 px-4 rounded-full text-[9px] font-black uppercase tracking-widest transition-all"
                             onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'nav' } })}
                         >
                             {user ? "Mon Espace" : "Se connecter"}
@@ -82,14 +82,13 @@ const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
         return (
-            <section className="py-8">
-                <Skeleton className="h-6 w-48 mb-6 rounded-full bg-slate-800" />
-                <div className="flex gap-4 overflow-hidden">
-                    {[...Array(4)].map((_, i) => (
-                        <div key={i} className="basis-[48%] sm:basis-1/3 md:basis-1/4 shrink-0 space-y-3">
-                            <Skeleton className="aspect-video w-full rounded-2xl bg-slate-800" />
-                            <Skeleton className="h-4 w-3/4 bg-slate-800" />
-                            <Skeleton className="h-3 w-1/2 bg-slate-800" />
+            <section className="py-6">
+                <Skeleton className="h-5 w-40 mb-4 rounded-full bg-slate-800" />
+                <div className="flex gap-3 overflow-hidden">
+                    {[...Array(3)].map((_, i) => (
+                        <div key={i} className="basis-[48%] sm:basis-1/3 md:basis-1/4 shrink-0 space-y-2">
+                            <Skeleton className="aspect-video w-full rounded-xl bg-slate-800" />
+                            <Skeleton className="h-3 w-3/4 bg-slate-800" />
                         </div>
                     ))}
                 </div>
@@ -99,15 +98,15 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     if (!courses || courses.length === 0) return null;
 
     return (
-        <section className="py-8 overflow-hidden">
-            <h2 className="text-xl md:text-2xl font-black mb-6 text-white flex items-center gap-3 uppercase tracking-tight">
-                <div className="h-8 w-1.5 bg-primary rounded-full shadow-[0_0_10px_hsl(var(--primary))]" />
+        <section className="py-6 overflow-hidden">
+            <h2 className="text-lg md:text-xl font-black mb-4 text-white flex items-center gap-2 uppercase tracking-tight">
+                <div className="h-6 w-1 bg-primary rounded-full shadow-[0_0_8px_hsl(var(--primary))]" />
                 {title}
             </h2>
              <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-4">
+                <CarouselContent className="-ml-3">
                     {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-4 basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                        <CarouselItem key={course.id} className="pl-3 basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
                             <CourseCard 
                                 course={course} 
                                 instructor={instructorsMap.get(course.instructorId) || null} 
@@ -155,8 +154,8 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
   
-  const siteName = settings?.general?.siteName || "NDARAAFRIQUE";
-  const logoUrl = "https://ndara-assets.b-cdn.net/logo.png";
+  const siteName = "Ndara Afrique";
+  const logoUrl = "/logo.png";
 
   const coursesByCategory = useMemo(() => {
     const groups: Record<string, Course[]> = {};
@@ -173,70 +172,63 @@ export default function LandingPage() {
       <LandingNav logoUrl={logoUrl} siteName={siteName} />
       
       <div className="container mx-auto px-4">
-        <header className="text-center pt-32 pb-16 md:pt-48 md:pb-24 max-w-4xl mx-auto space-y-8">
-          <Badge className="bg-primary/10 text-primary border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-1000 px-6 py-2 rounded-full font-black uppercase text-[10px] tracking-[0.3em]">
+        <header className="text-center pt-24 pb-12 md:pt-40 md:pb-20 max-w-4xl mx-auto space-y-6 px-4">
+          <Badge className="bg-primary/10 text-primary border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-1000 px-4 py-1.5 rounded-full font-black uppercase text-[9px] tracking-[0.2em]">
             <Sparkles className="w-3 h-3 mr-2" />
-            L'excellence technologique du continent
+            L'excellence technologique
           </Badge>
-          <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-[0.95] animate-in fade-in slide-in-from-bottom-4 duration-1000 uppercase">
+          <h1 className="text-2xl md:text-6xl font-black tracking-tighter leading-[1.1] animate-in fade-in slide-in-from-bottom-4 duration-1000 uppercase">
             {content?.heroTitle || "Le savoir est la seule richesse."}
           </h1>
-          <p className="text-slate-400 text-base md:text-xl max-w-2xl mx-auto font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000">
+          <p className="text-slate-400 text-sm md:text-xl max-w-2xl mx-auto font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000">
             {content?.heroSubtitle || "Formez-vous avec les leaders africains et propulsez votre carrière au niveau mondial."}
           </p>
           <div className="flex flex-col items-center gap-6 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-1000">
               <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`}>
                   <button 
-                    className="nd-cta-primary h-16 text-xs px-12 rounded-[2rem] shadow-2xl shadow-primary/40 hover:shadow-primary/60"
+                    className="nd-cta-primary h-14 text-[10px] px-10 rounded-2xl shadow-2xl shadow-primary/40 hover:shadow-primary/60"
                     onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'hero' } })}
                   >
                       {user ? "Accéder à mon espace" : (content?.heroCtaText || "Démarrer l'aventure")}
-                      <ChevronsRight className="ml-2 h-5 w-5" />
+                      <ChevronsRight className="ml-2 h-4 w-4" />
                   </button>
               </Link>
           </div>
         </header>
           
-        <main className="space-y-12 md:space-y-24 pb-32">
+        <main className="space-y-10 md:space-y-24 pb-32">
           <DynamicCarousel />
 
-          <CourseCarousel
-            title="Dernières Publications"
-            courses={courses.slice(0, 10)}
-            instructorsMap={instructorsMap}
-            isLoading={loading}
-          />
-
-          <section className="py-16 md:py-24 bg-slate-900/40 rounded-[3rem] border border-white/5 p-8 md:p-20 relative overflow-hidden shadow-3xl">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-                <div className="space-y-10">
-                    <h2 className="text-3xl md:text-5xl font-black leading-tight uppercase tracking-tight">Pourquoi <br/><span className="text-primary">Ndara Afrique ?</span></h2>
-                    <div className="grid gap-8">
+          <section className="py-10 px-4 md:py-20 md:px-10 bg-slate-900/40 rounded-[2.5rem] border border-white/5 relative overflow-hidden shadow-3xl">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
+            <div className="grid lg:grid-cols-2 gap-12 items-center">
+                <div className="space-y-8">
+                    <h2 className="text-2xl md:text-4xl font-black leading-tight uppercase tracking-tight">Pourquoi <br/><span className="text-primary">Ndara Afrique ?</span></h2>
+                    <div className="grid gap-6">
                         {[
                             { icon: BookCopy, title: "Savoir Contextualisé", desc: "Des cours pensés pour les réalités du terrain africain." },
                             { icon: Wallet, title: "Accessibilité Totale", desc: "Paiements fluides via vos services Mobile Money locaux." },
                             { icon: Award, title: "Validation Premium", desc: "Des certificats reconnus par les plus grandes entreprises." }
                         ].map((feat, i) => (
-                            <div key={i} className="flex gap-6 items-start group">
-                                <div className="p-4 bg-slate-800 rounded-2xl group-hover:bg-primary transition-colors duration-500 shadow-xl border border-white/5">
-                                    <feat.icon className="h-6 w-6 text-primary group-hover:text-white" />
+                            <div key={i} className="flex gap-4 items-start group">
+                                <div className="p-3 bg-slate-800 rounded-xl group-hover:bg-primary transition-colors duration-500 shadow-xl border border-white/5">
+                                    <feat.icon className="h-5 w-5 text-primary group-hover:text-white" />
                                 </div>
                                 <div>
-                                    <h3 className="font-bold text-lg text-white uppercase tracking-tight">{feat.title}</h3>
-                                    <p className="text-slate-500 text-sm leading-relaxed mt-1">{feat.desc}</p>
+                                    <h3 className="font-bold text-base text-white uppercase tracking-tight">{feat.title}</h3>
+                                    <p className="text-slate-500 text-xs leading-relaxed mt-1">{feat.desc}</p>
                                 </div>
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className="relative aspect-square rounded-[3rem] overflow-hidden shadow-2xl border-8 border-slate-800/50 transform rotate-2 hover:rotate-0 transition-transform duration-700">
+                <div className="relative aspect-square rounded-[2rem] overflow-hidden shadow-2xl border-4 border-slate-800/50 hidden lg:block">
                     <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" alt="Impact Ndara" fill className="object-cover" />
                 </div>
             </div>
           </section>
 
-          <div className="space-y-16">
+          <div className="space-y-12">
               {Object.entries(coursesByCategory).map(([category, catCourses]) => (
                 <CourseCarousel
                     key={category}
@@ -248,24 +240,24 @@ export default function LandingPage() {
               ))}
           </div>
 
-          <section className="text-center py-24 bg-primary rounded-[4rem] border border-white/10 relative overflow-hidden group shadow-[0_30px_60px_-15px_rgba(59,130,246,0.5)] px-8">
+          <section className="text-center py-12 md:py-20 bg-primary rounded-[2.5rem] border border-white/10 relative overflow-hidden group shadow-[0_30px_60px_-15px_rgba(59,130,246,0.5)] px-6">
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <div className="relative z-10 space-y-8">
-                <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-none">
+            <div className="relative z-10 space-y-6">
+                <h2 className="text-2xl md:text-5xl font-black text-white uppercase tracking-tight leading-tight">
                     {content?.finalCtaTitle || "Prêt à transformer votre avenir ?"}
                 </h2>
-                <p className="text-primary-foreground/80 text-lg md:text-xl max-w-2xl mx-auto font-medium italic">
+                <p className="text-primary-foreground/80 text-sm md:text-xl max-w-xl mx-auto font-medium italic">
                     {content?.finalCtaSubtitle || "Rejoignez la plus grande académie panafricaine dès aujourd'hui."}
                 </p>
                 <Button 
                     size="lg" 
                     asChild 
-                    className="h-20 px-16 rounded-2xl bg-white text-primary hover:bg-slate-50 font-black uppercase text-sm tracking-[0.2em] shadow-2xl transition-all active:scale-95"
+                    className="h-16 px-10 rounded-2xl bg-white text-primary hover:bg-slate-50 font-black uppercase text-[10px] tracking-[0.2em] shadow-2xl transition-all active:scale-95"
                     onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'footer' } })}
                 >
                     <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`}>
                         {user ? "Accéder au dashboard" : (content?.finalCtaButtonText || "Devenir Membre")}
-                        <ChevronsRight className="ml-3 h-6 w-6" />
+                        <ChevronsRight className="ml-2 h-5 w-5" />
                     </Link>
                 </Button>
             </div>
