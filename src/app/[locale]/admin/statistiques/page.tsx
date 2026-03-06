@@ -4,6 +4,7 @@
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
  * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
+ * ✅ RÉSOLU : Lisibilité des chiffres en mode clair (bg-card).
  * ✅ RÉSOLU : Erreur de build Vercel (Échappement caractères spéciaux).
  */
 
@@ -31,15 +32,18 @@ export default function AdminStatsPage() {
     const db = getFirestore();
 
     useEffect(() => {
+        // 1. Écouteur indépendant pour les utilisateurs
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             setAllUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as NdaraUser)));
             setIsLoading(false);
         });
 
+        // 2. Écouteur indépendant pour les paiements
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             setAllPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment)));
         });
 
+        // 3. Écouteur indépendant pour le tracking
         const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(2000)), (snap) => {
             setAllTracking(snap.docs.map(doc => doc.data() as TrackingEvent));
         });
