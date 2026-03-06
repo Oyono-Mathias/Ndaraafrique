@@ -3,7 +3,8 @@
 /**
  * @fileOverview Page de présentation détaillée d'un cours.
  * ✅ SÉCURITÉ : Bloque l'accès si le profil n'est pas complété.
- * ✅ TEMPS RÉEL : Score d'avis et liste des avis réels connectés à Firestore (Zéro simulation).
+ * ✅ TEMPS RÉEL : Score d'avis et liste des avis réels connectés à Firestore.
+ * ✅ FIX : Importation Card pour build Vercel.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -28,12 +29,11 @@ import {
   Loader2,
   UserCircle2,
   Camera,
-  MessageSquare,
-  Quote
+  MessageSquare
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
+import { Card } from '@/components/ui/card'; // Assuré pour le build
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
@@ -72,7 +72,7 @@ export default function CourseDetailPage() {
   useEffect(() => {
     if (!courseId) return;
 
-    // ✅ RÉEL TEMPS RÉEL : Calcul des avis réels et enrichissement des profils
+    // Écoute des avis réels
     const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
     const unsubReviews = onSnapshot(qReviews, async (snap) => {
         const reviewsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
@@ -138,7 +138,7 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
 
-  // 🛡️ LOGIQUE DE BLOCAGE PROFIL INCOMPLET
+  // LOGIQUE DE BLOCAGE PROFIL INCOMPLET
   const isProfileBlocked = user && currentUser && !currentUser.isProfileComplete;
 
   if (isLoading) return <CourseDetailSkeleton />;
@@ -314,7 +314,7 @@ export default function CourseDetailPage() {
           </div>
         </section>
 
-        {/* ✅ SECTION AVIS RÉELS (SANS SIMULATION) */}
+        {/* SECTION AVIS RÉELS */}
         <section className="space-y-8">
             <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
               <div className="h-6 w-1 bg-primary rounded-full" />
@@ -375,7 +375,6 @@ export default function CourseDetailPage() {
         </div>
       </div>
 
-      {/* --- BOTTOM ACTION BAR --- */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
         <div className="max-w-md mx-auto flex items-center gap-4">
           {!isEnrolled && (
