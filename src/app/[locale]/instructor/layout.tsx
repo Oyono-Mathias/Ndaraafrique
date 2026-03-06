@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 /**
  * @fileOverview Layout principal de l'espace instructeur.
- * Gère dynamiquement l'affichage de la Bottom Nav pour ne pas gêner l'édition.
+ * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
  */
 export default function InstructorLayoutAndroid({ children }: { children: React.ReactNode }) {
   const { isUserLoading } = useRole();
@@ -20,7 +20,6 @@ export default function InstructorLayoutAndroid({ children }: { children: React.
   }, [pathname]);
 
   const showNavigation = useMemo(() => {
-    // On cache la barre dans l'éditeur de cours (Create ou Edit) pour maximiser l'espace
     const hideOnPaths = [
         '/instructor/courses/create',
         '/instructor/courses/edit'
@@ -29,7 +28,6 @@ export default function InstructorLayoutAndroid({ children }: { children: React.
     const isHiddenPath = hideOnPaths.some(p => cleanPath.startsWith(p));
     if (isHiddenPath) return false;
 
-    // On affiche la barre sur les pages principales
     const mainInstructorPaths = [
         '/instructor/dashboard',
         '/instructor/courses',
@@ -50,14 +48,14 @@ export default function InstructorLayoutAndroid({ children }: { children: React.
 
   if (isUserLoading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-slate-950">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <main className="flex-1 overflow-y-auto">
         <div className={cn(showNavigation && "pb-20")}>
           {children}

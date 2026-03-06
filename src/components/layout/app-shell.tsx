@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
- * Correction : Redirection automatique des utilisateurs connectés vers le Dashboard depuis la Home.
+ * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -90,13 +89,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const isPublic = publicPaths.includes(cleanPath) || cleanPath.startsWith('/verify/') || isInstructorPublicProfile;
 
-    // 1. Redirection si non connecté
     if (!user) {
       if (!isPublic) router.push('/login');
       return;
     }
 
-    // 2. REDIRECTION STRICTE LANDING PAGE : Un utilisateur connecté n'a plus droit à la Landing Page
     if (user && cleanPath === '/') {
         const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
         router.push(target);
@@ -105,7 +102,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     if (cleanPath === '/account' || cleanPath === '/search' || isInstructorPublicProfile) return;
 
-    // 3. Sécurité des zones par rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
@@ -118,14 +114,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
   }, [user, role, loading, cleanPath, router, mounted]);
 
-  if (loading || !mounted) return <div className="h-screen flex items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
+  if (loading || !mounted) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
-        <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
+        <div className="h-screen flex flex-col items-center justify-center bg-background text-center p-6">
             <Wrench className="h-16 w-16 text-primary mb-4" />
-            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance Ndara</h1>
-            <p className="text-slate-500 mt-2 font-medium">Nous effectuons des mises à jour techniques. Nous revenons dans quelques instants.</p>
+            <h1 className="text-2xl font-black text-foreground uppercase tracking-tight">Maintenance Ndara</h1>
+            <p className="text-muted-foreground mt-2 font-medium">Nous effectuons des mises à jour techniques. Nous revenons dans quelques instants.</p>
         </div>
       );
   }
@@ -148,22 +144,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <SplashScreen />
       <OfflineBar />
-      <div className={cn("min-h-screen w-full bg-slate-950", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
+      <div className={cn("min-h-screen w-full bg-background text-foreground", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
         {showNav && !isFullScreen && (
-          <aside className="hidden md:block h-screen sticky top-0">
+          <aside className="hidden md:block h-screen sticky top-0 border-r border-border/50">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
         <div className="flex flex-col flex-1">
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
           {showNav && !isFullScreen && (
-            <header className="flex h-16 items-center justify-between border-b border-white/5 px-4 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-30">
+            <header className="flex h-16 items-center justify-between border-b border-border/50 px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-30">
               <div className="md:hidden">
                 <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="outline" size="icon" className="bg-transparent border-slate-800"><PanelLeft className="h-5 w-5 text-white" /></Button>
+                        <Button variant="outline" size="icon" className="bg-transparent border-border"><PanelLeft className="h-5 w-5 text-foreground" /></Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-[300px] bg-[#111827] border-none">
+                    <SheetContent side="left" className="p-0 w-[300px] bg-background border-none">
                         {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
                     </SheetContent>
                 </Sheet>

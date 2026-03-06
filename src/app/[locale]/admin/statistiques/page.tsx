@@ -3,8 +3,8 @@
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
+ * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
  * ✅ RÉSOLU : Erreur de build Vercel (Échappement caractères spéciaux).
- * ✅ RÉSOLU : Import icône Zap.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -30,20 +30,16 @@ export default function AdminStatsPage() {
     
     const db = getFirestore();
 
-    // 1. ÉCOUTEURS TEMPS RÉEL INDÉPENDANTS (Anti-blocage)
     useEffect(() => {
-        // Flux Utilisateurs
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             setAllUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as NdaraUser)));
             setIsLoading(false);
         });
 
-        // Flux Paiements
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             setAllPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment)));
         });
 
-        // Flux Tracking
         const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(2000)), (snap) => {
             setAllTracking(snap.docs.map(doc => doc.data() as TrackingEvent));
         });
@@ -55,7 +51,6 @@ export default function AdminStatsPage() {
         };
     }, [db]);
 
-    // 2. CALCULS DYNAMIQUES
     const stats = useMemo(() => {
         const from = dateRange?.from || subDays(new Date(), 30);
         const to = dateRange?.to || new Date();
@@ -107,17 +102,17 @@ export default function AdminStatsPage() {
     }, [allUsers, allPayments, allTracking, dateRange]);
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+        <div className="space-y-8 animate-in fade-in duration-700 pb-20 bg-background min-h-screen">
             <header className="flex flex-col md:flex-row justify-between md:items-end gap-6">
                 <div>
                     <div className="flex items-center gap-2 text-primary mb-1">
                         <TrendingUp className="h-4 w-4" />
                         <span className="text-[10px] font-black uppercase tracking-[0.3em]">Analyse Stratégique</span>
                     </div>
-                    <h1 className="text-3xl font-black text-white uppercase tracking-tight">Indicateurs de Performance</h1>
-                    <p className="text-slate-500 text-sm font-medium mt-1">Données consolidées en temps réel.</p>
+                    <h1 className="text-3xl font-black text-foreground uppercase tracking-tight">Indicateurs de Performance</h1>
+                    <p className="text-muted-foreground text-sm font-medium mt-1">Données consolidées en temps réel.</p>
                 </div>
-                <div className="bg-slate-900 p-1.5 rounded-2xl border border-slate-800 shadow-xl">
+                <div className="bg-card p-1.5 rounded-2xl border shadow-xl">
                     <DatePickerWithRange date={dateRange} setDate={setDateRange} />
                 </div>
             </header>
@@ -128,7 +123,6 @@ export default function AdminStatsPage() {
                     value={`${stats.totalRevenue.toLocaleString('fr-FR')} XOF`} 
                     icon={DollarSign} 
                     isLoading={isLoading} 
-                    accentColor="bg-slate-900 border-slate-800"
                     description="Période sélectionnée"
                 />
                 <StatCard 
@@ -136,15 +130,13 @@ export default function AdminStatsPage() {
                     value={`${stats.convRate}%`} 
                     icon={MousePointer2} 
                     isLoading={isLoading} 
-                    accentColor="bg-slate-900 border-slate-800 border-l-primary border-l-4"
-                    description="Visiteurs -> Membres"
+                    description="Visiteurs &rarr; Membres"
                 />
                 <StatCard 
                     title="Base Utilisateurs" 
                     value={stats.totalUsers.toLocaleString('fr-FR')} 
                     icon={Users} 
                     isLoading={isLoading} 
-                    accentColor="bg-slate-900 border-slate-800"
                     description="Membres totaux"
                 />
                 <StatCard 
@@ -152,13 +144,12 @@ export default function AdminStatsPage() {
                     value={stats.activeUsers.toString()} 
                     icon={Zap} 
                     isLoading={isLoading} 
-                    accentColor="bg-slate-900 border-slate-800"
                     description="Actuellement connectés"
                 />
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                <Card className="bg-card border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-0">
                         <div className="flex items-center gap-2 text-primary">
                             <DollarSign className="h-4 w-4" />
@@ -166,7 +157,7 @@ export default function AdminStatsPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-6 pt-10 h-80">
-                        {isLoading ? <Skeleton className="h-full w-full bg-slate-800/50 rounded-2xl" /> : (
+                        {isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={stats.revenueData}>
                                     <defs>
@@ -175,12 +166,12 @@ export default function AdminStatsPage() {
                                             <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'currentColor', fontSize: 10, fontWeight: 'bold', opacity: 0.5}} />
                                     <YAxis hide />
                                     <Tooltip 
-                                        contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px'}} 
-                                        itemStyle={{color: '#fff', fontWeight: 'bold'}}
+                                        contentStyle={{backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px'}} 
+                                        itemStyle={{color: 'hsl(var(--foreground))', fontWeight: 'bold'}}
                                     />
                                     <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorRev)" strokeWidth={4} />
                                 </AreaChart>
@@ -189,7 +180,7 @@ export default function AdminStatsPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                <Card className="bg-card border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-0">
                         <div className="flex items-center gap-2 text-emerald-500">
                             <Users className="h-4 w-4" />
@@ -197,15 +188,15 @@ export default function AdminStatsPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-6 pt-10 h-80">
-                        {isLoading ? <Skeleton className="h-full w-full bg-slate-800/50 rounded-2xl" /> : (
+                        {isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.growthData}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
-                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
+                                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'currentColor', fontSize: 10, fontWeight: 'bold', opacity: 0.5}} />
                                     <YAxis hide />
                                     <Tooltip 
-                                        cursor={{fill: '#1e293b', opacity: 0.4}} 
-                                        contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px'}}
+                                        cursor={{fill: 'currentColor', opacity: 0.1}} 
+                                        contentStyle={{backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px'}}
                                         itemStyle={{color: '#10b981', fontWeight: 'bold'}}
                                     />
                                     <Bar dataKey="value" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} />
@@ -220,7 +211,7 @@ export default function AdminStatsPage() {
                 <div className="p-2 bg-primary/10 rounded-xl">
                     <Calendar className="h-5 w-5 text-primary" />
                 </div>
-                <p className="text-xs text-slate-400 font-medium leading-relaxed">
+                <p className="text-xs text-muted-foreground font-medium leading-relaxed">
                     <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l&apos;outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
                 </p>
             </div>

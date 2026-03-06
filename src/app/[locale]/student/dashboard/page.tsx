@@ -1,9 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Étudiant optimisé pour Android.
  * Hub centralisé regroupant la progression, les recommandations et l'activité.
+ * ✅ RÉSOLU : Support du mode Clair/Sombre.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -52,53 +52,47 @@ export default function StudentDashboardAndroid() {
 
   if (isUserLoading) {
     return (
-      <div className="space-y-6 p-4 bg-slate-950 min-h-screen">
-        <Skeleton className="h-10 w-3/4 bg-slate-900 rounded-xl" />
+      <div className="space-y-6 p-4 bg-background min-h-screen">
+        <Skeleton className="h-10 w-3/4 bg-muted rounded-xl" />
         <div className="grid grid-cols-2 gap-3">
-          <Skeleton className="h-24 rounded-2xl bg-slate-900" />
-          <Skeleton className="h-24 rounded-2xl bg-slate-900" />
+          <Skeleton className="h-24 rounded-2xl bg-muted" />
+          <Skeleton className="h-24 rounded-2xl bg-muted" />
         </div>
-        <Skeleton className="h-64 w-full rounded-3xl bg-slate-900" />
+        <Skeleton className="h-64 w-full rounded-3xl bg-muted" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
+    <div className="flex flex-col gap-8 pb-24 bg-background min-h-screen relative overflow-hidden bg-grainy">
       
-      {/* --- HEADER SALUTATION --- */}
       <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
-        <h1 className="text-3xl font-black text-white leading-tight">
+        <h1 className="text-3xl font-black text-foreground leading-tight">
           Bara ala, <br/>
           <span className="text-primary">{currentUser?.fullName?.split(' ')[0]} !</span>
         </h1>
-        <p className="text-slate-500 text-sm mt-2 font-medium">Continuez votre quête du savoir.</p>
+        <p className="text-muted-foreground text-sm mt-2 font-medium">Continuez votre quête du savoir.</p>
       </header>
 
-      {/* --- STATS (Android Style) --- */}
       <section className="px-4 grid grid-cols-2 gap-3">
         <StatCard 
           title="Formations" 
           value={stats.total.toString()} 
           icon={BookOpen} 
           isLoading={loadingStats} 
-          accentColor="bg-slate-900 border-slate-800"
         />
         <StatCard 
           title="Certificats" 
           value={stats.completed.toString()} 
           icon={Trophy} 
           isLoading={loadingStats}
-          accentColor="bg-slate-900 border-slate-800"
         />
       </section>
 
-      {/* --- REPRENDRE L'APPRENTISSAGE --- */}
       <div className="px-4">
         <ContinueLearning />
       </div>
 
-      {/* --- MATHIAS QUICK ACCESS --- */}
       <section className="px-4">
         <div className="bg-primary p-6 rounded-[2rem] shadow-2xl shadow-primary/20 relative overflow-hidden group active:scale-[0.98] transition-all">
           <Bot className="absolute -right-4 -bottom-4 h-32 w-32 text-black/10 group-hover:scale-110 transition-transform" />
@@ -111,32 +105,28 @@ export default function StudentDashboardAndroid() {
             </div>
             <h2 className="text-2xl font-black text-white leading-none">Besoin d'aide, <br/>cher Ndara ?</h2>
             <p className="text-white/70 text-xs font-medium max-w-[180px]">Mathias répond à vos questions sur les cours 24h/24.</p>
-            <Button asChild className="bg-white text-primary hover:bg-white/90 rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6">
+            <Button asChild className="bg-white text-primary hover:bg-white/90 rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6 border-none">
               <Link href="/student/tutor">Discuter avec Mathias</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      {/* --- NOUVELLES FORMATIONS --- */}
       <div className="px-4">
         <NewCoursesExplore />
       </div>
 
-      {/* --- RECOMMANDATIONS IA --- */}
       <div className="px-4">
         <RecommendedCourses />
       </div>
 
-      {/* --- ACTIVITÉ RÉCENTE --- */}
       <div className="px-4">
         <RecentActivity />
       </div>
 
-      {/* --- BOUTON DE RECHERCHE FLOTTANT --- */}
-      <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90">
+      <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
         <Link href="/search">
-          <Search className="h-6 w-6 text-white" />
+          <Search className="h-6 w-6 text-primary-foreground" />
           <span className="sr-only">Explorer les cours</span>
         </Link>
       </Button>
