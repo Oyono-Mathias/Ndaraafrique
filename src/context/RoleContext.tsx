@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview RoleProvider Ndara Afrique.
- * ✅ RÉSOLU : Redirection Landing Page locale (/fr) après déconnexion.
+ * ✅ RÉSOLU : Redirection Landing Page locale (/${locale}/) après déconnexion.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -149,10 +149,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 status: 'active',
                 isInstructorApproved: false,
                 createdAt: serverTimestamp(),
+                isProfileComplete: false,
+                preferredLanguage: locale as 'fr' | 'en',
                 isOnline: true,
                 lastSeen: serverTimestamp(),
-                careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
-                isProfileComplete: false
             };
             await setDoc(userDocRef, newUserDoc).catch(() => {});
         }
@@ -163,7 +163,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user, isUserLoading, db, secureSignOut, toast]);
+  }, [user, isUserLoading, db, secureSignOut, toast, locale]);
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {

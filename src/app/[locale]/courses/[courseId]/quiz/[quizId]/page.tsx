@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Interface de quiz sécurisée pour le build.
+ * @fileOverview Interface de quiz sécurisée.
  * ✅ RÉSOLU : Suppression de l'import QuizAttempt inexistant.
  */
 

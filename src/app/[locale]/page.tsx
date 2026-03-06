@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Version 2.0 (Look Minimaliste & Fintech).
- * ✅ DESIGN : Aligné sur Udemy (Cards) et Fintech (Header fin, Typo équilibrée).
- * ✅ RESPONSIVE : Marges augmentées et tailles de titres réduites sur mobile.
- * ✅ PERF : Suppression de la section 'Dernières Publications'.
+ * @fileOverview Landing Page Ndara Afrique - Version "Fintech Premium".
+ * ✅ DESIGN : Hero avec gradient-text, Glass-cards pour la méthodologie.
+ * ✅ STATS : Section sur fond sombre (Brand-Dark) pour l'autorité.
+ * ✅ BOUTONS : Effet d'ombre portée lumineuse.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,7 +13,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, ChevronsRight, BookCopy, Wallet, Award, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ChevronsRight, BookCopy, Wallet, Award, CheckCircle2, Search as LucideSearch, Bot, Users, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -76,46 +76,15 @@ const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }
     );
 };
 
-const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
-    if (isLoading && courses.length === 0) {
-        return (
-            <section className="py-10">
-                <Skeleton className="h-6 w-48 mb-6 rounded-full bg-slate-800" />
-                <div className="flex gap-4 overflow-hidden">
-                    {[...Array(3)].map((_, i) => (
-                        <div key={i} className="basis-[48%] sm:basis-1/3 md:basis-1/4 shrink-0 space-y-3">
-                            <Skeleton className="aspect-video w-full rounded-2xl bg-slate-800" />
-                            <Skeleton className="h-4 w-3/4 bg-slate-800" />
-                        </div>
-                    ))}
-                </div>
-            </section>
-        );
-    }
-    if (!courses || courses.length === 0) return null;
-
-    return (
-        <section className="py-10 overflow-hidden px-6">
-            <h2 className="text-xl md:text-2xl font-black mb-6 text-white flex items-center gap-3 uppercase tracking-tight">
-                <div className="h-6 w-1 bg-primary rounded-full shadow-[0_0_10px_hsl(var(--primary))]" />
-                {title}
-            </h2>
-             <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-4">
-                    {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-4 basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
-                            <CourseCard 
-                                course={course} 
-                                instructor={instructorsMap.get(course.instructorId) || null} 
-                                variant="grid" 
-                            />
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
-        </section>
-    );
-};
+const StatItem = ({ icon: Icon, label, value, color }: any) => (
+    <div className="flex flex-col items-center p-6 text-center space-y-2 group">
+        <div className={cn("p-3 rounded-2xl bg-white/5 border border-white/10 transition-transform group-hover:scale-110", color)}>
+            <Icon className="h-6 w-6" />
+        </div>
+        <p className="text-3xl font-black text-white">{value}</p>
+        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">{label}</p>
+    </div>
+);
 
 export default function LandingPage() {
   const { user, role } = useRole();
@@ -150,8 +119,6 @@ export default function LandingPage() {
     });
     return () => unsubscribe();
   }, [db]);
-  
-  const logoUrl = "/logo.png";
 
   const coursesByCategory = useMemo(() => {
     const groups: Record<string, Course[]> = {};
@@ -165,93 +132,128 @@ export default function LandingPage() {
 
   return (
     <div className="bg-slate-950 text-white min-h-screen font-sans selection:bg-primary/30">
-      <LandingNav logoUrl={logoUrl} siteName="Ndara Afrique" />
+      <LandingNav logoUrl="/logo.png" siteName="Ndara Afrique" />
       
       <div className="container mx-auto">
-        <header className="text-center pt-28 pb-16 md:pt-44 md:pb-24 max-w-4xl mx-auto space-y-8 px-6">
-          <Badge className="bg-primary/10 text-primary border-primary/20 animate-in fade-in slide-in-from-bottom-2 duration-1000 px-5 py-2 rounded-full font-black uppercase text-[10px] tracking-[0.25em]">
+        {/* --- HERO SECTION MODERNE --- */}
+        <header className="text-center pt-32 pb-16 md:pt-48 md:pb-24 max-w-5xl mx-auto space-y-8 px-6">
+          <Badge className="bg-primary/10 text-primary border-primary/20 px-5 py-2 rounded-full font-black uppercase text-[10px] tracking-[0.25em] animate-in fade-in duration-1000">
             <Sparkles className="w-3 h-3 mr-2" />
-            L'excellence technologique
+            L'EXCELLENCE PAR LE SAVOIR
           </Badge>
-          <h1 className="text-3xl md:text-6xl font-black tracking-tighter leading-[1.15] animate-in fade-in slide-in-from-bottom-4 duration-1000 uppercase">
-            {content?.heroTitle || "Le savoir est la seule richesse."}
+          
+          <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-[1.1] uppercase animate-in slide-in-from-bottom-4 duration-1000">
+            <span className="block text-white">Le futur de l'Afrique</span>
+            <span className="block bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-emerald-400">
+              se code ici.
+            </span>
           </h1>
-          <p className="text-slate-400 text-base md:text-xl max-w-2xl mx-auto font-medium leading-relaxed animate-in fade-in slide-in-from-bottom-6 duration-1000">
-            {content?.heroSubtitle || "Formez-vous avec les leaders africains et propulsez votre carrière au niveau mondial."}
+
+          <p className="text-slate-400 text-lg md:text-xl max-w-2xl mx-auto font-medium leading-relaxed animate-in fade-in duration-1000 delay-300">
+            {content?.heroSubtitle || "Rejoignez la plus grande académie panafricaine et apprenez les compétences du futur avec des experts locaux."}
           </p>
-          <div className="flex flex-col items-center gap-6 pt-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 animate-in fade-in duration-1000 delay-500">
               <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`}>
                   <button 
-                    className="nd-cta-primary h-14 text-[11px] px-12 rounded-2xl shadow-2xl shadow-primary/30 hover:shadow-primary/50 w-fit"
+                    className="nd-cta-primary h-14 text-[11px] px-12 rounded-2xl shadow-2xl shadow-primary/30 hover:shadow-primary/50 transition-all"
                     onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'hero' } })}
                   >
                       {user ? "Accéder à mon espace" : (content?.heroCtaText || "Démarrer l'aventure")}
                       <ChevronsRight className="ml-2 h-4 w-4" />
                   </button>
               </Link>
+              <Link href="/about">
+                <Button variant="ghost" className="h-14 px-8 rounded-2xl font-black uppercase text-[10px] tracking-widest text-slate-400 hover:text-white">
+                    Notre Manifeste
+                </Button>
+              </Link>
           </div>
         </header>
           
-        <main className="space-y-16 md:space-y-32 pb-32">
+        <main className="space-y-24 md:space-y-40 pb-32">
+          {/* --- CARROUSEL DYNAMIQUE --- */}
           <div className="px-6">
             <DynamicCarousel />
           </div>
 
-          <section className="py-16 px-6 md:py-24 md:px-12 bg-slate-900/30 rounded-[2.5rem] border border-white/5 relative overflow-hidden shadow-3xl mx-6">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] rounded-full pointer-events-none" />
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
-                <div className="space-y-10">
-                    <h2 className="text-3xl md:text-4xl font-black leading-tight uppercase tracking-tight">Pourquoi <br/><span className="text-primary">Ndara Afrique ?</span></h2>
-                    <div className="grid gap-8">
-                        {[
-                            { icon: BookCopy, title: "Savoir Contextualisé", desc: "Des cours pensés pour les réalités du terrain africain." },
-                            { icon: Wallet, title: "Accessibilité Totale", desc: "Paiements fluides via vos services Mobile Money locaux." },
-                            { icon: Award, title: "Validation Premium", desc: "Des certificats reconnus par les plus grandes entreprises." }
-                        ].map((feat, i) => (
-                            <div key={i} className="flex gap-5 items-start group">
-                                <div className="p-4 bg-slate-800 rounded-2xl group-hover:bg-primary transition-colors duration-500 shadow-xl border border-white/5">
-                                    <feat.icon className="h-6 w-6 text-primary group-hover:text-white" />
-                                </div>
-                                <div className="pt-1">
-                                    <h3 className="font-bold text-lg text-white uppercase tracking-tight">{feat.title}</h3>
-                                    <p className="text-slate-500 text-sm leading-relaxed mt-1.5">{feat.desc}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-                <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border-4 border-slate-800/50 hidden lg:block">
-                    <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" alt="Impact Ndara" fill className="object-cover" />
-                </div>
+          {/* --- SECTION STATISTIQUES (BRAND DARK) --- */}
+          <section className="bg-slate-900/50 border-y border-white/5 py-16 px-6">
+            <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
+                <StatItem icon={Users} label="Apprenants" value="50K+" color="text-primary" />
+                <StatItem icon={BookCopy} label="Formations" value="120+" color="text-emerald-400" />
+                <StatItem icon={Award} label="Certifiés" value="15K+" color="text-amber-400" />
+                <StatItem icon={TrendingUp} label="Croissance" value="+25%" color="text-blue-400" />
             </div>
           </section>
 
-          <div className="space-y-16">
+          {/* --- METHODOLOGIE GLASS-CARDS --- */}
+          <section className="px-6">
+            <div className="text-center mb-16 space-y-4">
+                <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tight">Une méthodologie <br/><span className="text-primary">éprouvée.</span></h2>
+                <p className="text-slate-500 font-medium">Conçu pour l'impact, optimisé pour la réussite.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+                {[
+                    { icon: BookCopy, title: "Savoir Contextualisé", desc: "Des cours pensés pour les réalités économiques et technologiques du continent.", color: "bg-primary/10" },
+                    { icon: Wallet, title: "Fintech Ready", desc: "Paiements simplifiés via Mobile Money (MTN, Orange, Wave) et Cartes bancaires.", color: "bg-emerald-500/10" },
+                    { icon: Bot, title: "Tuteur IA Mathias", desc: "Un assistant personnel disponible 24h/24 pour corriger vos exercices et répondre à vos questions.", color: "bg-blue-500/10" }
+                ].map((feat, i) => (
+                    <div key={i} className="group p-8 rounded-[2.5rem] bg-white/5 backdrop-blur-xl border border-white/10 shadow-2xl hover:border-primary/30 transition-all duration-500">
+                        <div className={cn("p-4 rounded-2xl w-fit mb-6 shadow-xl", feat.color)}>
+                            <feat.icon className="h-8 w-8 text-white" />
+                        </div>
+                        <h3 className="font-bold text-xl text-white uppercase tracking-tight mb-3">{feat.title}</h3>
+                        <p className="text-slate-400 text-sm leading-relaxed">{feat.desc}</p>
+                    </div>
+                ))}
+            </div>
+          </section>
+
+          {/* --- CATALOGUE PAR CATÉGORIES --- */}
+          <div className="space-y-20 px-6">
               {Object.entries(coursesByCategory).map(([category, catCourses]) => (
-                <CourseCarousel
-                    key={category}
-                    title={category}
-                    courses={catCourses}
-                    instructorsMap={instructorsMap}
-                    isLoading={false}
-                />
+                <section key={category} className="space-y-8">
+                    <div className="flex items-center justify-between border-b border-white/5 pb-4">
+                        <h2 className="text-2xl md:text-3xl font-black uppercase tracking-tight flex items-center gap-3">
+                            <div className="h-8 w-1.5 bg-primary rounded-full shadow-[0_0_15px_hsl(var(--primary))]" />
+                            {category}
+                        </h2>
+                        <Link href={`/${locale}/search?q=${category}`}>
+                            <Button variant="ghost" className="text-primary font-black uppercase text-[10px] tracking-widest gap-2">
+                                Voir Tout <ChevronsRight className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    </div>
+                    <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                        <CarouselContent className="-ml-4">
+                            {catCourses.map(course => (
+                                <CarouselItem key={course.id} className="pl-4 basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
+                                    <CourseCard 
+                                        course={course} 
+                                        instructor={instructorsMap.get(course.instructorId) || null} 
+                                        variant="grid" 
+                                    />
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                    </Carousel>
+                </section>
               ))}
           </div>
 
-          <section className="text-center py-16 md:py-28 bg-primary rounded-[3rem] border border-white/10 relative overflow-hidden group shadow-[0_40px_80px_-20px_rgba(59,130,246,0.6)] px-8 mx-6">
+          {/* --- FINAL CTA --- */}
+          <section className="relative py-20 md:py-32 px-8 mx-6 rounded-[3rem] overflow-hidden group">
+            <div className="absolute inset-0 bg-primary shadow-[0_0_100px_rgba(59,130,246,0.2)]" />
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000" />
-            <div className="relative z-10 space-y-10">
-                <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-tight leading-[1.1]">
-                    {content?.finalCtaTitle || "Prêt à transformer votre avenir ?"}
+            <div className="relative z-10 text-center space-y-10">
+                <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-none">
+                    {content?.finalCtaTitle || "Prêt à transformer <br/>votre avenir ?"}
                 </h2>
-                <p className="text-primary-foreground/80 text-base md:text-xl max-w-2xl mx-auto font-medium italic leading-relaxed">
-                    {content?.finalCtaSubtitle || "Rejoignez la plus grande académie panafricaine dès aujourd'hui."}
-                </p>
                 <Button 
                     size="lg" 
                     asChild 
-                    className="h-16 px-12 rounded-2xl bg-white text-primary hover:bg-slate-50 font-black uppercase text-[11px] tracking-[0.25em] shadow-2xl transition-all active:scale-95 w-fit mx-auto flex"
-                    onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'footer' } })}
+                    className="h-16 px-12 rounded-2xl bg-white text-primary hover:bg-slate-50 font-black uppercase text-[11px] tracking-[0.25em] shadow-2xl transition-all active:scale-95 w-fit mx-auto"
                 >
                     <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`}>
                         {user ? "Accéder au dashboard" : (content?.finalCtaButtonText || "Devenir Membre")}
