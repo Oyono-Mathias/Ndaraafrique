@@ -34,12 +34,16 @@ function calculateCourseScore(
     const similarityScore = (isPreferredCategory ? 5 : 0) * similarityWeight;
 
     // 4. Recent Popularity (Proxy via la date de création : cours de moins de 30 jours)
-    const isNew = course.createdAt 
-        ? (Date.now() - (course.createdAt as any).toDate().getTime()) < 30 * 86400000 
-        : false;
+    const createdAt = course.createdAt;
+    let isNew = false;
+    if (createdAt) {
+        const date = (createdAt as any).toDate ? (createdAt as any).toDate() : new Date(createdAt as any);
+        isNew = (Date.now() - date.getTime()) < 30 * 86400000;
+    }
+    
     const freshnessScore = (isNew ? 5 : 0) * freshnessWeight;
 
-    // Retourne un score final sur une base 100 (optionnel, ici on garde la base pondérée)
+    // Retourne un score final sur une base 100 (pondéré * 20 pour normaliser sur 100)
     return (ratingScore + popularityScore + similarityScore + freshnessScore) * 20;
 }
 
@@ -103,7 +107,7 @@ export async function updateAllRecommendations() {
     const db = getAdminDb();
     const activeUsersSnap = await db.collection('users')
         .where('status', '==', 'active')
-        .limit(100) // Limitation pour le prototype
+        .limit(100) 
         .get();
 
     const tasks = activeUsersSnap.docs.map(doc => generateUserRecommendations(doc.id));

@@ -265,7 +265,7 @@ export interface Enrollment {
     lastWatchedLesson?: string;
     lastAccessedAt?: Timestamp | FieldValue;
     expiresAt?: Timestamp | FieldValue;
-    enrollmentType?: 'paid' | 'admin_grant';
+    enrollmentType?: 'paid' | 'admin_grant' | 'free';
     transactionId?: string;
 }
 
