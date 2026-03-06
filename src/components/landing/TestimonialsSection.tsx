@@ -1,14 +1,13 @@
-
 'use client';
 
 /**
- * @fileOverview Section des témoignages Ndara Afrique - 100% Réelle.
- * ✅ RÉSOLU : Suppression des données simulées.
- * ✅ TEMPS RÉEL : Affiche les derniers avis 4/5 étoiles de Firestore.
+ * @fileOverview Section des témoignages Ndara Afrique - 100% Réelle & Robuste.
+ * ✅ RÉSOLU : Requête simplifiée pour éviter les erreurs d'index Firestore.
+ * ✅ RÉSOLU : Tri intelligent des meilleurs avis en mémoire.
  */
 
 import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, getDocs, doc } from 'firebase/firestore';
+import { getFirestore, collection, query, orderBy, limit, onSnapshot, getDocs, where } from 'firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Star, MessageSquare, Quote } from 'lucide-react';
@@ -70,34 +69,36 @@ export function TestimonialsSection() {
   useEffect(() => {
     setIsLoading(true);
     
-    // On récupère les 3 derniers avis avec une note de 4 ou 5
+    // Requête simplifiée pour éviter les blocages d'index
     const q = query(
         collection(db, 'reviews'), 
-        where('rating', '>=', 4),
-        orderBy('rating', 'desc'),
         orderBy('createdAt', 'desc'),
-        limit(3)
+        limit(20)
     );
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
         try {
             const rawReviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Review));
             
-            if (rawReviews.length === 0) {
+            // Tri en mémoire : On prend les meilleurs avis parmi les plus récents
+            const bestReviews = rawReviews
+                .filter(r => r.rating >= 4)
+                .sort((a, b) => b.rating - a.rating)
+                .slice(0, 3);
+
+            if (bestReviews.length === 0) {
                 setReviews([]);
                 setIsLoading(false);
                 return;
             }
 
-            const userIds = [...new Set(rawReviews.map(r => r.userId))];
+            const userIds = [...new Set(bestReviews.map(r => r.userId))];
             const usersMap = new Map<string, NdaraUser>();
 
-            // Récupération groupée des profils utilisateurs
-            const usersQuery = query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30)));
-            const usersSnap = await getDocs(usersQuery);
+            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30))));
             usersSnap.forEach(d => usersMap.set(d.id, d.data() as NdaraUser));
 
-            const enriched = rawReviews.map(r => {
+            const enriched = bestReviews.map(r => {
                 const user = usersMap.get(r.userId);
                 return {
                     ...r,

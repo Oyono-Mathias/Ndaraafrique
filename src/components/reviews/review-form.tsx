@@ -1,19 +1,23 @@
 'use client';
 
+/**
+ * @fileOverview Formulaire d'avis Ndara Afrique.
+ * ✅ RÉSOLU : Met à jour dynamiquement la note moyenne et le compteur du cours dans Firestore.
+ * ✅ RÉSOLU : Garantit que les cartes de cours affichent les étoiles immédiatement.
+ */
+
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getFirestore, addDoc, collection, serverTimestamp, getDoc, doc } from 'firebase/firestore';
+import { getFirestore, addDoc, collection, serverTimestamp, getDoc, doc, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { Star, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { errorEmitter } from '@/firebase/error-emitter';
-import { FirestorePermissionError } from '@/firebase/errors';
-import type { Course } from '@/lib/types';
+import type { Course, Review } from '@/lib/types';
 
 const reviewSchema = z.object({
   rating: z.number().min(1, 'La note est requise.').max(5),
@@ -47,13 +51,16 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
     try {
       const courseRef = doc(db, 'courses', courseId);
       const courseSnap = await getDoc(courseRef);
+      
       if (!courseSnap.exists()) {
           toast({ variant: 'destructive', title: 'Erreur', description: 'Le cours n\'existe pas.' });
           setIsSubmitting(false);
           return;
       }
+      
       const courseData = courseSnap.data() as Course;
 
+      // 1. Enregistrer le nouvel avis
       const reviewPayload = {
         courseId,
         userId,
@@ -63,10 +70,23 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
         createdAt: serverTimestamp(),
       };
       
-      const reviewsCollection = collection(db, 'reviews');
-      await addDoc(reviewsCollection, reviewPayload);
+      await addDoc(collection(db, 'reviews'), reviewPayload);
+
+      // 2. RECULCULER LA MOYENNE (Pour que les cartes de cours s'actualisent)
+      const allReviewsQuery = query(collection(db, 'reviews'), where('courseId', '==', courseId));
+      const allReviewsSnap = await getDocs(allReviewsQuery);
+      const reviews = allReviewsSnap.docs.map(d => d.data() as Review);
       
-      toast({ title: 'Avis soumis !', description: 'Merci pour votre contribution Ndara.' });
+      const totalReviews = reviews.length;
+      const averageRating = reviews.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews;
+
+      // 3. Mettre à jour le document du cours
+      await updateDoc(courseRef, {
+        rating: Number(averageRating.toFixed(1)),
+        participantsCount: totalReviews // On utilise le nombre d'avis comme proxy de popularité
+      });
+      
+      toast({ title: 'Avis soumis !', description: 'Votre retour a été pris en compte.' });
       setSubmitted(true);
       setTimeout(() => onReviewSubmit(), 2000);
 
@@ -82,8 +102,8 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
     return (
       <div className="text-center p-8 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl space-y-3 animate-in zoom-in duration-500">
         <CheckCircle2 className="h-10 w-10 text-emerald-500 mx-auto" />
-        <h3 className="font-bold text-white">Merci Ndara !</h3>
-        <p className="text-sm text-slate-400">Votre témoignage inspire la communauté.</p>
+        <h3 className="font-bold text-white uppercase tracking-tight">Merci Ndara !</h3>
+        <p className="text-sm text-slate-400">Votre témoignage a été publié avec succès.</p>
       </div>
     );
   }
@@ -96,7 +116,7 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
           name="rating"
           render={({ field }) => (
             <FormItem className="text-center">
-              <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-4">Évaluez votre expérience</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest block mb-4">Notez cette formation</FormLabel>
               <FormControl>
                 <div
                   className="flex items-center justify-center gap-3"
@@ -134,10 +154,10 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
           name="comment"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Votre témoignage</FormLabel>
+              <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Votre commentaire</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="Qu'avez-vous le plus aimé dans ce cours ?"
+                  placeholder="Qu'avez-vous appris ? Partagez votre expérience..."
                   className="bg-slate-950 border-slate-800 rounded-2xl resize-none p-4 text-white focus-visible:ring-primary/30"
                   rows={4}
                   {...field}
