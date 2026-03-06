@@ -3,6 +3,7 @@
 /**
  * @fileOverview Liste des cours de l'étudiant optimisée Android.
  * Filtres rapides et cartes larges pour une manipulation tactile aisée.
+ * ✅ STYLE : Utilise le format LISTE (Admin style).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,15 +12,9 @@ import { getFirestore, collection, query, where, getDocs, documentId, onSnapshot
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BookOpen, Search, Frown } from 'lucide-react';
+import { Frown, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import type { Course, Enrollment } from '@/lib/types';
-
-// Importations demandées pour la conformité de l'audit
-import { Card, CardContent } from '@/components/ui/card';
-import Link from 'next/link';
-import Image from 'next/image';
-import { Badge } from '@/components/ui/badge';
 
 export default function StudentCoursesAndroid() {
   const { currentUser } = useRole();
@@ -34,7 +29,6 @@ export default function StudentCoursesAndroid() {
     setIsLoading(true);
     const enrollQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
 
-    // Écoute temps réel des inscriptions
     const unsubscribe = onSnapshot(enrollQuery, async (snap) => {
       if (snap.empty) {
         setCourses([]);
@@ -45,9 +39,7 @@ export default function StudentCoursesAndroid() {
       const enrollments = snap.docs.map(d => d.data() as Enrollment);
       const courseIds = enrollments.map(e => e.courseId);
 
-      // Récupération des détails des cours
       const coursesRef = collection(db, 'courses');
-      // Firestore limite 'in' à 30 IDs
       const q = query(coursesRef, where(documentId(), 'in', courseIds.slice(0, 30)));
       const courseSnap = await getDocs(q);
       
@@ -56,7 +48,7 @@ export default function StudentCoursesAndroid() {
         const data = doc.data() as Course;
         return {
           ...data,
-          id: doc.id, // L'ID de Firestore écrase toute propriété id présente dans les données
+          id: doc.id,
           progress: enrollment?.progress || 0
         };
       });
@@ -76,14 +68,14 @@ export default function StudentCoursesAndroid() {
   const completed = filteredCourses.filter(c => c.progress === 100);
 
   return (
-    <div className="flex flex-col gap-6 pb-24 bg-slate-950 min-h-screen">
+    <div className="flex flex-col gap-6 pb-24 bg-background min-h-screen">
       <header className="px-4 pt-6 space-y-4">
-        <h1 className="text-2xl font-black text-white">Mes Formations</h1>
+        <h1 className="text-2xl font-black text-foreground">Mes Formations</h1>
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input 
             placeholder="Rechercher un cours..." 
-            className="pl-10 bg-slate-900 border-slate-800 h-12 rounded-xl text-white"
+            className="pl-10 h-12 rounded-xl"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -91,10 +83,10 @@ export default function StudentCoursesAndroid() {
       </header>
 
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className="w-full bg-transparent border-b border-slate-800 rounded-none h-12 p-0 px-4 justify-start gap-6">
-          <TabsTrigger value="all" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-slate-500">Tous</TabsTrigger>
-          <TabsTrigger value="active" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-slate-500">En cours</TabsTrigger>
-          <TabsTrigger value="done" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-slate-500">Finis</TabsTrigger>
+        <TabsList className="w-full bg-transparent border-b border-border rounded-none h-12 p-0 px-4 justify-start gap-6">
+          <TabsTrigger value="all" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-muted-foreground">Tous</TabsTrigger>
+          <TabsTrigger value="active" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-muted-foreground">En cours</TabsTrigger>
+          <TabsTrigger value="done" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-xs uppercase tracking-widest text-muted-foreground">Finis</TabsTrigger>
         </TabsList>
 
         <div className="px-4 mt-6">
@@ -117,14 +109,14 @@ function CoursesGrid({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit 
   if (isLoading) {
     return (
       <div className="space-y-4">
-        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl bg-slate-900" />)}
+        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
       </div>
     );
   }
 
   if (courses.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center text-slate-500">
+      <div className="flex flex-col items-center justify-center py-20 text-center text-muted-foreground">
         <Frown className="h-12 w-12 mb-4 opacity-20" />
         <p className="text-sm font-medium">{emptyMessage}</p>
       </div>
@@ -132,9 +124,9 @@ function CoursesGrid({ courses, isLoading, emptyMessage = "Vous n'êtes inscrit 
   }
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-4">
       {courses.map(course => (
-        <CourseCard key={course.id} course={course} instructor={null} variant="student" />
+        <CourseCard key={course.id} course={course} instructor={null} variant="list" />
       ))}
     </div>
   );

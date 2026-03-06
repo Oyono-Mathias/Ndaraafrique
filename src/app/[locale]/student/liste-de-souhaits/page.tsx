@@ -2,14 +2,15 @@
 
 /**
  * @fileOverview Page Liste de Souhaits opérationnelle.
+ * ✅ STYLE : Utilise le format GRID (Udemy style).
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { getFirestore, collection, onSnapshot, query, getDocs, documentId, where } from 'firebase/firestore';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Heart, Search, ArrowRight } from 'lucide-react';
+import { Heart, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
@@ -56,42 +57,42 @@ export default function ListeSouhaitsPage() {
   }, [currentUser?.uid, db]);
 
   return (
-    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
+    <div className="flex flex-col gap-8 pb-24 bg-background min-h-screen relative overflow-hidden bg-grainy">
       <header className="px-4 pt-8">
         <div className="flex items-center gap-2 text-primary mb-2">
             <Heart className="h-5 w-5 fill-primary" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Favoris</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Ma Liste de <br/><span className="text-primary">Souhaits</span></h1>
-        <p className="text-slate-500 text-sm mt-2 font-medium">Retrouvez les formations qui vous ont fait craquer.</p>
+        <h1 className="text-3xl font-black text-foreground leading-tight uppercase tracking-tight">Ma Liste de <br/><span className="text-primary">Souhaits</span></h1>
+        <p className="text-muted-foreground text-sm mt-2 font-medium">Retrouvez les formations qui vous ont fait craquer.</p>
       </header>
 
       <div className="px-4">
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2">
-            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-3xl bg-slate-900" />)}
+            {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-[2.5rem]" />)}
           </div>
         ) : wishlistCourses.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {wishlistCourses.map(course => (
               <CourseCard 
                 key={course.id} 
                 course={course} 
                 instructor={instructorsMap.get(course.instructorId) || null}
-                variant="catalogue" 
+                variant="grid" 
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50">
-            <div className="p-6 bg-slate-800/50 rounded-full mb-6">
-              <Heart className="h-16 w-16 text-slate-700" />
+          <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-muted/20 rounded-[2.5rem] border-2 border-dashed border-border">
+            <div className="p-6 bg-background/50 rounded-full mb-6">
+              <Heart className="h-16 w-16 text-muted-foreground" />
             </div>
-            <h3 className="text-xl font-black text-white leading-tight">Votre liste est <br/>vide.</h3>
-            <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
+            <h3 className="text-xl font-black text-foreground leading-tight uppercase">Votre liste est vide.</h3>
+            <p className="text-muted-foreground text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
               Explorez le catalogue et cliquez sur le coeur pour sauvegarder un cours.
             </p>
-            <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
+            <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl">
               <Link href="/search">
                 Découvrir des cours
                 <ArrowRight className="ml-2 h-4 w-4" />

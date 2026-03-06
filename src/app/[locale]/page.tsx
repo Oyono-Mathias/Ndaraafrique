@@ -2,15 +2,16 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique avec Tracking KPIs.
+ * ✅ STYLE : Utilise le format GRID (Udemy style) pour le catalogue.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, limit, getDocs, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, doc } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, LayoutDashboard, ChevronsRight, BookCopy, UserPlus, Award, Wallet, ShieldCheck, Lock, HelpingHand } from 'lucide-react';
+import { Sparkles, LayoutDashboard, ChevronsRight, BookCopy, Wallet, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -20,7 +21,6 @@ import { CourseCard } from '@/components/cards/CourseCard';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
 import { useDoc } from '@/firebase';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { logTrackingEvent } from '@/actions/trackingActions';
 
 const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }) => {
@@ -102,10 +102,10 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     if (isLoading && courses.length === 0) {
         return (
             <section className="py-8">
-                <Skeleton className="h-8 w-1/3 mb-6 bg-slate-800" />
+                <Skeleton className="h-8 w-1/3 mb-6" />
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     {[...Array(3)].map((_, i) => (
-                        <Skeleton key={i} className="h-80 rounded-xl bg-slate-800" />
+                        <Skeleton key={i} className="h-80 rounded-3xl" />
                     ))}
                 </div>
             </section>
@@ -117,15 +117,19 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
 
     return (
         <section className="py-8">
-            <h2 className="text-2xl md:text-3xl font-bold mb-6 text-foreground flex items-center gap-3">
-                <div className="h-8 w-1 bg-primary rounded-full" />
+            <h2 className="text-2xl md:text-3xl font-black mb-6 text-foreground flex items-center gap-3 uppercase tracking-tight">
+                <div className="h-8 w-1.5 bg-primary rounded-full" />
                 {title}
             </h2>
              <Carousel opts={{ align: "start", loop: false }} className="w-full">
                 <CarouselContent className="-ml-4">
                     {courses.map(course => (
                         <CarouselItem key={course.id} className="pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
-                            <CourseCard course={course} instructor={instructorsMap.get(course.instructorId) || null} variant="catalogue" />
+                            <CourseCard 
+                                course={course} 
+                                instructor={instructorsMap.get(course.instructorId) || null} 
+                                variant="grid" 
+                            />
                         </CarouselItem>
                     ))}
                 </CarouselContent>
@@ -194,7 +198,7 @@ export default function LandingPage() {
   const recentCourses = useMemo(() => courses.slice(0, 10), [courses]);
 
   return (
-    <div className="bg-slate-950 text-foreground min-h-screen font-sans">
+    <div className="bg-background text-foreground min-h-screen font-sans">
       <LandingNav logoUrl={logoUrl} siteName={siteName} />
       
       <div className="container mx-auto px-4">
@@ -204,10 +208,10 @@ export default function LandingPage() {
             <Sparkles className="w-3 h-3 mr-2" />
             La plateforme N°1 pour les compétences du futur en Afrique
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight text-white animate-fade-in-up">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight text-foreground animate-fade-in-up uppercase">
             {content?.heroTitle || "Apprenez. Construisez. Prospérez."}
           </h1>
-          <p className="text-slate-400 text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up">
+          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up">
             {content?.heroSubtitle || `Des formations de pointe conçues par des experts africains, pour les talents africains sur ${siteName}. Transformez vos ambitions en succès.`}
           </p>
           <div className="animate-fade-in-up flex flex-col items-center">
@@ -238,10 +242,10 @@ export default function LandingPage() {
             isLoading={loading}
           />
 
-          <section className="py-16 md:py-24 bg-slate-900/20 rounded-[3rem] border border-white/5 p-8 md:p-16">
+          <section className="py-16 md:py-24 bg-card rounded-[3rem] border border-border p-8 md:p-16 shadow-xl">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
                 <div className="space-y-8">
-                    <h2 className="text-3xl md:text-4xl font-black text-white leading-tight">Pourquoi choisir <br/><span className="text-primary">Ndara Afrique ?</span></h2>
+                    <h2 className="text-3xl md:text-4xl font-black text-foreground leading-tight uppercase tracking-tight">Pourquoi choisir <br/><span className="text-primary">Ndara Afrique ?</span></h2>
                     <div className="space-y-6">
                         {[
                             { icon: BookCopy, title: "Expertise Locale", desc: "Cours conçus par des leaders du marché africain." },
@@ -250,12 +254,12 @@ export default function LandingPage() {
                         ].map((feat, i) => (
                             <div key={i} className="flex gap-4 items-start">
                                 <div className="p-3 bg-primary/10 rounded-2xl"><feat.icon className="h-6 w-6 text-primary" /></div>
-                                <div><h3 className="font-bold text-white">{feat.title}</h3><p className="text-slate-400 text-sm">{feat.desc}</p></div>
+                                <div><h3 className="font-bold text-foreground">{feat.title}</h3><p className="text-muted-foreground text-sm">{feat.desc}</p></div>
                             </div>
                         ))}
                     </div>
                 </div>
-                <div className="relative aspect-video rounded-[2rem] overflow-hidden shadow-2xl border border-white/10">
+                <div className="relative aspect-video rounded-[2rem] overflow-hidden shadow-2xl border border-border">
                     <Image src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=2071&auto=format&fit=crop" alt="Communauté Ndara" fill className="object-cover" />
                 </div>
             </div>
@@ -265,8 +269,8 @@ export default function LandingPage() {
               <div className="space-y-12">
                   {[...Array(2)].map((_, i) => (
                       <div key={i} className="space-y-4">
-                          <Skeleton className="h-8 w-48 bg-slate-900" />
-                          <div className="flex gap-4"><Skeleton className="h-64 w-full bg-slate-900" /><Skeleton className="h-64 w-full bg-slate-900" /></div>
+                          <Skeleton className="h-8 w-48" />
+                          <div className="flex gap-4"><Skeleton className="h-64 w-full rounded-3xl" /><Skeleton className="h-64 w-full rounded-3xl" /></div>
                       </div>
                   ))}
               </div>
@@ -282,12 +286,12 @@ export default function LandingPage() {
               ))
           )}
 
-          <section className="text-center py-24 bg-slate-900/30 rounded-[3rem] border border-white/5 relative overflow-hidden group">
+          <section className="text-center py-24 bg-card rounded-[3rem] border border-border relative overflow-hidden group shadow-2xl">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <h2 className="text-3xl md:text-4xl font-black text-white relative z-10">
+            <h2 className="text-3xl md:text-4xl font-black text-foreground relative z-10 uppercase tracking-tight">
                 {content?.finalCtaTitle || "Prêt à transformer votre avenir ?"}
             </h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto relative z-10">
+            <p className="mt-4 text-muted-foreground max-w-xl mx-auto relative z-10">
                 {content?.finalCtaSubtitle || "Rejoignez des milliers de talents qui construisent le futur de l'Afrique avec Ndara Afrique."}
             </p>
             <Button 

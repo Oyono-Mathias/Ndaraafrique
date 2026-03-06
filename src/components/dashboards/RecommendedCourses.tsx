@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
@@ -87,9 +86,9 @@ export function RecommendedCourses() {
              <section>
                 <SectionHeader title="Recommandés pour vous" />
                 <div className="flex space-x-6 mt-4">
-                    {[...Array(3)].map((_, i) => (
+                    {[...Array(2)].map((_, i) => (
                         <div key={i} className="w-[280px] shrink-0">
-                           <Skeleton className="h-80 rounded-2xl bg-slate-800" />
+                           <Skeleton className="h-80 rounded-[2rem]" />
                         </div>
                     ))}
                 </div>
@@ -101,13 +100,13 @@ export function RecommendedCourses() {
         return (
             <section>
                 <SectionHeader title="Recommandés pour vous" />
-                <div className="text-center p-8 mt-4 bg-slate-800/50 border-2 border-dashed border-slate-700 rounded-2xl">
+                <div className="text-center p-8 mt-4 bg-muted/20 border-2 border-dashed border-border rounded-[2.5rem]">
                     <EmptyState
                       icon={Sparkles}
                       title="Affinez vos recommandations"
-                      description="Plus vous suivez de cours, meilleures seront vos recommandations ! En attendant, pourquoi ne pas explorer notre catalogue ?"
+                      description="Plus vous suivez de cours, meilleures seront vos recommandations !"
                     />
-                    <Button asChild className="mt-6">
+                    <Button asChild className="mt-6 rounded-xl font-bold uppercase text-[10px]">
                         <Link href="/search">
                             <Search className="h-4 w-4 mr-2" />
                             Explorer les cours
@@ -135,11 +134,11 @@ export function RecommendedCourses() {
             <Carousel opts={{ align: "start", loop: false }} className="w-full mt-4">
                 <CarouselContent className="-ml-6">
                     {coursesForCard.map(course => (
-                        <CarouselItem key={course.id} className="pl-6 basis-[80%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        <CarouselItem key={course.id} className="pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
                             <CourseCard 
                                 course={course} 
                                 instructor={instructorsMap.get(course.instructorId) || null}
-                                variant="catalogue" 
+                                variant="grid" 
                             />
                         </CarouselItem>
                     ))}

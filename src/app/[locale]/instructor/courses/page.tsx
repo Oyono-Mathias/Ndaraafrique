@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des cours du formateur (Format Liste Unifié).
- * ✅ COHÉRENCE : Utilise CourseCard global pour le même dimensionnement qu'Admin.
+ * ✅ STYLE : Utilise le format LISTE (Admin style).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,7 +11,7 @@ import { getFirestore, collection, query, where, onSnapshot, doc, deleteDoc } fr
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, BookOpen, Edit3, Trash2, Sparkles } from 'lucide-react';
+import { Plus, Search, BookOpen, Edit3, Trash2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -90,7 +90,7 @@ export default function InstructorCoursesPage() {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input 
           placeholder="Filtrer mes cours..." 
-          className="h-12 pl-12 bg-card border-border rounded-xl"
+          className="h-12 pl-12 rounded-xl"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
@@ -98,7 +98,7 @@ export default function InstructorCoursesPage() {
 
       {isLoading ? (
         <div className="space-y-4">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-muted" />)}
+          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
         </div>
       ) : filteredCourses.length > 0 ? (
         <div className="grid gap-4 animate-in fade-in duration-700">
@@ -107,6 +107,7 @@ export default function InstructorCoursesPage() {
                 key={course.id} 
                 course={course} 
                 instructor={null}
+                variant="list"
                 actions={
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-sm shadow-sm" asChild>

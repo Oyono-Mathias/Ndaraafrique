@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -41,7 +40,7 @@ export function ContinueLearning() {
              <section>
                 <SectionHeader title="Reprendre l'apprentissage" />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-80 w-full rounded-2xl bg-slate-800" />)}
+                    {[...Array(3)].map((_, i) => <Skeleton className="h-24 w-full rounded-2xl bg-slate-800" key={i} />)}
                 </div>
             </section>
         );
@@ -56,7 +55,7 @@ export function ContinueLearning() {
         title: item.courseTitle,
         imageUrl: item.courseCover,
         progress: item.progressPercent,
-        lastLessonId: item.lastLessonId, // On passe l'ID de la leçon pour le lien direct
+        lastLessonId: item.lastLessonId,
         description: '',
         category: '',
         price: 0,
@@ -67,13 +66,13 @@ export function ContinueLearning() {
     return (
         <section>
             <SectionHeader title="Reprendre l'apprentissage" />
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 {coursesForCard.map(course => (
                     <CourseCard
                         key={course.id}
                         course={course}
                         instructor={null}
-                        variant="student"
+                        variant="list"
                     />
                 ))}
             </div>

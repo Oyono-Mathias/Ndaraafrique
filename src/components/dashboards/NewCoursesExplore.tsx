@@ -1,18 +1,16 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } from 'firebase/firestore';
-import { useRole } from '@/context/RoleContext';
 import { CourseCard } from '../cards/CourseCard';
 import { SectionHeader } from '../dashboard/SectionHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 import type { Course } from '@/lib/types';
 
 export function NewCoursesExplore() {
-    const { user } = useRole();
     const db = getFirestore();
     const [newCourses, setNewCourses] = useState<Course[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -40,9 +38,9 @@ export function NewCoursesExplore() {
     if (isLoading) {
         return (
             <section className="space-y-4">
-                <Skeleton className="h-8 w-48 bg-slate-800" />
+                <Skeleton className="h-8 w-48" />
                 <div className="flex gap-4 overflow-x-hidden">
-                    {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl bg-slate-800" />)}
+                    {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)}
                 </div>
             </section>
         );
@@ -54,20 +52,20 @@ export function NewCoursesExplore() {
         <section className="space-y-4">
             <div className="flex items-center justify-between">
                 <SectionHeader title="Dernières pépites" />
-                <Button variant="ghost" size="sm" asChild className="text-primary font-bold">
+                <Button variant="ghost" size="sm" asChild className="text-primary font-black uppercase text-[10px]">
                     <Link href="/search">
-                        Voir tout <ArrowRight className="ml-1 h-4 w-4" />
+                        Voir tout <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                     </Link>
                 </Button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {newCourses.map(course => (
                     <CourseCard 
                         key={course.id} 
                         course={course} 
                         instructor={null} 
-                        variant="catalogue" 
+                        variant="grid" 
                     />
                 ))}
             </div>

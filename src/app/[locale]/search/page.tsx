@@ -3,13 +3,13 @@
 /**
  * @fileOverview Page de recherche de formations Ndara Afrique (Android-First).
  * ✅ FILTRAGE EN MÉMOIRE : Garantit que les résultats s'affichent même sans index Firestore.
- * ✅ DESIGN VINTAGE : Cartes larges et typographie premium.
+ * ✅ STYLE : Utilise le format GRID (Udemy style).
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon, Frown, Loader2, BookOpen, Sparkles } from 'lucide-react';
+import { Search as SearchIcon, Frown, Sparkles } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Course, NdaraUser } from '@/lib/types';
@@ -24,7 +24,6 @@ export default function SearchPage() {
   useEffect(() => {
     setIsLoading(true);
     
-    // Requête de base simple pour éviter les erreurs d'index complexes
     const q = query(
       collection(db, "courses"),
       where("status", "==", "Published")
@@ -38,7 +37,6 @@ export default function SearchPage() {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
         const instructorsRef = collection(db, 'users');
         
-        // Récupération des instructeurs par paquets de 30
         const newMap = new Map();
         for (let i = 0; i < instructorIds.length; i += 30) {
             const chunk = instructorIds.slice(i, i + 30);
@@ -57,14 +55,12 @@ export default function SearchPage() {
     return () => unsubscribe();
   }, [db]);
 
-  // FILTRAGE ET TRI EN MÉMOIRE (Robuste et Rapide)
   const filteredCourses = useMemo(() => {
     const list = courses.filter(c => 
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
     
-    // Tri par date de création (les plus récents en premier)
     return list.sort((a, b) => {
         const dateA = (a.createdAt as any)?.toDate?.() || new Date(0);
         const dateB = (b.createdAt as any)?.toDate?.() || new Date(0);
@@ -73,19 +69,19 @@ export default function SearchPage() {
   }, [courses, searchTerm]);
 
   return (
-    <div className="space-y-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
+    <div className="space-y-8 pb-24 bg-background min-h-screen">
       <header className="px-4 pt-8 space-y-4">
         <div className="flex items-center gap-2 text-primary">
             <Sparkles className="h-5 w-5" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Catalogue Ndara</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Que voulez-vous <br/><span className="text-primary">apprendre ?</span></h1>
+        <h1 className="text-3xl font-black text-foreground leading-tight uppercase tracking-tight">Que voulez-vous <br/><span className="text-primary">apprendre ?</span></h1>
         
         <div className="relative">
-          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-600" />
+          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder="Saisissez un domaine, un sujet..."
-            className="h-14 pl-12 bg-slate-900 border-slate-800 rounded-2xl text-white placeholder:text-slate-600 shadow-xl focus-visible:ring-primary/30"
+            className="h-14 pl-12 rounded-2xl shadow-xl focus-visible:ring-primary/30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -96,7 +92,7 @@ export default function SearchPage() {
         {isLoading ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-80 w-full rounded-[2rem] bg-slate-900 border border-slate-800" />
+              <Skeleton key={i} className="h-80 w-full rounded-[2rem]" />
             ))}
           </div>
         ) : filteredCourses.length > 0 ? (
@@ -106,15 +102,15 @@ export default function SearchPage() {
                 key={course.id} 
                 course={course} 
                 instructor={instructorsMap.get(course.instructorId) || null}
-                variant="catalogue" 
+                variant="grid" 
               />
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800 animate-in zoom-in duration-500">
-            <Frown className="h-16 w-16 text-slate-700 mb-4" />
-            <h3 className="text-xl font-black text-white uppercase tracking-tight">Aucun résultat</h3>
-            <p className="text-slate-500 mt-2 max-w-[250px] mx-auto font-medium">
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-[2.5rem] border-2 border-dashed border-border animate-in zoom-in duration-500">
+            <Frown className="h-16 w-16 text-muted-foreground mb-4" />
+            <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Aucun résultat</h3>
+            <p className="text-muted-foreground mt-2 max-w-[250px] mx-auto font-medium">
               Nous n'avons pas trouvé de cours correspondant à votre recherche.
             </p>
           </div>
