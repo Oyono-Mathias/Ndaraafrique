@@ -3,6 +3,10 @@
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
 
+/**
+ * @fileOverview Enregistre les événements de comportement utilisateur pour calculer les KPIs.
+ */
+
 interface TrackingEventArgs {
   eventType: 'page_view' | 'cta_click' | 'payment_method_click';
   sessionId: string;
