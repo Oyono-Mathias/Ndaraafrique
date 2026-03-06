@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -10,7 +9,7 @@ import { useRole } from '@/context/RoleContext';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BookOpen, Trophy, Sparkles, Search, Bot, ArrowRight } from 'lucide-react';
+import { BookOpen, Trophy, Sparkles, Search as LucideSearch, Bot, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import type { Course, NdaraUser } from '@/lib/types';
