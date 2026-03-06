@@ -12,17 +12,19 @@ interface CourseCarouselProps {
     isLoading: boolean;
 }
 
+/**
+ * @fileOverview Carrousel de cours horizontal compact (Udemy Style).
+ * ✅ RÉSOLU : Variant "grid" pour corriger l'erreur de build.
+ * ✅ RÉSOLU : Basis 1/2 pour voir 2 cartes sur mobile.
+ */
 export const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: CourseCarouselProps) => {
     if (isLoading && courses.length === 0) {
         return (
-            <section className="py-8">
-                <h2 className="text-2xl md:text-3xl font-extrabold text-foreground mb-6 uppercase tracking-tight">{title}</h2>
-                <div className="flex -ml-4">
-                    {[...Array(4)].map((_, i) => (
-                        <div key={i} className="pl-4 basis-full sm:basis-1/2 md:basis-1/3 lg:basis-1/4 shrink-0">
-                           <Skeleton className="w-full aspect-[4/3.5] rounded-[2rem] bg-muted" />
-                        </div>
-                    ))}
+            <section className="py-6">
+                <Skeleton className="h-6 w-48 mb-4 rounded-full" />
+                <div className="flex gap-3 overflow-hidden">
+                    <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
+                    <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
                 </div>
             </section>
         );
@@ -33,15 +35,15 @@ export const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: Co
     }
 
     return (
-        <section className="py-8">
-            <h2 className="text-2xl md:text-3xl font-black mb-6 text-foreground flex items-center gap-3 uppercase tracking-tight">
-                <div className="h-8 w-1.5 bg-primary rounded-full" />
+        <section className="py-6 overflow-hidden">
+            <h2 className="text-lg md:text-2xl font-black mb-4 text-foreground flex items-center gap-2 uppercase tracking-tight">
+                <div className="h-6 w-1 bg-primary rounded-full" />
                 {title}
             </h2>
              <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-4 sm:-ml-6">
+                <CarouselContent className="-ml-3">
                     {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-4 sm:pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        <CarouselItem key={course.id} className="pl-3 basis-[48%] sm:basis-1/3 md:basis-1/4">
                             <CourseCard 
                                 course={course} 
                                 instructor={instructorsMap.get(course.instructorId) || null} 

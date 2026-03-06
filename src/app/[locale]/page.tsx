@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique avec Tracking KPIs.
- * ✅ STYLE : Utilise le format GRID (Udemy style) pour le catalogue.
+ * ✅ STYLE : Utilise le format GRID Udemy avec un basis réduit pour voir 2 cartes sur mobile.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -11,7 +11,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, LayoutDashboard, ChevronsRight, BookCopy, Wallet, Award } from 'lucide-react';
+import { Sparkles, LayoutDashboard, ChevronsRight, BookCopy, Wallet, Award, Search as SearchIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -92,8 +92,8 @@ const EnrollmentCounter = () => {
     if (count === null || count < 10) return null;
 
     return (
-        <p className="text-sm text-slate-400 mt-4">
-            Rejoignez nos <span className="font-bold text-primary">{count.toLocaleString('fr-FR')}</span> participants et commencez votre parcours.
+        <p className="text-xs text-slate-400 mt-4 uppercase font-black tracking-widest opacity-60">
+            Rejoignez <span className="text-primary">{count.toLocaleString('fr-FR')}</span> talents déjà inscrits
         </p>
     );
 };
@@ -101,12 +101,11 @@ const EnrollmentCounter = () => {
 const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: string, courses: Course[], instructorsMap: Map<string, Partial<NdaraUser>>, isLoading: boolean }) => {
     if (isLoading && courses.length === 0) {
         return (
-            <section className="py-8">
-                <Skeleton className="h-8 w-1/3 mb-6" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[...Array(3)].map((_, i) => (
-                        <Skeleton key={i} className="h-80 rounded-3xl" />
-                    ))}
+            <section className="py-6">
+                <Skeleton className="h-6 w-1/3 mb-4 rounded-full" />
+                <div className="flex gap-4 overflow-hidden">
+                    <Skeleton className="h-48 w-1/2 rounded-2xl shrink-0" />
+                    <Skeleton className="h-48 w-1/2 rounded-2xl shrink-0" />
                 </div>
             </section>
         );
@@ -116,15 +115,15 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
     }
 
     return (
-        <section className="py-8">
-            <h2 className="text-2xl md:text-3xl font-black mb-6 text-foreground flex items-center gap-3 uppercase tracking-tight">
-                <div className="h-8 w-1.5 bg-primary rounded-full" />
+        <section className="py-6 overflow-hidden">
+            <h2 className="text-lg md:text-2xl font-black mb-4 text-foreground flex items-center gap-2 uppercase tracking-tight">
+                <div className="h-6 w-1 bg-primary rounded-full" />
                 {title}
             </h2>
              <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-4">
+                <CarouselContent className="-ml-3">
                     {courses.map(course => (
-                        <CarouselItem key={course.id} className="pl-4 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        <CarouselItem key={course.id} className="pl-3 basis-[48%] sm:basis-1/3 md:basis-1/4 lg:basis-1/5">
                             <CourseCard 
                                 course={course} 
                                 instructor={instructorsMap.get(course.instructorId) || null} 
@@ -203,36 +202,36 @@ export default function LandingPage() {
       
       <div className="container mx-auto px-4">
         
-        <header className="text-center pt-32 pb-16 md:pt-40 md:pb-24">
-          <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up bg-primary/5">
+        <header className="text-center pt-28 pb-12 md:pt-40 md:pb-24 max-w-4xl mx-auto">
+          <Badge variant="outline" className="mb-4 border-primary/50 text-primary animate-fade-in-up bg-primary/5 rounded-full px-4 py-1">
             <Sparkles className="w-3 h-3 mr-2" />
-            La plateforme N°1 pour les compétences du futur en Afrique
+            La plateforme N°1 de compétences en Afrique
           </Badge>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight !leading-tight text-foreground animate-fade-in-up uppercase">
+          <h1 className="text-3xl md:text-6xl font-black tracking-tight !leading-[1.1] text-foreground animate-fade-in-up uppercase">
             {content?.heroTitle || "Apprenez. Construisez. Prospérez."}
           </h1>
-          <p className="text-muted-foreground text-base md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up">
-            {content?.heroSubtitle || `Des formations de pointe conçues par des experts africains, pour les talents africains sur ${siteName}. Transformez vos ambitions en succès.`}
+          <p className="text-muted-foreground text-sm md:text-lg max-w-2xl mx-auto mt-6 mb-8 animate-fade-in-up font-medium">
+            {content?.heroSubtitle || `Des formations de pointe conçues par des experts africains, pour les talents africains sur ${siteName}.`}
           </p>
-          <div className="animate-fade-in-up flex flex-col items-center">
+          <div className="animate-fade-in-up flex flex-col items-center gap-4">
               <Link href={user ? dashboardUrl : "/login?tab=register"}>
                   <button 
-                    className="nd-cta-primary h-12 text-base md:h-14 md:text-sm px-10"
+                    className="nd-cta-primary h-14 text-sm px-10 rounded-2xl"
                     onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'hero' } })}
                   >
                       {user ? (
                           <>
                             <LayoutDashboard className="w-5 h-5 mr-2" />
-                            Accéder à mon tableau de bord
+                            Mon Tableau de bord
                           </>
-                      ) : (content?.heroCtaText || "Démarrer mon parcours")}
+                      ) : (content?.heroCtaText || "Démarrer maintenant")}
                   </button>
               </Link>
               <EnrollmentCounter />
           </div>
         </header>
           
-        <main className="space-y-12 sm:space-y-16 pb-24">
+        <main className="space-y-10 sm:space-y-16 pb-24">
           <DynamicCarousel />
 
           <CourseCarousel
@@ -242,19 +241,20 @@ export default function LandingPage() {
             isLoading={loading}
           />
 
-          <section className="py-16 md:py-24 bg-card rounded-[3rem] border border-border p-8 md:p-16 shadow-xl">
-            <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <section className="py-12 md:py-24 bg-card rounded-[2.5rem] border border-border p-6 md:p-16 shadow-xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[100px] rounded-full" />
+            <div className="grid lg:grid-cols-2 gap-12 items-center relative z-10">
                 <div className="space-y-8">
-                    <h2 className="text-3xl md:text-4xl font-black text-foreground leading-tight uppercase tracking-tight">Pourquoi choisir <br/><span className="text-primary">Ndara Afrique ?</span></h2>
+                    <h2 className="text-2xl md:text-4xl font-black text-foreground leading-tight uppercase tracking-tight">Pourquoi <span className="text-primary">Ndara Afrique ?</span></h2>
                     <div className="space-y-6">
                         {[
-                            { icon: BookCopy, title: "Expertise Locale", desc: "Cours conçus par des leaders du marché africain." },
-                            { icon: Wallet, title: "Paiement Mobile", desc: "MTN, Orange, Wave... payez avec ce que vous avez." },
-                            { icon: Award, title: "Diplôme Certifié", desc: "Certificats officiels validés par l'industrie." }
+                            { icon: BookCopy, title: "Expertise Locale", desc: "Cours adaptés au marché africain." },
+                            { icon: Wallet, title: "Paiement Mobile", desc: "Payez via MTN, Orange, Wave..." },
+                            { icon: Award, title: "Certificats Ndara", desc: "Valorisez vos compétences." }
                         ].map((feat, i) => (
                             <div key={i} className="flex gap-4 items-start">
-                                <div className="p-3 bg-primary/10 rounded-2xl"><feat.icon className="h-6 w-6 text-primary" /></div>
-                                <div><h3 className="font-bold text-foreground">{feat.title}</h3><p className="text-muted-foreground text-sm">{feat.desc}</p></div>
+                                <div className="p-3 bg-primary/10 rounded-xl"><feat.icon className="h-5 w-5 text-primary" /></div>
+                                <div><h3 className="font-bold text-sm text-foreground uppercase tracking-tight">{feat.title}</h3><p className="text-muted-foreground text-xs leading-relaxed">{feat.desc}</p></div>
                             </div>
                         ))}
                     </div>
@@ -269,8 +269,8 @@ export default function LandingPage() {
               <div className="space-y-12">
                   {[...Array(2)].map((_, i) => (
                       <div key={i} className="space-y-4">
-                          <Skeleton className="h-8 w-48" />
-                          <div className="flex gap-4"><Skeleton className="h-64 w-full rounded-3xl" /><Skeleton className="h-64 w-full rounded-3xl" /></div>
+                          <Skeleton className="h-6 w-48 rounded-full" />
+                          <div className="flex gap-4"><Skeleton className="h-48 w-1/2 rounded-2xl" /><Skeleton className="h-48 w-1/2 rounded-2xl" /></div>
                       </div>
                   ))}
               </div>
@@ -286,22 +286,22 @@ export default function LandingPage() {
               ))
           )}
 
-          <section className="text-center py-24 bg-card rounded-[3rem] border border-border relative overflow-hidden group shadow-2xl">
+          <section className="text-center py-20 bg-card rounded-[2.5rem] border border-border relative overflow-hidden group shadow-2xl px-6">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-            <h2 className="text-3xl md:text-4xl font-black text-foreground relative z-10 uppercase tracking-tight">
+            <h2 className="text-2xl md:text-4xl font-black text-foreground relative z-10 uppercase tracking-tight">
                 {content?.finalCtaTitle || "Prêt à transformer votre avenir ?"}
             </h2>
-            <p className="mt-4 text-muted-foreground max-w-xl mx-auto relative z-10">
-                {content?.finalCtaSubtitle || "Rejoignez des milliers de talents qui construisent le futur de l'Afrique avec Ndara Afrique."}
+            <p className="mt-4 text-muted-foreground text-sm max-w-xl mx-auto relative z-10 font-medium">
+                {content?.finalCtaSubtitle || "Rejoignez la révolution de l'éducation en Afrique."}
             </p>
             <Button 
                 size="lg" 
                 asChild 
-                className="mt-10 h-14 px-12 rounded-2xl nd-cta-primary animate-pulse relative z-10"
+                className="mt-10 h-14 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 animate-pulse relative z-10"
                 onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'footer' } })}
             >
                 <Link href={user ? dashboardUrl : "/login?tab=register"}>
-                    {user ? "Accéder au Tableau de bord" : (content?.finalCtaButtonText || "Devenir Membre")}
+                    {user ? "Accéder au Dashboard" : (content?.finalCtaButtonText || "Rejoindre Ndara")}
                     <ChevronsRight className="ml-2 h-5 w-5" />
                 </Link>
             </Button>

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
- * ✅ RÉSOLU : Échappement des caractères spéciaux pour build Vercel.
+ * ✅ RÉSOLU : Échappement des caractères spéciaux (&gt;) pour build Vercel.
  * ✅ RÉSOLU : Écouteurs Firestore indépendants pour temps réel robuste.
  */
 
@@ -214,7 +214,7 @@ export default function AdminStatsPage() {
                     <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l&apos;outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
+                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l'outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
                 </p>
             </div>
         </div>

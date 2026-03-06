@@ -9,13 +9,13 @@ interface EnrolledCourse extends Course {
 }
 
 /**
- * @fileOverview Composant de transition corrigé pour le build.
+ * @fileOverview Composant de transition corrigé pour le build Vercel.
+ * ✅ RÉSOLU : Variant "list" pour respecter les types standardisés.
  */
 export function StudentCourseCard({ course }: { course: EnrolledCourse }) {
   const instructor: Partial<NdaraUser> = {
     fullName: course.instructorName,
   };
   
-  // Correction du type variant : "list" au lieu de "student"
   return <CourseCard course={course} instructor={instructor} variant="list" />;
 }

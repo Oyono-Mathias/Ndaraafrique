@@ -38,9 +38,10 @@ export function NewCoursesExplore() {
     if (isLoading) {
         return (
             <section className="space-y-4">
-                <Skeleton className="h-8 w-48" />
-                <div className="flex gap-4 overflow-x-hidden">
-                    {[...Array(2)].map((_, i) => <Skeleton key={i} className="h-64 w-full rounded-2xl" />)}
+                <Skeleton className="h-6 w-48 rounded-full" />
+                <div className="grid grid-cols-2 gap-4">
+                    <Skeleton className="h-40 w-full rounded-xl" />
+                    <Skeleton className="h-40 w-full rounded-xl" />
                 </div>
             </section>
         );
@@ -51,15 +52,15 @@ export function NewCoursesExplore() {
     return (
         <section className="space-y-4">
             <div className="flex items-center justify-between">
-                <SectionHeader title="Dernières pépites" />
+                <SectionHeader title="Nouveautés" />
                 <Button variant="ghost" size="sm" asChild className="text-primary font-black uppercase text-[10px]">
                     <Link href="/search">
-                        Voir tout <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                        Voir tout <ArrowRight className="ml-1 h-3 w-3" />
                     </Link>
                 </Button>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <div className="grid grid-cols-2 gap-x-3 gap-y-6">
                 {newCourses.map(course => (
                     <CourseCard 
                         key={course.id} 

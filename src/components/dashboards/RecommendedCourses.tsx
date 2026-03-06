@@ -84,13 +84,10 @@ export function RecommendedCourses() {
     if (finalIsLoading) {
          return (
              <section>
-                <SectionHeader title="Recommandés pour vous" />
-                <div className="flex space-x-6 mt-4">
-                    {[...Array(2)].map((_, i) => (
-                        <div key={i} className="w-[280px] shrink-0">
-                           <Skeleton className="h-80 rounded-[2rem]" />
-                        </div>
-                    ))}
+                <SectionHeader title="Pour vous" />
+                <div className="flex space-x-4 mt-4 overflow-hidden">
+                    <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
+                    <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
                 </div>
             </section>
         );
@@ -99,19 +96,13 @@ export function RecommendedCourses() {
     if (recommendedCourses.length === 0) {
         return (
             <section>
-                <SectionHeader title="Recommandés pour vous" />
-                <div className="text-center p-8 mt-4 bg-muted/20 border-2 border-dashed border-border rounded-[2.5rem]">
+                <SectionHeader title="Inspirations" />
+                <div className="text-center p-6 mt-4 bg-muted/20 border-2 border-dashed border-border rounded-3xl">
                     <EmptyState
                       icon={Sparkles}
-                      title="Affinez vos recommandations"
-                      description="Plus vous suivez de cours, meilleures seront vos recommandations !"
+                      title="Affinez vos goûts"
+                      description="Continuez d'apprendre pour recevoir des conseils personnalisés."
                     />
-                    <Button asChild className="mt-6 rounded-xl font-bold uppercase text-[10px]">
-                        <Link href="/search">
-                            <Search className="h-4 w-4 mr-2" />
-                            Explorer les cours
-                        </Link>
-                    </Button>
                 </div>
             </section>
         );
@@ -130,11 +121,11 @@ export function RecommendedCourses() {
 
     return (
         <section>
-            <SectionHeader title="Recommandés pour vous" />
+            <SectionHeader title="Recommandés" />
             <Carousel opts={{ align: "start", loop: false }} className="w-full mt-4">
-                <CarouselContent className="-ml-6">
+                <CarouselContent className="-ml-3">
                     {coursesForCard.map(course => (
-                        <CarouselItem key={course.id} className="pl-6 basis-[85%] sm:basis-1/2 md:basis-1/3 lg:basis-1/4">
+                        <CarouselItem key={course.id} className="pl-3 basis-[48%] sm:basis-1/3 md:basis-1/4">
                             <CourseCard 
                                 course={course} 
                                 instructor={instructorsMap.get(course.instructorId) || null}

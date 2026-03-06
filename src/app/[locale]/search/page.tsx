@@ -3,7 +3,7 @@
 /**
  * @fileOverview Page de recherche de formations Ndara Afrique (Android-First).
  * ✅ FILTRAGE EN MÉMOIRE : Garantit que les résultats s'affichent même sans index Firestore.
- * ✅ STYLE : Utilise le format GRID (Udemy style).
+ * ✅ STYLE : Grille compacte de 2 colonnes sur mobile pour un look Udemy.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -80,8 +80,8 @@ export default function SearchPage() {
         <div className="relative">
           <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
-            placeholder="Saisissez un domaine, un sujet..."
-            className="h-14 pl-12 rounded-2xl shadow-xl focus-visible:ring-primary/30"
+            placeholder="Domaine, sujet, expert..."
+            className="h-14 pl-12 rounded-2xl shadow-xl focus-visible:ring-primary/30 bg-card border-none"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -90,13 +90,13 @@ export default function SearchPage() {
 
       <div className="px-4">
         {isLoading ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <Skeleton key={i} className="h-80 w-full rounded-[2rem]" />
+              <Skeleton key={i} className="h-48 w-full rounded-xl" />
             ))}
           </div>
         ) : filteredCourses.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 animate-in fade-in duration-700">
+          <div className="grid gap-x-4 gap-y-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4 animate-in fade-in duration-700">
             {filteredCourses.map(course => (
               <CourseCard 
                 key={course.id} 
@@ -108,10 +108,10 @@ export default function SearchPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-[2.5rem] border-2 border-dashed border-border animate-in zoom-in duration-500">
-            <Frown className="h-16 w-16 text-muted-foreground mb-4" />
+            <Frown className="h-16 w-16 text-muted-foreground mb-4 opacity-20" />
             <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Aucun résultat</h3>
             <p className="text-muted-foreground mt-2 max-w-[250px] mx-auto font-medium">
-              Nous n'avons pas trouvé de cours correspondant à votre recherche.
+              Vérifiez l'orthographe ou essayez un autre mot-clé.
             </p>
           </div>
         )}
