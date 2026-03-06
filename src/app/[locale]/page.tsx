@@ -1,11 +1,10 @@
-
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Pilotée par l'Admin.
- * ✅ RÉALISME : Les textes (Hero, Subtitle, etc.) proviennent de Firestore (settings/global).
- * ✅ TEMPS RÉEL : Les stats et les formations sont synchronisées avec la base de données.
- * ✅ CONVERSION : Les 10 boutons stratégiques sont connectés aux services Ndara.
+ * @fileOverview Landing Page Ndara Afrique - Style Fintech Premium.
+ * ✅ RÉALISME : Les textes proviennent de Firestore (settings/global).
+ * ✅ TEMPS RÉEL : Les stats et les formations sont synchronisées via onSnapshot.
+ * ✅ CONVERSION : 10 points stratégiques connectés au tunnel de vente.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,7 +12,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, d
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookOpen, CheckCircle2, Users, Menu, X, GraduationCap, Laptop, Award, TrendingUp, Search as LucideSearch, Bot, MessageCircle } from 'lucide-react';
+import { ChevronsRight, BookOpen, CheckCircle2, Users, Menu, X, GraduationCap, Laptop, Award, TrendingUp, Bot, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -112,7 +111,7 @@ export default function LandingPage() {
 
   const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
-  // Récupération des réglages globaux pour les textes dynamiques (Bouton Admin -> Landing)
+  // Récupération des réglages globaux
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: siteSettings } = useDoc<Settings>(settingsRef);
   const landingContent = siteSettings?.content?.landingPage;
@@ -125,13 +124,13 @@ export default function LandingPage() {
       
       if (coursesData.length > 0) {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId).filter(Boolean))];
-        const usersRef = collection(db, 'users');
+        const instructorsRef = collection(db, 'users');
         const newMap = new Map();
         
         for (let i = 0; i < instructorIds.length; i += 30) {
             const chunk = instructorIds.slice(i, i + 30);
             if (chunk.length === 0) continue;
-            const qInst = query(usersRef, where('uid', 'in', chunk));
+            const qInst = query(instructorsRef, where('uid', 'in', chunk));
             const snap = await getDocs(qInst);
             snap.forEach(d => newMap.set(d.id, d.data()));
         }
@@ -144,7 +143,7 @@ export default function LandingPage() {
 
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
-    // Fallback pédagogique si base vide
+    // Fallback dynamique
     return [
         { 
             id: 'demo-1', 

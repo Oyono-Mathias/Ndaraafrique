@@ -7,7 +7,6 @@
 
 import { useEffect, useState } from 'react';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { Users, BookOpen, Star, Zap } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 export function Stats() {
