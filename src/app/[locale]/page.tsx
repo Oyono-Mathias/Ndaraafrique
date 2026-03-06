@@ -1,10 +1,11 @@
+
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Design CEO Premium Fintech.
- * ✅ RÉSOLU : Correction définitive de l'erreur "Unexpected token nav".
- * ✅ RÉSOLU : Affichage dynamique des formations via Firestore.
- * ✅ RÉSOLU : Statistiques réelles des membres.
+ * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
+ * ✅ RÉSOLU : Suppression de toutes les données de simulation (Cours demo).
+ * ✅ RÉSOLU : Correction de l'erreur syntaxique JSX 'nav'.
+ * ✅ RÉSOLU : Affichage dynamique basé uniquement sur Firestore.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -22,7 +23,7 @@ import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
 
 /**
- * Composant de navigation pour la Landing Page.
+ * Composant de navigation épuré et robuste.
  */
 const Navbar = () => {
     const { user, role } = useRole();
@@ -72,7 +73,7 @@ const Navbar = () => {
                                 <Menu className="h-6 w-6" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="bg-white border-l border-slate-200 p-0 w-[280px]">
+                        <SheetContent side="right" className="bg-white border-l border-slate-200 p-0 w-[280px] z-[10005]">
                             <div className="p-6 flex flex-col gap-6">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
@@ -143,12 +144,12 @@ export default function LandingPage() {
           setInstructorsMap(newMap);
         }
       } catch (err) {
-        console.warn("Firestore data fetch warning:", err);
+        console.warn("LandingPage Course Load Warning:", err);
       } finally {
         setLoading(false);
       }
     }, (error) => {
-        console.error("Firestore Listen error:", error);
+        console.error("Firestore Landing error:", error);
         setLoading(false);
     });
 
@@ -156,37 +157,7 @@ export default function LandingPage() {
   }, [db]);
 
   const displayCourses = useMemo(() => {
-    if (courses.length > 0) return courses.slice(0, 3);
-    
-    return [
-        { 
-            id: 'demo-1', 
-            title: 'Trading Crypto & Forex', 
-            category: 'Finance', 
-            price: 49000, 
-            imageUrl: 'https://images.unsplash.com/photo-1611974765270-ca12586343bb?w=800&q=80',
-            description: "Maîtrisez les graphiques, la gestion du risque et les stratégies d'entrée/sortie.",
-            instructorId: 'demo'
-        },
-        { 
-            id: 'demo-2', 
-            title: 'Lancer sa Startup en Afrique', 
-            category: 'Entrepreneuriat', 
-            price: 89000, 
-            imageUrl: 'https://images.unsplash.com/photo-1556761175-5973dc0f32e7?w=800&q=80',
-            description: "De l'idée au levée de fonds. Études de cas réels et modèles économiques adaptés.",
-            instructorId: 'demo'
-        },
-        { 
-            id: 'demo-3', 
-            title: 'Analyse de Données Financières', 
-            category: 'Data Science', 
-            price: 65000, 
-            imageUrl: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80',
-            description: 'Utilisez Python et Excel pour analyser les marchés et prédire les tendances.',
-            instructorId: 'demo'
-        }
-    ] as Course[];
+    return courses.slice(0, 6);
   }, [courses]);
 
   return (
@@ -306,13 +277,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS --- */}
+      {/* --- FORMATIONS (Vraies Données) --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
                 <div className="space-y-2">
                     <h2 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Formations <span className="text-brand-primary">Phare</span></h2>
-                    <p className="text-slate-600 font-medium">Les cours les plus plébiscités cette semaine.</p>
+                    <p className="text-slate-600 font-medium">Le savoir à l'état pur, accessible maintenant.</p>
                 </div>
                 <Link href={`/${locale}/search`} className="flex items-center text-brand-primary font-black uppercase text-[10px] tracking-[0.2em] hover:text-blue-500 transition-colors">
                     Tout le catalogue
@@ -323,7 +294,7 @@ export default function LandingPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
                 {loading ? (
                     [...Array(3)].map((_, i) => <div key={i} className="h-80 w-full bg-slate-200 animate-pulse rounded-[2.5rem]"></div>)
-                ) : (
+                ) : displayCourses.length > 0 ? (
                     displayCourses.map(course => (
                         <CourseCard 
                             key={course.id} 
@@ -332,6 +303,10 @@ export default function LandingPage() {
                             variant="grid" 
                         />
                     ))
+                ) : (
+                    <div className="col-span-full text-center py-20 bg-white rounded-[3rem] border border-slate-200 shadow-sm">
+                        <p className="text-slate-500 font-medium italic">Nos prochaines formations d'excellence arrivent très bientôt. Restez connectés !</p>
+                    </div>
                 )}
             </div>
         </div>
