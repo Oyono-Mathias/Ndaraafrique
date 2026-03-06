@@ -1,12 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
- * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
- * ✅ RÉSOLU : Support du mode Clair/Sombre.
- * ✅ RÉSOLU : Erreur de build Vercel (Échappement caractères spéciaux).
- * ✅ RÉSOLU : Import icône Zap.
+ * ✅ RÉSOLU : Échappement des caractères spéciaux pour build Vercel.
+ * ✅ RÉSOLU : Écouteurs Firestore indépendants pour temps réel robuste.
  */
 
 import { useState, useEffect, useMemo } from 'react';

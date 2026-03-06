@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -60,10 +59,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const unsubscribe = onIdTokenChanged(auth, async (user) => {
-      if (user) {
-        const userRef = doc(db, 'users', user.uid);
-        // Marquer en-ligne dès la connexion
+    const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
+      if (authUser) {
+        const userRef = doc(db, 'users', authUser.uid);
         await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
         window.addEventListener('beforeunload', handleBeforeUnload);
       } else {
@@ -104,15 +102,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
           
           const isMasterAdmin = user.email === MASTER_ADMIN_EMAIL || userData.role === 'admin';
-          
           const roles: UserRole[] = ['student'];
-          if (isMasterAdmin) {
-              roles.push('instructor', 'admin');
-          } else if (userData.role === 'instructor' || userData.isInstructorApproved) {
-              roles.push('instructor');
-          }
+          if (isMasterAdmin) roles.push('instructor', 'admin');
+          else if (userData.role === 'instructor' || userData.isInstructorApproved) roles.push('instructor');
 
-          // LOGIQUE DE COMPLÉTION : Photo réelle obligatoire (évite les placeholders type dicebear)
           const hasRealPhoto = !!userData.profilePictureURL && 
                                !userData.profilePictureURL.includes('api.dicebear.com') && 
                                userData.profilePictureURL.length > 10;
@@ -134,11 +127,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setAvailableRoles(roles);
           
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
-          if (savedRole && roles.includes(savedRole)) {
-              setRole(savedRole);
-          } else {
-              setRole(resolvedUser.role);
-          }
+          if (savedRole && roles.includes(savedRole)) setRole(savedRole);
+          else setRole(resolvedUser.role);
 
         } else {
             const isMasterAdmin = user.email === MASTER_ADMIN_EMAIL;
@@ -171,10 +161,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
-      
       const target = newRole === 'admin' ? '/admin' : newRole === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
       router.push(target);
-      
       toast({ title: `Mode ${newRole} activé` });
     }
   }, [availableRoles, router, toast]);

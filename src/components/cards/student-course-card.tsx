@@ -9,14 +9,13 @@ interface EnrolledCourse extends Course {
 }
 
 /**
- * @fileOverview Composant de transition (déprécié).
- * Redirige vers CourseCard avec la variante "list" pour corriger le build.
+ * @fileOverview Composant de transition corrigé pour le build.
  */
 export function StudentCourseCard({ course }: { course: EnrolledCourse }) {
   const instructor: Partial<NdaraUser> = {
     fullName: course.instructorName,
   };
   
-  // On utilise "list" pour correspondre au design compact souhaité par le CEO
+  // Correction du type variant : "list" au lieu de "student"
   return <CourseCard course={course} instructor={instructor} variant="list" />;
 }
