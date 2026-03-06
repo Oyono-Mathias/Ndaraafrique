@@ -5,7 +5,7 @@
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
  * Correction : Suppression du nesting des listeners pour garantir l'affichage même si une collection est vide.
- * Correction : Importation de l'icône Zap manquante.
+ * Correction : Importation de l'icône Zap et échappement des caractères JSX.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap, TrendingDown } from 'lucide-react';
+import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap } from 'lucide-react';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from 'react-day-picker';
 import { subDays, format, isWithinInterval } from 'date-fns';
@@ -225,7 +225,7 @@ export default function AdminStatsPage() {
                     <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l'outil de synchronisation dans <b>Configuration > Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
+                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l'outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
                 </p>
             </div>
         </div>
