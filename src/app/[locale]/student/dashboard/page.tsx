@@ -1,54 +1,71 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Étudiant optimisé pour Android.
- * Hub centralisé regroupant la progression, les recommandations et l'activité.
- * ✅ RÉSOLU : Support du mode Clair/Sombre.
+ * @fileOverview Dashboard Étudiant Ndara Afrique - Style Udemy Industriel.
+ * Regroupe les formations par catégories avec navigation horizontale.
  */
 
 import { useRole } from '@/context/RoleContext';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
-import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
-import { NewCoursesExplore } from '@/components/dashboards/NewCoursesExplore';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BookOpen, Trophy, TrendingUp, Sparkles, Zap, Search, Bot } from 'lucide-react';
-import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
-import type { CourseProgress, Enrollment } from '@/lib/types';
+import { BookOpen, Trophy, Sparkles, Search, Bot, ArrowRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
+import type { CourseProgress, Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import { CourseCard } from '@/components/cards/CourseCard';
+import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 
 export default function StudentDashboardAndroid() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
-  const [stats, setStats] = useState({ total: 0, completed: 0, avg: 0 });
-  const [loadingStats, setLoadingStats] = useState(true);
+  
+  const [stats, setStats] = useState({ total: 0, completed: 0 });
+  const [allCourses, setAllCourses] = useState<Course[]>([]);
+  const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
+  const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    setLoadingStats(true);
-    const enrollQuery = query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid));
-    const progressQuery = query(collection(db, 'course_progress'), where('userId', '==', currentUser.uid));
-
-    const unsubEnroll = onSnapshot(enrollQuery, (snap) => {
+    // 1. Écouteur Stats (Inscriptions & Certificats)
+    const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), (snap) => {
       const total = snap.size;
-      const unsubProg = onSnapshot(progressQuery, (pSnap) => {
-        const progressDocs = pSnap.docs.map(d => d.data() as CourseProgress);
-        const completed = progressDocs.filter(p => p.progressPercent === 100).length;
-        const totalPerc = progressDocs.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0);
-        const avg = progressDocs.length > 0 ? Math.round(totalPerc / progressDocs.length) : 0;
-        
-        setStats({ total, completed, avg });
-        setLoadingStats(false);
-      });
-      return () => unsubProg();
+      const completed = snap.docs.filter(d => d.data().progress === 100).length;
+      setStats({ total, completed });
     });
 
-    return () => unsubEnroll();
+    // 2. Chargement du Catalogue (Pour affichage par catégorie)
+    const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc')), async (snap) => {
+      const coursesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
+      setAllCourses(coursesData);
+      
+      if (coursesData.length > 0) {
+        const instructorIds = [...new Set(coursesData.map(c => c.instructorId))];
+        const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30))));
+        const newMap = new Map();
+        usersSnap.forEach(d => newMap.set(d.id, d.data()));
+        setInstructorsMap(newMap);
+      }
+      setLoadingData(false);
+    });
+
+    return () => { unsubEnroll(); unsubCourses(); };
   }, [currentUser?.uid, db]);
+
+  // Groupement par catégorie
+  const coursesByCategory = useMemo(() => {
+    const groups: Record<string, Course[]> = {};
+    allCourses.forEach(course => {
+      const cat = course.category || "Autres formations";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(course);
+    });
+    return groups;
+  }, [allCourses]);
 
   if (isUserLoading) {
     return (
@@ -75,18 +92,8 @@ export default function StudentDashboardAndroid() {
       </header>
 
       <section className="px-4 grid grid-cols-2 gap-3">
-        <StatCard 
-          title="Formations" 
-          value={stats.total.toString()} 
-          icon={BookOpen} 
-          isLoading={loadingStats} 
-        />
-        <StatCard 
-          title="Certificats" 
-          value={stats.completed.toString()} 
-          icon={Trophy} 
-          isLoading={loadingStats}
-        />
+        <StatCard title="Formations" value={stats.total.toString()} icon={BookOpen} isLoading={loadingData} />
+        <StatCard title="Certificats" value={stats.completed.toString()} icon={Trophy} isLoading={loadingData} />
       </section>
 
       <div className="px-4">
@@ -104,20 +111,55 @@ export default function StudentDashboardAndroid() {
               <span className="text-[10px] font-black text-white/80 uppercase tracking-[0.2em]">Assistant Personnel</span>
             </div>
             <h2 className="text-2xl font-black text-white leading-none">Besoin d'aide, <br/>cher Ndara ?</h2>
-            <p className="text-white/70 text-xs font-medium max-w-[180px]">Mathias répond à vos questions sur les cours 24h/24.</p>
-            <Button asChild className="bg-white text-primary hover:bg-white/90 rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6 border-none">
+            <Button asChild className="bg-white text-primary hover:bg-white/90 rounded-xl font-black uppercase text-[10px] tracking-widest h-10 px-6">
               <Link href="/student/tutor">Discuter avec Mathias</Link>
             </Button>
           </div>
         </div>
       </section>
 
-      <div className="px-4">
-        <NewCoursesExplore />
-      </div>
-
-      <div className="px-4">
-        <RecommendedCourses />
+      {/* --- AFFICHAGE PAR CATÉGORIE (STYLE UDEMY) --- */}
+      <div className="space-y-10">
+        {loadingData ? (
+            <div className="px-4 space-y-8">
+                {[...Array(2)].map((_, i) => (
+                    <div key={i} className="space-y-4">
+                        <Skeleton className="h-6 w-1/3 rounded-full" />
+                        <div className="flex gap-4 overflow-hidden">
+                            <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
+                            <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            Object.entries(coursesByCategory).map(([category, courses]) => (
+                <section key={category} className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
+                    <div className="px-4 flex items-center justify-between">
+                        <h2 className="text-xl font-black text-foreground uppercase tracking-tight flex items-center gap-2">
+                            <div className="h-6 w-1.5 bg-primary rounded-full" />
+                            {category}
+                        </h2>
+                        <Button variant="ghost" size="sm" asChild className="text-primary font-bold text-[10px] uppercase tracking-widest">
+                            <Link href={`/search?q=${category}`}>Voir tout</Link>
+                        </Button>
+                    </div>
+                    <Carousel opts={{ align: "start", loop: false }} className="w-full">
+                        <CarouselContent className="px-4 -ml-3">
+                            {courses.map(course => (
+                                <CarouselItem key={course.id} className="pl-3 basis-[48%] sm:basis-1/3 md:basis-1/4">
+                                    <CourseCard 
+                                        course={course} 
+                                        instructor={instructorsMap.get(course.instructorId) || null} 
+                                        variant="grid" 
+                                    />
+                                </CarouselItem>
+                            ))}
+                        </CarouselContent>
+                    </Carousel>
+                </section>
+            ))
+        )}
       </div>
 
       <div className="px-4">
@@ -127,7 +169,7 @@ export default function StudentDashboardAndroid() {
       <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
         <Link href="/search">
           <Search className="h-6 w-6 text-primary-foreground" />
-          <span className="sr-only">Explorer les cours</span>
+          <span className="sr-only">Explorer</span>
         </Link>
       </Button>
     </div>

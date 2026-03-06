@@ -17,5 +17,6 @@ export function StudentCourseCard({ course }: { course: EnrolledCourse }) {
     fullName: course.instructorName,
   };
   
+  // Correction du type variant pour le build Vercel
   return <CourseCard course={course} instructor={instructor} variant="list" />;
 }
