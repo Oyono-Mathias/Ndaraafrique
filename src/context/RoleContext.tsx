@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -48,8 +47,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ CEO Request: Redirect to Login Page with locale prefix
-    router.push(`/${locale}/login`);
+    // ✅ CEO Request: Redirect to Landing Page with locale prefix
+    router.push(`/${locale}`);
   }, [db, router, locale]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)
@@ -66,7 +65,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onIdTokenChanged(auth, async (authUser) => {
       if (authUser) {
         const userRef = doc(db, 'users', authUser.uid);
-        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
         window.addEventListener('beforeunload', handleBeforeUnload);
       } else {
         window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -150,7 +149,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
                 isProfileComplete: false
             };
-            await setDoc(userDocRef, newUserDoc);
+            await setDoc(userDocRef, newUserDoc).catch(() => {});
         }
         setLoading(false);
     }, (error) => {
