@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Award, Heart, ChevronRight, BookOpen } from 'lucide-react';
+import { Star, Heart, BookOpen } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where } from 'firebase/firestore';

@@ -111,8 +111,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
-          // LOGIQUE DE COMPLÉTION : Photo réelle obligatoire
-          const hasRealPhoto = !!userData.profilePictureURL && !userData.profilePictureURL.includes('api.dicebear.com');
+          // LOGIQUE DE COMPLÉTION : Photo réelle obligatoire (évite les placeholders type dicebear)
+          const hasRealPhoto = !!userData.profilePictureURL && 
+                               !userData.profilePictureURL.includes('api.dicebear.com') && 
+                               userData.profilePictureURL.length > 10;
+                               
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasRealPhoto);
 
           const resolvedUser: NdaraUser = {

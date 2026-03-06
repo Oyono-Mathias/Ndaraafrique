@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -6,7 +5,7 @@
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
  * ✅ RÉSOLU : Support du mode Clair/Sombre.
  * ✅ RÉSOLU : Erreur de build Vercel (Échappement caractères spéciaux).
- * ✅ RÉSOLU : Visibilité des textes en mode clair.
+ * ✅ RÉSOLU : Import icône Zap.
  */
 
 import { useState, useEffect, useMemo } from 'react';
