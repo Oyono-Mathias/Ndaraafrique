@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Interface de passage de quiz optimisée.
- * Correction : Importation explicite de orderBy pour fixer l'erreur de build Vercel.
+ * ✅ RÉSOLU : Tri en mémoire pour éviter les blocages d'index Firestore.
  */
 
 import { useState, useEffect } from 'react';

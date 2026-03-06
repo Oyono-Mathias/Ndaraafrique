@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Design CEO Premium.
- * ✅ RÉSOLU : Affichage garanti des formations (vrais cours ou démo).
- * ✅ TEMPS RÉEL : Stats et catalogue connectés à Firestore.
- * ✅ CONVERSION : Tunnel d'inscription forcé pour les non-connectés.
+ * @fileOverview Landing Page Ndara Afrique - Design CEO Premium Fintech.
+ * ✅ RÉSOLU : Affichage dynamique des formations via Firestore.
+ * ✅ RÉSOLU : Redirection forcée vers inscription si non-connecté.
+ * ✅ STYLE : Gradient-text, Glass-cards, et ombres portées signature.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -12,7 +12,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, d
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, GraduationCap, Laptop, Award, TrendingUp, Bot, Sparkles, Search } from 'lucide-react';
+import { ChevronsRight, Menu, X, GraduationCap, Laptop, Award, TrendingUp, Bot, Sparkles, Search, CheckCircle2, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -20,7 +20,6 @@ import { useLocale } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
-import { useDoc } from '@/firebase/firestore/use-doc';
 
 const Navbar = () => {
     const { user, role } = useRole();
@@ -37,7 +36,7 @@ const Navbar = () => {
                 
                 <div className="hidden md:flex space-x-8 items-center">
                     <a href="#formations" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Formations</a>
-                    <a href="#methodologie" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Méthodologie</a>
+                    <a href="#methodologie" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Notre Méthode</a>
                     <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Tarifs</Link>
                 </div>
 
@@ -95,9 +94,9 @@ const Navbar = () => {
                     </Sheet>
                 </div>
             </div>
-        </nav>
-    );
-};
+        </div>
+    </nav>
+);
 
 export default function LandingPage() {
   const db = getFirestore();
@@ -110,7 +109,7 @@ export default function LandingPage() {
   const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
   useEffect(() => {
-    // 🛡️ REQUÊTE ULTRA-ROBUSTE : OnSnapshot pour le temps réel
+    // 🛡️ REQUÊTE TEMPS RÉEL : OnSnapshot pour synchronisation instantanée
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -139,13 +138,13 @@ export default function LandingPage() {
       }
     }, (error) => {
         console.error("Firestore Listen error:", error);
-        setLoading(false); // On débloque le chargement même en cas d'erreur (fallback s'affichera)
+        setLoading(false);
     });
 
     return () => unsubscribe();
   }, [db]);
 
-  // 💎 LOGIQUE DE FALLBACK CEO : Si pas de cours en DB, on affiche les exemples du design
+  // 💎 LOGIQUE DE FALLBACK : Si pas de cours réels, on affiche les exemples premium
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
     
@@ -184,7 +183,7 @@ export default function LandingPage() {
     <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30 font-sans">
       <Navbar />
       
-      {/* --- HERO SECTION --- */}
+      {/* --- HERO SECTION (DESIGN CEO) --- */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden px-6">
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
@@ -217,11 +216,11 @@ export default function LandingPage() {
                     
                     <div className="mt-12 flex items-center justify-center lg:justify-start gap-8 text-slate-500 text-[10px] font-black uppercase tracking-widest">
                         <div className="flex items-center gap-2">
-                            <GraduationCap className="w-5 h-5 text-brand-primary" />
+                            <CheckCircle2 className="w-5 h-5 text-brand-primary" />
                             Certificats Inclus
                         </div>
                         <div className="flex items-center gap-2">
-                            <Award className="w-5 h-5 text-brand-primary" />
+                            <CheckCircle2 className="w-5 h-5 text-brand-primary" />
                             Accès Permanent
                         </div>
                     </div>
@@ -253,7 +252,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS SECTION (LIVE FROM FIRESTORE) --- */}
+      {/* --- STATS SECTION (LIVE & DARK BG) --- */}
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
             <Stats />
@@ -270,7 +269,7 @@ export default function LandingPage() {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group">
+                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group glass-card">
                     <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-brand-secondary mb-8 group-hover:scale-110 transition shadow-lg">
                         <Laptop className="w-7 h-7" />
                     </div>
@@ -278,7 +277,7 @@ export default function LandingPage() {
                     <p className="text-slate-600 text-sm leading-relaxed font-medium">Nos cours sont conçus par des experts terrain pour vous apporter des compétences immédiatement applicables.</p>
                 </div>
 
-                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group">
+                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group glass-card">
                     <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-brand-primary mb-8 group-hover:scale-110 transition shadow-lg">
                         <Award className="w-7 h-7" />
                     </div>
@@ -286,7 +285,7 @@ export default function LandingPage() {
                     <p className="text-slate-600 text-sm leading-relaxed font-medium">Obtenez un certificat Ndara Afrique officiel à la fin de chaque parcours pour valoriser votre profil.</p>
                 </div>
 
-                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group">
+                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group glass-card">
                     <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 mb-8 group-hover:scale-110 transition shadow-lg">
                         <Bot className="w-7 h-7" />
                     </div>
@@ -297,7 +296,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS POPULAIRES (DYNAMIC FROM FIRESTORE) --- */}
+      {/* --- FORMATIONS (DYNAMIC MAP) --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -328,7 +327,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- CTA FINAL (CONNECTÉ AU SUPPORT ET AUTH) --- */}
+      {/* --- CTA FINAL --- */}
       <section className="py-32 relative overflow-hidden bg-brand-dark px-6">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
