@@ -1,19 +1,19 @@
-
 'use client';
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
  * ✅ ÉTAT INITIAL : Hub de découverte avec recherches populaires et catégories.
- * ✅ RÉSULTATS : Grille 2 colonnes ultra-fluide.
+ * ✅ RÉSULTATS : Liste verticale de cartes horizontales (variant search-result).
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon, Frown, Sparkles, ChevronRight, TrendingUp, LayoutGrid } from 'lucide-react';
+import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
@@ -37,6 +37,7 @@ export default function SearchPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const db = getFirestore();
+  const router = useRouter();
 
   useEffect(() => {
     setIsLoading(true);
@@ -73,24 +74,31 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 animate-in fade-in duration-700">
-      {/* --- HEADER FIXE --- */}
-      <header className="px-4 pt-6 pb-4 sticky top-0 bg-background/95 backdrop-blur-xl z-40 border-b border-border/50">
-        <div className="relative">
-          <SearchIcon className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+      {/* --- HEADER UDEMY STYLE --- */}
+      <header className="px-2 pt-4 pb-2 sticky top-0 bg-background/95 backdrop-blur-xl z-40 border-b border-border/50 flex items-center gap-2">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+            <ArrowLeft className="h-6 w-6" />
+        </Button>
+        
+        <div className="relative flex-1">
           <Input
             placeholder="Rechercher"
-            className="h-14 pl-12 rounded-xl bg-card border-border/50 shadow-sm text-lg focus-visible:ring-primary/20"
+            className="h-12 pl-4 pr-10 rounded-lg bg-card border-border shadow-sm text-base focus-visible:ring-primary/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
         </div>
+
+        <Button variant="ghost" size="icon" className="rounded-full">
+            <ShoppingCart className="h-6 w-6" />
+        </Button>
       </header>
 
-      <main className="px-4 pt-8">
+      <main className="px-4 pt-6">
         {searchTerm === '' ? (
-          /* --- ÉTAT INITIAL : STYLE UDEMY --- */
+          /* --- ÉTAT INITIAL : HUB DE DÉCOUVERTE --- */
           <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-            {/* Recherches populaires */}
             <section className="space-y-4">
               <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-primary" />
@@ -109,7 +117,6 @@ export default function SearchPage() {
               </div>
             </section>
 
-            {/* Catégories */}
             <section className="space-y-4">
               <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
                 <LayoutGrid className="h-5 w-5 text-primary" />
@@ -130,27 +137,27 @@ export default function SearchPage() {
             </section>
           </div>
         ) : (
-          /* --- RÉSULTATS DE RECHERCHE --- */
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <h2 className="text-sm font-black text-muted-foreground uppercase tracking-widest">
-                    {filteredResults.length} résultats pour "{searchTerm}"
+          /* --- RÉSULTATS DE RECHERCHE UDEMY STYLE --- */
+          <div className="space-y-2">
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xs font-black text-muted-foreground uppercase tracking-widest">
+                    {filteredResults.length} résultats trouvés
                 </h2>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
             </div>
 
             {isLoading ? (
-              <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-[3/4] w-full rounded-2xl bg-card" />)}
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl bg-card" />)}
               </div>
             ) : filteredResults.length > 0 ? (
-              <div className="grid gap-x-4 gap-y-8 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              <div className="flex flex-col">
                 {filteredResults.map(course => (
                   <CourseCard 
                     key={course.id} 
                     course={course} 
                     instructor={instructorsMap.get(course.instructorId) || null}
-                    variant="grid" 
+                    variant="search-result" 
                   />
                 ))}
               </div>
