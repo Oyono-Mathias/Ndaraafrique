@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -140,16 +139,6 @@ export default function LoginClient() {
 
       try {
         await setDoc(userRef, userData);
-        
-        const welcomeRef = doc(db, "users", authUser.uid, "notifications", "welcome");
-        await setDoc(welcomeRef, {
-          text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
-          type: 'success',
-          read: false,
-          createdAt: serverTimestamp(),
-          link: `/${locale}/student/dashboard`
-        });
-
         toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
       } catch (firestoreError: any) {
         if (authUser) await deleteUser(authUser);
@@ -196,14 +185,6 @@ export default function LoginClient() {
           profilePictureURL: user.photoURL || ''
         };
         await setDoc(userRef, userData);
-        
-        await setDoc(doc(db, "users", user.uid, "notifications", "welcome"), {
-          text: `Bara ala ! Bienvenue sur Ndara Afrique. Votre profil a été créé via Google.`,
-          type: 'success',
-          read: false,
-          createdAt: serverTimestamp(),
-          link: `/${locale}/student/dashboard`
-        });
       }
       toast({ title: "Connexion Google réussie !" });
     } catch (err) {
@@ -216,10 +197,11 @@ export default function LoginClient() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-slate-950">
         <div className="w-full max-w-md">
-            <div className="flex flex-col items-center text-center mb-6">
+            <div className="flex flex-col items-center text-center mb-10">
                 <Link href={`/${locale}`} className="mb-4">
                   <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full shadow-2xl" />
                 </Link>
+                <h1 className="text-2xl font-black text-white uppercase tracking-tight">Ndara Afrique</h1>
             </div>
             
             <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl">
