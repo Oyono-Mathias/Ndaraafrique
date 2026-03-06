@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium.
- * ✅ TEMPS RÉEL : Connecté à Firestore (Courses & Stats).
- * ✅ DESIGN : Fidèle au fichier HTML du CEO (Gradient text, Glass-cards).
+ * ✅ TEMPS RÉEL : Connecté à Firestore pour les cours et les stats.
+ * ✅ CONVERSION : Redirige les non-connectés vers l'inscription au clic.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -12,7 +11,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } 
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, LayoutGrid, ChevronRight } from 'lucide-react';
+import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -30,7 +29,7 @@ const Navbar = () => {
         <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300 h-16 flex items-center">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-between items-center">
                 <Link href={`/${locale}`} className="flex items-center gap-2 group">
-                    <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-brand-primary text-white font-bold shadow-lg shadow-emerald-500/20">
+                    <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
                         <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-cover" priority />
                     </div>
                     <span className="text-xl font-bold text-brand-dark tracking-tight">Ndara <span className="text-brand-primary">Afrique</span></span>
@@ -87,11 +86,13 @@ const Navbar = () => {
 export default function LandingPage() {
   const db = getFirestore();
   const locale = useLocale();
+  const { user } = useRole();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
   useEffect(() => {
+    // ✅ Écouteur temps réel pour les formations publiées
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -110,9 +111,9 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
 
+  // Données de fallback si Firestore est vide
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
-    // Fallback: Si Firestore est vide, on affiche les démos du CEO
     return [
         { 
             id: 'demo-1', 
@@ -170,7 +171,7 @@ export default function LandingPage() {
                         Ndara Afrique est la plateforme de référence pour maîtriser la finance, le trading et l'entrepreneuriat digital. Des experts pour vous guider vers l'indépendance.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <Link href={`/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
+                        <Link href={user ? "/search" : `/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
                             Commencer maintenant
                             <ChevronsRight className="w-5 h-5" />
                         </Link>
@@ -217,7 +218,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS SECTION (BRAND DARK) --- */}
+      {/* --- STATS SECTION --- */}
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-4">
             <Stats />
@@ -261,7 +262,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS POPULAIRES (REAL-TIME) --- */}
+      {/* --- FORMATIONS POPULAIRES --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-4 md:px-8">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
@@ -280,18 +281,12 @@ export default function LandingPage() {
                     [...Array(3)].map((_, i) => <div key={i} className="h-80 w-full bg-slate-200 animate-pulse rounded-[2rem]"></div>)
                 ) : (
                     displayCourses.map(course => (
-                        <div key={course.id} className="relative group">
-                            {(course.id.startsWith('demo') || course.status === 'Draft') && (
-                                <div className="absolute top-4 left-4 z-20">
-                                    <span className="bg-brand-dark/80 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest">Bientôt disponible</span>
-                                </div>
-                            )}
-                            <CourseCard 
-                                course={course} 
-                                instructor={instructorsMap.get(course.instructorId) || null} 
-                                variant="grid" 
-                            />
-                        </div>
+                        <CourseCard 
+                            key={course.id} 
+                            course={course} 
+                            instructor={instructorsMap.get(course.instructorId) || null} 
+                            variant="grid" 
+                        />
                     ))
                 )}
             </div>

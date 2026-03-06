@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ RÉSOLU : Restauration définitive des hooks useForm pour corriger le build.
+ * ✅ RÉSOLU : Restauration des variables de formulaire pour le build Vercel.
  */
 
 import { useState, useEffect } from 'react';
@@ -60,8 +59,8 @@ const PasswordInput = ({ field }: { field: any }) => {
   const [showPassword, setShowPassword] = useState(false);
   return (
       <div className="relative">
-          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
-          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors" onClick={() => setShowPassword(!showPassword)}>
+          <Input type={showPassword ? "text" : "password"} {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20" />
+          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white" onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
           </button>
       </div>
@@ -81,7 +80,7 @@ export default function LoginClient() {
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
 
-  // ✅ RÉSOLU : Déclarations critiques pour le build Vercel
+  // ✅ RESTAURATION DES FORMULAIRES POUR LE BUILD
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },

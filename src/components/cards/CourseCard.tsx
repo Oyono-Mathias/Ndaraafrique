@@ -2,15 +2,14 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique - Style Udemy/Fintech Premium.
+ * ✅ CONVERSION : Redirige vers l'inscription si l'utilisateur n'est pas connecté.
  * ✅ DESIGN : Minimaliste avec bordures fines et effets de survol.
- * ✅ OPTIMISÉ : Supporte le mode grille (landing) et liste (dashboard).
  */
 
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Star, Heart, Clock } from 'lucide-react';
@@ -35,26 +34,27 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   const locale = useLocale();
   
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [isEnrolled, setIsEnrolled] = useState(false);
   
+  // ✅ LOGIQUE DE REDIRECTION CEO : Si non connecté -> Inscription
+  const href = !user 
+    ? `/${locale}/login?tab=register`
+    : (variant === 'list' 
+        ? `/${locale}/student/courses/${course.id}${course.lastLessonId ? `?lesson=${course.lastLessonId}` : ''}` 
+        : `/${locale}/courses/${course.id}`);
+
   const progress = course.progress ?? 0;
-  const href = variant === 'list' 
-    ? `/${locale}/student/courses/${course.id}${course.lastLessonId ? `?lesson=${course.lastLessonId}` : ''}` 
-    : `/${locale}/courses/${course.id}`;
 
   useEffect(() => {
     if (!user?.uid || course.id.startsWith('demo')) return;
     const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
-    const enrollmentRef = doc(db, 'enrollments', `${user.uid}_${course.id}`);
     const unsubWish = onSnapshot(wishlistRef, (snap) => setIsWishlisted(snap.exists()));
-    const unsubEnroll = onSnapshot(enrollmentRef, (snap) => setIsEnrolled(snap.exists()));
-    return () => { unsubWish(); unsubEnroll(); };
+    return () => unsubWish();
   }, [user?.uid, course.id, db]);
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { router.push(`/${locale}/login`); return; }
+    if (!user) { router.push(`/${locale}/login?tab=register`); return; }
     if (course.id.startsWith('demo')) return;
 
     const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
@@ -110,9 +110,11 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[9px] font-black text-brand-dark shadow-sm uppercase tracking-widest">
-             Premium
-          </div>
+          {course.id.startsWith('demo') && (
+            <div className="absolute top-4 left-4 z-20">
+                <span className="bg-brand-dark/80 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest">Bientôt disponible</span>
+            </div>
+          )}
           {!course.id.startsWith('demo') && (
             <button 
                 onClick={toggleWishlist}
