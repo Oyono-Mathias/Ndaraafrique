@@ -25,6 +25,12 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        brand: {
+          dark: '#0f172a',
+          primary: '#10b981', // Emerald for growth/money
+          secondary: '#3b82f6', // Blue for tech
+          light: '#f8fafc',
+        },
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
@@ -79,11 +85,16 @@ export default {
             transform: "translateY(0)",
           },
         },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        "fade-in-up": "fade-in-up 0.5s ease-out forwards",
+        "fade-in-up": "fade-in-up 0.8s ease-out forwards",
+        'float': 'float 6s ease-in-out infinite',
       },
     },
   },
