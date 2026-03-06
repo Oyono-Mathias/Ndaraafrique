@@ -575,3 +575,18 @@ export interface UserSubscription {
   canceledAt?: Timestamp | FieldValue;
   paymentTransactionId?: string;
 }
+
+export interface RecommendedCourseItem {
+  courseId: string;
+  title: string;
+  coverImage: string;
+  instructorId: string;
+  price: number;
+  score: number;
+}
+
+export interface UserRecommendations {
+  userId: string;
+  courses: RecommendedCourseItem[];
+  updatedAt: Timestamp | FieldValue;
+}
