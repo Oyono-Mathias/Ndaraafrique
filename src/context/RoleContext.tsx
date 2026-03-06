@@ -46,7 +46,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // Redirection vers la page de login par défaut
+    // ✅ CEO Request: Retour à la page de connexion après déconnexion
     router.push('/login');
   }, [db, router]);
 
