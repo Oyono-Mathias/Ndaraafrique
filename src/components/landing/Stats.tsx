@@ -3,6 +3,7 @@
 /**
  * @fileOverview Statistiques de la landing page en temps réel.
  * Écoute Firestore pour afficher les compteurs réels sans valeurs fictives.
+ * ✅ RÉSOLU : Affiche le nombre total de membres pour plus de visibilité au lancement.
  */
 
 import { useEffect, useState } from 'react';
@@ -10,25 +11,31 @@ import { getFirestore, collection, query, where, onSnapshot } from 'firebase/fir
 import { cn } from "@/lib/utils";
 
 export function Stats() {
-    const [stats, setStats] = useState({ studentCount: 0, courseCount: 0 });
+    const [stats, setStats] = useState({ memberCount: 0, courseCount: 0 });
     const [isLoading, setIsLoading] = useState(true);
     const db = getFirestore();
 
     useEffect(() => {
         setIsLoading(true);
-        // 1. Écouter les membres réels (rôle student)
-        const unsubStudents = onSnapshot(query(collection(db, 'users'), where('role', '==', 'student')), (snapshot) => {
-            setStats(prev => ({ ...prev, studentCount: snapshot.size }));
+        
+        // 1. Écouter TOUS les membres réels (Admin + Formateurs + Étudiants) pour éviter le "0" au début
+        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
+            setStats(prev => ({ ...prev, memberCount: snapshot.size }));
+        }, (err) => {
+            console.warn("Stats users error:", err);
         });
 
         // 2. Écouter les cours réellement publiés
         const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published')), (snapshot) => {
             setStats(prev => ({ ...prev, courseCount: snapshot.size }));
             setIsLoading(false);
+        }, (err) => {
+            console.warn("Stats courses error:", err);
+            setIsLoading(false);
         });
 
         return () => {
-            unsubStudents();
+            unsubUsers();
             unsubCourses();
         };
     }, [db]);
@@ -46,7 +53,7 @@ export function Stats() {
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center animate-in fade-in duration-1000">
-            <StatItem label="Étudiants Actifs" value={stats.studentCount} />
+            <StatItem label="Membres Ndara" value={stats.memberCount} />
             <StatItem label="Formations Premium" value={stats.courseCount} />
             <StatItem label="Note Moyenne" value="4.9/5" colorClass="text-brand-primary" />
             <StatItem label="Support Mentor" value="24/7" colorClass="text-brand-primary" />

@@ -2,6 +2,7 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Design CEO Premium Fintech.
+ * ✅ RÉSOLU : Erreur de build "Unexpected token nav".
  * ✅ RÉSOLU : Affichage dynamique des formations via Firestore.
  * ✅ RÉSOLU : Redirection forcée vers inscription si non-connecté.
  * ✅ STYLE : Gradient-text, Glass-cards, et ombres portées signature.
@@ -362,25 +363,5 @@ export default function LandingPage() {
 
       <Footer />
     </div>
-  );
-}
-
-function SearchIconLocal(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
   );
 }
