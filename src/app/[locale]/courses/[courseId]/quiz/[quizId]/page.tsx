@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,15 +12,14 @@ import {
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { useDoc, useCollection } from '@/firebase';
+import { useDoc } from '@/firebase';
 import { Button } from '@/components/ui/button';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Send, Check, X, Award } from 'lucide-react';
+import { Loader2, ArrowLeft, Award } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
-import type { Course, Quiz, Question, QuizAttempt } from '@/lib/types';
+import type { Course, Quiz, Question } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 

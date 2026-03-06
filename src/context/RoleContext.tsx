@@ -47,7 +47,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ CEO Request: Redirect to Landing Page with locale prefix
+    // ✅ CEO Request: Always redirect to Landing Page with locale prefix after logout
     router.push(`/${locale}`);
   }, [db, router, locale]);
 
