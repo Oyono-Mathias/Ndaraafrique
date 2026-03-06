@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique.
- * Gère le Mode Maintenance, la Bannière d'Annonce et la visibilité des NavBars.
+ * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -88,13 +88,22 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     const isPublic = publicPaths.includes(cleanPath) || cleanPath.startsWith('/verify/') || isInstructorPublicProfile;
 
+    // 1. Redirection si non connecté
     if (!user) {
       if (!isPublic) router.push('/login');
       return;
     }
 
+    // 2. REDIRECTION STRICTE LANDING PAGE : Un utilisateur connecté n'a plus droit à la Landing Page
+    if (user && cleanPath === '/') {
+        const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+        router.push(target);
+        return;
+    }
+
     if (cleanPath === '/account' || cleanPath === '/search' || isInstructorPublicProfile) return;
 
+    // 3. Sécurité des zones par rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 

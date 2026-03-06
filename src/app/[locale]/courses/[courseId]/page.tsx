@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de présentation détaillée d'un cours.
- * ✅ SÉCURITÉ : Bloque l'accès si le profil n'est pas complété.
+ * ✅ SÉCURITÉ : Bloque l'accès si le profil n'est pas complété (Photo comprise).
  * ✅ TEMPS RÉEL : Score d'avis et nombre d'inscrits connectés à Firestore.
  */
 
@@ -27,7 +27,7 @@ import {
   Lock,
   Loader2,
   UserCircle2,
-  Sparkles
+  Camera
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -47,10 +47,8 @@ export default function CourseDetailPage() {
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
   
-  // Stats temps réel
   const [stats, setStats] = useState({ rating: 0, reviewCount: 0, studentCount: 0 });
 
-  // --- RÉCUPÉRATION DES DONNÉES ---
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
@@ -60,7 +58,6 @@ export default function CourseDetailPage() {
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment, isLoading: enrollmentLoading } = useDoc<Enrollment>(enrollmentRef);
 
-  // Écouteurs temps réel (Avis & Inscrits)
   useEffect(() => {
     if (!courseId) return;
 
@@ -108,9 +105,7 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
 
-  // 🛡️ LOGIQUE DE BLOCAGE PROFIL INCOMPLET
-  // On laisse voir si l'utilisateur n'est pas connecté (vue publique)
-  // Mais s'il est connecté et incomplet, on bloque.
+  // 🛡️ LOGIQUE DE BLOCAGE PROFIL INCOMPLET (INCLUANT PHOTO)
   const isProfileBlocked = user && currentUser && !currentUser.isProfileComplete;
 
   if (isLoading) return <CourseDetailSkeleton />;
@@ -119,18 +114,23 @@ export default function CourseDetailPage() {
   if (isProfileBlocked) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
-        <div className="p-6 bg-amber-500/10 rounded-full border-4 border-amber-500/20 mb-8">
-          <UserCircle2 className="h-20 w-20 text-amber-500" />
+        <div className="relative mb-8">
+            <div className="p-6 bg-amber-500/10 rounded-full border-4 border-amber-500/20">
+                <UserCircle2 className="h-20 w-20 text-amber-500" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 p-3 bg-primary rounded-full shadow-xl border-4 border-slate-950">
+                <Camera className="h-5 w-5 text-white" />
+            </div>
         </div>
         <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-tight">
-          Finalisez votre <br/><span className="text-primary">Identité Ndara</span>
+          Identité <br/><span className="text-primary">Indispensable</span>
         </h1>
         <p className="text-slate-400 mt-4 max-w-md mx-auto leading-relaxed">
-          Pour garantir la qualité des échanges et la valeur de nos certificats, vous devez compléter votre profil avant d'accéder aux détails des formations.
+          Pour accéder aux détails et participer à la communauté, vous devez avoir un profil complet : <b>Nom, Expertise et Photo de profil</b>.
         </p>
         <Button asChild className="mt-10 h-16 px-10 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95">
           <Link href="/account">
-            Compléter mon profil
+            Compléter mon identité
             <ChevronRight className="ml-2 h-5 w-5" />
           </Link>
         </Button>

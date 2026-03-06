@@ -3,8 +3,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, getDoc } from 'firebase/firestore';
-import { onIdTokenChanged, signOut, getAuth } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp } from 'firebase/firestore';
+import { signOut, getAuth } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -82,13 +82,18 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
+          // ✅ LOGIQUE DE COMPLÉTION DE PROFIL : Photo + Username + Domaine
+          const hasPhoto = !!userData.profilePictureURL && !userData.profilePictureURL.includes('api.dicebear.com');
+          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasPhoto);
+
           const resolvedUser: NdaraUser = {
               ...userData,
               uid: user.uid,
               email: user.email || '',
               username: userData.username || 'user_' + user.uid.substring(0, 5),
               fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
-              role: isMasterAdmin ? 'admin' : (userData.role || 'student')
+              role: isMasterAdmin ? 'admin' : (userData.role || 'student'),
+              isProfileComplete: isComplete
           } as any;
           
           setCurrentUser(resolvedUser);
@@ -115,6 +120,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 isOnline: true,
                 lastSeen: serverTimestamp(),
                 careerGoals: { currentRole: '', interestDomain: '', mainGoal: '' },
+                isProfileComplete: false
             };
             await setDoc(userDocRef, newUserDoc);
         }
@@ -132,7 +138,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       
-      // La redirection est maintenant déclenchée par l'AppShell qui observe le changement de role
       const target = newRole === 'admin' ? '/admin' : newRole === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
       router.push(target);
       
