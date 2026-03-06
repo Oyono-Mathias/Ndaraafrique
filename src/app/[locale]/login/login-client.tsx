@@ -199,7 +199,7 @@ export default function LoginClient() {
         <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-10">
                 <Link href={`/${locale}`} className="mb-4">
-                  <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full shadow-2xl" />
+                  <Image src="/logo.png" alt="Ndara Afrique" width={64} height={64} className="rounded-full shadow-2xl" />
                 </Link>
                 <h1 className="text-2xl font-black text-white uppercase tracking-tight">Ndara Afrique</h1>
             </div>

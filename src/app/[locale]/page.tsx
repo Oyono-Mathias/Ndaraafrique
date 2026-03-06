@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium.
+ * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium & Dynamique.
  * ✅ TEMPS RÉEL : Connecté à Firestore pour les cours et les stats.
  * ✅ CONVERSION : Redirige les non-connectés vers l'inscription au clic.
  */
@@ -29,7 +29,7 @@ const Navbar = () => {
         <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300 h-16 flex items-center">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-between items-center">
                 <Link href={`/${locale}`} className="flex items-center gap-2 group">
-                    <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center">
+                    <div className="relative w-8 h-8 overflow-hidden flex items-center justify-center">
                         <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-cover" priority />
                     </div>
                     <span className="text-xl font-bold text-brand-dark tracking-tight">Ndara <span className="text-brand-primary">Afrique</span></span>
@@ -43,7 +43,7 @@ const Navbar = () => {
 
                 <div className="hidden md:flex items-center space-x-4">
                     <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login`} className="text-brand-dark font-medium hover:text-brand-primary transition">
-                        {user ? "Espace Membre" : "Connexion"}
+                        {user ? "Mon Espace" : "Connexion"}
                     </Link>
                     {!user && (
                         <Link href={`/${locale}/login?tab=register`} className="bg-brand-dark text-white px-6 py-2.5 rounded-full font-medium hover:bg-slate-800 transition shadow-lg shadow-brand-dark/20 active:scale-95">
@@ -92,7 +92,6 @@ export default function LandingPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
   useEffect(() => {
-    // ✅ Écouteur temps réel pour les formations publiées
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -111,7 +110,6 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
 
-  // Données de fallback si Firestore est vide
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
     return [
@@ -171,7 +169,7 @@ export default function LandingPage() {
                         Ndara Afrique est la plateforme de référence pour maîtriser la finance, le trading et l'entrepreneuriat digital. Des experts pour vous guider vers l'indépendance.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <Link href={user ? "/search" : `/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
+                        <Link href={user ? "/student/dashboard" : `/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
                             Commencer maintenant
                             <ChevronsRight className="w-5 h-5" />
                         </Link>
@@ -262,7 +260,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS POPULAIRES --- */}
+      {/* --- FORMATIONS POPULAIRES (DYNAMIC) --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-4 md:px-8">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">

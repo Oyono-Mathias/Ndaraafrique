@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Interface de quiz sécurisée.
- * ✅ RÉSOLU : Suppression de l'import QuizAttempt inexistant.
+ * ✅ RÉSOLU : Suppression de l'import QuizAttempt inexistant pour le build.
  */
 
 import { useState, useEffect, useMemo } from 'react';
