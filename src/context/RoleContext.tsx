@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -45,9 +46,9 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ CEO Request: Redirect to Landing Page instead of Login
-    router.push('/');
-  }, [db, router]);
+    // Redirection vers la Landing Page au lieu du login pour une expérience plus fluide
+    window.location.href = '/';
+  }, [db]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)
   useEffect(() => {

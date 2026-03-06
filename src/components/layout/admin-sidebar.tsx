@@ -24,6 +24,7 @@ import {
   Shield,
   ArrowLeftRight,
   Library,
+  Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -81,6 +82,7 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
       items: [
         { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
         { href: "/admin/statistiques", icon: BarChart3, label: "Statistiques" },
+        { href: "/admin/test-recommendations", icon: Zap, label: "Moteur Ndara IA" },
         { href: "/admin/logs", icon: History, label: "Journal d'Audit" },
         { href: "/admin/assistant", icon: Sparkles, label: "Assistant IA" },
       ]

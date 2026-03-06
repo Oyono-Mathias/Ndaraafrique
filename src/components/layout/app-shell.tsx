@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
- * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
+ * ✅ RÉSOLU : Cartographie complète des routes pour assurer l'accès public et privé.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -79,18 +80,26 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
+  const isPublicPage = useMemo(() => {
+    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales'];
+    if (publicPaths.includes(cleanPath)) return true;
+    if (cleanPath.startsWith('/verify/')) return true;
+    
+    // Profils publics des instructeurs
+    const instructorPathRegex = /^\/instructor\/[^/]+$/;
+    const instructorPrivateRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
+    if (instructorPathRegex.test(cleanPath)) {
+        return !instructorPrivateRoutes.some(sub => cleanPath.includes(sub));
+    }
+    
+    return false;
+  }, [cleanPath]);
+
   useEffect(() => {
     if (loading || !mounted) return;
 
-    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir'];
-    
-    const instructorPrivateRoutes = ['dashboard', 'courses', 'students', 'revenus', 'annonces', 'avis', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'certificats'];
-    const isInstructorPublicProfile = cleanPath.startsWith('/instructor/') && !instructorPrivateRoutes.some(sub => cleanPath.includes(`/instructor/${sub}`));
-
-    const isPublic = publicPaths.includes(cleanPath) || cleanPath.startsWith('/verify/') || isInstructorPublicProfile;
-
     if (!user) {
-      if (!isPublic) router.push('/login');
+      if (!isPublicPage) router.push('/login');
       return;
     }
 
@@ -100,7 +109,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         return;
     }
 
-    if (cleanPath === '/account' || cleanPath === '/search' || isInstructorPublicProfile) return;
+    if (cleanPath === '/account' || cleanPath === '/search' || isPublicPage) return;
 
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
@@ -112,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } else if (role === 'student') {
         if (isInstructorArea || isAdminArea) router.push('/student/dashboard');
     }
-  }, [user, role, loading, cleanPath, router, mounted]);
+  }, [user, role, loading, cleanPath, router, mounted, isPublicPage]);
 
   if (loading || !mounted) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   
@@ -129,13 +138,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
   const isLandingPage = cleanPath === '/';
   
-  const instructorPrivateRoutes = ['dashboard', 'courses', 'students', 'revenus', 'annonces', 'avis', 'devoirs', 'questions-reponses', 'quiz', 'ressources', 'certificats'];
-  const isInstructorPublicProfile = cleanPath.startsWith('/instructor/') && !instructorPrivateRoutes.some(sub => cleanPath.includes(`/instructor/${sub}`));
-  
-  const isPublicView = isLandingPage || ['/about', '/abonnements', '/search', '/investir'].includes(cleanPath) || cleanPath.startsWith('/verify/') || isInstructorPublicProfile;
-  
-  const showNav = user && !isAuthPage && !isPublicView;
+  // Masquer les sidebars sur les vues plein écran (lecteur de cours)
   const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').length > 3;
+  
+  const showNav = user && !isAuthPage && !isPublicPage && !isLandingPage;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
