@@ -148,6 +148,16 @@ export interface InvestorLead {
   email: string;
   organization?: string;
   message?: string;
+  status: 'new' | 'contacted' | 'interested' | 'rejected';
+  createdAt: Timestamp | FieldValue;
+}
+
+export interface InvestorLead {
+  id: string;
+  fullName: string;
+  email: string;
+  organization?: string;
+  message?: string;
   createdAt: Timestamp | FieldValue;
   status: 'new' | 'contacted' | 'interested' | 'rejected';
 }
