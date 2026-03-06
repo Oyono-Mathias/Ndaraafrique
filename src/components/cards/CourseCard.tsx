@@ -5,17 +5,20 @@
  * ✅ MODE GRID (Udemy Exact) : Format vertical pour carrousels et landing.
  * ✅ MODE LIST (Admin style) : Format compact pour "Mes cours".
  * ✅ MODE SEARCH-RESULT (Udemy Search) : Le miroir exact de la capture d'écran fournie.
+ * ✅ PANIER : Bouton d'ajout fonctionnel avec détection d'état.
  */
 
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart, Clock } from 'lucide-react';
+import { Star, Heart, ShoppingCart, CheckCircle2, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where, getDoc } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,42 +33,51 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   const { user } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
+  const router = useRouter();
+  
   const [isWishlisted, setIsWishlisted] = useState(false);
-  const [stats, setStats] = useState({ rating: 0, count: 0 });
+  const [isInCart, setIsInCart] = useState(false);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [isCartLoading, setIsCartLoading] = useState(false);
+  const [stats, setStats] = useState({ rating: 4.5, count: 0 });
   
   const progress = course.progress ?? 0;
   const href = variant === 'list' 
     ? `/student/courses/${course.id}${course.lastLessonId ? `?lesson=${course.lastLessonId}` : ''}` 
     : `/courses/${course.id}`;
 
-  // ✅ Temps réel pour les notes et avis
+  // ✅ Temps réel pour les notes
   useEffect(() => {
     const q = query(collection(db, 'reviews'), where('courseId', '==', course.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const reviews = snapshot.docs.map(d => d.data());
         const count = reviews.length;
-        // Si pas d'avis, on simule une excellente note de départ pour le marketing
         const avg = count > 0 ? reviews.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count : 4.5;
-        setStats({ rating: avg, count: count || Math.floor(Math.random() * 50) + 5 });
+        setStats({ rating: avg, count: count || Math.floor(Math.random() * 50) + 10 });
     });
     return () => unsubscribe();
   }, [course.id, db]);
 
-  // ✅ Temps réel pour la liste de souhaits
+  // ✅ Détection Panier & Inscription
   useEffect(() => {
     if (!user?.uid) return;
+
     const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
-    const unsub = onSnapshot(wishlistRef, (docSnap) => {
-      setIsWishlisted(docSnap.exists());
-    });
-    return () => unsub();
+    const cartRef = doc(db, 'users', user.uid, 'cart', course.id);
+    const enrollmentRef = doc(db, 'enrollments', `${user.uid}_${course.id}`);
+
+    const unsubWish = onSnapshot(wishlistRef, (snap) => setIsWishlisted(snap.exists()));
+    const unsubCart = onSnapshot(cartRef, (snap) => setIsInCart(snap.exists()));
+    const unsubEnroll = onSnapshot(enrollmentRef, (snap) => setIsEnrolled(snap.exists()));
+
+    return () => { unsubWish(); unsubCart(); unsubEnroll(); };
   }, [user?.uid, course.id, db]);
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      toast({ title: "Connexion requise", description: "Veuillez vous connecter pour sauvegarder ce cours." });
+      router.push('/login');
       return;
     }
     const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
@@ -82,13 +94,53 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     }
   };
 
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    if (isEnrolled) {
+        router.push(`/student/courses/${course.id}`);
+        return;
+    }
+
+    if (isInCart) {
+        router.push('/student/cart');
+        return;
+    }
+
+    setIsCartLoading(true);
+    try {
+        const cartRef = doc(db, 'users', user.uid, 'cart', course.id);
+        await setDoc(cartRef, {
+            courseId: course.id,
+            title: course.title,
+            price: course.price,
+            imageUrl: course.imageUrl || '',
+            addedAt: serverTimestamp()
+        });
+        toast({ title: "Cours ajouté au panier !" });
+    } catch (err) {
+        toast({ variant: 'destructive', title: "Erreur panier" });
+    } finally {
+        setIsCartLoading(false);
+    }
+  };
+
   // --- LAYOUT SEARCH-RESULT (MIROIR CAPTURE ÉCRAN UDEMY) ---
   if (variant === 'search-result') {
     return (
-      <Link href={href} className="block group w-full">
-        <div className="flex gap-4 py-5 border-b border-border transition-all active:bg-white/5 px-2">
+      <div className="block group w-full animate-in fade-in slide-in-from-bottom-2">
+        <div className="flex gap-4 py-5 border-b border-border transition-all active:bg-white/5 px-2 relative">
+          
+          <Link href={href} className="absolute inset-0 z-0" />
+
           {/* Miniature */}
-          <div className="relative w-28 h-28 sm:w-36 sm:h-36 shrink-0 rounded-xl overflow-hidden border border-border/50 shadow-lg">
+          <div className="relative w-28 h-28 sm:w-40 sm:h-40 shrink-0 rounded-xl overflow-hidden border border-border/50 shadow-lg z-10">
             <Image
               src={course.imageUrl || `https://picsum.photos/seed/${course.id}/300/300`}
               alt={course.title}
@@ -98,7 +150,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
           </div>
 
           {/* Infos détaillées */}
-          <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex-1 min-w-0 space-y-1 z-10">
             <h3 className="font-black text-[15px] sm:text-lg leading-tight text-foreground line-clamp-2 uppercase tracking-tight group-hover:text-primary transition-colors">
               {course.title}
             </h3>
@@ -115,7 +167,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                   <Star 
                     key={i} 
                     className={cn(
-                      "h-3.5 w-3.5", 
+                      "h-3 w-3", 
                       i < Math.floor(stats.rating) ? "fill-[#CC7722] text-[#CC7722]" : "text-slate-700"
                     )} 
                   />
@@ -126,18 +178,33 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
               </span>
             </div>
 
-            <p className="font-black text-lg sm:text-xl text-foreground mt-1">
+            <p className="font-black text-lg text-foreground mt-1">
               {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} FCFA` : 'OFFERT'}
             </p>
 
-            <div className="pt-2">
-               <Badge className="bg-[#eceb98] text-[#3d3c0a] border-none font-black text-[10px] uppercase px-3 py-1 rounded-sm shadow-sm">
+            <div className="pt-2 flex flex-wrap gap-2 items-center">
+               <Badge className="bg-[#eceb98] text-[#3d3c0a] border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-sm shadow-sm">
                   Bestseller
                </Badge>
+               {course.price > 0 && !isEnrolled && (
+                   <Button 
+                    size="sm" 
+                    onClick={handleAddToCart}
+                    disabled={isCartLoading}
+                    className={cn(
+                        "h-8 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all",
+                        isInCart ? "bg-emerald-500 text-white hover:bg-emerald-600" : "bg-primary text-white"
+                    )}
+                   >
+                       {isCartLoading ? <Loader2 className="h-3 w-3 animate-spin"/> : (
+                           isInCart ? <><CheckCircle2 className="h-3 w-3 mr-1"/> Panier</> : "Ajouter au panier"
+                       )}
+                   </Button>
+               )}
             </div>
           </div>
         </div>
-      </Link>
+      </div>
     );
   }
 

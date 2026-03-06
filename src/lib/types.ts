@@ -142,14 +142,13 @@ export interface NdaraUser {
   permissions?: { [key: string]: boolean };
 };
 
-export interface InvestorLead {
-  id: string;
-  fullName: string;
-  email: string;
-  organization?: string;
-  message?: string;
-  status: 'new' | 'contacted' | 'interested' | 'rejected';
-  createdAt: Timestamp | FieldValue;
+export interface CartItem {
+  id: string; // courseId
+  courseId: string;
+  title: string;
+  price: number;
+  imageUrl: string;
+  addedAt: Timestamp | FieldValue;
 }
 
 export interface InvestorLead {
@@ -158,8 +157,8 @@ export interface InvestorLead {
   email: string;
   organization?: string;
   message?: string;
-  createdAt: Timestamp | FieldValue;
   status: 'new' | 'contacted' | 'interested' | 'rejected';
+  createdAt: Timestamp | FieldValue;
 }
 
 export interface Lecture {

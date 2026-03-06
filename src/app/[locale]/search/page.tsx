@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ FONCTIONNEL : Bouton retour, filtre, panier et recherche temps réel Firestore.
+ * ✅ FONCTIONNEL : Bouton retour, filtre, panier (avec badge temps réel).
  * ✅ DESIGN : Copie conforme de la capture d'écran fournie.
  */
 
@@ -14,8 +14,10 @@ import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useRouter } from 'next/navigation';
+import { useRole } from '@/context/RoleContext';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 const POPULAR_SEARCHES = [
     "AgriTech", "FinTech", "Python", "Excel", "Marketing", "Élevage", "Commerce", "IA", "Design"
@@ -36,12 +38,14 @@ export default function SearchPage() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
+  
   const db = getFirestore();
   const router = useRouter();
+  const { user } = useRole();
 
   useEffect(() => {
     setIsLoading(true);
-    // On écoute toutes les formations publiées en temps réel
     const q = query(collection(db, "courses"), where("status", "==", "Published"));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -65,18 +69,28 @@ export default function SearchPage() {
     return () => unsubscribe();
   }, [db]);
 
-  // Filtrage local pour réactivité instantanée
+  // ✅ Temps réel pour le compteur panier
+  useEffect(() => {
+    if (!user?.uid) return;
+    const cartRef = collection(db, 'users', user.uid, 'cart');
+    const unsubscribe = onSnapshot(cartRef, (snap) => {
+        setCartCount(snap.size);
+    });
+    return () => unsubscribe();
+  }, [user?.uid, db]);
+
   const filteredResults = useMemo(() => {
     if (!searchTerm.trim()) return [];
     return courses.filter(c => 
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.category.toLowerCase().includes(searchTerm.toLowerCase())
-    ).sort((a, b) => ((b.createdAt as any)?.seconds || 0) - ((a.createdAt as any)?.seconds || 0));
+    );
   }, [courses, searchTerm]);
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 animate-in fade-in duration-700">
-      {/* --- HEADER UDEMY STYLE (COPIE EXACTE) --- */}
+      
+      {/* --- HEADER UDEMY STYLE --- */}
       <header className="px-2 pt-4 pb-2 sticky top-0 bg-background/95 backdrop-blur-xl z-40 border-b border-border/50 flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-foreground hover:bg-accent">
             <ArrowLeft className="h-6 w-6" />
@@ -92,14 +106,20 @@ export default function SearchPage() {
           <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
         </div>
 
-        <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-accent">
-            <ShoppingCart className="h-6 w-6" />
-        </Button>
+        <Link href="/student/cart" className="relative group">
+            <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-accent">
+                <ShoppingCart className="h-6 w-6" />
+                {cartCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in">
+                        {cartCount}
+                    </span>
+                )}
+            </Button>
+        </Link>
       </header>
 
       <main className="px-4 pt-6">
         {searchTerm === '' ? (
-          /* --- ÉTAT INITIAL : HUB DE DÉCOUVERTE --- */
           <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
             <section className="space-y-4">
               <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -139,7 +159,6 @@ export default function SearchPage() {
             </section>
           </div>
         ) : (
-          /* --- RÉSULTATS DE RECHERCHE (COPIE CAPTURE) --- */
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
                 <h2 className="text-[13px] font-black text-foreground uppercase tracking-[0.1em]">
