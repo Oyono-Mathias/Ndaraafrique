@@ -5,6 +5,7 @@
  * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium & Dynamique.
  * ✅ RÉALIGNÉ : Focus 100% sur la FORMATION EN LIGNE (E-learning).
  * ✅ TEMPS RÉEL : Connecté à Firestore pour les cours et les stats.
+ * ✅ CONNECTIVITÉ : 10 boutons/liens opérationnels.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -12,7 +13,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } 
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookOpen, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, ChevronRight, X, GraduationCap, Laptop, Award } from 'lucide-react';
+import { ChevronsRight, BookOpen, CheckCircle2, Users, Menu, X, GraduationCap, Laptop, Award, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
