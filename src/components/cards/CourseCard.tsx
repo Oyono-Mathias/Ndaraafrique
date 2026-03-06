@@ -5,7 +5,7 @@
  * ✅ MODE GRID (Udemy Exact) : Format vertical pour carrousels et landing.
  * ✅ MODE LIST (Admin style) : Format compact pour "Mes cours".
  * ✅ MODE SEARCH-RESULT (Udemy Search) : Le miroir exact de la capture d'écran fournie.
- * ✅ PANIER : Bouton d'ajout fonctionnel avec détection d'état.
+ * ✅ AVIS RÉELS : Calculé en temps réel depuis Firestore (Zéro simulation).
  */
 
 import Link from 'next/link';
@@ -18,7 +18,7 @@ import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Star, Heart, ShoppingCart, CheckCircle2, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where, getDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp, collection, query, where } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -39,21 +39,25 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   const [isInCart, setIsInCart] = useState(false);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [isCartLoading, setIsCartLoading] = useState(false);
-  const [stats, setStats] = useState({ rating: 4.5, count: 0 });
+  const [stats, setStats] = useState({ rating: 0, count: 0 });
   
   const progress = course.progress ?? 0;
   const href = variant === 'list' 
     ? `/student/courses/${course.id}${course.lastLessonId ? `?lesson=${course.lastLessonId}` : ''}` 
     : `/courses/${course.id}`;
 
-  // ✅ Temps réel pour les notes
+  // ✅ TEMPS RÉEL ABSOLU : Écoute les avis réels uniquement
   useEffect(() => {
     const q = query(collection(db, 'reviews'), where('courseId', '==', course.id));
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const reviews = snapshot.docs.map(d => d.data());
         const count = reviews.length;
-        const avg = count > 0 ? reviews.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count : 4.5;
-        setStats({ rating: avg, count: count || Math.floor(Math.random() * 50) + 10 });
+        if (count > 0) {
+            const avg = reviews.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count;
+            setStats({ rating: avg, count: count });
+        } else {
+            setStats({ rating: 0, count: 0 });
+        }
     });
     return () => unsubscribe();
   }, [course.id, db]);
@@ -159,23 +163,29 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             </p>
             
             <div className="flex items-center gap-1.5 py-0.5">
-              <span className="text-[13px] font-black text-[#CC7722]">
-                {stats.rating.toFixed(1).replace('.', ',')}
-              </span>
-              <div className="flex items-center">
-                {[...Array(5)].map((_, i) => (
-                  <Star 
-                    key={i} 
-                    className={cn(
-                      "h-3 w-3", 
-                      i < Math.floor(stats.rating) ? "fill-[#CC7722] text-[#CC7722]" : "text-slate-700"
-                    )} 
-                  />
-                ))}
-              </div>
-              <span className="text-[11px] text-muted-foreground font-bold">
-                ({stats.count})
-              </span>
+              {stats.count > 0 ? (
+                <>
+                  <span className="text-[13px] font-black text-[#CC7722]">
+                    {stats.rating.toFixed(1).replace('.', ',')}
+                  </span>
+                  <div className="flex items-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star 
+                        key={i} 
+                        className={cn(
+                          "h-3 w-3", 
+                          i < Math.floor(stats.rating) ? "fill-[#CC7722] text-[#CC7722]" : "text-slate-700"
+                        )} 
+                      />
+                    ))}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground font-bold">
+                    ({stats.count})
+                  </span>
+                </>
+              ) : (
+                <span className="text-[11px] text-primary font-black uppercase tracking-tighter">Nouveau sur Ndara</span>
+              )}
             </div>
 
             <p className="font-black text-lg text-foreground mt-1">
@@ -183,9 +193,11 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             </p>
 
             <div className="pt-2 flex flex-wrap gap-2 items-center">
-               <Badge className="bg-[#eceb98] text-[#3d3c0a] border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-sm shadow-sm">
-                  Bestseller
-               </Badge>
+               {stats.count > 5 && (
+                 <Badge className="bg-[#eceb98] text-[#3d3c0a] border-none font-black text-[9px] uppercase px-2 py-0.5 rounded-sm shadow-sm">
+                    Bestseller
+                 </Badge>
+               )}
                {course.price > 0 && !isEnrolled && (
                    <Button 
                     size="sm" 
@@ -282,23 +294,29 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
           </p>
 
           <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-[11px] font-black text-[#CC7722]">
-              {stats.rating.toFixed(1).replace('.', ',')}
-            </span>
-            <div className="flex items-center">
-              {[...Array(5)].map((_, i) => (
-                <Star 
-                  key={i} 
-                  className={cn(
-                    "h-2.5 w-2.5", 
-                    i < Math.floor(stats.rating) ? "fill-[#CC7722] text-[#CC7722]" : "text-slate-700"
-                  )} 
-                />
-              ))}
-            </div>
-            <span className="text-[9px] text-muted-foreground font-bold">
-              ({stats.count})
-            </span>
+            {stats.count > 0 ? (
+              <>
+                <span className="text-[11px] font-black text-[#CC7722]">
+                  {stats.rating.toFixed(1).replace('.', ',')}
+                </span>
+                <div className="flex items-center">
+                  {[...Array(5)].map((_, i) => (
+                    <Star 
+                      key={i} 
+                      className={cn(
+                        "h-2.5 w-2.5", 
+                        i < Math.floor(stats.rating) ? "fill-[#CC7722] text-[#CC7722]" : "text-slate-700"
+                      )} 
+                    />
+                  ))}
+                </div>
+                <span className="text-[9px] text-muted-foreground font-bold">
+                  ({stats.count})
+                </span>
+              </>
+            ) : (
+              <span className="text-[9px] text-primary font-black uppercase tracking-tighter">Nouveau</span>
+            )}
           </div>
 
           <p className="font-black text-sm text-foreground mt-0.5">
@@ -307,7 +325,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
 
           <div className="mt-1 flex gap-1">
              <Badge className="bg-primary/10 text-primary border-none font-black text-[8px] uppercase px-1.5 py-0.5 rounded-sm">
-                Nouveautés
+                Nouveau
              </Badge>
           </div>
         </div>

@@ -3,7 +3,7 @@
 /**
  * @fileOverview Page de présentation détaillée d'un cours.
  * ✅ SÉCURITÉ : Bloque l'accès si le profil n'est pas complété (Photo comprise).
- * ✅ TEMPS RÉEL : Score d'avis et nombre d'inscrits connectés à Firestore.
+ * ✅ TEMPS RÉEL : Score d'avis et nombre d'inscrits connectés à Firestore (Zéro simulation).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -61,6 +61,7 @@ export default function CourseDetailPage() {
   useEffect(() => {
     if (!courseId) return;
 
+    // ✅ RÉEL TEMPS RÉEL : Calcul des avis réels sans simulation
     const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
     const unsubReviews = onSnapshot(qReviews, (snap) => {
         const reviews = snap.docs.map(d => d.data());
