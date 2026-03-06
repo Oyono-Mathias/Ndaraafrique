@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Statistiques de la landing page en temps réel.
- * Écoute Firestore pour afficher les compteurs réels.
+ * Écoute Firestore pour afficher les compteurs réels sans valeurs fictives.
  */
 
 import { useEffect, useState } from 'react';
@@ -36,7 +36,7 @@ export function Stats() {
     const StatItem = ({ label, value, colorClass }: { label: string, value: string | number, colorClass?: string }) => (
         <div className="flex flex-col items-center gap-2">
             <p className={cn("text-3xl md:text-5xl font-black transition-all duration-700", colorClass || "text-brand-primary")}>
-                {isLoading ? "..." : (typeof value === 'number' && value > 1000 ? `${(value/1000).toFixed(1)}k+` : value)}
+                {isLoading ? "..." : (typeof value === 'number' && value >= 1000 ? `${(value/1000).toFixed(1)}k+` : value)}
             </p>
             <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500">
                 {label}
@@ -46,8 +46,8 @@ export function Stats() {
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 text-center animate-in fade-in duration-1000">
-            <StatItem label="Étudiants Actifs" value={stats.studentCount || 15000} />
-            <StatItem label="Formations Premium" value={stats.courseCount || 50} />
+            <StatItem label="Étudiants Actifs" value={stats.studentCount} />
+            <StatItem label="Formations Premium" value={stats.courseCount} />
             <StatItem label="Note Moyenne" value="4.9/5" colorClass="text-brand-primary" />
             <StatItem label="Support Mentor" value="24/7" colorClass="text-brand-primary" />
         </div>
