@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium.
- * ✅ CONVERSION : Redirige vers l'inscription si l'utilisateur n'est pas connecté.
- * ✅ DESIGN : Minimaliste avec badge catégorie, durée et prix.
+ * ✅ RÉSOLU : Suppression des notes (4.9) et nombres d'avis (1.2k) simulés.
+ * ✅ DYNAMIQUE : Affiche la vraie note et le nombre de participants réels.
  */
 
 import Link from 'next/link';
@@ -99,6 +99,8 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
+  const hasRating = course.rating !== undefined && course.rating > 0;
+
   return (
     <Link href={href} className="block group h-full">
       <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col h-full active:scale-[0.98]">
@@ -146,9 +148,13 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             
             <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
                 <div className="flex items-center gap-1">
-                    <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                    <span className="text-sm font-black text-slate-700">4.9</span>
-                    <span className="text-[10px] text-slate-400 font-bold ml-1">(1.2k)</span>
+                    <Star className={cn("w-4 h-4", hasRating ? "text-yellow-400 fill-current" : "text-slate-200")} />
+                    <span className="text-sm font-black text-slate-700">
+                        {hasRating ? course.rating?.toFixed(1) : "Nouveau"}
+                    </span>
+                    {course.participantsCount !== undefined && course.participantsCount > 0 && (
+                        <span className="text-[10px] text-slate-400 font-bold ml-1">({course.participantsCount})</span>
+                    )}
                 </div>
                 <span className="text-lg font-black text-brand-dark">
                     {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'OFFERT'}
