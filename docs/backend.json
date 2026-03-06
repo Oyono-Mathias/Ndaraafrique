@@ -96,7 +96,9 @@
         "instructorId": { "type": "string" },
         "category": { "type": "string" },
         "price": { "type": "number" },
-        "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] }
+        "status": { "type": "string", "enum": ["Draft", "Published", "Pending Review"] },
+        "rating": { "type": "number" },
+        "participantsCount": { "type": "number" }
       },
       "required": ["courseId", "title", "description", "instructorId", "category", "price", "status"]
     }

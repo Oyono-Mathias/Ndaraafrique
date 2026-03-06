@@ -232,6 +232,7 @@ export interface Course {
     ebookUrl?: string;
     language?: string;
     participantsCount?: number;
+    rating?: number;
     previewVideoUrl?: string;
     moderationFeedback?: string;
 }
