@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -18,9 +19,11 @@ service cloud.firestore {
     }
 
     // --- PROFIL UTILISATEUR ---
+    // Autorisé en lecture publique pour les compteurs de la Landing Page
     match /users/{userId} {
+      allow read: if true; 
       allow create: if isOwner(userId);
-      allow read, update: if isOwner(userId);
+      allow update: if isOwner(userId);
       
       match /notifications/{notifId} {
         allow create, read, update: if isOwner(userId);
@@ -29,6 +32,14 @@ service cloud.firestore {
       match /chatHistory/{msgId} {
         allow read, write: if isOwner(userId);
       }
+    }
+
+    // --- AVIS (REVIEWS) ---
+    // Autorisé en lecture publique pour la section Témoignages de la Landing Page
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.userId;
     }
 
     // --- QUESTIONS & RÉPONSES ---
