@@ -2,18 +2,18 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium & Dynamique.
- * ✅ RÉALIGNÉ : Focus 100% sur la FORMATION EN LIGNE (E-learning).
- * ✅ TEMPS RÉEL : Connecté à Firestore pour les cours et les stats.
- * ✅ CONNECTIVITÉ : 10 boutons/liens opérationnels.
+ * @fileOverview Landing Page Ndara Afrique - Pilotée par l'Admin.
+ * ✅ RÉALISME : Les textes (Hero, Subtitle, etc.) proviennent de Firestore (settings/global).
+ * ✅ TEMPS RÉEL : Les stats et les formations sont synchronisées avec la base de données.
+ * ✅ CONVERSION : Les 10 boutons stratégiques sont connectés aux services Ndara.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, doc } from 'firebase/firestore';
 import Link from 'next/link';
-import type { Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookOpen, CheckCircle2, Users, Menu, X, GraduationCap, Laptop, Award, TrendingUp } from 'lucide-react';
+import { ChevronsRight, BookOpen, CheckCircle2, Users, Menu, X, GraduationCap, Laptop, Award, TrendingUp, Search as LucideSearch, Bot, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -21,6 +21,7 @@ import { useLocale } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
+import { useDoc } from '@/firebase/firestore/use-doc';
 
 const Navbar = () => {
     const { user, role } = useRole();
@@ -38,22 +39,22 @@ const Navbar = () => {
                 </Link>
                 
                 <div className="hidden md:flex space-x-8 items-center">
-                    <a href="#formations" className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition">Formations</a>
-                    <a href="#methodologie" className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition">Notre Méthode</a>
-                    <Link href={`/${locale}/abonnements`} className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition">Tarifs</Link>
+                    <a href="#formations" className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition uppercase tracking-widest">Formations</a>
+                    <a href="#methodologie" className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition uppercase tracking-widest">Notre Méthode</a>
+                    <Link href={`/${locale}/abonnements`} className="text-sm font-semibold text-slate-600 hover:text-brand-primary transition uppercase tracking-widest">Tarifs</Link>
                 </div>
 
                 <div className="hidden md:flex items-center space-x-4">
                     {user ? (
-                        <Link href={`/${locale}${dashboardUrl}`} className="text-brand-dark font-black uppercase text-[10px] tracking-widest hover:text-brand-primary transition">
+                        <Link href={`/${locale}${dashboardUrl}`} className="text-brand-dark font-black uppercase text-[10px] tracking-widest hover:text-brand-primary transition bg-slate-100 px-4 py-2 rounded-full">
                             Mon Espace
                         </Link>
                     ) : (
                         <>
-                            <Link href={`/${locale}/login`} className="text-sm font-bold text-brand-dark hover:text-brand-primary transition">
+                            <Link href={`/${locale}/login`} className="text-xs font-black uppercase tracking-widest text-brand-dark hover:text-brand-primary transition">
                                 Connexion
                             </Link>
-                            <Link href={`/${locale}/login?tab=register`} className="bg-brand-dark text-white px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition shadow-lg shadow-brand-dark/20 active:scale-95">
+                            <Link href={`/${locale}/login?tab=register`} className="bg-brand-dark text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition shadow-lg shadow-brand-dark/20 active:scale-95">
                                 S'inscrire
                             </Link>
                         </>
@@ -111,6 +112,11 @@ export default function LandingPage() {
 
   const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
+  // Récupération des réglages globaux pour les textes dynamiques (Bouton Admin -> Landing)
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
+  const { data: siteSettings } = useDoc<Settings>(settingsRef);
+  const landingContent = siteSettings?.content?.landingPage;
+
   useEffect(() => {
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -138,6 +144,7 @@ export default function LandingPage() {
 
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
+    // Fallback pédagogique si base vide
     return [
         { 
             id: 'demo-1', 
@@ -170,7 +177,7 @@ export default function LandingPage() {
   }, [courses]);
 
   return (
-    <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden">
+    <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30">
       <Navbar />
       
       {/* --- HERO SECTION --- */}
@@ -188,15 +195,18 @@ export default function LandingPage() {
                         Formations certifiantes
                     </div>
                     <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-brand-dark leading-tight mb-6 tracking-tight uppercase">
-                        Maîtrisez les <br />
-                        <span className="gradient-text">Compétences de Demain</span>
+                        {landingContent?.heroTitle ? (
+                            <span dangerouslySetInnerHTML={{ __html: landingContent.heroTitle.replace('Compétences de Demain', '<span class="gradient-text">Compétences de Demain</span>') }} />
+                        ) : (
+                            <>Maîtrisez les <br /> <span className="gradient-text">Compétences de Demain</span></>
+                        )}
                     </h1>
                     <p className="text-base md:text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                        Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière.
+                        {landingContent?.heroSubtitle || "Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière."}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
-                            Commencer à apprendre
+                            {landingContent?.heroCtaText || "Commencer à apprendre"}
                             <ChevronsRight className="w-5 h-5" />
                         </Link>
                         <Link href={`/${locale}/search`} className="px-10 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
@@ -242,7 +252,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS SECTION --- */}
+      {/* --- STATS SECTION (LIVE FROM FIRESTORE) --- */}
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
             <Stats />
@@ -254,8 +264,12 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
                 <h2 className="text-brand-primary font-black tracking-[0.3em] uppercase text-[10px]">Notre Mission</h2>
-                <h3 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Apprenez avec <span className="text-brand-primary">Efficacité</span></h3>
-                <p className="text-slate-600 font-medium leading-relaxed">Une infrastructure technologique au service de votre montée en compétences.</p>
+                <h3 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">
+                    {landingContent?.howItWorksTitle || "Apprenez avec Efficacité"}
+                </h3>
+                <p className="text-slate-600 font-medium leading-relaxed">
+                    {landingContent?.howItWorksSubtitle || "Une infrastructure technologique au service de votre montée en compétences."}
+                </p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
@@ -286,7 +300,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS POPULAIRES (DYNAMIC) --- */}
+      {/* --- FORMATIONS POPULAIRES (DYNAMIC FROM FIRESTORE) --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-6 md:px-12">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -317,21 +331,21 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- CTA FINAL --- */}
+      {/* --- CTA FINAL (CONNECTÉ AU SUPPORT ET AUTH) --- */}
       <section className="py-32 relative overflow-hidden bg-brand-dark px-6">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
         
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-10">
             <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-tight">
-                Prêt à devenir <br /><span className="text-brand-primary">un expert ?</span>
+                {landingContent?.finalCtaTitle || "Prêt à devenir un expert ?"}
             </h2>
             <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-                Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic.
+                {landingContent?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic."}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
                 <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
-                    Créer mon profil gratuit
+                    {landingContent?.finalCtaButtonText || "Créer mon profil gratuit"}
                 </Link>
                 <Link href={`/${locale}/student/support`} className="px-12 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
                     Contacter un conseiller
