@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -12,7 +13,7 @@ import { StatCard } from '@/components/dashboard/StatCard';
 import { BookOpen, Trophy, Sparkles, Search, Bot, ArrowRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
-import type { CourseProgress, Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -31,14 +32,14 @@ export default function StudentDashboardAndroid() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    // 1. Écouteur Stats (Inscriptions & Certificats)
+    // 1. Écouteur Stats
     const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), (snap) => {
       const total = snap.size;
       const completed = snap.docs.filter(d => d.data().progress === 100).length;
       setStats({ total, completed });
     });
 
-    // 2. Chargement du Catalogue (Pour affichage par catégorie)
+    // 2. Chargement du Catalogue par catégories
     const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc')), async (snap) => {
       const coursesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
       setAllCourses(coursesData);
@@ -168,10 +169,30 @@ export default function StudentDashboardAndroid() {
 
       <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
         <Link href="/search">
-          <Search className="h-6 w-6 text-primary-foreground" />
+          <SearchIconLocal className="h-6 w-6 text-primary-foreground" />
           <span className="sr-only">Explorer</span>
         </Link>
       </Button>
     </div>
+  );
+}
+
+function SearchIconLocal(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
   );
 }

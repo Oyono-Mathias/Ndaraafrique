@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Course, NdaraUser } from '@/lib/types';
