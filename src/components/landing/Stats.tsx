@@ -5,6 +5,7 @@
  * @fileOverview Statistiques de la landing page en temps réel.
  * Écoute Firestore pour afficher les compteurs réels.
  * ✅ RÉSOLU : Affiche le nombre total de membres même pour les visiteurs publics.
+ * ✅ RÉSOLU : Zéro simulation, uniquement des chiffres basés sur la collection 'users'.
  */
 
 import { useEffect, useState } from 'react';
@@ -20,7 +21,6 @@ export function Stats() {
         setIsLoading(true);
         
         // 1. Écouter TOUS les membres réels (Admin + Formateurs + Étudiants)
-        // La règle publique autorisée dans firestore.rules permet ce comptage.
         const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
             setStats(prev => ({ ...prev, memberCount: snapshot.size }));
         }, (err) => {

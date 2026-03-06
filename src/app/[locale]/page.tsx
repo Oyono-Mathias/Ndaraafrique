@@ -4,8 +4,8 @@
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
  * ✅ RÉSOLU : Suppression de toutes les données de simulation (Cours demo).
- * ✅ RÉSOLU : Correction de l'erreur syntaxique JSX 'nav'.
  * ✅ RÉSOLU : Affichage dynamique basé uniquement sur Firestore.
+ * ✅ RÉSOLU : Correction du conflit de jeton 'nav' pour le build.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,7 +13,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } 
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, Sparkles, CheckCircle2 } from 'lucide-react';
+import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -22,9 +22,6 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
 
-/**
- * Composant de navigation épuré et robuste.
- */
 const Navbar = () => {
     const { user, role } = useRole();
     const locale = useLocale();
@@ -74,7 +71,7 @@ const Navbar = () => {
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="right" className="bg-white border-l border-slate-200 p-0 w-[280px] z-[10005]">
-                            <div className="p-6 flex flex-col gap-6">
+                            <div className="p-6 flex flex-col gap-6 h-full">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold">N</div>
@@ -84,11 +81,11 @@ const Navbar = () => {
                                         <Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button>
                                     </SheetClose>
                                 </div>
-                                <div className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-4 mt-8">
                                     <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600">Formations</a></SheetClose>
                                     <SheetClose asChild><a href="#methodologie" className="text-lg font-bold text-slate-600">Méthodologie</a></SheetClose>
                                     <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600">Tarifs</Link></SheetClose>
-                                    <hr className="border-slate-100" />
+                                    <hr className="border-slate-100 my-2" />
                                     {user ? (
                                         <SheetClose asChild><Link href={`/${locale}${dashboardUrl}`} className="text-lg font-bold text-brand-primary">Tableau de bord</Link></SheetClose>
                                     ) : (
@@ -277,7 +274,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS (Vraies Données) --- */}
+      {/* --- FORMATIONS (Vraies Données UNIQUEMENT) --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -304,8 +301,10 @@ export default function LandingPage() {
                         />
                     ))
                 ) : (
-                    <div className="col-span-full text-center py-20 bg-white rounded-[3rem] border border-slate-200 shadow-sm">
-                        <p className="text-slate-500 font-medium italic">Nos prochaines formations d'excellence arrivent très bientôt. Restez connectés !</p>
+                    <div className="col-span-full text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 shadow-sm opacity-60">
+                        <TrendingUp className="h-12 w-12 mx-auto text-slate-300 mb-4" />
+                        <h4 className="text-lg font-bold text-slate-400 uppercase tracking-tight">Nos contenus d'élite arrivent bientôt</h4>
+                        <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto font-medium">Nous finalisons la production de nos prochaines formations avec les meilleurs experts. Revenez très vite !</p>
                     </div>
                 )}
             </div>
