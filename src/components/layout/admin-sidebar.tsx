@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from 'next/link';
@@ -25,6 +24,7 @@ import {
   ArrowLeftRight,
   Library,
   Zap,
+  Handshake
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -92,6 +92,7 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
       items: [
         { href: "/admin/users", icon: Users, label: "Utilisateurs" },
         { href: "/admin/instructors", icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
+        { href: "/admin/investisseurs", icon: Handshake, label: "Partenaires", countId: 'newLeads' },
         { href: "/admin/messages", icon: MessageSquare, label: "Messagerie" },
       ]
     },
@@ -138,11 +139,16 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
     useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null, [db, currentUser])
   );
 
+  const { data: newLeads } = useCollection<any>(
+    useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'investor_leads'), where('status', '==', 'new')) : null, [db, currentUser])
+  );
+
   const counts = {
       pendingInstructors: pendingInstructors?.length || 0,
       pendingCourses: pendingCourses?.length || 0,
       pendingPayouts: pendingPayouts?.length || 0,
       openTickets: openTickets?.length || 0,
+      newLeads: newLeads?.length || 0,
   };
 
   const handleSwitch = (newRole: 'student' | 'instructor') => {
