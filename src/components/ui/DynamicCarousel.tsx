@@ -1,6 +1,12 @@
 
 'use client';
 
+/**
+ * @fileOverview Carrousel Dynamique Ndara Afrique.
+ * ✅ OPTIMISÉ : next/image avec priority pour le premier slide pour un LCP record.
+ * ✅ CDN : Utilise la Pull Zone Bunny pour les images.
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { getFirestore, collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import Autoplay from 'embla-carousel-autoplay';
@@ -56,31 +62,32 @@ export function DynamicCarousel() {
   }, [emblaApi, onSelect]);
   
   if (isLoading) {
-    return <Skeleton className="w-full h-[200px] md:h-[300px] rounded-xl bg-slate-800" />;
+    return <Skeleton className="w-full aspect-[3/1] md:aspect-[4/1] rounded-[2rem] bg-slate-800" />;
   }
 
   if (slides.length === 0) {
-    return null; // Don't render anything if there are no slides
+    return null;
   }
 
   return (
-    <div className="relative w-full">
+    <div className="relative w-full animate-in fade-in duration-1000">
       <Carousel
         ref={emblaRef}
-        className="w-full overflow-hidden rounded-xl"
+        className="w-full overflow-hidden rounded-[2rem] shadow-2xl border border-white/5"
       >
         <CarouselContent>
-          {slides.map((slide) => {
+          {slides.map((slide, index) => {
             const content = (
-                 <div className="relative w-full h-[200px] md:h-[300px] bg-slate-800">
+                 <div className="relative w-full aspect-[3/1] md:aspect-[4/1] bg-slate-900">
                     <Image
                         src={slide.imageUrl}
-                        alt={`Slide ${slide.order}`}
+                        alt={`Bannière ${slide.order}`}
                         fill
                         className="object-cover"
-                        priority={slide.order === 0}
+                        priority={index === 0}
+                        sizes="100vw"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>
                 </div>
             );
             return (
@@ -91,16 +98,16 @@ export function DynamicCarousel() {
           })}
         </CarouselContent>
       </Carousel>
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2.5 z-20">
         {slides.map((_, index) => (
           <button
             key={index}
             onClick={() => emblaApi?.scrollTo(index)}
             className={cn(
-              "h-2 rounded-full transition-all duration-300",
-              index === selectedIndex ? "w-6 bg-primary" : "w-2 bg-white/50"
+              "h-1.5 rounded-full transition-all duration-500",
+              index === selectedIndex ? "w-8 bg-primary shadow-[0_0_10px_hsl(var(--primary))]" : "w-2 bg-white/30"
             )}
-            aria-label={`Go to slide ${index + 1}`}
+            aria-label={`Aller au slide ${index + 1}`}
           />
         ))}
       </div>

@@ -1,51 +1,57 @@
 {
   "placeholderImages": [
     {
+      "id": "logo",
+      "description": "Logo Ndara Afrique",
+      "imageUrl": "https://ndara-assets.b-cdn.net/logo.png",
+      "imageHint": "logo brand"
+    },
+    {
       "id": "devweb",
       "description": "Introduction au Développement Web",
-      "imageUrl": "https://images.unsplash.com/photo-1608742213509-815b97c30b36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxjb2RlJTIwc2NyZWVufGVufDB8fHx8MTc2ODE5MTYxNnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1608742213509-815b97c30b36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "code screen"
     },
     {
       "id": "marketing",
       "description": "Les Fondamentaux du Marketing Digital",
-      "imageUrl": "https://images.unsplash.com/photo-1722172597269-d911054badb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw5fHxzb2NpYWwlMjBtZWRpYSUyMGNoYXJ0fGVufDB8fHx8MTc2ODI5MzM4Mnww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1722172597269-d911054badb9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "social media chart"
     },
     {
       "id": "ai",
       "description": "Initiation à l'Intelligence Artificielle",
-      "imageUrl": "https://images.unsplash.com/photo-1738082956254-1dd63ad1db71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw1fHxhYnN0cmFjdCUyMG5ldHdvcmt8ZW58MHx8fHwxNzY4MjUwMjEwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageUrl": "https://images.unsplash.com/photo-1738082956254-1dd63ad1db71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080",
       "imageHint": "abstract network"
     },
     {
       "id": "browse-courses",
       "description": "A grid view of course cards on a screen.",
-      "imageUrl": "https://images.unsplash.com/photo-1541888946425-d81bb19240f5?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://ndara-assets.b-cdn.net/assets/browse-courses.jpg",
       "imageHint": "course grid"
     },
     {
       "id": "mobile-payment",
       "description": "A person making a payment on a smartphone.",
-      "imageUrl": "https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://ndara-assets.b-cdn.net/assets/mobile-payment.jpg",
       "imageHint": "mobile payment"
     },
     {
       "id": "certificate",
       "description": "A digital certificate of completion on a screen.",
-      "imageUrl": "https://images.unsplash.com/photo-1593113598332-cd288d649433?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://ndara-assets.b-cdn.net/assets/certificate.jpg",
       "imageHint": "certificate screen"
     },
     {
       "id": "payment-security",
       "description": "Abstract image of a padlock on a screen with code, representing digital security.",
-      "imageUrl": "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://ndara-assets.b-cdn.net/assets/security.jpg",
       "imageHint": "digital security"
     },
     {
       "id": "final-cta-bg",
       "description": "Students collaborating and looking towards the future.",
-      "imageUrl": "https://images.unsplash.com/photo-1531482615713-2c65a2ad7a2b?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "imageUrl": "https://ndara-assets.b-cdn.net/assets/students-collaboration.jpg",
       "imageHint": "students learning"
     }
   ]
