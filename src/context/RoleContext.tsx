@@ -4,8 +4,8 @@
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
 import { useUser } from '@/firebase';
-import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp } from 'firebase/firestore';
-import { signOut, getAuth } from 'firebase/auth';
+import { doc, onSnapshot, getFirestore, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { signOut, getAuth, onIdTokenChanged } from 'firebase/auth';
 import type { NdaraUser, UserRole } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
@@ -49,6 +49,36 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     router.push('/login');
   }, [db, router]);
 
+  // 1. GESTION DE LA PRÉSENCE (isOnline)
+  useEffect(() => {
+    const auth = getAuth();
+    
+    // Marquer hors-ligne à la fermeture de l'onglet
+    const handleBeforeUnload = () => {
+        if (auth.currentUser) {
+            const userDocRef = doc(db, 'users', auth.currentUser.uid);
+            updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() });
+        }
+    };
+
+    const unsubscribe = onIdTokenChanged(auth, async (user) => {
+      if (user) {
+        const userRef = doc(db, 'users', user.uid);
+        // Marquer en-ligne à la connexion/rafraîchissement
+        await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
+        window.addEventListener('beforeunload', handleBeforeUnload);
+      } else {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      }
+    });
+
+    return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+        unsubscribe();
+    };
+  }, [db]);
+
+  // 2. SYNCHRONISATION DU PROFIL FIRESTORE
   useEffect(() => {
     if (isUserLoading) {
       setLoading(true);
@@ -84,7 +114,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
           // ✅ LOGIQUE DE COMPLÉTION DE PROFIL : Photo RÉELLE + Username + Domaine
-          // On vérifie que la photo existe et n'est pas l'avatar par défaut de Dicebear
           const hasRealPhoto = !!userData.profilePictureURL && !userData.profilePictureURL.includes('api.dicebear.com');
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasRealPhoto);
 
@@ -95,7 +124,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               username: userData.username || 'user_' + user.uid.substring(0, 5),
               fullName: userData.fullName || user.displayName || 'Utilisateur Ndara',
               role: isMasterAdmin ? 'admin' : (userData.role || 'student'),
-              isProfileComplete: isComplete
+              isProfileComplete: isComplete,
+              isOnline: userData.isOnline ?? true
           } as any;
           
           setCurrentUser(resolvedUser);

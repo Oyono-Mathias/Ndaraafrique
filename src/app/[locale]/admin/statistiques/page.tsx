@@ -4,8 +4,6 @@
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
- * Correction : Suppression du nesting des listeners pour garantir l'affichage même si une collection est vide.
- * Correction : Importation de l'icône Zap et échappement des caractères JSX.
  */
 
 import { useState, useEffect, useMemo } from 'react';
