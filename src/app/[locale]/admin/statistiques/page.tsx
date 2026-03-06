@@ -65,6 +65,7 @@ export default function AdminStatsPage() {
 
                     const totalRevenue = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
                     
+                    // Calcul du taux de conversion (Vues Landing vs Inscriptions)
                     const landingViews = allTracking.filter(t => 
                         t.eventType === 'page_view' && 
                         t.pageUrl === '/' &&
