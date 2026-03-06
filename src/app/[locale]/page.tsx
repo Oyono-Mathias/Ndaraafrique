@@ -8,11 +8,11 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, doc } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } from 'firebase/firestore';
 import Link from 'next/link';
-import type { Course, NdaraUser, Settings } from '@/lib/types';
+import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, GraduationCap, Laptop, Award, TrendingUp, Bot, Sparkles, Search, CheckCircle2, MessageSquare } from 'lucide-react';
+import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, Sparkles, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -21,10 +21,18 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
 
-const Navbar = () => {
+/**
+ * Composant de navigation interne pour la Landing Page.
+ */
+function Navbar() {
     const { user, role } = useRole();
     const locale = useLocale();
-    const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+    
+    const dashboardUrl = useMemo(() => {
+        if (role === 'admin') return '/admin';
+        if (role === 'instructor') return '/instructor/dashboard';
+        return '/student/dashboard';
+    }, [role]);
 
     return (
         <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300 h-20 flex items-center">
@@ -75,7 +83,7 @@ const Navbar = () => {
                                         <Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button>
                                     </SheetClose>
                                 </div>
-                                <nav className="flex flex-col gap-4">
+                                <div className="flex flex-col gap-4">
                                     <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600">Formations</a></SheetClose>
                                     <SheetClose asChild><a href="#methodologie" className="text-lg font-bold text-slate-600">Méthodologie</a></SheetClose>
                                     <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600">Tarifs</Link></SheetClose>
@@ -88,15 +96,15 @@ const Navbar = () => {
                                             <SheetClose asChild><Link href={`/${locale}/login?tab=register`} className="text-lg font-bold text-brand-primary">S'inscrire</Link></SheetClose>
                                         </>
                                     )}
-                                </nav>
+                                </div>
                             </div>
                         </SheetContent>
                     </Sheet>
                 </div>
             </div>
-        </div>
-    </nav>
-);
+        </nav>
+    );
+}
 
 export default function LandingPage() {
   const db = getFirestore();
@@ -106,7 +114,11 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
-  const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
+  const dashboardUrl = useMemo(() => {
+    if (role === 'admin') return '/admin';
+    if (role === 'instructor') return '/instructor/dashboard';
+    return '/student/dashboard';
+  }, [role]);
 
   useEffect(() => {
     // 🛡️ REQUÊTE TEMPS RÉEL : OnSnapshot pour synchronisation instantanée
@@ -176,14 +188,14 @@ export default function LandingPage() {
             description: 'Utilisez Python et Excel pour analyser les marchés et prédire les tendances.',
             instructorId: 'demo'
         }
-    ] as any[];
+    ] as Course[];
   }, [courses]);
 
   return (
     <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30 font-sans">
       <Navbar />
       
-      {/* --- HERO SECTION (DESIGN CEO) --- */}
+      {/* --- HERO SECTION --- */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden px-6">
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
@@ -252,14 +264,14 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS SECTION (LIVE & DARK BG) --- */}
+      {/* --- STATS SECTION --- */}
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
             <Stats />
         </div>
       </section>
 
-      {/* --- METHODOLOGIE (GLASS CARDS) --- */}
+      {/* --- METHODOLOGIE --- */}
       <section id="methodologie" className="py-24 bg-white relative px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
@@ -296,7 +308,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS (DYNAMIC MAP) --- */}
+      {/* --- FORMATIONS --- */}
       <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -350,5 +362,25 @@ export default function LandingPage() {
 
       <Footer />
     </div>
+  );
+}
+
+function SearchIconLocal(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
   );
 }
