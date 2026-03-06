@@ -22,12 +22,12 @@
   "Landing": {
     "hero_title": "Ndara Afrique : L'excellence par le savoir",
     "hero_subtitle": "Apprenez avec des experts africains et bénéficiez de l'aide 24h/24 du Tuteur MATHIAS, votre coach IA personnalisé.",
-    "cta_start": "Commencer gratuitement",
+    "cta_start": "Commencer la formation",
     "course_count": "{count} formations disponibles",
-    "feature_1_title": "Apprentissage temps réel",
-    "feature_1_desc": "Suivez vos cours n'importe où, n'importe quand, avec un suivi de progression instantané.",
-    "feature_2_title": "Quiz interactifs",
-    "feature_2_desc": "Testez vos connaissances après chaque chapitre et obtenez vos certificats de réussite.",
+    "feature_1_title": "Apprentissage d'expert",
+    "feature_1_desc": "Suivez des cours conçus par des professionnels du terrain pour une application immédiate.",
+    "feature_2_title": "Certificats officiels",
+    "feature_2_desc": "Validez vos compétences et obtenez vos certificats de réussite pour votre carrière.",
     "feature_3_title": "Tuteur IA 24h/24",
     "feature_3_desc": "MATHIAS répond à toutes vos questions sur les cours pour vous garantir une compréhension totale."
   },

@@ -1,3 +1,4 @@
+
 {
   "Auth": {
     "loginButton": "Log In",
@@ -20,12 +21,12 @@
   "Landing": {
     "hero_title": "Ndara Africa: Excellence through knowledge",
     "hero_subtitle": "Learn with African experts and get 24/7 help from MATHIAS Tutor, your personalized AI coach.",
-    "cta_start": "Start for free",
+    "cta_start": "Start learning",
     "course_count": "{count} available courses",
-    "feature_1_title": "Real-time learning",
-    "feature_1_desc": "Follow your courses anywhere, anytime, with instant progress tracking.",
-    "feature_2_title": "Interactive Quizzes",
-    "feature_2_desc": "Test your knowledge after each chapter and get your completion certificates.",
+    "feature_1_title": "Expert training",
+    "feature_1_desc": "Follow courses designed by industry professionals for immediate career impact.",
+    "feature_2_title": "Official Certificates",
+    "feature_2_desc": "Validate your skills and earn completion certificates for your professional growth.",
     "feature_3_title": "24/7 AI Tutor",
     "feature_3_desc": "MATHIAS answers all your course-related questions to ensure total understanding."
   },
