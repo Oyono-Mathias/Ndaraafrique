@@ -2,12 +2,11 @@
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
- * Visualisation des KPIs Business : Revenus, Conversion et Acquisition.
- * Design Premium pour présentation investisseurs.
+ * Visualisation des KPIs Business en TEMPS RÉEL : Revenus, Conversion et Acquisition.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, getDocs, Timestamp, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, Timestamp, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -27,88 +26,88 @@ interface ChartData {
 export default function AdminStatsPage() {
     const [stats, setStats] = useState({ totalRevenue: 0, totalUsers: 0, convRate: 0, activeUsers: 0 });
     const [revenueData, setRevenueData] = useState<ChartData[]>([]);
-    const [userGrowthData, setRevenueGrowthData] = useState<ChartData[]>([]);
+    const [userGrowthData, setUserGrowthData] = useState<ChartData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 30), to: new Date() });
     
     useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            const db = getFirestore();
+        setIsLoading(true);
+        const db = getFirestore();
 
-            const from = dateRange?.from || subDays(new Date(), 30);
-            const to = dateRange?.to || new Date();
+        const from = dateRange?.from || subDays(new Date(), 30);
+        const to = dateRange?.to || new Date();
 
-            try {
-                // Récupération massive des données pour calcul local (plus flexible pour les KPIs complexes)
-                const [usersSnap, paymentsSnap, trackingSnap] = await Promise.all([
-                    getDocs(collection(db, 'users')),
-                    getDocs(query(collection(db, 'payments'), where('status', '==', 'Completed'))),
-                    getDocs(query(collection(db, 'tracking_events'), limit(5000)))
-                ]);
-
-                const allUsers = usersSnap.docs.map(doc => doc.data() as NdaraUser);
+        // --- ÉCOUTEURS TEMPS RÉEL (onSnapshot) ---
+        
+        // 1. Écoute des utilisateurs
+        const unsubUsers = onSnapshot(collection(db, 'users'), (usersSnap) => {
+            const allUsers = usersSnap.docs.map(doc => doc.data() as NdaraUser);
+            
+            // 2. Écoute des paiements validés
+            const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (paymentsSnap) => {
                 const allPayments = paymentsSnap.docs.map(doc => doc.data() as Payment);
-                const allTracking = trackingSnap.docs.map(doc => doc.data() as TrackingEvent);
-
-                // 1. Filtrage par période
-                const filteredPayments = allPayments.filter(p => {
-                    const d = (p.date as Timestamp).toDate();
-                    return isWithinInterval(d, { start: from, end: to });
-                });
-
-                const filteredUsers = allUsers.filter(u => {
-                    const d = (u.createdAt as Timestamp).toDate();
-                    return isWithinInterval(d, { start: from, end: to });
-                });
-
-                // 2. Calcul des KPIs Business
-                const totalRevenue = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
                 
-                // Calcul du taux de conversion (Inscriptions / Vues de la Landing Page)
-                const landingViews = allTracking.filter(t => 
-                    t.eventType === 'page_view' && 
-                    t.pageUrl === '/' &&
-                    isWithinInterval((t.timestamp as Timestamp).toDate(), { start: from, end: to })
-                ).length;
-                
-                const convRate = landingViews > 0 ? Math.round((filteredUsers.length / landingViews) * 100) : 0;
+                // 3. Écoute des événements de tracking (Limité aux 2000 derniers pour perf)
+                const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(2000)), (trackingSnap) => {
+                    const allTracking = trackingSnap.docs.map(doc => doc.data() as TrackingEvent);
 
-                setStats({
-                    totalRevenue,
-                    totalUsers: allUsers.length,
-                    convRate,
-                    activeUsers: allUsers.filter(u => u.isOnline).length
+                    // --- CALCULS DES KPIs ---
+                    
+                    const filteredPayments = allPayments.filter(p => {
+                        const d = (p.date as Timestamp).toDate();
+                        return isWithinInterval(d, { start: from, end: to });
+                    });
+
+                    const filteredUsers = allUsers.filter(u => {
+                        const d = (u.createdAt as Timestamp).toDate();
+                        return isWithinInterval(d, { start: from, end: to });
+                    });
+
+                    const totalRevenue = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
+                    
+                    const landingViews = allTracking.filter(t => 
+                        t.eventType === 'page_view' && 
+                        t.pageUrl === '/' &&
+                        isWithinInterval((t.timestamp as Timestamp).toDate(), { start: from, end: to })
+                    ).length;
+                    
+                    const convRate = landingViews > 0 ? Math.round((filteredUsers.length / landingViews) * 100) : 0;
+
+                    setStats({
+                        totalRevenue,
+                        totalUsers: allUsers.length,
+                        convRate,
+                        activeUsers: allUsers.filter(u => u.isOnline).length
+                    });
+
+                    // Graphique Revenus
+                    const dailyRevenue: { [key: string]: number } = {};
+                    filteredPayments.forEach(p => {
+                        const day = format((p.date as Timestamp).toDate(), 'dd MMM', { locale: fr });
+                        dailyRevenue[day] = (dailyRevenue[day] || 0) + p.amount;
+                    });
+                    const sortedRevKeys = Object.keys(dailyRevenue).sort();
+                    setRevenueData(sortedRevKeys.map(day => ({ name: day, value: dailyRevenue[day] })));
+
+                    // Graphique Croissance
+                    const dailySignups: { [key: string]: number } = {};
+                    filteredUsers.forEach(u => {
+                        const day = format((u.createdAt as Timestamp).toDate(), 'dd MMM', { locale: fr });
+                        dailySignups[day] = (dailySignups[day] || 0) + 1;
+                    });
+                    const sortedUserKeys = Object.keys(dailySignups).sort();
+                    setUserGrowthData(sortedUserKeys.map(day => ({ name: day, value: dailySignups[day] })));
+
+                    setIsLoading(false);
                 });
 
-                // 3. Préparation données Graphique Revenus (Groupement par jour)
-                const dailyRevenue: { [key: string]: number } = {};
-                filteredPayments.forEach(p => {
-                    const day = format((p.date as Timestamp).toDate(), 'dd MMM', { locale: fr });
-                    dailyRevenue[day] = (dailyRevenue[day] || 0) + p.amount;
-                });
-                
-                // Assurer un tri chronologique
-                const sortedRevKeys = Object.keys(dailyRevenue).sort();
-                setRevenueData(sortedRevKeys.map(day => ({ name: day, value: dailyRevenue[day] })));
+                return () => unsubTracking();
+            });
 
-                // 4. Préparation données Graphique Croissance
-                const dailySignups: { [key: string]: number } = {};
-                filteredUsers.forEach(u => {
-                    const day = format((u.createdAt as Timestamp).toDate(), 'dd MMM', { locale: fr });
-                    dailySignups[day] = (dailySignups[day] || 0) + 1;
-                });
-                
-                const sortedUserKeys = Object.keys(dailySignups).sort();
-                setRevenueGrowthData(sortedUserKeys.map(day => ({ name: day, value: dailySignups[day] })));
+            return () => unsubPayments();
+        });
 
-            } catch (error) {
-                console.error("Error calculating KPIs:", error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchData();
+        return () => unsubUsers();
     }, [dateRange]);
 
     return (
@@ -127,7 +126,6 @@ export default function AdminStatsPage() {
                 </div>
             </header>
 
-            {/* --- GRILLE DES KPIs VITAUX --- */}
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard 
                     title="Chiffre d'Affaires" 
@@ -164,7 +162,6 @@ export default function AdminStatsPage() {
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Graphique Flux Financier */}
                 <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-0">
                         <div className="flex items-center gap-2 text-primary">
@@ -186,7 +183,7 @@ export default function AdminStatsPage() {
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 10, fontWeight: 'bold'}} />
                                     <YAxis hide />
                                     <Tooltip 
-                                        contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.5)'}} 
+                                        contentStyle={{backgroundColor: '#0f172a', border: '1px solid #1e293b', borderRadius: '16px'}} 
                                         itemStyle={{color: '#fff', fontWeight: 'bold'}}
                                     />
                                     <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorRev)" strokeWidth={4} />
@@ -196,7 +193,6 @@ export default function AdminStatsPage() {
                     </CardContent>
                 </Card>
 
-                {/* Graphique Croissance Utilisateurs */}
                 <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-0">
                         <div className="flex items-center gap-2 text-emerald-500">
@@ -224,13 +220,12 @@ export default function AdminStatsPage() {
                 </Card>
             </div>
 
-            {/* Note pédagogique pour l'admin */}
             <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-start gap-4">
                 <div className="p-2 bg-primary/10 rounded-xl">
                     <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                    <b>Conseil CEO :</b> Utilisez le sélecteur de date en haut à droite pour comparer vos performances. Un taux de conversion élevé (supérieur à 5%) indique que votre proposition de valeur est forte. Surveillez les pics dans le rythme d'acquisition pour identifier vos sources de trafic les plus rentables.
+                    <b>Conseil CEO :</b> Surveillez le compteur des <b>Utilisateurs Actifs</b> en temps réel pour coordonner vos interventions. Un pic de connexions est souvent le signe d'un besoin de support accru ou d'un succès viral immédiat.
                 </p>
             </div>
         </div>
