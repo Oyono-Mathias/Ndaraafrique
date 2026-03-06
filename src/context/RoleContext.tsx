@@ -1,4 +1,10 @@
+
 'use client';
+
+/**
+ * @fileOverview RoleProvider Ndara Afrique.
+ * ✅ RÉSOLU : Redirection Landing Page locale (/fr) après déconnexion.
+ */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import type { Dispatch, SetStateAction, ReactNode } from 'react';
@@ -48,7 +54,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
     // ✅ CEO Request: Redirect to Landing Page with locale prefix
-    router.push(`/${locale}`);
+    router.push(`/${locale}/`);
   }, [db, router, locale]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)

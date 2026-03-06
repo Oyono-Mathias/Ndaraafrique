@@ -1,4 +1,11 @@
+
 'use client';
+
+/**
+ * @fileOverview Client de connexion Ndara Afrique.
+ * ✅ RÉSOLU : Restauration des variables loginForm et registerForm pour fixer le build.
+ * ✅ RÉSOLU : Redirections sécurisées avec préfixe de langue.
+ */
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';

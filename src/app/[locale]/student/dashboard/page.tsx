@@ -1,17 +1,16 @@
+
 'use client';
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique - Style Udemy Industriel.
- * Regroupe les formations par catégories avec navigation horizontale.
  * ✅ RÉSOLU : Correction définitive du conflit de nommage Search (SearchIconLocal).
- * ✅ RÉSOLU : Toutes les redirections incluent désormais le préfixe de locale.
  */
 
 import { useRole } from '@/context/RoleContext';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BookOpen, Trophy, Sparkles, Search as LucideSearch, Bot, ArrowRight } from 'lucide-react';
+import { BookOpen, Trophy, Sparkles, Search as LucideSearch, Bot } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs } from 'firebase/firestore';
 import type { Course, NdaraUser } from '@/lib/types';
@@ -122,7 +121,7 @@ export default function StudentDashboardAndroid() {
         </div>
       </section>
 
-      {/* --- AFFICHAGE PAR CATÉGORIE (STYLE UDEMY) --- */}
+      {/* --- AFFICHAGE PAR CATÉGORIE --- */}
       <div className="space-y-10">
         {loadingData ? (
             <div className="px-4 space-y-8">

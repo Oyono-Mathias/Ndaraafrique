@@ -1,4 +1,10 @@
+
 'use client';
+
+/**
+ * @fileOverview Interface de quiz sécurisée pour le build.
+ * ✅ RÉSOLU : Suppression de l'import QuizAttempt inexistant.
+ */
 
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';

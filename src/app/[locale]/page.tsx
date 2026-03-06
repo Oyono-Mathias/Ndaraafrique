@@ -3,8 +3,8 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Performance & Branding.
- * ✅ CDN : Images servies par Bunny Pull Zone.
- * ✅ PERF : next/image priority et skeletons optimisés.
+ * ✅ DESIGN : Header optimisé pour l'équilibre Logo / Titre.
+ * ✅ PERF : next/image priority et Bunny Pull Zone.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -13,7 +13,7 @@ import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, LayoutDashboard, ChevronsRight, BookCopy, Wallet, Award, Search as SearchIcon } from 'lucide-react';
+import { Sparkles, ChevronsRight, BookCopy, Wallet, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
@@ -24,10 +24,12 @@ import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
 import { useDoc } from '@/firebase';
 import { logTrackingEvent } from '@/actions/trackingActions';
+import { useLocale } from 'next-intl';
 
 const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }) => {
     const [scrolled, setScrolled] = useState(false);
     const { user, role } = useRole();
+    const locale = useLocale();
 
     useEffect(() => {
         const handleScroll = () => {
@@ -45,27 +47,27 @@ const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }
     return (
         <nav className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-            scrolled ? "py-3 bg-slate-950/90 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "py-6 bg-transparent"
+            scrolled ? "py-3 bg-slate-950/90 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "py-5 bg-transparent"
         )}>
             <div className="container mx-auto px-4 flex justify-between items-center">
-                <Link href="/" className="flex items-center gap-3 group">
-                    <div className="relative w-10 h-10 overflow-hidden rounded-xl shadow-2xl bg-primary/20 flex items-center justify-center border border-white/10">
+                <Link href={`/${locale}`} className="flex items-center gap-2.5 group">
+                    <div className="relative w-9 h-9 overflow-hidden rounded-lg shadow-xl bg-white/5 flex items-center justify-center border border-white/10">
                         <Image 
                             src={logoUrl} 
-                            alt={`${siteName} Logo`} 
-                            width={40} 
-                            height={40} 
-                            className="object-contain p-1"
+                            alt="Logo" 
+                            width={36} 
+                            height={36} 
+                            className="object-contain"
                             priority
                         />
                     </div>
-                    <span className="text-xl font-black tracking-tighter text-white uppercase">{siteName}</span>
+                    <span className="text-lg font-bold tracking-tight text-white uppercase">{siteName}</span>
                 </Link>
                 <div className="flex items-center gap-2">
-                    <Link href={user ? dashboardUrl : "/login"}>
+                    <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login`}>
                         <Button 
                             variant="outline" 
-                            className="bg-white/10 backdrop-blur-md border-white/20 text-white hover:bg-primary hover:text-white hover:border-primary h-10 px-6 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
+                            className="bg-white/5 backdrop-blur-md border-white/10 text-white hover:bg-primary hover:text-white hover:border-primary h-9 px-5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all"
                             onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'nav' } })}
                         >
                             {user ? "Mon Espace" : "Se connecter"}
@@ -122,6 +124,7 @@ const CourseCarousel = ({ title, courses, instructorsMap, isLoading }: { title: 
 export default function LandingPage() {
   const { user, role } = useRole();
   const db = getFirestore();
+  const locale = useLocale();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
@@ -152,7 +155,7 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
   
-  const siteName = settings?.general?.siteName || "Ndara Afrique";
+  const siteName = settings?.general?.siteName || "NDARAAFRIQUE";
   const logoUrl = "https://ndara-assets.b-cdn.net/logo.png";
 
   const coursesByCategory = useMemo(() => {
@@ -182,7 +185,7 @@ export default function LandingPage() {
             {content?.heroSubtitle || "Formez-vous avec les leaders africains et propulsez votre carrière au niveau mondial."}
           </p>
           <div className="flex flex-col items-center gap-6 pt-4 animate-in fade-in slide-in-from-bottom-8 duration-1000">
-              <Link href={user ? dashboardUrl : "/login?tab=register"}>
+              <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`}>
                   <button 
                     className="nd-cta-primary h-16 text-xs px-12 rounded-[2rem] shadow-2xl shadow-primary/40 hover:shadow-primary/60"
                     onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'hero' } })}
@@ -249,7 +252,7 @@ export default function LandingPage() {
             <div className="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <div className="relative z-10 space-y-8">
                 <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-none">
-                    {content?.finalCtaTitle || "Prêt à coder l'avenir ?"}
+                    {content?.finalCtaTitle || "Prêt à transformer votre avenir ?"}
                 </h2>
                 <p className="text-primary-foreground/80 text-lg md:text-xl max-w-2xl mx-auto font-medium italic">
                     {content?.finalCtaSubtitle || "Rejoignez la plus grande académie panafricaine dès aujourd'hui."}
@@ -260,8 +263,8 @@ export default function LandingPage() {
                     className="h-20 px-16 rounded-2xl bg-white text-primary hover:bg-slate-50 font-black uppercase text-sm tracking-[0.2em] shadow-2xl transition-all active:scale-95"
                     onClick={() => logTrackingEvent({ eventType: 'cta_click', sessionId: 'landing', pageUrl: '/', metadata: { location: 'footer' } })}
                 >
-                    <Link href={user ? dashboardUrl : "/login?tab=register"}>
-                        {user ? "Accéder au dashboard" : (content?.finalCtaButtonText || "Rejoindre Ndara")}
+                    <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`}>
+                        {user ? "Accéder au dashboard" : (content?.finalCtaButtonText || "Devenir Membre")}
                         <ChevronsRight className="ml-3 h-6 w-6" />
                     </Link>
                 </Button>
