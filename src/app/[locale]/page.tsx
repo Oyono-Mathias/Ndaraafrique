@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium & Dynamique.
  * ✅ TEMPS RÉEL : Connecté à Firestore pour les cours et les stats.
- * ✅ CONVERSION : Redirige les non-connectés vers l'inscription au clic.
+ * ✅ INTERACTIF : Tous les boutons sont connectés aux routes réelles.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -11,7 +12,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } 
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, ChevronRight } from 'lucide-react';
+import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -38,17 +39,23 @@ const Navbar = () => {
                 <div className="hidden md:flex space-x-8 items-center">
                     <a href="#formations" className="text-slate-600 hover:text-brand-primary font-medium transition">Formations</a>
                     <a href="#methodologie" className="text-slate-600 hover:text-brand-primary font-medium transition">Méthodologie</a>
-                    <Link href="/abonnements" className="text-slate-600 hover:text-brand-primary font-medium transition">Tarifs</Link>
+                    <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-medium transition">Tarifs</Link>
                 </div>
 
                 <div className="hidden md:flex items-center space-x-4">
-                    <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login`} className="text-brand-dark font-medium hover:text-brand-primary transition">
-                        {user ? "Mon Espace" : "Connexion"}
-                    </Link>
-                    {!user && (
-                        <Link href={`/${locale}/login?tab=register`} className="bg-brand-dark text-white px-6 py-2.5 rounded-full font-medium hover:bg-slate-800 transition shadow-lg shadow-brand-dark/20 active:scale-95">
-                            S'inscrire
+                    {user ? (
+                        <Link href={`/${locale}${dashboardUrl}`} className="text-brand-dark font-black uppercase text-[10px] tracking-widest hover:text-brand-primary transition">
+                            Mon Espace
                         </Link>
+                    ) : (
+                        <>
+                            <Link href={`/${locale}/login`} className="text-brand-dark font-medium hover:text-brand-primary transition">
+                                Connexion
+                            </Link>
+                            <Link href={`/${locale}/login?tab=register`} className="bg-brand-dark text-white px-6 py-2.5 rounded-full font-medium hover:bg-slate-800 transition shadow-lg shadow-brand-dark/20 active:scale-95">
+                                S'inscrire
+                            </Link>
+                        </>
                     )}
                 </div>
 
@@ -61,18 +68,28 @@ const Navbar = () => {
                         </SheetTrigger>
                         <SheetContent side="right" className="bg-white border-l border-slate-200 p-0 w-[280px]">
                             <div className="p-6 flex flex-col gap-6">
-                                <div className="flex items-center gap-2">
-                                    <Image src="/logo.png" alt="Logo" width={32} height={32} className="rounded-lg" />
-                                    <span className="text-xl font-bold text-brand-dark">Ndara Afrique</span>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Image src="/logo.png" alt="Logo" width={32} height={32} className="rounded-lg" />
+                                        <span className="text-xl font-bold text-brand-dark">Ndara</span>
+                                    </div>
+                                    <SheetClose asChild>
+                                        <Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button>
+                                    </SheetClose>
                                 </div>
                                 <nav className="flex flex-col gap-4">
                                     <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600 hover:text-brand-primary">Formations</a></SheetClose>
                                     <SheetClose asChild><a href="#methodologie" className="text-lg font-bold text-slate-600 hover:text-brand-primary">Méthodologie</a></SheetClose>
-                                    <SheetClose asChild><Link href="/abonnements" className="text-lg font-bold text-slate-600 hover:text-brand-primary">Tarifs</Link></SheetClose>
+                                    <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600 hover:text-brand-primary">Tarifs</Link></SheetClose>
                                     <hr className="border-slate-100" />
-                                    <SheetClose asChild><Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login`} className="text-lg font-bold text-brand-primary">
-                                        {user ? "Mon Espace" : "Connexion"}
-                                    </Link></SheetClose>
+                                    {user ? (
+                                        <SheetClose asChild><Link href={`/${locale}${dashboardUrl}`} className="text-lg font-bold text-brand-primary">Tableau de bord</Link></SheetClose>
+                                    ) : (
+                                        <>
+                                            <SheetClose asChild><Link href={`/${locale}/login`} className="text-lg font-bold text-slate-600">Connexion</Link></SheetClose>
+                                            <SheetClose asChild><Link href={`/${locale}/login?tab=register`} className="text-lg font-bold text-brand-primary">S'inscrire</Link></SheetClose>
+                                        </>
+                                    )}
                                 </nav>
                             </div>
                         </SheetContent>
@@ -86,10 +103,12 @@ const Navbar = () => {
 export default function LandingPage() {
   const db = getFirestore();
   const locale = useLocale();
-  const { user } = useRole();
+  const { user, role } = useRole();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
+
+  const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
   useEffect(() => {
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
@@ -169,11 +188,11 @@ export default function LandingPage() {
                         Ndara Afrique est la plateforme de référence pour maîtriser la finance, le trading et l'entrepreneuriat digital. Des experts pour vous guider vers l'indépendance.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <Link href={user ? "/student/dashboard" : `/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
+                        <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
                             Commencer maintenant
                             <ChevronsRight className="w-5 h-5" />
                         </Link>
-                        <Link href="/search" className="px-8 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-bold text-lg hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
+                        <Link href={`/${locale}/search`} className="px-8 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-bold text-lg hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
                             Voir le catalogue
                         </Link>
                     </div>
@@ -268,7 +287,7 @@ export default function LandingPage() {
                     <h2 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Formations <span className="text-brand-primary">Populaires</span></h2>
                     <p className="text-slate-600 font-medium mt-2">Les cours les plus plébiscités par nos étudiants cette semaine.</p>
                 </div>
-                <Link href="/search" className="flex items-center text-brand-primary font-black uppercase text-[10px] tracking-[0.2em] hover:text-blue-500 transition-colors">
+                <Link href={`/${locale}/search`} className="flex items-center text-brand-primary font-black uppercase text-[10px] tracking-[0.2em] hover:text-blue-500 transition-colors">
                     Voir tout le catalogue
                     <ChevronsRight className="w-4 h-4 ml-2" />
                 </Link>
@@ -304,10 +323,10 @@ export default function LandingPage() {
                 Rejoignez plus de 15 000 étudiants qui ont déjà changé leur vie grâce à Ndara Afrique. Commencez votre premier cours aujourd'hui.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                <Link href={`/${locale}/login?tab=register`} className="px-10 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95">
+                <Link href={`/${locale}/login?tab=register`} className="px-10 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
                     Créer un compte gratuit
                 </Link>
-                <Link href="/student/support" className="px-10 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95">
+                <Link href={`/${locale}/student/support`} className="px-10 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
                     Contacter un conseiller
                 </Link>
             </div>
@@ -318,3 +337,5 @@ export default function LandingPage() {
     </div>
   );
 }
+
+    
