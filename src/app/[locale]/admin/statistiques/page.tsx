@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { Users, DollarSign, MousePointer2, TrendingUp, Calendar } from 'lucide-react';
+import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap } from 'lucide-react';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from 'react-day-picker';
 import { subDays, format, isWithinInterval } from 'date-fns';
@@ -27,7 +27,7 @@ interface ChartData {
 export default function AdminStatsPage() {
     const [stats, setStats] = useState({ totalRevenue: 0, totalUsers: 0, convRate: 0, activeUsers: 0 });
     const [revenueData, setRevenueData] = useState<ChartData[]>([]);
-    const [userGrowthData, setUserGrowthData] = useState<ChartData[]>([]);
+    const [userGrowthData, setRevenueGrowthData] = useState<ChartData[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 30), to: new Date() });
     
@@ -89,9 +89,7 @@ export default function AdminStatsPage() {
                 });
                 
                 // Assurer un tri chronologique
-                const sortedRevKeys = Object.keys(dailyRevenue).sort((a, b) => {
-                    return a.localeCompare(b);
-                });
+                const sortedRevKeys = Object.keys(dailyRevenue).sort();
                 setRevenueData(sortedRevKeys.map(day => ({ name: day, value: dailyRevenue[day] })));
 
                 // 4. Préparation données Graphique Croissance
@@ -102,7 +100,7 @@ export default function AdminStatsPage() {
                 });
                 
                 const sortedUserKeys = Object.keys(dailySignups).sort();
-                setUserGrowthData(sortedUserKeys.map(day => ({ name: day, value: dailySignups[day] })));
+                setRevenueGrowthData(sortedUserKeys.map(day => ({ name: day, value: dailySignups[day] })));
 
             } catch (error) {
                 console.error("Error calculating KPIs:", error);
