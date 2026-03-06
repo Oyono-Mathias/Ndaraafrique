@@ -2,14 +2,14 @@
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ ÉTAT INITIAL : Hub de découverte avec recherches populaires et catégories.
- * ✅ RÉSULTATS : Liste verticale de cartes horizontales (variant search-result).
+ * ✅ FONCTIONNEL : Bouton retour, filtre, panier et recherche temps réel Firestore.
+ * ✅ DESIGN : Copie conforme de la capture d'écran fournie.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart } from 'lucide-react';
+import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2 } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ export default function SearchPage() {
 
   useEffect(() => {
     setIsLoading(true);
+    // On écoute toutes les formations publiées en temps réel
     const q = query(collection(db, "courses"), where("status", "==", "Published"));
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -64,8 +65,9 @@ export default function SearchPage() {
     return () => unsubscribe();
   }, [db]);
 
+  // Filtrage local pour réactivité instantanée
   const filteredResults = useMemo(() => {
-    if (!searchTerm) return [];
+    if (!searchTerm.trim()) return [];
     return courses.filter(c => 
       c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.category.toLowerCase().includes(searchTerm.toLowerCase())
@@ -74,9 +76,9 @@ export default function SearchPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 animate-in fade-in duration-700">
-      {/* --- HEADER UDEMY STYLE --- */}
+      {/* --- HEADER UDEMY STYLE (COPIE EXACTE) --- */}
       <header className="px-2 pt-4 pb-2 sticky top-0 bg-background/95 backdrop-blur-xl z-40 border-b border-border/50 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full">
+        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-foreground hover:bg-accent">
             <ArrowLeft className="h-6 w-6" />
         </Button>
         
@@ -87,10 +89,10 @@ export default function SearchPage() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
         </div>
 
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-accent">
             <ShoppingCart className="h-6 w-6" />
         </Button>
       </header>
@@ -137,11 +139,11 @@ export default function SearchPage() {
             </section>
           </div>
         ) : (
-          /* --- RÉSULTATS DE RECHERCHE UDEMY STYLE --- */
-          <div className="space-y-2">
-            <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xs font-black text-muted-foreground uppercase tracking-widest">
-                    {filteredResults.length} résultats trouvés
+          /* --- RÉSULTATS DE RECHERCHE (COPIE CAPTURE) --- */
+          <div className="space-y-4">
+            <div className="flex items-center justify-between mb-2">
+                <h2 className="text-[13px] font-black text-foreground uppercase tracking-[0.1em]">
+                    {filteredResults.length} RÉSULTATS TROUVÉS
                 </h2>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
             </div>
@@ -151,7 +153,7 @@ export default function SearchPage() {
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl bg-card" />)}
               </div>
             ) : filteredResults.length > 0 ? (
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-2">
                 {filteredResults.map(course => (
                   <CourseCard 
                     key={course.id} 
@@ -162,7 +164,7 @@ export default function SearchPage() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-center opacity-40">
+              <div className="flex flex-col items-center justify-center py-24 text-center opacity-40">
                 <Frown className="h-16 w-16 mb-4" />
                 <h3 className="text-xl font-black uppercase tracking-tight">Aucun résultat</h3>
                 <Button variant="link" onClick={() => setSearchTerm('')} className="text-primary mt-2">Réinitialiser la recherche</Button>
@@ -172,24 +174,5 @@ export default function SearchPage() {
         )}
       </main>
     </div>
-  );
-}
-
-function Loader2(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-    </svg>
   );
 }

@@ -3,7 +3,7 @@
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique - Style Udemy Industriel.
  * Regroupe les formations par catégories avec navigation horizontale.
- * ✅ RÉSOLU : Correction du conflit de nommage Search.
+ * ✅ RÉSOLU : Correction du conflit de nommage Search (SearchIconLocal).
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -32,14 +32,14 @@ export default function StudentDashboardAndroid() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    // 1. Écouteur Stats
+    // 1. Écouteur Stats Temps Réel
     const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), (snap) => {
       const total = snap.size;
       const completed = snap.docs.filter(d => d.data().progress === 100).length;
       setStats({ total, completed });
     });
 
-    // 2. Chargement du Catalogue par catégories
+    // 2. Chargement du Catalogue Temps Réel
     const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc')), async (snap) => {
       const coursesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
       setAllCourses(coursesData);
@@ -57,7 +57,7 @@ export default function StudentDashboardAndroid() {
     return () => { unsubEnroll(); unsubCourses(); };
   }, [currentUser?.uid, db]);
 
-  // Groupement par catégorie
+  // Groupement par catégorie réactif
   const coursesByCategory = useMemo(() => {
     const groups: Record<string, Course[]> = {};
     allCourses.forEach(course => {
