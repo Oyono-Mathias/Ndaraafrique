@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Carte de cours Ndara Afrique - Style Udemy/Fintech Premium.
+ * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium.
  * ✅ CONVERSION : Redirige vers l'inscription si l'utilisateur n'est pas connecté.
- * ✅ DESIGN : Minimaliste avec bordures fines et effets de survol.
+ * ✅ DESIGN : Minimaliste avec badge catégorie, durée et prix.
  */
 
 import Link from 'next/link';
@@ -35,7 +35,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   
   const [isWishlisted, setIsWishlisted] = useState(false);
   
-  // ✅ LOGIQUE DE REDIRECTION CEO : Si non connecté -> Inscription
+  // ✅ LOGIQUE DE REDIRECTION CEO : Tout clic non-connecté -> Inscription
   const href = !user 
     ? `/${locale}/login?tab=register`
     : (variant === 'list' 
@@ -112,7 +112,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
           />
           {course.id.startsWith('demo') && (
             <div className="absolute top-4 left-4 z-20">
-                <span className="bg-brand-dark/80 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest">Bientôt disponible</span>
+                <span className="bg-brand-primary text-white px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest shadow-lg">Bientôt disponible</span>
             </div>
           )}
           {!course.id.startsWith('demo') && (
