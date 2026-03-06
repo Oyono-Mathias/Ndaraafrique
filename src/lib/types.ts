@@ -1,4 +1,3 @@
-
 import type { Timestamp, FieldValue } from "firebase/firestore";
 
 export type UserRole = 'student' | 'instructor' | 'admin';
@@ -198,16 +197,6 @@ export interface Assignment {
   updatedAt?: Timestamp | FieldValue;
 }
 
-export interface Submission {
-    id: string;
-    userId: string;
-    fileURL: string;
-    submittedAt: Timestamp | FieldValue;
-    grade?: number;
-    feedback?: string;
-    status: 'Envoyé' | 'Corrigé' | 'En retard';
-}
-
 export interface Course {
     id: string;
     courseId?: string; 
@@ -309,16 +298,6 @@ export interface CourseQuestion {
   studentName: string;
   studentAvatarUrl?: string;
 }
-
-export interface CourseAnswer {
-  id: string;
-  questionId: string;
-  userId: string; // ID of the user who answered (can be student or instructor)
-  body: string;
-  createdAt: Timestamp | FieldValue;
-  isOfficial: boolean; // True if the answer from the course instructor
-}
-
 
 export interface Notification {
   id: string;
@@ -489,16 +468,6 @@ export interface Quiz {
   createdAt: Timestamp | FieldValue;
   questionsCount?: number;
   updatedAt?: Timestamp | FieldValue;
-}
-
-export interface QuizAttempt {
-    id: string;
-    userId: string;
-    quizId: string;
-    courseId: string;
-    answers: Record<string, number>; // questionId: selectedOptionIndex
-    score: number;
-    submittedAt: Timestamp | FieldValue;
 }
 
 export interface AssignmentSubmission {
