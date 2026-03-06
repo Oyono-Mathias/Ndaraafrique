@@ -3,8 +3,7 @@
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ RÉSOLU : Restauration des variables loginForm et registerForm pour fixer le build.
- * ✅ RÉSOLU : Redirections sécurisées avec le préfixe locale.
+ * ✅ RÉSOLU : Restauration définitive des hooks useForm pour corriger le build.
  */
 
 import { useState, useEffect } from 'react';
@@ -82,6 +81,7 @@ export default function LoginClient() {
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
 
+  // ✅ RÉSOLU : Déclarations critiques pour le build Vercel
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },

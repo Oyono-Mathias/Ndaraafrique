@@ -1,10 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium.
- * ✅ HERO : Gradient text et animation fade-in-up fidèle au design CEO.
- * ✅ DYNAMIQUE : Affiche les cours de la DB ou des démos si vide.
- * ✅ HEADER : Logo fixé et dimensions affinées.
+ * ✅ TEMPS RÉEL : Connecté à Firestore (Courses & Stats).
+ * ✅ DESIGN : Fidèle au fichier HTML du CEO (Gradient text, Glass-cards).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -12,13 +12,14 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } 
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles } from 'lucide-react';
+import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, LayoutGrid, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Footer } from '@/components/layout/footer';
+import { Stats } from '@/components/landing/Stats';
 
 const Navbar = () => {
     const { user, role } = useRole();
@@ -26,11 +27,11 @@ const Navbar = () => {
     const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
     return (
-        <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300 h-20 flex items-center">
+        <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300 h-16 flex items-center">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-between items-center">
                 <Link href={`/${locale}`} className="flex items-center gap-2 group">
-                    <div className="w-10 h-10 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-xl flex items-center justify-center text-white font-bold shadow-lg shadow-emerald-500/20 group-hover:scale-110 transition-transform overflow-hidden">
-                        <Image src="/logo.png" alt="Logo" width={40} height={40} className="object-cover" />
+                    <div className="relative w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-brand-primary text-white font-bold shadow-lg shadow-emerald-500/20">
+                        <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-cover" priority />
                     </div>
                     <span className="text-xl font-bold text-brand-dark tracking-tight">Ndara <span className="text-brand-primary">Afrique</span></span>
                 </Link>
@@ -43,7 +44,7 @@ const Navbar = () => {
 
                 <div className="hidden md:flex items-center space-x-4">
                     <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login`} className="text-brand-dark font-medium hover:text-brand-primary transition">
-                        {user ? "Tableau de bord" : "Connexion"}
+                        {user ? "Espace Membre" : "Connexion"}
                     </Link>
                     {!user && (
                         <Link href={`/${locale}/login?tab=register`} className="bg-brand-dark text-white px-6 py-2.5 rounded-full font-medium hover:bg-slate-800 transition shadow-lg shadow-brand-dark/20 active:scale-95">
@@ -91,7 +92,6 @@ export default function LandingPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
   useEffect(() => {
-    // Requête pour les cours publiés
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     const unsubscribe = onSnapshot(q, async (snapshot) => {
       const coursesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
@@ -106,16 +106,13 @@ export default function LandingPage() {
         setInstructorsMap(newInstructors);
       }
       setLoading(false);
-    }, (error) => {
-        console.error("Firestore error:", error);
-        setLoading(false);
     });
     return () => unsubscribe();
   }, [db]);
 
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
-    // Fallback : Cours de démonstration si la DB est vide
+    // Fallback: Si Firestore est vide, on affiche les démos du CEO
     return [
         { 
             id: 'demo-1', 
@@ -152,13 +149,13 @@ export default function LandingPage() {
       <Navbar />
       
       {/* --- HERO SECTION --- */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden">
+      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden px-4 md:px-8">
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
             <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-gradient-to-t from-emerald-50 to-transparent opacity-50"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
                 <div className="text-center lg:text-left animate-fade-in-up">
                     <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-brand-secondary text-sm font-semibold mb-6">
@@ -170,7 +167,7 @@ export default function LandingPage() {
                         <span className="gradient-text">Avenir Financier</span>
                     </h1>
                     <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-                        Ndara Afrique est la plateforme de référence pour maîtriser la finance, le trading et l'entrepreneuriat digital. Des experts locaux pour vous guider vers l'indépendance.
+                        Ndara Afrique est la plateforme de référence pour maîtriser la finance, le trading et l'entrepreneuriat digital. Des experts pour vous guider vers l'indépendance.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <Link href={`/${locale}/login?tab=register`} className="px-8 py-4 bg-brand-primary text-white rounded-full font-bold text-lg hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
@@ -196,7 +193,7 @@ export default function LandingPage() {
 
                 <div className="relative animate-float hidden lg:block">
                     <div className="absolute -inset-4 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl blur-2xl opacity-20"></div>
-                    <div className="relative aspect-video rounded-2xl shadow-2xl border border-white/50 overflow-hidden transform hover:scale-[1.01] transition duration-500 bg-slate-200">
+                    <div className="relative aspect-video rounded-3xl shadow-2xl border border-white/50 overflow-hidden transform hover:scale-[1.01] transition duration-500 bg-slate-200">
                         <Image 
                             src="https://ndara-assets.b-cdn.net/assets/students-collaboration.jpg" 
                             alt="Étudiants Ndara Afrique" 
@@ -220,33 +217,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS SECTION --- */}
-      <section className="py-12 bg-brand-dark text-white border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-                <div className="space-y-1">
-                    <p className="text-3xl md:text-4xl font-black text-brand-primary">15k+</p>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Étudiants Actifs</p>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-3xl md:text-4xl font-black text-brand-primary">50+</p>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Formations Premium</p>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-3xl md:text-4xl font-black text-brand-primary">4.9/5</p>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Note Moyenne</p>
-                </div>
-                <div className="space-y-1">
-                    <p className="text-3xl md:text-4xl font-black text-brand-primary">24/7</p>
-                    <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">Support Mentor</p>
-                </div>
-            </div>
+      {/* --- STATS SECTION (BRAND DARK) --- */}
+      <section className="py-16 bg-brand-dark text-white border-y border-white/5">
+        <div className="max-w-7xl mx-auto px-4">
+            <Stats />
         </div>
       </section>
 
       {/* --- METHODOLOGIE (GLASS CARDS) --- */}
-      <section id="methodologie" className="py-24 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section id="methodologie" className="py-24 bg-white relative px-4 md:px-8">
+        <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
                 <h2 className="text-brand-primary font-black tracking-[0.2em] uppercase text-xs">Pourquoi Ndara ?</h2>
                 <h3 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Une approche pédagogique <span className="text-brand-primary">unique</span></h3>
@@ -281,9 +261,9 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS POPULAIRES --- */}
-      <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      {/* --- FORMATIONS POPULAIRES (REAL-TIME) --- */}
+      <section id="formations" className="py-24 bg-slate-50 relative overflow-hidden px-4 md:px-8">
+        <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-4">
                 <div>
                     <h2 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Formations <span className="text-brand-primary">Populaires</span></h2>
@@ -301,7 +281,7 @@ export default function LandingPage() {
                 ) : (
                     displayCourses.map(course => (
                         <div key={course.id} className="relative group">
-                            {course.id.startsWith('demo') && (
+                            {(course.id.startsWith('demo') || course.status === 'Draft') && (
                                 <div className="absolute top-4 left-4 z-20">
                                     <span className="bg-brand-dark/80 backdrop-blur px-3 py-1 rounded-full text-[8px] font-black text-white uppercase tracking-widest">Bientôt disponible</span>
                                 </div>
@@ -319,11 +299,11 @@ export default function LandingPage() {
       </section>
 
       {/* --- CTA FINAL --- */}
-      <section className="py-32 relative overflow-hidden bg-brand-dark">
+      <section className="py-32 relative overflow-hidden bg-brand-dark px-4">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
         
-        <div className="max-w-4xl mx-auto px-4 relative z-10 text-center space-y-8">
+        <div className="max-w-4xl mx-auto relative z-10 text-center space-y-8">
             <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-none">
                 Prêt à transformer <br /><span className="text-brand-primary">votre avenir ?</span>
             </h2>
