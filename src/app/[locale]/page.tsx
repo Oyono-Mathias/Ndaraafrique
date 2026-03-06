@@ -3,8 +3,8 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Design Fintech Premium & Dynamique.
+ * ✅ TOUS LES BOUTONS CONNECTÉS : Authentification, Recherche, Support, Abonnements.
  * ✅ TEMPS RÉEL : Connecté à Firestore pour les cours et les stats.
- * ✅ INTERACTIF : Tous les boutons sont connectés aux routes réelles.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -12,7 +12,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } 
 import Link from 'next/link';
 import type { Course, NdaraUser } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, ChevronRight, X } from 'lucide-react';
+import { ChevronsRight, BookCopy, CheckCircle2, Users, TrendingUp, Menu, Star, Sparkles, ChevronRight, X, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -118,11 +118,18 @@ export default function LandingPage() {
       
       if (coursesData.length > 0) {
         const instructorIds = [...new Set(coursesData.map(c => c.instructorId).filter(Boolean))];
-        const usersQuery = query(collection(db, 'users'), where('uid', 'in', instructorIds.slice(0, 30)));
-        const userSnapshots = await getDocs(usersQuery);
-        const newInstructors = new Map();
-        userSnapshots.forEach(doc => newInstructors.set(doc.id, doc.data()));
-        setInstructorsMap(newInstructors);
+        const usersRef = collection(db, 'users');
+        const newMap = new Map();
+        
+        // Fetch instructors by batch of 30
+        for (let i = 0; i < instructorIds.length; i += 30) {
+            const chunk = instructorIds.slice(i, i + 30);
+            if (chunk.length === 0) continue;
+            const qInst = query(usersRef, where('uid', 'in', chunk));
+            const snap = await getDocs(qInst);
+            snap.forEach(d => newMap.set(d.id, d.data()));
+        }
+        setInstructorsMap(newMap);
       }
       setLoading(false);
     });
@@ -131,6 +138,7 @@ export default function LandingPage() {
 
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
+    // Fallback static data if DB is empty
     return [
         { 
             id: 'demo-1', 
@@ -337,5 +345,3 @@ export default function LandingPage() {
     </div>
   );
 }
-
-    
