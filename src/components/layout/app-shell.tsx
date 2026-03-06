@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
- * ✅ RÉSOLU : Cartographie complète des routes pour assurer l'accès public et privé.
+ * ✅ RÉSOLU : Redirection sécurisée vers Landing Page (/fr) si non-authentifié.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -21,6 +20,7 @@ import { doc, onSnapshot, getFirestore } from 'firebase/firestore';
 import { SplashScreen } from '@/components/SplashScreen';
 import { Header } from '@/components/layout/header';
 import { OfflineBar } from '@/components/OfflineBar';
+import { useLocale } from 'next-intl';
 
 function AnnouncementBanner({ message }: { message: string }) {
     const [isVisible, setIsVisible] = useState(false);
@@ -52,6 +52,7 @@ function AnnouncementBanner({ message }: { message: string }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
   const router = useRouter();
+  const locale = useLocale();
   const pathname = usePathname() || '';
   const [mounted, setMounted] = useState(false);
   const db = getFirestore();
@@ -80,6 +81,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
+  const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
+
   const isPublicPage = useMemo(() => {
     const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales'];
     if (publicPaths.includes(cleanPath)) return true;
@@ -99,13 +102,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (loading || !mounted) return;
 
     if (!user) {
-      if (!isPublicPage) router.push('/login');
+      // ✅ Security: Redirect to Landing Page with locale prefix if trying to access private area
+      if (!isPublicPage && !isAuthPage) {
+          router.push(`/${locale}`);
+      }
       return;
     }
 
     if (user && cleanPath === '/') {
         const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-        router.push(target);
+        router.push(`/${locale}${target}`);
         return;
     }
 
@@ -117,11 +123,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (role === 'admin') return; 
     
     if (role === 'instructor') {
-        if (isAdminArea) router.push('/instructor/dashboard');
+        if (isAdminArea) router.push(`/${locale}/instructor/dashboard`);
     } else if (role === 'student') {
-        if (isInstructorArea || isAdminArea) router.push('/student/dashboard');
+        if (isInstructorArea || isAdminArea) router.push(`/${locale}/student/dashboard`);
     }
-  }, [user, role, loading, cleanPath, router, mounted, isPublicPage]);
+  }, [user, role, loading, cleanPath, router, mounted, isPublicPage, isAuthPage, locale]);
 
   if (loading || !mounted) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
   
@@ -135,7 +141,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       );
   }
 
-  const isAuthPage = ['/login', '/register', '/forgot-password'].includes(cleanPath);
   const isLandingPage = cleanPath === '/';
   
   // Masquer les sidebars sur les vues plein écran (lecteur de cours)

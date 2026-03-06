@@ -43,12 +43,12 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const auth = getAuth();
     if (auth.currentUser) {
         const userDocRef = doc(db, 'users', auth.currentUser.uid);
-        await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+        await updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }).catch(() => {});
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ CEO Request: Retour à la page de connexion incluant la locale
-    router.push(`/${locale}/login`);
+    // ✅ CEO Request: Redirect to Landing Page with locale prefix
+    router.push(`/${locale}`);
   }, [db, router, locale]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)
