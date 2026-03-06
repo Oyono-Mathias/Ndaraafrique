@@ -14,16 +14,15 @@ const withPWA = require('next-pwa')({
 const nextConfig = {
   images: {
     remotePatterns: [
-      { protocol: 'https', hostname: 'images.unsplash.com' },
-      { protocol: 'https', hostname: 'picsum.photos' },
-      { protocol: 'https', hostname: 'api.dicebear.com' },
-      { protocol: 'https', hostname: 'i.postimg.cc' },
-      { protocol: 'https', hostname: 'upload.wikimedia.org' },
-      { protocol: 'https', hostname: 'ndara-assets.b-cdn.net' },
+      { protocol: 'https', hostname: 'images.unsplash.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'picsum.photos', pathname: '/**' },
+      { protocol: 'https', hostname: 'api.dicebear.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'i.postimg.cc', pathname: '/**' },
+      { protocol: 'https', hostname: 'upload.wikimedia.org', pathname: '/**' },
+      { protocol: 'https', hostname: 'ndara-assets.b-cdn.net', pathname: '/**' },
     ],
   },
   webpack: (config, { isServer }) => {
-    // Correction critique pour Vercel : Empêche l'inclusion de modules Node.js côté client
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
