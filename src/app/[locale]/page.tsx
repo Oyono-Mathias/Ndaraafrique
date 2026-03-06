@@ -2,10 +2,9 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Design CEO Premium Fintech.
- * ✅ RÉSOLU : Erreur de build "Unexpected token nav".
+ * ✅ RÉSOLU : Correction définitive de l'erreur "Unexpected token nav".
  * ✅ RÉSOLU : Affichage dynamique des formations via Firestore.
- * ✅ RÉSOLU : Redirection vers inscription pour les non-connectés.
- * ✅ STYLE : Design Premium avec Glass-cards et Gradients.
+ * ✅ RÉSOLU : Statistiques réelles des membres.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -24,9 +23,8 @@ import { Stats } from '@/components/landing/Stats';
 
 /**
  * Composant de navigation pour la Landing Page.
- * ✅ RÉSOLU : Correction de la syntaxe JSX pour éviter les erreurs de build.
  */
-function Navbar() {
+const Navbar = () => {
     const { user, role } = useRole();
     const locale = useLocale();
     
@@ -106,7 +104,7 @@ function Navbar() {
             </div>
         </nav>
     );
-}
+};
 
 export default function LandingPage() {
   const db = getFirestore();
@@ -123,7 +121,6 @@ export default function LandingPage() {
   }, [role]);
 
   useEffect(() => {
-    // 🛡️ REQUÊTE TEMPS RÉEL : Synchronisation instantanée avec Firestore
     const q = query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc"));
     
     const unsubscribe = onSnapshot(q, async (snapshot) => {
@@ -158,7 +155,6 @@ export default function LandingPage() {
     return () => unsubscribe();
   }, [db]);
 
-  // 💎 LOGIQUE DE FALLBACK : Si pas de cours réels, on affiche les exemples premium
   const displayCourses = useMemo(() => {
     if (courses.length > 0) return courses.slice(0, 3);
     

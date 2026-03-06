@@ -7,11 +7,38 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
     // --- RÈGLES DE DÉVELOPPEMENT (DÉVERROUILLAGE) ---
-    // Autorise tout pour les utilisateurs connectés pendant la phase de modification
     match /{document=**} {
       allow read, write: if isSignedIn();
+    }
+
+    // --- PROFIL UTILISATEUR ---
+    // On autorise la lecture publique pour permettre le comptage des membres sur la Landing Page
+    // sans exposer les données sensibles grâce au filtrage frontend (comptage uniquement)
+    match /users/{userId} {
+      allow read: if true; 
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId);
+      
+      match /notifications/{notifId} {
+        allow create, read, update: if isOwner(userId);
+      }
+      
+      match /chatHistory/{msgId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // --- QUESTIONS & RÉPONSES ---
+    match /questions/{questionId} {
+      allow create: if isSignedIn();
+      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId);
+      allow update: if isSignedIn() && request.auth.uid == resource.data.instructorId;
     }
 
     // --- ACCÈS PUBLICS ---

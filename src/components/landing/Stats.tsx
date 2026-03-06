@@ -3,7 +3,7 @@
 /**
  * @fileOverview Statistiques de la landing page en temps réel.
  * Écoute Firestore pour afficher les compteurs réels.
- * ✅ RÉSOLU : Affiche le nombre total de membres pour éviter le "0" au début.
+ * ✅ RÉSOLU : Affiche le nombre total de membres même pour les visiteurs publics.
  */
 
 import { useEffect, useState } from 'react';
@@ -19,6 +19,7 @@ export function Stats() {
         setIsLoading(true);
         
         // 1. Écouter TOUS les membres réels (Admin + Formateurs + Étudiants)
+        // La règle publique autorisée dans firestore.rules permet ce comptage.
         const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
             setStats(prev => ({ ...prev, memberCount: snapshot.size }));
         }, (err) => {
@@ -43,7 +44,7 @@ export function Stats() {
     const StatItem = ({ label, value, colorClass }: { label: string, value: string | number, colorClass?: string }) => (
         <div className="flex flex-col items-center gap-2">
             <p className={cn("text-3xl md:text-5xl font-black transition-all duration-700", colorClass || "text-brand-primary")}>
-                {isLoading ? "..." : (typeof value === 'number' && value >= 1000 ? `${(value/1000).toFixed(1)}k+` : value)}
+                {isLoading && stats.memberCount === 0 ? "..." : (typeof value === 'number' && value >= 1000 ? `${(value/1000).toFixed(1)}k+` : value)}
             </p>
             <p className="text-[10px] md:text-xs font-black uppercase tracking-[0.2em] text-slate-500">
                 {label}
