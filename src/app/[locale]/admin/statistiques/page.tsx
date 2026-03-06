@@ -1,11 +1,12 @@
+
 'use client';
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
- * ✅ RÉSOLU : Support du mode Clair/Sombre (bg-background).
- * ✅ RÉSOLU : Lisibilité des chiffres en mode clair (bg-card).
+ * ✅ RÉSOLU : Support du mode Clair/Sombre.
  * ✅ RÉSOLU : Erreur de build Vercel (Échappement caractères spéciaux).
+ * ✅ RÉSOLU : Visibilité des textes en mode clair.
  */
 
 import { useState, useEffect, useMemo } from 'react';
