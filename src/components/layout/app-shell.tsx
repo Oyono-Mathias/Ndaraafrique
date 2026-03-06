@@ -1,8 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
+ * Correction : Redirection automatique des utilisateurs connectés vers le Dashboard depuis la Home.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';

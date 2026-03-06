@@ -1,28 +1,25 @@
+
 'use client';
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
  * Correction : Suppression du nesting des listeners pour garantir l'affichage même si une collection est vide.
+ * Correction : Importation de l'icône Zap manquante.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, Timestamp, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap } from 'lucide-react';
+import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap, TrendingDown } from 'lucide-react';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from 'react-day-picker';
-import { subDays, format, isWithinInterval, startOfDay } from 'date-fns';
+import { subDays, format, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, NdaraUser, TrackingEvent } from '@/lib/types';
-
-interface ChartData {
-    name: string;
-    value: number;
-}
 
 export default function AdminStatsPage() {
     const [allUsers, setAllUsers] = useState<NdaraUser[]>([]);
@@ -36,15 +33,18 @@ export default function AdminStatsPage() {
 
     // 1. ÉCOUTEURS TEMPS RÉEL INDÉPENDANTS (Anti-blocage)
     useEffect(() => {
+        // Flux Utilisateurs
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             setAllUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as NdaraUser)));
             setIsLoading(false);
         });
 
+        // Flux Paiements
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             setAllPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment)));
         });
 
+        // Flux Tracking (Limité aux 2000 derniers événements pour la perf)
         const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(2000)), (snap) => {
             setAllTracking(snap.docs.map(doc => doc.data() as TrackingEvent));
         });
@@ -85,7 +85,8 @@ export default function AdminStatsPage() {
         // Données graphiques Revenus
         const dailyRevenue: { [key: string]: number } = {};
         filteredPayments.forEach(p => {
-            const day = format((p.date as any).toDate(), 'dd MMM', { locale: fr });
+            const date = (p.date as any)?.toDate?.() || new Date();
+            const day = format(date, 'dd MMM', { locale: fr });
             dailyRevenue[day] = (dailyRevenue[day] || 0) + p.amount;
         });
         const revenueData = Object.keys(dailyRevenue).sort().map(day => ({ name: day, value: dailyRevenue[day] }));
@@ -93,10 +94,9 @@ export default function AdminStatsPage() {
         // Données graphiques Croissance
         const dailySignups: { [key: string]: number } = {};
         filteredUsers.forEach(u => {
-            if (u.createdAt) {
-                const day = format((u.createdAt as any).toDate(), 'dd MMM', { locale: fr });
-                dailySignups[day] = (dailySignups[day] || 0) + 1;
-            }
+            const date = (u.createdAt as any)?.toDate?.() || new Date();
+            const day = format(date, 'dd MMM', { locale: fr });
+            dailySignups[day] = (dailySignups[day] || 0) + 1;
         });
         const growthData = Object.keys(dailySignups).sort().map(day => ({ name: day, value: dailySignups[day] }));
 
@@ -149,7 +149,7 @@ export default function AdminStatsPage() {
                     icon={Users} 
                     isLoading={isLoading} 
                     accentColor="bg-slate-900 border-slate-800"
-                    description="Membres totaux enregistrés"
+                    description="Membres totaux"
                 />
                 <StatCard 
                     title="Utilisateurs Actifs" 
@@ -157,7 +157,7 @@ export default function AdminStatsPage() {
                     icon={Zap} 
                     isLoading={isLoading} 
                     accentColor="bg-slate-900 border-slate-800"
-                    description="Actuellement connectés"
+                    description="Actuellement en ligne"
                 />
             </section>
 
@@ -225,7 +225,7 @@ export default function AdminStatsPage() {
                     <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                    <b>Conseil CEO :</b> Si vos chiffres de membres semblent bas, utilisez l'outil de synchronisation dans l'onglet <b>Maintenance</b> des réglages pour importer tous les comptes Firebase Auth vers Firestore.
+                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l'outil de synchronisation dans <b>Configuration > Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
                 </p>
             </div>
         </div>

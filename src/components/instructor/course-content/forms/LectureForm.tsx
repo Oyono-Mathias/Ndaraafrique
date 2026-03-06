@@ -1,8 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
  * ✅ SÉCURITÉ : Bloque l'upload si le titre est absent.
+ * ✅ DESIGN : Boutons d'upload visuellement désactivés si titre vide.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -20,7 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, RefreshCw, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, Clock, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
@@ -124,7 +126,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                 title: "Titre manquant", 
                 description: "Veuillez saisir le titre de la leçon avant de choisir la vidéo." 
             });
-            event.target.value = ''; // Reset input
+            event.target.value = ''; 
             return;
         }
 
@@ -281,7 +283,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <div className="space-y-4">
                                 <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
                                     Fichier Vidéo
-                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3"/> Titre requis avant upload</span>}
+                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis avant upload</span>}
                                 </label>
                                 <div className="relative">
                                     <Input type="file" accept="video/*" onChange={handleVideoUpload} className="sr-only" id="video-upload-input" disabled={isUploading || isTitleMissing} />
@@ -306,7 +308,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                             <div className="space-y-4">
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
                                     Fichier PDF (Bunny CDN)
-                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1"><AlertCircle className="h-3 w-3"/> Titre requis</span>}
+                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis</span>}
                                 </FormLabel>
                                 <div className="relative">
                                     <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading || isTitleMissing} />

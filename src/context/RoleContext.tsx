@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -82,9 +83,10 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
-          // ✅ LOGIQUE DE COMPLÉTION DE PROFIL : Photo + Username + Domaine
-          const hasPhoto = !!userData.profilePictureURL && !userData.profilePictureURL.includes('api.dicebear.com');
-          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasPhoto);
+          // ✅ LOGIQUE DE COMPLÉTION DE PROFIL : Photo RÉELLE + Username + Domaine
+          // On vérifie que la photo existe et n'est pas l'avatar par défaut de Dicebear
+          const hasRealPhoto = !!userData.profilePictureURL && !userData.profilePictureURL.includes('api.dicebear.com');
+          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasRealPhoto);
 
           const resolvedUser: NdaraUser = {
               ...userData,
