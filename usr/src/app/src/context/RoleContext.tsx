@@ -45,8 +45,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
         await setDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }, { merge: true }).catch(console.error);
     }
     await signOut(auth);
-    // After signing out, redirect to the login page.
-    router.push('/login');
+    // ✅ CEO Request: Redirect to Landing Page instead of Login
+    router.push('/');
   }, [db, router]);
 
    useEffect(() => {

@@ -45,7 +45,8 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    router.push('/login');
+    // ✅ CEO Request: Redirect to Landing Page instead of Login
+    router.push('/');
   }, [db, router]);
 
   // 1. GESTION DE LA PRÉSENCE (isOnline)
