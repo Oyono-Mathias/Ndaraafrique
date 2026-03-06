@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Version "Fintech Premium".
+ * @fileOverview Landing Page Ndara Afrique - Standard Fintech Premium.
  * ✅ DESIGN : Hero avec gradient-text, Glass-cards pour la méthodologie.
- * ✅ STATS : Section sur fond sombre (Brand-Dark) pour l'autorité.
+ * ✅ STATS : Section Authority sur fond sombre.
  * ✅ BOUTONS : Effet d'ombre portée lumineuse.
  */
 
@@ -13,12 +14,11 @@ import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { Footer } from '@/components/layout/footer';
 import Image from 'next/image';
-import { Sparkles, ChevronsRight, BookCopy, Wallet, Award, CheckCircle2, Search as LucideSearch, Bot, Users, TrendingUp } from 'lucide-react';
+import { Sparkles, ChevronsRight, BookCopy, Wallet, Award, CheckCircle2, Bot, Users, TrendingUp, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { DynamicCarousel } from '@/components/ui/DynamicCarousel';
 import { useRole } from '@/context/RoleContext';
@@ -26,33 +26,32 @@ import { useDoc } from '@/firebase';
 import { logTrackingEvent } from '@/actions/trackingActions';
 import { useLocale } from 'next-intl';
 
-const LandingNav = ({ logoUrl, siteName }: { logoUrl: string, siteName: string }) => {
+const LandingNav = ({ logoUrl }: { logoUrl: string }) => {
     const [scrolled, setScrolled] = useState(false);
     const { user, role } = useRole();
     const locale = useLocale();
 
     useEffect(() => {
         const handleScroll = () => {
-            const isScrolled = window.scrollY > 10;
-            if (isScrolled !== scrolled) setScrolled(isScrolled);
+            setScrolled(window.scrollY > 10);
         };
-        document.addEventListener('scroll', handleScroll);
-        return () => document.removeEventListener('scroll', handleScroll);
-    }, [scrolled]);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
 
     const dashboardUrl = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
 
     return (
         <nav className={cn(
             "fixed top-0 left-0 right-0 z-50 transition-all duration-500",
-            scrolled ? "py-2 bg-slate-950/95 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "py-3 bg-transparent"
+            scrolled ? "py-2 bg-slate-950/95 backdrop-blur-xl border-b border-white/5 shadow-2xl" : "py-4 bg-transparent"
         )}>
             <div className="container mx-auto px-6 flex justify-between items-center">
                 <Link href={`/${locale}`} className="flex items-center gap-3 group">
                     <div className="relative w-9 h-9">
                         <Image 
                             src={logoUrl} 
-                            alt="Logo" 
+                            alt="Logo Ndara" 
                             width={36} 
                             height={36} 
                             className="object-contain"
@@ -123,7 +122,7 @@ export default function LandingPage() {
   const coursesByCategory = useMemo(() => {
     const groups: Record<string, Course[]> = {};
     courses.forEach(course => {
-      const cat = course.category || "Autres formations";
+      const cat = course.category || "Formations";
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(course);
     });
@@ -131,19 +130,19 @@ export default function LandingPage() {
   }, [courses]);
 
   return (
-    <div className="bg-slate-950 text-white min-h-screen font-sans selection:bg-primary/30">
-      <LandingNav logoUrl="/logo.png" siteName="Ndara Afrique" />
+    <div className="bg-slate-950 text-white min-h-screen font-sans selection:bg-primary/30 bg-grainy">
+      <LandingNav logoUrl="/logo.png" />
       
       <div className="container mx-auto">
-        {/* --- HERO SECTION MODERNE --- */}
-        <header className="text-center pt-32 pb-16 md:pt-48 md:pb-24 max-w-5xl mx-auto space-y-8 px-6">
+        {/* --- HERO SECTION FINTECH --- */}
+        <header className="text-center pt-28 pb-16 md:pt-40 md:pb-24 max-w-5xl mx-auto space-y-8 px-6">
           <Badge className="bg-primary/10 text-primary border-primary/20 px-5 py-2 rounded-full font-black uppercase text-[10px] tracking-[0.25em] animate-in fade-in duration-1000">
             <Sparkles className="w-3 h-3 mr-2" />
             L'EXCELLENCE PAR LE SAVOIR
           </Badge>
           
           <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-[1.1] uppercase animate-in slide-in-from-bottom-4 duration-1000">
-            <span className="block text-white">Le futur de l'Afrique</span>
+            <span className="block text-white">{content?.heroTitle || "Le futur de l'Afrique"}</span>
             <span className="block bg-clip-text text-transparent bg-gradient-to-r from-primary via-blue-400 to-emerald-400">
               se code ici.
             </span>
@@ -178,7 +177,7 @@ export default function LandingPage() {
           </div>
 
           {/* --- SECTION STATISTIQUES (BRAND DARK) --- */}
-          <section className="bg-slate-900/50 border-y border-white/5 py-16 px-6">
+          <section className="bg-slate-900 border-y border-white/5 py-16 px-6">
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
                 <StatItem icon={Users} label="Apprenants" value="50K+" color="text-primary" />
                 <StatItem icon={BookCopy} label="Formations" value="120+" color="text-emerald-400" />
