@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -53,7 +52,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const auth = getAuth();
     
-    // Marquer hors-ligne à la fermeture de l'onglet
     const handleBeforeUnload = () => {
         if (auth.currentUser) {
             const userDocRef = doc(db, 'users', auth.currentUser.uid);
@@ -64,7 +62,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onIdTokenChanged(auth, async (user) => {
       if (user) {
         const userRef = doc(db, 'users', user.uid);
-        // Marquer en-ligne à la connexion/rafraîchissement
+        // Marquer en-ligne dès la connexion
         await setDoc(userRef, { isOnline: true, lastSeen: serverTimestamp() }, { merge: true });
         window.addEventListener('beforeunload', handleBeforeUnload);
       } else {
@@ -113,7 +111,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
               roles.push('instructor');
           }
 
-          // ✅ LOGIQUE DE COMPLÉTION DE PROFIL : Photo RÉELLE + Username + Domaine
+          // LOGIQUE DE COMPLÉTION : Photo réelle obligatoire
           const hasRealPhoto = !!userData.profilePictureURL && !userData.profilePictureURL.includes('api.dicebear.com');
           const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasRealPhoto);
 

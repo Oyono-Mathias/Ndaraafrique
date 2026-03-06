@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -22,7 +21,7 @@ import {
   } from "@/components/ui/dropdown-menu"
   import { useRole } from "@/context/RoleContext"
   import { useRouter } from 'next/navigation';
-  import { LogOut, User as UserIcon, LifeBuoy, CreditCard, BadgeAlert, Moon, Sun } from 'lucide-react';
+  import { LogOut, User as UserIcon, LifeBuoy, CreditCard, BadgeAlert, Moon, Sun, Palette } from 'lucide-react';
   import { cn } from "@/lib/utils";
   import { OnlineStatusIndicator } from "../OnlineStatusIndicator";
   import { useTheme } from "next-themes";
@@ -31,11 +30,10 @@ import {
 export function UserNav() {
     const { currentUser, isUserLoading, secureSignOut } = useRole();
     const router = useRouter();
-    const { setTheme } = useTheme();
+    const { setTheme, theme } = useTheme();
 
     const handleLogout = async () => {
         await secureSignOut();
-        // The redirect is now handled by the AppShell's useEffect
     }
 
     if (isUserLoading || !currentUser) {
@@ -59,7 +57,7 @@ export function UserNav() {
             </div>
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent className="w-64 dark:bg-slate-800 dark:border-slate-700" align="end" forceMount>
+        <DropdownMenuContent className="w-64 dark:bg-[#111b21] dark:border-white/10 shadow-2xl" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex items-center gap-3">
                <Avatar className="h-9 w-9">
@@ -79,46 +77,59 @@ export function UserNav() {
                 </div>
             </div>
           </DropdownMenuLabel>
-          <DropdownMenuSeparator className="dark:bg-slate-700" />
+          <DropdownMenuSeparator className="dark:bg-white/5" />
           <DropdownMenuGroup>
-            <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer dark:focus:bg-slate-700">
-              <UserIcon className="mr-2 h-4 w-4" />
-              <span>Mon Compte</span>
+            <DropdownMenuItem onClick={() => router.push('/account')} className="cursor-pointer py-3">
+              <UserIcon className="mr-3 h-4 w-4 text-slate-400" />
+              <span className="font-medium">Mon Compte</span>
             </DropdownMenuItem>
-             <DropdownMenuItem onClick={() => router.push('/student/paiements')} className="cursor-pointer dark:focus:bg-slate-700">
-              <CreditCard className="mr-2 h-4 w-4" />
-              <span>Paiements</span>
+             <DropdownMenuItem onClick={() => router.push('/student/paiements')} className="cursor-pointer py-3">
+              <CreditCard className="mr-3 h-4 w-4 text-slate-400" />
+              <span className="font-medium">Paiements</span>
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => router.push('/student/support')} className="cursor-pointer dark:focus:bg-slate-700">
-              <LifeBuoy className="mr-2 h-4 w-4" />
-              <span>Support</span>
+            <DropdownMenuItem onClick={() => router.push('/student/support')} className="cursor-pointer py-3">
+              <LifeBuoy className="mr-3 h-4 w-4 text-slate-400" />
+              <span className="font-medium">Support</span>
             </DropdownMenuItem>
           </DropdownMenuGroup>
-          <DropdownMenuSeparator className="dark:bg-slate-700"/>
-           <DropdownMenuSub>
-            <DropdownMenuSubTrigger className="cursor-pointer dark:focus:bg-slate-700">
-              <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="ml-2">Thème</span>
-            </DropdownMenuSubTrigger>
-            <DropdownMenuPortal>
-              <DropdownMenuSubContent>
-                <DropdownMenuItem onClick={() => setTheme("light")}>
-                  Clair
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("dark")}>
-                  Sombre
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setTheme("system")}>
-                  Système
-                </DropdownMenuItem>
-              </DropdownMenuSubContent>
-            </DropdownMenuPortal>
-          </DropdownMenuSub>
-          <DropdownMenuSeparator className="dark:bg-slate-700"/>
-          <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-500 dark:focus:bg-red-500/10 dark:focus:text-red-400">
-            <LogOut className="mr-2 h-4 w-4" />
-            <span>Déconnexion</span>
+          
+          <DropdownMenuSeparator className="dark:bg-white/5"/>
+          
+          <div className="p-2 space-y-1">
+            <p className="px-2 pb-2 text-[9px] font-black uppercase text-slate-500 tracking-widest">Thème visuel</p>
+            <div className="grid grid-cols-3 gap-1">
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setTheme("light")}
+                    className={cn("h-8 text-[10px] font-bold uppercase rounded-md", theme === 'light' ? "bg-primary text-white" : "text-slate-400")}
+                >
+                    Clair
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setTheme("dark")}
+                    className={cn("h-8 text-[10px] font-bold uppercase rounded-md", theme === 'dark' ? "bg-primary text-white" : "text-slate-400")}
+                >
+                    Sombre
+                </Button>
+                <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setTheme("system")}
+                    className={cn("h-8 text-[10px] font-bold uppercase rounded-md", theme === 'system' ? "bg-primary text-white" : "text-slate-400")}
+                >
+                    Auto
+                </Button>
+            </div>
+          </div>
+
+          <DropdownMenuSeparator className="dark:bg-white/5"/>
+          
+          <DropdownMenuItem onClick={handleLogout} className="cursor-pointer py-3 text-red-500 focus:text-red-400 focus:bg-red-500/10">
+            <LogOut className="mr-3 h-4 w-4" />
+            <span className="font-bold uppercase text-[10px] tracking-widest">Déconnexion</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

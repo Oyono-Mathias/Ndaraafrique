@@ -1,9 +1,10 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique.
  * Visualisation des KPIs Business en TEMPS RÉEL INDÉPENDANT.
+ * ✅ RÉSOLU : Erreur de build Vercel (Échappement caractères spéciaux).
+ * ✅ RÉSOLU : Import icône Zap.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -42,7 +43,7 @@ export default function AdminStatsPage() {
             setAllPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment)));
         });
 
-        // Flux Tracking (Limité aux 2000 derniers événements pour la perf)
+        // Flux Tracking
         const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(2000)), (snap) => {
             setAllTracking(snap.docs.map(doc => doc.data() as TrackingEvent));
         });
@@ -54,7 +55,7 @@ export default function AdminStatsPage() {
         };
     }, [db]);
 
-    // 2. CALCULS DYNAMIQUES BASÉS SUR LES DONNÉES REÇUES
+    // 2. CALCULS DYNAMIQUES
     const stats = useMemo(() => {
         const from = dateRange?.from || subDays(new Date(), 30);
         const to = dateRange?.to || new Date();
@@ -71,7 +72,6 @@ export default function AdminStatsPage() {
 
         const totalRevenue = filteredPayments.reduce((sum, p) => sum + p.amount, 0);
         
-        // Calcul du taux de conversion (Vues Landing vs Inscriptions)
         const landingViews = allTracking.filter(t => 
             t.eventType === 'page_view' && 
             t.pageUrl === '/' &&
@@ -80,7 +80,6 @@ export default function AdminStatsPage() {
         
         const convRate = landingViews > 0 ? Math.round((filteredUsers.length / landingViews) * 100) : 0;
 
-        // Données graphiques Revenus
         const dailyRevenue: { [key: string]: number } = {};
         filteredPayments.forEach(p => {
             const date = (p.date as any)?.toDate?.() || new Date();
@@ -89,7 +88,6 @@ export default function AdminStatsPage() {
         });
         const revenueData = Object.keys(dailyRevenue).sort().map(day => ({ name: day, value: dailyRevenue[day] }));
 
-        // Données graphiques Croissance
         const dailySignups: { [key: string]: number } = {};
         filteredUsers.forEach(u => {
             const date = (u.createdAt as any)?.toDate?.() || new Date();
@@ -155,7 +153,7 @@ export default function AdminStatsPage() {
                     icon={Zap} 
                     isLoading={isLoading} 
                     accentColor="bg-slate-900 border-slate-800"
-                    description="Actuellement en ligne"
+                    description="Actuellement connectés"
                 />
             </section>
 
@@ -223,7 +221,7 @@ export default function AdminStatsPage() {
                     <Calendar className="h-5 w-5 text-primary" />
                 </div>
                 <p className="text-xs text-slate-400 font-medium leading-relaxed">
-                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l'outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
+                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l&apos;outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
                 </p>
             </div>
         </div>
