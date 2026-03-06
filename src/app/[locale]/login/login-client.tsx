@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -23,8 +22,7 @@ import {
   doc, 
   setDoc, 
   serverTimestamp, 
-  getDoc, 
-  writeBatch
+  getDoc
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
@@ -57,15 +55,16 @@ const PasswordInput = ({ field }: { field: any }) => {
   return (
       <div className="relative">
           <Input type={showPassword ? "text" : "password"} {...field} className="h-12 bg-slate-800/50 border-slate-700 text-white focus-visible:ring-primary/20 focus-visible:border-primary focus-visible:ring-2" />
-          <Button type="button" variant="ghost" size="icon" className="absolute right-1 top-1/2 -translate-y-1/2 h-9 w-9 text-slate-400 hover:text-white" onClick={() => setShowPassword(!showPassword)}>
+          <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors" onClick={() => setShowPassword(!showPassword)}>
               {showPassword ? <EyeOff className="h-5 w-5"/> : <Eye className="h-5 w-5"/>}
-          </Button>
+          </button>
       </div>
   );
 };
 
 export default function LoginClient() {
   const t = useTranslations('Auth');
+  const locale = useLocale();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
   const [activeTab, setActiveTab] = useState(initialTab);
@@ -75,7 +74,16 @@ export default function LoginClient() {
   const { toast } = useToast();
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
-  const locale = useLocale();
+
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { fullName: '', email: '', password: '', terms: false },
+  });
 
   useEffect(() => {
     if (!isUserLoading && user) {
@@ -102,14 +110,11 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
-      // 1. Création dans Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       authUser = userCredential.user;
       
-      // 2. Mise à jour du profil Auth
       await updateProfile(authUser, { displayName: values.fullName });
 
-      // 3. Création immédiate dans Firestore (Garantie de doublon)
       const userRef = doc(db, "users", authUser.uid);
       const userData = {
         uid: authUser.uid,
@@ -129,7 +134,6 @@ export default function LoginClient() {
       try {
         await setDoc(userRef, userData);
         
-        // Notification de bienvenue
         const welcomeRef = doc(db, "users", authUser.uid, "notifications", "welcome");
         await setDoc(welcomeRef, {
           text: `Bara ala ${values.fullName} ! Bienvenue sur Ndara Afrique. Explorez notre catalogue et commencez votre quête du savoir dès aujourd'hui.`,
@@ -141,7 +145,6 @@ export default function LoginClient() {
 
         toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
       } catch (firestoreError: any) {
-        // En cas d'échec Firestore, on supprime le compte Auth pour rester propre
         if (authUser) await deleteUser(authUser);
         throw new Error("Échec de la création du profil. Veuillez réessayer.");
       }
@@ -207,7 +210,7 @@ export default function LoginClient() {
     <div className="min-h-screen w-full flex items-center justify-center p-4 bg-slate-950">
         <div className="w-full max-w-md">
             <div className="flex flex-col items-center text-center mb-6">
-                <Link href="/" className="mb-4">
+                <Link href={`/${locale}`} className="mb-4">
                   <Image src="/logo.png" alt="Ndara Afrique" width={60} height={60} className="rounded-full shadow-2xl" />
                 </Link>
             </div>
