@@ -3,6 +3,7 @@
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
  * ✅ RÉSOLU : Gestion de la visibilité des boutons via les paramètres admin.
+ * ✅ RÉSOLU : Suppression de la mention "Compétences de Demain".
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -178,8 +179,13 @@ export default function LandingPage() {
                         Nouvelle session disponible
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-dark leading-tight mb-6 uppercase tracking-tight">
-                        {landingPageSettings?.heroTitle || "Maîtrisez les"} <br />
-                        <span className="gradient-text">{landingPageSettings?.heroSubtitle || "Compétences de Demain"}</span>
+                        {landingPageSettings?.heroTitle || "Maîtrisez l'Excellence Panafricaine"}
+                        {landingPageSettings?.heroSubtitle && (
+                            <>
+                                <br />
+                                <span className="gradient-text">{landingPageSettings.heroSubtitle}</span>
+                            </>
+                        )}
                     </h1>
                     <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
                         Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière.
