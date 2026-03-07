@@ -207,6 +207,21 @@ export default function AdminSettingsPage() {
     }
   };
 
+  const handleSyncRatings = async () => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+      const result = await syncAllCourseStatsAction(currentUser.uid);
+      if (result.success) {
+        toast({ title: "Synchronisation terminée", description: `${result.count} formations mises à jour.` });
+      }
+    } catch (err) {
+      toast({ variant: 'destructive', title: "Échec sync" }); 
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const onSubmit = async (values: SettingsValues) => {
     if (!currentUser) return;
     setIsSaving(true);
@@ -283,20 +298,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const handleSyncRatings = async () => {
-    if (!currentUser) return;
-    setIsSyncing(true);
-    try {
-      const result = await syncAllCourseStatsAction(currentUser.uid);
-      if (result.success) {
-        toast({ title: "Synchronisation terminée", description: `${result.count} formations mises à jour.` });
-      }
-    } catch (err) {
-      toast({ variant: 'destructive', title: "Échec sync" }); 
-    } finally {
-      setIsSyncing(false);
-    }
-
   if (isLoading) {
     return (
       <div className="flex h-[60vh] items-center justify-center">
@@ -312,7 +313,6 @@ export default function AdminSettingsPage() {
             <SettingsIcon className="h-4 w-4" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Pilotage Global</span>
         </div>
-
         <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Configuration Ndara</h1>
       </header>
 
