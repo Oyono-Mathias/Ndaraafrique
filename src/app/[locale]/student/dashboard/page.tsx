@@ -9,7 +9,7 @@ import { useRole } from '@/context/RoleContext';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { BookOpen, Trophy, Sparkles, Search as LucideSearch, Bot, BadgeEuro, Share2, Wallet, TrendingUp } from 'lucide-react';
+import { BookOpen, Trophy, Sparkles, Search as LucideSearch, Bot, BadgeEuro, Share2, Wallet, TrendingUp, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs, doc } from 'firebase/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
 import { useToast } from '@/hooks/use-toast';
@@ -27,6 +28,7 @@ export default function StudentDashboardAndroid() {
   const db = getFirestore();
   const locale = useLocale();
   const { toast } = useToast();
+  const router = useRouter();
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [allCourses, setAllCourses] = useState<Course[]>([]);
@@ -52,7 +54,7 @@ export default function StudentDashboardAndroid() {
     });
 
     // 2. Chargement du Catalogue
-    const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published'), orderBy('createdAt', 'desc')), async (snap) => {
+    const unsubCourses = onSnapshot(query(collection(db, "courses"), where("status", "==", "Published"), orderBy("createdAt", "desc")), async (snap) => {
       const coursesData = snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Course));
       setAllCourses(coursesData);
       
@@ -76,7 +78,12 @@ export default function StudentDashboardAndroid() {
   };
 
   if (isUserLoading) {
-    return <div className="space-y-6 p-4 bg-background min-h-screen"><Skeleton className="h-10 w-3/4 bg-muted rounded-xl" /><Skeleton className="h-64 w-full rounded-3xl bg-muted" /></div>;
+    return (
+      <div className="space-y-6 p-4 bg-background min-h-screen">
+        <Skeleton className="h-10 w-3/4 bg-muted rounded-xl" />
+        <Skeleton className="h-64 w-full rounded-3xl bg-muted" />
+      </div>
+    );
   }
 
   return (
@@ -107,7 +114,11 @@ export default function StudentDashboardAndroid() {
                               <p className="text-2xl font-black text-white">{(currentUser?.affiliateBalance || 0).toLocaleString('fr-FR')} <span className="text-xs text-primary">XOF</span></p>
                           </div>
                           <div className="bg-slate-950 p-4 rounded-2xl border border-white/5 flex flex-col justify-center">
-                              <Button variant="ghost" className="h-auto p-0 text-[10px] font-black text-primary uppercase tracking-widest justify-start hover:bg-transparent" onClick={() => router.push('/student/paiements')}>
+                              <Button 
+                                variant="ghost" 
+                                className="h-auto p-0 text-[10px] font-black text-primary uppercase tracking-widest justify-start hover:bg-transparent" 
+                                onClick={() => router.push('/student/paiements')}
+                              >
                                   Retirer mes gains <ChevronRight className="h-3 w-3 ml-1" />
                               </Button>
                           </div>
