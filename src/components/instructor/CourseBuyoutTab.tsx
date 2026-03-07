@@ -1,250 +1,175 @@
 'use client';
 
 /**
- * @fileOverview Onglet de cession de cours Ndara Afrique.
- * Vérifie : Min 2 sections, 5 leçons, Statut 'Published', Profil complet, Pas de sanctions.
+ * @fileOverview Onglet de gestion des droits et cessions.
+ * Permet de vendre à Ndara OU de mettre en vente sur le Marché Secondaire.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Course, Settings, NdaraUser } from '@/lib/types';
+import type { Course, Settings } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { ShoppingCart, ShieldAlert, CheckCircle2, Loader2, Coins, AlertCircle, ListChecks, Ban, Clock } from 'lucide-react';
+import { ShoppingCart, CheckCircle2, Loader2, Coins, AlertCircle, ListChecks, Ban, Clock, BadgeEuro, ArrowLeftRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/RoleContext';
-import { requestCourseBuyoutAction } from '@/actions/courseActions';
+import { requestCourseBuyoutAction, toggleResaleRightsAction } from '@/actions/courseActions';
 import { getFirestore, collection, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function CourseBuyoutTab({ course }: { course: Course }) {
     const { currentUser } = useRole();
     const { toast } = useToast();
     const db = getFirestore();
     
-    const [price, setPrice] = useState(course.buyoutPrice || 50000);
+    const [buyoutPrice, setBuyoutPrice] = useState(course.buyoutPrice || 50000);
+    const [resalePrice, setResalePrice] = useState(course.resaleRightsPrice || 150000);
     const [agreed, setAgreed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [stats, setStats] = useState({ sections: 0, lectures: 0 });
     const [isValidating, setIsValidating] = useState(true);
-    const [isBuyoutEnabled, setIsBuyoutEnabled] = useState(true);
+    const [platformSettings, setPlatformSettings] = useState({
+        allowBuyout: true,
+        allowResale: true,
+        allowTeacherToTeacher: false
+    });
 
     useEffect(() => {
-        // 1. Écouter les réglages plateforme
-        const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
             if (snap.exists()) {
                 const data = snap.data() as Settings;
-                setIsBuyoutEnabled(data.platform?.allowCourseBuyout ?? true);
+                setPlatformSettings({
+                    allowBuyout: data.platform?.allowCourseBuyout ?? true,
+                    allowResale: data.platform?.allowResaleRights ?? true,
+                    allowTeacherToTeacher: data.platform?.allowTeacherToTeacherResale ?? false
+                });
             }
         });
 
-        // 2. Vérifier le volume de contenu réel
         const checkContent = async () => {
-            setIsValidating(true);
             try {
                 const sectionsSnap = await getDocs(collection(db, `courses/${course.id}/sections`));
-                let lectureCount = 0;
-                
-                for (const secDoc of sectionsSnap.docs) {
-                    const lecturesSnap = await getDocs(collection(db, `courses/${course.id}/sections/${secDoc.id}/lectures`));
-                    lectureCount += lecturesSnap.size;
+                let lCount = 0;
+                for (const sec of sectionsSnap.docs) {
+                    const lSnap = await getDocs(collection(db, `courses/${course.id}/sections/${sec.id}/lectures`));
+                    lCount += lSnap.size;
                 }
-                
-                setStats({ sections: sectionsSnap.size, lectures: lectureCount });
-            } catch (e) {
-                console.error("Check content error:", e);
-            } finally {
-                setIsValidating(false);
-            }
+                setStats({ sections: sectionsSnap.size, lectures: lCount });
+            } finally { setIsValidating(false); }
         };
         
         checkContent();
-        return () => unsubSettings();
+        return () => unsub();
     }, [course.id, db]);
 
-    const isRequested = course.buyoutStatus === 'requested';
-
     const checklist = useMemo(() => [
-        { 
-            label: "Formation publiée", 
-            valid: course.status === 'Published',
-            desc: "Seuls les cours en ligne sont éligibles."
-        },
-        { 
-            label: "Consistance du contenu", 
-            valid: stats.sections >= 2 && stats.lectures >= 5,
-            desc: `Requis : 2 modules / 5 leçons (Actuel : ${stats.sections}/${stats.lectures}).`
-        },
-        { 
-            label: "Profil formateur vérifié", 
-            valid: currentUser?.isProfileComplete === true,
-            desc: "Identité complète requise."
-        },
-        { 
-            label: "Éligibilité contractuelle", 
-            valid: !currentUser?.buyoutSanctions?.isSanctioned,
-            desc: "Absence de litiges sur vos précédentes cessions."
-        }
+        { label: "Formation publiée", valid: course.status === 'Published' },
+        { label: "Consistance (2 mod / 5 leçons)", valid: stats.sections >= 2 && stats.lectures >= 5 },
+        { label: "Profil complet", valid: currentUser?.isProfileComplete === true }
     ], [course.status, stats, currentUser]);
 
-    const canSell = checklist.every(c => c.valid) && isBuyoutEnabled;
+    const canAct = checklist.every(c => c.valid) && !currentUser?.buyoutSanctions?.isSanctioned;
 
-    const handleRequest = async () => {
-        if (!currentUser || !agreed || !canSell) return;
+    const handleBuyoutRequest = async () => {
+        if (!currentUser || !agreed || !canAct) return;
         setIsSubmitting(true);
-        
-        try {
-            const result = await requestCourseBuyoutAction({
-                courseId: course.id,
-                instructorId: currentUser.uid,
-                requestedPrice: price
-            });
-
-            if (result.success) {
-                toast({ title: "Demande de rachat transmise !", description: "L'administration va auditer votre contenu." });
-            } else {
-                toast({ variant: 'destructive', title: "Échec", description: result.error });
-            }
-        } catch (e) {
-            toast({ variant: 'destructive', title: "Erreur technique" });
-        } finally {
-            setIsSubmitting(false);
-        }
+        const result = await requestCourseBuyoutAction({ courseId: course.id, instructorId: currentUser.uid, requestedPrice: buyoutPrice });
+        if (result.success) toast({ title: "Demande transmise !" });
+        else toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        setIsSubmitting(false);
     };
 
-    if (isRequested) {
-        return (
-            <Card className="bg-primary/5 border-primary/20 rounded-[2.5rem] p-12 text-center space-y-6 animate-in zoom-in duration-700">
-                <div className="p-4 bg-primary/10 rounded-full inline-block animate-pulse">
-                    <Clock className="h-12 w-12 text-primary" />
-                </div>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Audit en cours</h3>
-                <p className="text-slate-400 max-w-md mx-auto leading-relaxed font-medium">
-                    Votre offre de <span className="text-white font-bold">{course.buyoutPrice?.toLocaleString('fr-FR')} XOF</span> est entre les mains de l'équipe Ndara. <br/>
-                    Vous recevrez une notification dès validation.
-                </p>
-            </Card>
-        );
-    }
+    const handleTogglePublicResale = async (available: boolean) => {
+        if (!currentUser || !canAct) return;
+        setIsSubmitting(true);
+        const result = await toggleResaleRightsAction({ courseId: course.id, price: resalePrice, available, userId: currentUser.uid });
+        if (result.success) toast({ title: available ? "Licence mise en vente !" : "Vente de licence annulée" });
+        else toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        setIsSubmitting(false);
+    };
 
-    if (!isBuyoutEnabled) {
+    if (course.buyoutStatus === 'requested') {
         return (
-            <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] p-12 text-center space-y-6">
-                <div className="p-4 bg-slate-800 rounded-full inline-block">
-                    <Ban className="h-12 w-12 text-slate-500" />
-                </div>
-                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Guichet fermé</h3>
-                <p className="text-slate-400 max-w-md mx-auto leading-relaxed">
-                    Le rachat de formations est temporairement suspendu par la direction.
-                </p>
+            <Card className="bg-primary/5 border-primary/20 rounded-[2.5rem] p-12 text-center space-y-4">
+                <Clock className="h-12 w-12 text-primary mx-auto animate-pulse" />
+                <h3 className="text-xl font-bold text-white uppercase">Audit en cours</h3>
+                <p className="text-slate-400">Ndara Afrique examine votre contenu pour finaliser le rachat.</p>
             </Card>
         );
     }
 
     return (
-        <div className="max-w-2xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
-            <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-slate-800 rounded-2xl text-slate-400">
-                            <ListChecks className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-xl font-bold text-white uppercase tracking-tight">Critères d'Acquisition</CardTitle>
-                            <CardDescription className="text-slate-500">Ndara Afrique n'achète que des contenus complets et originaux.</CardDescription>
-                        </div>
-                    </div>
+        <div className="max-w-3xl mx-auto space-y-8 pb-20">
+            <Card className="bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden">
+                <CardHeader className="bg-slate-800/30 p-6 border-b border-white/5">
+                    <CardTitle className="text-sm font-black uppercase text-slate-400 flex items-center gap-2"><ListChecks className="h-4 w-4"/> Critères d'éligibilité</CardTitle>
                 </CardHeader>
-                <CardContent className="p-8 space-y-4">
-                    {isValidating ? (
-                        <div className="space-y-3">
-                            {[...Array(4)].map((_, i) => <div key={i} className="h-12 w-full bg-slate-800/50 rounded-xl animate-pulse" />)}
+                <CardContent className="p-6 grid sm:grid-cols-3 gap-4">
+                    {checklist.map((item, i) => (
+                        <div key={i} className={cn("p-3 rounded-xl border text-center", item.valid ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-400" : "bg-red-500/5 border-red-500/20 text-red-400")}>
+                            {item.valid ? <CheckCircle2 className="h-4 w-4 mx-auto mb-1"/> : <AlertCircle className="h-4 w-4 mx-auto mb-1"/>}
+                            <p className="text-[10px] font-bold uppercase">{item.label}</p>
                         </div>
-                    ) : (
-                        checklist.map((item, idx) => (
-                            <div key={idx} className={cn(
-                                "flex items-start gap-4 p-4 rounded-2xl border transition-all",
-                                item.valid ? "bg-emerald-500/5 border-emerald-500/10" : "bg-red-500/5 border-red-500/10 opacity-80"
-                            )}>
-                                {item.valid ? (
-                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0 mt-0.5" />
-                                ) : (
-                                    <AlertCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
-                                )}
-                                <div>
-                                    <p className={cn("text-sm font-bold", item.valid ? "text-white" : "text-red-400")}>{item.label}</p>
-                                    <p className="text-[10px] font-medium text-slate-500 uppercase tracking-tighter mt-0.5">{item.desc}</p>
-                                </div>
-                            </div>
-                        ))
+                    ))}
+                </CardContent>
+            </Card>
+
+            <Tabs defaultValue="buyout" className="w-full">
+                <TabsList className="bg-slate-900 border-slate-800 p-1 rounded-2xl h-14 w-full">
+                    <TabsTrigger value="buyout" className="flex-1 rounded-xl font-bold uppercase text-[10px] gap-2">
+                        <ShoppingCart className="h-4 w-4" /> Vendre à Ndara
+                    </TabsTrigger>
+                    {platformSettings.allowTeacherToTeacher && (
+                        <TabsTrigger value="public" className="flex-1 rounded-xl font-bold uppercase text-[10px] gap-2">
+                            <BadgeEuro className="h-4 w-4" /> Marché Secondaire
+                        </TabsTrigger>
                     )}
-                </CardContent>
-            </Card>
+                </TabsList>
 
-            <Card className={cn(
-                "bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all",
-                !canSell && "opacity-40 grayscale pointer-events-none"
-            )}>
-                <CardHeader className="bg-primary/10 p-8 border-b border-white/5">
-                    <div className="flex items-center gap-4">
-                        <div className="p-3 bg-primary/20 rounded-2xl text-primary">
-                            <ShoppingCart className="h-6 w-6" />
-                        </div>
-                        <div>
-                            <CardTitle className="text-xl font-bold text-white uppercase tracking-tight">Offre de Cession</CardTitle>
-                            <CardDescription className="text-slate-500">Fixez votre prix de vente direct.</CardDescription>
-                        </div>
-                    </div>
-                </CardHeader>
-                <CardContent className="p-8 space-y-8">
-                    <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-start gap-4">
-                        <ShieldAlert className="h-6 w-6 text-amber-500 shrink-0 mt-0.5" />
-                        <div className="space-y-2">
-                            <p className="text-xs font-black text-amber-400 uppercase tracking-widest">Clause de Non-Duplication</p>
-                            <p className="text-[11px] text-amber-200/70 font-medium leading-relaxed">
-                                En cédant ce cours, vous renoncez à tous vos droits d'auteur. Toute republication ultérieure (même gratuite) sur une autre plateforme entraînera un <b>bannissement immédiat et définitif</b> de Ndara Afrique.
-                            </p>
-                        </div>
-                    </div>
+                <TabsContent value="buyout" className="mt-6">
+                    <Card className={cn("bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden", !canAct && "opacity-40 grayscale pointer-events-none")}>
+                        <CardHeader className="bg-primary/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-black text-white uppercase">Cession à la Plateforme</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Prix de rachat souhaité (XOF)</Label>
+                                <Input type="number" value={buyoutPrice} onChange={(e) => setBuyoutPrice(Number(e.target.value))} className="h-14 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black" />
+                            </div>
+                            <div className="flex items-start gap-3 p-4 bg-slate-950/50 rounded-2xl border border-white/5">
+                                <Checkbox id="agree" checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} />
+                                <Label htmlFor="agree" className="text-xs text-slate-400 leading-relaxed cursor-pointer">Je cède mes droits à Ndara Afrique et m'engage à ne plus exploiter ce contenu ailleurs.</Label>
+                            </div>
+                            <Button onClick={handleBuyoutRequest} disabled={isSubmitting || !agreed || !canAct} className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30">
+                                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin" /> : "Envoyer l'offre à Ndara"}
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
 
-                    <div className="space-y-4">
-                        <Label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Prix de rachat (XOF)</Label>
-                        <div className="relative">
-                            <Coins className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-primary opacity-50" />
-                            <Input 
-                                type="number" 
-                                value={price} 
-                                onChange={(e) => setPrice(Number(e.target.value))}
-                                className="h-14 pl-12 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black text-white" 
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex items-start gap-3 p-4 bg-slate-950/50 rounded-2xl border border-white/5">
-                        <Checkbox 
-                            id="buyout-agree" 
-                            checked={agreed} 
-                            onCheckedChange={(v) => setAgreed(!!v)}
-                            className="mt-1 border-slate-700 data-[state=checked]:bg-primary"
-                        />
-                        <Label htmlFor="buyout-agree" className="text-xs text-slate-400 leading-relaxed cursor-pointer font-medium">
-                            Je confirme être le créateur original. Je cède irrévocablement mes droits à Ndara Afrique et m'engage à ne plus exploiter ce contenu ailleurs.
-                        </Label>
-                    </div>
-
-                    <Button 
-                        onClick={handleRequest}
-                        disabled={isSubmitting || !agreed || !canSell}
-                        className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30 active:scale-95 transition-all"
-                    >
-                        {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <CheckCircle2 className="h-5 w-5 mr-2" />}
-                        {canSell ? "Vendre ma formation maintenant" : "Veuillez remplir les critères"}
-                    </Button>
-                </CardContent>
-            </Card>
+                <TabsContent value="public" className="mt-6">
+                    <Card className={cn("bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden", !canAct && "opacity-40 grayscale pointer-events-none")}>
+                        <CardHeader className="bg-amber-500/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-black text-white uppercase">Vente de Licence au Public</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <p className="text-sm text-slate-400 leading-relaxed">Proposez votre licence de revente directement aux investisseurs et aux autres Ndara. Vous recevrez le paiement dès qu'un acheteur finalise la transaction.</p>
+                            <div className="space-y-4">
+                                <Label className="text-[10px] font-black uppercase text-slate-500 ml-1">Prix de la Licence (XOF)</Label>
+                                <Input type="number" value={resalePrice} onChange={(e) => setResalePrice(Number(e.target.value))} className="h-14 bg-slate-950 border-slate-800 rounded-xl text-2xl font-black" />
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <Button onClick={() => handleTogglePublicResale(true)} disabled={isSubmitting || course.resaleRightsAvailable} className="h-14 rounded-2xl bg-amber-500 text-black font-black uppercase text-[10px] tracking-widest">
+                                    {course.resaleRightsAvailable ? "Déjà en vente" : "Mettre en vente"}
+                                </Button>
+                                {course.resaleRightsAvailable && (
+                                    <Button onClick={() => handleTogglePublicResale(false)} variant="outline" className="h-14 rounded-2xl border-slate-800 font-black uppercase text-[10px] tracking-widest text-red-400">Retirer du marché</Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+            </Tabs>
         </div>
     );
 }

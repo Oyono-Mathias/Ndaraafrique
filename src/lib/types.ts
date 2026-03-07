@@ -373,7 +373,8 @@ export interface Settings {
     maintenanceMode: boolean;
     allowInstructorSignup: boolean;
     allowCourseBuyout: boolean;
-    allowResaleRights: boolean; // ✅ Nouvelle option globale
+    allowResaleRights: boolean;
+    allowTeacherToTeacherResale: boolean; // ✅ Nouvelle option
     autoApproveCourses: boolean;
     enableInternalMessaging: boolean;
     allowYoutube?: boolean;
