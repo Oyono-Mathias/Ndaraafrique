@@ -296,7 +296,6 @@ export default function AdminSettingsPage() {
     } finally {
       setIsSyncing(false);
     }
-  };
 
   if (isLoading) {
     return (
@@ -313,6 +312,7 @@ export default function AdminSettingsPage() {
             <SettingsIcon className="h-4 w-4" />
             <span className="text-[10px] font-black uppercase tracking-[0.2em]">Pilotage Global</span>
         </div>
+
         <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Configuration Ndara</h1>
       </header>
 
