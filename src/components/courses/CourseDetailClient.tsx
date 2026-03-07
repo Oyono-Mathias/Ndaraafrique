@@ -1,5 +1,4 @@
-
-'use client';
+'use server';
 
 /**
  * @fileOverview Composant client pour la présentation détaillée d'un cours.
@@ -9,7 +8,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { doc, getFirestore, collection, query, getDocs, orderBy, setDoc, serverTimestamp, onSnapshot, where } from 'firebase/firestore';
+import { doc, getFirestore, collection, query, getDocs, orderBy, setDoc, serverTimestamp, onSnapshot, where, documentId } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
@@ -64,7 +63,6 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   // ✅ LOGIQUE CEO : Redirection automatique pour les visiteurs non connectés
   useEffect(() => {
     if (!isUserLoading && !user) {
-        // On encode le chemin actuel pour y revenir après l'inscription
         const redirectUrl = encodeURIComponent(pathname);
         router.push(`/fr/login?tab=register&redirect=${redirectUrl}`);
     }
@@ -155,16 +153,8 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     fetchCurriculum();
   }, [courseId, db]);
 
-  const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
-
-  if (isLoading || !user) return <CourseDetailSkeleton />;
-  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
-
-  const isEnrolled = !!enrollment;
-  const resaleAvailable = course.resaleRightsAvailable && isResaleEnabled && !isEnrolled;
-
   const handleAction = async () => {
-    if (isEnrolled) {
+    if (enrollment) {
       router.push(`/student/courses/${courseId}`);
       return;
     }
@@ -172,6 +162,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     if (course?.price === 0) {
       setIsEnrolling(true);
       try {
+        if (!user) return;
         const enrollmentId = `${user.uid}_${courseId}`;
         const ref = doc(db, 'enrollments', enrollmentId);
         
@@ -199,9 +190,16 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     }
   };
 
+  const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
+
+  if (isLoading || !user) return <CourseDetailSkeleton />;
+  if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
+
+  const isEnrolled = !!enrollment;
+  const resaleAvailable = course.resaleRightsAvailable && isResaleEnabled && !isEnrolled;
+
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
-      
       <div className="relative aspect-video w-full bg-slate-900 overflow-hidden shadow-2xl">
         <Button 
           variant="ghost" 
@@ -336,7 +334,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
               Inscrivez-vous en toute confiance. L'accès au contenu est permanent et lié à votre compte Ndara Afrique.
             </p>
           </div>
-        </div>
+        </section>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">

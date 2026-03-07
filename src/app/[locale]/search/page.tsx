@@ -3,6 +3,7 @@
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
  * ✅ AFFILIATION : Capture de l'affiliateId avec expiration 30 jours (Standard industry).
+ * ✅ RÈGLE : Last-Click Attribution via localStorage.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -46,17 +47,18 @@ export default function SearchPage() {
   const { user } = useRole();
   const searchParams = useSearchParams();
 
-  // ✅ LOGIQUE AMBASSADEUR : Capturer l'affiliateId avec persistance 30 jours
+  // ✅ LOGIQUE AMBASSADEUR : Capturer l'affiliateId avec persistence 30 jours (Last Click wins)
   useEffect(() => {
       const affId = searchParams.get('aff');
-      if (affId) {
+      if (affId && typeof window !== 'undefined') {
           const cookieData = {
               id: affId,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 Jours réels
           };
-          // Persistance locale pour que l'affilié reste crédité même si le client revient plus tard
+          // Persistance locale pour que l'affilié reste crédité
           localStorage.setItem('ndara_affiliate_id', JSON.stringify(cookieData));
-          console.log("🚀 Affiliate ID Captured & Persisted:", affId);
+          console.log("🚀 Affiliate ID Captured & Persisted (30 Days):", affId);
       }
   }, [searchParams]);
 

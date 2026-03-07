@@ -2,12 +2,12 @@
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique Optimisé.
- * ✅ AMBASSADEUR : Espace dédié avec lien de partage et règles.
+ * ✅ AMBASSADEUR : Espace dédié avec lien de partage et règles (Last Click, Seuil 5000 XOF).
  */
 
 import { useRole } from '@/context/RoleContext';
 import dynamic from 'next/dynamic';
-import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight, Sparkles, AlertCircle, Info } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight, Sparkles, AlertCircle, Info, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs, doc } from 'firebase/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
@@ -136,7 +136,11 @@ export default function StudentDashboardAndroid() {
                             </div>
                             <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
                                 <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                                <span>Traçabilité garantie pendant 30 jours après le clic.</span>
+                                <span>Règle du dernier clic : Seul le dernier lien cliqué avant l'achat est récompensé (30 jours de suivi).</span>
+                            </div>
+                            <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
+                                <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
+                                <span>Retrait possible dès 5 000 XOF accumulés.</span>
                             </div>
                         </div>
                       </div>
@@ -152,7 +156,6 @@ export default function StudentDashboardAndroid() {
 
       <div className="px-4"><ContinueLearning /></div>
 
-      {/* --- EXPLORATION : NOUVEAUX COURS --- */}
       <div className="px-4">
         <NewCoursesExplore />
       </div>
@@ -162,7 +165,6 @@ export default function StudentDashboardAndroid() {
         <RecentActivity />
       </div>
 
-      {/* --- FAB : RECHERCHE --- */}
       <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
         <Link href={`/${locale}/search`}>
           <LucideSearch className="h-6 w-6 text-primary-foreground" />
