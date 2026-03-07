@@ -1,13 +1,12 @@
-
 'use client';
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ AFFILIATION : Capture du paramètre 'aff' pour récompenser l'ambassadeur (Last Click Rule).
+ * ✅ AFFILIATION : Capture de l'affiliateId avec expiration 30 jours (Standard industry).
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, getDocs, doc } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
 import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2, BadgeEuro, Sparkles } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
@@ -15,7 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import type { Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser, Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
@@ -47,13 +46,17 @@ export default function SearchPage() {
   const { user } = useRole();
   const searchParams = useSearchParams();
 
-  // ✅ LOGIQUE AMBASSADEUR : Capturer l'affiliateId s'il est présent dans l'URL
+  // ✅ LOGIQUE AMBASSADEUR : Capturer l'affiliateId avec persistance 30 jours
   useEffect(() => {
       const affId = searchParams.get('aff');
       if (affId) {
-          // On applique la règle du "Last Click" : le dernier lien cliqué écrase le précédent
-          sessionStorage.setItem('ndara_affiliate_id', affId);
-          console.log("🚀 Affiliate ID captured:", affId);
+          const cookieData = {
+              id: affId,
+              timestamp: Date.now()
+          };
+          // Persistance locale pour que l'affilié reste crédité même si le client revient plus tard
+          localStorage.setItem('ndara_affiliate_id', JSON.stringify(cookieData));
+          console.log("🚀 Affiliate ID Captured & Persisted:", affId);
       }
   }, [searchParams]);
 

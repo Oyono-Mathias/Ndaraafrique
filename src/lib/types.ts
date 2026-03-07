@@ -376,6 +376,7 @@ export interface Settings {
     // --- COMMISSIONS SYSTÈMES ---
     affiliateEnabled: boolean;
     affiliatePercentage: number;
+    affiliateCookieDurationDays: number;
     referralEnabled: boolean;
     referralPercentage: number;
   };

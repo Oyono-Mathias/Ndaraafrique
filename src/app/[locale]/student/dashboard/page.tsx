@@ -2,12 +2,12 @@
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique Optimisé.
- * ✅ DÉCOUVERTE : Ajout d'une section "Nouveautés" et d'un bouton de recherche flottant.
+ * ✅ AMBASSADEUR : Espace dédié avec lien de partage et règles.
  */
 
 import { useRole } from '@/context/RoleContext';
 import dynamic from 'next/dynamic';
-import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight, Sparkles } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight, Sparkles, AlertCircle, Info } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs, doc } from 'firebase/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
@@ -124,9 +124,22 @@ export default function StudentDashboardAndroid() {
                           </div>
                       </div>
 
-                      <Button onClick={handleShareAffiliate} className="w-full h-12 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest gap-2 shadow-lg shadow-primary/20 active:scale-95">
-                          <Share2 className="h-4 w-4" /> Copier mon lien Ambassadeur
-                      </Button>
+                      <div className="space-y-4">
+                        <Button onClick={handleShareAffiliate} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-all">
+                            <Share2 className="h-4 w-4" /> Partager mon lien
+                        </Button>
+                        
+                        <div className="bg-slate-950/50 p-4 rounded-xl border border-white/5 space-y-3">
+                            <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
+                                <Info className="h-3 w-3 text-primary shrink-0" />
+                                <span>Gagnez une commission sur chaque vente réalisée via votre lien.</span>
+                            </div>
+                            <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
+                                <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
+                                <span>Traçabilité garantie pendant 30 jours après le clic.</span>
+                            </div>
+                        </div>
+                      </div>
                   </CardContent>
               </Card>
           </section>
@@ -149,7 +162,7 @@ export default function StudentDashboardAndroid() {
         <RecentActivity />
       </div>
 
-      {/* --- FAB : RECHERCHE (STYLE ANDROID) --- */}
+      {/* --- FAB : RECHERCHE --- */}
       <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
         <Link href={`/${locale}/search`}>
           <LucideSearch className="h-6 w-6 text-primary-foreground" />

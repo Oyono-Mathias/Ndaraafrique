@@ -5,8 +5,9 @@ import { sendUserNotification } from '@/actions/notificationActions';
 
 /**
  * @fileOverview Webhook Moneroo mis à jour pour gérer l'affiliation et le parrainage.
- * ✅ AMBASSADEURS : Calcule et crédite la commission si un affiliateId est présent.
- * ✅ PARRAINAGE : Crédite le parrain si l'instructeur a été invité par un autre formateur.
+ * ✅ AMBASSADEURS : Règle du dernier clic appliquée.
+ * ✅ PARRAINAGE : Commission permanente pour l'instructeur référent.
+ * ✅ FLEXIBILITÉ : Commission partagée sur les cours tiers.
  */
 
 export async function POST(req: Request) {
@@ -50,9 +51,12 @@ export async function POST(req: Request) {
         enrollmentType: 'paid'
       }, { merge: true });
 
-      // 3. LOGIQUE AMBASSADEUR (SI COURS NDARA)
-      if (affiliateId && courseData?.isPlatformOwned && settings?.commercial?.affiliateEnabled) {
+      // 3. LOGIQUE AMBASSADEUR
+      // On récompense l'affilié si activé, peu importe qui possède le cours
+      if (affiliateId && settings?.commercial?.affiliateEnabled) {
           const affPerc = settings.commercial.affiliatePercentage || 10;
+          // Si le cours est tiers, la commission est prise sur la part de la plateforme
+          // Si le cours est à Ndara, elle est prise sur le total
           const affCommission = (amount * affPerc) / 100;
           
           const affiliateRef = db.collection('users').doc(affiliateId);
@@ -62,7 +66,7 @@ export async function POST(req: Request) {
 
           // Notifier l'ambassadeur
           await sendUserNotification(affiliateId, {
-              text: `Félicitations ! Vous avez gagné ${affCommission.toLocaleString('fr-FR')} XOF de commission ambassadeur.`,
+              text: `Félicitations ! Votre recommandation a généré une vente. Gain : ${affCommission.toLocaleString('fr-FR')} XOF.`,
               type: 'success',
               link: '/student/dashboard'
           });

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Réglages Globaux Ndara Afrique.
- * ✅ NOUVEAU : Onglet "Croissance & Revenus" pour piloter l'affiliation et le parrainage.
+ * ✅ OPTIMISÉ : Gestion fine de l'affiliation (cookie duration, seuil payout).
  */
 
 import { useState, useEffect } from 'react';
@@ -30,10 +30,8 @@ import {
   ImageIcon,
   UploadCloud,
   CheckCircle2,
-  Palette,
   ShoppingCart,
   BadgeEuro,
-  ArrowLeftRight,
   ShieldCheck,
   MessageSquare,
   Globe,
@@ -41,10 +39,9 @@ import {
   Users,
   Plus,
   Trash2,
-  Video,
-  Youtube,
   TrendingUp,
-  UserPlus
+  UserPlus,
+  Clock
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -81,11 +78,13 @@ const settingsSchema = z.object({
   fontScale: z.enum(['small', 'medium', 'large']).default('medium'),
   borderRadius: z.enum(['none', 'md', 'lg', 'xl']).default('lg'),
   teamMembers: z.array(teamMemberSchema).optional(),
-  // --- NOUVEAUX CHAMPS REVENUS ---
+  // --- REVENUS ---
   affiliateEnabled: z.boolean().default(true),
   affiliatePercentage: z.coerce.number().min(0).max(50),
+  affiliateCookieDurationDays: z.coerce.number().min(1).max(365),
   referralEnabled: z.boolean().default(true),
   referralPercentage: z.coerce.number().min(0).max(20),
+  minPayoutThreshold: z.coerce.number().min(1000),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -109,8 +108,10 @@ export default function AdminSettingsPage() {
       enableInternalMessaging: true,
       affiliateEnabled: true,
       affiliatePercentage: 10,
+      affiliateCookieDurationDays: 30,
       referralEnabled: true,
-      referralPercentage: 5
+      referralPercentage: 5,
+      minPayoutThreshold: 5000
     }
   });
 
@@ -151,8 +152,10 @@ export default function AdminSettingsPage() {
           // --- REVENUS ---
           affiliateEnabled: data.commercial?.affiliateEnabled ?? true,
           affiliatePercentage: data.commercial?.affiliatePercentage ?? 10,
+          affiliateCookieDurationDays: data.commercial?.affiliateCookieDurationDays ?? 30,
           referralEnabled: data.commercial?.referralEnabled ?? true,
           referralPercentage: data.commercial?.referralPercentage ?? 5,
+          minPayoutThreshold: data.commercial?.minPayoutThreshold ?? 5000,
         });
       }
       setIsLoading(false);
@@ -181,9 +184,10 @@ export default function AdminSettingsPage() {
           commercial: { 
             platformCommission: values.commission, 
             currency: 'XOF', 
-            minPayoutThreshold: 5000,
+            minPayoutThreshold: values.minPayoutThreshold,
             affiliateEnabled: values.affiliateEnabled,
             affiliatePercentage: values.affiliatePercentage,
+            affiliateCookieDurationDays: values.affiliateCookieDurationDays,
             referralEnabled: values.referralEnabled,
             referralPercentage: values.referralPercentage
           },
@@ -309,12 +313,20 @@ export default function AdminSettingsPage() {
             <TabsContent value="commercial" className="space-y-6">
                 <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                     <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Modèle Économique</CardTitle></CardHeader>
-                    <CardContent className="p-8">
+                    <CardContent className="p-8 space-y-8">
                         <FormField control={form.control} name="commission" render={({ field }) => (
                             <FormItem className="max-w-xs">
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"><Percent className="h-3 w-3" /> Commission Ndara Afrique (%)</FormLabel>
                                 <FormControl><Input type="number" {...field} className="h-14 bg-slate-800/50 border-slate-700 rounded-xl text-2xl font-black text-primary" /></FormControl>
                                 <FormDescription className="text-[10px] italic">Pourcentage prélevé sur chaque vente formateur.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                        
+                        <FormField control={form.control} name="minPayoutThreshold" render={({ field }) => (
+                            <FormItem className="max-w-xs">
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"><BadgeEuro className="h-3 w-3" /> Seuil de retrait minimum (XOF)</FormLabel>
+                                <FormControl><Input type="number" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl font-bold" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                         )} />
@@ -334,7 +346,7 @@ export default function AdminSettingsPage() {
                             <div className="flex items-center justify-between">
                                 <div className="space-y-1">
                                     <h3 className="font-bold text-white flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-primary" /> Programme Ambassadeur (Étudiants)</h3>
-                                    <p className="text-xs text-slate-500">Permet aux étudiants de revendre les cours rachetés par Ndara.</p>
+                                    <p className="text-xs text-slate-500">Permet aux étudiants de revendre les cours et toucher des commissions.</p>
                                 </div>
                                 <FormField control={form.control} name="affiliateEnabled" render={({ field }) => (
                                     <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
@@ -345,6 +357,14 @@ export default function AdminSettingsPage() {
                                     <FormItem>
                                         <FormLabel className="text-[10px] font-black uppercase text-slate-500">Commission Ambassadeur (%)</FormLabel>
                                         <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="affiliateCookieDurationDays" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"><Clock className="h-3 w-3" /> Durée du Cookie (Jours)</FormLabel>
+                                        <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                        <FormDescription className="text-[9px]">Temps pendant lequel l'affilié reste crédité après le clic.</FormDescription>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
