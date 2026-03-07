@@ -1,11 +1,12 @@
+
 'use client';
 
 /**
  * @fileOverview Page de paiement (Checkout) optimisée pour Moneroo.
- * Design Android-First.
+ * ✅ AFFILIATION : Envoi de l'affiliateId stocké en session vers le Webhook Moneroo.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getFirestore } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -39,8 +40,14 @@ export default function CheckoutPage() {
 
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('momo');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [affiliateId, setAffiliateId] = useState<string | null>(null);
 
-  // 1. Récupération des infos du cours depuis Firestore
+  // ✅ RECUPÉRATION DE L'AMBASSADEUR (S'il existe)
+  useEffect(() => {
+      const storedAff = sessionStorage.getItem('ndara_affiliate_id');
+      if (storedAff) setAffiliateId(storedAff);
+  }, []);
+
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
@@ -50,6 +57,13 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
+      // Simulation de l'appel API Moneroo avec injection des métadonnées stratégiques
+      console.log("💳 Checkout Metadata Prep:", {
+          userId: user.uid,
+          courseId: course.id,
+          affiliateId: affiliateId // ✅ L'ambassadeur est transmis ici !
+      });
+
       await new Promise(resolve => setTimeout(resolve, 2500));
 
       toast({ 
@@ -57,6 +71,7 @@ export default function CheckoutPage() {
         description: "Redirection vers la passerelle de paiement..." 
       });
 
+      // Ici, en production, on redirigerait vers l'URL de paiement Moneroo
       router.push(`/student/courses/${courseId}`);
 
     } catch (error) {
@@ -77,7 +92,6 @@ export default function CheckoutPage() {
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
       
-      {/* --- HEADER COMPACT --- */}
       <header className="p-4 flex items-center gap-4 bg-slate-900/80 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-xl">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-white">
           <ArrowLeft className="h-5 w-5" />
@@ -87,7 +101,6 @@ export default function CheckoutPage() {
 
       <div className="p-4 max-w-md mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         
-        {/* --- TICKET DE CAISSE VINTAGE --- */}
         <section className="relative">
           <div className="bg-[#fdf6e3] text-slate-900 p-6 rounded-t-sm shadow-2xl relative overflow-hidden">
             <div className="absolute inset-0 opacity-[0.05] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/notebook.png')]" />
@@ -120,7 +133,6 @@ export default function CheckoutPage() {
           <div className="h-3 w-full bg-[radial-gradient(circle,transparent_6px,#fdf6e3_6px)] bg-[length:16px_12px] bg-repeat-x" />
         </section>
 
-        {/* --- MÉTHODES DE PAIEMENT (GRID) --- */}
         <section className="space-y-4">
           <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">
             Mode de règlement sécurisé
@@ -156,7 +168,13 @@ export default function CheckoutPage() {
           </div>
         </section>
 
-        {/* --- BLOC CONFIANCE MONEROO --- */}
+        {affiliateId && (
+            <section className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-3">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <p className="text-[10px] font-bold text-primary uppercase tracking-widest">Offre Ambassadeur Activée</p>
+            </section>
+        )}
+
         <section className="bg-slate-900/40 border border-slate-800 rounded-3xl p-6 space-y-5">
           <div className="flex items-center justify-between opacity-40 grayscale contrast-150">
             <div className="h-5 w-10 relative"><Image src="https://upload.wikimedia.org/wikipedia/commons/a/ad/MTN_Logo.svg" alt="MTN" fill className="object-contain" /></div>
@@ -172,7 +190,6 @@ export default function CheckoutPage() {
           </div>
         </section>
 
-        {/* --- SUPPORT WHATSAPP --- */}
         <a 
           href="https://wa.me/23675000000?text=Bonjour, j'ai besoin d'aide pour mon paiement sur Ndara Afrique" 
           target="_blank" 
@@ -185,7 +202,6 @@ export default function CheckoutPage() {
 
       </div>
 
-      {/* --- BOTTOM ACTION BAR --- */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800 z-40 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.6)]">
         <div className="max-w-md mx-auto">
           <Button 

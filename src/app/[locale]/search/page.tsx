@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ FONCTIONNEL : Filtre "Bourse du Savoir" pour les investisseurs et visiteurs.
+ * ✅ AFFILIATION : Capture du paramètre 'aff' pour récompenser l'ambassadeur (Last Click Rule).
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,7 +13,7 @@ import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, Arro
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,17 @@ export default function SearchPage() {
   const db = getFirestore();
   const router = useRouter();
   const { user } = useRole();
+  const searchParams = useSearchParams();
+
+  // ✅ LOGIQUE AMBASSADEUR : Capturer l'affiliateId s'il est présent dans l'URL
+  useEffect(() => {
+      const affId = searchParams.get('aff');
+      if (affId) {
+          // On applique la règle du "Last Click" : le dernier lien cliqué écrase le précédent
+          sessionStorage.setItem('ndara_affiliate_id', affId);
+          console.log("🚀 Affiliate ID captured:", affId);
+      }
+  }, [searchParams]);
 
   useEffect(() => {
     setIsLoading(true);

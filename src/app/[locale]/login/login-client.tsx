@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ RÉSOLU : Restauration des variables de formulaire pour le build Vercel.
+ * ✅ GESTION PARRAINAGE : Capture du paramètre 'ref' pour lier le nouveau formateur à son parrain.
  */
 
 import { useState, useEffect } from 'react';
@@ -72,6 +73,8 @@ export default function LoginClient() {
   const locale = useLocale();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
+  const referralId = searchParams.get('ref'); // 🤝 Capture du parrain
+  
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -80,7 +83,6 @@ export default function LoginClient() {
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
 
-  // ✅ RESTAURATION DES FORMULAIRES POUR LE BUILD
   const loginForm = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: '', password: '' },
@@ -135,6 +137,7 @@ export default function LoginClient() {
         preferredLanguage: locale as 'fr' | 'en',
         isOnline: true,
         lastSeen: serverTimestamp(),
+        referredBy: referralId || null, // ✅ Sauvegarde du lien de parrainage permanent
       };
 
       try {
@@ -182,7 +185,8 @@ export default function LoginClient() {
           preferredLanguage: locale as 'fr' | 'en',
           isOnline: true,
           lastSeen: serverTimestamp(),
-          profilePictureURL: user.photoURL || ''
+          profilePictureURL: user.photoURL || '',
+          referredBy: referralId || null, // ✅ Support parrainage aussi via Google Login
         };
         await setDoc(userRef, userData);
       }
@@ -202,6 +206,11 @@ export default function LoginClient() {
                   <Image src="/logo.png" alt="Ndara Afrique" width={64} height={64} className="rounded-full shadow-2xl" />
                 </Link>
                 <h1 className="text-2xl font-black text-white uppercase tracking-tight">Ndara Afrique</h1>
+                {referralId && (
+                    <div className="mt-4 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full animate-in zoom-in duration-500">
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Vous avez été invité par un expert</p>
+                    </div>
+                )}
             </div>
             
             <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl">
