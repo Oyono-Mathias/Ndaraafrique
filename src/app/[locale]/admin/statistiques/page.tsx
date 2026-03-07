@@ -3,12 +3,11 @@
 
 /**
  * @fileOverview Dashboard Analytique Ndara Afrique - Version Optimisée.
- * ✅ PERFORMANCE : Chargement dynamique des graphiques Recharts (Lourds).
+ * ✅ PERFORMANCE : Rendu conditionnel après montage pour éviter les conflits SSR.
  * ✅ MÉMOÏSATION : Calculs de stats isolés pour réduire la charge CPU.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import dynamic from 'next/dynamic';
 import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,16 +19,18 @@ import { subDays, format, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, NdaraUser, TrackingEvent } from '@/lib/types';
 
-// Chargement dynamique des graphiques Recharts (évite de ralentir le chargement initial de l'admin)
-const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
-const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { ssr: false });
-const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false });
-const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
-const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
-const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
-const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
-const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
-const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
+// Importations standards pour éviter les erreurs de type avec dynamic()
+import { 
+    ResponsiveContainer, 
+    AreaChart, 
+    Area, 
+    BarChart, 
+    Bar, 
+    XAxis, 
+    YAxis, 
+    CartesianGrid, 
+    Tooltip 
+} from 'recharts';
 
 export default function AdminStatsPage() {
     const [allUsers, setAllUsers] = useState<NdaraUser[]>([]);
@@ -37,11 +38,13 @@ export default function AdminStatsPage() {
     const [allTracking, setAllTracking] = useState<TrackingEvent[]>([]);
     
     const [isLoading, setIsLoading] = useState(true);
+    const [hasMounted, setHasMounted] = useState(false);
     const [dateRange, setDateRange] = useState<DateRange | undefined>({ from: subDays(new Date(), 30), to: new Date() });
     
     const db = getFirestore();
 
     useEffect(() => {
+        setHasMounted(true);
         // Écouteurs Firestore optimisés
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             setAllUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as NdaraUser)));
@@ -141,7 +144,7 @@ export default function AdminStatsPage() {
                         <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Trésorerie (XOF)</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 pt-10 h-80">
-                        {isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
+                        {!hasMounted || isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <AreaChart data={stats.revenueData}>
                                     <defs>
@@ -166,7 +169,7 @@ export default function AdminStatsPage() {
                         <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Acquisition Membres</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 pt-10 h-80">
-                        {isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
+                        {!hasMounted || isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart data={stats.growthData}>
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
