@@ -3,8 +3,7 @@
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * ✅ SÉCURITÉ : Bloque l'upload si le titre est absent.
- * ✅ DESIGN : Boutons d'upload visuellement désactivés si titre vide.
+ * ✅ GOOGLE DRIVE : Importation directe sans téléchargement local.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -22,9 +21,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, Clock, AlertCircle } from 'lucide-react';
+import { Loader2, CheckCircle2, Youtube, PlaySquare, FileText, MessageSquareText, FileVideo, Clock, AlertCircle, HardDrive } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleDrivePicker } from '@/components/instructor/google-drive/GoogleDrivePicker';
 
 const formSchema = z.object({
   title: z.string().min(3, "Le titre est requis."),
@@ -49,6 +50,9 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     const [isUploading, setIsUploading] = useState(false);
     const [isSyncingDuration, setIsSyncingDuration] = useState(false);
     const db = getFirestore();
+
+    const [isDrivePickerOpen, setIsDrivePickerOpen] = useState(false);
+    const [driveAccessToken, setDriveAccessToken] = useState<string | null>(null);
 
     const [adminSettings, setAdminSettings] = useState({
         allowYoutube: true,
@@ -117,6 +121,66 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         }
     };
 
+    const handleGoogleDriveAuth = async () => {
+        const title = form.getValues('title');
+        if (!title || title.trim().length < 3) {
+            toast({ variant: 'destructive', title: "Titre requis", description: "Donnez un titre à votre leçon avant d'importer." });
+            return;
+        }
+
+        const auth = getAuth();
+        const provider = new GoogleAuthProvider();
+        provider.addScope('https://www.googleapis.com/auth/drive.readonly');
+
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const credential = GoogleAuthProvider.credentialFromResult(result);
+            const token = credential?.accessToken;
+
+            if (token) {
+                setDriveAccessToken(token);
+                setIsDrivePickerOpen(true);
+            } else {
+                throw new Error("Impossible de récupérer le jeton d'accès Google.");
+            }
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Auth Google échouée", description: error.message });
+        }
+    };
+
+    const handleFileFromDrive = async (file: { id: string, name: string }) => {
+        if (!driveAccessToken || !currentUser) return;
+        
+        setIsDrivePickerOpen(false);
+        setIsUploading(true);
+        
+        try {
+            toast({ title: "Importation en cours", description: "Veuillez patienter pendant que nous streamons votre fichier vers Bunny..." });
+            
+            const response = await fetch('/api/video/import-drive', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    fileId: file.id,
+                    accessToken: driveAccessToken,
+                    instructorId: currentUser.uid,
+                    title: form.getValues('title')
+                })
+            });
+
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error);
+
+            form.setValue('contentUrl', data.videoId, { shouldValidate: true });
+            toast({ title: "Importation réussie !", description: "Votre vidéo est prête sur Bunny Stream." });
+            setTimeout(() => syncDuration(data.videoId), 10000);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: "Échec de l'import", description: error.message });
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
     const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const title = form.getValues('title');
 
@@ -162,11 +226,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         const title = form.getValues('title');
 
         if (!title || title.trim().length < 3) {
-            toast({ 
-                variant: 'destructive', 
-                title: "Titre manquant", 
-                description: "Veuillez saisir le titre de la leçon avant de choisir le PDF." 
-            });
+            toast({ variant: 'destructive', title: "Titre manquant", description: "Saisissez d'abord le titre." });
             event.target.value = ''; 
             return;
         }
@@ -214,151 +274,181 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden z-[10000]">
-                <DialogHeader className="p-8 pb-0">
-                    <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">
-                        {lecture ? "Modifier" : "Ajouter"} une leçon
-                    </DialogTitle>
-                </DialogHeader>
-                <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-8">
-                        <FormField control={form.control} name="title" render={({ field }) => ( 
-                            <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
-                                <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
-                                <FormMessage />
-                            </FormItem> 
-                        )}/>
-                        
-                        <FormField control={form.control} name="type" render={({ field }) => ( 
-                            <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
-                                <Select 
-                                    onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); }} 
-                                    defaultValue={field.value} 
-                                    value={field.value}
-                                >
-                                    <FormControl>
-                                        <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white">
-                                            <SelectValue placeholder="Choisir un format" />
-                                        </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent className="bg-slate-900 border-slate-800 text-white z-[10006]">
-                                        {adminSettings.allowBunny && (
-                                            <SelectItem value="video" className="py-3">
+        <>
+            <GoogleDrivePicker 
+                isOpen={isDrivePickerOpen}
+                onOpenChange={setIsDrivePickerOpen}
+                accessToken={driveAccessToken || ''}
+                onFileSelect={handleFileFromDrive}
+            />
+
+            <Dialog open={isOpen} onOpenChange={onOpenChange}>
+                <DialogContent className="sm:max-w-2xl bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden z-[10000]">
+                    <DialogHeader className="p-8 pb-0">
+                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">
+                            {lecture ? "Modifier" : "Ajouter"} une leçon
+                        </DialogTitle>
+                    </DialogHeader>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 p-8">
+                            <FormField control={form.control} name="title" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Titre de la leçon</FormLabel>
+                                    <FormControl><Input placeholder="Ex: Introduction aux fondamentaux" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
+                                    <FormMessage />
+                                </FormItem> 
+                            )}/>
+                            
+                            <FormField control={form.control} name="type" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Format de contenu</FormLabel>
+                                    <Select 
+                                        onValueChange={(val) => { field.onChange(val); form.setValue('contentUrl', ''); }} 
+                                        defaultValue={field.value} 
+                                        value={field.value}
+                                    >
+                                        <FormControl>
+                                            <SelectTrigger className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white">
+                                                <SelectValue placeholder="Choisir un format" />
+                                            </SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent className="bg-slate-900 border-slate-800 text-white z-[10006]">
+                                            {adminSettings.allowBunny && (
+                                                <SelectItem value="video" className="py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <PlaySquare className="h-4 w-4 text-primary" />
+                                                        <span>Vidéo Premium (Bunny Stream)</span>
+                                                    </div>
+                                                </SelectItem>
+                                            )}
+                                            {adminSettings.allowYoutube && (
+                                                <SelectItem value="youtube" className="py-3">
+                                                    <div className="flex items-center gap-2">
+                                                        <Youtube className="h-4 w-4 text-red-500" />
+                                                        <span>Lien YouTube</span>
+                                                    </div>
+                                                </SelectItem>
+                                            )}
+                                            <SelectItem value="text" className="py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <PlaySquare className="h-4 w-4 text-primary" />
-                                                    <span>Vidéo Premium (Bunny Stream)</span>
+                                                    <MessageSquareText className="h-4 w-4 text-emerald-500" />
+                                                    <span>Texte / Article</span>
                                                 </div>
                                             </SelectItem>
-                                        )}
-                                        {adminSettings.allowYoutube && (
-                                            <SelectItem value="youtube" className="py-3">
+                                            <SelectItem value="pdf" className="py-3">
                                                 <div className="flex items-center gap-2">
-                                                    <Youtube className="h-4 w-4 text-red-500" />
-                                                    <span>Lien YouTube</span>
+                                                    <FileText className="h-4 w-4 text-amber-500" />
+                                                    <span>Document PDF (Bunny CDN)</span>
                                                 </div>
                                             </SelectItem>
-                                        )}
-                                        <SelectItem value="text" className="py-3">
-                                            <div className="flex items-center gap-2">
-                                                <MessageSquareText className="h-4 w-4 text-emerald-500" />
-                                                <span>Texte / Article</span>
-                                            </div>
-                                        </SelectItem>
-                                        <SelectItem value="pdf" className="py-3">
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="h-4 w-4 text-amber-500" />
-                                                <span>Document PDF (Bunny CDN)</span>
-                                            </div>
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                                <FormMessage />
-                            </FormItem> 
-                        )}/>
-                        
-                        {selectedType === 'video' && (
-                            <div className="space-y-4">
-                                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
-                                    Fichier Vidéo
-                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis avant upload</span>}
-                                </label>
-                                <div className="relative">
-                                    <Input type="file" accept="video/*" onChange={handleVideoUpload} className="sr-only" id="video-upload-input" disabled={isUploading || isTitleMissing} />
-                                    <label 
-                                        htmlFor="video-upload-input" 
-                                        className={cn(
-                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-[2.5rem] bg-slate-950/50 transition-all", 
-                                            isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
-                                        )}
-                                    >
-                                        {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileVideo className="h-10 w-10 text-slate-700" />}
-                                        <span className="text-[10px] font-black uppercase mt-2">{isTitleMissing ? "Saisir un titre d'abord" : "Choisir la vidéo"}</span>
-                                    </label>
-                                </div>
-                                <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
-                                    <FormItem><FormControl><Input {...field} readOnly className="h-10 bg-slate-950 border-slate-800 rounded-xl text-xs text-slate-500 font-mono" /></FormControl></FormItem> 
-                                )}/>
-                            </div>
-                        )}
-
-                        {selectedType === 'pdf' && (
-                            <div className="space-y-4">
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
-                                    Fichier PDF (Bunny CDN)
-                                    {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis</span>}
-                                </FormLabel>
-                                <div className="relative">
-                                    <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading || isTitleMissing} />
-                                    <label 
-                                        htmlFor="pdf-upload-input" 
-                                        className={cn(
-                                            "flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-xl bg-slate-950/50 transition-all", 
-                                            isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
-                                        )}
-                                    >
-                                        {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileText className="h-8 w-8 text-amber-500" />}
-                                        <span className="text-[10px] font-black uppercase mt-2">{isTitleMissing ? "Saisir un titre d'abord" : "Téléverser le PDF"}</span>
-                                    </label>
-                                </div>
-                                <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
-                                    <FormItem><FormControl><Input readOnly {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" /></FormControl></FormItem> 
-                                )}/>
-                            </div>
-                        )}
-
-                        {selectedType === 'youtube' && (
-                            <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
-                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Lien Vidéo</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl><FormMessage /></FormItem> 
+                                        </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem> 
                             )}/>
-                        )}
+                            
+                            {selectedType === 'video' && (
+                                <div className="space-y-4">
+                                    <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
+                                        Source de la vidéo
+                                        {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis avant import</span>}
+                                    </label>
+                                    
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={handleGoogleDriveAuth}
+                                            disabled={isUploading || isTitleMissing}
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-dashed transition-all active:scale-95 bg-slate-950/50",
+                                                isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "border-slate-700 hover:border-primary/50 text-slate-300"
+                                            )}
+                                        >
+                                            <HardDrive className="h-8 w-8 mb-2 text-primary" />
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Google Drive</span>
+                                        </button>
 
-                        {selectedType === 'text' && (
-                            <FormField control={form.control} name="textContent" render={({ field }) => ( 
-                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Contenu</FormLabel><FormControl><Textarea rows={10} {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none text-white" /></FormControl><FormMessage /></FormItem> 
+                                        <label 
+                                            className={cn(
+                                                "flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-dashed transition-all active:scale-95 bg-slate-950/50",
+                                                isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50 text-slate-300"
+                                            )}
+                                        >
+                                            {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileVideo className="h-8 w-8 mb-2" />}
+                                            <span className="text-[10px] font-black uppercase tracking-widest">Fichier local</span>
+                                            <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={isUploading || isTitleMissing} />
+                                        </label>
+                                    </div>
+
+                                    {form.watch('contentUrl') && (
+                                        <div className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center gap-2">
+                                            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                                            <span className="text-[10px] font-mono text-slate-500 truncate">{form.watch('contentUrl')}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {selectedType === 'pdf' && (
+                                <div className="space-y-4">
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
+                                        Fichier PDF (Bunny CDN)
+                                        {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis</span>}
+                                    </FormLabel>
+                                    <div className="relative">
+                                        <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading || isTitleMissing} />
+                                        <label 
+                                            htmlFor="pdf-upload-input" 
+                                            className={cn(
+                                                "flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-xl bg-slate-950/50 transition-all", 
+                                                isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
+                                            )}
+                                        >
+                                            {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileText className="h-8 w-8 text-amber-500" />}
+                                            <span className="text-[10px] font-black uppercase mt-2">{isTitleMissing ? "Saisir un titre d'abord" : "Téléverser le PDF"}</span>
+                                        </label>
+                                    </div>
+                                    <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                        <FormItem><FormControl><Input readOnly {...field} className="h-10 bg-slate-950 border-slate-800 rounded-xl text-[10px] text-slate-500" /></FormControl></FormItem> 
+                                    )}/>
+                                </div>
+                            )}
+
+                            {selectedType === 'youtube' && (
+                                <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Lien Vidéo</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl><FormMessage /></FormItem> 
+                                )}/>
+                            )}
+
+                            {selectedType === 'text' && (
+                                <FormField control={form.control} name="textContent" render={({ field }) => ( 
+                                    <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Contenu</FormLabel><FormControl><Textarea rows={10} {...field} className="bg-slate-950 border-slate-800 rounded-xl resize-none text-white" /></FormControl><FormMessage /></FormItem> 
+                                )}/>
+                            )}
+
+                            <FormField control={form.control} name="duration" render={({ field }) => ( 
+                                <FormItem>
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                                        <Clock className="h-3 w-3" />
+                                        Durée (minutes)
+                                        {isSyncingDuration && <Loader2 className="h-3 w-3 animate-spin text-primary ml-auto" />}
+                                    </FormLabel>
+                                    <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-black text-lg" /></FormControl>
+                                    <FormMessage />
+                                </FormItem> 
                             )}/>
-                        )}
 
-                        <FormField control={form.control} name="duration" render={({ field }) => ( 
-                            <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2"><Clock className="h-3 w-3" />Durée (minutes)</FormLabel>
-                                <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-black text-lg" /></FormControl>
-                                <FormMessage />
-                            </FormItem> 
-                        )}/>
-
-                        <DialogFooter className="pt-6 border-t border-white/5">
-                            <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px]">Annuler</Button></DialogClose>
-                            <Button type="submit" disabled={isPending || isUploading} className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all">
-                                {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
-                                Enregistrer
-                            </Button>
-                        </DialogFooter>
-                    </form>
-                </Form>
-            </DialogContent>
-        </Dialog>
+                            <DialogFooter className="pt-6 border-t border-white/5">
+                                <DialogClose asChild><Button type="button" variant="ghost" className="font-bold text-slate-500 uppercase text-[10px]">Annuler</Button></DialogClose>
+                                <Button type="submit" disabled={isPending || isUploading} className="h-14 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl transition-all">
+                                    {isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2"/> : <CheckCircle2 className="h-4 w-4 mr-2"/>} 
+                                    Enregistrer
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </Form>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
