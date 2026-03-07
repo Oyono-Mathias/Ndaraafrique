@@ -216,6 +216,11 @@ export interface Course {
     buyoutPrice?: number;
     isPlatformOwned?: boolean;
     originalInstructorId?: string;
+    // --- RESALE RIGHTS SYSTEM ---
+    resaleRightsAvailable?: boolean;
+    resaleRightsPrice?: number;
+    rightsChain?: string[]; // Track previous owners
+    // --- UI ATTR ---
     thumbnailUrl?: string;
     imageUrl?: string;
     createdAt?: Timestamp | FieldValue;
@@ -367,7 +372,8 @@ export interface Settings {
     announcementMessage?: string;
     maintenanceMode: boolean;
     allowInstructorSignup: boolean;
-    allowCourseBuyout: boolean; // ✅ Nouveau bouton global
+    allowCourseBuyout: boolean;
+    allowResaleRights: boolean; // ✅ Nouvelle option globale
     autoApproveCourses: boolean;
     enableInternalMessaging: boolean;
     allowYoutube?: boolean;

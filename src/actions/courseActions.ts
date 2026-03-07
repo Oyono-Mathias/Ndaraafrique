@@ -1,8 +1,98 @@
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
-import { FieldValue } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
+
+/**
+ * Mettre en vente les droits de revente d'un cours (Action Admin).
+ * Un cours doit appartenir à la plateforme pour être mis en vente.
+ */
+export async function toggleResaleRightsAction({
+    courseId,
+    price,
+    available,
+    adminId
+}: {
+    courseId: string;
+    price: number;
+    available: boolean;
+    adminId: string;
+}) {
+    try {
+        const db = getAdminDb();
+        const courseRef = db.collection('courses').doc(courseId);
+        const courseDoc = await courseRef.get();
+
+        if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+        if (!courseDoc.data()?.isPlatformOwned) return { success: false, error: 'Seuls les cours appartenant à Ndara peuvent être mis en vente.' };
+
+        await courseRef.update({
+            resaleRightsAvailable: available,
+            resaleRightsPrice: price,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        await db.collection('admin_audit_logs').add({
+            adminId,
+            eventType: 'settings.update',
+            target: { id: courseId, type: 'course' },
+            details: `Droits de revente pour "${courseDoc.data()?.title}" : ${available ? 'Activés' : 'Désactivés'} à ${price} XOF.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
+ * Finaliser l'achat des droits de revente (Transfert de propriété).
+ */
+export async function purchaseResaleRightsAction({
+    courseId,
+    buyerId,
+    transactionId
+}: {
+    courseId: string;
+    buyerId: string;
+    transactionId: string;
+}) {
+    try {
+        const db = getAdminDb();
+        const courseRef = db.collection('courses').doc(courseId);
+        const courseDoc = await courseRef.get();
+        const courseData = courseDoc.data() as Course;
+
+        if (!courseData.resaleRightsAvailable) return { success: false, error: 'Les droits ne sont plus disponibles.' };
+
+        const rightsChain = courseData.rightsChain || [];
+        const previousOwner = courseData.instructorId;
+
+        await courseRef.update({
+            instructorId: buyerId,
+            isPlatformOwned: false,
+            resaleRightsAvailable: false,
+            buyoutStatus: 'none', // Reset buyout status for new owner
+            rightsChain: FieldValue.arrayUnion(previousOwner),
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        // Logger la transaction stratégique
+        await db.collection('admin_audit_logs').add({
+            adminId: 'SYSTEM',
+            eventType: 'course.grant',
+            target: { id: buyerId, type: 'user' },
+            details: `Transfert de propriété : "${courseData.title}" acquis par l'utilisateur ${buyerId}. Transaction: ${transactionId}`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        return { success: true };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
 
 /**
  * Soumettre une demande de rachat de cours par la plateforme.

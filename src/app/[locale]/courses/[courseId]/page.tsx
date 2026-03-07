@@ -2,9 +2,7 @@
 
 /**
  * @fileOverview Page de présentation détaillée d'un cours.
- * ✅ SÉCURITÉ : Bloque l'accès si le profil n'est pas complété.
- * ✅ TEMPS RÉEL : Score d'avis et liste des avis réels connectés à Firestore.
- * ✅ FIX : Importation Card pour build Vercel.
+ * ✅ NOUVEAU : Système d'achat de droits de revente (Licence).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,14 +27,16 @@ import {
   Loader2,
   UserCircle2,
   Camera,
-  MessageSquare
+  MessageSquare,
+  BadgeEuro,
+  ShoppingCart
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
+import type { Course, Section, Lecture, NdaraUser, Enrollment, Review, Settings } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -59,6 +59,7 @@ export default function CourseDetailPage() {
   
   const [stats, setStats] = useState({ rating: 0, reviewCount: 0, studentCount: 0 });
   const [reviewsList, setReviewsList] = useState<EnrichedReview[]>([]);
+  const [isResaleEnabled, setIsResaleEnabled] = useState(false);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -68,6 +69,17 @@ export default function CourseDetailPage() {
 
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment, isLoading: enrollmentLoading } = useDoc<Enrollment>(enrollmentRef);
+
+  useEffect(() => {
+    // Écouter les réglages globaux pour le marché de droits
+    const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+        if (snap.exists()) {
+            const data = snap.data() as Settings;
+            setIsResaleEnabled(data.platform?.allowResaleRights ?? true);
+        }
+    });
+    return () => unsubSettings();
+  }, [db]);
 
   useEffect(() => {
     if (!courseId) return;
@@ -137,39 +149,11 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
 
-  const isProfileBlocked = user && currentUser && !currentUser.isProfileComplete;
-
   if (isLoading) return <CourseDetailSkeleton />;
   if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
 
-  if (isProfileBlocked) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-700">
-        <div className="relative mb-8">
-            <div className="p-6 bg-amber-500/10 rounded-full border-4 border-amber-500/20">
-                <UserCircle2 className="h-20 w-20 text-amber-500" />
-            </div>
-            <div className="absolute -bottom-2 -right-2 p-3 bg-primary rounded-full shadow-xl border-4 border-slate-950">
-                <Camera className="h-5 w-5 text-white" />
-            </div>
-        </div>
-        <h1 className="text-3xl font-black text-white uppercase tracking-tight leading-tight">
-          Identité <br/><span className="text-primary">Indispensable</span>
-        </h1>
-        <p className="text-slate-400 mt-4 max-w-md mx-auto leading-relaxed">
-          Pour accéder aux détails et participer à la communauté, vous devez avoir un profil complet : <b>Nom, Expertise et Photo de profil</b>.
-        </p>
-        <Button asChild className="mt-10 h-16 px-10 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 transition-all active:scale-95">
-          <Link href="/account">
-            Compléter mon identité
-            <ChevronRight className="ml-2 h-5 w-5" />
-          </Link>
-        </Button>
-      </div>
-    );
-  }
-
   const isEnrolled = !!enrollment;
+  const resaleAvailable = course.resaleRightsAvailable && isResaleEnabled && !isEnrolled;
 
   const handleAction = async () => {
     if (!user) {
@@ -254,6 +238,36 @@ export default function CourseDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* --- BLOC DROITS DE REVENTE (INVESTISSEURS) --- */}
+        {resaleAvailable && (
+            <Card className="p-6 bg-gradient-to-br from-amber-500/10 to-primary/5 border-2 border-amber-500/20 rounded-[2rem] shadow-2xl relative overflow-hidden group animate-in zoom-in duration-700">
+                <div className="absolute -right-4 -bottom-4 opacity-[0.05] group-hover:scale-110 transition-transform">
+                    <BadgeEuro size={120} className="text-amber-500" />
+                </div>
+                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-6">
+                    <div className="text-center sm:text-left space-y-2">
+                        <div className="flex items-center gap-2 text-amber-500 justify-center sm:justify-start">
+                            <ShoppingCart className="h-5 w-5" />
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Opportunité Partenaire</span>
+                        </div>
+                        <h3 className="text-xl font-black text-white uppercase tracking-tight">Devenez Propriétaire</h3>
+                        <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-sm">
+                            Achetez la licence de revente de ce cours. Percevez les revenus sur chaque vente et revendez la licence à tout moment.
+                        </p>
+                    </div>
+                    <div className="flex flex-col items-center sm:items-end gap-3 shrink-0">
+                        <div className="text-right">
+                            <p className="text-2xl font-black text-white">{(course.resaleRightsPrice || 0).toLocaleString('fr-FR')} XOF</p>
+                            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Licence Exclusive</p>
+                        </div>
+                        <Button asChild className="h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-black uppercase text-[10px] tracking-widest px-8 shadow-xl shadow-amber-500/20">
+                            <Link href={`/student/checkout/${courseId}?type=rights`}>Acheter les droits</Link>
+                        </Button>
+                    </div>
+                </div>
+            </Card>
+        )}
 
         {instructor && (
           <Link href={`/instructor/${instructor.uid}`} className="flex items-center gap-4 p-4 bg-slate-900 border border-slate-800 rounded-2xl active:scale-95 transition-transform">
