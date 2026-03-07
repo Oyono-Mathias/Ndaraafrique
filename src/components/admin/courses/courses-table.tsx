@@ -26,7 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Search, Edit, Trash2, Loader2, Eye, ShieldCheck, Clock, Archive } from 'lucide-react';
+import { MoreHorizontal, Search, Edit, Trash2, Loader2, Eye, ShieldCheck, Clock, Archive, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
@@ -269,7 +269,12 @@ export function CoursesTable() {
                                 <CourseRow key={course.id} course={course} instructor={instructorsMap.get(course.instructorId)} />
                             ))
                         ) : (
-                            <TableRow><TableCell colSpan={5} className="h-64 text-center opacity-20"><BookOpen className="h-16 w-16 mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucune formation trouvée</p></TableCell></TableRow>
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-64 text-center opacity-20">
+                                    <BookOpen className="h-16 w-16 mx-auto mb-4" />
+                                    <p className="font-black uppercase text-xs">Aucune formation trouvée</p>
+                                </TableCell>
+                            </TableRow>
                         )}
                     </TableBody>
                 </Table>
