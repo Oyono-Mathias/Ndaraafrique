@@ -313,7 +313,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
 
             <div className="flex flex-col sm:flex-row justify-end gap-4 sticky bottom-6 z-20 pt-4 border-t border-white/5 bg-slate-950/80 backdrop-blur-xl p-4 -m-4 rounded-t-3xl">
                 <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending} className="h-14 px-8 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
-                <Button type="submit" disabled={isPending || isUploading} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 transition-all active:scale-[0.98]">
+                <Button type="submit" disabled={isPending || isUploading} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/30 transition-all active:scale-[0.98]">
                     {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
                     {mode === 'create' ? "Initialiser la formation" : "Sauvegarder les changements"}
                 </Button>

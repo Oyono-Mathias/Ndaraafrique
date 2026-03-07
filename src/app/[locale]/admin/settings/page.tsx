@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const teamMemberSchema = z.object({
   name: z.string().min(2, "Nom requis"),
@@ -195,7 +196,6 @@ export default function AdminSettingsPage() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error);
 
-        // Si fieldName contient un index (ex: teamMembers.0.imageUrl)
         if (fieldName.includes('.')) {
             const parts = fieldName.split('.');
             if (parts[0] === 'teamMembers') {

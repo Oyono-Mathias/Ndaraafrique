@@ -3,6 +3,7 @@
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
  * ✅ RÉSOLU : Image Hero personnalisable par l'admin via Firestore.
+ * ✅ RÉSOLU : Suppression totale des cours de simulation.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -32,7 +33,7 @@ const Navbar = () => {
     }, [role]);
 
     return (
-        <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 transition-all duration-300 h-20 flex items-center">
+        <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-between items-center">
                 <Link href={`/${locale}`} className="flex items-center gap-2 group">
                     <div className="w-8 h-8 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-lg flex items-center justify-center text-white font-bold shadow-lg">N</div>
@@ -111,7 +112,6 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
-  // Récupération des réglages pour l'image Hero dynamique
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
   const landingPageSettings = settings?.content?.landingPage;
