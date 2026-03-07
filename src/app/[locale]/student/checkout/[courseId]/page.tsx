@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -23,7 +22,8 @@ import {
   CreditCard,
   MessageCircle,
   CheckCircle2,
-  ChevronRight
+  ChevronRight,
+  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -44,8 +44,10 @@ export default function CheckoutPage() {
 
   // ✅ RECUPÉRATION DE L'AMBASSADEUR (S'il existe)
   useEffect(() => {
-      const storedAff = sessionStorage.getItem('ndara_affiliate_id');
-      if (storedAff) setAffiliateId(storedAff);
+      if (typeof window !== 'undefined') {
+          const storedAff = sessionStorage.getItem('ndara_affiliate_id');
+          if (storedAff) setAffiliateId(storedAff);
+      }
   }, []);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
