@@ -2,12 +2,12 @@
 
 /**
  * @fileOverview Réglages Globaux Ndara Afrique.
- * ✅ RÉSOLU : Correction du Type Error bloquant le build Vercel.
- * ✅ NOUVEAU : Contrôles pour l'approbation auto et la messagerie interne.
+ * ✅ RESTAURÉ : Toutes les options (Social, Commercial, Équipe, Vidéo).
+ * ✅ EXHAUSTIF : Pilotage total sans code.
  */
 
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
@@ -35,10 +35,18 @@ import {
   BadgeEuro,
   ArrowLeftRight,
   ShieldCheck,
-  MessageSquare
+  MessageSquare,
+  Globe,
+  Percent,
+  Users,
+  Plus,
+  Trash2,
+  Video,
+  Youtube
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
+import { cn } from '@/lib/utils';
 
 const teamMemberSchema = z.object({
   name: z.string().min(2, "Nom requis"),
@@ -93,6 +101,11 @@ export default function AdminSettingsPage() {
       autoApproveCourses: false,
       enableInternalMessaging: true
     }
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "teamMembers"
   });
 
   useEffect(() => {
@@ -187,7 +200,12 @@ export default function AdminSettingsPage() {
             allowBunny: values.allowBunny
           },
           design: { primaryColor: values.primaryColor, fontScale: values.fontScale, borderRadius: values.borderRadius },
-        }
+          content: {
+              aboutPage: {
+                  ...form.getValues('teamMembers') ? { teamMembers: values.teamMembers } : {}
+              }
+          }
+        } as any
       });
 
       if (result.success) toast({ title: "Configuration Ndara enregistrée !" });
@@ -216,18 +234,23 @@ export default function AdminSettingsPage() {
           <Tabs defaultValue="general" className="w-full">
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-12 p-1 overflow-x-auto flex items-center justify-start gap-1 w-full rounded-2xl no-scrollbar">
               <TabsTrigger value="general" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Général</TabsTrigger>
+              <TabsTrigger value="commercial" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Commercial</TabsTrigger>
               <TabsTrigger value="design" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Studio Design</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Plateforme</TabsTrigger>
+              <TabsTrigger value="content" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Contenu</TabsTrigger>
             </TabsList>
 
             <TabsContent value="general" className="space-y-6">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Identité & Réseaux</CardTitle></CardHeader>
+                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Identité & Contact</CardTitle></CardHeader>
                 <CardContent className="p-6 space-y-8">
                   <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                       <FormField control={form.control} name="siteName" render={({ field }) => (
                         <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom du site</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <FormField control={form.control} name="contactEmail" render={({ field }) => (
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Email de contact</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="supportPhone" render={({ field }) => (
                         <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">WhatsApp Support</FormLabel><FormControl><Input placeholder="+236..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl><FormMessage /></FormItem>
@@ -249,8 +272,44 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
                   </div>
+
+                  <Separator className="bg-white/5" />
+                  
+                  <div className="space-y-6">
+                    <CardTitle className="text-sm font-black uppercase text-slate-500 flex items-center gap-2"><Globe className="h-4 w-4"/> Réseaux Sociaux</CardTitle>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="facebookUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">Facebook</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">LinkedIn</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="twitterUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">X (Twitter)</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="instagramUrl" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">Instagram</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
+                        )} />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="commercial" className="space-y-6">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                    <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Modèle Économique</CardTitle></CardHeader>
+                    <CardContent className="p-8">
+                        <FormField control={form.control} name="commission" render={({ field }) => (
+                            <FormItem className="max-w-xs">
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"><Percent className="h-3 w-3" /> Commission Ndara Afrique (%)</FormLabel>
+                                <FormControl><Input type="number" {...field} className="h-14 bg-slate-800/50 border-slate-700 rounded-xl text-2xl font-black text-primary" /></FormControl>
+                                <FormDescription className="text-[10px] italic">Pourcentage prélevé sur chaque vente formateur.</FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                        )} />
+                    </CardContent>
+                </Card>
             </TabsContent>
 
             <TabsContent value="design" className="space-y-6">
@@ -304,7 +363,7 @@ export default function AdminSettingsPage() {
 
             <TabsContent value="platform" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Économie & Droits</CardTitle></CardHeader>
+                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Sécurité & Économie</CardTitle></CardHeader>
                 <CardContent className="p-6 space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="allowCourseBuyout" render={({ field }) => (
@@ -319,20 +378,6 @@ export default function AdminSettingsPage() {
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
-                    <FormField control={form.control} name="allowTeacherToTeacherResale" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ArrowLeftRight className="h-4 w-4" /> Marché Libre</FormLabel><FormDescription className="text-[10px] uppercase">Transaction Directe</FormDescription></div>
-                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      </FormItem>
-                    )} />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Sécurité & Flux</CardTitle></CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="autoApproveCourses" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
                         <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Approbation Auto</FormLabel><FormDescription className="text-[10px] uppercase">Pas de modération</FormDescription></div>
@@ -348,12 +393,72 @@ export default function AdminSettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Sources de Contenu</CardTitle></CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="allowYoutube" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><Youtube className="h-4 w-4" /> Vidéos YouTube</FormLabel><FormDescription className="text-[10px]">Autoriser les liens externes</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="allowBunny" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><Video className="h-4 w-4" /> Bunny.net Stream</FormLabel><FormDescription className="text-[10px]">Hébergement Premium Natif</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="content" className="space-y-6">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                    <CardHeader className="bg-slate-800/30 border-b border-white/5 flex flex-row items-center justify-between p-8">
+                        <div>
+                            <CardTitle className="text-lg font-bold flex items-center gap-2"><Users className="h-5 w-5"/> Équipe de Direction</CardTitle>
+                            <CardDescription>Gérez les membres affichés sur la page "À propos".</CardDescription>
+                        </div>
+                        <Button type="button" onClick={() => append({ name: '', role: '', imageUrl: '', bio: '' })} className="rounded-xl h-10 px-4 font-black uppercase text-[9px] tracking-widest"><Plus className="h-4 w-4 mr-2"/> Ajouter un membre</Button>
+                    </CardHeader>
+                    <CardContent className="p-8">
+                        <div className="grid gap-6">
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="p-6 bg-slate-950 border border-slate-800 rounded-3xl relative animate-in slide-in-from-top-2">
+                                    <Button variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-4 right-4 text-red-500 hover:bg-red-500/10 rounded-full h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="space-y-4">
+                                            <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => (
+                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Nom Complet</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
+                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Poste / Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
+                                            )} />
+                                        </div>
+                                        <div className="space-y-4">
+                                            <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
+                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">URL de l'image</FormLabel><FormControl><Input {...field} placeholder="https://..." className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
+                                            )} />
+                                            <FormField control={form.control} name={`teamMembers.${index}.bio`} render={({ field }) => (
+                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Biographie courte</FormLabel><FormControl><Textarea {...field} rows={2} className="bg-slate-900 border-slate-800 resize-none" /></FormControl></FormItem>
+                                            )} />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {fields.length === 0 && <p className="text-center py-10 text-slate-600 font-bold uppercase text-[10px] tracking-widest italic opacity-50">Aucun membre d'équipe enregistré.</p>}
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
           </Tabs>
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-40 safe-area-pb md:relative md:bg-transparent md:border-none md:p-0">
             <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl">
-                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5 mr-2" /> Valider la configuration</>}
+                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5 mr-2" /> Valider la configuration globale</>}
             </Button>
           </div>
         </form>
