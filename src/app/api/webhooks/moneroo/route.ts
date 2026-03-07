@@ -6,8 +6,8 @@ import { sendUserNotification } from '@/actions/notificationActions';
 /**
  * @fileOverview Webhook Moneroo mis à jour pour gérer l'affiliation et le parrainage.
  * ✅ AMBASSADEURS : Règle du dernier clic appliquée.
+ * ✅ BONUS TIERS : +2%, +5%, +10% selon le volume de ventes.
  * ✅ PARRAINAGE : Commission permanente pour l'instructeur référent.
- * ✅ FLEXIBILITÉ : Commission partagée sur les cours tiers.
  */
 
 export async function POST(req: Request) {
@@ -51,22 +51,30 @@ export async function POST(req: Request) {
         enrollmentType: 'paid'
       }, { merge: true });
 
-      // 3. LOGIQUE AMBASSADEUR
-      // On récompense l'affilié si activé, peu importe qui possède le cours
+      // 3. LOGIQUE AMBASSADEUR (AVEC BONUS TIERS)
       if (affiliateId && settings?.commercial?.affiliateEnabled) {
-          const affPerc = settings.commercial.affiliatePercentage || 10;
-          // Si le cours est tiers, la commission est prise sur la part de la plateforme
-          // Si le cours est à Ndara, elle est prise sur le total
-          const affCommission = (amount * affPerc) / 100;
-          
           const affiliateRef = db.collection('users').doc(affiliateId);
+          const affDoc = await affiliateRef.get();
+          const affData = affDoc.data();
+          const currentSales = affData?.affiliateStats?.sales || 0;
+
+          let basePerc = settings.commercial.affiliatePercentage || 10;
+          
+          // Bonus Tiers Logic
+          if (currentSales >= 50) basePerc += 10;
+          else if (currentSales >= 20) basePerc += 5;
+          else if (currentSales >= 5) basePerc += 2;
+
+          const affCommission = (amount * basePerc) / 100;
+          
           batch.update(affiliateRef, {
-              affiliateBalance: FieldValue.increment(affCommission)
+              affiliateBalance: FieldValue.increment(affCommission),
+              'affiliateStats.sales': FieldValue.increment(1),
+              'affiliateStats.earnings': FieldValue.increment(affCommission)
           });
 
-          // Notifier l'ambassadeur
           await sendUserNotification(affiliateId, {
-              text: `Félicitations ! Votre recommandation a généré une vente. Gain : ${affCommission.toLocaleString('fr-FR')} XOF.`,
+              text: `Vente générée ! +${affCommission.toLocaleString('fr-FR')} XOF crédités (Taux: ${basePerc}%).`,
               type: 'success',
               link: '/student/dashboard'
           });
@@ -96,7 +104,6 @@ export async function POST(req: Request) {
 
       await batch.commit();
 
-      // Notifications et Logs d'activité
       await sendUserNotification(userId, {
         text: `Bienvenue ! Votre formation "${courseData?.title || 'demandée'}" est prête.`,
         link: `/student/courses/${courseId}`,

@@ -1,13 +1,13 @@
-'use server';
+'use client';
 
 /**
  * @fileOverview Composant client pour la présentation détaillée d'un cours.
  * ✅ SÉCURITÉ : Redirige vers /register si l'utilisateur n'est pas connecté.
- * ✅ FLUIDITÉ : Supporte le retour après inscription via le paramètre 'redirect'.
+ * ✅ AFFILIATION : Traçabilité des clics ambassadeurs.
  */
 
 import { useState, useMemo, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { doc, getFirestore, collection, query, getDocs, orderBy, setDoc, serverTimestamp, onSnapshot, where, documentId } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
@@ -28,7 +28,8 @@ import {
   Loader2,
   MessageSquare,
   BadgeEuro,
-  ShoppingCart
+  ShoppingCart,
+  Share2
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -38,6 +39,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review, Settings } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { logTrackingEvent } from '@/actions/trackingActions';
 
 interface EnrichedReview extends Review {
     userName?: string;
@@ -47,6 +49,7 @@ interface EnrichedReview extends Review {
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user, currentUser, isUserLoading } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
@@ -60,13 +63,34 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [reviewsList, setReviewsList] = useState<EnrichedReview[]>([]);
   const [isResaleEnabled, setIsResaleEnabled] = useState(false);
 
-  // ✅ LOGIQUE CEO : Redirection automatique pour les visiteurs non connectés
+  // 1. TRAÇABILITÉ AFFILIATION
+  useEffect(() => {
+      const affId = searchParams.get('aff');
+      if (affId && typeof window !== 'undefined') {
+          const cookieData = {
+              id: affId,
+              timestamp: Date.now(),
+              expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000)
+          };
+          localStorage.setItem('ndara_affiliate_id', JSON.stringify(cookieData));
+          
+          // Log du clic pour les stats ambassadeur
+          logTrackingEvent({
+              eventType: 'affiliate_click',
+              sessionId: 'anon',
+              pageUrl: pathname,
+              metadata: { affiliateId: affId, courseId }
+          });
+      }
+  }, [searchParams, pathname, courseId]);
+
+  // 2. SÉCURITÉ AUTH
   useEffect(() => {
     if (!isUserLoading && !user) {
-        const redirectUrl = encodeURIComponent(pathname);
+        const redirectUrl = encodeURIComponent(pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''));
         router.push(`/fr/login?tab=register&redirect=${redirectUrl}`);
     }
-  }, [user, isUserLoading, router, pathname]);
+  }, [user, isUserLoading, router, pathname, searchParams]);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -92,7 +116,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
     const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
     const unsubReviews = onSnapshot(qReviews, async (snap) => {
-        const reviewsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
+        const reviewsData = snap.docs.map(d => d.data() as Review);
         const count = reviewsData.length;
         const avg = count > 0 ? reviewsData.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count : 0;
         setStats(prev => ({ ...prev, rating: avg, reviewCount: count }));
@@ -221,9 +245,25 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
 
       <div className="px-4 -mt-8 relative z-10 space-y-12">
         <div className="space-y-4">
-          <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none font-black uppercase tracking-[0.1em] text-[10px] px-3 py-1 rounded-md">
-            {course.category}
-          </Badge>
+          <div className="flex justify-between items-start">
+            <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none font-black uppercase tracking-[0.1em] text-[10px] px-3 py-1 rounded-md">
+                {course.category}
+            </Badge>
+            {currentUser && (
+                <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 rounded-lg bg-slate-900 border-slate-800 text-[10px] font-black uppercase tracking-widest gap-2"
+                    onClick={() => {
+                        const url = `${window.location.origin}${pathname}?aff=${currentUser.uid}`;
+                        navigator.clipboard.writeText(url);
+                        toast({ title: "Lien Ambassadeur copié !", description: "Gagnez des commissions en partageant ce cours." });
+                    }}
+                >
+                    <Share2 className="h-3 w-3" /> Partager & Gagner
+                </Button>
+            )}
+          </div>
           <h1 className="text-3xl font-black text-white leading-[1.1] tracking-tight uppercase">
             {course.title}
           </h1>

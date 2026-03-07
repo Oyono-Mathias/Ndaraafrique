@@ -2,38 +2,56 @@
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique Optimisé.
- * ✅ AMBASSADEUR : Espace dédié avec lien de partage et règles (Last Click, Seuil 5000 XOF).
+ * ✅ AMBASSADEUR 2.0 : Métriques cliquées, ventes, bonus tiers et leaderboard.
  */
 
 import { useRole } from '@/context/RoleContext';
 import dynamic from 'next/dynamic';
-import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight, Sparkles, AlertCircle, Info, CheckCircle2 } from 'lucide-react';
+import { 
+    BookOpen, 
+    Trophy, 
+    TrendingUp, 
+    Search as LucideSearch, 
+    BadgeEuro, 
+    Share2, 
+    ChevronRight, 
+    Sparkles, 
+    Info, 
+    CheckCircle2, 
+    MousePointer2, 
+    ShoppingCart,
+    Medal,
+    BarChart3
+} from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs, doc } from 'firebase/firestore';
-import type { Course, NdaraUser, Settings } from '@/lib/types';
+import { getFirestore, collection, query, where, onSnapshot, orderBy, limit, doc, getDocs } from 'firebase/firestore';
+import type { NdaraUser, Settings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 // Chargement dynamique des composants
 const ContinueLearning = dynamic(() => import('@/components/dashboards/ContinueLearning').then(mod => mod.ContinueLearning), { 
-    loading: () => <Skeleton className="h-48 w-full rounded-[2rem] bg-slate-100 dark:bg-slate-800" />
+    loading: () => <Skeleton className="h-48 w-full rounded-[2rem] bg-slate-800" />
 });
 const RecommendedCourses = dynamic(() => import('@/components/dashboards/RecommendedCourses').then(mod => mod.RecommendedCourses), {
-    loading: () => <Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-100 dark:bg-slate-800" />
+    loading: () => <Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-800" />
 });
 const RecentActivity = dynamic(() => import('@/components/dashboards/RecentActivity').then(mod => mod.RecentActivity), {
-    loading: () => <Skeleton className="h-48 w-full rounded-2xl bg-slate-100 dark:bg-slate-800" />
+    loading: () => <Skeleton className="h-48 w-full rounded-2xl bg-slate-800" />
 });
 const StatCard = dynamic(() => import('@/components/dashboard/StatCard').then(mod => mod.StatCard), {
-    loading: () => <Skeleton className="h-24 w-full rounded-2xl bg-slate-100 dark:bg-slate-800" />
+    loading: () => <Skeleton className="h-24 w-full rounded-2xl bg-slate-800" />
 });
 const NewCoursesExplore = dynamic(() => import('@/components/dashboards/NewCoursesExplore').then(mod => mod.NewCoursesExplore), {
-    loading: () => <Skeleton className="h-64 w-full rounded-2xl bg-slate-100 dark:bg-slate-800" />
+    loading: () => <Skeleton className="h-64 w-full rounded-2xl bg-slate-800" />
 });
 
 export default function StudentDashboardAndroid() {
@@ -45,6 +63,7 @@ export default function StudentDashboardAndroid() {
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [isAffiliateEnabled, setIsAffiliateEnabled] = useState(false);
+  const [leaderboard, setLeaderboard] = useState<Partial<NdaraUser>[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -58,11 +77,21 @@ export default function StudentDashboardAndroid() {
     });
 
     const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', currentUser.uid)), (snap) => {
-      const total = snap.size;
-      const completed = snap.docs.filter(d => d.data().progress === 100).length;
-      setStats({ total, completed });
+      setStats({ total: snap.size, completed: snap.docs.filter(d => d.data().progress === 100).length });
       setLoadingData(false);
     });
+
+    // Fetch Leaderboard
+    const fetchLeaderboard = async () => {
+        const q = query(
+            collection(db, 'users'), 
+            orderBy('affiliateStats.sales', 'desc'), 
+            limit(5)
+        );
+        const snap = await getDocs(q);
+        setLeaderboard(snap.docs.map(d => d.data() as NdaraUser));
+    };
+    fetchLeaderboard();
 
     return () => { unsubSettings(); unsubEnroll(); };
   }, [currentUser?.uid, db]);
@@ -70,80 +99,114 @@ export default function StudentDashboardAndroid() {
   const handleShareAffiliate = () => {
       const url = `${window.location.origin}/search?aff=${currentUser?.uid}`;
       navigator.clipboard.writeText(url);
-      toast({ title: "Lien Ambassadeur copié !", description: "Partagez-le sur vos réseaux pour gagner des commissions." });
+      toast({ title: "Lien Ambassadeur copié !", description: "Partagez-le pour gagner des commissions." });
   };
 
-  if (isUserLoading) {
-    return (
-      <div className="space-y-6 p-4 bg-background min-h-screen">
-        <Skeleton className="h-10 w-3/4 bg-muted rounded-xl" />
-        <div className="grid grid-cols-2 gap-3">
-            <Skeleton className="h-24 rounded-2xl bg-muted" />
-            <Skeleton className="h-24 rounded-2xl bg-muted" />
-        </div>
-        <Skeleton className="h-64 w-full rounded-3xl bg-muted" />
-      </div>
-    );
-  }
+  const affStats = currentUser?.affiliateStats || { clicks: 0, sales: 0, earnings: 0 };
+  const salesCount = affStats.sales || 0;
+  
+  // Logic pour le prochain palier
+  const nextTier = useMemo(() => {
+      if (salesCount < 5) return { goal: 5, bonus: "+2%", current: salesCount };
+      if (salesCount < 20) return { goal: 20, bonus: "+5%", current: salesCount };
+      if (salesCount < 50) return { goal: 50, bonus: "+10%", current: salesCount };
+      return { goal: 50, bonus: "MAX", current: 50 };
+  }, [salesCount]);
+
+  if (isUserLoading) return <div className="p-4 bg-slate-950 min-h-screen space-y-6"><Skeleton className="h-10 w-3/4 rounded-xl bg-slate-900" /></div>;
 
   return (
-    <div className="flex flex-col gap-8 pb-24 bg-background min-h-screen relative overflow-hidden bg-grainy">
+    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
       
       <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
-        <h1 className="text-3xl font-black text-foreground leading-tight">
+        <h1 className="text-3xl font-black text-white leading-tight">
           Bara ala, <br/>
           <span className="text-primary">{currentUser?.fullName?.split(' ')[0]} !</span>
         </h1>
-        <p className="text-muted-foreground text-sm mt-2 font-medium italic">Votre empire du savoir est prêt.</p>
+        <p className="text-slate-500 text-sm mt-2 font-medium italic">Votre empire du savoir s'étend.</p>
       </header>
 
-      {/* --- SECTION AMBASSADEUR --- */}
+      {/* --- SECTION AMBASSADEUR 2.0 --- */}
       {isAffiliateEnabled && (
-          <section className="px-4">
+          <section className="px-4 space-y-4">
+              <div className="flex items-center gap-2 px-1">
+                  <Medal className="h-4 w-4 text-primary" />
+                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Programme Ambassadeur</h2>
+              </div>
+
               <Card className="bg-slate-900 border-2 border-primary/20 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
-                  <div className="absolute top-0 right-0 p-6 opacity-10"><BadgeEuro size={80} className="text-primary" /></div>
-                  <CardContent className="p-8 space-y-6">
-                      <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg"><TrendingUp className="h-5 w-5 text-primary" /></div>
-                          <h2 className="text-xl font-black text-white uppercase tracking-tight">Espace Ambassadeur</h2>
-                      </div>
+                  <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none"><BadgeEuro size={120} className="text-primary" /></div>
+                  <CardContent className="p-8 space-y-8">
                       
+                      {/* Stats Grid */}
                       <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-slate-950 p-4 rounded-2xl border border-white/5">
-                              <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1">Gains cumulés</p>
-                              <p className="text-2xl font-black text-white">{(currentUser?.affiliateBalance || 0).toLocaleString('fr-FR')} <span className="text-xs text-primary">XOF</span></p>
+                          <div className="bg-slate-950/50 p-5 rounded-3xl border border-white/5 space-y-1">
+                              <div className="flex items-center gap-2 text-slate-500 mb-1">
+                                  <MousePointer2 className="h-3 w-3" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest">Clics</span>
+                              </div>
+                              <p className="text-2xl font-black text-white">{affStats.clicks}</p>
                           </div>
-                          <div className="bg-slate-950 p-4 rounded-2xl border border-white/5 flex flex-col justify-center">
-                              <Button 
-                                variant="ghost" 
-                                className="h-auto p-0 text-[10px] font-black text-primary uppercase tracking-widest justify-start hover:bg-transparent" 
-                                onClick={() => router.push('/student/paiements')}
-                              >
-                                  Retirer mes gains <ChevronRight className="h-3 w-3 ml-1" />
-                              </Button>
+                          <div className="bg-slate-950/50 p-5 rounded-3xl border border-white/5 space-y-1">
+                              <div className="flex items-center gap-2 text-primary mb-1">
+                                  <ShoppingCart className="h-3 w-3" />
+                                  <span className="text-[9px] font-black uppercase tracking-widest">Ventes</span>
+                              </div>
+                              <p className="text-2xl font-black text-white">{salesCount}</p>
                           </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <Button onClick={handleShareAffiliate} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest gap-2 shadow-xl shadow-primary/20 active:scale-95 transition-all">
-                            <Share2 className="h-4 w-4" /> Partager mon lien
-                        </Button>
-                        
-                        <div className="bg-slate-950/50 p-4 rounded-xl border border-white/5 space-y-3">
-                            <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
-                                <Info className="h-3 w-3 text-primary shrink-0" />
-                                <span>Gagnez une commission sur chaque vente réalisée via votre lien.</span>
-                            </div>
-                            <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
-                                <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />
-                                <span>Règle du dernier clic : Seul le dernier lien cliqué avant l'achat est récompensé (30 jours de suivi).</span>
-                            </div>
-                            <div className="flex items-start gap-2 text-[10px] font-bold text-slate-400 uppercase leading-tight">
-                                <AlertCircle className="h-3 w-3 text-amber-500 shrink-0" />
-                                <span>Retrait possible dès 5 000 XOF accumulés.</span>
-                            </div>
-                        </div>
+                      {/* Financial Metrics */}
+                      <div className="bg-primary/10 border border-primary/20 p-6 rounded-[2rem] flex justify-between items-center">
+                          <div>
+                              <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Solde Retirable</p>
+                              <p className="text-3xl font-black text-white mt-1">{(currentUser?.affiliateBalance || 0).toLocaleString('fr-FR')} <span className="text-xs">XOF</span></p>
+                          </div>
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-10 px-4 bg-primary text-white hover:bg-emerald-600 rounded-xl font-black uppercase text-[9px] tracking-widest"
+                            onClick={() => router.push('/student/paiements')}
+                          >
+                              Retirer
+                          </Button>
                       </div>
+
+                      {/* Tier Progress */}
+                      <div className="space-y-3">
+                          <div className="flex justify-between items-end">
+                              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progression Bonus</p>
+                              <span className="text-[10px] font-black text-primary uppercase">{nextTier.goal - nextTier.current} ventes avant {nextTier.bonus}</span>
+                          </div>
+                          <Progress value={(nextTier.current / nextTier.goal) * 100} className="h-2 bg-slate-800" indicatorClassName="bg-primary" />
+                      </div>
+
+                      <Button onClick={handleShareAffiliate} className="w-full h-16 bg-white text-slate-950 hover:bg-slate-100 rounded-2xl font-black uppercase text-xs tracking-widest gap-3 shadow-xl active:scale-95 transition-all">
+                          <Share2 className="h-5 w-5" /> Partager mon lien viral
+                      </Button>
+                  </CardContent>
+              </Card>
+
+              {/* Leaderboard Small */}
+              <Card className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden">
+                  <div className="p-5 border-b border-white/5 flex items-center gap-3">
+                      <Medal className="h-4 w-4 text-amber-500" />
+                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Top Ambassadeurs Ndara</h3>
+                  </div>
+                  <CardContent className="p-4 space-y-3">
+                      {leaderboard.map((member, i) => (
+                          <div key={member.uid} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/50 transition-colors">
+                              <div className="flex items-center gap-3">
+                                  <span className={cn("text-xs font-black w-4", i === 0 ? "text-amber-500" : "text-slate-600")}>#{i+1}</span>
+                                  <Avatar className="h-8 w-8 border border-slate-700">
+                                      <AvatarImage src={member.profilePictureURL} />
+                                      <AvatarFallback className="bg-slate-800 text-[10px]">{member.fullName?.charAt(0)}</AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-xs font-bold text-slate-300 truncate max-w-[120px]">{member.fullName}</span>
+                              </div>
+                              <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black">{member.affiliateStats?.sales || 0} ventes</Badge>
+                          </div>
+                      ))}
                   </CardContent>
               </Card>
           </section>
@@ -155,10 +218,7 @@ export default function StudentDashboardAndroid() {
       </section>
 
       <div className="px-4"><ContinueLearning /></div>
-
-      <div className="px-4">
-        <NewCoursesExplore />
-      </div>
+      <div className="px-4"><NewCoursesExplore /></div>
 
       <div className="px-4 space-y-10">
         <RecommendedCourses />

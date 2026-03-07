@@ -8,7 +8,7 @@ import { FieldValue } from 'firebase-admin/firestore';
  */
 
 interface TrackingEventArgs {
-  eventType: 'page_view' | 'cta_click' | 'payment_method_click';
+  eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
   sessionId: string;
   pageUrl: string;
   metadata?: Record<string, any>;
@@ -22,6 +22,14 @@ export async function logTrackingEvent(event: TrackingEventArgs) {
             timestamp: FieldValue.serverTimestamp(),
         };
         await db.collection('tracking_events').add(eventData);
+
+        // Si c'est un clic d'affiliation, on incrémente aussi le compteur de l'utilisateur
+        if (event.eventType === 'affiliate_click' && event.metadata?.affiliateId) {
+            const userRef = db.collection('users').doc(event.metadata.affiliateId);
+            await userRef.update({
+                'affiliateStats.clicks': FieldValue.increment(1)
+            });
+        }
     } catch (error) {
         console.error("Error logging tracking event:", error);
     }

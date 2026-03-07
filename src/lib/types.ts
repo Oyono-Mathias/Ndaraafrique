@@ -91,6 +91,11 @@ export interface NdaraUser {
   referralBalance?: number;
   referralCode?: string;
   referredBy?: string; // UID of the instructor who invited this user
+  affiliateStats?: {
+      clicks: number;
+      sales: number;
+      earnings: number;
+  };
   socialLinks?: {
       website?: string;
       twitter?: string;
@@ -547,7 +552,7 @@ export interface Resource {
 }
 
 export interface TrackingEvent {
-  eventType: 'page_view' | 'cta_click' | 'payment_method_click';
+  eventType: 'page_view' | 'cta_click' | 'payment_method_click' | 'affiliate_click';
   sessionId: string;
   pageUrl: string;
   metadata?: Record<any, any>;

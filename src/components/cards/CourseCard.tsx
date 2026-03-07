@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
- * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium Optimisé.
- * ✅ PERFORMANCE : Sizes responsive pour les images afin de réduire la consommation data.
+ * @fileOverview Carte de cours Ndara Afrique.
+ * ✅ AFFILIATION : Bouton de partage rapide avec ID Ambassadeur.
  */
 
 import Link from 'next/link';
@@ -12,13 +11,19 @@ import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart, BadgeEuro } from 'lucide-react';
+import { Star, Heart, BadgeEuro, Share2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface CourseCardProps {
   course: Course & { progress?: number; lastLessonId?: string };
@@ -28,7 +33,7 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, instructor, variant = 'grid', actions }: CourseCardProps) {
-  const { user } = useRole();
+  const { user, currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -50,6 +55,20 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     const unsubWish = onSnapshot(wishlistRef, (snap) => setIsWishlisted(snap.exists()));
     return () => unsubWish();
   }, [user?.uid, course.id, db]);
+
+  const handleSocialShare = (platform: 'whatsapp' | 'facebook' | 'x' | 'linkedin') => {
+      const shareUrl = `${window.location.origin}/${locale}/courses/${course.id}?aff=${currentUser?.uid || ''}`;
+      const text = `Découvrez cette formation sur Ndara Afrique : ${course.title}`;
+      
+      let finalUrl = '';
+      switch(platform) {
+          case 'whatsapp': finalUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + shareUrl)}`; break;
+          case 'facebook': finalUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`; break;
+          case 'x': finalUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`; break;
+          case 'linkedin': finalUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`; break;
+      }
+      window.open(finalUrl, '_blank');
+  };
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,7 +99,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 alt={course.title}
                 fill
                 className="object-cover"
-                sizes="(max-width: 640px) 112px, 144px" // ✅ Optimisation Mobile : petite image sur tel
+                sizes="(max-width: 640px) 112px, 144px"
               />
             </div>
             <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
@@ -103,61 +122,81 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   const hasRating = course.rating !== undefined && course.rating > 0;
 
   return (
-    <Link href={href} className="block group h-full">
-      <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col h-full active:scale-[0.98]">
-        <div className="relative aspect-video w-full bg-slate-200 overflow-hidden">
-          <Image
-            src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
-            alt={course.title}
-            fill
-            sizes="(max-width: 768px) 48vw, (max-width: 1200px) 30vw, 25vw" // ✅ Optimisation Responsive : évite les downloads inutiles
-            className="object-cover transition-transform duration-700 group-hover:scale-105"
-          />
-          
-          {course.resaleRightsAvailable && (
-            <div className="absolute top-4 left-4 z-10">
-                <Badge className="bg-amber-500 text-black border-none font-black uppercase text-[8px] tracking-[0.15em] px-2 py-1 flex items-center gap-1 shadow-lg shadow-amber-500/20">
-                    <BadgeEuro className="h-3 w-3" />
-                    Licence disponible
-                </Badge>
-            </div>
-          )}
+    <div className="relative group h-full">
+      <Link href={href} className="block group h-full">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 dark:border-slate-800 flex flex-col h-full active:scale-[0.98]">
+          <div className="relative aspect-video w-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+            <Image
+              src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
+              alt={course.title}
+              fill
+              sizes="(max-width: 768px) 48vw, (max-width: 1200px) 30vw, 25vw"
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+            
+            {course.resaleRightsAvailable && (
+              <div className="absolute top-4 left-4 z-10">
+                  <Badge className="bg-amber-500 text-black border-none font-black uppercase text-[8px] tracking-[0.15em] px-2 py-1 flex items-center gap-1 shadow-lg">
+                      <BadgeEuro className="h-3 w-3" />
+                      Licence
+                  </Badge>
+              </div>
+            )}
 
-          {!course.id.startsWith('demo') && (
-            <button 
-                onClick={toggleWishlist}
-                className={cn(
-                "absolute bottom-4 right-4 p-2 rounded-full backdrop-blur-md border border-white/10 transition-all active:scale-90 z-10",
-                isWishlisted ? "bg-brand-primary text-white" : "bg-black/40 text-white hover:bg-black/60"
+            <div className="absolute bottom-4 right-4 flex gap-2 z-10">
+                {!course.id.startsWith('demo') && (
+                    <button 
+                        onClick={toggleWishlist}
+                        className={cn(
+                        "p-2 rounded-full backdrop-blur-md border border-white/10 transition-all active:scale-90",
+                        isWishlisted ? "bg-brand-primary text-white" : "bg-black/40 text-white hover:bg-black/60"
+                        )}
+                    >
+                        <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
+                    </button>
                 )}
-            >
-                <Heart className={cn("h-4 w-4", isWishlisted && "fill-current")} />
-            </button>
-          )}
-        </div>
-        
-        <div className="p-6 flex-1 flex flex-col">
-            <div className="flex items-center gap-2 mb-3">
-                <span className="text-[10px] font-black text-brand-secondary bg-blue-50 px-2 py-1 rounded uppercase tracking-widest">{course.category || 'Formation'}</span>
+                
+                {currentUser && (
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <button className="p-2 rounded-full backdrop-blur-md border border-white/10 bg-black/40 text-white hover:bg-black/60 active:scale-90">
+                                <Share2 className="h-4 w-4" />
+                            </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="bg-slate-900 border-slate-800 text-white p-2 min-w-[160px] rounded-xl shadow-2xl">
+                            <DropdownMenuItem className="py-2.5 cursor-pointer font-bold text-xs uppercase" onClick={() => handleSocialShare('whatsapp')}>WhatsApp</DropdownMenuItem>
+                            <DropdownMenuItem className="py-2.5 cursor-pointer font-bold text-xs uppercase" onClick={() => handleSocialShare('facebook')}>Facebook</DropdownMenuItem>
+                            <DropdownMenuItem className="py-2.5 cursor-pointer font-bold text-xs uppercase" onClick={() => handleSocialShare('x')}>X (Twitter)</DropdownMenuItem>
+                            <DropdownMenuItem className="py-2.5 cursor-pointer font-bold text-xs uppercase" onClick={() => handleSocialShare('linkedin')}>LinkedIn</DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                )}
             </div>
-            
-            <h3 className="text-lg font-black text-brand-dark mb-2 leading-tight uppercase tracking-tight group-hover:text-brand-primary transition-colors line-clamp-2">
-                {course.title}
-            </h3>
-            
-            <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
-                <div className="flex items-center gap-1">
-                    <Star className={cn("w-4 h-4", hasRating ? "text-yellow-400 fill-current" : "text-slate-200")} />
-                    <span className="text-sm font-black text-slate-700">
-                        {hasRating ? course.rating?.toFixed(1) : "Nouveau"}
-                    </span>
-                </div>
-                <span className="text-lg font-black text-brand-dark">
-                    {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'OFFERT'}
-                </span>
-            </div>
+          </div>
+          
+          <div className="p-6 flex-1 flex flex-col">
+              <div className="flex items-center gap-2 mb-3">
+                  <span className="text-[10px] font-black text-brand-secondary bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded uppercase tracking-widest">{course.category || 'Formation'}</span>
+              </div>
+              
+              <h3 className="text-lg font-black text-brand-dark dark:text-white mb-2 leading-tight uppercase tracking-tight group-hover:text-brand-primary transition-colors line-clamp-2">
+                  {course.title}
+              </h3>
+              
+              <div className="flex items-center justify-between pt-4 border-t border-slate-50 dark:border-white/5 mt-auto">
+                  <div className="flex items-center gap-1">
+                      <Star className={cn("w-4 h-4", hasRating ? "text-yellow-400 fill-current" : "text-slate-200 dark:text-slate-700")} />
+                      <span className="text-sm font-black text-slate-700 dark:text-slate-400">
+                          {hasRating ? course.rating?.toFixed(1) : "Nouveau"}
+                      </span>
+                  </div>
+                  <span className="text-lg font-black text-brand-dark dark:text-white">
+                      {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'OFFERT'}
+                  </span>
+              </div>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
