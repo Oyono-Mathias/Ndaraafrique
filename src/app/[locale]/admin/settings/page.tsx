@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div'.
- * ✅ RÉSOLU : Bouton de synchronisation des scores pour la vérité des avis.
+ * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' (Build Vercel).
+ * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
  */
 
 import { useState, useEffect } from 'react';
