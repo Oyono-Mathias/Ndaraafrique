@@ -2,11 +2,11 @@
 
 /**
  * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Correction définitive de la structure syntaxique (suppression de l'erreur Unexpected token div).
+ * ✅ RÉSOLU : Correction définitive de la structure syntaxique (Build Safe).
  * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,7 +39,6 @@ import {
   Wrench,
   ImageIcon,
   UploadCloud,
-  Star,
   CheckCircle2
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
@@ -227,72 +226,75 @@ export default function AdminSettingsPage() {
     setIsSaving(true);
 
     try {
+      const payload: Partial<Settings> = {
+        general: { siteName: values.siteName, logoUrl: values.logoUrl, contactEmail: values.contactEmail },
+        commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
+        platform: { 
+          announcementMessage: values.announcementMessage, 
+          maintenanceMode: values.maintenanceMode,
+          allowInstructorSignup: values.allowInstructorSignup,
+          allowYoutube: values.allowYoutube,
+          allowBunny: values.allowBunny,
+          bunnyLibraryId: values.bunnyLibraryId,
+          autoApproveCourses: false,
+          enableInternalMessaging: true
+        },
+        content: {
+          landingPage: {
+            heroTitle: values.landingHeroTitle,
+            heroSubtitle: values.landingHeroSubtitle,
+            heroImageUrl: values.landingHeroImageUrl,
+            heroCtaText: values.landingHeroCta,
+            howItWorksTitle: values.howItWorksTitle,
+            howItWorksSubtitle: values.howItWorksSubtitle,
+            howItWorks_step1_imageUrl: values.howItWorks_step1_imageUrl,
+            howItWorks_step2_imageUrl: values.howItWorks_step2_imageUrl,
+            howItWorks_step3_imageUrl: values.howItWorks_step3_imageUrl,
+            securitySectionTitle: values.securitySectionTitle,
+            securitySectionSubtitle: values.securitySectionSubtitle,
+            securitySection_imageUrl: values.securitySection_imageUrl,
+            finalCtaTitle: values.finalCtaTitle,
+            finalCtaSubtitle: values.finalCtaSubtitle,
+            finalCtaButtonText: values.finalCtaButtonText,
+            finalCta_imageUrl: values.finalCta_imageUrl,
+          },
+          aboutPage: {
+            mainTitle: values.aboutMainTitle || '',
+            mainSubtitle: values.aboutMainSubtitle || '',
+            historyTitle: values.historyTitle || '',
+            historyFrench: values.historyFrench || '',
+            historySango: values.historySango || '',
+            visionTitle: values.visionTitle || '',
+            visionFrench: values.visionFrench || '',
+            visionSango: values.visionSango || '',
+            ctaTitle: values.aboutCtaTitle || '',
+            teamMembers: (values.teamMembers || []).map(m => ({
+              name: m.name,
+              role: m.role,
+              imageUrl: m.imageUrl,
+              bio: m.bio || ''
+            })),
+            ctaSubtitle: ''
+          }
+        },
+        legal: {
+          termsOfService: values.termsOfService || '',
+          privacyPolicy: values.privacyPolicy || '',
+        }
+      };
+
       const result = await updateGlobalSettings({
         adminId: currentUser.uid,
-        settings: {
-          general: { siteName: values.siteName, logoUrl: values.logoUrl, contactEmail: values.contactEmail },
-          commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
-          platform: { 
-            announcementMessage: values.announcementMessage, 
-            maintenanceMode: values.maintenanceMode,
-            allowInstructorSignup: values.allowInstructorSignup,
-            allowYoutube: values.allowYoutube,
-            allowBunny: values.allowBunny,
-            bunnyLibraryId: values.bunnyLibraryId,
-            autoApproveCourses: false,
-            enableInternalMessaging: true
-          },
-          content: {
-            landingPage: {
-              heroTitle: values.landingHeroTitle,
-              heroSubtitle: values.landingHeroSubtitle,
-              heroImageUrl: values.landingHeroImageUrl,
-              heroCtaText: values.landingHeroCta,
-              howItWorksTitle: values.howItWorksTitle,
-              howItWorksSubtitle: values.howItWorksSubtitle,
-              howItWorks_step1_imageUrl: values.howItWorks_step1_imageUrl,
-              howItWorks_step2_imageUrl: values.howItWorks_step2_imageUrl,
-              howItWorks_step3_imageUrl: values.howItWorks_step3_imageUrl,
-              securitySectionTitle: values.securitySectionTitle,
-              securitySectionSubtitle: values.securitySectionSubtitle,
-              securitySection_imageUrl: values.securitySection_imageUrl,
-              finalCtaTitle: values.finalCtaTitle,
-              finalCtaSubtitle: values.finalCtaSubtitle,
-              finalCtaButtonText: values.finalCtaButtonText,
-              finalCta_imageUrl: values.finalCta_imageUrl,
-            },
-            aboutPage: {
-              mainTitle: values.aboutMainTitle || '',
-              mainSubtitle: values.aboutMainSubtitle || '',
-              historyTitle: values.historyTitle || '',
-              historyFrench: values.historyFrench || '',
-              historySango: values.historySango || '',
-              visionTitle: values.visionTitle || '',
-              visionFrench: values.visionFrench || '',
-              visionSango: values.visionSango || '',
-              ctaTitle: values.aboutCtaTitle || '',
-              teamMembers: (values.teamMembers || []).map(m => ({
-                name: m.name,
-                role: m.role,
-                imageUrl: m.imageUrl,
-                bio: m.bio || ''
-              })),
-              ctaSubtitle: ''
-            }
-          },
-          legal: {
-            termsOfService: values.termsOfService || '',
-            privacyPolicy: values.privacyPolicy || '',
-          }
-        }
+        settings: payload
       });
+
       if (result.success) {
         toast({ title: "Configuration Ndara enregistrée !" });
       } else {
         toast({ variant: 'destructive', title: "Erreur", description: result.error });
       }
     } catch (e: any) {
-      toast({ variant: 'destructive', title: "Erreur technique" });
+      toast({ variant: 'destructive', title: "Erreur technique", description: e.message });
     } finally {
       setIsSaving(false);
     }
@@ -461,7 +463,7 @@ export default function AdminSettingsPage() {
                         <div className="space-y-4">
                             <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
                                 <ImageIcon className="h-3 w-3" /> Image Hero (Bunny CDN)
-                            </Label>
+                            </FormLabel>
                             <div className="relative aspect-video rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group">
                                 {form.watch('landingHeroImageUrl') ? (
                                     <Image src={form.watch('landingHeroImageUrl')!} alt="Preview" fill className="object-cover" />
@@ -610,7 +612,7 @@ export default function AdminSettingsPage() {
                         </div>
                         <div className="grid sm:grid-cols-2 gap-4">
                             <Button type="button" onClick={handleSyncRatings} disabled={isSyncing} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">
-                                {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <Star className="mr-2 h-4 w-4 text-primary"/>}
+                                {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <Sparkles className="mr-2 h-4 w-4 text-primary"/>}
                                 Recalculer les scores des cours
                             </Button>
                             <Button type="button" onClick={() => currentUser && repairAllCertificatesAction(currentUser.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
