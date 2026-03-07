@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Settings as SettingsIcon, 
   Loader2, 
@@ -39,7 +40,10 @@ import {
   Linkedin,
   Twitter,
   Instagram,
-  MessageCircle
+  MessageCircle,
+  Palette,
+  Type,
+  Layout
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -68,6 +72,10 @@ const settingsSchema = z.object({
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
   bunnyLibraryId: z.string().optional(),
+  // Design
+  primaryColor: z.enum(['emerald', 'ocre', 'blue', 'gold']).default('emerald'),
+  fontScale: z.enum(['small', 'medium', 'large']).default('medium'),
+  borderRadius: z.enum(['none', 'md', 'lg', 'xl']).default('lg'),
   // Landing Hero
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
@@ -127,7 +135,10 @@ export default function AdminSettingsPage() {
       showHeroExplore: true,
       showFinalCta: true,
       showFinalContact: true,
-      logoUrl: '/logo.png'
+      logoUrl: '/logo.png',
+      primaryColor: 'emerald',
+      fontScale: 'medium',
+      borderRadius: 'lg'
     }
   });
 
@@ -157,6 +168,10 @@ export default function AdminSettingsPage() {
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
           bunnyLibraryId: data.platform?.bunnyLibraryId || '',
+          // Design
+          primaryColor: data.design?.primaryColor || 'emerald',
+          fontScale: data.design?.fontScale || 'medium',
+          borderRadius: data.design?.borderRadius || 'lg',
           // Content Landing
           landingHeroTitle: data.content?.landingPage?.heroTitle || "",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
@@ -282,6 +297,11 @@ export default function AdminSettingsPage() {
           autoApproveCourses: false,
           enableInternalMessaging: true
         },
+        design: {
+          primaryColor: values.primaryColor,
+          fontScale: values.fontScale,
+          borderRadius: values.borderRadius,
+        },
         content: {
           landingPage: {
             heroTitle: values.landingHeroTitle,
@@ -370,6 +390,7 @@ export default function AdminSettingsPage() {
           <Tabs defaultValue="general" className="w-full">
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-12 p-1 overflow-x-auto overflow-y-hidden flex flex-nowrap items-center justify-start gap-1 w-full rounded-2xl no-scrollbar">
               <TabsTrigger value="general" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Général</TabsTrigger>
+              <TabsTrigger value="design" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Studio Design</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Plateforme</TabsTrigger>
               <TabsTrigger value="video" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Vidéo</TabsTrigger>
               <TabsTrigger value="landing" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0">Accueil</TabsTrigger>
@@ -481,20 +502,84 @@ export default function AdminSettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
 
+            <TabsContent value="design" className="space-y-6">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
-                  <CardTitle className="text-lg font-bold">Économie de la Plateforme</CardTitle>
+                  <CardTitle className="text-lg font-bold">Ambiance Visuelle (Studio Design)</CardTitle>
+                  <CardDescription>Ajustez les couleurs et la structure sans toucher au code.</CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
-                  <FormField control={form.control} name="commission" render={({ field }) => (
-                    <FormItem className="max-w-xs">
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Commission plateforme (%)</FormLabel>
-                        <FormControl><Input type="number" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
-                        <FormDescription className="text-[10px]">Pourcentage prélevé sur chaque vente de cours.</FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                  )} />
+                <CardContent className="p-6 space-y-10">
+                  <div className="grid md:grid-cols-2 gap-8">
+                    {/* Couleur Primaire */}
+                    <FormField control={form.control} name="primaryColor" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                          <Palette className="h-3.5 w-3.5" /> Thème de Couleur
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-14 bg-slate-800 border-slate-700 rounded-xl">
+                              <SelectValue placeholder="Choisir une couleur" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            <SelectItem value="emerald" className="py-3">🌿 Émeraude Ndara (Vert)</SelectItem>
+                            <SelectItem value="ocre" className="py-3">🏜️ Ocre Sahélien (Marron)</SelectItem>
+                            <SelectItem value="blue" className="py-3">💎 Deep Tech (Bleu)</SelectItem>
+                            <SelectItem value="gold" className="py-3">👑 Or Panafricain (Jaune)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-[10px]">Change la couleur des boutons, badges et liens actifs.</FormDescription>
+                      </FormItem>
+                    )} />
+
+                    {/* Taille du Texte */}
+                    <FormField control={form.control} name="fontScale" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                          <Type className="h-3.5 w-3.5" /> Taille des Textes
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-14 bg-slate-800 border-slate-700 rounded-xl">
+                              <SelectValue placeholder="Choisir une échelle" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            <SelectItem value="small" className="py-3">Compact (Fin)</SelectItem>
+                            <SelectItem value="medium" className="py-3">Standard (Équilibré)</SelectItem>
+                            <SelectItem value="large" className="py-3">Confort (Large)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-[10px]">Ajuste la taille de la police de base sur tout le site.</FormDescription>
+                      </FormItem>
+                    )} />
+
+                    {/* Arrondi des Cartes */}
+                    <FormField control={form.control} name="borderRadius" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                          <Layout className="h-3.5 w-3.5" /> Courbure des Éléments
+                        </FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-14 bg-slate-800 border-slate-700 rounded-xl">
+                              <SelectValue placeholder="Choisir un arrondi" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            <SelectItem value="none" className="py-3">Droit (Brut)</SelectItem>
+                            <SelectItem value="md" className="py-3">Modéré (Soft)</SelectItem>
+                            <SelectItem value="lg" className="py-3">Accentué (Ndara Style)</SelectItem>
+                            <SelectItem value="xl" className="py-3">Immersif (Android First)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-[10px]">Définit la rondeur des boutons et des cartes de cours.</FormDescription>
+                      </FormItem>
+                    )} />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

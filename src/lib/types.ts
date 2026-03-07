@@ -329,6 +329,13 @@ export interface UserActivity {
   createdAt: Timestamp | FieldValue;
 }
 
+export interface DesignSettings {
+  primaryColor?: 'emerald' | 'ocre' | 'blue' | 'gold';
+  fontScale?: 'small' | 'medium' | 'large';
+  borderRadius?: 'none' | 'md' | 'lg' | 'xl';
+  cardStyle?: 'flat' | 'elevated' | 'glass';
+}
+
 export interface Settings {
   general: {
     siteName: string;
@@ -357,6 +364,7 @@ export interface Settings {
     allowBunny?: boolean;
     bunnyLibraryId?: string;
   };
+  design?: DesignSettings;
   legal: {
     termsOfService: string;
     privacyPolicy: string;
@@ -513,7 +521,7 @@ export interface TrackingEvent {
   eventType: 'page_view' | 'cta_click' | 'payment_method_click';
   sessionId: string;
   pageUrl: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<any, any>;
   timestamp: Timestamp | FieldValue;
 }
 
