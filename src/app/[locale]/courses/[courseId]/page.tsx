@@ -33,7 +33,7 @@ import {
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card'; // Importation critique rétablie
+import { Card } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
@@ -72,7 +72,6 @@ export default function CourseDetailPage() {
   useEffect(() => {
     if (!courseId) return;
 
-    // Écoute des avis réels
     const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
     const unsubReviews = onSnapshot(qReviews, async (snap) => {
         const reviewsData = snap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
@@ -138,7 +137,6 @@ export default function CourseDetailPage() {
 
   const isLoading = courseLoading || instructorLoading || enrollmentLoading || isUserLoading || isLoadingCurriculum;
 
-  // LOGIQUE DE BLOCAGE PROFIL INCOMPLET
   const isProfileBlocked = user && currentUser && !currentUser.isProfileComplete;
 
   if (isLoading) return <CourseDetailSkeleton />;
@@ -314,7 +312,6 @@ export default function CourseDetailPage() {
           </div>
         </section>
 
-        {/* SECTION AVIS RÉELS */}
         <section className="space-y-8">
             <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
               <div className="h-6 w-1 bg-primary rounded-full" />

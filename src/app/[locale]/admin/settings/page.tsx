@@ -32,7 +32,6 @@ import {
   Scale,
   Wrench,
   History,
-  Eye,
   ImageIcon,
   UploadCloud
 } from 'lucide-react';

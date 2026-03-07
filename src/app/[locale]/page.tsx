@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
+ * ✅ RÉSOLU : Suppression totale des cours de simulation (Trading, Startup, Design).
  * ✅ RÉSOLU : Image Hero personnalisable par l'admin via Firestore.
- * ✅ RÉSOLU : Suppression totale des cours de simulation.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -165,7 +165,6 @@ export default function LandingPage() {
     <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30 font-sans">
       <Navbar />
       
-      {/* --- HERO SECTION --- */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden px-6">
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
@@ -234,14 +233,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- STATS SECTION --- */}
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
             <Stats />
         </div>
       </section>
 
-      {/* --- METHODOLOGIE --- */}
       <section id="methodologie" className="py-24 bg-white relative px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
@@ -278,14 +275,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- TEMOIGNAGES RÉELS --- */}
       <section className="bg-slate-50 border-t border-slate-200 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
             <TestimonialsSection />
         </div>
       </section>
 
-      {/* --- FORMATIONS --- */}
       <section id="formations" className="py-24 bg-white relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -322,7 +317,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- CTA FINAL --- */}
       <section className="py-32 relative overflow-hidden bg-brand-dark px-6">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
