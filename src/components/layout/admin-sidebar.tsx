@@ -98,7 +98,7 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
       ]
     },
     {
-      label: "Pédagogie",
+      label: "PÉDAGOGIE",
       items: [
         { href: "/admin/moderation", icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
         { href: "/admin/courses", icon: BookOpen, label: "Catalogue Cours" },

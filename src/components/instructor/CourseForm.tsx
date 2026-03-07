@@ -326,7 +326,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                             <label className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
                                 <UploadCloud className="h-10 w-10 text-primary mb-2" />
                                 <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir un fichier JPG/PNG</span>
-                                <Input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading}/>
+                                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading}/>
                             </label>
                         </div>
                     )}
