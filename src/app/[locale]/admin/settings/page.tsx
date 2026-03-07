@@ -2,11 +2,11 @@
 
 /**
  * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' (Build Vercel).
+ * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' par une réécriture propre.
  * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
