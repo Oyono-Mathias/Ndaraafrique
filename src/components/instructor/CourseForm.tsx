@@ -19,11 +19,12 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe, UploadCloud, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe, UploadCloud, ShieldAlert, HardDrive } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Course, CourseTemplate } from '@/lib/types';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const CourseFormSchema = z.object({
   title: z.string().min(5, { message: "Le titre doit faire au moins 5 caractères." }),
@@ -59,14 +60,13 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  const [imageSource, setImageSource] = useState<'upload' | 'template'>('template');
+  const [imageSource, setImageSource] = useState<'upload' | 'template' | 'project'>('template');
   const { user, currentUser } = useRole();
 
-  // 🛡️ SÉCURITÉ CEO : Vérifier si l'instructeur est sanctionné pour rachat frauduleux
   const isSanctioned = currentUser?.buyoutSanctions?.isSanctioned === true;
 
   const templatesQuery = useMemo(() => query(collection(db, 'course_templates'), orderBy('createdAt', 'desc')), [db]);
-  const { data: templates, isLoading: templatesLoading } = useCollection<CourseTemplate>(templatesQuery);
+  const { data: customTemplates, isLoading: templatesLoading } = useCollection<CourseTemplate>(templatesQuery);
 
   const form = useForm<CourseFormValues>({
     resolver: zodResolver(CourseFormSchema),
@@ -131,7 +131,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const handleSelectTemplate = (url: string) => {
       form.setValue('imageUrl', url);
       setImagePreview(url);
-      toast({ title: "Modèle appliqué" });
+      toast({ title: "Visuel appliqué" });
   };
 
   const handleMathiasHelp = async () => {
@@ -165,18 +165,6 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   return (
     <Form {...form}>
         <form onSubmit={form.handleSubmit(processSubmit)} className="space-y-8 max-w-4xl mx-auto p-4 pb-24">
-            {mode === 'create' && (
-                <header className="flex items-center gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
-                    <Button variant="outline" size="icon" asChild className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl">
-                        <Link href="/instructor/courses"><ArrowLeft className="h-4 w-4" /></Link>
-                    </Button>
-                    <div>
-                        <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Nouvelle Formation</h1>
-                        <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Identité du savoir</p>
-                    </div>
-                </header>
-            )}
-            
             <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
                 <CardHeader className="border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30 p-8">
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
@@ -257,7 +245,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
              <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
                 <CardHeader className="p-8 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
                     <CardTitle className="text-xl font-bold uppercase tracking-tight">Visuel de Couverture</CardTitle>
-                    <CardDescription>Importez une image percutante ou utilisez nos modèles.</CardDescription>
+                    <CardDescription>Sélectionnez une image officielle ou importez votre propre fichier.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
                    <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-inner group">
@@ -275,25 +263,44 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                                 <p className="text-white font-black text-xs uppercase tracking-widest animate-pulse">Téléversement...</p>
                             </div>
                         )}
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                             <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white font-black uppercase text-[10px]">Modifier le visuel</div>
-                        </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl w-fit border border-slate-200 dark:border-slate-800">
-                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'ghost'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Modèles Ndara</Button>
-                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'ghost'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Téléverser mon fichier</Button>
+                        <Button type="button" variant={imageSource === 'project' ? 'default' : 'ghost'} onClick={() => setImageSource('project')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Bibliothèque Ndara</Button>
+                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'ghost'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Modèles Externes</Button>
+                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'ghost'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Téléverser</Button>
                     </div>
 
+                    {/* --- SECTION 1 : BIBLIOTHÈQUE PROJET (IA) --- */}
+                    {imageSource === 'project' && (
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-in slide-in-from-bottom-2 duration-500">
+                            {PlaceHolderImages.map((img) => (
+                                <button
+                                    key={img.id}
+                                    type="button"
+                                    onClick={() => handleSelectTemplate(img.imageUrl)}
+                                    className={cn(
+                                        "relative aspect-video rounded-2xl overflow-hidden border-2 transition-all active:scale-95 group",
+                                        form.watch('imageUrl') === img.imageUrl ? "border-primary ring-4 ring-primary/10 shadow-xl" : "border-transparent opacity-60 hover:opacity-100"
+                                    )}
+                                >
+                                    <Image src={img.imageUrl} alt={img.description} fill className="object-cover" />
+                                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* --- SECTION 2 : MODÈLES CUSTOM --- */}
                     {imageSource === 'template' && (
                         <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
                             {templatesLoading ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     {[...Array(4)].map((_, i) => <Skeleton key={i} className="aspect-video rounded-2xl bg-slate-100 dark:bg-slate-800" />)}
                                 </div>
-                            ) : templates && templates.length > 0 ? (
+                            ) : customTemplates && customTemplates.length > 0 ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                    {templates.map((img) => (
+                                    {customTemplates.map((img) => (
                                         <button
                                             key={img.id}
                                             type="button"
@@ -304,18 +311,13 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                                             )}
                                         >
                                             <Image src={img.imageUrl} alt={img.description} fill className="object-cover" />
-                                            {form.watch('imageUrl') === img.imageUrl && (
-                                                <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
-                                                    <CheckCircle2 className="h-8 w-8 text-white shadow-lg" />
-                                                </div>
-                                            )}
                                         </button>
                                     ))}
                                 </div>
                             ) : (
                                 <div className="text-center py-12 bg-slate-50 dark:bg-slate-950/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                                     <Frown className="h-10 w-10 mx-auto text-slate-300 mb-2 opacity-20" />
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aucun modèle prêt.</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aucun modèle externe prêt.</p>
                                 </div>
                             )}
                         </div>
