@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Formulaire de création de leçon Ndara Afrique.
- * ✅ GOOGLE DRIVE : Importation directe sans téléchargement local.
+ * ✅ GOOGLE DRIVE : Importation directe avec nommage automatique.
  */
 
 import { useEffect, useTransition, useState } from 'react';
@@ -73,7 +72,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
     const selectedType = form.watch('type');
     const lectureTitle = form.watch('title');
-    const isTitleMissing = !lectureTitle || lectureTitle.trim().length < 3;
     
     useEffect(() => {
         const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
@@ -122,12 +120,6 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
     };
 
     const handleGoogleDriveAuth = async () => {
-        const title = form.getValues('title');
-        if (!title || title.trim().length < 3) {
-            toast({ variant: 'destructive', title: "Titre requis", description: "Donnez un titre à votre leçon avant d'importer." });
-            return;
-        }
-
         const auth = getAuth();
         const provider = new GoogleAuthProvider();
         provider.addScope('https://www.googleapis.com/auth/drive.readonly');
@@ -154,8 +146,15 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
         setIsDrivePickerOpen(false);
         setIsUploading(true);
         
+        // ✅ LOGIQUE CEO : Utiliser le titre du fichier Drive si le champ est vide
+        let finalTitle = form.getValues('title');
+        if (!finalTitle || finalTitle.trim().length < 3) {
+            finalTitle = file.name.replace(/\.[^/.]+$/, ""); // On retire l'extension
+            form.setValue('title', finalTitle);
+        }
+        
         try {
-            toast({ title: "Importation en cours", description: "Veuillez patienter pendant que nous streamons votre fichier vers Bunny..." });
+            toast({ title: "Importation en cours", description: `Transfert de "${finalTitle}" vers votre CDN...` });
             
             const response = await fetch('/api/video/import-drive', {
                 method: 'POST',
@@ -164,7 +163,7 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                     fileId: file.id,
                     accessToken: driveAccessToken,
                     instructorId: currentUser.uid,
-                    title: form.getValues('title')
+                    title: finalTitle
                 })
             });
 
@@ -351,17 +350,16 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                 <div className="space-y-4">
                                     <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
                                         Source de la vidéo
-                                        {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis avant import</span>}
                                     </label>
                                     
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <button
                                             type="button"
                                             onClick={handleGoogleDriveAuth}
-                                            disabled={isUploading || isTitleMissing}
+                                            disabled={isUploading}
                                             className={cn(
                                                 "flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-dashed transition-all active:scale-95 bg-slate-950/50",
-                                                isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "border-slate-700 hover:border-primary/50 text-slate-300"
+                                                isUploading ? "opacity-40 cursor-not-allowed border-slate-800" : "border-slate-700 hover:border-primary/50 text-slate-300"
                                             )}
                                         >
                                             <HardDrive className="h-8 w-8 mb-2 text-primary" />
@@ -371,12 +369,12 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
                                         <label 
                                             className={cn(
                                                 "flex flex-col items-center justify-center p-6 rounded-3xl border-2 border-dashed transition-all active:scale-95 bg-slate-950/50",
-                                                isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50 text-slate-300"
+                                                isUploading ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50 text-slate-300"
                                             )}
                                         >
                                             {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileVideo className="h-8 w-8 mb-2" />}
                                             <span className="text-[10px] font-black uppercase tracking-widest">Fichier local</span>
-                                            <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={isUploading || isTitleMissing} />
+                                            <input type="file" accept="video/*" onChange={handleVideoUpload} className="hidden" disabled={isUploading} />
                                         </label>
                                     </div>
 
@@ -391,21 +389,20 @@ export function LectureFormModal({ isOpen, onOpenChange, courseId, sectionId, le
 
                             {selectedType === 'pdf' && (
                                 <div className="space-y-4">
-                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1 flex justify-between items-center">
+                                    <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">
                                         Fichier PDF (Bunny CDN)
-                                        {isTitleMissing && <span className="text-red-500 flex items-center gap-1 font-bold"><AlertCircle className="h-3 w-3"/> Titre requis</span>}
                                     </FormLabel>
                                     <div className="relative">
-                                        <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading || isTitleMissing} />
+                                        <Input type="file" accept=".pdf" onChange={handlePdfUpload} className="sr-only" id="pdf-upload-input" disabled={isUploading} />
                                         <label 
                                             htmlFor="pdf-upload-input" 
                                             className={cn(
                                                 "flex flex-col items-center justify-center py-10 border-2 border-dashed rounded-xl bg-slate-950/50 transition-all", 
-                                                isUploading || isTitleMissing ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
+                                                isUploading ? "opacity-40 cursor-not-allowed border-slate-800" : "cursor-pointer border-slate-700 hover:border-primary/50"
                                             )}
                                         >
                                             {isUploading ? <Loader2 className="h-8 w-8 animate-spin text-primary" /> : <FileText className="h-8 w-8 text-amber-500" />}
-                                            <span className="text-[10px] font-black uppercase mt-2">{isTitleMissing ? "Saisir un titre d'abord" : "Téléverser le PDF"}</span>
+                                            <span className="text-[10px] font-black uppercase mt-2">Téléverser le PDF</span>
                                         </label>
                                     </div>
                                     <FormField control={form.control} name="contentUrl" render={({ field }) => ( 
