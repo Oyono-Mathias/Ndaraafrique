@@ -13,7 +13,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, d
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, PlayCircle, BadgeEuro, LayoutDashboard, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { ChevronsRight, Menu, X, PlayCircle, BadgeEuro, LayoutDashboard, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -22,11 +22,20 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-// Chargement dynamique des composants lourds ou sous la ligne de flottaison
-const Stats = dynamic(() => import('@/components/landing/Stats').then(mod => mod.Stats), { ssr: false });
-const TestimonialsSection = dynamic(() => import('@/components/landing/TestimonialsSection').then(mod => mod.TestimonialsSection), { ssr: false });
-const RecommendedCourses = dynamic(() => import('@/components/dashboards/RecommendedCourses').then(mod => mod.RecommendedCourses), { ssr: false });
-const Footer = dynamic(() => import('@/components/layout/footer').then(mod => mod.Footer), { ssr: false });
+// Chargement dynamique des composants lourds ou sous la ligne de flottaison pour accélérer le premier rendu
+const Stats = dynamic(() => import('@/components/landing/Stats').then(mod => mod.Stats), { 
+    ssr: false,
+    loading: () => <div className="h-20 w-full animate-pulse bg-slate-100 rounded-xl" />
+});
+const TestimonialsSection = dynamic(() => import('@/components/landing/TestimonialsSection').then(mod => mod.TestimonialsSection), { 
+    ssr: false 
+});
+const RecommendedCourses = dynamic(() => import('@/components/dashboards/RecommendedCourses').then(mod => mod.RecommendedCourses), { 
+    ssr: false 
+});
+const Footer = dynamic(() => import('@/components/layout/footer').then(mod => mod.Footer), { 
+    ssr: false 
+});
 
 const Navbar = () => {
     const { user, currentUser, role } = useRole();
@@ -267,7 +276,7 @@ export default function LandingPage() {
                             alt="Étudiants Ndara Afrique" 
                             fill 
                             className="object-cover"
-                            priority
+                            priority // ✅ CRITIQUE PERFORMANCE : Chargement prioritaire pour l'image au-dessus du pli
                             sizes="(max-width: 768px) 100vw, 50vw"
                         />
                     </div>

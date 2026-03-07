@@ -80,7 +80,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 alt={course.title}
                 fill
                 className="object-cover"
-                sizes="(max-width: 640px) 112px, 144px"
+                sizes="(max-width: 640px) 112px, 144px" // ✅ Optimisation Mobile : petite image sur tel
               />
             </div>
             <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
@@ -110,7 +110,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
             alt={course.title}
             fill
-            sizes="(max-width: 768px) 48vw, (max-width: 1200px) 30vw, 25vw"
+            sizes="(max-width: 768px) 48vw, (max-width: 1200px) 30vw, 25vw" // ✅ Optimisation Responsive : évite les downloads inutiles
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
           

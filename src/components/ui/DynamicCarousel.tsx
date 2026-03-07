@@ -84,7 +84,7 @@ export function DynamicCarousel() {
                         alt={`Bannière ${slide.order}`}
                         fill
                         className="object-cover"
-                        priority={index === 0}
+                        priority={index === 0} // ✅ Priorité sur le premier slide
                         sizes="100vw"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent"></div>

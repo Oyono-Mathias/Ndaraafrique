@@ -20,7 +20,7 @@ import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-// Chargement dynamique des composants de données
+// Chargement dynamique des composants de données pour un démarrage plus rapide
 const ContinueLearning = dynamic(() => import('@/components/dashboards/ContinueLearning').then(mod => mod.ContinueLearning), { 
     loading: () => <Skeleton className="h-48 w-full rounded-[2rem] bg-slate-100 dark:bg-slate-800" />
 });
