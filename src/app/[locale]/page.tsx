@@ -1,27 +1,32 @@
+
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Version Bourse du Savoir & Mobile-Optimized.
- * ✅ VISION CEO : Expérience Android-First fluide et mise en avant de l'investissement.
+ * @fileOverview Landing Page Ndara Afrique - Version Optimisée Performance.
+ * ✅ PERFORMANCE : next/image avec priority et sizes pour un LCP record.
+ * ✅ LAZY LOADING : Composants secondaires chargés de manière différée.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, doc } from 'firebase/firestore';
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2, PlayCircle, Sparkles, BadgeEuro, Landmark, LayoutDashboard } from 'lucide-react';
+import { ChevronsRight, Menu, X, PlayCircle, BadgeEuro, LayoutDashboard, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
-import { Footer } from '@/components/layout/footer';
-import { Stats } from '@/components/landing/Stats';
-import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
-import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+// Chargement dynamique des composants lourds ou sous la ligne de flottaison
+const Stats = dynamic(() => import('@/components/landing/Stats').then(mod => mod.Stats), { ssr: false });
+const TestimonialsSection = dynamic(() => import('@/components/landing/TestimonialsSection').then(mod => mod.TestimonialsSection), { ssr: false });
+const RecommendedCourses = dynamic(() => import('@/components/dashboards/RecommendedCourses').then(mod => mod.RecommendedCourses), { ssr: false });
+const Footer = dynamic(() => import('@/components/layout/footer').then(mod => mod.Footer), { ssr: false });
 
 const Navbar = () => {
     const { user, currentUser, role } = useRole();
@@ -43,7 +48,7 @@ const Navbar = () => {
                 
                 <div className="hidden md:flex space-x-8 items-center">
                     <a href="#formations" className="text-slate-600 hover:text-brand-primary font-bold transition uppercase tracking-widest text-[10px]">Formations</a>
-                    <Link href={`/${locale}/investir`} className="flex items-center gap-1.5 text-slate-600 hover:text-amber-600 font-black transition uppercase tracking-widest text-[10px] animate-pulse">
+                    <Link href={`/${locale}/investir`} className="flex items-center gap-1.5 text-slate-600 hover:text-amber-600 font-black transition uppercase tracking-widest text-[10px]">
                         <BadgeEuro className="h-3.5 w-3.5 text-amber-500" />
                         Bourse du Savoir
                     </Link>
@@ -103,7 +108,7 @@ const Navbar = () => {
                                         </Link>
                                     </SheetClose>
                                     <SheetClose asChild>
-                                        <Link href={`/${locale}/investir`} className="text-lg font-black uppercase tracking-tight text-amber-600 p-4 bg-amber-50 rounded-2xl flex items-center justify-between border border-amber-100">
+                                        <Link href={`/${locale}/investir`} className="text-lg font-black uppercase tracking-tight text-amber-600 p-4 bg-amber-100/50 rounded-2xl flex items-center justify-between border border-amber-100">
                                             <span className="flex items-center gap-3">
                                                 <BadgeEuro className="h-6 w-6" />
                                                 Bourse du Savoir
@@ -252,17 +257,6 @@ export default function LandingPage() {
                             Devenir Propriétaire
                         </Link>
                     </div>
-                    
-                    <div className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-slate-400 text-[10px] font-black uppercase tracking-widest opacity-60">
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-brand-primary" />
-                            Diplômes Inclus
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-4 h-4 text-brand-primary" />
-                            Accès à vie
-                        </div>
-                    </div>
                 </div>
 
                 <div className="relative animate-float block px-4 md:px-0 mt-8 lg:mt-0">
@@ -274,10 +268,11 @@ export default function LandingPage() {
                             fill 
                             className="object-cover"
                             priority
+                            sizes="(max-width: 768px) 100vw, 50vw"
                         />
                     </div>
                     
-                    <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-white p-4 md:p-5 rounded-3xl shadow-2xl border border-slate-50 flex items-center gap-4 animate-bounce" style={{ animationDuration: '4s' }}>
+                    <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-white p-4 md:p-5 rounded-3xl shadow-2xl border border-slate-50 flex items-center gap-4">
                         <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600 shrink-0">
                             <TrendingUp className="w-6 h-6" />
                         </div>
@@ -302,12 +297,6 @@ export default function LandingPage() {
       {user && (
           <section className="py-12 bg-white border-b border-slate-100 px-4 md:px-6">
               <div className="max-w-7xl mx-auto">
-                  <div className="flex items-center gap-3 mb-8">
-                      <div className="p-2 bg-brand-primary/10 rounded-lg">
-                          <Sparkles className="w-5 h-5 text-brand-primary" />
-                      </div>
-                      <h2 className="text-xl font-black text-brand-dark uppercase tracking-tight">Sélectionné pour vous, {currentUser?.fullName?.split(' ')[0]}</h2>
-                  </div>
                   <RecommendedCourses />
               </div>
           </section>
@@ -315,7 +304,6 @@ export default function LandingPage() {
 
       {/* --- BOURSE DU SAVOIR --- */}
       <section id="bourse" className="py-20 md:py-32 bg-brand-dark relative overflow-hidden px-4 md:px-12 border-y border-white/5 bg-grainy">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary rounded-full blur-[150px] opacity-10 -translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
                 <div className="space-y-8 text-center lg:text-left">
@@ -330,18 +318,6 @@ export default function LandingPage() {
                     <p className="text-slate-400 text-base md:text-lg leading-relaxed max-w-2xl mx-auto lg:mx-0 font-medium">
                         Ndara Afrique permet aux investisseurs d'acquérir les droits de revente des meilleures formations. Encaissez des revenus passifs sur chaque vente et revendez vos licences selon l'évolution du marché.
                     </p>
-                    <div className="grid sm:grid-cols-2 gap-4">
-                        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-3 text-left group hover:border-brand-primary/30 transition-all">
-                            <Landmark className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform" />
-                            <h4 className="font-black text-white uppercase text-xs tracking-widest">Propriété Exclusive</h4>
-                            <p className="text-slate-500 text-[11px] font-medium leading-relaxed">Devenez l'exploitant d'un savoir et touchez vos dividendes sur chaque nouvel élève.</p>
-                        </div>
-                        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-3 text-left group hover:border-brand-primary/30 transition-all">
-                            <TrendingUp className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
-                            <h4 className="font-black text-white uppercase text-xs tracking-widest">Marché Secondaire</h4>
-                            <p className="text-slate-500 text-[11px] font-medium leading-relaxed">Revendez vos licences à tout moment à d'autres partenaires via notre plateforme sécurisée.</p>
-                        </div>
-                    </div>
                     <Button asChild size="lg" className="w-full sm:w-auto h-16 px-12 rounded-2xl bg-brand-primary hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-brand-primary/20 active:scale-95 transition-all">
                         <Link href={`/${locale}/investir`}>
                             Explorer les opportunités
@@ -356,14 +332,8 @@ export default function LandingPage() {
                             alt="Investissement Ndara" 
                             fill 
                             className="object-cover grayscale hover:grayscale-0 transition-all duration-1000" 
+                            sizes="40vw"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent"></div>
-                        <div className="absolute bottom-10 left-10 right-10 p-8 bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-[2.5rem]">
-                            <p className="text-white font-black italic text-lg leading-relaxed uppercase tracking-tight">
-                                "Nous bâtissons la première bourse numérique du savoir africain."
-                            </p>
-                            <p className="mt-4 text-brand-primary font-black uppercase text-[10px] tracking-widest">— Mathias Oyono, CEO</p>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -375,7 +345,6 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
             <div className="flex flex-col md:flex-row justify-between items-center lg:items-end mb-16 gap-6 text-center md:text-left">
                 <div className="space-y-2">
-                    <div className="h-1.5 w-12 bg-brand-primary rounded-full mx-auto md:mx-0 mb-4" />
                     <h2 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tighter">Formations <span className="text-brand-primary">Ndara</span></h2>
                     <p className="text-slate-500 font-medium">Les compétences du futur, sélectionnées par des experts.</p>
                 </div>
@@ -404,54 +373,14 @@ export default function LandingPage() {
                     <div className="col-span-full text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 opacity-60">
                         <TrendingUp className="h-12 w-12 mx-auto text-slate-300 mb-4" />
                         <h4 className="text-lg font-black text-slate-400 uppercase tracking-tight">Contenus d'élite en préparation</h4>
-                        <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto font-medium">Nos experts finalisent les prochains modules. Revenez très bientôt.</p>
                     </div>
                 )}
             </div>
         </div>
       </section>
 
-      {/* --- TÉMOIGNAGES --- */}
-      <section className="bg-slate-50 border-t border-slate-100 px-4 md:px-12 py-20 bg-grainy">
-        <div className="max-w-7xl mx-auto">
-            <TestimonialsSection />
-        </div>
-      </section>
-
-      {/* --- FINAL CTA --- */}
-      <section className="py-24 md:py-40 relative overflow-hidden bg-brand-dark px-4 md:px-6 bg-grainy">
-        <div className="absolute inset-0 bg-primary/5 opacity-20 blur-3xl rounded-full scale-150"></div>
-        
-        <div className="max-w-4xl mx-auto relative z-10 text-center space-y-10">
-            <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter leading-none">
-                {user ? "Continuez votre ascension." : (landingPageSettings?.finalCtaTitle || "Prêt pour l'excellence ?")}
-            </h2>
-            <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-                {user ? "Votre savoir est votre pouvoir. Vos certificats et vos leçons vous attendent dans votre tableau de bord." : (landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Le futur commence par une leçon.")}
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-                {user ? (
-                    <Link href={`/${locale}${dashboardUrl}`} className="w-full sm:w-auto px-12 py-6 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 flex items-center justify-center">
-                        Accéder à mon tableau de bord
-                    </Link>
-                ) : (
-                    <>
-                        {(landingPageSettings?.showFinalCta ?? true) && (
-                            <Link href={`/${locale}/login?tab=register`} className="w-full sm:w-auto px-12 py-6 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 flex items-center justify-center">
-                                {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
-                            </Link>
-                        )}
-                    </>
-                )}
-                {(landingPageSettings?.showFinalContact ?? true) && (
-                    <Link href={`/${locale}/student/support`} className="w-full sm:w-auto px-12 py-6 bg-transparent border-2 border-slate-800 text-slate-300 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 flex items-center justify-center">
-                        Contacter l'assistance
-                    </Link>
-                )}
-            </div>
-        </div>
-      </section>
-
+      <TestimonialsSection />
+      
       <Footer />
     </div>
   );

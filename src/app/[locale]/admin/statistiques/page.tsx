@@ -1,16 +1,17 @@
+
 'use client';
 
 /**
- * @fileOverview Dashboard Analytique Ndara Afrique.
- * ✅ RÉSOLU : Échappement des caractères spéciaux (&gt;) pour build Vercel.
- * ✅ RÉSOLU : Écouteurs Firestore indépendants pour temps réel robuste.
+ * @fileOverview Dashboard Analytique Ndara Afrique - Version Optimisée.
+ * ✅ PERFORMANCE : Chargement dynamique des graphiques Recharts (Lourds).
+ * ✅ MÉMOÏSATION : Calculs de stats isolés pour réduire la charge CPU.
  */
 
 import { useState, useEffect, useMemo } from 'react';
+import dynamic from 'next/dynamic';
 import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap } from 'lucide-react';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
@@ -18,6 +19,17 @@ import type { DateRange } from 'react-day-picker';
 import { subDays, format, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, NdaraUser, TrackingEvent } from '@/lib/types';
+
+// Chargement dynamique des graphiques Recharts (évite de ralentir le chargement initial de l'admin)
+const ResponsiveContainer = dynamic(() => import('recharts').then(mod => mod.ResponsiveContainer), { ssr: false });
+const AreaChart = dynamic(() => import('recharts').then(mod => mod.AreaChart), { ssr: false });
+const Area = dynamic(() => import('recharts').then(mod => mod.Area), { ssr: false });
+const BarChart = dynamic(() => import('recharts').then(mod => mod.BarChart), { ssr: false });
+const Bar = dynamic(() => import('recharts').then(mod => mod.Bar), { ssr: false });
+const XAxis = dynamic(() => import('recharts').then(mod => mod.XAxis), { ssr: false });
+const YAxis = dynamic(() => import('recharts').then(mod => mod.YAxis), { ssr: false });
+const CartesianGrid = dynamic(() => import('recharts').then(mod => mod.CartesianGrid), { ssr: false });
+const Tooltip = dynamic(() => import('recharts').then(mod => mod.Tooltip), { ssr: false });
 
 export default function AdminStatsPage() {
     const [allUsers, setAllUsers] = useState<NdaraUser[]>([]);
@@ -30,19 +42,17 @@ export default function AdminStatsPage() {
     const db = getFirestore();
 
     useEffect(() => {
-        // 1. Écouteur indépendant pour les utilisateurs
+        // Écouteurs Firestore optimisés
         const unsubUsers = onSnapshot(collection(db, 'users'), (snap) => {
             setAllUsers(snap.docs.map(doc => ({ uid: doc.id, ...doc.data() } as NdaraUser)));
             setIsLoading(false);
         });
 
-        // 2. Écouteur indépendant pour les paiements
         const unsubPayments = onSnapshot(query(collection(db, 'payments'), where('status', '==', 'Completed')), (snap) => {
             setAllPayments(snap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Payment)));
         });
 
-        // 3. Écouteur indépendant pour le tracking
-        const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(2000)), (snap) => {
+        const unsubTracking = onSnapshot(query(collection(db, 'tracking_events'), limit(1000)), (snap) => {
             setAllTracking(snap.docs.map(doc => doc.data() as TrackingEvent));
         });
 
@@ -111,8 +121,7 @@ export default function AdminStatsPage() {
                         <TrendingUp className="h-4 w-4" />
                         <span className="text-[10px] font-black uppercase tracking-[0.3em]">Analyse Stratégique</span>
                     </div>
-                    <h1 className="text-3xl font-black text-foreground uppercase tracking-tight">Indicateurs de Performance</h1>
-                    <p className="text-muted-foreground text-sm font-medium mt-1">Données consolidées en temps réel.</p>
+                    <h1 className="text-3xl font-black text-foreground uppercase tracking-tight">Performances</h1>
                 </div>
                 <div className="bg-card p-1.5 rounded-2xl border shadow-xl">
                     <DatePickerWithRange date={dateRange} setDate={setDateRange} />
@@ -120,43 +129,16 @@ export default function AdminStatsPage() {
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard 
-                    title="Chiffre d'Affaires" 
-                    value={`${stats.totalRevenue.toLocaleString('fr-FR')} XOF`} 
-                    icon={DollarSign} 
-                    isLoading={isLoading} 
-                    description="Période sélectionnée"
-                />
-                <StatCard 
-                    title="Taux de Conversion" 
-                    value={`${stats.convRate}%`} 
-                    icon={MousePointer2} 
-                    isLoading={isLoading} 
-                    description="Visiteurs &rarr; Membres"
-                />
-                <StatCard 
-                    title="Base Utilisateurs" 
-                    value={stats.totalUsers.toLocaleString('fr-FR')} 
-                    icon={Users} 
-                    isLoading={isLoading} 
-                    description="Membres totaux"
-                />
-                <StatCard 
-                    title="Utilisateurs Actifs" 
-                    value={stats.activeUsers.toString()} 
-                    icon={Zap} 
-                    isLoading={isLoading} 
-                    description="Actuellement connectés"
-                />
+                <StatCard title="Revenus" value={`${stats.totalRevenue.toLocaleString('fr-FR')} XOF`} icon={DollarSign} isLoading={isLoading} />
+                <StatCard title="Conversion" value={`${stats.convRate}%`} icon={MousePointer2} isLoading={isLoading} />
+                <StatCard title="Membres" value={stats.totalUsers.toLocaleString('fr-FR')} icon={Users} isLoading={isLoading} />
+                <StatCard title="Connectés" value={stats.activeUsers.toString()} icon={Zap} isLoading={isLoading} />
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card className="bg-card border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-0">
-                        <div className="flex items-center gap-2 text-primary">
-                            <DollarSign className="h-4 w-4" />
-                            <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Flux de Trésorerie (XOF)</CardTitle>
-                        </div>
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Trésorerie (XOF)</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 pt-10 h-80">
                         {isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
@@ -171,10 +153,7 @@ export default function AdminStatsPage() {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'currentColor', fontSize: 10, fontWeight: 'bold', opacity: 0.5}} />
                                     <YAxis hide />
-                                    <Tooltip 
-                                        contentStyle={{backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px'}} 
-                                        itemStyle={{color: 'hsl(var(--foreground))', fontWeight: 'bold'}}
-                                    />
+                                    <Tooltip contentStyle={{backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px'}} />
                                     <Area type="monotone" dataKey="value" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorRev)" strokeWidth={4} />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -184,10 +163,7 @@ export default function AdminStatsPage() {
 
                 <Card className="bg-card border-border rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="p-8 pb-0">
-                        <div className="flex items-center gap-2 text-emerald-500">
-                            <Users className="h-4 w-4" />
-                            <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Rythme d'Acquisition (Membres)</CardTitle>
-                        </div>
+                        <CardTitle className="text-xs font-black uppercase tracking-[0.2em]">Acquisition Membres</CardTitle>
                     </CardHeader>
                     <CardContent className="p-6 pt-10 h-80">
                         {isLoading ? <Skeleton className="h-full w-full rounded-2xl" /> : (
@@ -196,26 +172,13 @@ export default function AdminStatsPage() {
                                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
                                     <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: 'currentColor', fontSize: 10, fontWeight: 'bold', opacity: 0.5}} />
                                     <YAxis hide />
-                                    <Tooltip 
-                                        cursor={{fill: 'currentColor', opacity: 0.1}} 
-                                        contentStyle={{backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px'}}
-                                        itemStyle={{color: '#10b981', fontWeight: 'bold'}}
-                                    />
-                                    <Bar dataKey="value" fill="#10b981" radius={[6, 6, 0, 0]} barSize={20} />
+                                    <Tooltip cursor={{fill: 'currentColor', opacity: 0.1}} contentStyle={{backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '16px'}} />
+                                    <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} barSize={20} />
                                 </BarChart>
                             </ResponsiveContainer>
                         )}
                     </CardContent>
                 </Card>
-            </div>
-
-            <div className="p-6 bg-primary/5 border border-primary/10 rounded-3xl flex items-start gap-4">
-                <div className="p-2 bg-primary/10 rounded-xl">
-                    <Calendar className="h-5 w-5 text-primary" />
-                </div>
-                <p className="text-xs text-muted-foreground font-medium leading-relaxed">
-                    <b>Conseil CEO :</b> Si vous voyez peu de membres, utilisez l'outil de synchronisation dans <b>Configuration &gt; Outils</b> pour importer tous les comptes Firebase Auth vers Firestore.
-                </p>
             </div>
         </div>
     );

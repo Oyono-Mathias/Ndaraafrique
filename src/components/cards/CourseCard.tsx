@@ -1,8 +1,9 @@
+
 'use client';
 
 /**
- * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium.
- * ✅ RÉSOLU : Ajout du badge "Licence de revente" pour les investisseurs.
+ * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium Optimisé.
+ * ✅ PERFORMANCE : Sizes responsive pour les images afin de réduire la consommation data.
  */
 
 import Link from 'next/link';
@@ -79,6 +80,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 alt={course.title}
                 fill
                 className="object-cover"
+                sizes="(max-width: 640px) 112px, 144px"
               />
             </div>
             <div className="flex-1 p-4 flex flex-col justify-between min-w-0">
@@ -108,13 +110,12 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             src={course.imageUrl || `https://picsum.photos/seed/${course.id}/600/400`}
             alt={course.title}
             fill
-            sizes="(max-width: 768px) 50vw, 25vw"
+            sizes="(max-width: 768px) 48vw, (max-width: 1200px) 30vw, 25vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
           
-          {/* Badge Investisseur Dynamique */}
           {course.resaleRightsAvailable && (
-            <div className="absolute top-4 left-4 z-10 animate-in slide-in-from-left-4 duration-500">
+            <div className="absolute top-4 left-4 z-10">
                 <Badge className="bg-amber-500 text-black border-none font-black uppercase text-[8px] tracking-[0.15em] px-2 py-1 flex items-center gap-1 shadow-lg shadow-amber-500/20">
                     <BadgeEuro className="h-3 w-3" />
                     Licence disponible
@@ -144,19 +145,12 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 {course.title}
             </h3>
             
-            <p className="text-slate-500 text-xs mb-4 flex-1 line-clamp-2">
-                {course.description || "Apprenez les compétences du futur avec Ndara Afrique."}
-            </p>
-            
             <div className="flex items-center justify-between pt-4 border-t border-slate-50 mt-auto">
                 <div className="flex items-center gap-1">
                     <Star className={cn("w-4 h-4", hasRating ? "text-yellow-400 fill-current" : "text-slate-200")} />
                     <span className="text-sm font-black text-slate-700">
                         {hasRating ? course.rating?.toFixed(1) : "Nouveau"}
                     </span>
-                    {course.participantsCount !== undefined && course.participantsCount > 0 && (
-                        <span className="text-[10px] text-slate-400 font-bold ml-1">({course.participantsCount})</span>
-                    )}
                 </div>
                 <span className="text-lg font-black text-brand-dark">
                     {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'OFFERT'}
