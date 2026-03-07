@@ -33,7 +33,8 @@ import {
   Wrench,
   History,
   ImageIcon,
-  UploadCloud
+  UploadCloud,
+  RefreshCw
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
