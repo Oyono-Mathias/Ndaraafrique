@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' par une réécriture propre.
+ * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' par une réécriture propre et parenthésée.
  * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
  */
 
