@@ -1,14 +1,13 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique Optimisé.
- * ✅ PERFORMANCE : Chargement dynamique des sous-sections lourdes.
+ * ✅ DÉCOUVERTE : Ajout d'une section "Nouveautés" et d'un bouton de recherche flottant.
  */
 
 import { useRole } from '@/context/RoleContext';
 import dynamic from 'next/dynamic';
-import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight } from 'lucide-react';
+import { BookOpen, Trophy, TrendingUp, Search as LucideSearch, BadgeEuro, Share2, ChevronRight, Sparkles } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, getDocs, doc } from 'firebase/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
@@ -20,7 +19,7 @@ import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 
-// Chargement dynamique des composants de données pour un démarrage plus rapide
+// Chargement dynamique des composants
 const ContinueLearning = dynamic(() => import('@/components/dashboards/ContinueLearning').then(mod => mod.ContinueLearning), { 
     loading: () => <Skeleton className="h-48 w-full rounded-[2rem] bg-slate-100 dark:bg-slate-800" />
 });
@@ -32,6 +31,9 @@ const RecentActivity = dynamic(() => import('@/components/dashboards/RecentActiv
 });
 const StatCard = dynamic(() => import('@/components/dashboard/StatCard').then(mod => mod.StatCard), {
     loading: () => <Skeleton className="h-24 w-full rounded-2xl bg-slate-100 dark:bg-slate-800" />
+});
+const NewCoursesExplore = dynamic(() => import('@/components/dashboards/NewCoursesExplore').then(mod => mod.NewCoursesExplore), {
+    loading: () => <Skeleton className="h-64 w-full rounded-2xl bg-slate-100 dark:bg-slate-800" />
 });
 
 export default function StudentDashboardAndroid() {
@@ -48,7 +50,6 @@ export default function StudentDashboardAndroid() {
   useEffect(() => {
     if (!currentUser?.uid) return;
 
-    // Écouteur Stats & Réglages
     const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
         if (snap.exists()) {
             const data = snap.data() as Settings;
@@ -138,11 +139,17 @@ export default function StudentDashboardAndroid() {
 
       <div className="px-4"><ContinueLearning /></div>
 
+      {/* --- EXPLORATION : NOUVEAUX COURS --- */}
+      <div className="px-4">
+        <NewCoursesExplore />
+      </div>
+
       <div className="px-4 space-y-10">
         <RecommendedCourses />
         <RecentActivity />
       </div>
 
+      {/* --- FAB : RECHERCHE (STYLE ANDROID) --- */}
       <Button asChild className="fixed bottom-24 right-6 h-14 w-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl shadow-primary/40 z-50 transition-transform active:scale-90 p-0 flex items-center justify-center">
         <Link href={`/${locale}/search`}>
           <LucideSearch className="h-6 w-6 text-primary-foreground" />

@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { 
   LayoutDashboard, 
   BookOpen, 
-  ClipboardCheck, 
+  Search,
   User,
   Bell
 } from 'lucide-react';
@@ -14,10 +14,15 @@ import { useEffect, useState, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 
+/**
+ * @fileOverview Barre de navigation mobile pour l'étudiant.
+ * ✅ AJOUT : Onglet "Rechercher" pour explorer le catalogue sans quitter le dashboard.
+ */
+
 const navItems = [
   { href: '/student/dashboard', icon: LayoutDashboard, label: 'Accueil' },
+  { href: '/search', icon: Search, label: 'Catalogue' },
   { href: '/student/courses', icon: BookOpen, label: 'Mes cours' },
-  { href: '/student/devoirs', icon: ClipboardCheck, label: 'Devoirs' },
   { href: '/student/notifications', icon: Bell, label: 'Alertes', showBadge: true },
   { href: '/student/profile', icon: User, label: 'Profil' },
 ];
@@ -28,7 +33,6 @@ export function StudentBottomNav() {
   const db = getFirestore();
   const [unreadCount, setUnreadCount] = useState(0);
 
-  // ✅ Suppression robuste du préfixe de langue pour la détection du bouton actif
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
@@ -48,7 +52,6 @@ export function StudentBottomNav() {
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#111827] border-t border-white/5 flex items-stretch justify-around z-50 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
       {navItems.map((item) => {
-        // Un bouton est actif s'il correspond exactement ou s'il est le parent de la route actuelle
         const isActive = cleanPath === item.href || (item.href !== '/student/dashboard' && cleanPath.startsWith(item.href));
         
         return (
