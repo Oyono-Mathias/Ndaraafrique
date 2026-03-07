@@ -292,7 +292,7 @@ export default function AdminSettingsPage() {
         toast({ title: "Synchronisation terminée", description: `${result.count} formations mises à jour.` });
       }
     } catch (err) {
-      toast({ variant: 'destructive', title: "Échec sync" });
+      toast({ variant: 'destructive', title: "Échec sync" }); 
     } finally {
       setIsSyncing(false);
     }
