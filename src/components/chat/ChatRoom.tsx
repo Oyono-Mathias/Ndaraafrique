@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Salon de discussion immersif (Style WhatsApp Android exact).
- * Synchronisation en temps réel avec Firestore et indicateurs de lecture (Ticks).
+ * ✅ SÉCURITÉ : Gère le blocage silencieux (shadow block) par l'admin.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -27,21 +27,24 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, Check, CheckCheck, Paperclip, Smile, Camera, Mic } from 'lucide-react';
+import { Loader2, Send, ArrowLeft, MoreVertical, Phone, Video, Check, CheckCheck, Paperclip, Smile, Camera, Mic, ShieldAlert } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Message, NdaraUser } from '@/lib/types';
+import type { Message, NdaraUser, Chat } from '@/lib/types';
 import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 export function ChatRoom({ chatId }: { chatId: string }) {
-  const { user } = useRole();
+  const { user, currentUser } = useRole();
   const db = getFirestore();
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [otherParticipant, setOtherParticipant] = useState<Partial<NdaraUser> | null>(null);
+  const [chatData, setChatData] = useState<Chat | null>(null);
   const [isSending, setIsSending] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  const isAdmin = currentUser?.role === 'admin';
 
   useEffect(() => {
     if (!chatId || !user) return;
@@ -49,7 +52,8 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     const chatRef = doc(db, 'chats', chatId);
     const unsubChat = onSnapshot(chatRef, (snap) => {
         if (snap.exists()) {
-            const data = snap.data();
+            const data = { id: snap.id, ...snap.data() } as Chat;
+            setChatData(data);
             const otherId = data.participants.find((p: string) => p !== user.uid);
             
             if (otherId && (!otherParticipant || otherParticipant.uid !== otherId)) {
@@ -60,11 +64,10 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 });
             }
 
-            // Marquer comme lu pour l'utilisateur actuel
-            if (data.unreadBy?.includes(user.uid)) {
+            // Marquer comme lu uniquement si le chat n'est pas bloqué (ou si on est admin)
+            if (data.unreadBy?.includes(user.uid) && (data.status !== 'blocked' || isAdmin)) {
                 updateDoc(chatRef, { unreadBy: arrayRemove(user.uid) });
                 
-                // Marquer les messages individuels comme lus en batch
                 const msgsQuery = query(
                     collection(db, `chats/${chatId}/messages`), 
                     where('senderId', '==', otherId),
@@ -82,7 +85,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
     });
 
     return () => unsubChat();
-  }, [chatId, user, db, otherParticipant]);
+  }, [chatId, user, db, otherParticipant, isAdmin]);
 
   useEffect(() => {
     if (!chatId) return;
@@ -120,6 +123,10 @@ export function ChatRoom({ chatId }: { chatId: string }) {
 
         const now = serverTimestamp();
 
+        // LOGIQUE CEO : Si le chat est bloqué silensieusement, on enregistre le message 
+        // mais on ne notifie pas le destinataire (unreadBy reste inchangé pour lui)
+        const isBlocked = chatData?.status === 'blocked';
+
         batch.set(msgRef, {
             senderId: user.uid,
             text,
@@ -127,12 +134,17 @@ export function ChatRoom({ chatId }: { chatId: string }) {
             status: 'sent',
         });
 
-        batch.update(chatRef, {
+        const updateData: any = {
             lastMessage: text,
             updatedAt: now,
             lastSenderId: user.uid,
-            unreadBy: arrayUnion(otherParticipant?.uid || '')
-        });
+        };
+
+        if (!isBlocked) {
+            updateData.unreadBy = arrayUnion(otherParticipant?.uid || '');
+        }
+
+        batch.update(chatRef, updateData);
         
         await batch.commit();
     } catch (err) {
@@ -151,7 +163,7 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 variant="ghost" 
                 size="icon" 
                 className="mr-0 text-slate-300 h-10 w-8 rounded-full" 
-                onClick={() => router.push('/student/messages')}
+                onClick={() => router.back()}
             >
                 <ArrowLeft className="h-6 w-6" />
             </Button>
@@ -164,9 +176,14 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                   </AvatarFallback>
               </Avatar>
               <div className="flex flex-col overflow-hidden">
-                  <h2 className="font-bold text-sm text-white truncate leading-none">
-                      {otherParticipant?.fullName || 'Chargement...'}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-bold text-sm text-white truncate leading-none">
+                        {otherParticipant?.fullName || 'Chargement...'}
+                    </h2>
+                    {chatData?.status === 'blocked' && isAdmin && (
+                        <ShieldAlert className="h-3 w-3 text-red-500" />
+                    )}
+                  </div>
                   <p className="text-[10px] text-emerald-500 font-medium mt-1 uppercase tracking-widest">
                       {otherParticipant?.isOnline ? 'en ligne' : ''}
                   </p>
@@ -179,6 +196,12 @@ export function ChatRoom({ chatId }: { chatId: string }) {
                 <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><MoreVertical className="h-5 w-5" /></Button>
             </div>
         </header>
+
+        {chatData?.status === 'blocked' && isAdmin && (
+            <div className="bg-red-500/10 border-b border-red-500/20 p-2 text-center">
+                <p className="text-[10px] font-black text-red-400 uppercase tracking-widest">Cette conversation est bloquée silensieusement par l'admin.</p>
+            </div>
+        )}
 
         <ScrollArea className="flex-1 z-10" ref={scrollAreaRef}>
             <div className="p-4 space-y-2 flex flex-col min-h-full">

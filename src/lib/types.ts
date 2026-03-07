@@ -444,7 +444,7 @@ export interface SecurityLog {
   id: string;
   userId: string; // The user PERFORMING the action (e.g., admin UID)
   targetId: string; // The user or entity being affected
-  eventType: 'suspicious_login' | 'failed_payment' | 'profile_change' | 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'alert_resolved';
+  eventType: 'suspicious_login' | 'failed_payment' | 'profile_change' | 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'alert_resolved' | 'chat_blocked' | 'chat_unblocked';
   details: string; // Human-readable description
   ipAddress?: string;
   timestamp: Timestamp | FieldValue;
@@ -454,10 +454,10 @@ export interface SecurityLog {
 export interface AdminAuditLog {
   id: string;
   adminId: string;
-  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update' | 'settings.update' | 'user.delete' | 'user.import' | 'instructor.application' | 'course.grant';
+  eventType: 'user.status.update' | 'user.role.update' | 'course.moderation' | 'payout.process' | 'security.resolve' | 'role.permissions.update' | 'settings.update' | 'user.delete' | 'user.import' | 'instructor.application' | 'course.grant' | 'chat.block';
   target: {
     id: string;
-    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role' | 'settings' | 'enrollment';
+    type: 'user' | 'course' | 'payout' | 'payment' | 'security_log' | 'role' | 'settings' | 'enrollment' | 'chat';
   };
   timestamp: Timestamp | FieldValue;
   details: string;
@@ -533,6 +533,8 @@ export interface Chat {
     updatedAt: Timestamp | FieldValue;
     lastSenderId?: string;
     unreadBy?: string[];
+    status?: 'active' | 'blocked';
+    blockedBy?: string;
 }
 
 export interface Message {

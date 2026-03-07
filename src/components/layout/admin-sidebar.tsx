@@ -24,7 +24,8 @@ import {
   ArrowLeftRight,
   Library,
   Zap,
-  Handshake
+  Handshake,
+  FolderLock
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -93,7 +94,7 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
         { href: "/admin/users", icon: Users, label: "Utilisateurs" },
         { href: "/admin/instructors", icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
         { href: "/admin/investisseurs", icon: Handshake, label: "Partenaires", countId: 'newLeads' },
-        { href: "/admin/messages", icon: MessageSquare, label: "Messagerie" },
+        { href: "/admin/messages", icon: MessageSquare, label: "Messagerie Centrale" },
       ]
     },
     {
