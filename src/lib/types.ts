@@ -86,6 +86,11 @@ export interface NdaraUser {
   preferredLanguage?: 'fr' | 'en';
   countryCode?: string;
   countryName?: string;
+  // --- ECONOMY ---
+  affiliateBalance?: number;
+  referralBalance?: number;
+  referralCode?: string;
+  referredBy?: string; // UID of the instructor who invited this user
   socialLinks?: {
       website?: string;
       twitter?: string;
@@ -271,6 +276,7 @@ export interface Enrollment {
     expiresAt?: Timestamp | FieldValue;
     enrollmentType?: 'paid' | 'admin_grant' | 'free';
     transactionId?: string;
+    affiliateId?: string; // Track who referred the student for this sale
 }
 
 export interface Review {
@@ -367,6 +373,11 @@ export interface Settings {
     currency: string;
     minPayoutThreshold: number;
     featuredCourseId?: string;
+    // --- COMMISSIONS SYSTÈMES ---
+    affiliateEnabled: boolean;
+    affiliatePercentage: number;
+    referralEnabled: boolean;
+    referralPercentage: number;
   };
   platform: {
     announcementMessage?: string;
@@ -374,7 +385,7 @@ export interface Settings {
     allowInstructorSignup: boolean;
     allowCourseBuyout: boolean;
     allowResaleRights: boolean;
-    allowTeacherToTeacherResale: boolean; // ✅ Nouvelle option
+    allowTeacherToTeacherResale: boolean;
     autoApproveCourses: boolean;
     enableInternalMessaging: boolean;
     allowYoutube?: boolean;

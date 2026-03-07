@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Réglages Globaux Ndara Afrique.
- * ✅ RESTAURÉ : Toutes les options (Social, Commercial, Équipe, Vidéo).
- * ✅ EXHAUSTIF : Pilotage total sans code.
+ * ✅ NOUVEAU : Onglet "Croissance & Revenus" pour piloter l'affiliation et le parrainage.
  */
 
 import { useState, useEffect } from 'react';
@@ -23,6 +22,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { 
   Settings as SettingsIcon, 
   Loader2, 
@@ -42,7 +42,9 @@ import {
   Plus,
   Trash2,
   Video,
-  Youtube
+  Youtube,
+  TrendingUp,
+  UserPlus
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -79,6 +81,11 @@ const settingsSchema = z.object({
   fontScale: z.enum(['small', 'medium', 'large']).default('medium'),
   borderRadius: z.enum(['none', 'md', 'lg', 'xl']).default('lg'),
   teamMembers: z.array(teamMemberSchema).optional(),
+  // --- NOUVEAUX CHAMPS REVENUS ---
+  affiliateEnabled: z.boolean().default(true),
+  affiliatePercentage: z.coerce.number().min(0).max(50),
+  referralEnabled: z.boolean().default(true),
+  referralPercentage: z.coerce.number().min(0).max(20),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -99,7 +106,11 @@ export default function AdminSettingsPage() {
       allowResaleRights: true,
       allowTeacherToTeacherResale: false,
       autoApproveCourses: false,
-      enableInternalMessaging: true
+      enableInternalMessaging: true,
+      affiliateEnabled: true,
+      affiliatePercentage: 10,
+      referralEnabled: true,
+      referralPercentage: 5
     }
   });
 
@@ -137,36 +148,17 @@ export default function AdminSettingsPage() {
           fontScale: data.design?.fontScale || 'medium',
           borderRadius: data.design?.borderRadius || 'lg',
           teamMembers: data.content?.aboutPage?.teamMembers || [],
+          // --- REVENUS ---
+          affiliateEnabled: data.commercial?.affiliateEnabled ?? true,
+          affiliatePercentage: data.commercial?.affiliatePercentage ?? 10,
+          referralEnabled: data.commercial?.referralEnabled ?? true,
+          referralPercentage: data.commercial?.referralPercentage ?? 5,
         });
       }
       setIsLoading(false);
     });
     return () => unsubscribe();
   }, [db, form]);
-
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
-    const file = event.target.files?.[0];
-    if (!file || !currentUser) return;
-
-    setIsUploading(fieldName);
-    try {
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('userId', currentUser.uid);
-        formData.append('folder', 'platform_assets');
-
-        const response = await fetch('/api/storage/upload', { method: 'POST', body: formData });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error);
-
-        form.setValue(fieldName as any, data.url);
-        toast({ title: "Fichier prêt !" });
-    } catch (error: any) {
-        toast({ variant: 'destructive', title: "Échec", description: error.message });
-    } finally {
-        setIsUploading(null);
-    }
-  };
 
   const onSubmit = async (values: SettingsValues) => {
     if (!currentUser) return;
@@ -186,7 +178,15 @@ export default function AdminSettingsPage() {
             twitterUrl: values.twitterUrl, 
             instagramUrl: values.instagramUrl 
           },
-          commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
+          commercial: { 
+            platformCommission: values.commission, 
+            currency: 'XOF', 
+            minPayoutThreshold: 5000,
+            affiliateEnabled: values.affiliateEnabled,
+            affiliatePercentage: values.affiliatePercentage,
+            referralEnabled: values.referralEnabled,
+            referralPercentage: values.referralPercentage
+          },
           platform: { 
             announcementMessage: values.announcementMessage, 
             maintenanceMode: values.maintenanceMode,
@@ -201,9 +201,7 @@ export default function AdminSettingsPage() {
           },
           design: { primaryColor: values.primaryColor, fontScale: values.fontScale, borderRadius: values.borderRadius },
           content: {
-              aboutPage: {
-                  ...form.getValues('teamMembers') ? { teamMembers: values.teamMembers } : {}
-              }
+              aboutPage: { teamMembers: values.teamMembers }
           }
         } as any
       });
@@ -214,6 +212,27 @@ export default function AdminSettingsPage() {
       toast({ variant: 'destructive', title: "Erreur technique", description: e.message });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+    setIsUploading(fieldName);
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', currentUser.uid);
+        formData.append('folder', 'platform_assets');
+        const response = await fetch('/api/storage/upload', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+        form.setValue(fieldName as any, data.url);
+        toast({ title: "Fichier prêt !" });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Échec", description: error.message });
+    } finally {
+        setIsUploading(null);
     }
   };
 
@@ -235,6 +254,7 @@ export default function AdminSettingsPage() {
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-12 p-1 overflow-x-auto flex items-center justify-start gap-1 w-full rounded-2xl no-scrollbar">
               <TabsTrigger value="general" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Général</TabsTrigger>
               <TabsTrigger value="commercial" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Commercial</TabsTrigger>
+              <TabsTrigger value="growth" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-primary">Croissance</TabsTrigger>
               <TabsTrigger value="design" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Studio Design</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Plateforme</TabsTrigger>
               <TabsTrigger value="content" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Contenu</TabsTrigger>
@@ -272,24 +292,14 @@ export default function AdminSettingsPage() {
                       </div>
                     </div>
                   </div>
-
                   <Separator className="bg-white/5" />
-                  
                   <div className="space-y-6">
                     <CardTitle className="text-sm font-black uppercase text-slate-500 flex items-center gap-2"><Globe className="h-4 w-4"/> Réseaux Sociaux</CardTitle>
                     <div className="grid md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="facebookUrl" render={({ field }) => (
-                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">Facebook</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
-                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">LinkedIn</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name="twitterUrl" render={({ field }) => (
-                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">X (Twitter)</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name="instagramUrl" render={({ field }) => (
-                            <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">Instagram</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem>
-                        )} />
+                        <FormField control={form.control} name="facebookUrl" render={({ field }) => ( <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">Facebook</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem> )} />
+                        <FormField control={form.control} name="linkedinUrl" render={({ field }) => ( <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">LinkedIn</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem> )} />
+                        <FormField control={form.control} name="twitterUrl" render={({ field }) => ( <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">X (Twitter)</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem> )} />
+                        <FormField control={form.control} name="instagramUrl" render={({ field }) => ( <FormItem><FormLabel className="text-[9px] font-bold text-slate-600 uppercase">Instagram</FormLabel><FormControl><Input {...field} className="bg-slate-800/30" /></FormControl></FormItem> )} />
                     </div>
                   </div>
                 </CardContent>
@@ -308,6 +318,62 @@ export default function AdminSettingsPage() {
                                 <FormMessage />
                             </FormItem>
                         )} />
+                    </CardContent>
+                </Card>
+            </TabsContent>
+
+            <TabsContent value="growth" className="space-y-6">
+                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                    <CardHeader className="bg-primary/5 p-8 border-b border-white/5">
+                        <CardTitle className="text-xl font-black text-white uppercase flex items-center gap-3"><TrendingUp className="text-primary"/> Accélération de Croissance</CardTitle>
+                        <CardDescription>Gérez les systèmes de recommandation rémunérée.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 space-y-10">
+                        {/* Section Ambassadeurs */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-white flex items-center gap-2"><ShoppingCart className="h-4 w-4 text-primary" /> Programme Ambassadeur (Étudiants)</h3>
+                                    <p className="text-xs text-slate-500">Permet aux étudiants de revendre les cours rachetés par Ndara.</p>
+                                </div>
+                                <FormField control={form.control} name="affiliateEnabled" render={({ field }) => (
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                )} />
+                            </div>
+                            <div className={cn("grid sm:grid-cols-2 gap-6", !form.watch('affiliateEnabled') && "opacity-40 pointer-events-none")}>
+                                <FormField control={form.control} name="affiliatePercentage" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500">Commission Ambassadeur (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                            </div>
+                        </div>
+
+                        <Separator className="bg-white/5" />
+
+                        {/* Section Parrainage */}
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                                <div className="space-y-1">
+                                    <h3 className="font-bold text-white flex items-center gap-2"><UserPlus className="h-4 w-4 text-primary" /> Parrainage d'Instructeurs</h3>
+                                    <p className="text-xs text-slate-500">Commissions pour les formateurs qui invitent de nouveaux experts.</p>
+                                </div>
+                                <FormField control={form.control} name="referralEnabled" render={({ field }) => (
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                )} />
+                            </div>
+                            <div className={cn("grid sm:grid-cols-2 gap-6", !form.watch('referralEnabled') && "opacity-40 pointer-events-none")}>
+                                <FormField control={form.control} name="referralPercentage" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500">Commission Parrain (%)</FormLabel>
+                                        <FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                            </div>
+                        </div>
                     </CardContent>
                 </Card>
             </TabsContent>
@@ -393,63 +459,31 @@ export default function AdminSettingsPage() {
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Sources de Contenu</CardTitle></CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name="allowYoutube" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-red-500/5 border border-red-500/10 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><Youtube className="h-4 w-4" /> Vidéos YouTube</FormLabel><FormDescription className="text-[10px]">Autoriser les liens externes</FormDescription></div>
-                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name="allowBunny" render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><Video className="h-4 w-4" /> Bunny.net Stream</FormLabel><FormDescription className="text-[10px]">Hébergement Premium Natif</FormDescription></div>
-                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                      </FormItem>
-                    )} />
-                  </div>
-                </CardContent>
-              </Card>
             </TabsContent>
 
             <TabsContent value="content" className="space-y-6">
                 <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                     <CardHeader className="bg-slate-800/30 border-b border-white/5 flex flex-row items-center justify-between p-8">
-                        <div>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2"><Users className="h-5 w-5"/> Équipe de Direction</CardTitle>
-                            <CardDescription>Gérez les membres affichés sur la page "À propos".</CardDescription>
-                        </div>
+                        <div><CardTitle className="text-lg font-bold flex items-center gap-2"><Users className="h-5 w-5"/> Équipe de Direction</CardTitle><CardDescription>Gérez les membres affichés sur la page "À propos".</CardDescription></div>
                         <Button type="button" onClick={() => append({ name: '', role: '', imageUrl: '', bio: '' })} className="rounded-xl h-10 px-4 font-black uppercase text-[9px] tracking-widest"><Plus className="h-4 w-4 mr-2"/> Ajouter un membre</Button>
                     </CardHeader>
                     <CardContent className="p-8">
                         <div className="grid gap-6">
                             {fields.map((field, index) => (
-                                <div key={field.id} className="p-6 bg-slate-950 border border-slate-800 rounded-3xl relative animate-in slide-in-from-top-2">
+                                <div key={field.id} className="p-6 bg-slate-950 border border-slate-800 rounded-3xl relative">
                                     <Button variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-4 right-4 text-red-500 hover:bg-red-500/10 rounded-full h-8 w-8"><Trash2 className="h-4 w-4" /></Button>
                                     <div className="grid md:grid-cols-2 gap-6">
                                         <div className="space-y-4">
-                                            <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => (
-                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Nom Complet</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
-                                            )} />
-                                            <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
-                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Poste / Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
-                                            )} />
+                                            <FormField control={form.control} name={`teamMembers.${index}.name`} render={({ field }) => ( <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Nom Complet</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem> )} />
+                                            <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => ( <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Poste / Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem> )} />
                                         </div>
                                         <div className="space-y-4">
-                                            <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
-                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">URL de l'image</FormLabel><FormControl><Input {...field} placeholder="https://..." className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
-                                            )} />
-                                            <FormField control={form.control} name={`teamMembers.${index}.bio`} render={({ field }) => (
-                                                <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Biographie courte</FormLabel><FormControl><Textarea {...field} rows={2} className="bg-slate-900 border-slate-800 resize-none" /></FormControl></FormItem>
-                                            )} />
+                                            <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => ( <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">URL de l'image</FormLabel><FormControl><Input {...field} placeholder="https://..." className="bg-slate-900 border-slate-800" /></FormControl></FormItem> )} />
+                                            <FormField control={form.control} name={`teamMembers.${index}.bio`} render={({ field }) => ( <FormItem><FormLabel className="text-[9px] uppercase font-black text-slate-600">Biographie courte</FormLabel><FormControl><Textarea {...field} rows={2} className="bg-slate-900 border-slate-800 resize-none" /></FormControl></FormItem> )} />
                                         </div>
                                     </div>
                                 </div>
                             ))}
-                            {fields.length === 0 && <p className="text-center py-10 text-slate-600 font-bold uppercase text-[10px] tracking-widest italic opacity-50">Aucun membre d'équipe enregistré.</p>}
                         </div>
                     </CardContent>
                 </Card>

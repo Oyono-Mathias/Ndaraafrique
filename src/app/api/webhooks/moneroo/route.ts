@@ -4,74 +4,108 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { sendUserNotification } from '@/actions/notificationActions';
 
 /**
- * @fileOverview Webhook pour recevoir les notifications de paiement de Moneroo.
- * Active automatiquement le cours pour l'étudiant et envoie une notification de succès.
+ * @fileOverview Webhook Moneroo mis à jour pour gérer l'affiliation et le parrainage.
+ * ✅ AMBASSADEURS : Calcule et crédite la commission si un affiliateId est présent.
+ * ✅ PARRAINAGE : Crédite le parrain si l'instructeur a été invité par un autre formateur.
  */
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    
-    // Structure type Moneroo : body.data.status, body.data.metadata
     const { status, metadata, id: transactionId, amount, currency_code } = body.data || {};
 
     if (status === 'successful') {
-      const { userId, courseId } = metadata || {};
+      const { userId, courseId, affiliateId } = metadata || {};
 
       if (!userId || !courseId) {
-        console.error('Moneroo Webhook: Missing metadata', metadata);
-        return NextResponse.json({ error: 'Missing metadata in transaction' }, { status: 400 });
+        return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
       }
 
       const db = getAdminDb();
-      const enrollmentId = `${userId}_${courseId}`;
-      
-      // 1. Récupération des infos du cours pour enrichir l'inscription
-      const courseDoc = await db.collection('courses').doc(courseId).get();
-      const courseData = courseDoc.data();
+      const batch = db.batch();
 
-      // 2. Création/Mise à jour de l'inscription
-      const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
-      await enrollmentRef.set({
+      // 1. Récupération des données critiques
+      const [courseDoc, settingsDoc] = await Promise.all([
+        db.collection('courses').doc(courseId).get(),
+        db.collection('settings').doc('global').get()
+      ]);
+
+      const courseData = courseDoc.data();
+      const settings = settingsDoc.data();
+      const instructorId = courseData?.instructorId;
+
+      // 2. Création de l'inscription
+      const enrollmentRef = db.collection('enrollments').doc(`${userId}_${courseId}`);
+      batch.set(enrollmentRef, {
         studentId: userId,
         courseId: courseId,
-        instructorId: courseData?.instructorId || '',
+        instructorId: instructorId || '',
         status: 'active', 
         enrollmentDate: FieldValue.serverTimestamp(),
         lastAccessedAt: FieldValue.serverTimestamp(),
         progress: 0,
         priceAtEnrollment: amount || 0,
-        currency: currency_code || 'XOF',
         transactionId: transactionId,
+        affiliateId: affiliateId || null,
         enrollmentType: 'paid'
       }, { merge: true });
 
-      // 3. Notification In-App de succès
+      // 3. LOGIQUE AMBASSADEUR (SI COURS NDARA)
+      if (affiliateId && courseData?.isPlatformOwned && settings?.commercial?.affiliateEnabled) {
+          const affPerc = settings.commercial.affiliatePercentage || 10;
+          const affCommission = (amount * affPerc) / 100;
+          
+          const affiliateRef = db.collection('users').doc(affiliateId);
+          batch.update(affiliateRef, {
+              affiliateBalance: FieldValue.increment(affCommission)
+          });
+
+          // Notifier l'ambassadeur
+          await sendUserNotification(affiliateId, {
+              text: `Félicitations ! Vous avez gagné ${affCommission.toLocaleString('fr-FR')} XOF de commission ambassadeur.`,
+              type: 'success',
+              link: '/student/dashboard'
+          });
+      }
+
+      // 4. LOGIQUE PARRAINAGE FORMATEUR
+      if (instructorId && settings?.commercial?.referralEnabled) {
+          const instructorDoc = await db.collection('users').doc(instructorId).get();
+          const sponsorId = instructorDoc.data()?.referredBy;
+
+          if (sponsorId) {
+              const refPerc = settings.commercial.referralPercentage || 5;
+              const refCommission = (amount * refPerc) / 100;
+
+              const sponsorRef = db.collection('users').doc(sponsorId);
+              batch.update(sponsorRef, {
+                  referralBalance: FieldValue.increment(refCommission)
+              });
+
+              await sendUserNotification(sponsorId, {
+                  text: `Gain de parrainage : +${refCommission.toLocaleString('fr-FR')} XOF sur une vente de votre filleul.`,
+                  type: 'success',
+                  link: '/instructor/dashboard'
+              });
+          }
+      }
+
+      await batch.commit();
+
+      // Notifications et Logs d'activité
       await sendUserNotification(userId, {
-        text: `Bienvenue dans la famille Ndara ! Votre formation "${courseData?.title || 'demandée'}" est maintenant débloquée.`,
+        text: `Bienvenue ! Votre formation "${courseData?.title || 'demandée'}" est prête.`,
         link: `/student/courses/${courseId}`,
         type: 'success'
       });
 
-      // 4. Log de l'activité
-      const activityRef = db.collection('users').doc(userId).collection('activity').doc();
-      await activityRef.set({
-        userId,
-        type: 'enrollment',
-        title: 'Nouvelle formation débloquée',
-        description: `Vous avez rejoint "${courseData?.title}"`,
-        link: `/student/courses/${courseId}`,
-        read: false,
-        createdAt: FieldValue.serverTimestamp()
-      });
-
-      return NextResponse.json({ received: true, activated: true });
+      return NextResponse.json({ received: true, processed: true });
     }
 
-    return NextResponse.json({ received: true, activated: false });
+    return NextResponse.json({ received: true });
 
   } catch (error: any) {
     console.error('Moneroo Webhook Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
