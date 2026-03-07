@@ -2,13 +2,13 @@
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ FONCTIONNEL : Filtre "Bourse du Savoir" pour les investisseurs.
+ * ✅ FONCTIONNEL : Filtre "Bourse du Savoir" pour les investisseurs et visiteurs.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2, BadgeEuro } from 'lucide-react';
+import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2, BadgeEuro, Sparkles } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -114,38 +114,45 @@ export default function SearchPage() {
           <button 
             onClick={() => setShowOnlyResale(!showOnlyResale)}
             className={cn(
-                "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all",
-                showOnlyResale ? "bg-amber-500 text-black" : "text-muted-foreground hover:text-primary"
+                "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all flex items-center gap-1",
+                showOnlyResale ? "bg-amber-500 text-black shadow-lg" : "text-muted-foreground hover:text-primary"
             )}
-            title="Afficher uniquement les licences à vendre"
+            title="Afficher uniquement la Bourse du Savoir"
           >
             <BadgeEuro className="h-5 w-5" />
+            {showOnlyResale && <span className="text-[10px] font-black uppercase hidden sm:inline">Bourse Active</span>}
           </button>
         </div>
 
-        <Link href="/student/cart" className="relative group">
-            <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-accent">
-                <ShoppingCart className="h-6 w-6" />
-                {cartCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in">
-                        {cartCount}
-                    </span>
-                )}
-            </Button>
-        </Link>
+        {user && (
+            <Link href="/student/cart" className="relative group">
+                <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-accent">
+                    <ShoppingCart className="h-6 w-6" />
+                    {cartCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in">
+                            {cartCount}
+                        </span>
+                    )}
+                </Button>
+            </Link>
+        )}
       </header>
 
       <main className="px-4 pt-6">
         {showOnlyResale && (
-            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-2">
-                <div className="flex items-center gap-3">
-                    <BadgeEuro className="h-6 w-6 text-amber-500" />
+            <div className="mb-8 p-6 bg-gradient-to-r from-amber-500/10 to-primary/10 border border-amber-500/20 rounded-3xl flex items-center justify-between animate-in slide-in-from-top-2 shadow-2xl">
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-amber-500/20 rounded-2xl">
+                        <BadgeEuro className="h-8 w-8 text-amber-500" />
+                    </div>
                     <div>
-                        <p className="text-sm font-bold text-white uppercase tracking-tight">Mode Bourse du Savoir</p>
-                        <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Affichage des licences de revente</p>
+                        <p className="text-lg font-black text-white uppercase tracking-tight">Bourse du Savoir</p>
+                        <p className="text-xs text-amber-500 font-bold uppercase tracking-widest">Affichage exclusif des licences de revente</p>
                     </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setShowOnlyResale(false)} className="h-8 text-xs font-bold text-slate-400 hover:text-white uppercase tracking-tighter">Réinitialiser</Button>
+                <Button variant="outline" size="sm" onClick={() => setShowOnlyResale(false)} className="h-10 border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-black font-black uppercase text-[10px]">
+                    Quitter le mode Bourse
+                </Button>
             </div>
         )}
 
@@ -191,8 +198,9 @@ export default function SearchPage() {
         ) : (
           <div className="space-y-4">
             <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[13px] font-black text-foreground uppercase tracking-[0.1em]">
-                    {filteredResults.length} RÉSULTATS TROUVÉS
+                <h2 className="text-[13px] font-black text-foreground uppercase tracking-[0.1em] flex items-center gap-2">
+                    {showOnlyResale && <Sparkles className="h-4 w-4 text-amber-500" />}
+                    {filteredResults.length} {showOnlyResale ? 'OPPORTUNITÉS' : 'RÉSULTATS'}
                 </h2>
                 {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
             </div>
@@ -202,7 +210,7 @@ export default function SearchPage() {
                 {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl bg-card" />)}
               </div>
             ) : filteredResults.length > 0 ? (
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-3">
                 {filteredResults.map(course => (
                   <CourseCard 
                     key={course.id} 

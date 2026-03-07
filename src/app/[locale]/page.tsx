@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Version Intelligente & Adaptative.
- * ✅ VISION CEO : Mise en avant de la Bourse du Savoir dans la Navbar.
+ * @fileOverview Landing Page Ndara Afrique - Version Bourse du Savoir.
+ * ✅ VISION CEO : Mise en avant de la dimension "Investissement" pour les visiteurs.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -44,8 +44,8 @@ const Navbar = () => {
                 
                 <div className="hidden md:flex space-x-8 items-center">
                     <a href="#formations" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Formations</a>
-                    <Link href={`/${locale}/investir`} className="flex items-center gap-1.5 text-slate-600 hover:text-amber-600 font-bold transition uppercase tracking-widest text-[10px]">
-                        <BadgeEuro className="h-3 w-3" />
+                    <Link href={`/${locale}/investir`} className="flex items-center gap-1.5 text-slate-600 hover:text-amber-600 font-black transition uppercase tracking-widest text-[10px] animate-pulse">
+                        <BadgeEuro className="h-3 w-3 text-amber-500" />
                         Bourse du Savoir
                     </Link>
                     <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Tarifs</Link>
@@ -95,7 +95,7 @@ const Navbar = () => {
                                 </div>
                                 <div className="flex flex-col gap-4 mt-8">
                                     <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600">Formations</a></SheetClose>
-                                    <SheetClose asChild><Link href={`/${locale}/investir`} className="text-lg font-bold text-amber-600 flex items-center gap-2"><BadgeEuro className="h-5 w-5" /> Investir</Link></SheetClose>
+                                    <SheetClose asChild><Link href={`/${locale}/investir`} className="text-lg font-bold text-amber-600 flex items-center gap-2"><BadgeEuro className="h-5 w-5" /> Bourse du Savoir</Link></SheetClose>
                                     <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600">Tarifs</Link></SheetClose>
                                     <hr className="border-slate-100 my-2" />
                                     {user ? (
@@ -211,7 +211,7 @@ export default function LandingPage() {
                 <div className="text-center lg:text-left animate-fade-in-up">
                     <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-brand-secondary text-sm font-semibold mb-6">
                         <span className="w-2 h-2 rounded-full bg-brand-primary mr-2 animate-pulse"></span>
-                        {user ? `Content de vous revoir, ${currentUser?.fullName?.split(' ')[0]} !` : "Nouvelle session disponible"}
+                        {user ? `Content de vous revoir, ${currentUser?.fullName?.split(' ')[0]} !` : "L'excellence africaine par le savoir"}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-dark leading-tight mb-6 uppercase tracking-tight">
                         {landingPageSettings?.heroTitle || "Maîtrisez l'Excellence Panafricaine"}
@@ -242,11 +242,10 @@ export default function LandingPage() {
                                 )}
                             </>
                         )}
-                        {(landingPageSettings?.showHeroExplore ?? true) && (
-                            <Link href={`/${locale}/search`} className="px-10 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
-                                Explorer le catalogue
-                            </Link>
-                        )}
+                        <Link href={`/${locale}/investir`} className="px-10 py-4 bg-white text-amber-600 border-2 border-amber-100 rounded-full font-black uppercase text-xs tracking-widest hover:bg-amber-50 transition flex items-center justify-center gap-2 active:scale-95">
+                            <BadgeEuro className="w-5 h-5" />
+                            Devenir Propriétaire
+                        </Link>
                     </div>
                     
                     <div className="mt-12 flex items-center justify-center lg:justify-start gap-8 text-slate-500 text-[10px] font-black uppercase tracking-widest">
