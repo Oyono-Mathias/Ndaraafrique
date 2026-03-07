@@ -3,6 +3,7 @@
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
+ * ✅ GESTION REDIRECTION : Supporte le paramètre 'redirect' pour ramener l'utilisateur là où il était.
  * ✅ GESTION PARRAINAGE : Capture du paramètre 'ref' pour lier le nouveau formateur à son parrain.
  */
 
@@ -73,7 +74,8 @@ export default function LoginClient() {
   const locale = useLocale();
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
-  const referralId = searchParams.get('ref'); // 🤝 Capture du parrain
+  const referralId = searchParams.get('ref'); 
+  const redirectUrl = searchParams.get('redirect'); // ✅ Capture de l'URL de redirection
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
@@ -95,10 +97,16 @@ export default function LoginClient() {
 
   useEffect(() => {
     if (!isUserLoading && user) {
+      // ✅ LOGIQUE CEO : Priorité au redirect param pour le partage social
+      if (redirectUrl) {
+          router.push(decodeURIComponent(redirectUrl));
+          return;
+      }
+
       const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
       router.push(`/${locale}${target}`);
     }
-  }, [user, isUserLoading, role, router, locale]);
+  }, [user, isUserLoading, role, router, locale, redirectUrl]);
 
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
@@ -137,7 +145,7 @@ export default function LoginClient() {
         preferredLanguage: locale as 'fr' | 'en',
         isOnline: true,
         lastSeen: serverTimestamp(),
-        referredBy: referralId || null, // ✅ Sauvegarde du lien de parrainage permanent
+        referredBy: referralId || null,
       };
 
       try {
@@ -186,7 +194,7 @@ export default function LoginClient() {
           isOnline: true,
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
-          referredBy: referralId || null, // ✅ Support parrainage aussi via Google Login
+          referredBy: referralId || null,
         };
         await setDoc(userRef, userData);
       }
@@ -206,9 +214,9 @@ export default function LoginClient() {
                   <Image src="/logo.png" alt="Ndara Afrique" width={64} height={64} className="rounded-full shadow-2xl" />
                 </Link>
                 <h1 className="text-2xl font-black text-white uppercase tracking-tight">Ndara Afrique</h1>
-                {referralId && (
+                {redirectUrl && (
                     <div className="mt-4 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full animate-in zoom-in duration-500">
-                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Vous avez été invité par un expert</p>
+                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Connectez-vous pour voir cette formation</p>
                     </div>
                 )}
             </div>
