@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
- * ✅ RÉSOLU : Image Hero visible sur mobile.
+ * ✅ RÉSOLU : Image Hero remplacée par un visuel HD garanti.
  * ✅ RÉSOLU : Structure JSX ultra-propre pour le build.
  */
 
@@ -207,7 +207,7 @@ export default function LandingPage() {
                     <div className="absolute -inset-4 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl blur-3xl opacity-10"></div>
                     <div className="relative aspect-video rounded-3xl shadow-2xl border border-white/50 overflow-hidden transform hover:scale-[1.01] transition duration-500 bg-slate-200">
                         <Image 
-                            src="https://ndara-assets.b-cdn.net/assets/students-collaboration.jpg" 
+                            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop" 
                             alt="Étudiants Ndara Afrique" 
                             fill 
                             className="object-cover"
