@@ -3,7 +3,7 @@
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
- * ✅ RÉSOLU : Redirection sécurisée vers Landing Page (/fr) si non-authentifié.
+ * ✅ VISION CEO : Unification de l'expérience connecté vs visiteur.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -102,18 +102,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (loading || !mounted) return;
 
     if (!user) {
-      // ✅ Security: Redirect to Landing Page with locale prefix if trying to access private area
+      // ✅ Sécurité : Redirection vers Landing Page locale si tentative d'accès zone privée
       if (!isPublicPage && !isAuthPage) {
           router.push(`/${locale}`);
       }
       return;
     }
 
-    if (user && cleanPath === '/') {
-        const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-        router.push(`/${locale}${target}`);
-        return;
-    }
+    // ✅ NOUVELLE LOGIQUE CEO : Si connecté sur /, on laisse l'utilisateur choisir mais on lui montre un accueil adapté.
+    // Pas de redirection forcée automatique depuis la Landing Page pour permettre la découverte.
 
     if (cleanPath === '/account' || cleanPath === '/search' || isPublicPage) return;
 

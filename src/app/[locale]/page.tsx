@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
- * ✅ RÉSOLU : Gestion de la visibilité des boutons via les paramètres admin.
- * ✅ RÉSOLU : Suppression de la mention "Compétences de Demain".
+ * @fileOverview Landing Page Ndara Afrique - Version Intelligente & Adaptative.
+ * ✅ VISION CEO : Si l'utilisateur est connecté, la page s'adapte pour lui proposer de reprendre son cours.
+ * ✅ DYNAMIQUE : Intégration des recommandations personnalisées directement sur l'accueil.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -11,7 +11,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, d
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2 } from 'lucide-react';
+import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2, PlayCircle, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -20,10 +20,12 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
+import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { useDoc } from '@/firebase';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Navbar = () => {
-    const { user, role } = useRole();
+    const { user, currentUser, role } = useRole();
     const locale = useLocale();
     
     const dashboardUrl = useMemo(() => {
@@ -48,9 +50,16 @@ const Navbar = () => {
 
                 <div className="hidden md:flex items-center space-x-4">
                     {user ? (
-                        <Link href={`/${locale}${dashboardUrl}`} className="text-brand-dark font-black uppercase text-[10px] tracking-widest hover:text-brand-primary transition bg-slate-100 px-4 py-2 rounded-full">
-                            Mon Espace
-                        </Link>
+                        <div className="flex items-center gap-4">
+                            <Link href={`/${locale}${dashboardUrl}`} className="text-brand-dark font-black uppercase text-[10px] tracking-widest hover:text-brand-primary transition bg-slate-100 px-4 py-2 rounded-full flex items-center gap-2">
+                                <LayoutDashboardIcon className="w-3 h-3" />
+                                Mon Espace
+                            </Link>
+                            <Avatar className="h-10 w-10 border-2 border-brand-primary/20">
+                                <AvatarImage src={currentUser?.profilePictureURL} />
+                                <AvatarFallback className="bg-slate-100 text-brand-dark font-bold">{currentUser?.fullName?.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                        </div>
                     ) : (
                         <>
                             <Link href={`/${locale}/login`} className="text-[10px] font-black uppercase tracking-widest text-brand-dark hover:text-brand-primary transition">
@@ -104,10 +113,32 @@ const Navbar = () => {
     );
 };
 
+function LayoutDashboardIcon(props: any) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="7" height="9" x="3" y="3" rx="1" />
+      <rect width="7" height="5" x="14" y="3" rx="1" />
+      <rect width="7" height="9" x="14" y="12" rx="1" />
+      <rect width="7" height="5" x="3" y="16" rx="1" />
+    </svg>
+  );
+}
+
 export default function LandingPage() {
   const db = getFirestore();
   const locale = useLocale();
-  const { user, role } = useRole();
+  const { user, currentUser, role } = useRole();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
@@ -165,6 +196,7 @@ export default function LandingPage() {
     <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30 font-sans">
       <Navbar />
       
+      {/* --- HERO SECTION --- */}
       <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden px-6">
         <div className="absolute inset-0 z-0">
             <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
@@ -176,7 +208,7 @@ export default function LandingPage() {
                 <div className="text-center lg:text-left animate-fade-in-up">
                     <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-brand-secondary text-sm font-semibold mb-6">
                         <span className="w-2 h-2 rounded-full bg-brand-primary mr-2 animate-pulse"></span>
-                        Nouvelle session disponible
+                        {user ? `Content de vous revoir, ${currentUser?.fullName?.split(' ')[0]} !` : "Nouvelle session disponible"}
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-dark leading-tight mb-6 uppercase tracking-tight">
                         {landingPageSettings?.heroTitle || "Maîtrisez l'Excellence Panafricaine"}
@@ -190,16 +222,26 @@ export default function LandingPage() {
                     <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
                         Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière.
                     </p>
+                    
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        {(landingPageSettings?.showHeroCta ?? true) && (
-                            <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
-                                {landingPageSettings?.heroCtaText || "Commencer à apprendre"}
-                                <ChevronsRight className="w-5 h-5" />
+                        {user ? (
+                            <Link href={`/${locale}${dashboardUrl}`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 active:scale-95">
+                                <PlayCircle className="w-5 h-5" />
+                                Reprendre ma formation
                             </Link>
+                        ) : (
+                            <>
+                                {(landingPageSettings?.showHeroCta ?? true) && (
+                                    <Link href={`/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
+                                        {landingPageSettings?.heroCtaText || "Commencer à apprendre"}
+                                        <ChevronsRight className="w-5 h-5" />
+                                    </Link>
+                                )}
+                            </>
                         )}
                         {(landingPageSettings?.showHeroExplore ?? true) && (
                             <Link href={`/${locale}/search`} className="px-10 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
-                                Explorer les cours
+                                Explorer le catalogue
                             </Link>
                         )}
                     </div>
@@ -242,12 +284,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- RECOMMANDATIONS PERSONNALISÉES (CONNECTÉ UNIQUEMENT) --- */}
+      {user && (
+          <section className="py-12 bg-white border-y border-slate-100 px-6">
+              <div className="max-w-7xl mx-auto">
+                  <div className="flex items-center gap-3 mb-8">
+                      <div className="p-2 bg-brand-primary/10 rounded-lg">
+                          <Sparkles className="w-5 h-5 text-brand-primary" />
+                      </div>
+                      <h2 className="text-xl font-black text-brand-dark uppercase tracking-tight">Spécialement pour vous, {currentUser?.fullName?.split(' ')[0]}</h2>
+                  </div>
+                  <RecommendedCourses />
+              </div>
+          </section>
+      )}
+
+      {/* --- STATS SECTION --- */}
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
             <Stats />
         </div>
       </section>
 
+      {/* --- MÉTHODOLOGIE --- */}
       <section id="methodologie" className="py-24 bg-white relative px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
@@ -284,12 +343,14 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- TÉMOIGNAGES --- */}
       <section className="bg-slate-50 border-t border-slate-200 px-6 md:px-12">
         <div className="max-w-7xl mx-auto">
             <TestimonialsSection />
         </div>
       </section>
 
+      {/* --- CATALOGUE --- */}
       <section id="formations" className="py-24 bg-white relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
@@ -326,20 +387,29 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- FINAL CTA --- */}
       <section className="py-32 relative overflow-hidden bg-brand-dark px-6">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
         
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-10">
-            <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-tight">{landingPageSettings?.finalCtaTitle || "Prêt à devenir un expert ?"}</h2>
+            <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-tight">{user ? "Prêt à continuer l'aventure ?" : (landingPageSettings?.finalCtaTitle || "Prêt à devenir un expert ?")}</h2>
             <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-                {landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic."}
+                {user ? "Votre progression est sauvegardée. Vos certificats vous attendent." : (landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic.")}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
-                {(landingPageSettings?.showFinalCta ?? true) && (
-                    <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
-                        {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
+                {user ? (
+                    <Link href={`/${locale}${dashboardUrl}`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
+                        Accéder à mon tableau de bord
                     </Link>
+                ) : (
+                    <>
+                        {(landingPageSettings?.showFinalCta ?? true) && (
+                            <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
+                                {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
+                            </Link>
+                        )}
+                    </>
                 )}
                 {(landingPageSettings?.showFinalContact ?? true) && (
                     <Link href={`/${locale}/student/support`} className="px-12 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
