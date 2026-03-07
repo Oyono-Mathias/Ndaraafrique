@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -19,8 +19,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { 
   Settings as SettingsIcon, 
-  Globe, 
-  ShieldCheck, 
   Loader2, 
   Save,
   Youtube,
@@ -30,12 +28,8 @@ import {
   Plus,
   Trash2,
   Sparkles,
-  LayoutGrid,
-  FileText,
   Megaphone,
   Scale,
-  Smartphone,
-  Info,
   Wrench,
   History,
   Eye,
@@ -54,21 +48,16 @@ const teamMemberSchema = z.object({
 });
 
 const settingsSchema = z.object({
-  // Général
   siteName: z.string().min(2, "Le nom est trop court."),
   logoUrl: z.string().url("URL invalide.").or(z.literal('')),
   contactEmail: z.string().email("Email invalide."),
   commission: z.coerce.number().min(0).max(100),
-  
-  // Plateforme
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
   bunnyLibraryId: z.string().optional(),
-
-  // Landing Page
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
   landingHeroImageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
@@ -85,8 +74,6 @@ const settingsSchema = z.object({
   finalCtaSubtitle: z.string().optional(),
   finalCtaButtonText: z.string().optional(),
   finalCta_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
-
-  // About Page
   aboutMainTitle: z.string().optional(),
   aboutMainSubtitle: z.string().optional(),
   historyTitle: z.string().optional(),
@@ -97,8 +84,6 @@ const settingsSchema = z.object({
   visionSango: z.string().optional(),
   aboutCtaTitle: z.string().optional(),
   teamMembers: z.array(teamMemberSchema).optional(),
-
-  // Légal
   termsOfService: z.string().optional(),
   privacyPolicy: z.string().optional(),
 });
@@ -139,7 +124,6 @@ export default function AdminSettingsPage() {
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
           bunnyLibraryId: data.platform?.bunnyLibraryId || '',
-          
           landingHeroTitle: data.content?.landingPage?.heroTitle || "",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
           landingHeroImageUrl: data.content?.landingPage?.heroImageUrl || "",
@@ -156,7 +140,6 @@ export default function AdminSettingsPage() {
           finalCtaSubtitle: data.content?.landingPage?.finalCtaSubtitle || "",
           finalCtaButtonText: data.content?.landingPage?.finalCtaButtonText || "",
           finalCta_imageUrl: data.content?.landingPage?.finalCta_imageUrl || "",
-
           aboutMainTitle: data.content?.aboutPage?.mainTitle || "",
           aboutMainSubtitle: data.content?.aboutPage?.mainSubtitle || "",
           historyTitle: data.content?.aboutPage?.historyTitle || "",
@@ -167,7 +150,6 @@ export default function AdminSettingsPage() {
           visionSango: data.content?.aboutPage?.visionSango || "",
           aboutCtaTitle: data.content?.aboutPage?.ctaTitle || "",
           teamMembers: data.content?.aboutPage?.teamMembers || [],
-
           termsOfService: data.legal?.termsOfService || '',
           privacyPolicy: data.legal?.privacyPolicy || '',
         });
@@ -177,7 +159,7 @@ export default function AdminSettingsPage() {
     return () => unsubscribe();
   }, [db, form]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: keyof SettingsValues | string) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: string) => {
     const file = event.target.files?.[0];
     if (!file || !currentUser) return;
 
@@ -288,7 +270,13 @@ export default function AdminSettingsPage() {
     setIsSaving(false);
   };
 
-  if (isLoading) return <div className="flex h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 pb-24">
@@ -530,7 +518,7 @@ export default function AdminSettingsPage() {
 
                   <div className="pt-6 border-t border-white/5 space-y-6">
                     <div className="flex items-center gap-2 text-primary">
-                        <Eye className="h-4 w-4" />
+                        <History className="h-4 w-4" />
                         <h3 className="text-xs font-black uppercase tracking-widest">Notre Vision</h3>
                     </div>
                     <FormField control={form.control} name="visionTitle" render={({ field }) => (
@@ -660,8 +648,17 @@ export default function AdminSettingsPage() {
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-40 safe-area-pb md:relative md:bg-transparent md:border-none md:p-0">
             <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/30 active:scale-[0.98] transition-all">
-                {isSaving ? <Loader2 className="mr-3 h-5 w-5 animate-spin" /> : <Save className="mr-3 h-5 w-5" />}
-                Enregistrer la configuration globale
+                {isSaving ? (
+                  <div className="flex items-center gap-3">
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    <span>Sauvegarde...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-3">
+                    <Save className="h-5 w-5" />
+                    <span>Enregistrer la configuration globale</span>
+                  </div>
+                )}
             </Button>
           </div>
         </form>
