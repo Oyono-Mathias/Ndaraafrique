@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Landing Page Ndara Afrique - Version Bourse du Savoir.
- * ✅ VISION CEO : Mise en avant de la dimension "Investissement" pour les visiteurs.
+ * @fileOverview Landing Page Ndara Afrique - Version Bourse du Savoir & Mobile-Optimized.
+ * ✅ VISION CEO : Expérience Android-First fluide et mise en avant de l'investissement.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -10,7 +10,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, d
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2, PlayCircle, Sparkles, BadgeEuro, Landmark } from 'lucide-react';
+import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2, PlayCircle, Sparkles, BadgeEuro, Landmark, LayoutDashboard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -22,7 +22,6 @@ import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 
 const Navbar = () => {
     const { user, currentUser, role } = useRole();
@@ -35,31 +34,31 @@ const Navbar = () => {
     }, [role]);
 
     return (
-        <nav className="fixed w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 h-20 flex items-center">
+        <nav className="fixed w-full z-50 bg-white/90 backdrop-blur-lg border-b border-slate-200 h-16 md:h-20 flex items-center">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex justify-between items-center">
                 <Link href={`/${locale}`} className="flex items-center gap-2 group">
-                    <div className="w-8 h-8 bg-gradient-to-br from-brand-primary to-brand-secondary rounded-lg flex items-center justify-center text-white font-bold shadow-lg">N</div>
-                    <span className="text-xl font-bold text-brand-dark tracking-tight">Ndara <span className="text-brand-primary">Afrique</span></span>
+                    <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold shadow-lg">N</div>
+                    <span className="text-lg md:text-xl font-black text-brand-dark tracking-tighter uppercase">Ndara <span className="text-brand-primary">Afrique</span></span>
                 </Link>
                 
                 <div className="hidden md:flex space-x-8 items-center">
-                    <a href="#formations" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Formations</a>
+                    <a href="#formations" className="text-slate-600 hover:text-brand-primary font-bold transition uppercase tracking-widest text-[10px]">Formations</a>
                     <Link href={`/${locale}/investir`} className="flex items-center gap-1.5 text-slate-600 hover:text-amber-600 font-black transition uppercase tracking-widest text-[10px] animate-pulse">
-                        <BadgeEuro className="h-3 w-3 text-amber-500" />
+                        <BadgeEuro className="h-3.5 w-3.5 text-amber-500" />
                         Bourse du Savoir
                     </Link>
-                    <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Tarifs</Link>
+                    <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-bold transition uppercase tracking-widest text-[10px]">Tarifs</Link>
                 </div>
 
                 <div className="hidden md:flex items-center space-x-4">
                     {user ? (
                         <div className="flex items-center gap-4">
                             <Link href={`/${locale}${dashboardUrl}`} className="text-brand-dark font-black uppercase text-[10px] tracking-widest hover:text-brand-primary transition bg-slate-100 px-4 py-2 rounded-full flex items-center gap-2">
-                                <LayoutDashboardIcon className="w-3 h-3" />
+                                <LayoutDashboard className="w-3.5 h-3.5" />
                                 Mon Espace
                             </Link>
-                            <Avatar className="h-10 w-10 border-2 border-brand-primary/20">
-                                <AvatarImage src={currentUser?.profilePictureURL} />
+                            <Avatar className="h-10 w-10 border-2 border-brand-primary/20 shadow-sm">
+                                <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
                                 <AvatarFallback className="bg-slate-100 text-brand-dark font-bold">{currentUser?.fullName?.charAt(0)}</AvatarFallback>
                             </Avatar>
                         </div>
@@ -75,36 +74,64 @@ const Navbar = () => {
                     )}
                 </div>
 
-                <div className="md:hidden">
+                <div className="md:hidden flex items-center gap-3">
+                    {!user && (
+                        <Link href={`/${locale}/login`} className="text-[10px] font-black uppercase tracking-widest text-brand-primary">Connexion</Link>
+                    )}
                     <Sheet>
                         <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-slate-600">
+                            <Button variant="ghost" size="icon" className="text-slate-600 h-10 w-10 rounded-full bg-slate-50">
                                 <Menu className="h-6 w-6" />
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="right" className="bg-white border-l border-slate-200 p-0 w-[280px] z-[10005]">
-                            <div className="p-6 flex flex-col gap-6 h-full">
+                        <SheetContent side="right" className="bg-white border-l-0 p-0 w-[85%] z-[10005]">
+                            <div className="p-8 flex flex-col gap-8 h-full bg-grainy">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center text-white font-bold">N</div>
-                                        <span className="text-xl font-bold text-brand-dark">Ndara</span>
+                                        <span className="text-xl font-black text-brand-dark uppercase tracking-tighter">Ndara</span>
                                     </div>
                                     <SheetClose asChild>
-                                        <Button variant="ghost" size="icon"><X className="h-5 w-5" /></Button>
+                                        <Button variant="ghost" size="icon" className="rounded-full bg-slate-100"><X className="h-5 w-5" /></Button>
                                     </SheetClose>
                                 </div>
-                                <div className="flex flex-col gap-4 mt-8">
-                                    <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600">Formations</a></SheetClose>
-                                    <SheetClose asChild><Link href={`/${locale}/investir`} className="text-lg font-bold text-amber-600 flex items-center gap-2"><BadgeEuro className="h-5 w-5" /> Bourse du Savoir</Link></SheetClose>
-                                    <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600">Tarifs</Link></SheetClose>
-                                    <hr className="border-slate-100 my-2" />
+                                <div className="flex flex-col gap-2 mt-4">
+                                    <SheetClose asChild>
+                                        <Link href={`/${locale}/search`} className="text-lg font-black uppercase tracking-tight text-slate-800 p-4 bg-slate-50 rounded-2xl flex items-center justify-between">
+                                            Explorer les cours
+                                            <ChevronsRight className="h-5 w-5 text-slate-300" />
+                                        </Link>
+                                    </SheetClose>
+                                    <SheetClose asChild>
+                                        <Link href={`/${locale}/investir`} className="text-lg font-black uppercase tracking-tight text-amber-600 p-4 bg-amber-50 rounded-2xl flex items-center justify-between border border-amber-100">
+                                            <span className="flex items-center gap-3">
+                                                <BadgeEuro className="h-6 w-6" />
+                                                Bourse du Savoir
+                                            </span>
+                                            <ChevronsRight className="h-5 w-5" />
+                                        </Link>
+                                    </SheetClose>
+                                    <SheetClose asChild>
+                                        <Link href={`/${locale}/abonnements`} className="text-lg font-black uppercase tracking-tight text-slate-800 p-4 bg-slate-50 rounded-2xl flex items-center justify-between">
+                                            Nos Tarifs
+                                            <ChevronsRight className="h-5 w-5 text-slate-300" />
+                                        </Link>
+                                    </SheetClose>
+                                </div>
+
+                                <div className="mt-auto space-y-4">
                                     {user ? (
-                                        <SheetClose asChild><Link href={`/${locale}${dashboardUrl}`} className="text-lg font-bold text-brand-primary">Tableau de bord</Link></SheetClose>
+                                        <SheetClose asChild>
+                                            <Link href={`/${locale}${dashboardUrl}`} className="w-full h-16 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center shadow-xl shadow-emerald-500/20">
+                                                Accéder à mon espace
+                                            </Link>
+                                        </SheetClose>
                                     ) : (
-                                        <>
-                                            <SheetClose asChild><Link href={`/${locale}/login`} className="text-lg font-bold text-slate-600">Connexion</Link></SheetClose>
-                                            <SheetClose asChild><Link href={`/${locale}/login?tab=register`} className="text-lg font-bold text-brand-primary">S'inscrire</Link></SheetClose>
-                                        </>
+                                        <SheetClose asChild>
+                                            <Link href={`/${locale}/login?tab=register`} className="w-full h-16 bg-brand-dark text-white rounded-2xl font-black uppercase text-xs tracking-widest flex items-center justify-center shadow-xl shadow-brand-dark/20">
+                                                Créer mon compte
+                                            </Link>
+                                        </SheetClose>
                                     )}
                                 </div>
                             </div>
@@ -115,28 +142,6 @@ const Navbar = () => {
         </nav>
     );
 };
-
-function LayoutDashboardIcon(props: any) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect width="7" height="9" x="3" y="3" rx="1" />
-      <rect width="7" height="5" x="14" y="3" rx="1" />
-      <rect width="7" height="9" x="14" y="12" rx="1" />
-      <rect width="7" height="5" x="3" y="16" rx="1" />
-    </svg>
-  );
-}
 
 export default function LandingPage() {
   const db = getFirestore();
@@ -196,73 +201,73 @@ export default function LandingPage() {
   }, [courses]);
 
   return (
-    <div className="bg-slate-50 text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30 font-sans">
+    <div className="bg-white text-slate-800 antialiased overflow-x-hidden selection:bg-brand-primary/30 font-sans">
       <Navbar />
       
       {/* --- HERO SECTION --- */}
-      <section className="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden px-6">
+      <section className="relative pt-24 pb-16 md:pt-48 md:pb-32 overflow-hidden px-4 md:px-6">
         <div className="absolute inset-0 z-0">
-            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-blue-50 to-transparent opacity-50"></div>
-            <div className="absolute bottom-0 left-0 w-1/3 h-1/2 bg-gradient-to-t from-emerald-50 to-transparent opacity-50"></div>
+            <div className="absolute top-0 right-0 w-full md:w-1/2 h-full bg-gradient-to-l from-emerald-50/50 to-transparent opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-full md:w-1/3 h-1/2 bg-gradient-to-t from-blue-50/50 to-transparent opacity-50"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
-                <div className="text-center lg:text-left animate-fade-in-up">
-                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-brand-secondary text-sm font-semibold mb-6">
+                <div className="text-center lg:text-left animate-fade-in-up px-2">
+                    <div className="inline-flex items-center px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[10px] font-black uppercase tracking-widest mb-6">
                         <span className="w-2 h-2 rounded-full bg-brand-primary mr-2 animate-pulse"></span>
-                        {user ? `Content de vous revoir, ${currentUser?.fullName?.split(' ')[0]} !` : "L'excellence africaine par le savoir"}
+                        {user ? `Bara ala, ${currentUser?.fullName?.split(' ')[0]} !` : "L'excellence africaine par le savoir"}
                     </div>
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-dark leading-tight mb-6 uppercase tracking-tight">
+                    <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-brand-dark leading-[1.1] mb-6 uppercase tracking-tighter">
                         {landingPageSettings?.heroTitle || "Maîtrisez l'Excellence Panafricaine"}
                         {landingPageSettings?.heroSubtitle && (
                             <>
                                 <br />
-                                <span className="gradient-text">{landingPageSettings.heroSubtitle}</span>
+                                <span className="text-brand-primary">{landingPageSettings.heroSubtitle}</span>
                             </>
                         )}
                     </h1>
-                    <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                        Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière.
+                    <p className="text-base md:text-lg text-slate-500 mb-8 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+                        Rejoignez la plateforme leader pour vous former aux métiers d'avenir. Apprenez avec les meilleurs experts et propulsez votre carrière dès aujourd'hui.
                     </p>
                     
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         {user ? (
-                            <Link href={`/${locale}${dashboardUrl}`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 active:scale-95">
+                            <Link href={`/${locale}${dashboardUrl}`} className="w-full sm:w-auto px-10 py-5 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-3 active:scale-95">
                                 <PlayCircle className="w-5 h-5" />
                                 Reprendre ma formation
                             </Link>
                         ) : (
                             <>
                                 {(landingPageSettings?.showHeroCta ?? true) && (
-                                    <Link href={`/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
+                                    <Link href={`/${locale}/login?tab=register`} className="w-full sm:w-auto px-10 py-5 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
                                         {landingPageSettings?.heroCtaText || "Commencer à apprendre"}
                                         <ChevronsRight className="w-5 h-5" />
                                     </Link>
                                 )}
                             </>
                         )}
-                        <Link href={`/${locale}/investir`} className="px-10 py-4 bg-white text-amber-600 border-2 border-amber-100 rounded-full font-black uppercase text-xs tracking-widest hover:bg-amber-50 transition flex items-center justify-center gap-2 active:scale-95">
+                        <Link href={`/${locale}/investir`} className="w-full sm:w-auto px-10 py-5 bg-white text-amber-600 border-2 border-amber-100 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-amber-50 transition flex items-center justify-center gap-2 active:scale-95">
                             <BadgeEuro className="w-5 h-5" />
                             Devenir Propriétaire
                         </Link>
                     </div>
                     
-                    <div className="mt-12 flex items-center justify-center lg:justify-start gap-8 text-slate-500 text-[10px] font-black uppercase tracking-widest">
+                    <div className="mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-6 text-slate-400 text-[10px] font-black uppercase tracking-widest opacity-60">
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-brand-primary" />
-                            Certificats Inclus
+                            <CheckCircle2 className="w-4 h-4 text-brand-primary" />
+                            Diplômes Inclus
                         </div>
                         <div className="flex items-center gap-2">
-                            <CheckCircle2 className="w-5 h-5 text-brand-primary" />
-                            Accès Permanent
+                            <CheckCircle2 className="w-4 h-4 text-brand-primary" />
+                            Accès à vie
                         </div>
                     </div>
                 </div>
 
-                <div className="relative animate-float block">
-                    <div className="absolute -inset-4 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl blur-3xl opacity-10"></div>
-                    <div className="relative aspect-video rounded-3xl shadow-2xl border border-white/50 overflow-hidden transform hover:scale-[1.01] transition duration-500 bg-slate-200">
+                <div className="relative animate-float block px-4 md:px-0 mt-8 lg:mt-0">
+                    <div className="absolute -inset-4 bg-gradient-to-r from-brand-primary/20 to-brand-secondary/20 rounded-[3rem] blur-3xl opacity-30"></div>
+                    <div className="relative aspect-video rounded-[2.5rem] shadow-2xl border-4 border-white overflow-hidden bg-slate-100">
                         <Image 
                             src={landingPageSettings?.heroImageUrl || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop"} 
                             alt="Étudiants Ndara Afrique" 
@@ -272,13 +277,13 @@ export default function LandingPage() {
                         />
                     </div>
                     
-                    <div className="absolute -bottom-6 -left-6 bg-white p-5 rounded-2xl shadow-xl border border-slate-100 flex items-center gap-4 animate-bounce" style={{ animationDuration: '4s' }}>
-                        <div className="bg-emerald-100 p-3 rounded-xl text-emerald-600">
+                    <div className="absolute -bottom-4 -left-4 md:-bottom-6 md:-left-6 bg-white p-4 md:p-5 rounded-3xl shadow-2xl border border-slate-50 flex items-center gap-4 animate-bounce" style={{ animationDuration: '4s' }}>
+                        <div className="bg-emerald-100 p-3 rounded-2xl text-emerald-600 shrink-0">
                             <TrendingUp className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none">Succès</p>
-                            <p className="text-brand-dark font-bold mt-1">+24% de revenus</p>
+                            <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest leading-none">Réussite</p>
+                            <p className="text-brand-dark font-black mt-1 text-sm">+24% de revenus</p>
                         </div>
                     </div>
                 </div>
@@ -286,76 +291,76 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* --- STATS SECTION --- */}
+      <section className="py-12 md:py-20 bg-brand-dark text-white border-y border-white/5 relative bg-grainy">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+            <Stats />
+        </div>
+      </section>
+
       {/* --- RECOMMANDATIONS PERSONNALISÉES (CONNECTÉ UNIQUEMENT) --- */}
       {user && (
-          <section className="py-12 bg-white border-y border-slate-100 px-6">
+          <section className="py-12 bg-white border-b border-slate-100 px-4 md:px-6">
               <div className="max-w-7xl mx-auto">
                   <div className="flex items-center gap-3 mb-8">
                       <div className="p-2 bg-brand-primary/10 rounded-lg">
                           <Sparkles className="w-5 h-5 text-brand-primary" />
                       </div>
-                      <h2 className="text-xl font-black text-brand-dark uppercase tracking-tight">Spécialement pour vous, {currentUser?.fullName?.split(' ')[0]}</h2>
+                      <h2 className="text-xl font-black text-brand-dark uppercase tracking-tight">Sélectionné pour vous, {currentUser?.fullName?.split(' ')[0]}</h2>
                   </div>
                   <RecommendedCourses />
               </div>
           </section>
       )}
 
-      {/* --- STATS SECTION --- */}
-      <section className="py-16 bg-brand-dark text-white border-y border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-            <Stats />
-        </div>
-      </section>
-
-      {/* --- MARCHÉ DE DROITS (BOURSE DU SAVOIR) --- */}
-      <section id="bourse" className="py-24 bg-brand-dark relative overflow-hidden px-6 md:px-12 border-y border-white/5">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-10 -translate-y-1/2 translate-x-1/2"></div>
+      {/* --- BOURSE DU SAVOIR --- */}
+      <section id="bourse" className="py-20 md:py-32 bg-brand-dark relative overflow-hidden px-4 md:px-12 border-y border-white/5 bg-grainy">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary rounded-full blur-[150px] opacity-10 -translate-y-1/2 translate-x-1/2"></div>
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="grid lg:grid-cols-2 gap-16 items-center">
-                <div className="space-y-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary/10 border border-brand-primary/20 rounded-full text-brand-primary text-xs font-black uppercase tracking-[0.2em]">
+                <div className="space-y-8 text-center lg:text-left">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary/10 border border-brand-primary/20 rounded-full text-brand-primary text-[10px] font-black uppercase tracking-[0.2em] mx-auto lg:mx-0">
                         <BadgeEuro className="w-4 h-4" />
-                        Bourse du Savoir
+                        La Bourse du Savoir
                     </div>
-                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tight">
+                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tighter">
                         Plus qu'une formation, <br/>
-                        <span className="text-brand-primary">un actif rentable.</span>
+                        <span className="text-brand-primary">un actif financier.</span>
                     </h2>
-                    <p className="text-slate-400 text-lg leading-relaxed">
-                        Ndara Afrique révolutionne l'EdTech en permettant aux investisseurs d'acquérir les droits de revente des meilleures formations. Encaissez des revenus passifs sur chaque vente et revendez vos licences au prix fort.
+                    <p className="text-slate-400 text-base md:text-lg leading-relaxed max-w-2xl mx-auto lg:mx-0 font-medium">
+                        Ndara Afrique permet aux investisseurs d'acquérir les droits de revente des meilleures formations. Encaissez des revenus passifs sur chaque vente et revendez vos licences selon l'évolution du marché.
                     </p>
-                    <div className="grid sm:grid-cols-2 gap-6">
-                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                            <Landmark className="w-8 h-8 text-brand-primary" />
-                            <h4 className="font-bold text-white uppercase text-sm">Propriété Réelle</h4>
-                            <p className="text-slate-500 text-xs">Devenez l'exploitant exclusif d'un cours et touchez vos commissions à vie.</p>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-3 text-left group hover:border-brand-primary/30 transition-all">
+                            <Landmark className="w-8 h-8 text-brand-primary group-hover:scale-110 transition-transform" />
+                            <h4 className="font-black text-white uppercase text-xs tracking-widest">Propriété Exclusive</h4>
+                            <p className="text-slate-500 text-[11px] font-medium leading-relaxed">Devenez l'exploitant d'un savoir et touchez vos dividendes sur chaque nouvel élève.</p>
                         </div>
-                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-3">
-                            <TrendingUp className="w-8 h-8 text-blue-400" />
-                            <h4 className="font-bold text-white uppercase text-sm">Marché Libre</h4>
-                            <p className="text-slate-500 text-xs">Revendez vos droits de licence à d'autres partenaires dès que leur valeur augmente.</p>
+                        <div className="p-6 bg-white/5 border border-white/10 rounded-3xl space-y-3 text-left group hover:border-brand-primary/30 transition-all">
+                            <TrendingUp className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
+                            <h4 className="font-black text-white uppercase text-xs tracking-widest">Marché Secondaire</h4>
+                            <p className="text-slate-500 text-[11px] font-medium leading-relaxed">Revendez vos licences à tout moment à d'autres partenaires via notre plateforme sécurisée.</p>
                         </div>
                     </div>
-                    <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-brand-primary hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-brand-primary/20">
+                    <Button asChild size="lg" className="w-full sm:w-auto h-16 px-12 rounded-2xl bg-brand-primary hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-brand-primary/20 active:scale-95 transition-all">
                         <Link href={`/${locale}/investir`}>
-                            Découvrir le programme Investisseur
+                            Explorer les opportunités
                             <ChevronsRight className="ml-2 w-5 h-5" />
                         </Link>
                     </Button>
                 </div>
-                <div className="relative">
-                    <div className="relative aspect-[4/5] rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
+                <div className="relative hidden lg:block">
+                    <div className="relative aspect-[4/5] rounded-[4rem] overflow-hidden border border-white/10 shadow-2xl">
                         <Image 
                             src="https://images.unsplash.com/photo-1553729459-efe14ef6055d?q=80&w=1200&auto=format&fit=crop" 
                             alt="Investissement Ndara" 
                             fill 
-                            className="object-cover grayscale hover:grayscale-0 transition-all duration-700" 
+                            className="object-cover grayscale hover:grayscale-0 transition-all duration-1000" 
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent"></div>
-                        <div className="absolute bottom-10 left-10 right-10 p-8 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
-                            <p className="text-white font-bold italic text-lg leading-relaxed">
-                                "Nous transformons le savoir africain en une classe d'actifs numériques accessible à tous."
+                        <div className="absolute bottom-10 left-10 right-10 p-8 bg-slate-900/40 backdrop-blur-2xl border border-white/10 rounded-[2.5rem]">
+                            <p className="text-white font-black italic text-lg leading-relaxed uppercase tracking-tight">
+                                "Nous bâtissons la première bourse numérique du savoir africain."
                             </p>
                             <p className="mt-4 text-brand-primary font-black uppercase text-[10px] tracking-widest">— Mathias Oyono, CEO</p>
                         </div>
@@ -365,114 +370,82 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- MÉTHODOLOGIE --- */}
-      <section id="methodologie" className="py-24 bg-white relative px-6 md:px-12">
-        <div className="max-w-7xl mx-auto">
-            <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
-                <h2 className="text-brand-primary font-black tracking-[0.3em] uppercase text-[10px]">Notre Mission</h2>
-                <h3 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">{landingPageSettings?.howItWorksTitle || "Apprenez avec Efficacité"}</h3>
-                <p className="text-slate-600 font-medium leading-relaxed">{landingPageSettings?.howItWorksSubtitle || "Une approche pédagogique unique qui combine théorie rigoureuse et pratique intensive."}</p>
-            </div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group glass-card">
-                    <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-brand-secondary mb-8 group-hover:scale-110 transition shadow-lg">
-                        <Laptop className="w-7 h-7" />
-                    </div>
-                    <h4 className="text-xl font-black text-brand-dark mb-4 uppercase tracking-tight">Savoir Pratique</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed font-medium">Nos cours sont conçus par des experts terrain pour vous apporter des compétences immédiatement applicables.</p>
-                </div>
-
-                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group glass-card">
-                    <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center text-brand-primary mb-8 group-hover:scale-110 transition shadow-lg">
-                        <Award className="w-7 h-7" />
-                    </div>
-                    <h4 className="text-xl font-black text-brand-dark mb-4 uppercase tracking-tight">Diplômes Reconnus</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed font-medium">Obtenez un certificat Ndara Afrique officiel à la fin de chaque parcours pour valoriser votre profil.</p>
-                </div>
-
-                <div className="p-8 rounded-[2rem] bg-slate-50 border border-slate-100 hover:shadow-lg hover:shadow-brand-primary/10 transition duration-300 group glass-card">
-                    <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center text-purple-600 mb-8 group-hover:scale-110 transition shadow-lg">
-                        <Bot className="w-7 h-7" />
-                    </div>
-                    <h4 className="text-xl font-black text-brand-dark mb-4 uppercase tracking-tight">Mentorat Interactif</h4>
-                    <p className="text-slate-600 text-sm leading-relaxed font-medium">Accédez à une communauté d'apprenants et posez vos questions à notre IA Mathias 24h/24.</p>
-                </div>
-            </div>
-        </div>
-      </section>
-
-      {/* --- TÉMOIGNAGES --- */}
-      <section className="bg-slate-50 border-t border-slate-200 px-6 md:px-12">
-        <div className="max-w-7xl mx-auto">
-            <TestimonialsSection />
-        </div>
-      </section>
-
       {/* --- CATALOGUE --- */}
-      <section id="formations" className="py-24 bg-white relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+      <section id="formations" className="py-20 md:py-32 bg-white relative px-4 md:px-12 border-t border-slate-100">
+        <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row justify-between items-center lg:items-end mb-16 gap-6 text-center md:text-left">
                 <div className="space-y-2">
-                    <h2 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Formations <span className="text-brand-primary">Phare</span></h2>
-                    <p className="text-slate-600 font-medium">Le savoir à l'état pur, accessible maintenant.</p>
+                    <div className="h-1.5 w-12 bg-brand-primary rounded-full mx-auto md:mx-0 mb-4" />
+                    <h2 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tighter">Formations <span className="text-brand-primary">Ndara</span></h2>
+                    <p className="text-slate-500 font-medium">Les compétences du futur, sélectionnées par des experts.</p>
                 </div>
-                <Link href={`/${locale}/search`} className="flex items-center text-brand-primary font-black uppercase text-[10px] tracking-[0.2em] hover:text-blue-500 transition-colors">
-                    Tout le catalogue
-                    <ChevronsRight className="w-4 h-4 ml-2" />
-                </Link>
+                <Button variant="ghost" asChild className="text-brand-primary font-black uppercase text-[10px] tracking-[0.2em] hover:bg-emerald-50 h-12 px-8 rounded-xl">
+                    <Link href={`/${locale}/search`}>
+                        Tout le catalogue
+                        <ChevronsRight className="w-4 h-4 ml-2" />
+                    </Link>
+                </Button>
             </div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 md:gap-10">
                 {loading ? (
-                    [...Array(3)].map((_, i) => <div key={i} className="h-80 w-full bg-slate-200 animate-pulse rounded-[2.5rem]"></div>)
+                    [...Array(3)].map((_, i) => <div key={i} className="h-96 w-full bg-slate-100 animate-pulse rounded-[2.5rem]"></div>)
                 ) : displayCourses.length > 0 ? (
                     displayCourses.map(course => (
-                        <CourseCard 
-                            key={course.id} 
-                            course={course} 
-                            instructor={instructorsMap.get(course.instructorId) || null} 
-                            variant="grid" 
-                        />
+                        <div key={course.id} className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <CourseCard 
+                                course={course} 
+                                instructor={instructorsMap.get(course.instructorId) || null} 
+                                variant="grid" 
+                            />
+                        </div>
                     ))
                 ) : (
-                    <div className="col-span-full text-center py-20 bg-white rounded-[3rem] border-2 border-dashed border-slate-200 shadow-sm opacity-60">
+                    <div className="col-span-full text-center py-24 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200 opacity-60">
                         <TrendingUp className="h-12 w-12 mx-auto text-slate-300 mb-4" />
-                        <h4 className="text-lg font-bold text-slate-400 uppercase tracking-tight">Nos contenus d'élite arrivent bientôt</h4>
-                        <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto font-medium">Nous finalisons la production de nos prochaines formations avec les meilleurs experts. Revenez très vite !</p>
+                        <h4 className="text-lg font-black text-slate-400 uppercase tracking-tight">Contenus d'élite en préparation</h4>
+                        <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto font-medium">Nos experts finalisent les prochains modules. Revenez très bientôt.</p>
                     </div>
                 )}
             </div>
         </div>
       </section>
 
+      {/* --- TÉMOIGNAGES --- */}
+      <section className="bg-slate-50 border-t border-slate-100 px-4 md:px-12 py-20 bg-grainy">
+        <div className="max-w-7xl mx-auto">
+            <TestimonialsSection />
+        </div>
+      </section>
+
       {/* --- FINAL CTA --- */}
-      <section className="py-32 relative overflow-hidden bg-brand-dark px-6">
-        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
+      <section className="py-24 md:py-40 relative overflow-hidden bg-brand-dark px-4 md:px-6 bg-grainy">
+        <div className="absolute inset-0 bg-primary/5 opacity-20 blur-3xl rounded-full scale-150"></div>
         
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-10">
-            <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-tight">{user ? "Prêt à continuer l'aventure ?" : (landingPageSettings?.finalCtaTitle || "Prêt à devenir un expert ?")}</h2>
+            <h2 className="text-4xl md:text-6xl lg:text-7xl font-black text-white uppercase tracking-tighter leading-none">
+                {user ? "Continuez votre ascension." : (landingPageSettings?.finalCtaTitle || "Prêt pour l'excellence ?")}
+            </h2>
             <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-                {user ? "Votre progression est sauvegardée. Vos certificats vous attendent." : (landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic.")}
+                {user ? "Votre savoir est votre pouvoir. Vos certificats et vos leçons vous attendent dans votre tableau de bord." : (landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Le futur commence par une leçon.")}
             </p>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
                 {user ? (
-                    <Link href={`/${locale}${dashboardUrl}`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
+                    <Link href={`/${locale}${dashboardUrl}`} className="w-full sm:w-auto px-12 py-6 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 flex items-center justify-center">
                         Accéder à mon tableau de bord
                     </Link>
                 ) : (
                     <>
                         {(landingPageSettings?.showFinalCta ?? true) && (
-                            <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
+                            <Link href={`/${locale}/login?tab=register`} className="w-full sm:w-auto px-12 py-6 bg-brand-primary text-white rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 flex items-center justify-center">
                                 {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
                             </Link>
                         )}
                     </>
                 )}
                 {(landingPageSettings?.showFinalContact ?? true) && (
-                    <Link href={`/${locale}/student/support`} className="px-12 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
-                        Contacter un conseiller
+                    <Link href={`/${locale}/student/support`} className="w-full sm:w-auto px-12 py-6 bg-transparent border-2 border-slate-800 text-slate-300 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 flex items-center justify-center">
+                        Contacter l'assistance
                     </Link>
                 )}
             </div>
