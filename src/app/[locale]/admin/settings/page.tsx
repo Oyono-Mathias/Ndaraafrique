@@ -2,9 +2,8 @@
 
 /**
  * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Correction définitive de la structure syntaxique (suppression du code corrompu).
+ * ✅ RÉSOLU : Correction définitive de la structure syntaxique (suppression de l'erreur Unexpected token div).
  * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
- * ✅ PERFORMANCE : Outils de synchronisation massive pour les avis et membres.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -38,7 +37,6 @@ import {
   Megaphone,
   Scale,
   Wrench,
-  History,
   ImageIcon,
   UploadCloud,
   Star,
@@ -332,7 +330,7 @@ export default function AdminSettingsPage() {
               <TabsTrigger value="maintenance" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0 text-amber-500">Outils</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="general" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="general" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <CardTitle className="text-lg font-bold">Identité & Contact</CardTitle>
@@ -363,7 +361,7 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="platform" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="platform" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <CardTitle className="text-lg font-bold">État de la Plateforme</CardTitle>
@@ -404,7 +402,7 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="video" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="video" className="space-y-4">
                 <Card className="bg-slate-900 border-slate-800 rounded-3xl p-6 shadow-xl">
                     <CardHeader className="px-0 pt-0">
                         <CardTitle className="text-lg font-bold">Hébergement Vidéo</CardTitle>
@@ -441,7 +439,7 @@ export default function AdminSettingsPage() {
                 </Card>
             </TabsContent>
 
-            <TabsContent value="landing" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="landing" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <CardTitle className="text-lg font-bold">Édition Page d'Accueil</CardTitle>
@@ -487,7 +485,7 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="about" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="about" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <div className="flex items-center gap-3">
@@ -516,7 +514,7 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="team" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="team" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -529,7 +527,7 @@ export default function AdminSettingsPage() {
                 <CardContent className="space-y-4 p-6">
                   {fields.length > 0 ? (
                     fields.map((field, index) => (
-                      <div key={field.id} className="p-5 bg-slate-950/50 rounded-2xl border border-slate-800 relative group animate-in slide-in-from-top-2">
+                      <div key={field.id} className="p-5 bg-slate-950/50 rounded-2xl border border-slate-800 relative group">
                         <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)} className="absolute top-2 right-2 text-slate-600 hover:text-red-500">
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -568,7 +566,7 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="legal" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="legal" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <div className="flex items-center gap-3">
@@ -595,7 +593,7 @@ export default function AdminSettingsPage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="maintenance" className="space-y-4 animate-in fade-in duration-500">
+            <TabsContent value="maintenance" className="space-y-4">
                 <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                     <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                         <div className="flex items-center gap-3">
