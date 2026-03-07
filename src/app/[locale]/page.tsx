@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version Intelligente & Adaptative.
- * ✅ VISION CEO : Si l'utilisateur est connecté, la page s'adapte pour lui proposer de reprendre son cours.
- * ✅ DYNAMIQUE : Intégration des recommandations personnalisées directement sur l'accueil.
+ * ✅ VISION CEO : Intégration de la dimension "Bourse du Savoir" (Investissement).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -11,7 +10,7 @@ import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, d
 import Link from 'next/link';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
-import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2, PlayCircle, Sparkles } from 'lucide-react';
+import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2, PlayCircle, Sparkles, BadgeEuro, Landmark } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
@@ -44,7 +43,7 @@ const Navbar = () => {
                 
                 <div className="hidden md:flex space-x-8 items-center">
                     <a href="#formations" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Formations</a>
-                    <a href="#methodologie" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Notre Méthode</a>
+                    <a href="#bourse" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Marché de Droits</a>
                     <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Tarifs</Link>
                 </div>
 
@@ -92,7 +91,7 @@ const Navbar = () => {
                                 </div>
                                 <div className="flex flex-col gap-4 mt-8">
                                     <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600">Formations</a></SheetClose>
-                                    <SheetClose asChild><a href="#methodologie" className="text-lg font-bold text-slate-600">Méthodologie</a></SheetClose>
+                                    <SheetClose asChild><a href="#bourse" className="text-lg font-bold text-slate-600">Investir</a></SheetClose>
                                     <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600">Tarifs</Link></SheetClose>
                                     <hr className="border-slate-100 my-2" />
                                     {user ? (
@@ -303,6 +302,63 @@ export default function LandingPage() {
       <section className="py-16 bg-brand-dark text-white border-y border-white/5">
         <div className="max-w-7xl mx-auto px-6">
             <Stats />
+        </div>
+      </section>
+
+      {/* --- MARCHÉ DE DROITS (BOURSE DU SAVOIR) --- */}
+      <section id="bourse" className="py-24 bg-brand-dark relative overflow-hidden px-6 md:px-12 border-y border-white/5">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-10 -translate-y-1/2 translate-x-1/2"></div>
+        <div className="max-w-7xl mx-auto relative z-10">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+                <div className="space-y-8">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 bg-brand-primary/10 border border-brand-primary/20 rounded-full text-brand-primary text-xs font-black uppercase tracking-[0.2em]">
+                        <BadgeEuro className="w-4 h-4" />
+                        Bourse du Savoir
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-black text-white leading-tight uppercase tracking-tight">
+                        Plus qu'une formation, <br/>
+                        <span className="text-brand-primary">un actif rentable.</span>
+                    </h2>
+                    <p className="text-slate-400 text-lg leading-relaxed">
+                        Ndara Afrique révolutionne l'EdTech en permettant aux investisseurs d'acquérir les droits de revente des meilleures formations. Encaissez des revenus passifs sur chaque vente et revendez vos licences au prix fort.
+                    </p>
+                    <div className="grid sm:grid-cols-2 gap-6">
+                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                            <Landmark className="w-8 h-8 text-brand-primary" />
+                            <h4 className="font-bold text-white uppercase text-sm">Propriété Réelle</h4>
+                            <p className="text-slate-500 text-xs">Devenez l'exploitant exclusif d'un cours et touchez vos commissions à vie.</p>
+                        </div>
+                        <div className="p-6 bg-white/5 border border-white/10 rounded-2xl space-y-3">
+                            <TrendingUp className="w-8 h-8 text-blue-400" />
+                            <h4 className="font-bold text-white uppercase text-sm">Marché Libre</h4>
+                            <p className="text-slate-500 text-xs">Revendez vos droits de licence à d'autres partenaires dès que leur valeur augmente.</p>
+                        </div>
+                    </div>
+                    <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-brand-primary hover:bg-emerald-600 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-brand-primary/20">
+                        <Link href={`/${locale}/investir`}>
+                            Découvrir le programme Investisseur
+                            <ChevronsRight className="ml-2 w-5 h-5" />
+                        </Link>
+                    </Button>
+                </div>
+                <div className="relative">
+                    <div className="relative aspect-[4/5] rounded-[3rem] overflow-hidden border border-white/10 shadow-2xl">
+                        <Image 
+                            src="https://images.unsplash.com/photo-1553729459-efe14ef6055d?q=80&w=1200&auto=format&fit=crop" 
+                            alt="Investissement Ndara" 
+                            fill 
+                            className="object-cover grayscale hover:grayscale-0 transition-all duration-700" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-brand-dark via-transparent to-transparent"></div>
+                        <div className="absolute bottom-10 left-10 right-10 p-8 bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl">
+                            <p className="text-white font-bold italic text-lg leading-relaxed">
+                                "Nous transformons le savoir africain en une classe d'actifs numériques accessible à tous."
+                            </p>
+                            <p className="mt-4 text-brand-primary font-black uppercase text-[10px] tracking-widest">— Mathias Oyono, CEO</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
       </section>
 
