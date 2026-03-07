@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
- * ✅ RÉSOLU : Intégration de la section Témoignages Dynamiques.
- * ✅ RÉSOLU : Zéro simulation, uniquement des données Firestore.
+ * ✅ RÉSOLU : Image Hero visible sur mobile.
+ * ✅ RÉSOLU : Structure JSX ultra-propre pour le build.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -203,7 +203,7 @@ export default function LandingPage() {
                     </div>
                 </div>
 
-                <div className="relative animate-float hidden lg:block">
+                <div className="relative animate-float block">
                     <div className="absolute -inset-4 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl blur-3xl opacity-10"></div>
                     <div className="relative aspect-video rounded-3xl shadow-2xl border border-white/50 overflow-hidden transform hover:scale-[1.01] transition duration-500 bg-slate-200">
                         <Image 
@@ -280,7 +280,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* --- FORMATIONS (Vraies Données UNIQUEMENT) --- */}
+      {/* --- FORMATIONS --- */}
       <section id="formations" className="py-24 bg-white relative overflow-hidden px-6 md:px-12 border-t border-slate-200">
         <div className="max-w-7xl mx-auto relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">

@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Section des témoignages Ndara Afrique - 100% Réelle & Robuste.
- * ✅ RÉSOLU : Requête simplifiée pour éviter les erreurs d'index Firestore.
- * ✅ RÉSOLU : Tri intelligent des meilleurs avis en mémoire.
+ * ✅ RÉSOLU : Ne bloque plus l'interface si vide.
  */
 
 import { useState, useEffect } from 'react';
@@ -69,7 +68,7 @@ export function TestimonialsSection() {
   useEffect(() => {
     setIsLoading(true);
     
-    // Requête simplifiée pour éviter les blocages d'index
+    // Requête simplifiée
     const q = query(
         collection(db, 'reviews'), 
         orderBy('createdAt', 'desc'),
@@ -78,9 +77,13 @@ export function TestimonialsSection() {
 
     const unsubscribe = onSnapshot(q, async (snapshot) => {
         try {
+            if (snapshot.empty) {
+                setReviews([]);
+                setIsLoading(false);
+                return;
+            }
+
             const rawReviews = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Review));
-            
-            // Tri en mémoire : On prend les meilleurs avis parmi les plus récents
             const bestReviews = rawReviews
                 .filter(r => r.rating >= 4)
                 .sort((a, b) => b.rating - a.rating)
@@ -113,33 +116,20 @@ export function TestimonialsSection() {
         } finally {
             setIsLoading(false);
         }
+    }, (error) => {
+        console.error("Testimonials snapshot error:", error);
+        setIsLoading(false);
     });
 
     return () => unsubscribe();
   }, [db]);
 
   if (isLoading) {
-    return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 py-12">
-            {[...Array(3)].map((_, i) => (
-                <Skeleton key={i} className="h-64 w-full rounded-[2.5rem] bg-slate-100 dark:bg-slate-800" />
-            ))}
-        </div>
-    );
+    return null; // On ne montre rien pendant le chargement pour éviter les skeletons vides
   }
 
   if (reviews.length === 0) {
-      return (
-          <div className="py-24 text-center">
-              <div className="inline-block p-4 bg-primary/5 rounded-full mb-6">
-                <MessageSquare className="h-10 w-10 text-primary opacity-20" />
-              </div>
-              <h3 className="text-xl font-black text-slate-400 uppercase tracking-tight">Le savoir en marche</h3>
-              <p className="text-slate-400 text-sm mt-2 max-w-sm mx-auto font-medium">
-                Nos premiers diplômés préparent leurs témoignages. Rejoignez l'aventure pour être le prochain !
-              </p>
-          </div>
-      );
+      return null; // Si vide, on n'affiche pas la section
   }
 
   return (
