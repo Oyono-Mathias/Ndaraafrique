@@ -96,6 +96,11 @@ export interface NdaraUser {
       mobileMoneyNumber?: string;
       bankInfo?: string;
   };
+  buyoutSanctions?: {
+      isSanctioned: boolean;
+      reason: string;
+      date: Timestamp | FieldValue;
+  };
   instructorNotificationPreferences?: {
     newEnrollment?: boolean;
     newMessage?: boolean;
@@ -207,6 +212,10 @@ export interface Course {
     price: number;
     originalPrice?: number;
     status: 'Draft' | 'Published' | 'Pending Review';
+    buyoutStatus?: 'none' | 'requested' | 'approved';
+    buyoutPrice?: number;
+    isPlatformOwned?: boolean;
+    originalInstructorId?: string;
     thumbnailUrl?: string;
     imageUrl?: string;
     createdAt?: Timestamp | FieldValue;

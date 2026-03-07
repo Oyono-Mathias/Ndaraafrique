@@ -2,11 +2,14 @@
 
 /**
  * @fileOverview Page principale de gestion des cours pour les administrateurs.
+ * ✅ NOUVEAU : Intégration du système de rachat (Buyouts).
  */
 
 import { CoursesTable } from '@/components/admin/courses/courses-table';
+import { BuyoutRequestsTable } from '@/components/admin/courses/BuyoutRequestsTable';
 import { Button } from '@/components/ui/button';
-import { PlusCircle, BookOpen } from 'lucide-react';
+import { PlusCircle, BookOpen, ShoppingCart, LayoutGrid } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 
 export default function AdminCoursesPage() {
@@ -28,7 +31,24 @@ export default function AdminCoursesPage() {
         </Button>
       </header>
 
-      <CoursesTable />
+      <Tabs defaultValue="all" className="w-full">
+        <TabsList className="bg-slate-900 border-slate-800 h-14 p-1 rounded-2xl w-full sm:w-auto">
+            <TabsTrigger value="all" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
+                <LayoutGrid className="h-3.5 w-3.5" /> Catalogue
+            </TabsTrigger>
+            <TabsTrigger value="buyouts" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full text-primary">
+                <ShoppingCart className="h-3.5 w-3.5" /> Demandes de Rachat
+            </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="all" className="mt-8">
+            <CoursesTable />
+        </TabsContent>
+
+        <TabsContent value="buyouts" className="mt-8">
+            <BuyoutRequestsTable />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

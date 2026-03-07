@@ -10,13 +10,14 @@ import { doc, getFirestore } from 'firebase/firestore';
 import type { Course } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
+import { Loader2, ArrowLeft, Send, CheckCircle2, ShoppingCart } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
+import { CourseBuyoutTab } from '@/components/instructor/CourseBuyoutTab';
 
 export default function EditCoursePage({ params }: { params: { courseId: string } }) {
   const { courseId } = params;
@@ -73,13 +74,18 @@ export default function EditCoursePage({ params }: { params: { courseId: string 
     return <div className="text-center text-destructive py-20">Impossible de charger le cours.</div>;
   }
   
-  if (course.instructorId !== currentUser?.uid) {
+  // Vérifier si le cours appartient à l'instructeur OU s'il a été racheté
+  const isAuthorized = course.instructorId === currentUser?.uid || (course.isPlatformOwned && currentUser?.role === 'admin');
+
+  if (!isAuthorized) {
     return <div className="text-center text-destructive py-20">Vous n'avez pas la permission de modifier ce cours.</div>
   }
 
   const isDraft = course.status === 'Draft';
   const isPending = course.status === 'Pending Review';
   const isPublished = course.status === 'Published';
+  const isRequestedBuyout = course.buyoutStatus === 'requested';
+  const isApprovedBuyout = course.buyoutStatus === 'approved';
 
   return (
     <div className="space-y-8 bg-slate-50 dark:bg-slate-900/50 p-6 -m-6 rounded-2xl min-h-full">
@@ -97,11 +103,13 @@ export default function EditCoursePage({ params }: { params: { courseId: string 
                         )}>
                             {isPublished ? 'Publié' : isPending ? 'En attente de validation' : 'Brouillon'}
                         </Badge>
+                        {isRequestedBuyout && <Badge className="bg-primary/10 text-primary text-[9px] border-none font-black uppercase">Rachat demandé</Badge>}
+                        {isApprovedBuyout && <Badge className="bg-emerald-500/10 text-emerald-500 text-[9px] border-none font-black uppercase">Acquis par Ndara</Badge>}
                     </div>
                 </div>
             </div>
 
-            {isDraft && (
+            {isDraft && !isRequestedBuyout && (
                 <Button 
                     onClick={handleSubmitForReview} 
                     disabled={isSubmittingReview}
@@ -125,16 +133,32 @@ export default function EditCoursePage({ params }: { params: { courseId: string 
         </header>
 
         <Tabs defaultValue="content" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-slate-200 dark:bg-slate-800 p-1 rounded-xl h-auto">
-                <TabsTrigger value="content" className="py-2.5 font-bold uppercase text-[10px] tracking-widest">Contenu du Cours</TabsTrigger>
-                <TabsTrigger value="details" className="py-2.5 font-bold uppercase text-[10px] tracking-widest">Détails du Cours</TabsTrigger>
+            <TabsList className={cn(
+                "grid w-full bg-slate-200 dark:bg-slate-800 p-1 rounded-xl h-auto",
+                !course.isPlatformOwned ? "grid-cols-3" : "grid-cols-2"
+            )}>
+                <TabsTrigger value="content" className="py-2.5 font-bold uppercase text-[10px] tracking-widest">Contenu</TabsTrigger>
+                <TabsTrigger value="details" className="py-2.5 font-bold uppercase text-[10px] tracking-widest">Détails</TabsTrigger>
+                {!course.isPlatformOwned && (
+                    <TabsTrigger value="buyout" className="py-2.5 font-bold uppercase text-[10px] tracking-widest text-primary">
+                        <ShoppingCart className="h-3 w-3 mr-2" /> Vendre à Ndara
+                    </TabsTrigger>
+                )}
             </TabsList>
-            <TabsContent value="details" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-                <CourseForm mode="edit" initialData={course} onSubmit={handleUpdateCourse} />
-            </TabsContent>
+            
             <TabsContent value="content" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
                 <ContentManager courseId={courseId} />
             </TabsContent>
+            
+            <TabsContent value="details" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                <CourseForm mode="edit" initialData={course} onSubmit={handleUpdateCourse} />
+            </TabsContent>
+
+            {!course.isPlatformOwned && (
+                <TabsContent value="buyout" className="mt-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
+                    <CourseBuyoutTab course={course} />
+                </TabsContent>
+            )}
         </Tabs>
     </div>
   );

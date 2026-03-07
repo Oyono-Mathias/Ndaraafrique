@@ -19,11 +19,11 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe, UploadCloud } from 'lucide-react';
-import type { Course, CourseTemplate } from '@/lib/types';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe, UploadCloud, ShieldAlert } from 'lucide-react';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import type { Course, CourseTemplate } from '@/lib/types';
 
 const CourseFormSchema = z.object({
   title: z.string().min(5, { message: "Le titre doit faire au moins 5 caractères." }),
@@ -60,9 +60,11 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
   const [imageSource, setImageSource] = useState<'upload' | 'template'>('template');
-  const { user } = useRole();
+  const { user, currentUser } = useRole();
 
-  // Chargement des modèles d'images depuis la collection admin
+  // 🛡️ SÉCURITÉ CEO : Vérifier si l'instructeur est sanctionné pour rachat frauduleux
+  const isSanctioned = currentUser?.buyoutSanctions?.isSanctioned === true;
+
   const templatesQuery = useMemo(() => query(collection(db, 'course_templates'), orderBy('createdAt', 'desc')), [db]);
   const { data: templates, isLoading: templatesLoading } = useCollection<CourseTemplate>(templatesQuery);
 
@@ -76,6 +78,26 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
       imageUrl: initialData?.imageUrl || '',
     },
   });
+
+  if (isSanctioned) {
+      return (
+          <div className="max-w-2xl mx-auto py-12 px-4 animate-in fade-in duration-700">
+              <Card className="bg-red-500/10 border-red-500/20 rounded-[2rem] p-12 text-center space-y-6">
+                  <div className="p-4 bg-red-500/20 rounded-full inline-block">
+                      <ShieldAlert className="h-16 w-16 text-red-500" />
+                  </div>
+                  <h2 className="text-2xl font-black text-white uppercase tracking-tight">Compte Restreint</h2>
+                  <p className="text-slate-400 leading-relaxed">
+                      Votre droit de publication a été révoqué pour violation des règles de cession de droits intellectuels. <br/>
+                      <b>Raison :</b> {currentUser?.buyoutSanctions?.reason || 'Non spécifiée'}
+                  </p>
+                  <Button asChild variant="outline" className="mt-8 border-slate-800 bg-slate-900 rounded-xl">
+                      <Link href="/instructor/dashboard">Retour au tableau de bord</Link>
+                  </Button>
+              </Card>
+          </div>
+      );
+  }
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
