@@ -336,6 +336,10 @@ export interface Settings {
     loginBackgroundImage?: string;
     contactEmail: string;
     supportPhone?: string;
+    facebookUrl?: string;
+    linkedinUrl?: string;
+    twitterUrl?: string;
+    instagramUrl?: string;
   };
   commercial: {
     platformCommission: number;

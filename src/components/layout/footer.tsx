@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { Facebook, Linkedin } from 'lucide-react';
+import { Facebook, Linkedin, Twitter, Instagram } from 'lucide-react';
 import { WhatsAppIcon } from '../icons/WhatsAppIcon';
 import { useDoc } from '@/firebase';
 import { doc, getFirestore } from 'firebase/firestore';
@@ -14,8 +14,9 @@ export function Footer() {
   const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
   const { data: settings } = useDoc<Settings>(settingsRef);
 
-  const siteName = "Ndara Afrique";
-  const logoUrl = '/logo.png';
+  const siteName = settings?.general?.siteName || "Ndara Afrique";
+  const logoUrl = settings?.general?.logoUrl || '/logo.png';
+  const whatsapp = settings?.general?.supportPhone;
 
   return (
     <footer className="mt-20 border-t border-white/5 bg-slate-950 pt-20 pb-12">
@@ -69,9 +70,21 @@ export function Footer() {
             © {new Date().getFullYear()} {siteName}. Fait avec passion pour le continent.
           </p>
           <div className="flex gap-8">
-            <a href="#" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><Facebook className="h-5 w-5"/></a>
-            <a href="#" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><Linkedin className="h-5 w-5"/></a>
-            <a href="#" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><WhatsAppIcon className="h-5 w-5"/></a>
+            {settings?.general?.facebookUrl && (
+              <a href={settings.general.facebookUrl} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><Facebook className="h-5 w-5"/></a>
+            )}
+            {settings?.general?.linkedinUrl && (
+              <a href={settings.general.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><Linkedin className="h-5 w-5"/></a>
+            )}
+            {settings?.general?.twitterUrl && (
+              <a href={settings.general.twitterUrl} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><Twitter className="h-5 w-5"/></a>
+            )}
+            {settings?.general?.instagramUrl && (
+              <a href={settings.general.instagramUrl} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><Instagram className="h-5 w-5"/></a>
+            )}
+            {whatsapp && (
+              <a href={`https://wa.me/${whatsapp.replace(/\+/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-primary transition-all hover:scale-110"><WhatsAppIcon className="h-5 w-5"/></a>
+            )}
           </div>
         </div>
       </div>

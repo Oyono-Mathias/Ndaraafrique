@@ -34,7 +34,12 @@ import {
   ImageIcon,
   UploadCloud,
   CheckCircle2,
-  Eye
+  Eye,
+  Facebook,
+  Linkedin,
+  Twitter,
+  Instagram,
+  MessageCircle
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -51,6 +56,11 @@ const settingsSchema = z.object({
   siteName: z.string().min(2, "Le nom est trop court."),
   logoUrl: z.string().url("URL invalide.").or(z.literal('')),
   contactEmail: z.string().email("Email invalide."),
+  supportPhone: z.string().optional(),
+  facebookUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  linkedinUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  twitterUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  instagramUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   commission: z.coerce.number().min(0).max(100),
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
@@ -116,7 +126,8 @@ export default function AdminSettingsPage() {
       showHeroCta: true,
       showHeroExplore: true,
       showFinalCta: true,
-      showFinalContact: true
+      showFinalContact: true,
+      logoUrl: '/logo.png'
     }
   });
 
@@ -134,6 +145,11 @@ export default function AdminSettingsPage() {
           siteName: data.general?.siteName || 'Ndara Afrique',
           logoUrl: data.general?.logoUrl || '/logo.png',
           contactEmail: data.general?.contactEmail || '',
+          supportPhone: data.general?.supportPhone || '',
+          facebookUrl: data.general?.facebookUrl || '',
+          linkedinUrl: data.general?.linkedinUrl || '',
+          twitterUrl: data.general?.twitterUrl || '',
+          instagramUrl: data.general?.instagramUrl || '',
           commission: data.commercial?.platformCommission || 20,
           announcementMessage: data.platform?.announcementMessage || '',
           maintenanceMode: data.platform?.maintenanceMode || false,
@@ -245,7 +261,16 @@ export default function AdminSettingsPage() {
 
     try {
       const payload: Partial<Settings> = {
-        general: { siteName: values.siteName, logoUrl: values.logoUrl, contactEmail: values.contactEmail },
+        general: { 
+          siteName: values.siteName, 
+          logoUrl: values.logoUrl, 
+          contactEmail: values.contactEmail,
+          supportPhone: values.supportPhone,
+          facebookUrl: values.facebookUrl,
+          linkedinUrl: values.linkedinUrl,
+          twitterUrl: values.twitterUrl,
+          instagramUrl: values.instagramUrl
+        },
         commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
         platform: { 
           announcementMessage: values.announcementMessage, 
@@ -354,30 +379,119 @@ export default function AdminSettingsPage() {
               <TabsTrigger value="maintenance" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest whitespace-nowrap shrink-0 text-amber-500">Outils</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="general" className="space-y-4">
+            <TabsContent value="general" className="space-y-6">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
-                  <CardTitle className="text-lg font-bold">Identité & Contact</CardTitle>
+                  <CardTitle className="text-lg font-bold">Identité de Marque</CardTitle>
                 </CardHeader>
-                <CardContent className="grid md:grid-cols-2 gap-6 p-6">
-                  <FormField control={form.control} name="siteName" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom de la plateforme</FormLabel>
-                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Email de contact</FormLabel>
-                        <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
-                        <FormMessage />
-                    </FormItem>
-                  )} />
+                <CardContent className="p-6 space-y-8">
+                  <div className="grid md:grid-cols-2 gap-8 items-start">
+                    <div className="space-y-6">
+                      <FormField control={form.control} name="siteName" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom de la plateforme</FormLabel>
+                            <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="contactEmail" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Email de contact</FormLabel>
+                            <FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="supportPhone" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest flex items-center gap-2">
+                              <MessageCircle className="h-3 w-3" /> WhatsApp de Support
+                            </FormLabel>
+                            <FormControl><Input placeholder="+236..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+
+                    <div className="space-y-4">
+                      <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                          <ImageIcon className="h-3 w-3" /> Logo du Site (Bunny CDN)
+                      </FormLabel>
+                      <div className="relative h-32 w-32 rounded-3xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group">
+                          {form.watch('logoUrl') ? (
+                              <Image src={form.watch('logoUrl')!} alt="Logo Preview" fill className="object-contain p-4" />
+                          ) : (
+                              <ImageIcon className="h-10 w-10 text-slate-800" />
+                          )}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl bg-primary text-white border-none" asChild disabled={!!isUploading}>
+                                  <label className="cursor-pointer">
+                                      {isUploading === 'logoUrl' ? <Loader2 className="h-4 w-4 animate-spin"/> : <UploadCloud className="h-4 w-4 mr-2"/>}
+                                      Changer
+                                      <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'logoUrl')} />
+                                  </label>
+                              </Button>
+                          </div>
+                      </div>
+                      <p className="text-[9px] text-slate-500 uppercase font-bold">Format conseillé : PNG transparent 256x256px.</p>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5 space-y-6">
+                    <h3 className="text-xs font-black uppercase text-primary tracking-[0.2em] flex items-center gap-2">
+                      <UsersIcon className="h-3.5 w-3.5" /> Présence Sociale
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                      <FormField control={form.control} name="facebookUrl" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                              <Facebook className="h-3 w-3" /> Facebook
+                            </FormLabel>
+                            <FormControl><Input placeholder="https://facebook.com/..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="linkedinUrl" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                              <Linkedin className="h-3 w-3" /> LinkedIn
+                            </FormLabel>
+                            <FormControl><Input placeholder="https://linkedin.com/company/..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="twitterUrl" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                              <Twitter className="h-3 w-3" /> Twitter / X
+                            </FormLabel>
+                            <FormControl><Input placeholder="https://x.com/..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                      <FormField control={form.control} name="instagramUrl" render={({ field }) => (
+                        <FormItem>
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                              <Instagram className="h-3 w-3" /> Instagram
+                            </FormLabel>
+                            <FormControl><Input placeholder="https://instagram.com/..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                            <FormMessage />
+                        </FormItem>
+                      )} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
+                  <CardTitle className="text-lg font-bold">Économie de la Plateforme</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
                   <FormField control={form.control} name="commission" render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="max-w-xs">
                         <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Commission plateforme (%)</FormLabel>
                         <FormControl><Input type="number" {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl" /></FormControl>
+                        <FormDescription className="text-[10px]">Pourcentage prélevé sur chaque vente de cours.</FormDescription>
                         <FormMessage />
                     </FormItem>
                   )} />
