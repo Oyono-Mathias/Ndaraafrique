@@ -271,7 +271,9 @@ export default function AdminSettingsPage() {
           }
         }
       });
-
+e="text-[10px] font-black uppercase tracking-[0.2em]">Pilotage Global</span>
+        </div>
+        <h1 className="t
       if (result.success) {
         toast({ title: "Configuration Ndara enregistrée !" });
       } else {
@@ -285,36 +287,36 @@ export default function AdminSettingsPage() {
   };
 
   const handleSyncRatings = async () => {
-    if (!currentUser) return;
-    setIsSyncing(true);
-    try {
-        const result = await syncAllCourseStatsAction(currentUser.uid);
-        if (result.success) {
-            toast({ title: "Synchronisation terminée", description: `${result.count} formations mises à jour.` });
-        }
-    } catch (err) {
-        toast({ variant: 'destructive', title: "Échec sync" });
-    } finally {
-        setIsSyncing(false);
-    }
-  };
+       if (!currentUser) return;
+           setIsSyncing(true);
+               try {
+                     const result = await syncAllCourseStatsAction(currentUser.uid);
+                           if (result.success) {
+                                   toast({ 
+                                             title: "Synchronisation terminée", 
+                                                       description: `${result.count} formations mises à jour.` 
+                                                               });
+                                                                     }
+                                                                         } catch (err) {
+                                                                               toast({ variant: 'destructive', title: "Échec sync" });
+                                                                                   } finally {
+                                                                                         setIsSyncing(false);
+                                                                                             }
+                                                                                               }; // <--- Cette accolade ferme ta fonction de synchronisation
 
-  if (isLoading) {
-    return (
-      <div className="flex h-[60vh] items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
+                                                                                                 if (isLoading) {
+                                                                                                     return (
+                                                                                                           <div className="flex items-center justify-center min-h-[400px]">
+                                                                                                                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                                                                                                                         </div>
+                                                                                                                             );
+                                                                                                                               }
 
-  return (
-    <div className="space-y-6 pb-24">
-      <header className="px-1">
-        <div className="flex items-center gap-2 text-primary mb-1">
+                                                                                                                                 return (
+                                                                                                                                     <div className="space-y-6 pb-24">
+                                                                                                                                     
             <SettingsIcon className="h-4 w-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Pilotage Global</span>
-        </div>
-        <h1 className="text-2xl md:text-3xl font-black text-white uppercase tracking-tight">Configuration Ndara</h1>
+            <span classNamext-2xl md:text-3xl font-black text-white uppercase tracking-tight">Configuration Ndara</h1>
       </header>
 
       <Form {...form}>
