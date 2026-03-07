@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' par une réécriture propre et parenthésée.
- * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
+ * ✅ RÉSOLU : Erreur syntaxique 'Unexpected token div' corrigée par une restructuration propre des fonctions.
+ * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias de la plateforme.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -671,8 +671,8 @@ export default function AdminSettingsPage() {
                                 {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <Star className="mr-2 h-4 w-4 text-primary"/>}
                                 Recalculer les scores des cours
                             </Button>
-                            <Button type="button" onClick={() => repairAllCertificatesAction(currentUser!.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
-                            <Button type="button" onClick={() => syncUsersWithAuthAction(currentUser!.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Importer membres Firebase Auth</Button>
+                            <Button type="button" onClick={() => currentUser && repairAllCertificatesAction(currentUser.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
+                            <Button type="button" onClick={() => currentUser && syncUsersWithAuthAction(currentUser.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Importer membres Firebase Auth</Button>
                         </div>
                     </CardContent>
                 </Card>
