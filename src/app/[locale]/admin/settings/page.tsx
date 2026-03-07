@@ -182,8 +182,10 @@ export default function AdminSettingsPage() {
             if (parts[0] === 'teamMembers') {
                 const index = parseInt(parts[1]);
                 const members = form.getValues('teamMembers') || [];
-                members[index].imageUrl = data.url;
-                form.setValue('teamMembers', members);
+                if (members[index]) {
+                    members[index].imageUrl = data.url;
+                    form.setValue('teamMembers', members);
+                }
             }
         } else {
             form.setValue(fieldName as any, data.url);
@@ -201,72 +203,77 @@ export default function AdminSettingsPage() {
     if (!currentUser) return;
     setIsSaving(true);
 
-    const result = await updateGlobalSettings({
-      adminId: currentUser.uid,
-      settings: {
-        general: { siteName: values.siteName, logoUrl: values.logoUrl, contactEmail: values.contactEmail },
-        commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
-        platform: { 
-          announcementMessage: values.announcementMessage, 
-          maintenanceMode: values.maintenanceMode,
-          allowInstructorSignup: values.allowInstructorSignup,
-          allowYoutube: values.allowYoutube,
-          allowBunny: values.allowBunny,
-          bunnyLibraryId: values.bunnyLibraryId,
-          autoApproveCourses: false,
-          enableInternalMessaging: true
-        },
-        content: {
-          landingPage: {
-            heroTitle: values.landingHeroTitle,
-            heroSubtitle: values.landingHeroSubtitle,
-            heroImageUrl: values.landingHeroImageUrl,
-            heroCtaText: values.landingHeroCta,
-            howItWorksTitle: values.howItWorksTitle,
-            howItWorksSubtitle: values.howItWorksSubtitle,
-            howItWorks_step1_imageUrl: values.howItWorks_step1_imageUrl,
-            howItWorks_step2_imageUrl: values.howItWorks_step2_imageUrl,
-            howItWorks_step3_imageUrl: values.howItWorks_step3_imageUrl,
-            securitySectionTitle: values.securitySectionTitle,
-            securitySectionSubtitle: values.securitySectionSubtitle,
-            securitySection_imageUrl: values.securitySection_imageUrl,
-            finalCtaTitle: values.finalCtaTitle,
-            finalCtaSubtitle: values.finalCtaSubtitle,
-            finalCtaButtonText: values.finalCtaButtonText,
-            finalCta_imageUrl: values.finalCta_imageUrl,
+    try {
+      const result = await updateGlobalSettings({
+        adminId: currentUser.uid,
+        settings: {
+          general: { siteName: values.siteName, logoUrl: values.logoUrl, contactEmail: values.contactEmail },
+          commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
+          platform: { 
+            announcementMessage: values.announcementMessage, 
+            maintenanceMode: values.maintenanceMode,
+            allowInstructorSignup: values.allowInstructorSignup,
+            allowYoutube: values.allowYoutube,
+            allowBunny: values.allowBunny,
+            bunnyLibraryId: values.bunnyLibraryId,
+            autoApproveCourses: false,
+            enableInternalMessaging: true
           },
-          aboutPage: {
-            mainTitle: values.aboutMainTitle || '',
-            mainSubtitle: values.aboutMainSubtitle || '',
-            historyTitle: values.historyTitle || '',
-            historyFrench: values.historyFrench || '',
-            historySango: values.historySango || '',
-            visionTitle: values.visionTitle || '',
-            visionFrench: values.visionFrench || '',
-            visionSango: values.visionSango || '',
-            ctaTitle: values.aboutCtaTitle || '',
-            teamMembers: (values.teamMembers || []).map(m => ({
-              name: m.name,
-              role: m.role,
-              imageUrl: m.imageUrl,
-              bio: m.bio || ''
-            })),
-            ctaSubtitle: ''
+          content: {
+            landingPage: {
+              heroTitle: values.landingHeroTitle,
+              heroSubtitle: values.landingHeroSubtitle,
+              heroImageUrl: values.landingHeroImageUrl,
+              heroCtaText: values.landingHeroCta,
+              howItWorksTitle: values.howItWorksTitle,
+              howItWorksSubtitle: values.howItWorksSubtitle,
+              howItWorks_step1_imageUrl: values.howItWorks_step1_imageUrl,
+              howItWorks_step2_imageUrl: values.howItWorks_step2_imageUrl,
+              howItWorks_step3_imageUrl: values.howItWorks_step3_imageUrl,
+              securitySectionTitle: values.securitySectionTitle,
+              securitySectionSubtitle: values.securitySectionSubtitle,
+              securitySection_imageUrl: values.securitySection_imageUrl,
+              finalCtaTitle: values.finalCtaTitle,
+              finalCtaSubtitle: values.finalCtaSubtitle,
+              finalCtaButtonText: values.finalCtaButtonText,
+              finalCta_imageUrl: values.finalCta_imageUrl,
+            },
+            aboutPage: {
+              mainTitle: values.aboutMainTitle || '',
+              mainSubtitle: values.aboutMainSubtitle || '',
+              historyTitle: values.historyTitle || '',
+              historyFrench: values.historyFrench || '',
+              historySango: values.historySango || '',
+              visionTitle: values.visionTitle || '',
+              visionFrench: values.visionFrench || '',
+              visionSango: values.visionSango || '',
+              ctaTitle: values.aboutCtaTitle || '',
+              teamMembers: (values.teamMembers || []).map(m => ({
+                name: m.name,
+                role: m.role,
+                imageUrl: m.imageUrl,
+                bio: m.bio || ''
+              })),
+              ctaSubtitle: ''
+            }
+          },
+          legal: {
+            termsOfService: values.termsOfService || '',
+            privacyPolicy: values.privacyPolicy || '',
           }
-        },
-        legal: {
-          termsOfService: values.termsOfService || '',
-          privacyPolicy: values.privacyPolicy || '',
         }
-      }
-    });
+      });
 
-    if (result.success) {
-      toast({ title: "Configuration Ndara enregistrée !" });
-    } else {
-      toast({ variant: 'destructive', title: "Erreur", description: result.error });
+      if (result.success) {
+        toast({ title: "Configuration Ndara enregistrée !" });
+      } else {
+        toast({ variant: 'destructive', title: "Erreur", description: result.error });
+      }
+    } catch (e: any) {
+      toast({ variant: 'destructive', title: "Erreur technique" });
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   if (isLoading) {
