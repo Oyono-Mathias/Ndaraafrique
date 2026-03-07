@@ -2,10 +2,11 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Course } from '@/lib/types';
+import type { Course, NdaraUser } from '@/lib/types';
 
 /**
  * Soumettre une demande de rachat de cours par la plateforme.
+ * Vérifie rigoureusement les conditions CEO avant enregistrement.
  */
 export async function requestCourseBuyoutAction({
   courseId,
@@ -18,31 +19,63 @@ export async function requestCourseBuyoutAction({
 }): Promise<{ success: boolean; error?: string }> {
   try {
     const db = getAdminDb();
+    
+    // 1. Vérification du cours
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();
-
     if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
-    const data = courseDoc.data();
-    if (data?.instructorId !== instructorId) return { success: false, error: 'Permission refusée.' };
+    
+    const courseData = courseDoc.data() as Course;
+    if (courseData.instructorId !== instructorId) return { success: false, error: 'Permission refusée.' };
+    if (courseData.status !== 'Published') return { success: false, error: 'Seule une formation publiée peut être rachetée.' };
 
+    // 2. Vérification de l'instructeur
+    const userDoc = await db.collection('users').doc(instructorId).get();
+    const userData = userDoc.data() as NdaraUser;
+    
+    if (userData.buyoutSanctions?.isSanctioned) {
+        return { success: false, error: 'Votre compte est restreint pour violation des règles de cession.' };
+    }
+    if (!userData.isProfileComplete) {
+        return { success: false, error: 'Votre profil doit être 100% complété pour cette transaction.' };
+    }
+
+    // 3. Vérification du volume de contenu (Server-side enforcement)
+    const sectionsSnap = await courseRef.collection('sections').get();
+    if (sectionsSnap.size < 2) {
+        return { success: false, error: 'Volume insuffisant : Minimum 2 sections requises.' };
+    }
+
+    let lectureCount = 0;
+    for (const sec of sectionsSnap.docs) {
+        const lecturesSnap = await sec.ref.collection('lectures').get();
+        lectureCount += lecturesSnap.size;
+    }
+
+    if (lectureCount < 5) {
+        return { success: false, error: 'Volume insuffisant : Minimum 5 leçons requises.' };
+    }
+
+    // 4. Mise à jour de la demande
     await courseRef.update({
       buyoutStatus: 'requested',
       buyoutPrice: requestedPrice,
       updatedAt: FieldValue.serverTimestamp(),
     });
 
-    // Logger la demande
+    // 5. Journalisation audit
     await db.collection('admin_audit_logs').add({
       adminId: 'SYSTEM',
       eventType: 'course.buyout.request',
       target: { id: courseId, type: 'course' },
-      details: `L'instructeur ${instructorId} demande un rachat de "${data?.title}" pour ${requestedPrice} XOF.`,
+      details: `Demande de rachat : ${userData.fullName} propose "${courseData.title}" pour ${requestedPrice} XOF.`,
       timestamp: FieldValue.serverTimestamp(),
     });
 
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    console.error("BUYOUT_REQUEST_ERROR:", error);
+    return { success: false, error: error.message || "Une erreur est survenue lors de la demande." };
   }
 }
 
