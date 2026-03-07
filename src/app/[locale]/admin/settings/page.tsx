@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 import { updateGlobalSettings } from '@/actions/settingsActions';
-import { repairAllCertificatesAction, syncUsersWithAuthAction } from '@/actions/userActions';
+import { repairAllCertificatesAction, syncUsersWithAuthAction, syncAllCourseStatsAction } from '@/actions/userActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -34,7 +34,7 @@ import {
   History,
   ImageIcon,
   UploadCloud,
-  RefreshCw
+  Star
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -97,6 +97,7 @@ export default function AdminSettingsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -274,6 +275,21 @@ export default function AdminSettingsPage() {
       toast({ variant: 'destructive', title: "Erreur technique" });
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleSyncRatings = async () => {
+    if (!currentUser) return;
+    setIsSyncing(true);
+    try {
+        const result = await syncAllCourseStatsAction(currentUser.uid);
+        if (result.success) {
+            toast({ title: "Synchronisation terminée", description: `${result.count} formations mises à jour.` });
+        }
+    } catch (err) {
+        toast({ variant: 'destructive', title: "Échec sync" });
+    } finally {
+        setIsSyncing(false);
     }
   };
 
@@ -645,6 +661,10 @@ export default function AdminSettingsPage() {
                             </p>
                         </div>
                         <div className="grid sm:grid-cols-2 gap-4">
+                            <Button type="button" onClick={handleSyncRatings} disabled={isSyncing} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">
+                                {isSyncing ? <Loader2 className="animate-spin mr-2"/> : <Star className="mr-2 h-4 w-4 text-primary"/>}
+                                Recalculer les scores des cours
+                            </Button>
                             <Button type="button" onClick={() => repairAllCertificatesAction(currentUser!.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Réparer les Certificats (Mass Sync)</Button>
                             <Button type="button" onClick={() => syncUsersWithAuthAction(currentUser!.uid)} className="h-16 bg-slate-950 border border-slate-800 text-white font-black uppercase text-[10px] tracking-widest rounded-2xl hover:bg-slate-800 transition-colors shadow-lg">Importer membres Firebase Auth</Button>
                         </div>

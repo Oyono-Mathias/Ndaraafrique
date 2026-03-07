@@ -20,6 +20,46 @@ async function isRequesterAdmin(uid: string): Promise<boolean> {
 }
 
 /**
+ * RÉPARER LES STATISTIQUES DES COURS (Sync Ratings)
+ */
+export async function syncAllCourseStatsAction(adminId: string) {
+    const isAdmin = await isRequesterAdmin(adminId);
+    if (!isAdmin) return { success: false, error: "Action réservée aux administrateurs." };
+
+    try {
+        const db = getAdminDb();
+        const coursesSnap = await db.collection('courses').get();
+        let count = 0;
+
+        for (const courseDoc of coursesSnap.docs) {
+            const courseId = courseDoc.id;
+            const reviewsSnap = await db.collection('reviews').where('courseId', '==', courseId).get();
+            
+            if (!reviewsSnap.empty) {
+                const reviewsData = reviewsSnap.docs.map(d => d.data());
+                const total = reviewsData.length;
+                const avg = reviewsData.reduce((acc, curr) => acc + (curr.rating || 0), 0) / total;
+                
+                await courseDoc.ref.update({
+                    rating: Number(avg.toFixed(1)),
+                    participantsCount: total
+                });
+                count++;
+            } else {
+                await courseDoc.ref.update({
+                    rating: 0,
+                    participantsCount: 0
+                });
+            }
+        }
+        
+        return { success: true, count };
+    } catch (e: any) {
+        return { success: false, error: e.message };
+    }
+}
+
+/**
  * ACCORDE L'ACCÈS À UN COURS
  */
 export async function grantCourseAccess({
