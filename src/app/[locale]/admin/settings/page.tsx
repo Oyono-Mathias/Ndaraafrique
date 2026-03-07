@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -39,7 +38,8 @@ import {
   Info,
   Wrench,
   History,
-  Eye
+  Eye,
+  ImageIcon
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 
@@ -68,14 +68,20 @@ const settingsSchema = z.object({
   // Landing Page
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
+  landingHeroImageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   landingHeroCta: z.string().optional(),
   howItWorksTitle: z.string().optional(),
   howItWorksSubtitle: z.string().optional(),
+  howItWorks_step1_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  howItWorks_step2_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  howItWorks_step3_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   securitySectionTitle: z.string().optional(),
   securitySectionSubtitle: z.string().optional(),
+  securitySection_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   finalCtaTitle: z.string().optional(),
   finalCtaSubtitle: z.string().optional(),
   finalCtaButtonText: z.string().optional(),
+  finalCta_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
 
   // About Page
   aboutMainTitle: z.string().optional(),
@@ -132,14 +138,20 @@ export default function AdminSettingsPage() {
           
           landingHeroTitle: data.content?.landingPage?.heroTitle || "",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
+          landingHeroImageUrl: data.content?.landingPage?.heroImageUrl || "",
           landingHeroCta: data.content?.landingPage?.heroCtaText || "",
           howItWorksTitle: data.content?.landingPage?.howItWorksTitle || "",
           howItWorksSubtitle: data.content?.landingPage?.howItWorksSubtitle || "",
+          howItWorks_step1_imageUrl: data.content?.landingPage?.howItWorks_step1_imageUrl || "",
+          howItWorks_step2_imageUrl: data.content?.landingPage?.howItWorks_step2_imageUrl || "",
+          howItWorks_step3_imageUrl: data.content?.landingPage?.howItWorks_step3_imageUrl || "",
           securitySectionTitle: data.content?.landingPage?.securitySectionTitle || "",
           securitySectionSubtitle: data.content?.landingPage?.securitySectionSubtitle || "",
+          securitySection_imageUrl: data.content?.landingPage?.securitySection_imageUrl || "",
           finalCtaTitle: data.content?.landingPage?.finalCtaTitle || "",
           finalCtaSubtitle: data.content?.landingPage?.finalCtaSubtitle || "",
           finalCtaButtonText: data.content?.landingPage?.finalCtaButtonText || "",
+          finalCta_imageUrl: data.content?.landingPage?.finalCta_imageUrl || "",
 
           aboutMainTitle: data.content?.aboutPage?.mainTitle || "",
           aboutMainSubtitle: data.content?.aboutPage?.mainSubtitle || "",
@@ -184,14 +196,20 @@ export default function AdminSettingsPage() {
           landingPage: {
             heroTitle: values.landingHeroTitle,
             heroSubtitle: values.landingHeroSubtitle,
+            heroImageUrl: values.landingHeroImageUrl,
             heroCtaText: values.landingHeroCta,
             howItWorksTitle: values.howItWorksTitle,
             howItWorksSubtitle: values.howItWorksSubtitle,
+            howItWorks_step1_imageUrl: values.howItWorks_step1_imageUrl,
+            howItWorks_step2_imageUrl: values.howItWorks_step2_imageUrl,
+            howItWorks_step3_imageUrl: values.howItWorks_step3_imageUrl,
             securitySectionTitle: values.securitySectionTitle,
             securitySectionSubtitle: values.securitySectionSubtitle,
+            securitySection_imageUrl: values.securitySection_imageUrl,
             finalCtaTitle: values.finalCtaTitle,
             finalCtaSubtitle: values.finalCtaSubtitle,
             finalCtaButtonText: values.finalCtaButtonText,
+            finalCta_imageUrl: values.finalCta_imageUrl,
           },
           aboutPage: {
             mainTitle: values.aboutMainTitle || '',
@@ -367,25 +385,40 @@ export default function AdminSettingsPage() {
                 <CardHeader className="p-6 border-b border-white/5 bg-slate-800/30">
                   <CardTitle className="text-lg font-bold">Édition Page d'Accueil</CardTitle>
                 </CardHeader>
-                <CardContent className="p-6 space-y-6">
+                <CardContent className="p-6 space-y-8">
                   <div className="space-y-4">
-                    <h3 className="text-xs font-black uppercase text-primary tracking-widest border-b border-primary/10 pb-2">Hero Section</h3>
-                    <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
-                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Principal</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
-                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre</FormLabel><FormControl><Textarea {...field} rows={2} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
-                    )} />
+                    <h3 className="text-xs font-black uppercase text-primary tracking-widest border-b border-primary/10 pb-2 flex items-center gap-2">
+                        <Sparkles className="h-3.5 w-3.5" /> Hero Section
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <FormField control={form.control} name="landingHeroTitle" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Principal</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl" /></FormControl></FormItem>
+                            )} />
+                            <FormField control={form.control} name="landingHeroSubtitle" render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre</FormLabel><FormControl><Textarea {...field} rows={3} className="bg-slate-800 border-slate-700 rounded-xl" /></FormControl></FormItem>
+                            )} />
+                        </div>
+                        <FormField control={form.control} name="landingHeroImageUrl" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"><ImageIcon className="h-3 w-3" /> URL Image Hero (HD)</FormLabel>
+                                <FormControl><Input {...field} placeholder="https://images.unsplash.com/..." className="bg-slate-800 border-slate-700 h-12 rounded-xl font-mono text-[10px]" /></FormControl>
+                                <FormDescription className="text-[10px]">Image principale de la page d'accueil.</FormDescription>
+                            </FormItem>
+                        )} />
+                    </div>
                   </div>
 
                   <div className="space-y-4 pt-4">
                     <h3 className="text-xs font-black uppercase text-primary tracking-widest border-b border-primary/10 pb-2">Sections Impact</h3>
-                    <FormField control={form.control} name="howItWorksTitle" render={({ field }) => (
-                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre "Comment ça marche"</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
-                    )} />
-                    <FormField control={form.control} name="securitySectionTitle" render={({ field }) => (
-                      <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre Section Sécurité</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700" /></FormControl></FormItem>
-                    )} />
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="howItWorksTitle" render={({ field }) => (
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre "Comment ça marche"</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl" /></FormControl></FormItem>
+                        )} />
+                        <FormField control={form.control} name="securitySection_imageUrl" render={({ field }) => (
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Image Section Sécurité</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl font-mono text-[10px]" /></FormControl></FormItem>
+                        )} />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

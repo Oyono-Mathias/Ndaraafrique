@@ -374,6 +374,7 @@ export interface Settings {
     landingPage?: {
       heroTitle?: string;
       heroSubtitle?: string;
+      heroImageUrl?: string;
       heroCtaText?: string;
       howItWorksTitle?: string;
       howItWorksSubtitle?: string;

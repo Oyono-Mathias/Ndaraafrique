@@ -2,14 +2,13 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
- * ✅ RÉSOLU : Image Hero remplacée par un visuel HD garanti.
- * ✅ RÉSOLU : Structure JSX ultra-propre pour le build.
+ * ✅ RÉSOLU : Image Hero personnalisable par l'admin via Firestore.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot, getFirestore, where, orderBy, getDocs, doc } from 'firebase/firestore';
 import Link from 'next/link';
-import type { Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser, Settings } from '@/lib/types';
 import Image from 'next/image';
 import { ChevronsRight, Menu, X, Laptop, Award, TrendingUp, Bot, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,7 @@ import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/s
 import { Footer } from '@/components/layout/footer';
 import { Stats } from '@/components/landing/Stats';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
+import { useDoc } from '@/firebase';
 
 const Navbar = () => {
     const { user, role } = useRole();
@@ -111,6 +111,11 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
 
+  // Récupération des réglages pour l'image Hero dynamique
+  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
+  const { data: settings } = useDoc<Settings>(settingsRef);
+  const landingPageSettings = settings?.content?.landingPage;
+
   const dashboardUrl = useMemo(() => {
     if (role === 'admin') return '/admin';
     if (role === 'instructor') return '/instructor/dashboard';
@@ -175,15 +180,15 @@ export default function LandingPage() {
                         Nouvelle session disponible
                     </div>
                     <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-brand-dark leading-tight mb-6 uppercase tracking-tight">
-                        Maîtrisez les <br />
-                        <span className="gradient-text">Compétences de Demain</span>
+                        {landingPageSettings?.heroTitle || "Maîtrisez les"} <br />
+                        <span className="gradient-text">{landingPageSettings?.heroSubtitle || "Compétences de Demain"}</span>
                     </h1>
                     <p className="text-lg text-slate-600 mb-8 max-w-2xl mx-auto lg:mx-0 leading-relaxed font-medium">
                         Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                         <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
-                            Commencer à apprendre
+                            {landingPageSettings?.heroCtaText || "Commencer à apprendre"}
                             <ChevronsRight className="w-5 h-5" />
                         </Link>
                         <Link href={`/${locale}/search`} className="px-10 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
@@ -207,7 +212,7 @@ export default function LandingPage() {
                     <div className="absolute -inset-4 bg-gradient-to-r from-brand-primary to-brand-secondary rounded-2xl blur-3xl opacity-10"></div>
                     <div className="relative aspect-video rounded-3xl shadow-2xl border border-white/50 overflow-hidden transform hover:scale-[1.01] transition duration-500 bg-slate-200">
                         <Image 
-                            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop" 
+                            src={landingPageSettings?.heroImageUrl || "https://images.unsplash.com/photo-1522202176988-66273c2fd55f?q=80&w=1200&auto=format&fit=crop"} 
                             alt="Étudiants Ndara Afrique" 
                             fill 
                             className="object-cover"
@@ -241,8 +246,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto">
             <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
                 <h2 className="text-brand-primary font-black tracking-[0.3em] uppercase text-[10px]">Notre Mission</h2>
-                <h3 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">Apprenez avec Efficacité</h3>
-                <p className="text-slate-600 font-medium leading-relaxed">Une approche pédagogique unique qui combine théorie rigoureuse et pratique intensive.</p>
+                <h3 className="text-3xl md:text-4xl font-black text-brand-dark uppercase tracking-tight">{landingPageSettings?.howItWorksTitle || "Apprenez avec Efficacité"}</h3>
+                <p className="text-slate-600 font-medium leading-relaxed">{landingPageSettings?.howItWorksSubtitle || "Une approche pédagogique unique qui combine théorie rigoureuse et pratique intensive."}</p>
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
@@ -323,13 +328,13 @@ export default function LandingPage() {
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-brand-primary rounded-full blur-[120px] opacity-20"></div>
         
         <div className="max-w-4xl mx-auto relative z-10 text-center space-y-10">
-            <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-tight">Prêt à devenir un expert ?</h2>
+            <h2 className="text-3xl md:text-6xl font-black text-white uppercase tracking-tight leading-tight">{landingPageSettings?.finalCtaTitle || "Prêt à devenir un expert ?"}</h2>
             <p className="text-slate-400 text-lg md:text-xl font-medium max-w-2xl mx-auto leading-relaxed">
-                Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic.
+                {landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic."}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
                 <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
-                    Créer mon profil gratuit
+                    {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
                 </Link>
                 <Link href={`/${locale}/student/support`} className="px-12 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
                     Contacter un conseiller
