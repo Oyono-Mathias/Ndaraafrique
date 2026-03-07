@@ -8,6 +8,7 @@
 import { useRole } from '@/context/RoleContext';
 import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
 import { RecentActivity } from '@/components/dashboards/RecentActivity';
+import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { BookOpen, Trophy, Sparkles, Search as LucideSearch, Bot, BadgeEuro, Share2, Wallet, TrendingUp, ChevronRight } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
