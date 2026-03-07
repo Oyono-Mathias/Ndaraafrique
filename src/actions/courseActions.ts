@@ -2,7 +2,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import type { Course, NdaraUser } from '@/lib/types';
+import type { Course, NdaraUser, Settings } from '@/lib/types';
 
 /**
  * Soumettre une demande de rachat de cours par la plateforme.
@@ -20,6 +20,13 @@ export async function requestCourseBuyoutAction({
   try {
     const db = getAdminDb();
     
+    // 0. Vérification de l'activation globale de l'option
+    const settingsSnap = await db.collection('settings').doc('global').get();
+    const settingsData = settingsSnap.data() as Settings;
+    if (settingsData?.platform?.allowCourseBuyout === false) {
+        return { success: false, error: 'Le programme de rachat est actuellement suspendu par la direction.' };
+    }
+
     // 1. Vérification du cours
     const courseRef = db.collection('courses').doc(courseId);
     const courseDoc = await courseRef.get();

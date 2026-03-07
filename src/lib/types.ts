@@ -367,6 +367,7 @@ export interface Settings {
     announcementMessage?: string;
     maintenanceMode: boolean;
     allowInstructorSignup: boolean;
+    allowCourseBuyout: boolean; // ✅ Nouveau bouton global
     autoApproveCourses: boolean;
     enableInternalMessaging: boolean;
     allowYoutube?: boolean;

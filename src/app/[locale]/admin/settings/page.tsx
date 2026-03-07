@@ -43,7 +43,8 @@ import {
   MessageCircle,
   Palette,
   Type,
-  Layout
+  Layout,
+  ShoppingCart
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -69,6 +70,7 @@ const settingsSchema = z.object({
   announcementMessage: z.string().optional(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
+  allowCourseBuyout: z.boolean().default(true), // ✅ Nouveau champ schema
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
   bunnyLibraryId: z.string().optional(),
@@ -138,7 +140,8 @@ export default function AdminSettingsPage() {
       logoUrl: '/logo.png',
       primaryColor: 'emerald',
       fontScale: 'medium',
-      borderRadius: 'lg'
+      borderRadius: 'lg',
+      allowCourseBuyout: true
     }
   });
 
@@ -165,6 +168,7 @@ export default function AdminSettingsPage() {
           announcementMessage: data.platform?.announcementMessage || '',
           maintenanceMode: data.platform?.maintenanceMode || false,
           allowInstructorSignup: data.platform?.allowInstructorSignup ?? true,
+          allowCourseBuyout: data.platform?.allowCourseBuyout ?? true,
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
           bunnyLibraryId: data.platform?.bunnyLibraryId || '',
@@ -291,6 +295,7 @@ export default function AdminSettingsPage() {
           announcementMessage: values.announcementMessage, 
           maintenanceMode: values.maintenanceMode,
           allowInstructorSignup: values.allowInstructorSignup,
+          allowCourseBuyout: values.allowCourseBuyout, // ✅ Enregistrement du paramètre
           allowYoutube: values.allowYoutube,
           allowBunny: values.allowBunny,
           bunnyLibraryId: values.bunnyLibraryId,
@@ -605,6 +610,18 @@ export default function AdminSettingsPage() {
                         <div className="space-y-0.5">
                           <FormLabel className="text-sm font-bold text-white">Inscriptions Formateurs</FormLabel>
                           <FormDescription className="text-[10px] uppercase">Autoriser les nouvelles demandes</FormDescription>
+                        </div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    {/* ✅ Nouveau switch Buyout */}
+                    <FormField control={form.control} name="allowCourseBuyout" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-primary/5 border border-primary/10 rounded-2xl">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-bold text-white flex items-center gap-2">
+                            <ShoppingCart className="h-4 w-4 text-primary" /> Rachat de formations
+                          </FormLabel>
+                          <FormDescription className="text-[10px] uppercase">Autoriser les cessions directes</FormDescription>
                         </div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>

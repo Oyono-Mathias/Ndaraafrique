@@ -3,20 +3,21 @@
 /**
  * @fileOverview Onglet de cession de cours avec vérification des conditions CEO.
  * ✅ CONDITIONS : Min 2 sections, 5 leçons, Statut 'Published', Profil complet, Pas de sanctions.
+ * ✅ NOUVEAU : Respecte le bouton d'activation global de l'admin.
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { Course, Section, Lecture } from '@/lib/types';
+import { Course, Section, Lecture, Settings } from '@/lib/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { ShoppingCart, ShieldAlert, CheckCircle2, Loader2, Coins, AlertCircle, ListChecks, Info } from 'lucide-react';
+import { ShoppingCart, ShieldAlert, CheckCircle2, Loader2, Coins, AlertCircle, ListChecks, Info, Ban } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useRole } from '@/context/RoleContext';
 import { requestCourseBuyoutAction } from '@/actions/courseActions';
-import { getFirestore, collection, query, getDocs } from 'firebase/firestore';
+import { getFirestore, collection, query, getDocs, doc, onSnapshot } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
 export function CourseBuyoutTab({ course }: { course: Course }) {
@@ -28,11 +29,20 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
     const [agreed, setAgreed] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    // États de vérification
     const [stats, setStats] = useState({ sections: 0, lectures: 0 });
     const [isValidating, setIsValidating] = useState(true);
+    const [isBuyoutEnabled, setIsBuyoutEnabled] = useState(true);
 
     useEffect(() => {
+        // 1. Écouter les réglages plateforme pour savoir si le rachat est activé
+        const unsubSettings = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data() as Settings;
+                setIsBuyoutEnabled(data.platform?.allowCourseBuyout ?? true);
+            }
+        });
+
+        // 2. Vérifier le contenu du cours
         const checkContent = async () => {
             setIsValidating(true);
             try {
@@ -51,12 +61,13 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
                 setIsValidating(false);
             }
         };
+        
         checkContent();
+        return () => unsubSettings();
     }, [course.id, db]);
 
     const isRequested = course.buyoutStatus === 'requested';
 
-    // Checklist de conformité CEO
     const checklist = useMemo(() => [
         { 
             label: "Formation publiée officiellement", 
@@ -80,7 +91,7 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
         }
     ], [course.status, stats, currentUser]);
 
-    const canSell = checklist.every(c => c.valid);
+    const canSell = checklist.every(c => c.valid) && isBuyoutEnabled;
 
     const handleRequest = async () => {
         if (!currentUser || !agreed || !canSell) return;
@@ -120,9 +131,23 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
         );
     }
 
+    if (!isBuyoutEnabled) {
+        return (
+            <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] p-12 text-center space-y-6 animate-in fade-in duration-700">
+                <div className="p-4 bg-slate-800 rounded-full inline-block">
+                    <Ban className="h-12 w-12 text-slate-500" />
+                </div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Programme Suspendu</h3>
+                <p className="text-slate-400 max-w-md mx-auto leading-relaxed font-medium">
+                    L'option de rachat direct de formations est actuellement désactivée par l'administration. 
+                    Vous recevrez une notification dès que les acquisitions reprendront.
+                </p>
+            </Card>
+        );
+    }
+
     return (
         <div className="max-w-2xl mx-auto space-y-8 pb-20">
-            {/* --- CHECKLIST DE CONFORMITÉ --- */}
             <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                 <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
                     <div className="flex items-center gap-4">
@@ -161,7 +186,6 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
                 </CardContent>
             </Card>
 
-            {/* --- FORMULAIRE DE VENTE --- */}
             <Card className={cn(
                 "bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl transition-all",
                 !canSell && "opacity-40 grayscale pointer-events-none"
@@ -225,7 +249,7 @@ export function CourseBuyoutTab({ course }: { course: Course }) {
                 </CardContent>
             </Card>
 
-            {!canSell && !isValidating && (
+            {!canSell && !isValidating && isBuyoutEnabled && (
                 <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 animate-in slide-in-from-bottom-2">
                     <Info className="h-5 w-5" />
                     <p className="text-[10px] font-black uppercase tracking-widest">Améliorez votre formation pour débloquer l'option de rachat.</p>
