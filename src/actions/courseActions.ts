@@ -36,21 +36,21 @@ export async function requestCourseBuyoutAction({
     if (courseData.instructorId !== instructorId) return { success: false, error: 'Permission refusée.' };
     if (courseData.status !== 'Published') return { success: false, error: 'Seule une formation publiée peut être rachetée.' };
 
-    // 2. Vérification de l'instructeur
+    // 2. Vérification de l'instructeur (Sanctions et Profil)
     const userDoc = await db.collection('users').doc(instructorId).get();
     const userData = userDoc.data() as NdaraUser;
     
     if (userData.buyoutSanctions?.isSanctioned) {
-        return { success: false, error: 'Votre compte est restreint pour violation des règles de cession.' };
+        return { success: false, error: 'Votre compte est restreint pour violation des règles de rachat.' };
     }
     if (!userData.isProfileComplete) {
-        return { success: false, error: 'Votre profil doit être 100% complété pour cette transaction.' };
+        return { success: false, error: 'Votre profil doit être 100% complété (Photo, Bio, Expertise).' };
     }
 
     // 3. Vérification du volume de contenu (Server-side enforcement)
     const sectionsSnap = await courseRef.collection('sections').get();
     if (sectionsSnap.size < 2) {
-        return { success: false, error: 'Volume insuffisant : Minimum 2 sections requises.' };
+        return { success: false, error: 'Contenu insuffisant : Minimum 2 sections requises.' };
     }
 
     let lectureCount = 0;
@@ -60,7 +60,7 @@ export async function requestCourseBuyoutAction({
     }
 
     if (lectureCount < 5) {
-        return { success: false, error: 'Volume insuffisant : Minimum 5 leçons requises.' };
+        return { success: false, error: 'Contenu insuffisant : Minimum 5 leçons requises.' };
     }
 
     // 4. Mise à jour de la demande
