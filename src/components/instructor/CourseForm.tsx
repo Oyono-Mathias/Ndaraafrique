@@ -6,7 +6,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
 import { collection, query, orderBy, getFirestore } from 'firebase/firestore';
@@ -20,7 +19,7 @@ import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, For
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe } from 'lucide-react';
+import { ArrowLeft, Bot, Image as ImageIcon, Loader2, Sparkles, LayoutGrid, CheckCircle2, Frown, Globe, UploadCloud } from 'lucide-react';
 import type { Course, CourseTemplate } from '@/lib/types';
 import Image from 'next/image';
 import { useToast } from '@/hooks/use-toast';
@@ -58,9 +57,9 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
   const db = getFirestore();
   const [isPending, startTransition] = useTransition();
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(initialData?.imageUrl || null);
-  const [imageSource, setImageSource] = useState<'upload' | 'template' | 'url'>('template');
+  const [imageSource, setImageSource] = useState<'upload' | 'template'>('template');
   const { user } = useRole();
 
   // Chargement des modèles d'images depuis la collection admin
@@ -78,32 +77,33 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     },
   });
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    const storage = getStorage();
-    const storageRef = ref(storage, `courses/${user.uid}/${Date.now()}_${file.name}`);
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    setIsUploading(true);
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', user.uid);
+        formData.append('folder', 'course_covers');
 
-    uploadTask.on('state_changed',
-      (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-        setUploadProgress(progress);
-      },
-      (error) => {
-        toast({ variant: 'destructive', title: "Échec du téléversement" });
-        setUploadProgress(null);
-      },
-      () => {
-        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-          form.setValue('imageUrl', downloadURL);
-          setImagePreview(downloadURL);
-          setUploadProgress(null);
-          toast({ title: "Image prête !" });
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
         });
-      }
-    );
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        form.setValue('imageUrl', data.url);
+        setImagePreview(data.url);
+        toast({ title: "Image transmise !", description: "Elle est maintenant hébergée sur votre infrastructure CDN." });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Erreur de téléversement", description: error.message });
+    } finally {
+        setIsUploading(false);
+    }
   };
 
   const handleSelectTemplate = (url: string) => {
@@ -123,7 +123,6 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
     try {
         const result = await assistCourseCreation({ courseTitle: title });
         form.setValue('description', result.description);
-        // On vérifie si la catégorie suggérée existe dans notre liste
         if (courseCategories.includes(result.category)) {
             form.setValue('category', result.category);
         }
@@ -151,7 +150,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     </Button>
                     <div>
                         <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Nouvelle Formation</h1>
-                        <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Étape 1 : Identité du cours</p>
+                        <p className="text-slate-500 text-xs font-medium uppercase tracking-widest">Identité du savoir</p>
                     </div>
                 </header>
             )}
@@ -161,7 +160,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                         <div>
                             <CardTitle className="text-xl font-bold uppercase tracking-tight">Contenu Pédagogique</CardTitle>
-                            <CardDescription>Présentez votre expertise de manière claire.</CardDescription>
+                            <CardDescription>Décrivez votre expertise aux futurs Ndara.</CardDescription>
                         </div>
                         <Button 
                             type="button" 
@@ -235,11 +234,11 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
             
              <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-xl rounded-[2rem] overflow-hidden">
                 <CardHeader className="p-8 border-b dark:border-white/5 bg-slate-50/50 dark:bg-slate-800/30">
-                    <CardTitle className="text-xl font-bold uppercase tracking-tight">Couverture Visuelle</CardTitle>
-                    <CardDescription>Une belle image augmente le taux d'inscription de 40%.</CardDescription>
+                    <CardTitle className="text-xl font-bold uppercase tracking-tight">Visuel de Couverture</CardTitle>
+                    <CardDescription>Importez une image percutante ou utilisez nos modèles.</CardDescription>
                 </CardHeader>
                 <CardContent className="p-8 space-y-8">
-                   <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-inner">
+                   <div className="w-full aspect-video rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800 flex items-center justify-center relative overflow-hidden bg-slate-50 dark:bg-slate-950 shadow-inner group">
                         {imagePreview ? (
                             <Image src={imagePreview} alt="Aperçu" fill className="object-cover animate-in fade-in duration-700" />
                         ) : (
@@ -248,19 +247,20 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                                 <p className="text-[10px] font-black uppercase tracking-widest">Aucun visuel défini</p>
                              </div>
                         )}
-                        {uploadProgress !== null && (
-                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-8">
+                        {isUploading && (
+                            <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center p-8 z-20">
                                 <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
-                                <Progress value={uploadProgress} className="h-2 w-full max-w-xs" />
-                                <p className="text-white font-bold text-xs mt-2 uppercase tracking-widest">{Math.round(uploadProgress)}%</p>
+                                <p className="text-white font-black text-xs uppercase tracking-widest animate-pulse">Téléversement...</p>
                             </div>
                         )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                             <div className="p-4 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 text-white font-black uppercase text-[10px]">Modifier le visuel</div>
+                        </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 p-1 bg-slate-100 dark:bg-slate-950 rounded-2xl w-fit border border-slate-200 dark:border-slate-800">
-                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'ghost'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Bibliothèque Ndara</Button>
-                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'ghost'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Mon Fichier</Button>
-                        <Button type="button" variant={imageSource === 'url' ? 'default' : 'ghost'} onClick={() => setImageSource('url')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Lien Web</Button>
+                        <Button type="button" variant={imageSource === 'template' ? 'default' : 'ghost'} onClick={() => setImageSource('template')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Modèles Ndara</Button>
+                        <Button type="button" variant={imageSource === 'upload' ? 'default' : 'ghost'} onClick={() => setImageSource('upload')} size="sm" className="rounded-xl font-black text-[9px] uppercase tracking-widest h-10 px-4">Téléverser mon fichier</Button>
                     </div>
 
                     {imageSource === 'template' && (
@@ -293,7 +293,7 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                             ) : (
                                 <div className="text-center py-12 bg-slate-50 dark:bg-slate-950/50 rounded-3xl border-2 border-dashed border-slate-200 dark:border-slate-800">
                                     <Frown className="h-10 w-10 mx-auto text-slate-300 mb-2 opacity-20" />
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aucun modèle disponible.</p>
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Aucun modèle prêt.</p>
                                 </div>
                             )}
                         </div>
@@ -302,34 +302,20 @@ export function CourseForm({ mode, initialData, onSubmit }: CourseFormProps) {
                     {imageSource === 'upload' && (
                         <div className="space-y-4 animate-in slide-in-from-bottom-2 duration-500">
                             <label className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-3xl cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-950 transition-colors">
-                                <ImageIcon className="h-10 w-10 text-slate-300 mb-2" />
-                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Sélectionner un fichier image</span>
-                                <Input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={uploadProgress !== null}/>
+                                <UploadCloud className="h-10 w-10 text-primary mb-2" />
+                                <span className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Choisir un fichier JPG/PNG</span>
+                                <Input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" disabled={isUploading}/>
                             </label>
                         </div>
-                    )}
-
-                    {imageSource === 'url' && (
-                        <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                            <FormItem className="animate-in slide-in-from-bottom-2 duration-500">
-                                <FormControl>
-                                    <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-1 pr-4">
-                                        <div className="p-3 bg-slate-200 dark:bg-slate-800 rounded-xl text-slate-500"><Globe className="h-5 w-5"/></div>
-                                        <Input placeholder="https://images.unsplash.com/..." {...field} onChange={(e) => { field.onChange(e); setImagePreview(e.target.value); }} className="border-none bg-transparent focus-visible:ring-0 h-12" />
-                                    </div>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
                     )}
                 </CardContent>
             </Card>
 
             <div className="flex flex-col sm:flex-row justify-end gap-4 sticky bottom-6 z-20 pt-4 border-t border-white/5 bg-slate-950/80 backdrop-blur-xl p-4 -m-4 rounded-t-3xl">
-                <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending} className="h-14 px-8 rounded-2xl font-bold text-slate-500">Annuler</Button>
-                <Button type="submit" disabled={isPending || uploadProgress !== null} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 transition-all active:scale-[0.98]">
+                <Button type="button" variant="ghost" onClick={() => router.back()} disabled={isPending} className="h-14 px-8 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
+                <Button type="submit" disabled={isPending || isUploading} className="h-16 px-12 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 transition-all active:scale-[0.98]">
                     {isPending ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Sparkles className="mr-2 h-5 w-5" />}
-                    {mode === 'create' ? "Créer ma formation" : "Enregistrer les modifications"}
+                    {mode === 'create' ? "Initialiser la formation" : "Sauvegarder les changements"}
                 </Button>
             </div>
         </form>

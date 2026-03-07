@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -39,9 +39,11 @@ import {
   Wrench,
   History,
   Eye,
-  ImageIcon
+  ImageIcon,
+  UploadCloud
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
+import Image from 'next/image';
 
 const teamMemberSchema = z.object({
   name: z.string().min(2, "Nom requis"),
@@ -108,6 +110,7 @@ export default function AdminSettingsPage() {
   const db = getFirestore();
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isUploading, setIsUploading] = useState<string | null>(null);
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
@@ -172,6 +175,46 @@ export default function AdminSettingsPage() {
     });
     return () => unsubscribe();
   }, [db, form]);
+
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: keyof SettingsValues | string) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser) return;
+
+    setIsUploading(fieldName);
+    try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('userId', currentUser.uid);
+        formData.append('folder', 'platform_assets');
+
+        const response = await fetch('/api/storage/upload', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error);
+
+        // Si fieldName contient un index (ex: teamMembers.0.imageUrl)
+        if (fieldName.includes('.')) {
+            const parts = fieldName.split('.');
+            if (parts[0] === 'teamMembers') {
+                const index = parseInt(parts[1]);
+                const members = form.getValues('teamMembers') || [];
+                members[index].imageUrl = data.url;
+                form.setValue('teamMembers', members);
+            }
+        } else {
+            form.setValue(fieldName as any, data.url);
+        }
+        
+        toast({ title: "Fichier prêt !", description: "L'image a été hébergée sur votre CDN." });
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: "Échec du téléversement", description: error.message });
+    } finally {
+        setIsUploading(null);
+    }
+  };
 
   const onSubmit = async (values: SettingsValues) => {
     if (!currentUser) return;
@@ -399,13 +442,27 @@ export default function AdminSettingsPage() {
                             <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Sous-titre</FormLabel><FormControl><Textarea {...field} rows={3} className="bg-slate-800 border-slate-700 rounded-xl" /></FormControl></FormItem>
                             )} />
                         </div>
-                        <FormField control={form.control} name="landingHeroImageUrl" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2"><ImageIcon className="h-3 w-3" /> URL Image Hero (HD)</FormLabel>
-                                <FormControl><Input {...field} placeholder="https://images.unsplash.com/..." className="bg-slate-800 border-slate-700 h-12 rounded-xl font-mono text-[10px]" /></FormControl>
-                                <FormDescription className="text-[10px]">Image principale de la page d'accueil.</FormDescription>
-                            </FormItem>
-                        )} />
+                        <div className="space-y-4">
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500 flex items-center gap-2">
+                                <ImageIcon className="h-3 w-3" /> Image Hero (Bunny CDN)
+                            </Label>
+                            <div className="relative aspect-video rounded-2xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group">
+                                {form.watch('landingHeroImageUrl') ? (
+                                    <Image src={form.watch('landingHeroImageUrl')!} alt="Preview" fill className="object-cover" />
+                                ) : (
+                                    <ImageIcon className="h-10 w-10 text-slate-800" />
+                                )}
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl bg-primary text-white border-none" asChild disabled={!!isUploading}>
+                                        <label className="cursor-pointer">
+                                            {isUploading === 'landingHeroImageUrl' ? <Loader2 className="h-4 w-4 animate-spin"/> : <UploadCloud className="h-4 w-4 mr-2"/>}
+                                            Téléverser
+                                            <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'landingHeroImageUrl')} />
+                                        </label>
+                                    </Button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                   </div>
 
@@ -415,9 +472,20 @@ export default function AdminSettingsPage() {
                         <FormField control={form.control} name="howItWorksTitle" render={({ field }) => (
                         <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre "Comment ça marche"</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl" /></FormControl></FormItem>
                         )} />
-                        <FormField control={form.control} name="securitySection_imageUrl" render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Image Section Sécurité</FormLabel><FormControl><Input {...field} className="bg-slate-800 border-slate-700 h-12 rounded-xl font-mono text-[10px]" /></FormControl></FormItem>
-                        )} />
+                        <div className="space-y-4">
+                            <FormLabel className="text-[10px] font-black uppercase text-slate-500">Image Section Sécurité</FormLabel>
+                            <div className="flex items-center gap-4">
+                                <div className="relative h-12 w-20 rounded-lg bg-slate-950 border border-slate-800 overflow-hidden">
+                                    {form.watch('securitySection_imageUrl') && <Image src={form.watch('securitySection_imageUrl')!} alt="Preview" fill className="object-cover" />}
+                                </div>
+                                <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl" asChild disabled={!!isUploading}>
+                                    <label className="cursor-pointer">
+                                        {isUploading === 'securitySection_imageUrl' ? <Loader2 className="h-4 w-4 animate-spin"/> : "Remplacer l'image"}
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'securitySection_imageUrl')} />
+                                    </label>
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                   </div>
                 </CardContent>
@@ -511,9 +579,21 @@ export default function AdminSettingsPage() {
                           <FormField control={form.control} name={`teamMembers.${index}.role`} render={({ field }) => (
                             <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Rôle</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800" /></FormControl></FormItem>
                           )} />
-                          <FormField control={form.control} name={`teamMembers.${index}.imageUrl`} render={({ field }) => (
-                            <FormItem><FormLabel className="text-[10px] uppercase font-black text-slate-500">Photo URL</FormLabel><FormControl><Input {...field} className="bg-slate-900 border-slate-800 font-mono text-[9px]" /></FormControl></FormItem>
-                          )} />
+                          <div className="space-y-2">
+                            <FormLabel className="text-[10px] uppercase font-black text-slate-500">Photo</FormLabel>
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10 border border-slate-700">
+                                    <AvatarImage src={form.watch(`teamMembers.${index}.imageUrl`)} />
+                                    <AvatarFallback>{form.watch(`teamMembers.${index}.name`)?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <Button type="button" variant="outline" size="sm" className="h-9 text-[9px] uppercase font-black" asChild disabled={!!isUploading}>
+                                    <label className="cursor-pointer">
+                                        {isUploading === `teamMembers.${index}.imageUrl` ? <Loader2 className="h-3 w-3 animate-spin"/> : "Téléverser"}
+                                        <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, `teamMembers.${index}.imageUrl`)} />
+                                    </label>
+                                </Button>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     ))
