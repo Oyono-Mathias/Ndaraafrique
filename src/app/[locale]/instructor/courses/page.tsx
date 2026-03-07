@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Liste des cours du formateur (Format Liste Unifié).
- * ✅ STYLE : Utilise le format LISTE (Admin style).
+ * ✅ SÉCURITÉ : Empêche la suppression si un rachat est en cours ou acté.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,7 +11,7 @@ import { getFirestore, collection, query, where, onSnapshot, doc, deleteDoc } fr
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, BookOpen, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Search, BookOpen, Edit3, Trash2, ShoppingCart, Lock } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,7 @@ export default function InstructorCoursesPage() {
     if (!currentUser?.uid) return;
 
     setIsLoading(true);
+    // On ne récupère que les cours dont l'utilisateur est encore PROPRIÉTAIRE
     const q = query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid));
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -102,38 +103,50 @@ export default function InstructorCoursesPage() {
         </div>
       ) : filteredCourses.length > 0 ? (
         <div className="grid gap-4 animate-in fade-in duration-700">
-          {filteredCourses.map(course => (
-            <CourseCard 
-                key={course.id} 
-                course={course} 
-                instructor={null}
-                variant="list"
-                actions={
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-sm shadow-sm" asChild>
-                            <Link href={`/instructor/courses/edit/${course.id}`}><Edit3 className="h-3.5 w-3.5" /></Link>
-                        </Button>
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-sm">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Supprimer ?</AlertDialogTitle>
-                                    <AlertDialogDescription>Voulez-vous vraiment supprimer "{course.title}" ? Cette action est irréversible.</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDeleteCourse(course.id)} className="bg-red-600">Supprimer</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    </div>
-                }
-            />
-          ))}
+          {filteredCourses.map(course => {
+            // ✅ SÉCURITÉ CEO : On bloque la suppression si un rachat est demandé
+            const isBuyoutRequested = course.buyoutStatus === 'requested';
+            
+            return (
+              <CourseCard 
+                  key={course.id} 
+                  course={course} 
+                  instructor={null}
+                  variant="list"
+                  actions={
+                      <div className="flex gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-sm shadow-sm" asChild>
+                              <Link href={`/instructor/courses/edit/${course.id}`}><Edit3 className="h-3.5 w-3.5" /></Link>
+                          </Button>
+                          
+                          {isBuyoutRequested ? (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-primary/10 text-primary cursor-help" title="Rachat en cours d'audit - Suppression verrouillée">
+                                  <ShoppingCart className="h-3.5 w-3.5" />
+                              </Button>
+                          ) : (
+                              <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-sm">
+                                          <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent className="bg-slate-900 border-slate-800 rounded-[2rem]">
+                                      <AlertDialogHeader>
+                                          <AlertDialogTitle className="text-white font-black uppercase tracking-tight">Supprimer ?</AlertDialogTitle>
+                                          <AlertDialogDescription className="text-slate-400">Voulez-vous vraiment supprimer "{course.title}" ? Cette action est irréversible.</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter className="p-6 pt-0">
+                                          <AlertDialogCancel className="bg-slate-800 border-none rounded-xl font-bold uppercase text-[10px]">Annuler</AlertDialogCancel>
+                                          <AlertDialogAction onClick={() => handleDeleteCourse(course.id)} className="bg-red-600 font-bold uppercase text-[10px] rounded-xl">Supprimer</AlertDialogAction>
+                                      </AlertDialogFooter>
+                                  </AlertDialogContent>
+                              </AlertDialog>
+                          )}
+                      </div>
+                  }
+              />
+            )
+          })}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-[3rem] border-2 border-dashed border-border animate-in zoom-in duration-500">

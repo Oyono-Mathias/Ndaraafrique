@@ -10,7 +10,7 @@ import { doc, getFirestore } from 'firebase/firestore';
 import type { Course } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, ArrowLeft, Send, CheckCircle2, ShoppingCart } from 'lucide-react';
+import { Loader2, ArrowLeft, Send, CheckCircle2, ShoppingCart, ShieldAlert } from 'lucide-react';
 import { useRole } from '@/context/RoleContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -74,11 +74,26 @@ export default function EditCoursePage({ params }: { params: { courseId: string 
     return <div className="text-center text-destructive py-20">Impossible de charger le cours.</div>;
   }
   
-  // Vérifier si le cours appartient à l'instructeur OU s'il a été racheté
+  // ✅ SÉCURITÉ CEO : Vérifier si le cours appartient à l'instructeur
+  // Si le cours est racheté (instructorId === NDARA_OFFICIAL), l'instructeur original perd l'accès.
   const isAuthorized = course.instructorId === currentUser?.uid || (course.isPlatformOwned && currentUser?.role === 'admin');
 
   if (!isAuthorized) {
-    return <div className="text-center text-destructive py-20">Vous n'avez pas la permission de modifier ce cours.</div>
+    return (
+        <div className="max-w-2xl mx-auto py-20 px-4 text-center space-y-6">
+            <div className="p-6 bg-red-500/10 rounded-full inline-block">
+                <ShieldAlert className="h-16 w-16 text-red-500" />
+            </div>
+            <h1 className="text-3xl font-black text-white uppercase tracking-tight">Accès Révoqué</h1>
+            <p className="text-slate-400 leading-relaxed">
+                Cette formation a été acquise par <b>Ndara Afrique</b>. <br/>
+                Vous ne disposez plus des droits de modification ou de suppression sur ce contenu.
+            </p>
+            <Button asChild className="mt-8 h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest px-10">
+                <Link href="/instructor/courses">Retour à mon catalogue</Link>
+            </Button>
+        </div>
+    );
   }
 
   const isDraft = course.status === 'Draft';
