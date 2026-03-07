@@ -388,6 +388,11 @@ export interface Settings {
       finalCtaSubtitle?: string;
       finalCtaButtonText?: string;
       finalCta_imageUrl?: string;
+      // Button visibility flags
+      showHeroCta?: boolean;
+      showHeroExplore?: boolean;
+      showFinalCta?: boolean;
+      showFinalContact?: boolean;
     };
   };
 }

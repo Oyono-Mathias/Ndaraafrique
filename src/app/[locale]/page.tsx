@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version 100% Réelle.
- * ✅ RÉSOLU : Suppression totale des cours de simulation (Trading, Startup, Design).
- * ✅ RÉSOLU : Image Hero personnalisable par l'admin via Firestore.
+ * ✅ RÉSOLU : Gestion de la visibilité des boutons via les paramètres admin.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -186,13 +185,17 @@ export default function LandingPage() {
                         Ndara Afrique est la plateforme leader pour se former aux métiers d'avenir. Apprenez avec les meilleurs experts du continent et propulsez votre carrière.
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-                        <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
-                            {landingPageSettings?.heroCtaText || "Commencer à apprendre"}
-                            <ChevronsRight className="w-5 h-5" />
-                        </Link>
-                        <Link href={`/${locale}/search`} className="px-10 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
-                            Explorer les cours
-                        </Link>
+                        {(landingPageSettings?.showHeroCta ?? true) && (
+                            <Link href={user ? `/${locale}${dashboardUrl}` : `/${locale}/login?tab=register`} className="px-10 py-4 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 active:scale-95">
+                                {landingPageSettings?.heroCtaText || "Commencer à apprendre"}
+                                <ChevronsRight className="w-5 h-5" />
+                            </Link>
+                        )}
+                        {(landingPageSettings?.showHeroExplore ?? true) && (
+                            <Link href={`/${locale}/search`} className="px-10 py-4 bg-white text-brand-dark border border-slate-200 rounded-full font-black uppercase text-xs tracking-widest hover:bg-slate-50 transition flex items-center justify-center active:scale-95">
+                                Explorer les cours
+                            </Link>
+                        )}
                     </div>
                     
                     <div className="mt-12 flex items-center justify-center lg:justify-start gap-8 text-slate-500 text-[10px] font-black uppercase tracking-widest">
@@ -327,12 +330,16 @@ export default function LandingPage() {
                 {landingPageSettings?.finalCtaSubtitle || "Rejoignez des milliers d'apprenants qui transforment leur passion en métier. Votre première leçon est à portée de clic."}
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center pt-6">
-                <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
-                    {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
-                </Link>
-                <Link href={`/${locale}/student/support`} className="px-12 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
-                    Contacter un conseiller
-                </Link>
+                {(landingPageSettings?.showFinalCta ?? true) && (
+                    <Link href={`/${locale}/login?tab=register`} className="px-12 py-5 bg-brand-primary text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-emerald-600 transition shadow-2xl shadow-emerald-500/40 active:scale-95 text-center">
+                        {landingPageSettings?.finalCtaButtonText || "Créer mon profil gratuit"}
+                    </Link>
+                )}
+                {(landingPageSettings?.showFinalContact ?? true) && (
+                    <Link href={`/${locale}/student/support`} className="px-12 py-5 bg-transparent border border-slate-700 text-white rounded-full font-black uppercase text-xs tracking-widest hover:bg-white/5 transition active:scale-95 text-center">
+                        Contacter un conseiller
+                    </Link>
+                )}
             </div>
         </div>
       </section>

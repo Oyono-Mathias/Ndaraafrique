@@ -1,11 +1,5 @@
 'use client';
 
-/**
- * @fileOverview Panneau de Configuration Globale Ndara Afrique.
- * ✅ RÉSOLU : Correction définitive de la structure syntaxique (Build Safe).
- * ✅ SOUVERAINETÉ : Upload direct vers Bunny CDN pour tous les médias.
- */
-
 import { useState, useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -39,7 +33,8 @@ import {
   Wrench,
   ImageIcon,
   UploadCloud,
-  CheckCircle2
+  CheckCircle2,
+  Eye
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -63,22 +58,31 @@ const settingsSchema = z.object({
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
   bunnyLibraryId: z.string().optional(),
+  // Landing Hero
   landingHeroTitle: z.string().optional(),
   landingHeroSubtitle: z.string().optional(),
   landingHeroImageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   landingHeroCta: z.string().optional(),
+  showHeroCta: z.boolean().default(true),
+  showHeroExplore: z.boolean().default(true),
+  // How it works
   howItWorksTitle: z.string().optional(),
   howItWorksSubtitle: z.string().optional(),
   howItWorks_step1_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   howItWorks_step2_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
   howItWorks_step3_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  // Security
   securitySectionTitle: z.string().optional(),
   securitySectionSubtitle: z.string().optional(),
   securitySection_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  // Final CTA
   finalCtaTitle: z.string().optional(),
   finalCtaSubtitle: z.string().optional(),
   finalCtaButtonText: z.string().optional(),
   finalCta_imageUrl: z.string().url("URL invalide").or(z.literal('')).optional(),
+  showFinalCta: z.boolean().default(true),
+  showFinalContact: z.boolean().default(true),
+  // About Page
   aboutMainTitle: z.string().optional(),
   aboutMainSubtitle: z.string().optional(),
   historyTitle: z.string().optional(),
@@ -89,6 +93,7 @@ const settingsSchema = z.object({
   visionSango: z.string().optional(),
   aboutCtaTitle: z.string().optional(),
   teamMembers: z.array(teamMemberSchema).optional(),
+  // Legal
   termsOfService: z.string().optional(),
   privacyPolicy: z.string().optional(),
 });
@@ -106,7 +111,13 @@ export default function AdminSettingsPage() {
 
   const form = useForm<SettingsValues>({
     resolver: zodResolver(settingsSchema),
-    defaultValues: { teamMembers: [] }
+    defaultValues: { 
+      teamMembers: [],
+      showHeroCta: true,
+      showHeroExplore: true,
+      showFinalCta: true,
+      showFinalContact: true
+    }
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -130,10 +141,13 @@ export default function AdminSettingsPage() {
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
           bunnyLibraryId: data.platform?.bunnyLibraryId || '',
+          // Content Landing
           landingHeroTitle: data.content?.landingPage?.heroTitle || "",
           landingHeroSubtitle: data.content?.landingPage?.heroSubtitle || "",
           landingHeroImageUrl: data.content?.landingPage?.heroImageUrl || "",
           landingHeroCta: data.content?.landingPage?.heroCtaText || "",
+          showHeroCta: data.content?.landingPage?.showHeroCta ?? true,
+          showHeroExplore: data.content?.landingPage?.showHeroExplore ?? true,
           howItWorksTitle: data.content?.landingPage?.howItWorksTitle || "",
           howItWorksSubtitle: data.content?.landingPage?.howItWorksSubtitle || "",
           howItWorks_step1_imageUrl: data.content?.landingPage?.howItWorks_step1_imageUrl || "",
@@ -146,6 +160,9 @@ export default function AdminSettingsPage() {
           finalCtaSubtitle: data.content?.landingPage?.finalCtaSubtitle || "",
           finalCtaButtonText: data.content?.landingPage?.finalCtaButtonText || "",
           finalCta_imageUrl: data.content?.landingPage?.finalCta_imageUrl || "",
+          showFinalCta: data.content?.landingPage?.showFinalCta ?? true,
+          showFinalContact: data.content?.landingPage?.showFinalContact ?? true,
+          // Content About
           aboutMainTitle: data.content?.aboutPage?.mainTitle || "",
           aboutMainSubtitle: data.content?.aboutPage?.mainSubtitle || "",
           historyTitle: data.content?.aboutPage?.historyTitle || "",
@@ -156,6 +173,7 @@ export default function AdminSettingsPage() {
           visionSango: data.content?.aboutPage?.visionSango || "",
           aboutCtaTitle: data.content?.aboutPage?.ctaTitle || "",
           teamMembers: data.content?.aboutPage?.teamMembers || [],
+          // Legal
           termsOfService: data.legal?.termsOfService || '',
           privacyPolicy: data.legal?.privacyPolicy || '',
         });
@@ -245,6 +263,8 @@ export default function AdminSettingsPage() {
             heroSubtitle: values.landingHeroSubtitle,
             heroImageUrl: values.landingHeroImageUrl,
             heroCtaText: values.landingHeroCta,
+            showHeroCta: values.showHeroCta,
+            showHeroExplore: values.showHeroExplore,
             howItWorksTitle: values.howItWorksTitle,
             howItWorksSubtitle: values.howItWorksSubtitle,
             howItWorks_step1_imageUrl: values.howItWorks_step1_imageUrl,
@@ -257,6 +277,8 @@ export default function AdminSettingsPage() {
             finalCtaSubtitle: values.finalCtaSubtitle,
             finalCtaButtonText: values.finalCtaButtonText,
             finalCta_imageUrl: values.finalCta_imageUrl,
+            showFinalCta: values.showFinalCta,
+            showFinalContact: values.showFinalContact,
           },
           aboutPage: {
             mainTitle: values.aboutMainTitle || '',
@@ -481,6 +503,50 @@ export default function AdminSettingsPage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase text-primary tracking-widest border-b border-primary/10 pb-2 flex items-center gap-2">
+                        <Eye className="h-3.5 w-3.5" /> Visibilité des Actions
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="showHeroCta" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-xs font-bold text-white uppercase">CTA "Commencer"</FormLabel>
+                                    <FormDescription className="text-[9px] uppercase">Bouton principal du Hero</FormDescription>
+                                </div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="showHeroExplore" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-xs font-bold text-white uppercase">Action "Explorer"</FormLabel>
+                                    <FormDescription className="text-[9px] uppercase">Bouton secondaire du Hero</FormDescription>
+                                </div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="showFinalCta" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-xs font-bold text-white uppercase">CTA Final "Profil"</FormLabel>
+                                    <FormDescription className="text-[9px] uppercase">Bouton du bas de page</FormDescription>
+                                </div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
+                        <FormField control={form.control} name="showFinalContact" render={({ field }) => (
+                            <FormItem className="flex items-center justify-between p-4 bg-slate-800/30 border border-slate-700 rounded-2xl">
+                                <div className="space-y-0.5">
+                                    <FormLabel className="text-xs font-bold text-white uppercase">Action "Conseiller"</FormLabel>
+                                    <FormDescription className="text-[9px] uppercase">Bouton de support bas de page</FormDescription>
+                                </div>
+                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                            </FormItem>
+                        )} />
                     </div>
                   </div>
                 </CardContent>
