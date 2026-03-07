@@ -2,14 +2,13 @@
 
 /**
  * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ FONCTIONNEL : Bouton retour, filtre, panier (avec badge temps réel).
- * ✅ DESIGN : Copie conforme de la capture d'écran fournie.
+ * ✅ FONCTIONNEL : Filtre "Bourse du Savoir" pour les investisseurs.
  */
 
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2 } from 'lucide-react';
+import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2, BadgeEuro } from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -18,6 +17,7 @@ import { useRole } from '@/context/RoleContext';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { Badge } from '@/components/ui/badge';
 
 const POPULAR_SEARCHES = [
     "AgriTech", "FinTech", "Python", "Excel", "Marketing", "Élevage", "Commerce", "IA", "Design"
@@ -39,6 +39,7 @@ export default function SearchPage() {
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
+  const [showOnlyResale, setShowOnlyResale] = useState(false);
   
   const db = getFirestore();
   const router = useRouter();
@@ -69,7 +70,6 @@ export default function SearchPage() {
     return () => unsubscribe();
   }, [db]);
 
-  // ✅ Temps réel pour le compteur panier
   useEffect(() => {
     if (!user?.uid) return;
     const cartRef = collection(db, 'users', user.uid, 'cart');
@@ -80,17 +80,25 @@ export default function SearchPage() {
   }, [user?.uid, db]);
 
   const filteredResults = useMemo(() => {
-    if (!searchTerm.trim()) return [];
-    return courses.filter(c => 
-      c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [courses, searchTerm]);
+    let results = [...courses];
+    
+    if (showOnlyResale) {
+        results = results.filter(c => c.resaleRightsAvailable === true);
+    }
+
+    if (searchTerm.trim()) {
+        results = results.filter(c => 
+            c.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            c.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }
+
+    return results;
+  }, [courses, searchTerm, showOnlyResale]);
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24 animate-in fade-in duration-700">
       
-      {/* --- HEADER UDEMY STYLE --- */}
       <header className="px-2 pt-4 pb-2 sticky top-0 bg-background/95 backdrop-blur-xl z-40 border-b border-border/50 flex items-center gap-2">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-foreground hover:bg-accent">
             <ArrowLeft className="h-6 w-6" />
@@ -98,12 +106,21 @@ export default function SearchPage() {
         
         <div className="relative flex-1">
           <Input
-            placeholder="Rechercher"
+            placeholder="Rechercher une formation ou une licence..."
             className="h-12 pl-4 pr-10 rounded-lg bg-card border-border shadow-sm text-base focus-visible:ring-primary/20"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <SlidersHorizontal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground cursor-pointer hover:text-primary transition-colors" />
+          <button 
+            onClick={() => setShowOnlyResale(!showOnlyResale)}
+            className={cn(
+                "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all",
+                showOnlyResale ? "bg-amber-500 text-black" : "text-muted-foreground hover:text-primary"
+            )}
+            title="Afficher uniquement les licences à vendre"
+          >
+            <BadgeEuro className="h-5 w-5" />
+          </button>
         </div>
 
         <Link href="/student/cart" className="relative group">
@@ -119,7 +136,20 @@ export default function SearchPage() {
       </header>
 
       <main className="px-4 pt-6">
-        {searchTerm === '' ? (
+        {showOnlyResale && (
+            <div className="mb-6 p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-between animate-in slide-in-from-top-2">
+                <div className="flex items-center gap-3">
+                    <BadgeEuro className="h-6 w-6 text-amber-500" />
+                    <div>
+                        <p className="text-sm font-bold text-white uppercase tracking-tight">Mode Bourse du Savoir</p>
+                        <p className="text-[10px] text-amber-500 font-black uppercase tracking-widest">Affichage des licences de revente</p>
+                    </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setShowOnlyResale(false)} className="h-8 text-xs font-bold text-slate-400 hover:text-white uppercase tracking-tighter">Réinitialiser</Button>
+            </div>
+        )}
+
+        {(searchTerm === '' && !showOnlyResale) ? (
           <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
             <section className="space-y-4">
               <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
@@ -186,7 +216,7 @@ export default function SearchPage() {
               <div className="flex flex-col items-center justify-center py-24 text-center opacity-40">
                 <Frown className="h-16 w-16 mb-4" />
                 <h3 className="text-xl font-black uppercase tracking-tight">Aucun résultat</h3>
-                <Button variant="link" onClick={() => setSearchTerm('')} className="text-primary mt-2">Réinitialiser la recherche</Button>
+                <Button variant="link" onClick={() => { setSearchTerm(''); setShowOnlyResale(false); }} className="text-primary mt-2">Réinitialiser la recherche</Button>
               </div>
             )}
           </div>

@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique - Style Udemy Premium.
- * ✅ RÉSOLU : Suppression définitive des labels simulés (12h+).
- * ✅ DYNAMIQUE : Affiche la vraie note et le nombre de participants réels.
+ * ✅ RÉSOLU : Ajout du badge "Licence de revente" pour les investisseurs.
  */
 
 import Link from 'next/link';
@@ -12,12 +11,13 @@ import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart } from 'lucide-react';
+import { Star, Heart, BadgeEuro } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface CourseCardProps {
   course: Course & { progress?: number; lastLessonId?: string };
@@ -35,7 +35,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   
   const [isWishlisted, setIsWishlisted] = useState(false);
   
-  // ✅ LOGIQUE DE REDIRECTION CEO : Tout clic non-connecté -> Inscription
   const href = !user 
     ? `/${locale}/login?tab=register`
     : (variant === 'list' 
@@ -112,6 +111,17 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             sizes="(max-width: 768px) 50vw, 25vw"
             className="object-cover transition-transform duration-700 group-hover:scale-105"
           />
+          
+          {/* Badge Investisseur Dynamique */}
+          {course.resaleRightsAvailable && (
+            <div className="absolute top-4 left-4 z-10 animate-in slide-in-from-left-4 duration-500">
+                <Badge className="bg-amber-500 text-black border-none font-black uppercase text-[8px] tracking-[0.15em] px-2 py-1 flex items-center gap-1 shadow-lg shadow-amber-500/20">
+                    <BadgeEuro className="h-3 w-3" />
+                    Licence disponible
+                </Badge>
+            </div>
+          )}
+
           {!course.id.startsWith('demo') && (
             <button 
                 onClick={toggleWishlist}

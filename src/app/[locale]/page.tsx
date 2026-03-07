@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Landing Page Ndara Afrique - Version Intelligente & Adaptative.
- * ✅ VISION CEO : Intégration de la dimension "Bourse du Savoir" (Investissement).
+ * ✅ VISION CEO : Mise en avant de la Bourse du Savoir dans la Navbar.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -22,6 +22,7 @@ import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
 import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 const Navbar = () => {
     const { user, currentUser, role } = useRole();
@@ -43,7 +44,10 @@ const Navbar = () => {
                 
                 <div className="hidden md:flex space-x-8 items-center">
                     <a href="#formations" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Formations</a>
-                    <a href="#bourse" className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Marché de Droits</a>
+                    <Link href={`/${locale}/investir`} className="flex items-center gap-1.5 text-slate-600 hover:text-amber-600 font-bold transition uppercase tracking-widest text-[10px]">
+                        <BadgeEuro className="h-3 w-3" />
+                        Bourse du Savoir
+                    </Link>
                     <Link href={`/${locale}/abonnements`} className="text-slate-600 hover:text-brand-primary font-medium transition uppercase tracking-widest text-[10px]">Tarifs</Link>
                 </div>
 
@@ -91,7 +95,7 @@ const Navbar = () => {
                                 </div>
                                 <div className="flex flex-col gap-4 mt-8">
                                     <SheetClose asChild><a href="#formations" className="text-lg font-bold text-slate-600">Formations</a></SheetClose>
-                                    <SheetClose asChild><a href="#bourse" className="text-lg font-bold text-slate-600">Investir</a></SheetClose>
+                                    <SheetClose asChild><Link href={`/${locale}/investir`} className="text-lg font-bold text-amber-600 flex items-center gap-2"><BadgeEuro className="h-5 w-5" /> Investir</Link></SheetClose>
                                     <SheetClose asChild><Link href={`/${locale}/abonnements`} className="text-lg font-bold text-slate-600">Tarifs</Link></SheetClose>
                                     <hr className="border-slate-100 my-2" />
                                     {user ? (
