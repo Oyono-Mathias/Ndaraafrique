@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -12,14 +11,14 @@ import { getFirestore, collection, query, where, onSnapshot, limit } from 'fireb
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { Users, DollarSign, MousePointer2, TrendingUp, Calendar, Zap } from 'lucide-react';
+import { Users, DollarSign, MousePointer2, TrendingUp, Zap } from 'lucide-react';
 import { DatePickerWithRange } from '@/components/ui/date-picker-with-range';
 import type { DateRange } from 'react-day-picker';
 import { subDays, format, isWithinInterval } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import type { Payment, NdaraUser, TrackingEvent } from '@/lib/types';
 
-// Importations standards pour éviter les erreurs de type avec dynamic()
+// Importations directes pour la stabilité TypeScript
 import { 
     ResponsiveContainer, 
     AreaChart, 
