@@ -2,11 +2,12 @@
 
 /**
  * @fileOverview Réglages Globaux Ndara Afrique.
- * ✅ NOUVEAU : Interrupteurs Marché de Droits & Marché Libre.
+ * ✅ RÉSOLU : Correction du Type Error bloquant le build Vercel.
+ * ✅ NOUVEAU : Contrôles pour l'approbation auto et la messagerie interne.
  */
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
@@ -26,21 +27,15 @@ import {
   Settings as SettingsIcon, 
   Loader2, 
   Save,
-  Users as UsersIcon,
   ImageIcon,
   UploadCloud,
   CheckCircle2,
-  Facebook,
-  Linkedin,
-  Twitter,
-  Instagram,
-  MessageCircle,
   Palette,
-  Type,
-  Layout,
   ShoppingCart,
   BadgeEuro,
-  ArrowLeftRight
+  ArrowLeftRight,
+  ShieldCheck,
+  MessageSquare
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -67,7 +62,9 @@ const settingsSchema = z.object({
   allowInstructorSignup: z.boolean().default(true),
   allowCourseBuyout: z.boolean().default(true),
   allowResaleRights: z.boolean().default(true),
-  allowTeacherToTeacherResale: z.boolean().default(false), // ✅ Nouveau
+  allowTeacherToTeacherResale: z.boolean().default(false),
+  autoApproveCourses: z.boolean().default(false),
+  enableInternalMessaging: z.boolean().default(true),
   allowYoutube: z.boolean().default(true),
   allowBunny: z.boolean().default(true),
   primaryColor: z.enum(['emerald', 'ocre', 'blue', 'gold']).default('emerald'),
@@ -92,7 +89,9 @@ export default function AdminSettingsPage() {
       teamMembers: [],
       allowCourseBuyout: true,
       allowResaleRights: true,
-      allowTeacherToTeacherResale: false
+      allowTeacherToTeacherResale: false,
+      autoApproveCourses: false,
+      enableInternalMessaging: true
     }
   });
 
@@ -117,6 +116,8 @@ export default function AdminSettingsPage() {
           allowCourseBuyout: data.platform?.allowCourseBuyout ?? true,
           allowResaleRights: data.platform?.allowResaleRights ?? true,
           allowTeacherToTeacherResale: data.platform?.allowTeacherToTeacherResale ?? false,
+          autoApproveCourses: data.platform?.autoApproveCourses ?? false,
+          enableInternalMessaging: data.platform?.enableInternalMessaging ?? true,
           allowYoutube: data.platform?.allowYoutube ?? true,
           allowBunny: data.platform?.allowBunny ?? true,
           primaryColor: data.design?.primaryColor || 'emerald',
@@ -162,7 +163,16 @@ export default function AdminSettingsPage() {
       const result = await updateGlobalSettings({
         adminId: currentUser.uid,
         settings: {
-          general: { siteName: values.siteName, logoUrl: values.logoUrl, contactEmail: values.contactEmail, supportPhone: values.supportPhone, facebookUrl: values.facebookUrl, linkedinUrl: values.linkedinUrl, twitterUrl: values.twitterUrl, instagramUrl: values.instagramUrl },
+          general: { 
+            siteName: values.siteName, 
+            logoUrl: values.logoUrl, 
+            contactEmail: values.contactEmail, 
+            supportPhone: values.supportPhone, 
+            facebookUrl: values.facebookUrl, 
+            linkedinUrl: values.linkedinUrl, 
+            twitterUrl: values.twitterUrl, 
+            instagramUrl: values.instagramUrl 
+          },
           commercial: { platformCommission: values.commission, currency: 'XOF', minPayoutThreshold: 5000 },
           platform: { 
             announcementMessage: values.announcementMessage, 
@@ -171,6 +181,8 @@ export default function AdminSettingsPage() {
             allowCourseBuyout: values.allowCourseBuyout,
             allowResaleRights: values.allowResaleRights,
             allowTeacherToTeacherResale: values.allowTeacherToTeacherResale,
+            autoApproveCourses: values.autoApproveCourses,
+            enableInternalMessaging: values.enableInternalMessaging,
             allowYoutube: values.allowYoutube,
             allowBunny: values.allowBunny
           },
@@ -204,7 +216,7 @@ export default function AdminSettingsPage() {
           <Tabs defaultValue="general" className="w-full">
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-12 p-1 overflow-x-auto flex items-center justify-start gap-1 w-full rounded-2xl no-scrollbar">
               <TabsTrigger value="general" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Général</TabsTrigger>
-              <TabsTrigger value="design" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Design</TabsTrigger>
+              <TabsTrigger value="design" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Studio Design</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Plateforme</TabsTrigger>
             </TabsList>
 
@@ -243,18 +255,18 @@ export default function AdminSettingsPage() {
 
             <TabsContent value="design" className="space-y-6">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden">
-                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Ambiance Visuelle</CardTitle></CardHeader>
+                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Studio Design Ndara</CardTitle></CardHeader>
                 <CardContent className="p-6 grid md:grid-cols-3 gap-8">
                     <FormField control={form.control} name="primaryColor" render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-[10px] font-black uppercase text-slate-500">Thème Couleur</FormLabel>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500">Palette Couleur</FormLabel>
                         <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                           <FormControl><SelectTrigger className="h-12 bg-slate-800 border-slate-700 rounded-xl"><SelectValue placeholder="Couleur" /></SelectTrigger></FormControl>
                           <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                            <SelectItem value="emerald">🌿 Émeraude</SelectItem>
-                            <SelectItem value="ocre">🏜️ Ocre</SelectItem>
-                            <SelectItem value="blue">💎 Bleu Tech</SelectItem>
-                            <SelectItem value="gold">👑 Or</SelectItem>
+                            <SelectItem value="emerald">🌿 Émeraude Ndara</SelectItem>
+                            <SelectItem value="ocre">🏜️ Ocre Sahélien</SelectItem>
+                            <SelectItem value="blue">💎 Bleu Royal</SelectItem>
+                            <SelectItem value="gold">👑 Or Panafricain</SelectItem>
                           </SelectContent>
                         </Select>
                       </FormItem>
@@ -272,30 +284,64 @@ export default function AdminSettingsPage() {
                         </Select>
                       </FormItem>
                     )} />
+                    <FormField control={form.control} name="borderRadius" render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-[10px] font-black uppercase text-slate-500">Style des Cartes</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
+                          <FormControl><SelectTrigger className="h-12 bg-slate-800 border-slate-700 rounded-xl"><SelectValue placeholder="Arrondi" /></SelectTrigger></FormControl>
+                          <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                            <SelectItem value="none">Flat (Carré)</SelectItem>
+                            <SelectItem value="md">Modern (Doux)</SelectItem>
+                            <SelectItem value="lg">Round (Arrondi)</SelectItem>
+                            <SelectItem value="xl">Ultra Round (Vintage)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )} />
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="platform" className="space-y-4">
               <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Économie & Marché</CardTitle></CardHeader>
+                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Économie & Droits</CardTitle></CardHeader>
                 <CardContent className="p-6 space-y-6">
                   <div className="grid md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="allowCourseBuyout" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-primary/5 border border-primary/10 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> Rachat direct</FormLabel><FormDescription className="text-[10px] uppercase">Formateur &rarr; Ndara</FormDescription></div>
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ShoppingCart className="h-4 w-4" /> Rachat direct</FormLabel><FormDescription className="text-[10px] uppercase">Vente à Ndara</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="allowResaleRights" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-amber-500/5 border border-amber-500/10 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><BadgeEuro className="h-4 w-4" /> Vente de Licences</FormLabel><FormDescription className="text-[10px] uppercase">Ndara &rarr; Investisseur</FormDescription></div>
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><BadgeEuro className="h-4 w-4" /> Bourse du Savoir</FormLabel><FormDescription className="text-[10px] uppercase">Marché des Licences</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
                     <FormField control={form.control} name="allowTeacherToTeacherResale" render={({ field }) => (
                       <FormItem className="flex items-center justify-between p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
-                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ArrowLeftRight className="h-4 w-4" /> Marché Libre</FormLabel><FormDescription className="text-[10px] uppercase">Vendeur &rarr; Acheteur (Direct)</FormDescription></div>
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ArrowLeftRight className="h-4 w-4" /> Marché Libre</FormLabel><FormDescription className="text-[10px] uppercase">Transaction Directe</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
+                <CardHeader className="bg-slate-800/30 border-b border-white/5"><CardTitle className="text-lg font-bold">Sécurité & Flux</CardTitle></CardHeader>
+                <CardContent className="p-6 space-y-6">
+                  <div className="grid md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name="autoApproveCourses" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><ShieldCheck className="h-4 w-4" /> Approbation Auto</FormLabel><FormDescription className="text-[10px] uppercase">Pas de modération</FormDescription></div>
+                        <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                      </FormItem>
+                    )} />
+                    <FormField control={form.control} name="enableInternalMessaging" render={({ field }) => (
+                      <FormItem className="flex items-center justify-between p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl">
+                        <div className="space-y-0.5"><FormLabel className="text-sm font-bold text-white flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Messagerie Interne</FormLabel><FormDescription className="text-[10px] uppercase">Chat entre membres</FormDescription></div>
                         <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
                       </FormItem>
                     )} />
@@ -307,7 +353,7 @@ export default function AdminSettingsPage() {
 
           <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-slate-800 z-40 safe-area-pb md:relative md:bg-transparent md:border-none md:p-0">
             <Button type="submit" disabled={isSaving} className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-xs tracking-[0.2em] shadow-2xl">
-                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5 mr-2" /> Enregistrer la configuration</>}
+                {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <><CheckCircle2 className="h-5 w-5 mr-2" /> Valider la configuration</>}
             </Button>
           </div>
         </form>
