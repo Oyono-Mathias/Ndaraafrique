@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Dashboard Formateur Ndara Afrique.
- * ✅ PARRAINAGE 2.0 : Traçabilité des invitations (Compte le nombre d'experts parrainés).
+ * ✅ PARRAINAGE 3.0 : Leaderboard Experts et Outils de recrutement.
  * ✅ SÉCURISATION : Libellés financiers conformes au mode "Anti-Pertes".
  */
 
@@ -13,7 +13,9 @@ import {
   where, 
   getFirestore, 
   onSnapshot, 
-  doc
+  doc,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -30,14 +32,20 @@ import {
   BadgeEuro,
   UserCheck,
   ShieldCheck,
-  Clock
+  Clock,
+  Facebook,
+  Twitter,
+  Linkedin,
+  MessageCircle,
+  Medal
 } from 'lucide-react';
-import type { AssignmentSubmission, Settings } from '@/lib/types';
+import type { AssignmentSubmission, Settings, NdaraUser } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { cn } from '@/lib/utils';
 
 export default function InstructorDashboard() {
     const { currentUser: instructor, isUserLoading } = useRole();
@@ -48,6 +56,7 @@ export default function InstructorDashboard() {
     const [pendingSubmissions, setPendingSubmissions] = useState<AssignmentSubmission[]>([]);
     const [coursePerformance, setCoursePerformance] = useState<{title: string, revenue: number}[]>([]);
     const [isReferralEnabled, setIsReferralEnabled] = useState(false);
+    const [leaderboard, setLeaderboard] = useState<NdaraUser[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -60,7 +69,7 @@ export default function InstructorDashboard() {
             }
         });
 
-        // Revenus & Performance (Ventes directes)
+        // Revenus & Performance
         const unsubPayments = onSnapshot(
             query(collection(db, 'payments'), where('instructorId', '==', instructor.uid), where('status', '==', 'Completed')),
             (snap) => {
@@ -75,16 +84,17 @@ export default function InstructorDashboard() {
             }
         );
 
-        // Étudiants (Inscrits à mes cours)
-        const unsubEnrollments = onSnapshot(
-            query(collection(db, 'enrollments'), where('instructorId', '==', instructor.uid)),
-            (snap) => {
-                const uniqueStudents = new Set(snap.docs.map(d => d.data().studentId));
-                setStats(prev => ({ ...prev, studentCount: uniqueStudents.size }));
-            }
+        // Leaderboard des Experts (Top 5 par parrainages ou ventes)
+        const leaderboardQuery = query(
+            collection(db, 'users'),
+            where('role', '==', 'instructor'),
+            orderBy('affiliateStats.sales', 'desc'),
+            limit(5)
         );
+        const unsubLeaderboard = onSnapshot(leaderboardQuery, (snap) => {
+            setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+        });
 
-        // ✨ TRAÇABILITÉ PARRAINAGE
         const unsubReferrals = onSnapshot(
             query(collection(db, 'users'), where('referredBy', '==', instructor.uid)),
             (snap) => {
@@ -93,7 +103,6 @@ export default function InstructorDashboard() {
             }
         );
 
-        // Devoirs
         const unsubDevoirs = onSnapshot(
             query(collection(db, 'devoirs'), where('instructorId', '==', instructor.uid), where('status', '==', 'submitted')),
             (snap) => {
@@ -101,30 +110,41 @@ export default function InstructorDashboard() {
             }
         );
 
-        return () => { unsubSettings(); unsubPayments(); unsubEnrollments(); unsubReferrals(); unsubDevoirs(); };
+        return () => { unsubSettings(); unsubPayments(); unsubLeaderboard(); unsubReferrals(); unsubDevoirs(); };
     }, [instructor?.uid, db]);
 
-    const handleShareReferral = () => {
-        const url = `${window.location.origin}/login?tab=register&ref=${instructor?.uid}`;
-        navigator.clipboard.writeText(url);
-        toast({ title: "Lien de parrainage copié !", description: "Invitez d'autres experts et gagnez des commissions sur leurs ventes." });
+    const referralUrl = `${window.location.origin}/login?tab=register&ref=${instructor?.uid}`;
+
+    const handleShareReferral = (provider?: string) => {
+        let url = '';
+        const text = `Rejoins l'élite des formateurs sur Ndara Afrique ! 🌍 Partage ton savoir et génère des revenus : ${referralUrl}`;
+        
+        switch(provider) {
+            case 'wa': url = `https://wa.me/?text=${encodeURIComponent(text)}`; break;
+            case 'fb': url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralUrl)}`; break;
+            default: 
+                navigator.clipboard.writeText(referralUrl);
+                toast({ title: "Lien de parrainage copié !" });
+                return;
+        }
+        window.open(url, '_blank');
     };
 
     if (isUserLoading || isLoading) {
         return <div className="p-4 space-y-6 bg-slate-950 min-h-screen"><Skeleton className="h-10 w-3/4 bg-slate-900 rounded-xl" /><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
     }
 
-    return (
-        <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
+  return (
+    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
             
             <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
                 <h1 className="text-3xl font-black text-white leading-tight">Espace <span className="text-primary">Formateur</span></h1>
                 <p className="text-slate-500 text-sm mt-2 font-medium italic">Pilotez votre académie panafricaine.</p>
             </header>
 
-            {/* --- SECTION PARRAINAGE : IMPACT SUR LE RÉSEAU --- */}
+            {/* --- SECTION CLUB DES EXPERTS --- */}
             {isReferralEnabled && (
-                <section className="px-4">
+                <section className="px-4 space-y-6">
                     <Card className="bg-gradient-to-br from-slate-900 to-primary/10 border-2 border-primary/30 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardContent className="p-8 space-y-6">
                             <div className="flex justify-between items-start">
@@ -141,27 +161,43 @@ export default function InstructorDashboard() {
                                 <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center">
                                     <UserCheck className="h-3 w-3 mx-auto text-blue-400 mb-1" />
                                     <p className="text-2xl font-black text-white">{stats.referralsCount}</p>
-                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Experts Parrainés</p>
+                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Filleuls Directs</p>
                                 </div>
                                 <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center">
                                     <Wallet className="h-3 w-3 mx-auto text-emerald-400 mb-1" />
                                     <p className="text-xl font-black text-white">{(instructor?.referralBalance || 0).toLocaleString('fr-FR')}</p>
-                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Gains Disponibles</p>
+                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Gains Parrainage</p>
                                 </div>
                             </div>
 
-                            <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl flex items-center gap-3">
-                                <ShieldCheck className="h-4 w-4 text-primary" />
-                                <p className="text-[9px] font-bold text-slate-400 uppercase leading-relaxed">
-                                    Vos gains de parrainage sont garantis par le mode "Anti-Pertes" et libérés après validation.
-                                </p>
+                            <div className="flex gap-2">
+                                <Button onClick={() => handleShareReferral('wa')} className="flex-1 h-12 bg-[#25D366] text-white rounded-xl shadow-lg active:scale-90"><MessageCircle size={20}/></Button>
+                                <Button onClick={() => handleShareReferral()} className="flex-[2] h-12 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/30 gap-2">
+                                    <Share2 size={14} /> Copier mon lien
+                                </Button>
                             </div>
-
-                            <Button onClick={handleShareReferral} className="w-full h-14 bg-primary text-white rounded-2xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/30 gap-3 active:scale-95 transition-all">
-                                <Share2 className="h-4 w-4" /> Inviter un nouvel Expert
-                            </Button>
                         </CardContent>
                     </Card>
+
+                    {/* LEADERBOARD EXPERTS */}
+                    <div className="space-y-4">
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
+                            <Medal className="h-4 w-4 text-primary" /> Top Experts Ndara
+                        </h3>
+                        <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-xl">
+                            {leaderboard.map((user, idx) => (
+                                <div key={user.uid} className={cn("flex items-center justify-between p-4 border-b border-white/5 last:border-0", user.uid === instructor.uid && "bg-primary/5")}>
+                                    <div className="flex items-center gap-3">
+                                        <div className={cn("h-6 w-6 rounded-full flex items-center justify-center font-black text-[10px]", idx === 0 ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-500")}>
+                                            {idx + 1}
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-200">{user.fullName} {user.uid === instructor.uid && "(Moi)"}</span>
+                                    </div>
+                                    <span className="text-[10px] font-black text-primary uppercase">Elite Formateur</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 </section>
             )}
 
@@ -196,7 +232,7 @@ export default function InstructorDashboard() {
                 {pendingSubmissions.length > 0 ? (
                     <div className="grid gap-3">
                         {pendingSubmissions.map(sub => (
-                            <Card key={sub.id} className="bg-slate-900 border-slate-800 rounded-3xl active:scale-[0.98] transition-all border-l-4 border-l-primary shadow-xl">
+                            <Card key={sub.id} className="bg-slate-900 border border-slate-800 rounded-3xl active:scale-[0.98] transition-all border-l-4 border-l-primary shadow-xl">
                                 <CardContent className="p-5 flex items-center justify-between">
                                     <div className="flex-1 min-w-0 mr-4">
                                         <p className="text-sm font-bold text-white truncate">{sub.studentName}</p>
@@ -230,5 +266,5 @@ export default function InstructorDashboard() {
                 </div>
             </section>
         </div>
-    );
+  );
 }
