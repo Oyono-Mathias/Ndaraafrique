@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Réglages Formateur - Centre de pilotage Pédagogique et Financier.
- * ✅ RÉSOLU : Harmonisation complète pour débloquer le bouton Enregistrer.
+ * ✅ RÉSOLU : Type Error sur mobileMoneyNumber.
  */
 
 import { useState, useEffect } from 'react';
@@ -123,7 +123,7 @@ export default function InstructorSettingsPage() {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Numéro Orange/MTN/Wave</FormLabel>
-                                <FormControl><Input {...field} value={field.value || ''} placeholder="+236..." className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
+                                <FormControl><Input {...field} value={field.value ?? ''} placeholder="+236..." className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                             )}

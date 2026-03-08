@@ -2,9 +2,8 @@
 
 /**
  * @fileOverview Réglages Globaux Ndara Afrique.
- * ✅ RÉSOLU : Réécriture complète pour éliminer les erreurs de syntaxe.
- * ✅ RÉSOLU : Harmonisation Schéma/UI pour débloquer le bouton Enregistrer.
- * ✅ SÉCURITÉ : Support des valeurs null/optionnelles pour éviter les blocages Zod.
+ * ✅ RÉSOLU : Type Error Vercel (value null non assignable aux Inputs).
+ * ✅ SÉCURITÉ : Utilisation de ?? '' pour garantir une chaîne de caractères.
  */
 
 import { useState, useEffect } from 'react';
@@ -241,13 +240,13 @@ export default function AdminSettingsPage() {
                   <div className="grid md:grid-cols-2 gap-8">
                     <div className="space-y-6">
                       <FormField control={form.control} name="siteName" render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom du site</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom du site</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="contactEmail" render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Email de contact</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Email de contact</FormLabel><FormControl><Input {...field} value={field.value ?? ''} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white" /></FormControl><FormMessage /></FormItem>
                       )} />
                       <FormField control={form.control} name="supportPhone" render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">WhatsApp Support</FormLabel><FormControl><Input placeholder="+236..." {...field} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white" /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">WhatsApp Support</FormLabel><FormControl><Input placeholder="+236..." {...field} value={field.value ?? ''} className="h-12 bg-slate-800/50 border-slate-700 rounded-xl text-white" /></FormControl><FormMessage /></FormItem>
                       )} />
                     </div>
                     <div className="space-y-4">
@@ -283,14 +282,14 @@ export default function AdminSettingsPage() {
                                 <FormField control={form.control} name="pwaAppName" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom complet de l'App</FormLabel>
-                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
+                                        <FormControl><Input {...field} value={field.value ?? ''} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
                                 <FormField control={form.control} name="pwaShortName" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom court (Icône)</FormLabel>
-                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
+                                        <FormControl><Input {...field} value={field.value ?? ''} className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )} />
@@ -349,7 +348,7 @@ export default function AdminSettingsPage() {
                   <FormField control={form.control} name="announcementMessage" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-[10px] font-black uppercase text-slate-500">Bannière d'Annonce Globale</FormLabel>
-                      <FormControl><Textarea placeholder="Texte défilant en haut du site..." {...field} className="bg-slate-950 border-slate-800 rounded-xl text-white" value={field.value || ''} /></FormControl>
+                      <FormControl><Textarea placeholder="Texte défilant en haut du site..." {...field} value={field.value ?? ''} className="bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

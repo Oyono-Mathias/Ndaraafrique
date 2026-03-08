@@ -3,6 +3,7 @@
 /**
  * @fileOverview Landing Page Ndara Afrique - Style Udemy Premium.
  * ✅ DESIGN : Grilles de cours horizontales et sections thématiques.
+ * ✅ RÉSOLU : Type Error useRouter.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -17,7 +18,6 @@ import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 

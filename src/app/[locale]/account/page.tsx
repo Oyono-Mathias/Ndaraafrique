@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Mon Profil - Identification Ndara Afrique.
- * ✅ RÉSOLU : Harmonisation Schéma pour débloquer le bouton Enregistrer.
- * ✅ SÉCURITÉ : Validation assouplie pour les champs facultatifs.
+ * ✅ RÉSOLU : Type Error Vercel sur les champs optionnels.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -147,7 +146,7 @@ export default function AccountPage() {
                   <FormField control={form.control} name="fullName" render={({ field }) => (
                       <FormItem>
                           <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom Complet</FormLabel>
-                          <FormControl><Input {...field} className="h-12 bg-slate-900 border-slate-800 rounded-xl text-white" /></FormControl>
+                          <FormControl><Input {...field} value={field.value ?? ''} className="h-12 bg-slate-900 border-slate-800 rounded-xl text-white" /></FormControl>
                           <FormMessage />
                       </FormItem>
                   )}/>
@@ -156,7 +155,7 @@ export default function AccountPage() {
                           <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Nom d'utilisateur</FormLabel>
                           <div className="flex items-center bg-slate-900 border border-slate-800 rounded-xl pl-4 overflow-hidden">
                             <span className="text-primary font-bold">@</span>
-                            <FormControl><Input {...field} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" /></FormControl>
+                            <FormControl><Input {...field} value={field.value ?? ''} className="border-none bg-transparent focus-visible:ring-0 h-12 text-white" /></FormControl>
                           </div>
                           <FormMessage />
                       </FormItem>
@@ -164,14 +163,14 @@ export default function AccountPage() {
                   <FormField control={form.control} name="interestDomain" render={({ field }) => (
                       <FormItem>
                           <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Domaine d'intérêt</FormLabel>
-                          <FormControl><Input placeholder="Finance, Agriculture, Code..." {...field} className="h-12 bg-slate-900 border-slate-800 rounded-xl text-white" /></FormControl>
+                          <FormControl><Input placeholder="Finance, Agriculture, Code..." {...field} value={field.value ?? ''} className="h-12 bg-slate-900 border-slate-800 rounded-xl text-white" /></FormControl>
                           <FormMessage />
                       </FormItem>
                   )}/>
                   <FormField control={form.control} name="bio" render={({ field }) => (
                       <FormItem>
                           <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Biographie</FormLabel>
-                          <FormControl><Textarea {...field} value={field.value || ''} rows={4} className="bg-slate-900 border-slate-800 rounded-xl text-white resize-none" /></FormControl>
+                          <FormControl><Textarea {...field} value={field.value ?? ''} rows={4} className="bg-slate-900 border-slate-800 rounded-xl text-white resize-none" /></FormControl>
                           <FormMessage />
                       </FormItem>
                   )}/>
