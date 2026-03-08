@@ -1,158 +1,174 @@
-
 'use client';
 
 /**
- * @fileOverview Historique des paiements pour l'étudiant.
+ * @fileOverview Historique financier complet de l'étudiant.
+ * ✅ HYBRIDE : Investissements (Achats) & Commissions (Gains Ambassadeur).
  * Design Android-First & Vintage.
- * Connecté en temps réel à la collection 'payments' de Firestore.
  */
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CreditCard, Calendar, CheckCircle2, XCircle, RotateCcw, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { 
+    CreditCard, 
+    Calendar, 
+    CheckCircle2, 
+    XCircle, 
+    RotateCcw, 
+    ArrowUpRight, 
+    ShoppingBag, 
+    BadgeEuro, 
+    Landmark,
+    Clock
+} from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import type { Payment } from '@/lib/types';
+import type { Payment, Payout } from '@/lib/types';
 
 export default function StudentPaymentsPage() {
   const { currentUser, isUserLoading } = useRole();
   const db = getFirestore();
 
-  // 1. Récupération de l'historique des paiements
+  // 1. Récupération des Achats
   const paymentsQuery = useMemo(() => 
-    currentUser?.uid 
-      ? query(
-          collection(db, 'payments'), 
-          where('userId', '==', currentUser.uid),
-          orderBy('date', 'desc')
-        )
-      : null,
+    currentUser?.uid ? query(collection(db, 'payments'), where('userId', '==', currentUser.uid), orderBy('date', 'desc')) : null,
     [db, currentUser]
   );
-
   const { data: payments, isLoading: paymentsLoading } = useCollection<Payment>(paymentsQuery);
 
-  const isLoading = isUserLoading || paymentsLoading;
+  // 2. Récupération des Retraits de commissions
+  const payoutsQuery = useMemo(() => 
+    currentUser?.uid ? query(collection(db, 'payouts'), where('instructorId', '==', currentUser.uid), orderBy('date', 'desc')) : null,
+    [db, currentUser]
+  );
+  const { data: payouts, isLoading: payoutsLoading } = useCollection<Payout>(payoutsQuery);
+
+  const isLoading = isUserLoading || paymentsLoading || payoutsLoading;
 
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
       
-      {/* --- HEADER --- */}
       <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
         <div className="flex items-center gap-2 text-primary mb-2">
             <CreditCard className="h-5 w-5" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Finances</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Espace Financier</span>
         </div>
-        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-primary">Paiements</span></h1>
-        <p className="text-slate-500 text-sm mt-2 font-medium">Retrouvez le détail de vos investissements dans votre savoir.</p>
+        <h1 className="text-3xl font-black text-white leading-tight">Mes <br/><span className="text-primary">Transactions</span></h1>
       </header>
 
-      <div className="px-4 space-y-4">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-32 w-full rounded-3xl bg-slate-900" />
-            ))}
-          </div>
-        ) : payments && payments.length > 0 ? (
-          <div className="grid gap-4">
-            {payments.map((payment) => (
-              <PaymentItem key={payment.id} payment={payment} />
-            ))}
-          </div>
-        ) : (
-          <EmptyState />
-        )}
-      </div>
+      <Tabs defaultValue="purchases" className="w-full">
+        <TabsList className="w-full bg-transparent border-b border-slate-800 rounded-none h-12 p-0 px-4 justify-start gap-6">
+          <TabsTrigger value="purchases" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-[10px] uppercase tracking-widest text-slate-500">
+            Mes Formations
+          </TabsTrigger>
+          <TabsTrigger value="commissions" className="data-[state=active]:bg-transparent data-[state=active]:text-primary border-b-2 border-transparent data-[state=active]:border-primary rounded-none h-full px-0 font-bold text-[10px] uppercase tracking-widest text-slate-500">
+            Mes Gains Ambassadeur
+          </TabsTrigger>
+        </TabsList>
 
-      {/* --- RÉASSURANCE --- */}
-      {!isLoading && payments && payments.length > 0 && (
-        <div className="px-6 py-8 text-center opacity-40">
-            <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-500">
-                Toutes vos transactions sont sécurisées par cryptage SSL
-            </p>
+        <div className="px-4 mt-6">
+          <TabsContent value="purchases" className="m-0 space-y-4">
+            {isLoading ? <ListSkeleton /> : payments && payments.length > 0 ? (
+                payments.map(p => <PaymentItem key={p.id} payment={p} />)
+            ) : <EmptyState icon={ShoppingBag} text="Aucun achat enregistré" />}
+          </TabsContent>
+
+          <TabsContent value="commissions" className="m-0 space-y-4">
+            {isLoading ? <ListSkeleton /> : payouts && payouts.length > 0 ? (
+                payouts.map(p => <PayoutItem key={p.id} payout={p} />)
+            ) : <EmptyState icon={BadgeEuro} text="Aucun retrait effectué" />}
+          </TabsContent>
         </div>
-      )}
+      </Tabs>
     </div>
   );
 }
 
 function PaymentItem({ payment }: { payment: Payment }) {
-  const paymentDate = (payment.date as any)?.toDate?.() || new Date();
-  
-  const statusConfig = {
-    Completed: { label: 'Réussi', icon: CheckCircle2, class: 'bg-green-500/10 text-green-400' },
-    Pending: { label: 'En attente', icon: Calendar, class: 'bg-amber-500/10 text-amber-400' },
-    Failed: { label: 'Échoué', icon: XCircle, class: 'bg-red-500/10 text-red-400' },
-    Refunded: { label: 'Remboursé', icon: RotateCcw, class: 'bg-slate-500/10 text-slate-400' },
-  };
-
-  const config = statusConfig[payment.status] || statusConfig.Pending;
+  const date = (payment.date as any)?.toDate?.() || new Date();
+  const config = {
+    Completed: { label: 'Réussi', class: 'bg-green-500/10 text-green-400' },
+    Pending: { label: 'En attente', class: 'bg-amber-500/10 text-amber-400' },
+    Failed: { label: 'Échoué', class: 'bg-red-500/10 text-red-400' },
+    Refunded: { label: 'Remboursé', class: 'bg-slate-500/10 text-slate-400' },
+  }[payment.status] || { label: payment.status, class: 'bg-slate-800' };
 
   return (
-    <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl transition-all active:scale-[0.98]">
-      <CardContent className="p-5">
-        <div className="flex justify-between items-start mb-4">
-          <div className="space-y-1 flex-1">
-            <h3 className="text-sm font-bold text-white line-clamp-1 uppercase tracking-tight">
-              {payment.courseTitle || 'Formation Ndara'}
-            </h3>
-            <p className="text-[10px] text-slate-500 font-bold">
-              ID: {payment.id.substring(0, 12).toUpperCase()}
-            </p>
-          </div>
-          <Badge className={cn("border-none text-[9px] font-black uppercase px-2", config.class)}>
-            <config.icon className="h-3 w-3 mr-1" />
-            {config.label}
-          </Badge>
-        </div>
-
-        <div className="flex items-end justify-between">
-          <div className="space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-slate-400 font-medium">
-              <Calendar className="h-3.5 w-3.5" />
-              <span>{format(paymentDate, 'dd MMMM yyyy', { locale: fr })}</span>
+    <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-xl">
+      <CardContent className="p-5 flex justify-between items-center">
+        <div>
+            <h3 className="text-sm font-bold text-white line-clamp-1 uppercase tracking-tight">{payment.courseTitle || 'Formation Ndara'}</h3>
+            <div className="flex items-center gap-2 mt-1">
+                <Badge className={cn("text-[8px] font-black uppercase border-none px-2", config.class)}>{config.label}</Badge>
+                <span className="text-[10px] text-slate-600 font-bold">{format(date, 'dd MMM yyyy', { locale: fr })}</span>
             </div>
-          </div>
-          
-          <div className="text-right">
-            <p className="text-xl font-black text-white leading-none">
-              {payment.amount.toLocaleString('fr-FR')}
-            </p>
-            <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-1">
-              {payment.currency || 'XOF'}
-            </p>
-          </div>
+        </div>
+        <div className="text-right">
+            <p className="text-lg font-black text-white">{payment.amount.toLocaleString('fr-FR')}</p>
+            <p className="text-[8px] font-black text-primary uppercase tracking-widest mt-0.5">XOF</p>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50">
-      <div className="p-6 bg-slate-800/50 rounded-full mb-6">
-        <ShoppingBag className="h-16 w-16 text-slate-700" />
-      </div>
-      <h3 className="text-xl font-black text-white leading-tight">Aucun achat <br/>enregistré.</h3>
-      <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium">
-        Commencez votre aventure en explorant notre catalogue de formations.
-      </p>
-      <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-white rounded-xl h-14 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
-        <Link href="/search">
-          Voir les cours
-          <ArrowRight className="ml-2 h-4 w-4" />
-        </Link>
-      </Button>
-    </div>
-  );
+function PayoutItem({ payout }: { payout: Payout }) {
+    const date = (payout.date as any)?.toDate?.() || new Date();
+    const isSuccess = payout.status === 'valide';
+    const isPending = payout.status === 'en_attente';
+
+    return (
+        <Card className="bg-slate-900/50 border-slate-800 overflow-hidden shadow-xl">
+            <CardContent className="p-5 flex justify-between items-center">
+                <div className="flex items-center gap-4">
+                    <div className={cn(
+                        "h-10 w-10 rounded-xl flex items-center justify-center",
+                        isSuccess ? "bg-emerald-500/10 text-emerald-500" : isPending ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-500"
+                    )}>
+                        <ArrowUpRight className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <p className="font-bold text-white text-sm">Retrait Mobile Money</p>
+                        <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter mt-0.5">
+                            {format(date, 'dd MMM yyyy à HH:mm', { locale: fr })}
+                        </p>
+                    </div>
+                </div>
+                <div className="text-right">
+                    <p className="text-lg font-black text-white">-{payout.amount.toLocaleString('fr-FR')}</p>
+                    <Badge className={cn(
+                        "text-[8px] font-black uppercase border-none px-2 mt-1",
+                        isSuccess ? "bg-emerald-500/10 text-emerald-500" : isPending ? "bg-amber-500/10 text-amber-400" : "bg-red-500/10 text-red-500"
+                    )}>
+                        {payout.status === 'valide' ? 'Terminé' : payout.status === 'en_attente' ? 'En cours' : 'Rejeté'}
+                    </Badge>
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
+function EmptyState({ icon: Icon, text }: any) {
+    return (
+        <div className="py-20 text-center flex flex-col items-center opacity-30">
+            <Icon className="h-16 w-16 mb-4 text-slate-600" />
+            <p className="text-sm font-black uppercase tracking-widest text-slate-500">{text}</p>
+        </div>
+    );
+}
+
+function ListSkeleton() {
+    return (
+        <div className="space-y-4">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-2xl bg-slate-900" />)}
+        </div>
+    );
 }
