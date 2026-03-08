@@ -124,7 +124,6 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
-      // ✅ RECUPERATION DE L'AFFILIE (Last Click Rule)
       let affiliateId = null;
       if (typeof window !== 'undefined') {
           const storedAff = localStorage.getItem('ndara_affiliate_id');
@@ -167,7 +166,6 @@ export default function LoginClient() {
 
       await setDoc(userRef, userData);
 
-      // ✨ INCREMENTATION COMPTEUR INSCRIPTIONS (AMBASSADEUR)
       if (affiliateId) {
           const affRef = doc(db, 'users', affiliateId);
           await updateDoc(affRef, {

@@ -80,7 +80,6 @@ export default function StudentDashboardAndroid() {
       setLoadingData(false);
     });
 
-    // Fetch Leaderboard
     const fetchLeaderboard = async () => {
         try {
             const q = query(
@@ -91,7 +90,7 @@ export default function StudentDashboardAndroid() {
             const snap = await getDocs(q);
             setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
         } catch (e) {
-            console.warn("Leaderboard index not ready yet.");
+            console.warn("Leaderboard indexing...");
         }
     };
     fetchLeaderboard();
@@ -102,7 +101,7 @@ export default function StudentDashboardAndroid() {
   const handleShareAffiliate = () => {
       const url = `${window.location.origin}/${locale}/search?aff=${currentUser?.uid}`;
       navigator.clipboard.writeText(url);
-      toast({ title: "Lien Ambassadeur copié !", description: "Partagez-le pour gagner des commissions." });
+      toast({ title: "Lien Ambassadeur copié !" });
   };
 
   const affStats = currentUser?.affiliateStats || { clicks: 0, registrations: 0, sales: 0, earnings: 0 };

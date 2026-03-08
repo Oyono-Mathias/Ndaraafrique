@@ -63,7 +63,6 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [reviewsList, setReviewsList] = useState<EnrichedReview[]>([]);
   const [isResaleEnabled, setIsResaleEnabled] = useState(false);
 
-  // 1. TRAÇABILITÉ AFFILIATION
   useEffect(() => {
       const affId = searchParams.get('aff');
       if (affId && typeof window !== 'undefined') {
@@ -74,7 +73,6 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           };
           localStorage.setItem('ndara_affiliate_id', JSON.stringify(cookieData));
           
-          // Log du clic pour les stats ambassadeur
           logTrackingEvent({
               eventType: 'affiliate_click',
               sessionId: 'anon',
@@ -84,7 +82,6 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
       }
   }, [searchParams, pathname, courseId]);
 
-  // 2. SÉCURITÉ AUTH
   useEffect(() => {
     if (!isUserLoading && !user) {
         const redirectUrl = encodeURIComponent(pathname + (searchParams.toString() ? `?${searchParams.toString()}` : ''));
@@ -257,7 +254,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
                     onClick={() => {
                         const url = `${window.location.origin}${pathname}?aff=${currentUser.uid}`;
                         navigator.clipboard.writeText(url);
-                        toast({ title: "Lien Ambassadeur copié !", description: "Gagnez des commissions en partageant ce cours." });
+                        toast({ title: "Lien Ambassadeur copié !" });
                     }}
                 >
                     <Share2 className="h-3 w-3" /> Partager & Gagner
