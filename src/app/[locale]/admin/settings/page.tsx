@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Réglages Globaux Ndara Afrique.
- * ✅ OPTIMISÉ : Gestion fine de l'affiliation (cookie duration, seuil payout).
+ * ✅ AJOUT : Configuration PWA (Branding App Mobile).
  */
 
 import { useState, useEffect } from 'react';
@@ -41,7 +41,8 @@ import {
   Trash2,
   TrendingUp,
   UserPlus,
-  Clock
+  Clock,
+  Smartphone
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
@@ -85,6 +86,10 @@ const settingsSchema = z.object({
   referralEnabled: z.boolean().default(true),
   referralPercentage: z.coerce.number().min(0).max(20),
   minPayoutThreshold: z.coerce.number().min(1000),
+  // --- PWA ---
+  pwaAppName: z.string().min(3, "Nom requis"),
+  pwaShortName: z.string().min(3, "Nom court requis"),
+  pwaIconUrl: z.string().url("URL invalide").or(z.literal('')),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -111,7 +116,10 @@ export default function AdminSettingsPage() {
       affiliateCookieDurationDays: 30,
       referralEnabled: true,
       referralPercentage: 5,
-      minPayoutThreshold: 5000
+      minPayoutThreshold: 5000,
+      pwaAppName: 'Ndara Afrique',
+      pwaShortName: 'Ndara',
+      pwaIconUrl: '/logo.png',
     }
   });
 
@@ -156,6 +164,10 @@ export default function AdminSettingsPage() {
           referralEnabled: data.commercial?.referralEnabled ?? true,
           referralPercentage: data.commercial?.referralPercentage ?? 5,
           minPayoutThreshold: data.commercial?.minPayoutThreshold ?? 5000,
+          // --- PWA ---
+          pwaAppName: data.pwa?.appName || 'Ndara Afrique',
+          pwaShortName: data.pwa?.shortName || 'Ndara',
+          pwaIconUrl: data.pwa?.iconUrl || '/logo.png',
         });
       }
       setIsLoading(false);
@@ -202,6 +214,14 @@ export default function AdminSettingsPage() {
             enableInternalMessaging: values.enableInternalMessaging,
             allowYoutube: values.allowYoutube,
             allowBunny: values.allowBunny
+          },
+          pwa: {
+            appName: values.pwaAppName,
+            shortName: values.pwaShortName,
+            appDescription: "L'excellence panafricaine par le savoir.",
+            iconUrl: values.pwaIconUrl,
+            themeColor: '#10b981',
+            backgroundColor: '#0f172a'
           },
           design: { primaryColor: values.primaryColor, fontScale: values.fontScale, borderRadius: values.borderRadius },
           content: {
@@ -258,7 +278,8 @@ export default function AdminSettingsPage() {
             <TabsList className="bg-slate-900 border-slate-800 mb-6 h-12 p-1 overflow-x-auto flex items-center justify-start gap-1 w-full rounded-2xl no-scrollbar">
               <TabsTrigger value="general" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Général</TabsTrigger>
               <TabsTrigger value="commercial" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Commercial</TabsTrigger>
-              <TabsTrigger value="growth" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-primary">Croissance</TabsTrigger>
+              <TabsTrigger value="pwa" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest text-primary">App Mobile (PWA)</TabsTrigger>
+              <TabsTrigger value="growth" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Croissance</TabsTrigger>
               <TabsTrigger value="design" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Studio Design</TabsTrigger>
               <TabsTrigger value="platform" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Plateforme</TabsTrigger>
               <TabsTrigger value="content" className="py-2 px-4 font-bold uppercase text-[10px] tracking-widest">Contenu</TabsTrigger>
@@ -281,7 +302,7 @@ export default function AdminSettingsPage() {
                       )} />
                     </div>
                     <div className="space-y-4">
-                      <FormLabel className="text-[10px] font-black uppercase text-slate-500">Logo (Bunny CDN)</FormLabel>
+                      <FormLabel className="text-[10px] font-black uppercase text-slate-500">Logo Site (Square)</FormLabel>
                       <div className="relative h-32 w-32 rounded-3xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group">
                           {form.watch('logoUrl') ? <Image src={form.watch('logoUrl')!} alt="Logo" fill className="object-contain p-4" /> : <ImageIcon className="h-10 w-10 text-slate-800" />}
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -308,6 +329,59 @@ export default function AdminSettingsPage() {
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            <TabsContent value="pwa" className="space-y-6">
+                <Card className="bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-2xl border-l-4 border-l-primary">
+                    <CardHeader className="bg-primary/5 p-8 border-b border-white/5">
+                        <CardTitle className="text-xl font-black text-white uppercase flex items-center gap-3">
+                            <Smartphone className="text-primary"/> Branding App Mobile (PWA)
+                        </CardTitle>
+                        <CardDescription>Configurez comment Ndara s'affiche une fois installée sur mobile.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-8 space-y-8">
+                        <div className="grid md:grid-cols-2 gap-8">
+                            <div className="space-y-6">
+                                <FormField control={form.control} name="pwaAppName" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom complet de l'App</FormLabel>
+                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                                <FormField control={form.control} name="pwaShortName" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Nom court (Icon Label)</FormLabel>
+                                        <FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl>
+                                        <FormDescription className="text-[9px]">Ce qui s'affiche sous l'icône sur l'écran d'accueil.</FormDescription>
+                                        <FormMessage />
+                                    </FormItem>
+                                )} />
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Icône App (512x512px)</FormLabel>
+                                <div className="relative h-40 w-40 rounded-[2rem] bg-slate-950 border border-slate-800 overflow-hidden flex items-center justify-center group shadow-2xl">
+                                    {form.watch('pwaIconUrl') ? (
+                                        <Image src={form.watch('pwaIconUrl')!} alt="PWA Icon" fill className="object-cover" />
+                                    ) : (
+                                        <Smartphone className="h-12 w-12 text-slate-800" />
+                                    )}
+                                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                        <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl bg-primary text-white border-none" asChild disabled={!!isUploading}>
+                                            <label className="cursor-pointer">
+                                                {isUploading === 'pwaIconUrl' ? <Loader2 className="h-4 w-4 animate-spin"/> : <UploadCloud className="h-4 w-4 mr-2"/>}
+                                                Charger l'icône
+                                                <input type="file" className="hidden" accept="image/*" onChange={(e) => handleFileUpload(e, 'pwaIconUrl')} />
+                                            </label>
+                                        </Button>
+                                    </div>
+                                </div>
+                                <p className="text-[9px] text-slate-500 italic max-w-[200px]">Utilisez un fond opaque et un design simple pour une meilleure visibilité sur smartphone.</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </TabsContent>
 
             <TabsContent value="commercial" className="space-y-6">

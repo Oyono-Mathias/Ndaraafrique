@@ -93,7 +93,7 @@ export interface NdaraUser {
   referredBy?: string; // UID of the instructor who invited this user
   affiliateStats?: {
       clicks: number;
-      registrations: number; // ✨ NOUVEAU : Traçabilité inscriptions
+      registrations: number; 
       sales: number;
       earnings: number;
   };
@@ -398,6 +398,14 @@ export interface Settings {
     allowYoutube?: boolean;
     allowBunny?: boolean;
     bunnyLibraryId?: string;
+  };
+  pwa?: {
+    appName: string;
+    shortName: string;
+    appDescription: string;
+    iconUrl: string;
+    themeColor: string;
+    backgroundColor: string;
   };
   design?: DesignSettings;
   legal: {
