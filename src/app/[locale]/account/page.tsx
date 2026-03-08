@@ -5,12 +5,11 @@
  * ✅ RÉSOLU : Harmonisation Schéma pour débloquer le bouton Enregistrer.
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRole } from '@/context/RoleContext';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
 
@@ -18,11 +17,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader2, KeyRound, LogOut, Camera, CheckCircle2, AlertCircle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Loader2, Camera, CheckCircle2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ImageCropper } from '@/components/ui/ImageCropper';
-import { Card } from '@/components/ui/card';
 
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/, "Lettres, chiffres et _ uniquement."),
@@ -30,13 +27,10 @@ const accountSchema = z.object({
   bio: z.string().max(500).optional().or(z.literal('')),
   phoneNumber: z.string().optional().or(z.literal('')),
   interestDomain: z.string().min(2, "Domaine requis."),
-  linkedin: z.string().url("URL invalide").or(z.literal('')).optional(),
-  twitter: z.string().url("URL invalide").or(z.literal('')).optional(),
-  website: z.string().url("URL invalide").or(z.literal('')).optional(),
 });
 
 export default function AccountPage() {
-  const { currentUser, isUserLoading, secureSignOut, user } = useRole();
+  const { currentUser, isUserLoading, user } = useRole();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -51,9 +45,6 @@ export default function AccountPage() {
         bio: '',
         phoneNumber: '',
         interestDomain: '',
-        linkedin: '',
-        twitter: '',
-        website: '',
     }
   });
 
@@ -65,23 +56,9 @@ export default function AccountPage() {
         bio: currentUser.bio || '',
         phoneNumber: currentUser.phoneNumber || '',
         interestDomain: currentUser.careerGoals?.interestDomain || '',
-        linkedin: currentUser.socialLinks?.linkedin || '',
-        twitter: currentUser.socialLinks?.twitter || '',
-        website: currentUser.socialLinks?.website || '',
       });
     }
   }, [currentUser, form]);
-
-  const handlePasswordReset = useCallback(async () => {
-    if (!currentUser?.email) return;
-    const auth = getAuth();
-    try {
-      await sendPasswordResetEmail(auth, currentUser.email);
-      toast({ title: "E-mail envoyé !", description: "Suivez les instructions envoyées." });
-    } catch (error: any) {
-      toast({ variant: 'destructive', title: "Erreur", description: "Impossible d'envoyer l'e-mail." });
-    }
-  }, [currentUser, toast]);
 
   const onFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,9 +105,6 @@ export default function AccountPage() {
                 bio: values.bio,
                 phoneNumber: values.phoneNumber,
                 'careerGoals.interestDomain': values.interestDomain,
-                'socialLinks.linkedin': values.linkedin,
-                'socialLinks.twitter': values.twitter,
-                'socialLinks.website': values.website,
                 isProfileComplete: true
             },
             requesterId: currentUser.uid
@@ -149,7 +123,7 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 pb-32 bg-grainy min-h-screen">
+    <div className="max-w-2xl mx-auto space-y-8 pb-32 min-h-screen">
       {selectedImage && <ImageCropper image={selectedImage} onCropComplete={onCropComplete} onClose={() => setSelectedImage(null)} />}
 
       <header className="px-4 pt-12 text-center space-y-6 flex flex-col items-center">
@@ -188,7 +162,7 @@ export default function AccountPage() {
                   )}/>
                   <FormField control={form.control} name="interestDomain" render={({ field }) => (
                       <FormItem>
-                          <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Domaine d'expertise</FormLabel>
+                          <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Domaine d'intérêt</FormLabel>
                           <FormControl><Input placeholder="Finance, Agriculture, Code..." {...field} className="h-12 bg-slate-900 border-slate-800 rounded-xl text-white" /></FormControl>
                           <FormMessage />
                       </FormItem>

@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique - Style Udemy Exact.
- * ✅ DESIGN : Image rectangulaire 16:9, texte en dessous.
+ * ✅ DESIGN : Image rectangulaire 16:9 avec coins arrondis (pas de cercles).
  * ✅ RATING : Affichage des étoiles et du score.
  */
 
@@ -11,7 +11,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart, BadgeEuro, Share2 } from 'lucide-react';
+import { Star, Heart } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
@@ -27,7 +27,7 @@ interface CourseCardProps {
 }
 
 export function CourseCard({ course, instructor, variant = 'grid', actions }: CourseCardProps) {
-  const { user, currentUser } = useRole();
+  const { user } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -79,7 +79,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
               />
             </div>
             <div className="flex-1 ml-4 flex flex-col justify-center min-w-0">
-              <h3 className="font-bold text-sm text-brand-dark dark:text-white line-clamp-1 group-hover:text-primary transition-colors uppercase tracking-tight">{course.title}</h3>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white line-clamp-1 group-hover:text-primary transition-colors uppercase tracking-tight">{course.title}</h3>
               <p className="text-[10px] text-slate-500 font-medium mt-1 truncate">{instructor?.fullName || 'Instructeur Ndara'}</p>
               {course.progress !== undefined && (
                   <div className="mt-2 flex items-center gap-2">
@@ -102,8 +102,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   return (
     <div className="group h-full">
       <Link href={href} className="flex flex-col h-full active:scale-[0.98] transition-transform duration-200">
-        {/* IMAGE */}
-        <div className="relative aspect-video w-full rounded-md overflow-hidden bg-slate-800 shadow-md mb-3">
+        <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-800 shadow-md mb-3">
             <Image
                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
                 alt={course.title}
@@ -129,7 +128,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             </button>
         </div>
         
-        {/* TEXT CONTENT */}
         <div className="flex flex-col flex-1 space-y-1">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 h-[2.5rem]">
                 {course.title}
@@ -148,7 +146,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                     ))}
                 </div>
                 <span className="text-[10px] text-slate-500">
-                    ({course.participantsCount || Math.floor(Math.random() * 500) + 50})
+                    ({course.participantsCount || 42})
                 </span>
             </div>
 
@@ -156,20 +154,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 <p className="font-black text-slate-900 dark:text-white">
                     {course.price > 0 ? `${course.price.toLocaleString('fr-FR')} XOF` : 'OFFERT'}
                 </p>
-                {course.price > 0 && (
-                    <p className="text-xs text-slate-500 line-through opacity-50">
-                        {(course.price * 1.5).toLocaleString('fr-FR')} XOF
-                    </p>
-                )}
             </div>
-
-            {course.isPopular && (
-                <div className="pt-1">
-                    <Badge variant="secondary" className="bg-[#ECEB98] text-[#3D3C0A] hover:bg-[#ECEB98] border-none font-bold text-[8px] px-1.5 py-0 rounded-sm">
-                        Bestseller
-                    </Badge>
-                </div>
-            )}
         </div>
       </Link>
     </div>
