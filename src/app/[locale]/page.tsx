@@ -7,10 +7,10 @@
  */
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { HowItWorks } from '@/components/landing/HowItWorks';
+import dynamic from 'next/dynamic';
 
 // Chargement dynamique des composants pour un LCP optimal
 const DynamicCarousel = dynamic(() => import('@/components/ui/DynamicCarousel').then(mod => mod.DynamicCarousel), { ssr: false });
