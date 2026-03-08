@@ -10,11 +10,11 @@ import React from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
+import { HowItWorks } from '@/components/landing/HowItWorks';
 
 // Chargement dynamique des composants pour un LCP optimal
 const DynamicCarousel = dynamic(() => import('@/components/ui/DynamicCarousel').then(mod => mod.DynamicCarousel), { ssr: false });
 const Stats = dynamic(() => import('@/components/landing/Stats').then(mod => mod.Stats), { ssr: false });
-const HowItWorks = dynamic(() => import('@/components/landing/HowItWorks').then(mod => mod.HowItWorks), { ssr: false });
 const TrustAndSecuritySection = dynamic(() => import('@/components/landing/TrustAndSecuritySection').then(mod => mod.TrustAndSecuritySection), { ssr: false });
 const TestimonialsSection = dynamic(() => import('@/components/landing/TestimonialsSection').then(mod => mod.TestimonialsSection), { ssr: false });
 const InstructorCTASection = dynamic(() => import('@/components/landing/InstructorCTASection').then(mod => mod.InstructorCTASection), { ssr: false });
