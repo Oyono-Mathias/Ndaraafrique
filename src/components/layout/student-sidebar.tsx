@@ -28,6 +28,7 @@ import {
   ArrowLeftRight,
   Shield,
   MessageCircle,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";
