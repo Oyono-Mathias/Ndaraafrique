@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
-  LayoutDashboard, 
-  BookOpen, 
+  Star, 
   Search,
-  User,
-  Bell
+  PlayCircle,
+  Heart,
+  UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useState, useMemo } from 'react';
@@ -15,42 +15,29 @@ import { getFirestore, collection, query, where, onSnapshot } from 'firebase/fir
 import { useRole } from '@/context/RoleContext';
 
 /**
- * @fileOverview Barre de navigation mobile pour l'étudiant.
- * ✅ AJOUT : Onglet "Rechercher" pour explorer le catalogue sans quitter le dashboard.
+ * @fileOverview Barre de navigation mobile pour l'étudiant - Style Udemy Exact.
+ * ✅ LABELS : Sélection, Rechercher, Mon apprentissage, Liste de souhaits, Compte.
  */
 
 const navItems = [
-  { href: '/student/dashboard', icon: LayoutDashboard, label: 'Accueil' },
-  { href: '/search', icon: Search, label: 'Catalogue' },
-  { href: '/student/courses', icon: BookOpen, label: 'Mes cours' },
-  { href: '/student/notifications', icon: Bell, label: 'Alertes', showBadge: true },
-  { href: '/student/profile', icon: User, label: 'Profil' },
+  { href: '/student/dashboard', icon: Star, label: 'Sélection' },
+  { href: '/search', icon: Search, label: 'Rechercher' },
+  { href: '/student/courses', icon: PlayCircle, label: 'Apprentissage' },
+  { href: '/student/liste-de-souhaits', icon: Heart, label: 'Souhaits' },
+  { href: '/student/profile', icon: UserCircle, label: 'Compte' },
 ];
 
 export function StudentBottomNav() {
   const pathname = usePathname() || '';
   const { user } = useRole();
   const db = getFirestore();
-  const [unreadCount, setUnreadCount] = useState(0);
 
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';
   }, [pathname]);
 
-  useEffect(() => {
-    if (!user?.uid) return;
-    const q = query(
-      collection(db, `users/${user.uid}/notifications`),
-      where('read', '==', false)
-    );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setUnreadCount(snapshot.size);
-    });
-    return () => unsubscribe();
-  }, [user?.uid, db]);
-
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#111827] border-t border-white/5 flex items-stretch justify-around z-50 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#1C1D1F] border-t border-white/5 flex items-stretch justify-around z-50 safe-area-pb shadow-[0_-4px_20px_rgba(0,0,0,0.4)]">
       {navItems.map((item) => {
         const isActive = cleanPath === item.href || (item.href !== '/student/dashboard' && cleanPath.startsWith(item.href));
         
@@ -61,18 +48,15 @@ export function StudentBottomNav() {
             className="flex flex-col items-center justify-center flex-1 gap-1 relative transition-all active:scale-90"
           >
             <item.icon className={cn(
-              "h-6 w-6 transition-colors duration-200",
-              isActive ? "text-primary" : "text-slate-500"
+              "h-5 w-5 transition-colors duration-200",
+              isActive ? "text-white" : "text-slate-500"
             )} />
             <span className={cn(
-              "text-[10px] font-bold transition-colors duration-200 uppercase tracking-tighter",
-              isActive ? "text-primary" : "text-slate-600"
+              "text-[9px] font-medium transition-colors duration-200 truncate px-1",
+              isActive ? "text-white" : "text-slate-500"
             )}>
               {item.label}
             </span>
-            {item.showBadge && unreadCount > 0 && (
-              <span className="absolute top-2.5 right-[30%] h-2 w-2 bg-red-500 rounded-full ring-2 ring-[#111827] animate-pulse" />
-            )}
           </Link>
         );
       })}
