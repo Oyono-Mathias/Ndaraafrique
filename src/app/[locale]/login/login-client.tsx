@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
- * ✅ GESTION REDIRECTION : Supporte le paramètre 'redirect' pour ramener l'utilisateur là où il était.
- * ✅ GESTION AFFILIATION : Incrémente le compteur d'inscriptions de l'ambassadeur.
+ * ✅ GESTION REDIRECTION : Supporte le paramètre 'redirect'.
+ * ✅ GESTION AFFILIATION : Incrémente le compteur d'inscriptions de l'ambassadeur ou du parrain.
  */
 
 import { useState, useEffect } from 'react';
@@ -20,7 +20,6 @@ import {
   updateProfile, 
   GoogleAuthProvider, 
   signInWithPopup, 
-  deleteUser,
   User as FirebaseUser 
 } from 'firebase/auth';
 import { 
@@ -86,6 +85,16 @@ export default function LoginClient() {
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
 
+  const loginForm = useForm<z.infer<typeof loginSchema>>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const registerForm = useForm<z.infer<typeof registerSchema>>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { fullName: '', email: '', password: '', terms: false },
+  });
+
   useEffect(() => {
     if (!isUserLoading && user) {
       if (redirectUrl) {
@@ -115,7 +124,7 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
-      // ✅ RECUPERATION DE L'AFFILIE (Session Browser)
+      // ✅ RECUPERATION DE L'AFFILIE (Last Click Rule)
       let affiliateId = null;
       if (typeof window !== 'undefined') {
           const storedAff = localStorage.getItem('ndara_affiliate_id');
@@ -146,6 +155,14 @@ export default function LoginClient() {
         lastSeen: serverTimestamp(),
         referredBy: referralId || null,
         affiliateId: affiliateId || null,
+        affiliateStats: {
+            clicks: 0,
+            registrations: 0,
+            sales: 0,
+            earnings: 0
+        },
+        affiliateBalance: 0,
+        referralBalance: 0
       };
 
       await setDoc(userRef, userData);
@@ -155,7 +172,7 @@ export default function LoginClient() {
           const affRef = doc(db, 'users', affiliateId);
           await updateDoc(affRef, {
               'affiliateStats.registrations': increment(1)
-          }).catch(e => console.warn("Failed to increment reg count:", e));
+          }).catch(() => {});
       }
 
       toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
@@ -207,6 +224,9 @@ export default function LoginClient() {
           profilePictureURL: user.photoURL || '',
           referredBy: referralId || null,
           affiliateId: affiliateId || null,
+          affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
+          affiliateBalance: 0,
+          referralBalance: 0
         };
         await setDoc(userRef, userData);
 

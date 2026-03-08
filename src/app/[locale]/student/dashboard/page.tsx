@@ -81,13 +81,17 @@ export default function StudentDashboardAndroid() {
 
     // Fetch Leaderboard
     const fetchLeaderboard = async () => {
-        const q = query(
-            collection(db, 'users'), 
-            orderBy('affiliateStats.sales', 'desc'), 
-            limit(5)
-        );
-        const snap = await getDocs(q);
-        setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+        try {
+            const q = query(
+                collection(db, 'users'), 
+                orderBy('affiliateStats.sales', 'desc'), 
+                limit(5)
+            );
+            const snap = await getDocs(q);
+            setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+        } catch (e) {
+            console.warn("Leaderboard index not ready yet.");
+        }
     };
     fetchLeaderboard();
 
@@ -158,14 +162,11 @@ export default function StudentDashboardAndroid() {
                               <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Solde Retirable</p>
                               <p className="text-3xl font-black text-white mt-1">{(currentUser?.affiliateBalance || 0).toLocaleString('fr-FR')} <span className="text-xs">XOF</span></p>
                           </div>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-10 px-4 bg-primary text-white hover:bg-emerald-600 rounded-xl font-black uppercase text-[9px] tracking-widest"
-                            onClick={() => router.push('/student/paiements')}
-                          >
-                              Retirer
-                          </Button>
+                          <div className="bg-slate-950 p-4 rounded-2xl border border-white/5 flex flex-col justify-center">
+                               <Button variant="ghost" className="h-auto p-0 text-[10px] font-black text-primary uppercase tracking-widest justify-start hover:bg-transparent" onClick={() => router.push('/student/paiements')}>
+                                   Retirer mes gains <ChevronRight className="h-3 w-3 ml-1" />
+                               </Button>
+                           </div>
                       </div>
 
                       <div className="space-y-3">
