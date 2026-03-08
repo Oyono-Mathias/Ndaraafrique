@@ -21,7 +21,7 @@ import { useRouter } from 'next/navigation';
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
-// Chargement dynamique
+// Chargement dynamique pour optimiser le LCP
 const Stats = dynamic(() => import('@/components/landing/Stats').then(mod => mod.Stats), { ssr: false });
 const TestimonialsSection = dynamic(() => import('@/components/landing/TestimonialsSection').then(mod => mod.TestimonialsSection), { ssr: false });
 const Footer = dynamic(() => import('@/components/layout/footer').then(mod => mod.Footer), { ssr: false });
@@ -72,10 +72,9 @@ const Navbar = () => {
 };
 
 export default function LandingPage() {
-  const router = useRouter();
+  const router = useRouter(); // ✅ Initialisation correcte de router
   const db = getFirestore();
   const locale = useLocale();
-  const { user, role } = useRole();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
@@ -111,9 +110,10 @@ export default function LandingPage() {
   const categories = ["Développement", "Business", "Marketing", "Finance"];
 
   return (
-    <div className="bg-[#1C1D1F] text-white min-h-screen">
+    <div className="bg-[#1C1D1F] text-white min-h-screen font-sans">
       <Navbar />
       
+      {/* Hero Section */}
       <section className="pt-32 pb-16 px-4 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <div className="space-y-6">
             <h1 className="text-4xl md:text-6xl font-black leading-tight uppercase tracking-tighter">
@@ -127,8 +127,9 @@ export default function LandingPage() {
                 <input 
                     type="text" 
                     placeholder="Que souhaitez-vous apprendre ?" 
-                    className="w-full h-14 pl-12 pr-4 bg-white text-black rounded-sm font-medium focus:outline-none"
+                    className="w-full h-14 pl-12 pr-4 bg-white text-black rounded-sm font-medium focus:outline-none cursor-pointer"
                     onClick={() => router.push('/search')}
+                    readOnly
                 />
             </div>
         </div>
@@ -137,12 +138,14 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Stats Bar */}
       <section className="py-12 border-y border-white/5 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4">
             <Stats />
         </div>
       </section>
 
+      {/* Courses Sections */}
       <main className="max-w-7xl mx-auto px-4 py-20 space-y-24">
         {categories.map(cat => {
             const catCourses = courses.filter(c => c.category === cat || (!c.category && cat === "Développement")).slice(0, 4);
@@ -150,7 +153,10 @@ export default function LandingPage() {
             
             return (
                 <section key={cat} className="space-y-6">
-                    <h2 className="text-2xl font-black uppercase tracking-tight">Meilleurs cours en <span className="text-primary">{cat}</span></h2>
+                    <div className="flex justify-between items-end">
+                        <h2 className="text-2xl font-black uppercase tracking-tight">Meilleurs cours en <span className="text-primary">{cat}</span></h2>
+                        <Link href="/search" className="text-sm font-bold text-primary hover:underline">Voir tout</Link>
+                    </div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                         {catCourses.map(course => (
                             <CourseCard 
