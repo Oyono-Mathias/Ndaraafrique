@@ -31,6 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
@@ -89,7 +90,7 @@ export default function StudentDashboardAndroid() {
             limit(5)
         );
         const snap = await getDocs(q);
-        setLeaderboard(snap.docs.map(d => d.data() as NdaraUser));
+        setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
     };
     fetchLeaderboard();
 
@@ -138,7 +139,6 @@ export default function StudentDashboardAndroid() {
                   <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none"><BadgeEuro size={120} className="text-primary" /></div>
                   <CardContent className="p-8 space-y-8">
                       
-                      {/* Stats Grid */}
                       <div className="grid grid-cols-2 gap-4">
                           <div className="bg-slate-950/50 p-5 rounded-3xl border border-white/5 space-y-1">
                               <div className="flex items-center gap-2 text-slate-500 mb-1">
@@ -156,7 +156,6 @@ export default function StudentDashboardAndroid() {
                           </div>
                       </div>
 
-                      {/* Financial Metrics */}
                       <div className="bg-primary/10 border border-primary/20 p-6 rounded-[2rem] flex justify-between items-center">
                           <div>
                               <p className="text-[9px] font-black text-primary uppercase tracking-[0.2em]">Solde Retirable</p>
@@ -172,7 +171,6 @@ export default function StudentDashboardAndroid() {
                           </Button>
                       </div>
 
-                      {/* Tier Progress */}
                       <div className="space-y-3">
                           <div className="flex justify-between items-end">
                               <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Progression Bonus</p>
@@ -187,7 +185,6 @@ export default function StudentDashboardAndroid() {
                   </CardContent>
               </Card>
 
-              {/* Leaderboard Small */}
               <Card className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden">
                   <div className="p-5 border-b border-white/5 flex items-center gap-3">
                       <Medal className="h-4 w-4 text-amber-500" />
