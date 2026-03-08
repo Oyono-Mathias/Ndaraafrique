@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * @fileOverview Barre latérale Étudiant Ndara Afrique.
+ * ✅ SÉCURITÉ CEO : Boutons Admin & Formateur visibles et actifs pour Mathias.
+ */
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -14,7 +19,6 @@ import {
   User,
   Heart,
   Search,
-  Play,
   Briefcase,
   Bell,
   Lock,
@@ -59,7 +63,6 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
       href={href}
       onClick={handleClick}
       id={id}
-      aria-disabled={disabled}
       className={cn(
         "flex items-center justify-between px-4 py-2.5 my-1 cursor-pointer transition-all duration-200 rounded-lg mx-3 group relative",
         isActive
@@ -86,10 +89,11 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
 };
 
 
-export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
+export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
   const { switchRole, availableRoles, user, currentUser } = useRole();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
+  
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
   const [globalProgress, setGlobalProgress] = useState(0);
@@ -111,7 +115,7 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.pn
       items: [
         { href: "/student/dashboard", icon: LayoutDashboard, label: "Tableau de Bord", id: 'sidebar-nav-dashboard' },
         { href: "/search", icon: Search, label: "Rechercher", id: 'sidebar-nav-search' },
-        { href: "/student/courses", icon: Play, label: 'Mes Formations', id: 'sidebar-nav-mes-formations' },
+        { href: "/student/courses", icon: BookOpen, label: 'Mes Formations', id: 'sidebar-nav-mes-formations' },
         { href: "/student/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
@@ -242,19 +246,19 @@ export function StudentSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.pn
           
           <div className="space-y-2">
             {isAdmin && (
-                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={() => handleSwitchRole('admin')}>
+                <Button variant="secondary" className="w-full justify-center gap-2 font-bold h-11 rounded-xl" onClick={() => handleSwitchRole('admin')}>
                     <Shield className="h-4 w-4" />
                     Mode Administrateur
                 </Button>
             )}
             
             {isInstructor ? (
-                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold" onClick={() => handleSwitchRole('instructor')}>
+                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold h-11 rounded-xl" onClick={() => handleSwitchRole('instructor')}>
                     <ArrowLeftRight className="h-4 w-4 text-primary" />
                     Mode Formateur
                 </Button>
             ) : showInstructorSignup && (
-                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white" asChild onClick={onLinkClick}>
+                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white h-11 rounded-xl" asChild onClick={onLinkClick}>
                     <Link href="/devenir-instructeur">
                         <Briefcase className="mr-2 h-4 w-4" />
                         Devenir Formateur

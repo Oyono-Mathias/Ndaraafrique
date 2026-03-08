@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique.
- * Gère le Mode Maintenance, la Bannière d'Annonce, la visibilité des NavBars et la redirection automatique.
- * ✅ VISION CEO : Unification de l'expérience connecté vs visiteur.
+ * Gère le Mode Maintenance, la Bannière d'Annonce et la sécurité des accès par rôle.
+ * ✅ RÉSOLU : Redirection intelligente respectant le switchRole manuel.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -90,59 +90,62 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     
     // Profils publics des instructeurs
     const instructorPathRegex = /^\/instructor\/[^/]+$/;
-    const instructorPrivateRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
     if (instructorPathRegex.test(cleanPath)) {
-        return !instructorPrivateRoutes.some(sub => cleanPath.includes(sub));
+        const privateSubRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
+        return !privateSubRoutes.some(sub => cleanPath.includes(sub));
     }
     
     return false;
   }, [cleanPath]);
 
+  // 🛡️ MOTEUR DE SÉCURITÉ ET REDIRECTION
   useEffect(() => {
     if (loading || !mounted) return;
 
+    // 1. Visiteur non connecté
     if (!user) {
-      // ✅ Sécurité : Redirection vers Landing Page locale si tentative d'accès zone privée
       if (!isPublicPage && !isAuthPage) {
           router.push(`/${locale}`);
       }
       return;
     }
 
-    // ✅ NOUVELLE LOGIQUE CEO : Si connecté sur /, on laisse l'utilisateur choisir mais on lui montre un accueil adapté.
-    // Pas de redirection forcée automatique depuis la Landing Page pour permettre la découverte.
+    // 2. Utilisateur connecté
+    // On ne force PAS de redirection depuis la Landing Page ou les pages publiques
+    if (cleanPath === '/' || cleanPath === '/search' || isPublicPage || cleanPath === '/account') return;
 
-    if (cleanPath === '/account' || cleanPath === '/search' || isPublicPage) return;
-
+    // 3. Gestion des frontières de rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    if (role === 'admin') return; 
-    
-    if (role === 'instructor') {
-        if (isAdminArea) router.push(`/${locale}/instructor/dashboard`);
-    } else if (role === 'student') {
-        if (isInstructorArea || isAdminArea) router.push(`/${locale}/student/dashboard`);
+    // Si l'utilisateur essaie d'accéder à une zone qui ne correspond pas à son rôle ACTUEL
+    if (role === 'student' && (isAdminArea || isInstructorArea)) {
+        router.push(`/${locale}/student/dashboard`);
+    } else if (role === 'instructor' && isAdminArea) {
+        router.push(`/${locale}/instructor/dashboard`);
+    } else if (role === 'admin' && !isAdminArea && !isInstructorArea && cleanPath.startsWith('/student')) {
+        // Un admin peut aller partout, mais s'il est perdu dans student, on le laisse
     }
   }, [user, role, loading, cleanPath, router, mounted, isPublicPage, isAuthPage, locale]);
 
-  if (loading || !mounted) return <div className="h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary"/></div>;
+  if (loading || !mounted) return (
+    <div className="h-screen flex items-center justify-center bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+    </div>
+  );
   
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
-        <div className="h-screen flex flex-col items-center justify-center bg-background text-center p-6">
+        <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
             <Wrench className="h-16 w-16 text-primary mb-4" />
-            <h1 className="text-2xl font-black text-foreground uppercase tracking-tight">Maintenance Ndara</h1>
-            <p className="text-muted-foreground mt-2 font-medium">Nous effectuons des mises à jour techniques. Nous revenons dans quelques instants.</p>
+            <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance Ndara</h1>
+            <p className="text-slate-500 mt-2 font-medium italic">Nous effectuons des mises à jour techniques. Nous revenons dans quelques instants.</p>
         </div>
       );
   }
 
   const isLandingPage = cleanPath === '/';
-  
-  // Masquer les sidebars sur les vues plein écran (lecteur de cours)
   const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').length > 3;
-  
   const showNav = user && !isAuthPage && !isPublicPage && !isLandingPage;
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);

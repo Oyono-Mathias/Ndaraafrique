@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview RoleProvider Ndara Afrique.
- * ✅ RÉSOLU : Redirection Landing Page locale (/${locale}/) après déconnexion.
+ * Gère les rôles (étudiant, instructeur, admin) et les permissions.
+ * ✅ SÉCURITÉ CEO : Accès total pour Mathias (salguienow@gmail.com).
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -31,6 +32,7 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
+// 🛡️ IDENTITÉ CEO NDARA
 const MASTER_ADMIN_EMAIL = 'salguienow@gmail.com';
 
 export function RoleProvider({ children }: { children: ReactNode }) {
@@ -52,7 +54,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem('ndaraafrique-role');
     await signOut(auth);
-    // ✅ CEO Request: Redirect to Landing Page with locale prefix
     router.push(`/${locale}`);
   }, [db, router, locale]);
 
@@ -63,7 +64,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     const handleBeforeUnload = () => {
         if (auth.currentUser) {
             const userDocRef = doc(db, 'users', auth.currentUser.uid);
-            updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() });
+            updateDoc(userDocRef, { isOnline: false, lastSeen: serverTimestamp() }).catch(() => {});
         }
     };
 
@@ -83,7 +84,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     };
   }, [db]);
 
-  // 2. SYNCHRONISATION DU PROFIL FIRESTORE
+  // 2. SYNCHRONISATION DU PROFIL ET DES RÔLES
   useEffect(() => {
     if (isUserLoading) {
       setLoading(true);
@@ -109,16 +110,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
-          const isMasterAdmin = user.email === MASTER_ADMIN_EMAIL || userData.role === 'admin';
+          // 💎 VÉRIFICATION DROITS CEO & ADMIN
+          const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || userData.role === 'admin';
+          
           const roles: UserRole[] = ['student'];
-          if (isMasterAdmin) roles.push('instructor', 'admin');
-          else if (userData.role === 'instructor' || userData.isInstructorApproved) roles.push('instructor');
+          if (isMasterAdmin) {
+              roles.push('instructor', 'admin');
+          } else if (userData.role === 'instructor' || userData.isInstructorApproved) {
+              roles.push('instructor');
+          }
 
-          const hasRealPhoto = !!userData.profilePictureURL && 
-                               !userData.profilePictureURL.includes('api.dicebear.com') && 
-                               userData.profilePictureURL.length > 10;
-                               
-          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain && hasRealPhoto);
+          const isComplete = !!(userData.username && userData.careerGoals?.interestDomain);
 
           const resolvedUser: NdaraUser = {
               ...userData,
@@ -134,12 +136,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
+          // Récupération du rôle de la session
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
-          if (savedRole && roles.includes(savedRole)) setRole(savedRole);
-          else setRole(resolvedUser.role);
+          if (savedRole && roles.includes(savedRole)) {
+              setRole(savedRole);
+          } else {
+              setRole(resolvedUser.role);
+          }
 
         } else {
-            const isMasterAdmin = user.email === MASTER_ADMIN_EMAIL;
+            // Création automatique du document utilisateur s'il n'existe pas
+            const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
             const newUserDoc = {
                 uid: user.uid,
                 email: user.email || '',
@@ -147,7 +154,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 fullName: user.displayName || 'Utilisateur Ndara',
                 role: isMasterAdmin ? 'admin' : 'student',
                 status: 'active',
-                isInstructorApproved: false,
+                isInstructorApproved: isMasterAdmin,
                 createdAt: serverTimestamp(),
                 isProfileComplete: false,
                 preferredLanguage: locale as 'fr' | 'en',
@@ -165,13 +172,33 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [user, isUserLoading, db, secureSignOut, toast, locale]);
 
+  /**
+   * Basculer entre les modes (Étudiant / Formateur / Admin)
+   */
   const switchRole = useCallback((newRole: UserRole) => {
+    // On vérifie si l'utilisateur a le droit d'utiliser ce rôle
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
-      const target = newRole === 'admin' ? '/admin' : newRole === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
-      router.push(`/${locale}${target}`);
-      toast({ title: `Mode ${newRole} activé` });
+      
+      // Détermination de la cible
+      const target = newRole === 'admin' 
+        ? '/admin' 
+        : newRole === 'instructor' 
+            ? '/instructor/dashboard' 
+            : '/student/dashboard';
+      
+      // Redirection propre avec gestion du préfixe locale
+      const finalPath = `/${locale}${target}`.replace(/\/fr\//, '/').replace(/\/fr$/, '/');
+      router.push(finalPath);
+      
+      toast({ title: `Mode ${newRole.toUpperCase()} activé` });
+    } else {
+        toast({ 
+            variant: 'destructive', 
+            title: "Accès refusé", 
+            description: "Vous n'avez pas les autorisations pour ce mode." 
+        });
     }
   }, [availableRoles, router, toast, locale]);
   
