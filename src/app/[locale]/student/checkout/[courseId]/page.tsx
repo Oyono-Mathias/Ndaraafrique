@@ -45,8 +45,17 @@ export default function CheckoutPage() {
   // ✅ RECUPÉRATION DE L'AMBASSADEUR (S'il existe)
   useEffect(() => {
       if (typeof window !== 'undefined') {
-          const storedAff = sessionStorage.getItem('ndara_affiliate_id');
-          if (storedAff) setAffiliateId(storedAff);
+          const storedAff = localStorage.getItem('ndara_affiliate_id');
+          if (storedAff) {
+              try {
+                  const data = JSON.parse(storedAff);
+                  if (data.expiresAt > Date.now()) {
+                      setAffiliateId(data.id);
+                  }
+              } catch (e) {
+                  console.error("Affiliate parsing error:", e);
+              }
+          }
       }
   }, []);
 

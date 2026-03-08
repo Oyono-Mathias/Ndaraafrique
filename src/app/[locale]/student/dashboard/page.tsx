@@ -8,6 +8,7 @@
 
 import { useRole } from '@/context/RoleContext';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import { 
     BookOpen, 
     Trophy, 
