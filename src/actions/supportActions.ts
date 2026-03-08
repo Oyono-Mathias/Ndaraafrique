@@ -76,6 +76,8 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeAccessParams)
     try {
         const db = getAdminDb();
         const batch = db.batch();
+        
+        // 1. Rechercher le paiement
         const paymentQuery = db.collection('payments')
             .where('userId', '==', userId)
             .where('courseId', '==', courseId)
@@ -91,21 +93,56 @@ export async function refundAndRevokeAccess(params: RefundAndRevokeAccessParams)
             });
         }
 
+        // 2. ANNULATION SÉCURISÉE DE LA COMMISSION AFFILIÉ
+        // On cherche une transaction d'affiliation non encore payée pour ce couple Acheteur/Cours
+        const affTransQuery = db.collection('affiliate_transactions')
+            .where('buyerId', '==', userId)
+            .where('courseId', '==', courseId)
+            .where('status', 'in', ['pending', 'approved'])
+            .limit(1);
+        
+        const affSnap = await affTransQuery.get();
+        if (!affSnap.empty) {
+            const affTrans = affSnap.docs[0];
+            const affData = affTrans.data();
+            const affiliateId = affData.affiliateId;
+            const commission = affData.commissionAmount;
+
+            // On marque la transaction comme annulée
+            batch.update(affTrans.ref, { status: 'cancelled' });
+
+            // On déduit du solde de l'affilié (selon l'endroit où elle se trouvait)
+            const affUserRef = db.collection('users').doc(affiliateId);
+            if (affData.status === 'pending') {
+                batch.update(affUserRef, { 
+                    pendingAffiliateBalance: FieldValue.increment(-commission),
+                    'affiliateStats.earnings': FieldValue.increment(-commission) 
+                });
+            } else if (affData.status === 'approved') {
+                batch.update(affUserRef, { 
+                    affiliateBalance: FieldValue.increment(-commission),
+                    'affiliateStats.earnings': FieldValue.increment(-commission)
+                });
+            }
+        }
+
+        // 3. Révoquer l'accès
         const enrollmentId = `${userId}_${courseId}`;
         const enrollmentRef = db.collection('enrollments').doc(enrollmentId);
         batch.delete(enrollmentRef);
         
+        // 4. Fermer le ticket
         const ticketRef = db.collection('support_tickets').doc(ticketId);
         batch.update(ticketRef, { 
             status: 'fermé', 
             updatedAt: Timestamp.now(),
-            resolution: 'Remboursé et accès révoqué'
+            resolution: 'Remboursé et commission affilié annulée.'
         });
 
         const messageRef = ticketRef.collection('messages').doc();
         batch.set(messageRef, {
             senderId: 'SYSTEM',
-            text: `Action système : Le remboursement a été traité et l'accès de l'étudiant au cours a été révoqué. Ce ticket est maintenant fermé.`,
+            text: `Action système : Remboursement traité. L'accès a été révoqué et la commission éventuelle a été annulée.`,
             createdAt: Timestamp.now(),
         });
         

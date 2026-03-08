@@ -87,7 +87,8 @@ export interface NdaraUser {
   countryCode?: string;
   countryName?: string;
   // --- ECONOMY ---
-  affiliateBalance?: number;
+  affiliateBalance?: number; // Available
+  pendingAffiliateBalance?: number; // Frozen (14 days)
   referralBalance?: number;
   referralCode?: string;
   referredBy?: string; // UID of the instructor who invited this user
@@ -157,6 +158,20 @@ export interface NdaraUser {
   badges?: string[];
   permissions?: { [key: string]: boolean };
 };
+
+export interface AffiliateTransaction {
+  id: string;
+  affiliateId: string;
+  courseId: string;
+  courseTitle: string;
+  buyerId: string;
+  buyerName: string;
+  amount: number;
+  commissionAmount: number;
+  status: 'pending' | 'approved' | 'paid' | 'cancelled';
+  createdAt: Timestamp | FieldValue;
+  unlockDate: Timestamp | FieldValue; // Target date for auto-approval
+}
 
 export interface CartItem {
   id: string; // courseId
