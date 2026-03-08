@@ -3,6 +3,7 @@
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique Optimisé.
  * ✅ AMBASSADEUR 2.0 : Résumé cliquable vers la page dédiée.
+ * ✅ CORRECTIF : Ajout des imports manquants pour le build.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -15,26 +16,17 @@ import {
     BadgeEuro, 
     Share2, 
     ChevronRight, 
-    Sparkles, 
-    MousePointer2, 
-    ShoppingCart,
-    Medal,
-    Users,
-    ArrowRight
+    TrendingUp
 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, orderBy, limit, doc, getDocs } from 'firebase/firestore';
-import type { NdaraUser, Settings } from '@/lib/types';
+import { useState, useEffect } from 'react';
+import { getFirestore, collection, query, where, onSnapshot, doc, getDocs, orderBy, limit } from 'firebase/firestore';
+import type { Settings } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 
 // Chargement dynamique des composants
 const ContinueLearning = dynamic(() => import('@/components/dashboards/ContinueLearning').then(mod => mod.ContinueLearning), { 
@@ -62,7 +54,6 @@ export default function StudentDashboardAndroid() {
   
   const [stats, setStats] = useState({ total: 0, completed: 0 });
   const [isAffiliateEnabled, setIsAffiliateEnabled] = useState(false);
-  const [leaderboard, setLeaderboard] = useState<Partial<NdaraUser>[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
   useEffect(() => {
@@ -80,21 +71,6 @@ export default function StudentDashboardAndroid() {
       setLoadingData(false);
     });
 
-    const fetchLeaderboard = async () => {
-        try {
-            const q = query(
-                collection(db, 'users'), 
-                orderBy('affiliateStats.sales', 'desc'), 
-                limit(5)
-            );
-            const snap = await getDocs(q);
-            setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
-        } catch (e) {
-            console.warn("Leaderboard indexing...");
-        }
-    };
-    fetchLeaderboard();
-
     return () => { unsubSettings(); unsubEnroll(); };
   }, [currentUser?.uid, db]);
 
@@ -105,9 +81,6 @@ export default function StudentDashboardAndroid() {
       navigator.clipboard.writeText(url);
       toast({ title: "Lien Ambassadeur copié !" });
   };
-
-  const affStats = currentUser?.affiliateStats || { clicks: 0, registrations: 0, sales: 0, earnings: 0 };
-  const salesCount = affStats.sales || 0;
   
   if (isUserLoading) return <div className="p-4 bg-slate-950 min-h-screen space-y-6"><Skeleton className="h-10 w-3/4 rounded-xl bg-slate-900" /></div>;
 

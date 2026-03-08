@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Barre latérale Étudiant Ndara Afrique.
- * ✅ CEO FEATURE : Ajout de l'Espace Ambassadeur.
+ * ✅ CORRECTIF : Ajout de l'import BookOpen.
  */
 
 import Link from "next/link";
@@ -19,7 +19,6 @@ import {
   User,
   Heart,
   Search,
-  Briefcase,
   Bell,
   Lock,
   LayoutDashboard,
@@ -27,10 +26,9 @@ import {
   CreditCard,
   ArrowLeftRight,
   Shield,
-  MessageCircle,
   BookOpen,
   BadgeEuro,
-  TrendingUp,
+  Briefcase
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { collection, query, where, onSnapshot, getFirestore, doc } from "firebase/firestore";

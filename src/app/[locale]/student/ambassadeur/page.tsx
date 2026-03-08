@@ -3,14 +3,14 @@
 /**
  * @fileOverview Espace Ambassadeur Ndara Afrique.
  * Centre de pilotage pour les étudiants souhaitant monétiser leur réseau.
- * ✅ TRAÇABILITÉ : Clics, Inscriptions, Ventes.
+ * ✅ TRAÇABILITÉ TEMPS RÉEL : Clics, Inscriptions, Ventes.
  * ✅ FINANCE : Retrait Mobile Money (Seuil 5000 XOF).
  */
 
 import { useRole } from '@/context/RoleContext';
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, doc, onSnapshot, collection, query, where, orderBy, limit } from 'firebase/firestore';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -27,8 +27,6 @@ import {
     Sparkles, 
     Award,
     ShieldCheck,
-    Info,
-    ArrowUpRight,
     Loader2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -80,7 +78,7 @@ export default function AmbassadorPage() {
 
         setIsSubmitting(true);
         const result = await requestPayout({ 
-            instructorId: currentUser!.uid, // Réutilisation de l'action générique
+            instructorId: currentUser!.uid, 
             amount: balance 
         });
 
@@ -140,7 +138,7 @@ export default function AmbassadorPage() {
                             className="w-full h-14 rounded-2xl bg-white text-primary hover:bg-slate-100 font-black uppercase text-[10px] tracking-widest shadow-xl active:scale-95 transition-all"
                         >
                             {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Landmark className="mr-2 h-4 w-4" />}
-                            Retirer via Mobile Money
+                            Demander mon paiement
                         </Button>
                         <p className="text-[9px] text-white/50 text-center mt-4 font-bold uppercase tracking-tighter">
                             Seuil minimum de retrait : 5 000 XOF
