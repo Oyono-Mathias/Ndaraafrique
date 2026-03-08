@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useMemo } from 'react';
@@ -43,7 +42,7 @@ export function CourseSidebar({
                 </Link>
                 
                 <div className="flex gap-4">
-                    <div className="relative h-12 w-16 shrink-0 rounded-lg overflow-hidden border border-white/10 bg-slate-900">
+                    <div className="relative h-12 w-16 shrink-0 rounded-xl overflow-hidden border border-white/10 bg-slate-900">
                         {course?.imageUrl && <Image src={course.imageUrl} alt={course.title} fill className="object-cover" />}
                     </div>
                     <div className="flex-1 overflow-hidden">

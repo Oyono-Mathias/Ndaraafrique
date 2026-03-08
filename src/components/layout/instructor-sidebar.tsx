@@ -1,5 +1,10 @@
-
 'use client';
+
+/**
+ * @fileOverview Barre latérale Instructeur Ndara Afrique.
+ * ✅ AUDIT BOUTONS : type="button" et switchRole sécurisé.
+ * ✅ DESIGN : Fintech/Udemy Style.
+ */
 
 import React from 'react';
 import Link from "next/link";
@@ -143,7 +148,7 @@ export function InstructorSidebar({
           
           <div className="space-y-2">
             {isAdmin && (
-                <Button variant="secondary" className="w-full justify-center gap-2 font-bold" onClick={handleSwitchToAdmin}>
+                <Button variant="secondary" type="button" className="w-full justify-center gap-2 font-bold" onClick={handleSwitchToAdmin}>
                     <Shield className="h-4 w-4" />
                     Mode Administrateur
                 </Button>
@@ -151,6 +156,7 @@ export function InstructorSidebar({
 
             <Button 
                 variant="outline" 
+                type="button"
                 className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-bold"
                 onClick={handleSwitchToStudent}
             >

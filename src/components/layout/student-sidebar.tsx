@@ -2,11 +2,12 @@
 
 /**
  * @fileOverview Barre latérale Étudiant Ndara Afrique.
- * ✅ CORRECTIF : Ajout de l'import BookOpen.
+ * ✅ AUDIT BOUTONS : switchRole opérationnel avec redirection.
+ * ✅ DESIGN : Respect des standards Fintech.
  */
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
 import { Button } from "@/components/ui/button";
@@ -39,6 +40,7 @@ import { OnboardingGuide } from "@/components/onboarding-guide";
 import { UserNav } from "@/components/layout/user-nav";
 import { useToast } from "@/hooks/use-toast";
 import type { CourseProgress } from "@/lib/types";
+import { useLocale } from 'next-intl';
 
 
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled, highlight }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean, highlight?: boolean }) => {
@@ -96,6 +98,8 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
   const { switchRole, availableRoles, user, currentUser } = useRole();
   const isInstructor = availableRoles.includes('instructor');
   const isAdmin = availableRoles.includes('admin');
+  const locale = useLocale();
+  const router = useRouter();
   
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [unreadNotifs, setUnreadNotifs] = useState(0);
@@ -250,14 +254,14 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
           
           <div className="space-y-2">
             {isAdmin && (
-                <Button variant="secondary" className="w-full justify-center gap-2 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl" onClick={() => handleSwitchRole('admin')}>
+                <Button variant="secondary" type="button" className="w-full justify-center gap-2 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl" onClick={() => handleSwitchRole('admin')}>
                     <Shield className="h-4 w-4" />
                     Cockpit Admin
                 </Button>
             )}
             
             {isInstructor ? (
-                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl" onClick={() => handleSwitchRole('instructor')}>
+                <Button variant="outline" type="button" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl" onClick={() => handleSwitchRole('instructor')}>
                     <ArrowLeftRight className="h-4 w-4 text-primary" />
                     Mode Formateur
                 </Button>

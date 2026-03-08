@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
- * ✅ DESIGN : Images circulaires (aspect-square rounded-full) pour une vue premium.
+ * ✅ DESIGN : Images rectangulaires avec coins arrondis (Style Udemy/Fintech).
+ * ✅ INTERACTIVITÉ : Audit des clics et liens sécurisés.
  */
 
 import Link from 'next/link';
@@ -93,13 +94,13 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
       <div className="group relative">
         <Link href={href} className="block w-full">
           <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden flex items-center transition-all duration-300 hover:border-brand-primary/50 hover:shadow-xl active:scale-[0.98] p-3">
-            <div className="relative h-20 w-20 shrink-0 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden shadow-inner">
+            <div className="relative h-20 w-24 shrink-0 bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden shadow-inner">
               <Image
                 src={course.imageUrl || `https://picsum.photos/seed/${course.id}/200/200`}
                 alt={course.title}
                 fill
                 className="object-cover"
-                sizes="80px"
+                sizes="100px"
               />
             </div>
             <div className="flex-1 ml-4 flex flex-col justify-center min-w-0">
@@ -125,18 +126,18 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     <div className="relative group h-full">
       <Link href={href} className="block group h-full">
         <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border border-slate-100 dark:border-slate-800 flex flex-col h-full active:scale-[0.98]">
-          <div className="p-4 flex justify-center">
-            <div className="relative aspect-square w-full max-w-[200px] bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden shadow-xl border-4 border-white dark:border-slate-800">
+          <div className="p-3">
+            <div className="relative aspect-video w-full bg-slate-200 dark:bg-slate-800 rounded-[2rem] overflow-hidden shadow-xl border-4 border-white dark:border-slate-800">
                 <Image
-                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/400`}
+                src={course.imageUrl || `https://picsum.photos/seed/${course.id}/400/225`}
                 alt={course.title}
                 fill
-                sizes="(max-width: 768px) 40vw, 200px"
+                sizes="(max-width: 768px) 100vw, 400px"
                 className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 
                 {course.resaleRightsAvailable && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                <div className="absolute top-3 left-3 flex items-center justify-center pointer-events-none">
                     <Badge className="bg-amber-500 text-black border-none font-black uppercase text-[7px] tracking-[0.1em] px-2 py-0.5 shadow-lg">
                         LICENCE
                     </Badge>
@@ -145,14 +146,14 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             </div>
           </div>
           
-          <div className="px-6 pb-6 pt-2 flex-1 flex flex-col items-center text-center">
+          <div className="px-6 pb-6 pt-2 flex-1 flex flex-col items-start text-left">
               <span className="text-[9px] font-black text-brand-secondary bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded uppercase tracking-widest mb-3">{course.category || 'Formation'}</span>
               
               <h3 className="text-base font-black text-brand-dark dark:text-white mb-2 leading-tight uppercase tracking-tight group-hover:text-brand-primary transition-colors line-clamp-2 min-h-[2.5rem]">
                   {course.title}
               </h3>
               
-              <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-50 dark:border-white/5 w-full justify-center">
+              <div className="flex items-center gap-4 mt-auto pt-4 border-t border-slate-50 dark:border-white/5 w-full justify-between">
                   <div className="flex items-center gap-1">
                       <Star className={cn("w-3.5 h-3.5", hasRating ? "text-yellow-400 fill-current" : "text-slate-200 dark:text-slate-700")} />
                       <span className="text-xs font-black text-slate-700 dark:text-slate-400">
@@ -165,7 +166,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
               </div>
           </div>
 
-          <div className="absolute top-4 right-4 flex flex-col gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-6 right-6 flex flex-col gap-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
                 {!course.id.startsWith('demo') && (
                     <button 
                         onClick={toggleWishlist}

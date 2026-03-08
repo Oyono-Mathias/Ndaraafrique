@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Table de gestion des cours pour les administrateurs.
- * ✅ DESIGN : Miniatures circulaires.
+ * ✅ DESIGN : Miniatures rectangulaires arrondies (rounded-lg).
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -80,7 +80,7 @@ const CourseRow = ({ course, instructor }: { course: Course; instructor?: Partia
         <TableRow className="group border-slate-800 hover:bg-slate-800/20">
             <TableCell>
                 <div className="flex items-center gap-4">
-                    <div className="relative h-12 w-12 rounded-full overflow-hidden bg-slate-800 shadow-lg border border-white/5 shrink-0">
+                    <div className="relative h-10 w-14 rounded-lg overflow-hidden bg-slate-800 shadow-lg border border-white/5 shrink-0">
                         <Image src={course.imageUrl || `https://picsum.photos/seed/${course.id}/100/100`} alt={course.title} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                     </div>
                     <div className="flex flex-col">
