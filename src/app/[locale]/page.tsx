@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
+import { useRouter } from 'next/navigation';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { useDoc } from '@/firebase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -71,6 +72,7 @@ const Navbar = () => {
 };
 
 export default function LandingPage() {
+  const router = useRouter();
   const db = getFirestore();
   const locale = useLocale();
   const { user, role } = useRole();
@@ -112,7 +114,6 @@ export default function LandingPage() {
     <div className="bg-[#1C1D1F] text-white min-h-screen">
       <Navbar />
       
-      {/* HERO HERO */}
       <section className="pt-32 pb-16 px-4 max-w-7xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
         <div className="space-y-6">
             <h1 className="text-4xl md:text-6xl font-black leading-tight uppercase tracking-tighter">
@@ -136,14 +137,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* STATS BAR */}
       <section className="py-12 border-y border-white/5 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4">
             <Stats />
         </div>
       </section>
 
-      {/* COURSE SECTIONS */}
       <main className="max-w-7xl mx-auto px-4 py-20 space-y-24">
         {categories.map(cat => {
             const catCourses = courses.filter(c => c.category === cat || (!c.category && cat === "Développement")).slice(0, 4);

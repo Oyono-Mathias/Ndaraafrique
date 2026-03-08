@@ -3,6 +3,7 @@
 /**
  * @fileOverview Mon Profil - Identification Ndara Afrique.
  * ✅ RÉSOLU : Harmonisation Schéma pour débloquer le bouton Enregistrer.
+ * ✅ SÉCURITÉ : Validation assouplie pour les champs facultatifs.
  */
 
 import { useState, useEffect, useRef } from 'react';
@@ -24,8 +25,8 @@ import { ImageCropper } from '@/components/ui/ImageCropper';
 const accountSchema = z.object({
   username: z.string().min(3, "Min. 3 caractères.").max(20).regex(/^[a-zA-Z0-9_]+$/, "Lettres, chiffres et _ uniquement."),
   fullName: z.string().min(3, "Nom requis."),
-  bio: z.string().max(500).optional().or(z.literal('')),
-  phoneNumber: z.string().optional().or(z.literal('')),
+  bio: z.string().max(500).optional().nullable().or(z.literal('')),
+  phoneNumber: z.string().optional().nullable().or(z.literal('')),
   interestDomain: z.string().min(2, "Domaine requis."),
 });
 
@@ -102,8 +103,8 @@ export default function AccountPage() {
             data: {
                 username: values.username,
                 fullName: values.fullName,
-                bio: values.bio,
-                phoneNumber: values.phoneNumber,
+                bio: values.bio || '',
+                phoneNumber: values.phoneNumber || '',
                 'careerGoals.interestDomain': values.interestDomain,
                 isProfileComplete: true
             },
@@ -170,7 +171,7 @@ export default function AccountPage() {
                   <FormField control={form.control} name="bio" render={({ field }) => (
                       <FormItem>
                           <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Biographie</FormLabel>
-                          <FormControl><Textarea {...field} rows={4} className="bg-slate-900 border-slate-800 rounded-xl text-white resize-none" /></FormControl>
+                          <FormControl><Textarea {...field} value={field.value || ''} rows={4} className="bg-slate-900 border-slate-800 rounded-xl text-white resize-none" /></FormControl>
                           <FormMessage />
                       </FormItem>
                   )}/>

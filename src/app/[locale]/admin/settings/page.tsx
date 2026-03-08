@@ -4,10 +4,11 @@
  * @fileOverview Réglages Globaux Ndara Afrique.
  * ✅ RÉSOLU : Réécriture complète pour éliminer les erreurs de syntaxe.
  * ✅ RÉSOLU : Harmonisation Schéma/UI pour débloquer le bouton Enregistrer.
+ * ✅ SÉCURITÉ : Support des valeurs null/optionnelles pour éviter les blocages Zod.
  */
 
 import { useState, useEffect } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
@@ -15,7 +16,7 @@ import { updateGlobalSettings } from '@/actions/settingsActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -26,13 +27,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Settings as SettingsIcon, 
   Loader2, 
-  Save,
   ImageIcon,
   UploadCloud,
   CheckCircle2,
   BadgeEuro,
   ShieldCheck,
-  Globe,
   Percent,
   Smartphone,
   Wrench,
@@ -42,15 +41,14 @@ import {
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
 
 const settingsSchema = z.object({
   siteName: z.string().min(2, "Le nom est trop court."),
-  logoUrl: z.string().url().or(z.literal('')).optional(),
+  logoUrl: z.string().url().or(z.literal('')).optional().nullable(),
   contactEmail: z.string().email("Email invalide."),
-  supportPhone: z.string().optional(),
+  supportPhone: z.string().optional().nullable(),
   commission: z.coerce.number().min(0).max(100),
-  announcementMessage: z.string().optional(),
+  announcementMessage: z.string().optional().nullable(),
   maintenanceMode: z.boolean().default(false),
   allowInstructorSignup: z.boolean().default(true),
   allowCourseBuyout: z.boolean().default(true),
@@ -65,7 +63,7 @@ const settingsSchema = z.object({
   minPayoutThreshold: z.coerce.number().min(1000),
   pwaAppName: z.string().min(3),
   pwaShortName: z.string().min(3),
-  pwaIconUrl: z.string().url().or(z.literal('')).optional(),
+  pwaIconUrl: z.string().url().or(z.literal('')).optional().nullable(),
 });
 
 type SettingsValues = z.infer<typeof settingsSchema>;
@@ -145,9 +143,9 @@ export default function AdminSettingsPage() {
         settings: {
           general: { 
             siteName: values.siteName, 
-            logoUrl: values.logoUrl, 
+            logoUrl: values.logoUrl || '', 
             contactEmail: values.contactEmail, 
-            supportPhone: values.supportPhone, 
+            supportPhone: values.supportPhone || '', 
           },
           commercial: { 
             platformCommission: values.commission, 
@@ -157,7 +155,7 @@ export default function AdminSettingsPage() {
             affiliatePercentage: values.affiliatePercentage,
           },
           platform: { 
-            announcementMessage: values.announcementMessage, 
+            announcementMessage: values.announcementMessage || '', 
             maintenanceMode: values.maintenanceMode,
             allowInstructorSignup: values.allowInstructorSignup,
             allowCourseBuyout: values.allowCourseBuyout,
@@ -351,7 +349,7 @@ export default function AdminSettingsPage() {
                   <FormField control={form.control} name="announcementMessage" render={({ field }) => (
                     <FormItem>
                       <FormLabel className="text-[10px] font-black uppercase text-slate-500">Bannière d'Annonce Globale</FormLabel>
-                      <FormControl><Textarea placeholder="Texte défilant en haut du site..." {...field} className="bg-slate-950 border-slate-800 rounded-xl text-white" /></FormControl>
+                      <FormControl><Textarea placeholder="Texte défilant en haut du site..." {...field} className="bg-slate-950 border-slate-800 rounded-xl text-white" value={field.value || ''} /></FormControl>
                       <FormMessage />
                     </FormItem>
                   )} />

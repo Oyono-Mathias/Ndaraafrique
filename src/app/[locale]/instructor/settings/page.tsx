@@ -27,7 +27,7 @@ const instructorSettingsSchema = z.object({
   aiInterventionLevel: z.enum(['low', 'medium', 'high']).default('medium'),
   notifyEnrollment: z.boolean().default(true),
   notifyPayout: z.boolean().default(true),
-  mobileMoneyNumber: z.string().min(8, "Numéro requis pour les retraits."),
+  mobileMoneyNumber: z.string().min(8, "Numéro requis pour les retraits.").nullable().or(z.literal('')),
 });
 
 export default function InstructorSettingsPage() {
@@ -68,7 +68,7 @@ export default function InstructorSettingsPage() {
         'pedagogicalPreferences.aiInterventionLevel': values.aiInterventionLevel,
         'instructorNotificationPreferences.newEnrollment': values.notifyEnrollment,
         'instructorNotificationPreferences.payoutUpdate': values.notifyPayout,
-        'payoutInfo.mobileMoneyNumber': values.mobileMoneyNumber,
+        'payoutInfo.mobileMoneyNumber': values.mobileMoneyNumber || '',
       };
 
       const result = await updateUserProfileAction({
@@ -123,7 +123,7 @@ export default function InstructorSettingsPage() {
                             render={({ field }) => (
                             <FormItem>
                                 <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Numéro Orange/MTN/Wave</FormLabel>
-                                <FormControl><Input {...field} placeholder="+236..." className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
+                                <FormControl><Input {...field} value={field.value || ''} placeholder="+236..." className="h-12 bg-slate-950 border-slate-800 rounded-xl text-white font-bold" /></FormControl>
                                 <FormMessage />
                             </FormItem>
                             )}
