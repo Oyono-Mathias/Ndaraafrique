@@ -16,8 +16,10 @@ export const metadata: Metadata = {
     template: "%s | Ndara Afrique"
   },
   description: "Apprenez les compétences du futur avec des experts africains.",
+  manifest: '/manifest.json',
   icons: {
     icon: "/logo.png",
+    shortcut: "/logo.png",
     apple: "/logo.png",
   },
 };
@@ -25,7 +27,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  themeColor: '#3b82f6',
+  themeColor: '#10b981', // Emerald Ndara
 };
 
 export default function RootLayout({
@@ -37,6 +39,7 @@ export default function RootLayout({
     <html lang="fr" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo.png" />
       </head>
       <body
         className={cn(
