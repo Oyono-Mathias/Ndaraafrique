@@ -93,6 +93,7 @@ export interface NdaraUser {
   referredBy?: string; // UID of the instructor who invited this user
   affiliateStats?: {
       clicks: number;
+      registrations: number; // ✨ NOUVEAU : Traçabilité inscriptions
       sales: number;
       earnings: number;
   };

@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview Dashboard Étudiant Ndara Afrique Optimisé.
- * ✅ AMBASSADEUR 2.0 : Métriques cliquées, ventes, bonus tiers et leaderboard.
+ * ✅ AMBASSADEUR 2.0 : Métriques précises (Clics, Inscriptions, Ventes).
+ * ✅ TRANSPARENCE : Chaque action via le lien est comptabilisée pour l'étudiant.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -10,18 +11,15 @@ import dynamic from 'next/dynamic';
 import { 
     BookOpen, 
     Trophy, 
-    TrendingUp, 
     Search as LucideSearch, 
     BadgeEuro, 
     Share2, 
     ChevronRight, 
     Sparkles, 
-    Info, 
-    CheckCircle2, 
     MousePointer2, 
     ShoppingCart,
     Medal,
-    BarChart3
+    Users
 } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { getFirestore, collection, query, where, onSnapshot, orderBy, limit, doc, getDocs } from 'firebase/firestore';
@@ -32,7 +30,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import Link from 'next/link';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
@@ -98,15 +95,14 @@ export default function StudentDashboardAndroid() {
   }, [currentUser?.uid, db]);
 
   const handleShareAffiliate = () => {
-      const url = `${window.location.origin}/search?aff=${currentUser?.uid}`;
+      const url = `${window.location.origin}/${locale}/search?aff=${currentUser?.uid}`;
       navigator.clipboard.writeText(url);
       toast({ title: "Lien Ambassadeur copié !", description: "Partagez-le pour gagner des commissions." });
   };
 
-  const affStats = currentUser?.affiliateStats || { clicks: 0, sales: 0, earnings: 0 };
+  const affStats = currentUser?.affiliateStats || { clicks: 0, registrations: 0, sales: 0, earnings: 0 };
   const salesCount = affStats.sales || 0;
   
-  // Logic pour le prochain palier
   const nextTier = useMemo(() => {
       if (salesCount < 5) return { goal: 5, bonus: "+2%", current: salesCount };
       if (salesCount < 20) return { goal: 20, bonus: "+5%", current: salesCount };
@@ -132,27 +128,28 @@ export default function StudentDashboardAndroid() {
           <section className="px-4 space-y-4">
               <div className="flex items-center gap-2 px-1">
                   <Medal className="h-4 w-4 text-primary" />
-                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Programme Ambassadeur</h2>
+                  <h2 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500">Mon Impact Ambassadeur</h2>
               </div>
 
               <Card className="bg-slate-900 border-2 border-primary/20 rounded-[2.5rem] overflow-hidden shadow-2xl relative">
                   <div className="absolute top-0 right-0 p-6 opacity-[0.03] pointer-events-none"><BadgeEuro size={120} className="text-primary" /></div>
                   <CardContent className="p-8 space-y-8">
                       
-                      <div className="grid grid-cols-2 gap-4">
-                          <div className="bg-slate-950/50 p-5 rounded-3xl border border-white/5 space-y-1">
-                              <div className="flex items-center gap-2 text-slate-500 mb-1">
-                                  <MousePointer2 className="h-3 w-3" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest">Clics</span>
-                              </div>
-                              <p className="text-2xl font-black text-white">{affStats.clicks}</p>
+                      <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-slate-950/50 p-4 rounded-3xl border border-white/5 space-y-1 text-center">
+                              <MousePointer2 className="h-3 w-3 mx-auto text-slate-500 mb-1" />
+                              <p className="text-xl font-black text-white">{affStats.clicks || 0}</p>
+                              <span className="text-[8px] font-black uppercase text-slate-600 tracking-tighter">Clics</span>
                           </div>
-                          <div className="bg-slate-950/50 p-5 rounded-3xl border border-white/5 space-y-1">
-                              <div className="flex items-center gap-2 text-primary mb-1">
-                                  <ShoppingCart className="h-3 w-3" />
-                                  <span className="text-[9px] font-black uppercase tracking-widest">Ventes</span>
-                              </div>
-                              <p className="text-2xl font-black text-white">{salesCount}</p>
+                          <div className="bg-slate-950/50 p-4 rounded-3xl border border-white/5 space-y-1 text-center">
+                              <Users className="h-3 w-3 mx-auto text-blue-400 mb-1" />
+                              <p className="text-xl font-black text-white">{affStats.registrations || 0}</p>
+                              <span className="text-[8px] font-black uppercase text-slate-600 tracking-tighter">Inscrits</span>
+                          </div>
+                          <div className="bg-slate-950/50 p-4 rounded-3xl border border-white/5 space-y-1 text-center">
+                              <ShoppingCart className="h-3 w-3 mx-auto text-emerald-400 mb-1" />
+                              <p className="text-xl font-black text-white">{salesCount}</p>
+                              <span className="text-[8px] font-black uppercase text-slate-600 tracking-tighter">Ventes</span>
                           </div>
                       </div>
 
@@ -185,27 +182,29 @@ export default function StudentDashboardAndroid() {
                   </CardContent>
               </Card>
 
-              <Card className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden">
-                  <div className="p-5 border-b border-white/5 flex items-center gap-3">
-                      <Medal className="h-4 w-4 text-amber-500" />
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Top Ambassadeurs Ndara</h3>
-                  </div>
-                  <CardContent className="p-4 space-y-3">
-                      {leaderboard.map((member, i) => (
-                          <div key={member.uid} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/50 transition-colors">
-                              <div className="flex items-center gap-3">
-                                  <span className={cn("text-xs font-black w-4", i === 0 ? "text-amber-500" : "text-slate-600")}>#{i+1}</span>
-                                  <Avatar className="h-8 w-8 border border-slate-700">
-                                      <AvatarImage src={member.profilePictureURL} />
-                                      <AvatarFallback className="bg-slate-800 text-[10px]">{member.fullName?.charAt(0)}</AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-xs font-bold text-slate-300 truncate max-w-[120px]">{member.fullName}</span>
-                              </div>
-                              <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black">{member.affiliateStats?.sales || 0} ventes</Badge>
-                          </div>
-                      ))}
-                  </CardContent>
-              </Card>
+              {leaderboard.length > 0 && (
+                <Card className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden">
+                    <div className="p-5 border-b border-white/5 flex items-center gap-3">
+                        <Medal className="h-4 w-4 text-amber-500" />
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Top Ambassadeurs Ndara</h3>
+                    </div>
+                    <CardContent className="p-4 space-y-3">
+                        {leaderboard.map((member, i) => (
+                            <div key={member.uid} className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-800/50 transition-colors">
+                                <div className="flex items-center gap-3">
+                                    <span className={cn("text-xs font-black w-4", i === 0 ? "text-amber-500" : "text-slate-600")}>#{i+1}</span>
+                                    <Avatar className="h-8 w-8 border border-slate-700">
+                                        <AvatarImage src={member.profilePictureURL} />
+                                        <AvatarFallback className="bg-slate-800 text-[10px]">{member.fullName?.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-xs font-bold text-slate-300 truncate max-w-[120px]">{member.fullName}</span>
+                                </div>
+                                <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black">{member.affiliateStats?.sales || 0} ventes</Badge>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+              )}
           </section>
       )}
 

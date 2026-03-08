@@ -23,7 +23,7 @@ export async function logTrackingEvent(event: TrackingEventArgs) {
         };
         await db.collection('tracking_events').add(eventData);
 
-        // Si c'est un clic d'affiliation, on incrémente aussi le compteur de l'utilisateur
+        // Si c'est un clic d'affiliation, on incrémente aussi le compteur de l'utilisateur CIBLE (l'ambassadeur)
         if (event.eventType === 'affiliate_click' && event.metadata?.affiliateId) {
             const userRef = db.collection('users').doc(event.metadata.affiliateId);
             await userRef.update({

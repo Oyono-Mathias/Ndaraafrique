@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
  * ✅ GESTION REDIRECTION : Supporte le paramètre 'redirect' pour ramener l'utilisateur là où il était.
- * ✅ GESTION PARRAINAGE : Capture du paramètre 'ref' pour lier le nouveau formateur à son parrain.
+ * ✅ GESTION AFFILIATION : Incrémente le compteur d'inscriptions de l'ambassadeur.
  */
 
 import { useState, useEffect } from 'react';
@@ -29,7 +28,9 @@ import {
   doc, 
   setDoc, 
   serverTimestamp, 
-  getDoc
+  getDoc,
+  updateDoc,
+  increment
 } from 'firebase/firestore';
 import { FirebaseError } from 'firebase/app';
 import { useToast } from '@/hooks/use-toast';
@@ -75,7 +76,7 @@ export default function LoginClient() {
   const searchParams = useSearchParams();
   const initialTab = searchParams.get('tab') || 'login';
   const referralId = searchParams.get('ref'); 
-  const redirectUrl = searchParams.get('redirect'); // ✅ Capture de l'URL de redirection
+  const redirectUrl = searchParams.get('redirect'); 
   
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isLoading, setIsLoading] = useState(false);
@@ -85,24 +86,12 @@ export default function LoginClient() {
   const db = getFirestore();
   const { user, isUserLoading, role } = useRole();
 
-  const loginForm = useForm<z.infer<typeof loginSchema>>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: '', password: '' },
-  });
-
-  const registerForm = useForm<z.infer<typeof registerSchema>>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { fullName: '', email: '', password: '', terms: false },
-  });
-
   useEffect(() => {
     if (!isUserLoading && user) {
-      // ✅ LOGIQUE CEO : Priorité au redirect param pour le partage social
       if (redirectUrl) {
           router.push(decodeURIComponent(redirectUrl));
           return;
       }
-
       const target = role === 'admin' ? '/admin' : role === 'instructor' ? '/instructor/dashboard' : '/student/dashboard';
       router.push(`/${locale}${target}`);
     }
@@ -126,6 +115,16 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
+      // ✅ RECUPERATION DE L'AFFILIE (Session Browser)
+      let affiliateId = null;
+      if (typeof window !== 'undefined') {
+          const storedAff = localStorage.getItem('ndara_affiliate_id');
+          if (storedAff) {
+              const data = JSON.parse(storedAff);
+              if (data.expiresAt > Date.now()) affiliateId = data.id;
+          }
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       authUser = userCredential.user;
       
@@ -146,22 +145,25 @@ export default function LoginClient() {
         isOnline: true,
         lastSeen: serverTimestamp(),
         referredBy: referralId || null,
+        affiliateId: affiliateId || null,
       };
 
-      try {
-        await setDoc(userRef, userData);
-        toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
-      } catch (firestoreError: any) {
-        if (authUser) await deleteUser(authUser);
-        throw new Error("Échec de la création du profil. Veuillez réessayer.");
+      await setDoc(userRef, userData);
+
+      // ✨ INCREMENTATION COMPTEUR INSCRIPTIONS (AMBASSADEUR)
+      if (affiliateId) {
+          const affRef = doc(db, 'users', affiliateId);
+          await updateDoc(affRef, {
+              'affiliateStats.registrations': increment(1)
+          }).catch(e => console.warn("Failed to increment reg count:", e));
       }
+
+      toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
 
     } catch (error: any) {
       let msg = "Une erreur est survenue lors de l'inscription.";
       if (error instanceof FirebaseError && error.code === 'auth/email-already-in-use') {
         msg = "Cette adresse email est déjà utilisée.";
-      } else if (error.message) {
-        msg = error.message;
       }
       toast({ variant: 'destructive', title: "Échec", description: msg });
     } finally {
@@ -180,6 +182,15 @@ export default function LoginClient() {
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
+        let affiliateId = null;
+        if (typeof window !== 'undefined') {
+            const storedAff = localStorage.getItem('ndara_affiliate_id');
+            if (storedAff) {
+                const data = JSON.parse(storedAff);
+                if (data.expiresAt > Date.now()) affiliateId = data.id;
+            }
+        }
+
         const userData = {
           uid: user.uid,
           email: user.email,
@@ -195,8 +206,16 @@ export default function LoginClient() {
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
           referredBy: referralId || null,
+          affiliateId: affiliateId || null,
         };
         await setDoc(userRef, userData);
+
+        if (affiliateId) {
+            const affRef = doc(db, 'users', affiliateId);
+            await updateDoc(affRef, {
+                'affiliateStats.registrations': increment(1)
+            }).catch(() => {});
+        }
       }
       toast({ title: "Connexion Google réussie !" });
     } catch (err) {
@@ -214,11 +233,6 @@ export default function LoginClient() {
                   <Image src="/logo.png" alt="Ndara Afrique" width={64} height={64} className="rounded-full shadow-2xl" />
                 </Link>
                 <h1 className="text-2xl font-black text-white uppercase tracking-tight">Ndara Afrique</h1>
-                {redirectUrl && (
-                    <div className="mt-4 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full animate-in zoom-in duration-500">
-                        <p className="text-[10px] font-black text-primary uppercase tracking-widest">Connectez-vous pour voir cette formation</p>
-                    </div>
-                )}
             </div>
             
             <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-[2.5rem] p-6 sm:p-8 shadow-2xl">
