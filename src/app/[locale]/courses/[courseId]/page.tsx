@@ -62,5 +62,5 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default function CoursePage({ params }: Props) {
-  return <CourseDetailClient courseId={params.courseId} />;
+  return <CourseDetailClient courseId={params.slug} />;
 }
