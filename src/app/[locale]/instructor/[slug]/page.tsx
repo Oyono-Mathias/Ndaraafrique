@@ -7,7 +7,8 @@ import { Loader2 } from 'lucide-react';
 import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
- * @fileOverview Page serveur pour le profil public d'un instructeur.
+ * @fileOverview Page serveur unifiée pour le profil public d'un instructeur.
+ * Résout le conflit de routage Next.js en utilisant uniquement le paramètre [slug].
  * Gère le SEO et l'agrégation des données de l'expert.
  */
 
@@ -21,6 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   try {
     const db = getAdminDb();
+    // Le slug correspond à l'UID ou au pseudo de l'instructeur
     const userDoc = await db.collection('users').doc(slug).get();
     
     if (!userDoc.exists) {
@@ -62,8 +64,13 @@ export default function InstructorPublicPage({ params }: Props) {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Chargement du profil...</p>
+        <div className="relative h-12 w-12">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <div className="absolute inset-0 flex items-center justify-center">
+                <div className="h-2 w-2 bg-primary rounded-full animate-pulse" />
+            </div>
+        </div>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Chargement du profil expert...</p>
       </div>
     }>
       <PublicInstructorProfile instructorId={slug} locale={locale} />
