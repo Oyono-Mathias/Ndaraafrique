@@ -23,7 +23,11 @@ import {
   Clock,
   Lock,
   ExternalLink,
-  CheckCircle2
+  CheckCircle2,
+  Facebook,
+  Linkedin,
+  Link as LinkIcon,
+  RotateCcw
 } from 'lucide-react';
 import Image from 'next/image';
 import { YoutubePlayer } from '@/components/ui/youtube-player';
@@ -44,6 +48,8 @@ interface EnrichedReview extends Review {
  * ✅ PREUVE SOCIALE : Ratings, nombre d'élèves et avis réels.
  * ✅ CURRICULUM : Programme détaillé avec durées et aperçus gratuits.
  * ✅ CERTIFICATION : Explication de la valeur du diplôme vérifiable.
+ * ✅ VIRALITÉ : Boutons de partage social intégrés.
+ * ✅ RÉASSURANCE : Badges de confiance (Paiement, Garantie, Certificat).
  */
 export default function PublicCourseDetail({ courseId, locale }: { courseId: string; locale: string }) {
   const router = useRouter();
@@ -52,7 +58,7 @@ export default function PublicCourseDetail({ courseId, locale }: { courseId: str
   const db = getFirestore();
 
   // 1. Données du cours
-  const courseRef = useMemo(() => doc(db, 'courses', courseId), [db, courseId]);
+  const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
 
   // 2. Données de l'instructeur
@@ -142,16 +148,24 @@ export default function PublicCourseDetail({ courseId, locale }: { courseId: str
     }
   };
 
-  const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: course?.title,
-        text: course?.description?.substring(0, 100),
-        url: window.location.href,
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(window.location.href);
-      toast({ title: "Lien copié dans le presse-papier" });
+  const handleSocialShare = (platform: 'wa' | 'fb' | 'in' | 'copy') => {
+    const url = window.location.href;
+    const text = `Découvrez cette formation sur Ndara Afrique : ${course?.title} 🚀`;
+    
+    switch (platform) {
+      case 'wa':
+        window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+        break;
+      case 'fb':
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'in':
+        window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank');
+        break;
+      case 'copy':
+        navigator.clipboard.writeText(url);
+        toast({ title: "Lien copié !", description: "Vous pouvez maintenant le coller où vous voulez." });
+        break;
     }
   };
 
@@ -193,7 +207,7 @@ export default function PublicCourseDetail({ courseId, locale }: { courseId: str
           variant="ghost" 
           size="icon" 
           className="absolute top-4 right-4 z-30 bg-black/40 backdrop-blur-md rounded-full text-white"
-          onClick={handleShare}
+          onClick={() => handleSocialShare('copy')}
         >
           <Share2 className="h-5 w-5" />
         </Button>
@@ -251,6 +265,118 @@ export default function PublicCourseDetail({ courseId, locale }: { courseId: str
             </div>
           </div>
         </div>
+
+        {/* Section Partage Social (Viralité) */}
+        <section className="space-y-4">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Partager cette formation</h2>
+          <div className="grid grid-cols-4 gap-3">
+            <Button 
+              variant="outline" 
+              className="h-14 rounded-2xl bg-emerald-500/10 border-emerald-500/20 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all p-0"
+              onClick={() => handleSocialShare('wa')}
+            >
+              <MessageSquare className="h-6 w-6" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-14 rounded-2xl bg-blue-600/10 border-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-white transition-all p-0"
+              onClick={() => handleSocialShare('fb')}
+            >
+              <Facebook className="h-6 w-6" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-14 rounded-2xl bg-blue-700/10 border-blue-700/20 text-blue-500 hover:bg-blue-700 hover:text-white transition-all p-0"
+              onClick={() => handleSocialShare('in')}
+            >
+              <Linkedin className="h-6 w-6" />
+            </Button>
+            <Button 
+              variant="outline" 
+              className="h-14 rounded-2xl bg-slate-800 border-slate-700 text-slate-400 hover:text-white transition-all p-0"
+              onClick={() => handleSocialShare('copy')}
+            >
+              <LinkIcon className="h-6 w-6" />
+            </Button>
+          </div>
+        </section>
+
+        {/* Badges de Confiance (Réassurance Achat) */}
+        <section className="grid grid-cols-3 gap-2">
+          <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
+            <div className="p-2 bg-emerald-500/10 rounded-full">
+              <ShieldCheck className="h-5 w-5 text-emerald-500" />
+            </div>
+            <p className="text-[8px] font-black uppercase leading-tight text-slate-300">Paiement sécurisé</p>
+          </div>
+          <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
+            <div className="p-2 bg-blue-500/10 rounded-full">
+              <RotateCcw className="h-5 w-5 text-blue-400" />
+            </div>
+            <p className="text-[8px] font-black uppercase leading-tight text-slate-300">Garantie 7 jours</p>
+          </div>
+          <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
+            <div className="p-2 bg-amber-500/10 rounded-full">
+              <Award className="h-5 w-5 text-amber-500" />
+            </div>
+            <p className="text-[8px] font-black uppercase leading-tight text-slate-300">Certificat vérifié</p>
+          </div>
+        </section>
+
+        {/* Section Instructeur - Crédibilité */}
+        {instructor && (
+          <section className="space-y-4">
+            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Expert certifié</h2>
+            <div className="p-6 bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-xl space-y-6">
+                <div className="flex items-center gap-5">
+                    <Avatar className="h-20 w-20 border-2 border-primary/20 shadow-lg">
+                        <AvatarImage src={instructor.profilePictureURL} className="object-cover" />
+                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold text-xl">
+                            {instructor.fullName?.charAt(0)}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div>
+                        <p className="text-xl font-black text-white leading-tight">{instructor.fullName}</p>
+                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.1em] mt-1">{instructor.careerGoals?.currentRole || 'Spécialiste certifié Ndara'}</p>
+                        <div className="flex items-center gap-4 mt-3">
+                            <div className="text-center">
+                                <p className="text-sm font-black text-white leading-none">1.2k</p>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Étudiants</p>
+                            </div>
+                            <div className="h-6 w-px bg-slate-800" />
+                            <div className="text-center">
+                                <p className="text-sm font-black text-white leading-none">4.9</p>
+                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Note moy.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                {instructor.bio && (
+                    <p className="text-xs text-slate-400 leading-relaxed italic border-t border-white/5 pt-4">
+                        "{instructor.bio.length > 180 ? instructor.bio.substring(0, 180) + '...' : instructor.bio}"
+                    </p>
+                )}
+
+                <Button variant="outline" asChild className="w-full h-11 rounded-xl border-slate-800 bg-slate-950 text-slate-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all">
+                    <Link href={`/${locale}/instructor/${instructor.uid}`}>
+                        Consulter son portfolio
+                        <ChevronRight className="ml-2 h-3.5 w-3.5" />
+                    </Link>
+                </Button>
+            </div>
+          </section>
+        )}
+
+        <section className="space-y-4">
+          <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+            <div className="h-6 w-1 bg-primary rounded-full" />
+            Description
+          </h2>
+          <p className="text-slate-400 leading-relaxed text-sm">
+            {course.description}
+          </p>
+        </section>
 
         {/* Section Programme (Curriculum) */}
         <section className="space-y-6">
@@ -363,51 +489,6 @@ export default function PublicCourseDetail({ courseId, locale }: { courseId: str
                     ))}
                 </div>
             </section>
-        )}
-
-        {/* Section Instructeur - Crédibilité */}
-        {instructor && (
-          <section className="space-y-4">
-            <h2 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Expert certifié</h2>
-            <div className="p-6 bg-slate-900 border border-slate-800 rounded-[2.5rem] shadow-xl space-y-6">
-                <div className="flex items-center gap-5">
-                    <Avatar className="h-20 w-20 border-2 border-primary/20 shadow-lg">
-                        <AvatarImage src={instructor.profilePictureURL} className="object-cover" />
-                        <AvatarFallback className="bg-slate-800 text-slate-500 font-bold text-xl">
-                            {instructor.fullName?.charAt(0)}
-                        </AvatarFallback>
-                    </Avatar>
-                    <div>
-                        <p className="text-xl font-black text-white leading-tight">{instructor.fullName}</p>
-                        <p className="text-[11px] font-bold text-primary uppercase tracking-[0.1em] mt-1">{instructor.careerGoals?.currentRole || 'Spécialiste certifié Ndara'}</p>
-                        <div className="flex items-center gap-4 mt-3">
-                            <div className="text-center">
-                                <p className="text-sm font-black text-white leading-none">1.2k</p>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Étudiants</p>
-                            </div>
-                            <div className="h-6 w-px bg-slate-800" />
-                            <div className="text-center">
-                                <p className="text-sm font-black text-white leading-none">4.9</p>
-                                <p className="text-[8px] font-black text-slate-500 uppercase tracking-tighter mt-1">Note moy.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                {instructor.bio && (
-                    <p className="text-xs text-slate-400 leading-relaxed italic border-t border-white/5 pt-4">
-                        "{instructor.bio.length > 180 ? instructor.bio.substring(0, 180) + '...' : instructor.bio}"
-                    </p>
-                )}
-
-                <Button variant="outline" asChild className="w-full h-11 rounded-xl border-slate-800 bg-slate-950 text-slate-300 font-black uppercase text-[10px] tracking-widest hover:bg-slate-800 transition-all">
-                    <Link href={`/${locale}/instructor/${instructor.uid}`}>
-                        Consulter son portfolio
-                        <ChevronRight className="ml-2 h-3.5 w-3.5" />
-                    </Link>
-                </Button>
-            </div>
-          </section>
         )}
 
         <section className="bg-slate-900/20 border border-slate-800 rounded-3xl p-6 flex items-start gap-4">
