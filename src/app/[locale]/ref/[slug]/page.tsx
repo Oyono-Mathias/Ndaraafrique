@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Page d'invitation parrainage Ndara Afrique.
- * Paramètre unifié [slug] pour éviter les conflits de routage.
+ * @fileOverview Page d'invitation parrainage unifiée.
+ * Paramètre [slug] pour la cohérence du routage global.
  */
 
 import { useEffect, useMemo } from 'react';
@@ -23,7 +23,7 @@ export default function ReferralCapturePage() {
     const locale = useLocale();
     const db = getFirestore();
     
-    const slug = params.slug as string; // Paramètre unifié
+    const slug = params.slug as string; 
     const referralCode = searchParams.get('code');
 
     const instructorRef = useMemo(() => slug ? doc(db, 'users', slug) : null, [db, slug]);
@@ -32,10 +32,9 @@ export default function ReferralCapturePage() {
     useEffect(() => {
         if (!slug) return;
 
-        // Stockage du parrainage
         const referralData = {
             instructorId: slug,
-            referralCode: referralCode || 'DEFAULT',
+            referralCode: referralCode || 'NDARA',
             timestamp: Date.now(),
             expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000)
         };
@@ -54,30 +53,31 @@ export default function ReferralCapturePage() {
         return (
             <div className="h-screen bg-slate-950 flex flex-col items-center justify-center gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Connexion au réseau Ndara...</p>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em]">Connexion Ndara...</p>
             </div>
         );
     }
 
     return (
         <div className="h-screen bg-slate-950 flex flex-col items-center justify-center p-6 relative bg-grainy">
+            <div className="absolute inset-0 bg-primary/5 blur-[120px] rounded-full pointer-events-none" />
             <div className="w-full max-w-sm space-y-8 text-center z-10 animate-in fade-in zoom-in duration-700">
                 <Avatar className="h-24 w-24 border-4 border-slate-900 shadow-2xl mx-auto">
                     <AvatarImage src={instructor?.profilePictureURL} className="object-cover" />
                     <AvatarFallback className="bg-slate-800 text-3xl font-black text-slate-500">
-                        {instructor?.fullName?.charAt(0)}
+                        {instructor?.fullName?.charAt(0) || 'N'}
                     </AvatarFallback>
                 </Avatar>
 
                 <div className="space-y-3">
-                    <h1 className="text-2xl font-black text-white uppercase tracking-tight">
+                    <h1 className="text-2xl font-black text-white uppercase tracking-tight leading-tight">
                         <span className="text-primary">{instructor?.fullName || "Un expert"}</span> <br/>
                         vous invite à apprendre.
                     </h1>
                 </div>
 
-                <Button onClick={() => router.push(`/${locale}/search`)} className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-2xl">
-                    Explorer les cours
+                <Button onClick={() => router.push(`/${locale}/search`)} className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/30 active:scale-95 transition-all">
+                    Explorer le catalogue
                     <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>

@@ -5,8 +5,8 @@ import CourseDetailClient from '@/components/courses/CourseDetailClient';
 import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
- * @fileOverview Page privée du lecteur de cours.
- * Paramètre unifié [slug] pour éviter les conflits de routage.
+ * @fileOverview Page privée du lecteur de cours (Point d'entrée unique).
+ * Paramètre unifié [slug] pour la stabilité du routeur Next.js.
  */
 
 interface Props {
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
     return {
       title: `${course.title} | Ndara Afrique`,
-      robots: { index: false, follow: false }, // Espace privé
+      robots: { index: false, follow: false },
     };
   } catch (error) {
     return { title: 'Cours | Ndara Afrique' };

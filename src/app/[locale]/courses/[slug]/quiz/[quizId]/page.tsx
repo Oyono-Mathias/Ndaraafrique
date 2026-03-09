@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Interface de quiz sécurisée.
- * Parent unifié [slug] pour la cohérence du routage.
+ * Paramètre parent unifié [slug].
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -29,7 +29,7 @@ import confetti from 'canvas-confetti';
 
 export default function TakeQuizPage() {
   const params = useParams();
-  const slug = params.slug as string; // Paramètre unifié
+  const slug = params.slug as string; 
   const quizId = params.quizId as string;
   const router = useRouter();
   const { user } = useRole();
@@ -98,17 +98,17 @@ export default function TakeQuizPage() {
   if (finalScore !== null) {
     return (
         <div className="flex flex-col items-center justify-center h-screen p-4 bg-slate-950">
-            <Card className="w-full max-w-lg text-center dark:bg-slate-800">
+            <Card className="w-full max-w-lg text-center dark:bg-slate-800 rounded-[2.5rem]">
                 <CardHeader>
                     <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
                     <CardTitle className="text-2xl font-bold dark:text-white">Résultats</CardTitle>
                     <CardDescription>{quiz?.title}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-6xl font-bold text-primary">{finalScore}%</p>
+                    <p className="text-6xl font-black text-primary">{finalScore}%</p>
                 </CardContent>
                 <CardFooter>
-                    <Button onClick={() => router.push(`/student/courses/${slug}`)} className="w-full">Continuer</Button>
+                    <Button onClick={() => router.push(`/courses/${slug}`)} className="w-full h-14 rounded-2xl">Continuer</Button>
                 </CardFooter>
             </Card>
         </div>
@@ -120,28 +120,28 @@ export default function TakeQuizPage() {
   return (
     <div className="flex flex-col h-screen p-4 bg-slate-950">
       <header className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/student/courses/${slug}`)} className="text-slate-400">
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${slug}`)} className="text-slate-400">
           <ArrowLeft className="h-4 w-4 mr-2" /> Retour
         </Button>
       </header>
       <div className="w-full max-w-2xl mx-auto flex-1">
         <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="mb-6" />
-        <Card className="dark:bg-slate-800">
-            <CardContent className="p-6">
-                <h2 className="text-lg font-semibold mb-6">{currentQuestion?.text}</h2>
-                <RadioGroup onValueChange={(v) => handleAnswerSelect(parseInt(v, 10))}>
+        <Card className="dark:bg-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <CardContent className="p-8">
+                <h2 className="text-xl font-bold mb-8 text-white leading-snug">{currentQuestion?.text}</h2>
+                <RadioGroup onValueChange={(v) => handleAnswerSelect(parseInt(v, 10))} className="gap-4">
                     {currentQuestion?.options.map((opt, i) => (
-                        <div key={i} className="flex items-center space-x-3 p-2">
+                        <div key={i} className="flex items-center space-x-3 p-4 bg-slate-900/50 rounded-xl border border-white/5">
                             <RadioGroupItem value={i.toString()} id={`q-${i}`} />
-                            <label htmlFor={`q-${i}`} className="text-slate-200">{opt.text}</label>
+                            <label htmlFor={`q-${i}`} className="text-slate-300 font-medium cursor-pointer">{opt.text}</label>
                         </div>
                     ))}
                 </RadioGroup>
-                <div className="mt-8 flex justify-end">
+                <div className="mt-10 flex justify-end">
                     {currentQuestionIndex < questions.length - 1 ? (
-                        <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)}>Suivant</Button>
+                        <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)} className="h-12 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Suivant</Button>
                     ) : (
-                        <Button onClick={handleSubmit} disabled={isSubmitting}>Terminer</Button>
+                        <Button onClick={handleSubmit} disabled={isSubmitting} className="h-12 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest bg-primary">Terminer</Button>
                     )}
                 </div>
             </CardContent>

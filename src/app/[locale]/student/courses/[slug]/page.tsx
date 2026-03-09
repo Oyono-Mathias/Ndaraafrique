@@ -1,0 +1,29 @@
+'use client';
+
+import { useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
+
+/**
+ * @fileOverview Pont de redirection vers le lecteur de cours unifié.
+ * ✅ RÉSOLU : Redirige /[locale]/student/courses/[slug] vers /[locale]/courses/[slug].
+ */
+export default function StudentCourseRedirect() {
+  const router = useRouter();
+  const params = useParams();
+  const slug = params.slug as string;
+  const locale = params.locale as string;
+
+  useEffect(() => {
+    if (slug && locale) {
+      router.replace(`/${locale}/courses/${slug}`);
+    }
+  }, [slug, locale, router]);
+
+  return (
+    <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-white">
+      <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+      <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Ouverture du lecteur...</p>
+    </div>
+  );
+}
