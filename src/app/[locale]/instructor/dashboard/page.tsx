@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -37,7 +38,8 @@ import {
   Twitter,
   Linkedin,
   MessageCircle,
-  Medal
+  Medal,
+  Link as LinkIcon
 } from 'lucide-react';
 import type { AssignmentSubmission, Settings, NdaraUser } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,12 +47,14 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 export default function InstructorDashboard() {
     const { currentUser: instructor, isUserLoading } = useRole();
     const db = getFirestore();
     const { toast } = useToast();
+    const locale = useLocale();
 
     const [stats, setStats] = useState({ totalRevenue: 0, studentCount: 0, referralsCount: 0 });
     const [pendingSubmissions, setPendingSubmissions] = useState<AssignmentSubmission[]>([]);
@@ -84,7 +88,7 @@ export default function InstructorDashboard() {
             }
         );
 
-        // Leaderboard des Experts (Top 5 par parrainages ou ventes)
+        // Leaderboard des Experts
         const leaderboardQuery = query(
             collection(db, 'users'),
             where('role', '==', 'instructor'),
@@ -113,7 +117,9 @@ export default function InstructorDashboard() {
         return () => { unsubSettings(); unsubPayments(); unsubLeaderboard(); unsubReferrals(); unsubDevoirs(); };
     }, [instructor?.uid, db]);
 
-    const referralUrl = `${window.location.origin}/login?tab=register&ref=${instructor?.uid}`;
+    const referralUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/${locale}/ref/${instructor?.uid}?code=${instructor?.referralCode || 'NDARA'}`
+        : '';
 
     const handleShareReferral = (provider?: string) => {
         let url = '';
@@ -170,11 +176,19 @@ export default function InstructorDashboard() {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2">
-                                <Button onClick={() => handleShareReferral('wa')} className="flex-1 h-12 bg-[#25D366] text-white rounded-xl shadow-lg active:scale-90"><MessageCircle size={20}/></Button>
-                                <Button onClick={() => handleShareReferral()} className="flex-[2] h-12 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/30 gap-2">
-                                    <Share2 size={14} /> Copier mon lien
-                                </Button>
+                            <div className="space-y-3">
+                                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
+                                    <span className="text-[10px] font-mono text-slate-500 truncate mr-4">{referralUrl}</span>
+                                    <Button size="icon" variant="ghost" onClick={() => handleShareReferral()} className="h-8 w-8 text-primary">
+                                        <LinkIcon size={14} />
+                                    </Button>
+                                </div>
+                                <div className="flex gap-2">
+                                    <Button onClick={() => handleShareReferral('wa')} className="flex-1 h-12 bg-[#25D366] text-white rounded-xl shadow-lg active:scale-90"><MessageCircle size={20}/></Button>
+                                    <Button onClick={() => handleShareReferral()} className="flex-[2] h-12 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/30 gap-2">
+                                        <Share2 size={14} /> Partager mon lien
+                                    </Button>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

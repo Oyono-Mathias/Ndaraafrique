@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Client de connexion Ndara Afrique.
  * ✅ GESTION REDIRECTION : Supporte le paramètre 'redirect'.
- * ✅ GESTION AFFILIATION : Incrémente le compteur d'inscriptions de l'ambassadeur ou du parrain.
+ * ✅ GESTION PARRAINAGE : Attribution persistante via localStorage ou URL.
  */
 
 import { useState, useEffect } from 'react';
@@ -106,6 +107,23 @@ export default function LoginClient() {
     }
   }, [user, isUserLoading, role, router, locale, redirectUrl]);
 
+  // ✅ RÉCUPÉRATION DU PARRAIN (REFERRED BY)
+  const getStoredReferrer = () => {
+      if (referralId) return referralId;
+      if (typeof window === 'undefined') return null;
+      
+      const stored = localStorage.getItem('ndara_referral');
+      if (stored) {
+          try {
+              const data = JSON.parse(stored);
+              if (data.expiresAt > Date.now()) return data.instructorId;
+          } catch (e) {
+              console.error("Referral parse error");
+          }
+      }
+      return null;
+  };
+
   const onLoginSubmit = async (values: z.infer<typeof loginSchema>) => {
     setIsLoading(true);
     try {
@@ -124,14 +142,7 @@ export default function LoginClient() {
     let authUser: FirebaseUser | null = null;
 
     try {
-      let affiliateId = null;
-      if (typeof window !== 'undefined') {
-          const storedAff = localStorage.getItem('ndara_affiliate_id');
-          if (storedAff) {
-              const data = JSON.parse(storedAff);
-              if (data.expiresAt > Date.now()) affiliateId = data.id;
-          }
-      }
+      const instructorSponsorId = getStoredReferrer();
 
       const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
       authUser = userCredential.user;
@@ -152,25 +163,21 @@ export default function LoginClient() {
         preferredLanguage: locale as 'fr' | 'en',
         isOnline: true,
         lastSeen: serverTimestamp(),
-        referredBy: referralId || null,
-        affiliateId: affiliateId || null,
-        affiliateStats: {
-            clicks: 0,
-            registrations: 0,
-            sales: 0,
-            earnings: 0
-        },
+        referredBy: instructorSponsorId || null,
+        referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
         affiliateBalance: 0,
         referralBalance: 0
       };
 
       await setDoc(userRef, userData);
 
-      if (affiliateId) {
-          const affRef = doc(db, 'users', affiliateId);
-          await updateDoc(affRef, {
+      if (instructorSponsorId) {
+          const sponsorRef = doc(db, 'users', instructorSponsorId);
+          await updateDoc(sponsorRef, {
               'affiliateStats.registrations': increment(1)
           }).catch(() => {});
+          if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
       }
 
       toast({ title: "Compte créé !", description: "Bienvenue dans la famille Ndara." });
@@ -197,14 +204,7 @@ export default function LoginClient() {
       const userSnap = await getDoc(userRef);
       
       if (!userSnap.exists()) {
-        let affiliateId = null;
-        if (typeof window !== 'undefined') {
-            const storedAff = localStorage.getItem('ndara_affiliate_id');
-            if (storedAff) {
-                const data = JSON.parse(storedAff);
-                if (data.expiresAt > Date.now()) affiliateId = data.id;
-            }
-        }
+        const instructorSponsorId = getStoredReferrer();
 
         const userData = {
           uid: user.uid,
@@ -220,19 +220,20 @@ export default function LoginClient() {
           isOnline: true,
           lastSeen: serverTimestamp(),
           profilePictureURL: user.photoURL || '',
-          referredBy: referralId || null,
-          affiliateId: affiliateId || null,
+          referredBy: instructorSponsorId || null,
+          referralCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
           affiliateStats: { clicks: 0, registrations: 0, sales: 0, earnings: 0 },
           affiliateBalance: 0,
           referralBalance: 0
         };
         await setDoc(userRef, userData);
 
-        if (affiliateId) {
-            const affRef = doc(db, 'users', affiliateId);
-            await updateDoc(affRef, {
+        if (instructorSponsorId) {
+            const sponsorRef = doc(db, 'users', instructorSponsorId);
+            await updateDoc(sponsorRef, {
                 'affiliateStats.registrations': increment(1)
             }).catch(() => {});
+            if (typeof window !== 'undefined') localStorage.removeItem('ndara_referral');
         }
       }
       toast({ title: "Connexion Google réussie !" });

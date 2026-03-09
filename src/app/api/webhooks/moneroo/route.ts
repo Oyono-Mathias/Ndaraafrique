@@ -1,3 +1,4 @@
+
 import { NextResponse } from 'next/server';
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -7,6 +8,7 @@ import { sendUserNotification } from '@/actions/notificationActions';
  * @fileOverview Webhook Moneroo mis à jour pour la sécurité financière Ndara.
  * ✅ COMMISSIONS SÉCURISÉES : Statut 'pending' avec délai de 14 jours.
  * ✅ TRAÇABILITÉ : Enregistrement dans 'affiliate_transactions'.
+ * ✅ PARRAINAGE INSTRUCTEUR : Rémunération du parrain (5% par défaut).
  */
 
 export async function POST(req: Request) {
@@ -68,10 +70,9 @@ export async function POST(req: Request) {
 
           const affCommission = (amount * basePerc) / 100;
           
-          // Création de la transaction d'affiliation sécurisée
           const affTransRef = db.collection('affiliate_transactions').doc();
           const unlockDate = new Date();
-          unlockDate.setDate(unlockDate.getDate() + 14); // Geler pendant 14 jours
+          unlockDate.setDate(unlockDate.getDate() + 14);
 
           batch.set(affTransRef, {
               id: affTransRef.id,
@@ -87,7 +88,6 @@ export async function POST(req: Request) {
               unlockDate: Timestamp.fromDate(unlockDate)
           });
 
-          // Mise à jour des compteurs (On incrémente le SOLDE EN ATTENTE)
           batch.update(affiliateRef, {
               pendingAffiliateBalance: FieldValue.increment(affCommission),
               'affiliateStats.sales': FieldValue.increment(1),
@@ -101,26 +101,26 @@ export async function POST(req: Request) {
           });
       }
 
-      // 4. LOGIQUE PARRAINAGE FORMATEUR
-      if (instructorId && settings?.commercial?.referralEnabled) {
-          const instructorDoc = await db.collection('users').doc(instructorId).get();
-          const sponsorId = instructorDoc.data()?.referredBy;
+      // 4. LOGIQUE PARRAINAGE FORMATEUR (Réseau d'experts)
+      // Si l'acheteur a été parrainé par un formateur (via /ref/ID)
+      const sponsorId = buyerData?.referredBy;
+      if (sponsorId && settings?.commercial?.referralEnabled) {
+          const referralPerc = settings.commercial.referralPercentage || 5;
+          const referralCommission = (amount * referralPerc) / 100;
 
-          if (sponsorId) {
-              const refPerc = settings.commercial.referralPercentage || 5;
-              const refCommission = (amount * refPerc) / 100;
+          const sponsorRef = db.collection('users').doc(sponsorId);
+          
+          batch.update(sponsorRef, {
+              referralBalance: FieldValue.increment(referralCommission),
+              'affiliateStats.sales': FieldValue.increment(1),
+              'affiliateStats.earnings': FieldValue.increment(referralCommission)
+          });
 
-              const sponsorRef = db.collection('users').doc(sponsorId);
-              batch.update(sponsorRef, {
-                  referralBalance: FieldValue.increment(refCommission)
-              });
-
-              await sendUserNotification(sponsorId, {
-                  text: `Gain parrainage : +${refCommission.toLocaleString('fr-FR')} XOF sur une vente de votre filleul.`,
-                  type: 'success',
-                  link: '/instructor/dashboard'
-              });
-          }
+          await sendUserNotification(sponsorId, {
+              text: `Gain Parrainage : +${referralCommission.toLocaleString('fr-FR')} XOF sur un achat de votre réseau.`,
+              type: 'success',
+              link: '/instructor/dashboard'
+          });
       }
 
       await batch.commit();
