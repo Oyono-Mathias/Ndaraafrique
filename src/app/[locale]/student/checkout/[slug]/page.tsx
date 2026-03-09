@@ -1,3 +1,4 @@
+
 'use client';
 
 /**
@@ -28,6 +29,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import type { Course } from '@/lib/types';
+import { Card } from '@/components/ui/card';
 
 type PaymentMethod = 'momo' | 'card';
 
