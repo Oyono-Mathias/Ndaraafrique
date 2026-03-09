@@ -500,6 +500,16 @@ export interface Payment {
   }
 }
 
+export interface PayoutRequest {
+  id: string;
+  instructorId: string;
+  amount: number;
+  method: 'mobile_money' | 'bank_transfer';
+  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  createdAt: Timestamp | FieldValue;
+  processedAt?: Timestamp | FieldValue;
+}
+
 export interface Payout {
   id: string;
   instructorId: string;
