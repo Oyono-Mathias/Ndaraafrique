@@ -28,6 +28,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#0f172a] text-white font-sans selection:bg-primary/30">
       <Navbar />
+     
       
       <main className="pt-16">
         {/* Section Hero : Carrousel de Vision */}
