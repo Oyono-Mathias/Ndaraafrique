@@ -3,7 +3,7 @@
 /**
  * @fileOverview Composant client pour la présentation détaillée d'un cours.
  * ✅ SÉCURITÉ : Redirige vers /register si l'utilisateur n'est pas connecté.
- * ✅ AFFILIATION : Traçabilité des clics ambassadeurs.
+ * ✅ INTERACTION : Intégration du système d'avis pour les élèves inscrits.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -29,22 +29,19 @@ import {
   MessageSquare,
   BadgeEuro,
   ShoppingCart,
-  Share2
+  Share2,
+  Sparkles
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review, Settings } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { logTrackingEvent } from '@/actions/trackingActions';
-
-interface EnrichedReview extends Review {
-    userName?: string;
-    userAvatar?: string;
-}
+import { ReviewForm } from '@/components/reviews/review-form';
 
 export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const router = useRouter();
@@ -60,27 +57,7 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   const [isLoadingCurriculum, setIsLoadingCurriculum] = useState(true);
   
   const [stats, setStats] = useState({ rating: 0, reviewCount: 0, studentCount: 0 });
-  const [reviewsList, setReviewsList] = useState<EnrichedReview[]>([]);
   const [isResaleEnabled, setIsResaleEnabled] = useState(false);
-
-  useEffect(() => {
-      const affId = searchParams.get('aff');
-      if (affId && typeof window !== 'undefined') {
-          const cookieData = {
-              id: affId,
-              timestamp: Date.now(),
-              expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000)
-          };
-          localStorage.setItem('ndara_affiliate_id', JSON.stringify(cookieData));
-          
-          logTrackingEvent({
-              eventType: 'affiliate_click',
-              sessionId: 'anon',
-              pageUrl: pathname,
-              metadata: { affiliateId: affId, courseId }
-          });
-      }
-  }, [searchParams, pathname, courseId]);
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -112,32 +89,11 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
     if (!courseId) return;
 
     const qReviews = query(collection(db, 'reviews'), where('courseId', '==', courseId));
-    const unsubReviews = onSnapshot(qReviews, async (snap) => {
+    const unsubReviews = onSnapshot(qReviews, (snap) => {
         const reviewsData = snap.docs.map(d => d.data() as Review);
         const count = reviewsData.length;
         const avg = count > 0 ? reviewsData.reduce((acc, curr) => acc + (curr.rating || 0), 0) / count : 0;
         setStats(prev => ({ ...prev, rating: avg, reviewCount: count }));
-
-        if (count > 0) {
-            const userIds = [...new Set(reviewsData.map(r => r.userId))];
-            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30))));
-            const uMap = new Map();
-            usersSnap.forEach(d => uMap.set(d.id, d.data()));
-            
-            const enriched = reviewsData.map(r => ({
-                ...r,
-                userName: uMap.get(r.userId)?.fullName || 'Étudiant Ndara',
-                userAvatar: uMap.get(r.userId)?.profilePictureURL
-            })).sort((a, b) => {
-                const dateA = (a.createdAt as any)?.toDate?.().getTime() || 0;
-                const dateB = (b.createdAt as any)?.toDate?.().getTime() || 0;
-                return dateB - dateA;
-            });
-            
-            setReviewsList(enriched);
-        } else {
-            setReviewsList([]);
-        }
     });
 
     const qEnrolls = query(collection(db, 'enrollments'), where('courseId', '==', courseId));
@@ -217,7 +173,6 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
   if (!course) return <div className="p-8 text-center text-slate-400">Cours introuvable.</div>;
 
   const isEnrolled = !!enrollment;
-  const resaleAvailable = course.resaleRightsAvailable && isResaleEnabled && !isEnrolled;
 
   return (
     <div className="min-h-screen bg-slate-950 pb-32 font-sans selection:bg-primary/30">
@@ -240,26 +195,12 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
       </div>
 
-      <div className="px-4 -mt-8 relative z-10 space-y-12">
+      <div className="px-4 -mt-8 relative z-10 space-y-12 max-w-2xl mx-auto">
         <div className="space-y-4">
           <div className="flex justify-between items-start">
             <Badge className="bg-primary text-primary-foreground hover:bg-primary border-none font-black uppercase tracking-[0.1em] text-[10px] px-3 py-1 rounded-md">
                 {course.category}
             </Badge>
-            {currentUser && (
-                <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 rounded-lg bg-slate-900 border-slate-800 text-[10px] font-black uppercase tracking-widest gap-2"
-                    onClick={() => {
-                        const url = `${window.location.origin}${pathname}?aff=${currentUser.uid}`;
-                        navigator.clipboard.writeText(url);
-                        toast({ title: "Lien Ambassadeur copié !" });
-                    }}
-                >
-                    <Share2 className="h-3 w-3" /> Partager & Gagner
-                </Button>
-            )}
           </div>
           <h1 className="text-3xl font-black text-white leading-[1.1] tracking-tight uppercase">
             {course.title}
@@ -277,33 +218,14 @@ export default function CourseDetailClient({ courseId }: { courseId: string }) {
           </div>
         </div>
 
-        {resaleAvailable && (
-            <Card className="p-6 bg-gradient-to-br from-amber-500/10 to-primary/5 border-2 border-amber-500/20 rounded-[2rem] shadow-2xl relative overflow-hidden group animate-in zoom-in duration-700">
-                <div className="absolute -right-4 -bottom-4 opacity-[0.05] group-hover:scale-110 transition-transform">
-                    <BadgeEuro size={120} className="text-amber-500" />
-                </div>
-                <div className="relative z-10 flex flex-col sm:flex-row justify-between items-center gap-6">
-                    <div className="text-center sm:text-left space-y-2">
-                        <div className="flex items-center gap-2 text-amber-500 justify-center sm:justify-start">
-                            <ShoppingCart className="h-5 w-5" />
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Opportunité Partenaire</span>
-                        </div>
-                        <h3 className="text-xl font-black text-white uppercase tracking-tight">Devenez Propriétaire</h3>
-                        <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-sm">
-                            Achetez la licence de revente de ce cours. Percevez les revenus sur chaque vente et revendez la licence à tout moment.
-                        </p>
-                    </div>
-                    <div className="flex flex-col items-center sm:items-end gap-3 shrink-0">
-                        <div className="text-right">
-                            <p className="text-2xl font-black text-white">{(course.resaleRightsPrice || 0).toLocaleString('fr-FR')} XOF</p>
-                            <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest">Licence Exclusive</p>
-                        </div>
-                        <Button asChild className="h-12 rounded-xl bg-amber-500 hover:bg-amber-600 text-black font-black uppercase text-[10px] tracking-widest px-8 shadow-xl shadow-amber-500/20">
-                            <Link href={`/student/checkout/${courseId}?type=rights`}>Acheter les droits</Link>
-                        </Button>
-                    </div>
-                </div>
-            </Card>
+        {isEnrolled && (
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                <Card className="bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden shadow-2xl">
+                    <CardContent className="p-8">
+                        <ReviewForm courseId={courseId} userId={user.uid} />
+                    </CardContent>
+                </Card>
+            </section>
         )}
 
         {instructor && (
@@ -410,7 +332,7 @@ function CourseDetailSkeleton() {
   return (
     <div className="min-h-screen bg-slate-950 space-y-8 pb-32">
       <Skeleton className="w-full aspect-video bg-slate-900 rounded-none" />
-      <div className="px-4 space-y-6">
+      <div className="px-4 space-y-6 max-w-2xl mx-auto">
         <Skeleton className="h-12 w-3/4 bg-slate-900 rounded-xl" />
         <Skeleton className="h-20 w-full bg-slate-900 rounded-2xl" />
         <Skeleton className="h-64 w-full bg-slate-900 rounded-2xl" />

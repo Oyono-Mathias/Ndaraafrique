@@ -1,12 +1,17 @@
 'use client';
 
+/**
+ * @fileOverview Vitrine publique d'une formation Ndara Afrique.
+ * ✅ RÉSOLU : Affichage dynamique des avis avec résumé statistique.
+ * ✅ RÉSOLU : Support du partage social et des badges de réassurance.
+ */
+
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { doc, getFirestore, collection, query, getDocs, orderBy, getCountFromServer, limit, where, onSnapshot } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
@@ -18,21 +23,18 @@ import {
   Loader2, 
   ChevronRight,
   Share2,
-  BookOpen,
   Award,
-  Clock,
   Lock,
   RotateCcw,
   Facebook,
   Linkedin,
   Link as LinkIcon,
-  MessageSquare
+  MessageSquare,
+  MessageSquareQuote
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card } from '@/components/ui/card';
-import { YoutubePlayer } from '@/components/ui/youtube-player';
-import { BunnyPlayer } from '@/components/ui/bunny-player';
+import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
 import { cn } from '@/lib/utils';
@@ -44,18 +46,13 @@ interface EnrichedReview extends Review {
     userAvatar?: string;
 }
 
-/**
- * @fileOverview Composant interne gérant l'affichage avec accès aux searchParams.
- */
 function CourseDetailContent({ courseId, locale }: { courseId: string; locale: string }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { user, isUserLoading } = useRole();
   const { toast } = useToast();
   const db = getFirestore();
 
-  const [isEnrolling, setIsEnrolling] = useState(false);
   const [sections, setSections] = useState<Section[]>([]);
   const [lecturesMap, setLecturesMap] = useState<Map<string, Lecture[]>>(new Map());
   const [reviews, setReviews] = useState<EnrichedReview[]>([]);
@@ -88,7 +85,8 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             }
             setLecturesMap(lMap);
 
-            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(5));
+            // Charger les avis réels
+            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(10));
             const reviewsSnap = await getDocs(reviewsQuery);
             const rawReviews = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
 
@@ -100,7 +98,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
 
                 setReviews(rawReviews.map(r => ({
                     ...r,
-                    userName: uMap.get(r.userId)?.fullName,
+                    userName: uMap.get(r.userId)?.fullName || 'Étudiant Ndara',
                     userAvatar: uMap.get(r.userId)?.profilePictureURL
                 })));
             }
@@ -184,10 +182,11 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           </div>
         </div>
 
+        {/* Badges de Confiance */}
         <section className="grid grid-cols-3 gap-2">
           <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
             <ShieldCheck className="h-5 w-5 text-emerald-500" />
-            <p className="text-[8px] font-black uppercase text-slate-300">Sécurisé</p>
+            <p className="text-[8px] font-black uppercase text-slate-300">Paiement Sécurisé</p>
           </div>
           <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
             <RotateCcw className="h-5 w-5 text-blue-400" />
@@ -195,7 +194,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           </div>
           <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
             <Award className="h-5 w-5 text-amber-500" />
-            <p className="text-[8px] font-black uppercase text-slate-300">Diplôme</p>
+            <p className="text-[8px] font-black uppercase text-slate-300">Certifié Ndara</p>
           </div>
         </section>
 
@@ -229,38 +228,61 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           </div>
         </section>
 
-        {reviews.length > 0 && (
-            <section className="space-y-6">
+        {/* Section Avis Améliorée */}
+        <section className="space-y-8">
+            <div className="flex items-center justify-between">
                 <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
                     <div className="h-6 w-1.5 bg-primary rounded-full" />
-                    Avis
+                    Ce qu'en disent les Ndara
                 </h2>
+                <Badge variant="outline" className="text-slate-500 border-slate-800">{stats.reviewCount} avis</Badge>
+            </div>
+
+            {reviews.length > 0 ? (
                 <div className="grid gap-4">
                     {reviews.map(review => (
-                        <div key={review.id} className="p-6 bg-slate-900/50 border border-slate-800 rounded-[2rem] space-y-4">
-                            <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10 border border-white/5">
-                                    <AvatarImage src={review.userAvatar} />
-                                    <AvatarFallback className="bg-slate-800 text-[10px] font-bold text-slate-500">{review.userName?.charAt(0)}</AvatarFallback>
-                                </Avatar>
-                                <div>
-                                    <p className="text-sm font-bold text-white">{review.userName}</p>
-                                    <div className="flex items-center gap-0.5 mt-1">
+                        <Card key={review.id} className="bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden shadow-xl hover:border-primary/30 transition-all duration-500 group">
+                            <CardContent className="p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <Avatar className="h-10 w-10 border border-white/5">
+                                            <AvatarImage src={review.userAvatar} />
+                                            <AvatarFallback className="bg-slate-800 text-[10px] font-bold text-slate-500">{review.userName?.charAt(0)}</AvatarFallback>
+                                        </Avatar>
+                                        <div>
+                                            <p className="text-sm font-bold text-white leading-none">{review.userName}</p>
+                                            <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-1">Étudiant Vérifié</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-0.5 bg-slate-950/50 px-2 py-1 rounded-lg">
                                         {[...Array(5)].map((_, i) => (
-                                            <Star key={i} size={10} className={cn(i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-slate-700")} />
+                                            <Star key={i} size={10} className={cn(i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-slate-800")} />
                                         ))}
                                     </div>
                                 </div>
-                            </div>
-                            <p className="text-sm text-slate-400 italic leading-relaxed">"{review.comment}"</p>
-                        </div>
+                                <div className="relative">
+                                    <MessageSquareQuote className="absolute -left-2 -top-2 h-8 w-8 text-white/5 group-hover:text-primary/10 transition-colors" />
+                                    <p className="text-sm text-slate-400 italic leading-relaxed pl-4">
+                                        "{review.comment}"
+                                    </p>
+                                </div>
+                                <p className="text-[9px] text-slate-600 font-bold uppercase text-right">
+                                    Le {(review.createdAt as any)?.toDate ? format((review.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'récemment'}
+                                </p>
+                            </CardContent>
+                        </Card>
                     ))}
                 </div>
-            </section>
-        )}
+            ) : (
+                <div className="py-12 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[2rem] opacity-30">
+                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-slate-600" />
+                    <p className="text-sm font-black uppercase tracking-widest">Aucun avis pour le moment</p>
+                </div>
+            )}
+        </section>
 
         <section className="space-y-4 pb-8">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Partager</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Partager cette formation</h2>
           <div className="grid grid-cols-4 gap-3">
             <Button variant="outline" className="h-14 rounded-2xl bg-emerald-500/10 border-emerald-500/20 text-emerald-500" onClick={() => handleSocialShare('wa')}><MessageSquare className="h-6 w-6" /></Button>
             <Button variant="outline" className="h-14 rounded-2xl bg-blue-600/10 border-blue-600/20 text-blue-400" onClick={() => handleSocialShare('fb')}><Facebook className="h-6 w-6" /></Button>
@@ -291,11 +313,11 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
 function PublicCourseSkeleton() {
   return (
     <div className="min-h-screen bg-slate-950 space-y-8 pb-32">
-      <Skeleton className="w-full aspect-video bg-slate-900" />
+      <Skeleton className="w-full aspect-video bg-slate-900 rounded-none" />
       <div className="px-4 space-y-6 max-w-2xl mx-auto">
-        <Skeleton className="h-12 w-3/4 bg-slate-900" />
-        <Skeleton className="h-24 w-full bg-slate-900" />
-        <Skeleton className="h-64 w-full bg-slate-900" />
+        <Skeleton className="h-12 w-3/4 bg-slate-900 rounded-xl" />
+        <Skeleton className="h-20 w-full bg-slate-900 rounded-2xl" />
+        <Skeleton className="h-64 w-full bg-slate-900 rounded-2xl" />
       </div>
     </div>
   );
