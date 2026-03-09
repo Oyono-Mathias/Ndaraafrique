@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview Dashboard Formateur Ndara Afrique.
- * ✅ PARRAINAGE 4.0 : Alias Invite & Partage Social étendu.
- * ✅ SÉCURISATION : Libellés financiers conformes.
+ * ✅ ANALYTICS 2.0 : Funnel de conversion (Clics -> Inscriptions -> Ventes).
+ * ✅ MOTIVATION : Lien direct vers le Leaderboard public.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -17,7 +18,7 @@ import {
   orderBy,
   limit
 } from 'firebase/firestore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   Users, 
@@ -39,7 +40,9 @@ import {
   ArrowUpRight,
   Facebook,
   Linkedin,
-  Twitter
+  Twitter,
+  ArrowRight,
+  PieChart
 } from 'lucide-react';
 import type { AssignmentSubmission, Settings, NdaraUser, ReferralCommission } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
@@ -104,7 +107,7 @@ export default function InstructorDashboard() {
             }
         );
 
-        // Leaderboard des Experts
+        // Leaderboard des Experts (Top 5 local)
         const leaderboardQuery = query(
             collection(db, 'users'),
             where('role', '==', 'instructor'),
@@ -140,7 +143,6 @@ export default function InstructorDashboard() {
         };
     }, [instructor?.uid, db]);
 
-    // ✅ NOUVEL ALIAS INVITE COURT
     const inviteUrl = typeof window !== 'undefined' 
         ? `${window.location.origin}/${locale}/invite/${instructor?.username}`
         : '';
@@ -167,19 +169,38 @@ export default function InstructorDashboard() {
         if (url) window.open(url, '_blank');
     };
 
+    // ✅ CALCUL DU TAUX DE CONVERSION
+    const conversionRate = useMemo(() => {
+        const clicks = instructor?.affiliateStats?.clicks || 0;
+        const sales = instructor?.affiliateStats?.sales || 0;
+        if (clicks === 0) return 0;
+        return ((sales / clicks) * 100).toFixed(1);
+    }, [instructor]);
+
     if (isUserLoading || isLoading) {
         return <div className="p-4 space-y-6 bg-slate-950 min-h-screen"><Skeleton className="h-10 w-3/4 bg-slate-900 rounded-xl" /><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
     }
+
+    const aff = instructor?.affiliateStats || { clicks: 0, registrations: 0, sales: 0, earnings: 0 };
 
   return (
     <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
             
             <header className="px-4 pt-8 animate-in fade-in slide-in-from-top-4 duration-700">
-                <h1 className="text-3xl font-black text-white leading-tight">Espace <span className="text-primary">Formateur</span></h1>
-                <p className="text-slate-500 text-sm mt-2 font-medium italic">Pilotez votre académie panafricaine.</p>
+                <div className="flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-black text-white leading-tight">Espace <span className="text-primary">Formateur</span></h1>
+                        <p className="text-slate-500 text-sm mt-2 font-medium italic">Pilotez votre académie panafricaine.</p>
+                    </div>
+                    <Button asChild variant="outline" className="h-10 rounded-xl border-slate-800 bg-slate-900 text-primary font-black uppercase text-[9px] tracking-widest">
+                        <Link href="/leaderboard">
+                            <Medal className="mr-2 h-3.5 w-3.5" /> Bourse
+                        </Link>
+                    </Button>
+                </div>
             </header>
 
-            {/* --- SECTION CLUB DES EXPERTS --- */}
+            {/* --- SECTION ANALYTICS FUNNEL --- */}
             {isReferralEnabled && (
                 <section className="px-4 space-y-6">
                     <Card className="bg-gradient-to-br from-slate-900 to-primary/10 border-2 border-primary/30 rounded-[2.5rem] overflow-hidden shadow-2xl">
@@ -187,33 +208,35 @@ export default function InstructorDashboard() {
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
                                     <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
-                                        <UserPlus className="h-5 w-5 text-primary" /> Club des Experts
+                                        <PieChart className="h-5 w-5 text-primary" /> Funnel & Conversion
                                     </h2>
-                                    <p className="text-xs text-slate-400 font-medium">Développez le réseau Ndara.</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Analytics Réseau</p>
                                 </div>
-                                <div className="p-3 bg-primary/20 rounded-2xl text-primary"><BadgeEuro size={32} /></div>
+                                <div className="p-3 bg-primary/20 rounded-2xl text-primary font-black text-sm">{conversionRate}%</div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-2">
+                                <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center">
+                                    <Clock className="h-3 w-3 mx-auto text-slate-500 mb-1" />
+                                    <p className="text-xl font-black text-white">{aff.clicks}</p>
+                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Clics</p>
+                                </div>
                                 <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center">
                                     <UserCheck className="h-3 w-3 mx-auto text-blue-400 mb-1" />
-                                    <p className="text-2xl font-black text-white">{stats.referralsCount}</p>
-                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Filleuls Directs</p>
+                                    <p className="text-xl font-black text-white">{aff.registrations}</p>
+                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Inscriptions</p>
                                 </div>
                                 <div className="bg-slate-950/50 p-4 rounded-2xl border border-white/5 text-center">
-                                    <Wallet className="h-3 w-3 mx-auto text-emerald-400 mb-1" />
-                                    <p className="text-xl font-black text-white">{(instructor?.referralBalance || 0).toLocaleString('fr-FR')}</p>
-                                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Gains Parrainage</p>
+                                    <ShoppingCart className="h-3 w-3 mx-auto text-emerald-400 mb-1" />
+                                    <p className="text-xl font-black text-white">{aff.sales}</p>
+                                    <p className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Ventes</p>
                                 </div>
                             </div>
 
-                            <div className="space-y-4">
-                                <p className="text-[9px] font-black text-slate-500 uppercase text-center tracking-widest">Mon Alias d'Invitation</p>
-                                <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                                    <span className="text-[10px] font-mono text-primary truncate mr-4">invite/{instructor?.username}</span>
-                                    <Button size="icon" variant="ghost" onClick={() => handleShareReferral()} className="h-8 w-8 text-slate-400 hover:text-white">
-                                        <LinkIcon size={14} />
-                                    </Button>
+                            <div className="space-y-4 pt-4 border-t border-white/5">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Mon Alias d'Invitation</p>
+                                    <span className="text-[10px] font-mono text-primary truncate">invite/{instructor?.username}</span>
                                 </div>
                                 
                                 <div className="grid grid-cols-4 gap-2">
@@ -273,25 +296,13 @@ export default function InstructorDashboard() {
                         )}
                     </div>
 
-                    {/* LEADERBOARD EXPERTS */}
-                    <div className="space-y-4">
-                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
-                            <Medal className="h-4 w-4 text-primary" /> Top Experts Ndara
-                        </h3>
-                        <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-xl">
-                            {leaderboard.map((user, idx) => (
-                                <div key={user.uid} className={cn("flex items-center justify-between p-4 border-b border-white/5 last:border-0", user.uid === instructor.uid && "bg-primary/5")}>
-                                    <div className="flex items-center gap-3">
-                                        <div className={cn("h-6 w-6 rounded-full flex items-center justify-center font-black text-[10px]", idx === 0 ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-500")}>
-                                            {idx + 1}
-                                        </div>
-                                        <span className="text-xs font-bold text-slate-200">{user.fullName} {user.uid === instructor.uid && "(Moi)"}</span>
-                                    </div>
-                                    <span className="text-[10px] font-black text-primary uppercase">Elite Formateur</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {/* LIEN VERS LE LEADERBOARD GLOBAL */}
+                    <Button asChild variant="ghost" className="w-full h-14 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 font-bold uppercase text-[10px] tracking-widest hover:text-primary transition-all">
+                        <Link href="/leaderboard">
+                            Voir le classement complet des experts
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
                 </section>
             )}
 

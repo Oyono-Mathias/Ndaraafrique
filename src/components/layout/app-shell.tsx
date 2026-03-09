@@ -1,9 +1,10 @@
+
 'use client';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce et la sécurité des accès par rôle.
- * ✅ RÉSOLU : Ajout de /invite/ dans la liste des pages publiques.
+ * ✅ RÉSOLU : Ajout de /leaderboard dans la liste des pages publiques.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -84,7 +85,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const isAuthPage = useMemo(() => ['/login', '/register', '/forgot-password'].includes(cleanPath), [cleanPath]);
 
   const isPublicPage = useMemo(() => {
-    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales'];
+    const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales', '/leaderboard'];
     if (publicPaths.includes(cleanPath)) return true;
     if (cleanPath.startsWith('/verify/')) return true;
     // ✅ Autoriser les liens d'invitation sans connexion
