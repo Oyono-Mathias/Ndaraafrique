@@ -1,202 +1,213 @@
 'use client';
 
+/**
+ * @fileOverview Cockpit Admin : Gestion des Retraits Instructeurs.
+ * Permet de filtrer et traiter les demandes de paiement de manière granulaire.
+ */
+
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, getDocs, where } from 'firebase/firestore';
-import type { Payout, NdaraUser } from '@/lib/types';
+import { getFirestore, collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import type { PayoutRequest, NdaraUser } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, User, CheckCircle, XCircle, Loader2 } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { 
+    CheckCircle2, 
+    XCircle, 
+    Clock, 
+    Smartphone, 
+    Loader2, 
+    History,
+    HandCoins,
+    Banknote,
+    UserCheck,
+    Handshake
+} from 'lucide-react';
+import { updatePayoutStatusAction } from '@/actions/payoutActions';
 import { useRole } from '@/context/RoleContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { processPayout } from '@/actions/supportActions';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useRouter } from 'next/navigation';
-
-type PayoutStatus = 'en_attente' | 'valide' | 'rejete';
-
-const getStatusVariant = (status: PayoutStatus) => {
-  switch (status) {
-    case 'en_attente': return 'warning';
-    case 'valide': return 'success';
-    case 'rejete': return 'destructive';
-    default: return 'default';
-  }
-};
-
-const PayoutRow = ({ payout, instructor }: { payout: Payout; instructor?: Partial<NdaraUser> }) => {
-    const { currentUser: adminUser } = useRole();
-    const { toast } = useToast();
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
-
-    const handleProcessPayout = async (decision: 'valide' | 'rejete') => {
-        if (!adminUser) return;
-        setIsLoading(true);
-        const result = await processPayout(payout.id, decision, adminUser.uid);
-        if (result.success) {
-            toast({ title: `Demande de retrait ${decision === 'valide' ? 'validée' : 'rejetée'}.` });
-        } else {
-            toast({ variant: 'destructive', title: 'Erreur', description: result.error });
-        }
-        setIsLoading(false);
-    };
-
-    return (
-        <TableRow>
-            <TableCell>
-                <div className="flex items-center gap-2">
-                    <Avatar className="h-6 w-6">
-                        <AvatarImage src={instructor?.profilePictureURL} />
-                        <AvatarFallback>{instructor?.fullName?.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium text-white">{instructor?.fullName || 'Instructeur inconnu'}</span>
-                </div>
-            </TableCell>
-            <TableCell className="font-medium">{payout.amount.toLocaleString('fr-FR')} XOF</TableCell>
-            <TableCell>{payout.method}</TableCell>
-            <TableCell>
-                {payout.date && typeof (payout.date as any).toDate === 'function' 
-                    ? format((payout.date as any).toDate(), 'd MMM yyyy, HH:mm', { locale: fr }) 
-                    : 'Date inconnue'}
-            </TableCell>
-            <TableCell>
-                <Badge variant={getStatusVariant(payout.status as PayoutStatus)} className="capitalize">
-                    {payout.status.replace('_', ' ')}
-                </Badge>
-            </TableCell>
-            <TableCell className="text-right">
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0" disabled={isLoading}>
-                             {isLoading ? <Loader2 className="h-4 w-4 animate-spin"/> : <MoreHorizontal className="h-4 w-4" />}
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        {payout.status === 'en_attente' && (
-                            <>
-                                <DropdownMenuItem onClick={() => handleProcessPayout('valide')} className="text-green-500 focus:text-green-500">
-                                    <CheckCircle className="mr-2 h-4 w-4" /> Valider
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleProcessPayout('rejete')} className="text-destructive focus:text-destructive">
-                                    <XCircle className="mr-2 h-4 w-4" /> Rejeter
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                            </>
-                        )}
-                        <DropdownMenuItem onClick={() => router.push(`/instructor/${payout.instructorId}`)}>
-                            <User className="mr-2 h-4 w-4" /> Voir l'instructeur
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </TableCell>
-        </TableRow>
-    );
-};
-
-const PayoutsGrid = ({ isLoading, payouts, usersMap }: { isLoading: boolean, payouts: Payout[], usersMap: Map<string, Partial<NdaraUser>> }) => (
-    <div className="border rounded-lg dark:border-slate-700">
-        <Table>
-            <TableHeader>
-                <TableRow>
-                    <TableHead>Instructeur</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Méthode</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-            </TableHeader>
-            <TableBody>
-                {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}><TableCell colSpan={6}><Skeleton className="h-10 w-full bg-slate-800"/></TableCell></TableRow>
-                    ))
-                ) : payouts.length > 0 ? (
-                    payouts.map((p: Payout) => (
-                        <PayoutRow key={p.id} payout={p} instructor={usersMap.get(p.instructorId)} />
-                    ))
-                ) : (
-                    <TableRow><TableCell colSpan={6} className="h-24 text-center">Aucune demande de retrait trouvée.</TableCell></TableRow>
-                )}
-            </TableBody>
-        </Table>
-    </div>
-);
+import { cn } from '@/lib/utils';
 
 export function PayoutsTable() {
     const db = getFirestore();
-    const [filter, setFilter] = useState<PayoutStatus>('en_attente');
+    const { currentUser: adminUser } = useRole();
+    const { toast } = useToast();
+    const [statusFilter, setStatusFilter] = useState<'pending' | 'approved' | 'paid' | 'rejected'>('pending');
+    const [isActionPending, setIsActionPending] = useState<string | null>(null);
+    const [instructorsMap, setInstructorsMap] = useState<Map<string, NdaraUser>>(new Map());
 
-    // Correction : On retire l'orderBy de la requête Firestore
-    const payoutsQuery = useMemo(() => {
-        return query(collection(db, 'payouts'), where('status', '==', filter));
-    }, [db, filter]);
-    
-    const { data: rawPayouts, isLoading: payoutsLoading } = useCollection<Payout>(payoutsQuery);
+    // Requête temps réel sur les demandes filtrées
+    const requestsQuery = useMemo(() => query(
+        collection(db, 'payout_requests'), 
+        where('status', '==', statusFilter),
+        orderBy('createdAt', 'desc'),
+        limit(100)
+    ), [db, statusFilter]);
 
-    const payouts = useMemo(() => {
-      if (!rawPayouts) return [];
-      return [...rawPayouts].sort((a, b) => {
-        const dateA = (a.date as any)?.toDate?.() || new Date(0);
-        const dateB = (b.date as any)?.toDate?.() || new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-    }, [rawPayouts]);
+    const { data: requests, isLoading } = useCollection<PayoutRequest>(requestsQuery);
 
-    const [usersMap, setUsersMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
-    const [usersLoading, setUsersLoading] = useState(true);
-
+    // Chargement des profils instructeurs pour enrichir la table
     useEffect(() => {
-        if (payoutsLoading || !payouts) return;
+        if (!requests || requests.length === 0) return;
         
-        const fetchRelatedData = async () => {
-            setUsersLoading(true);
-            const userIds = [...new Set(payouts.map(p => p.instructorId).filter(Boolean))];
-            
-            const newUsersMap = new Map(usersMap);
-            const idsToFetch = userIds.filter(id => !newUsersMap.has(id));
-
-            if (idsToFetch.length > 0) {
-                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
-                 const snapshot = await getDocs(usersQuery);
-                 snapshot.forEach(doc => {
-                     const data = doc.data();
-                     newUsersMap.set(data.uid, { fullName: data.fullName, profilePictureURL: data.profilePictureURL });
-                 });
-            }
-
-            setUsersMap(newUsersMap);
-            setUsersLoading(false);
+        const fetchInstructors = async () => {
+            const ids = [...new Set(requests.map(r => r.instructorId))];
+            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', ids)));
+            const newMap = new Map();
+            usersSnap.forEach(d => newMap.set(d.id, d.data()));
+            setInstructorsMap(newMap);
         };
-        fetchRelatedData();
-    }, [payouts, payoutsLoading, db, usersMap]);
-    
-    const isLoading = payoutsLoading || usersLoading;
+        fetchInstructors();
+    }, [requests, db]);
+
+    const handleUpdateStatus = async (payoutId: string, status: 'approved' | 'paid' | 'rejected') => {
+        if (!adminUser) return;
+        setIsActionPending(payoutId);
+        
+        const result = await updatePayoutStatusAction({ payoutId, status, adminId: adminUser.uid });
+        
+        if (result.success) {
+            toast({ title: "Statut mis à jour", description: `Le retrait est désormais marqué comme '${status}'.` });
+        } else {
+            toast({ variant: 'destructive', title: "Erreur", description: result.error });
+        }
+        setIsActionPending(null);
+    };
 
     return (
-        <Tabs value={filter} onValueChange={(value) => setFilter(value as any)} className="space-y-4">
-            <TabsList>
-                <TabsTrigger value="en_attente">En attente</TabsTrigger>
-                <TabsTrigger value="valide">Validées</TabsTrigger>
-                <TabsTrigger value="rejete">Rejetées</TabsTrigger>
-            </TabsList>
-            <TabsContent value="en_attente">
-                <PayoutsGrid isLoading={isLoading} payouts={payouts} usersMap={usersMap} />
-            </TabsContent>
-            <TabsContent value="valide">
-                <PayoutsGrid isLoading={isLoading} payouts={payouts} usersMap={usersMap} />
-            </TabsContent>
-            <TabsContent value="rejete">
-                <PayoutsGrid isLoading={isLoading} payouts={payouts} usersMap={usersMap} />
-            </TabsContent>
-        </Tabs>
+        <div className="space-y-6">
+            <Tabs value={statusFilter} onValueChange={(v: any) => setStatusFilter(v)} className="w-full">
+                <TabsList className="bg-slate-900 border-slate-800 p-1 rounded-2xl h-14 w-full sm:w-auto">
+                    <TabsTrigger value="pending" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
+                        <Clock className="h-3.5 w-3.5" /> En attente
+                    </TabsTrigger>
+                    <TabsTrigger value="approved" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full text-blue-400">
+                        <UserCheck className="h-3.5 w-3.5" /> Approuvés
+                    </TabsTrigger>
+                    <TabsTrigger value="paid" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full text-emerald-400">
+                        <HandCoins className="h-3.5 w-3.5" /> Payés
+                    </TabsTrigger>
+                    <TabsTrigger value="rejected" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full text-red-400">
+                        <XCircle className="h-3.5 w-3.5" /> Rejetés
+                    </TabsTrigger>
+                </TabsList>
+
+                <div className="mt-8 border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
+                    <Table>
+                        <TableHeader>
+                            <TableRow className="border-slate-800 bg-slate-800/30">
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Instructeur</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Montant</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Méthode</TableHead>
+                                <TableHead className="text-[10px] font-black uppercase tracking-widest">Date Demande</TableHead>
+                                <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action Stratégique</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {isLoading ? (
+                                [...Array(5)].map((_, i) => (
+                                    <TableRow key={i} className="border-slate-800"><TableCell colSpan={5}><Skeleton className="h-12 w-full bg-slate-800/50 rounded-xl"/></TableCell></TableRow>
+                                ))
+                            ) : requests && requests.length > 0 ? (
+                                requests.map(req => {
+                                    const instructor = instructorsMap.get(req.instructorId);
+                                    const date = (req.createdAt as any)?.toDate?.() || new Date();
+                                    
+                                    return (
+                                        <TableRow key={req.id} className="group border-slate-800 hover:bg-slate-800/20">
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 border border-slate-700 shadow-lg">
+                                                        <AvatarImage src={instructor?.profilePictureURL} className="object-cover" />
+                                                        <AvatarFallback className="bg-slate-800 text-[10px] font-black">
+                                                            {instructor?.fullName?.charAt(0)}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="flex flex-col">
+                                                        <span className="font-bold text-sm text-white">{instructor?.fullName || 'Chargement...'}</span>
+                                                        <span className="text-[10px] text-slate-500 truncate max-w-[150px]">{instructor?.email}</span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <span className="text-sm font-black text-white">{req.amount.toLocaleString('fr-FR')} <span className="text-[10px] opacity-50">XOF</span></span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    {req.method === 'mobile_money' ? <Smartphone className="h-3.5 w-3.5 text-primary" /> : <Banknote className="h-3.5 w-3.5 text-blue-400" />}
+                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                                                        {req.method === 'mobile_money' ? 'Momo' : 'Virement'}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-[10px] font-black text-slate-500 uppercase">
+                                                {format(date, "d MMM yyyy HH:mm", { locale: fr })}
+                                            </TableCell>
+                                            <TableCell className="text-right pr-6">
+                                                <div className="flex justify-end gap-2">
+                                                    {req.status === 'pending' && (
+                                                        <>
+                                                            <Button 
+                                                                size="sm" 
+                                                                variant="outline"
+                                                                className="h-9 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest bg-blue-500/10 text-blue-400 border-none hover:bg-blue-500 hover:text-white"
+                                                                onClick={() => handleUpdateStatus(req.id, 'approved')}
+                                                                disabled={isActionPending === req.id}
+                                                            >
+                                                                Approuver
+                                                            </Button>
+                                                            <Button 
+                                                                size="sm" 
+                                                                variant="ghost"
+                                                                className="h-9 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest text-red-500 hover:bg-red-500/10"
+                                                                onClick={() => handleUpdateStatus(req.id, 'rejected')}
+                                                                disabled={isActionPending === req.id}
+                                                            >
+                                                                Rejeter
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                    {req.status === 'approved' && (
+                                                        <Button 
+                                                            size="sm" 
+                                                            className="h-9 px-4 rounded-xl font-black uppercase text-[9px] tracking-widest bg-primary text-primary-foreground shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
+                                                            onClick={() => handleUpdateStatus(req.id, 'paid')}
+                                                            disabled={isActionPending === req.id}
+                                                        >
+                                                            {isActionPending === req.id ? <Loader2 className="h-3 w-3 animate-spin"/> : <Handshake className="h-3.5 w-3.5 mr-2" />}
+                                                            Marquer comme Payé
+                                                        </Button>
+                                                    )}
+                                                    {req.status === 'paid' && (
+                                                        <Badge className="bg-emerald-500/10 text-emerald-500 border-none font-black text-[9px] uppercase px-3">
+                                                            <CheckCircle2 className="h-3 w-3 mr-1.5" />
+                                                            Terminé
+                                                        </Badge>
+                                                    )}
+                                                    {req.status === 'rejected' && (
+                                                        <Badge className="bg-red-500/10 text-red-500 border-none font-black text-[9px] uppercase px-3">
+                                                            <XCircle className="h-3 w-3 mr-1.5" />
+                                                            Rejeté
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
+                            ) : (
+                                <TableRow><TableCell colSpan={5} className="h-64 text-center opacity-20"><History className="h-16 w-16 mx-auto mb-4" /><p className="font-black uppercase text-xs">Aucune demande trouvée</p></TableCell></TableRow>
+                            )}
+                        </TableBody>
+                    </Table>
+                </div>
+            </Tabs>
+        </div>
     );
 }

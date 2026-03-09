@@ -2,7 +2,7 @@
 
 import { getAdminDb } from '@/firebase/admin';
 import { FieldValue } from 'firebase-admin/firestore';
-import { sendAdminNotification } from './notificationActions';
+import { sendAdminNotification, sendUserNotification } from './notificationActions';
 
 interface RequestPayoutParams {
     instructorId: string;
@@ -61,5 +61,76 @@ export async function requestPayoutAction({ instructorId, amount, method }: Requ
     } catch (error: any) {
         console.error("PAYOUT_REQUEST_ERROR:", error);
         return { success: false, error: "Une erreur est survenue : " + (error.message || "Erreur serveur") };
+    }
+}
+
+/**
+ * Met à jour le statut d'un retrait par l'administrateur.
+ */
+export async function updatePayoutStatusAction({ 
+    payoutId, 
+    status, 
+    adminId 
+}: { 
+    payoutId: string; 
+    status: 'approved' | 'paid' | 'rejected'; 
+    adminId: string; 
+}): Promise<{ success: boolean; error?: string }> {
+    try {
+        const db = getAdminDb();
+        const payoutRef = db.collection('payout_requests').doc(payoutId);
+        const payoutDoc = await payoutRef.get();
+
+        if (!payoutDoc.exists) return { success: false, error: "Demande introuvable." };
+        
+        const payoutData = payoutDoc.data();
+        const instructorId = payoutData?.instructorId;
+
+        const batch = db.batch();
+        batch.update(payoutRef, {
+            status,
+            processedAt: FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        // Log d'audit stratégique
+        const auditRef = db.collection('admin_audit_logs').doc();
+        batch.set(auditRef, {
+            adminId,
+            eventType: 'payout.process',
+            target: { id: payoutId, type: 'payout' },
+            details: `Le retrait de ${payoutData?.amount} XOF pour l'instructeur ${instructorId} a été passé au statut '${status}'.`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        await batch.commit();
+
+        // Notification de réassurance à l'instructeur
+        let msg = "";
+        let type: 'info' | 'success' | 'alert' = 'info';
+        
+        if (status === 'approved') {
+            msg = "Bonne nouvelle ! Votre demande de retrait a été approuvée et est en cours de transfert.";
+            type = 'info';
+        } else if (status === 'paid') {
+            msg = `Félicitations ! Votre retrait de ${(payoutData?.amount || 0).toLocaleString('fr-FR')} XOF a été versé sur votre compte.`;
+            type = 'success';
+        } else if (status === 'rejected') {
+            msg = "Votre demande de retrait n'a pas pu être validée. Veuillez consulter le support technique.";
+            type = 'alert';
+        }
+
+        if (instructorId) {
+            await sendUserNotification(instructorId, {
+                text: msg,
+                link: '/instructor/revenus',
+                type
+            });
+        }
+
+        return { success: true };
+    } catch (e: any) {
+        console.error("UPDATE_PAYOUT_ERROR:", e);
+        return { success: false, error: e.message || "Erreur serveur lors de la mise à jour." };
     }
 }
