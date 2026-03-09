@@ -6,7 +6,7 @@ import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
  * @fileOverview Page privée du lecteur de cours (Point d'entrée unifié).
- * ✅ RÉSOLU : Utilisation du paramètre unique [slug].
+ * ✅ RÉSOLU : Utilisation du paramètre unique [slug] pour éviter les conflits de build.
  */
 
 interface Props {

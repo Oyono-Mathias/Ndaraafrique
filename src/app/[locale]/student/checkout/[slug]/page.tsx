@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Page de paiement (Checkout) unifiée.
- * ✅ RÉSOLU : Paramètre [slug] pour la cohérence du routage.
+ * ✅ RÉSOLU : Utilisation du paramètre unique [slug] pour éviter les conflits Next.js.
  */
 
 import { useState, useMemo, useEffect } from 'react';

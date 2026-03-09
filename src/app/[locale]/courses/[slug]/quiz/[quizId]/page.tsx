@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Interface de quiz sécurisée.
- * ✅ RÉSOLU : Paramètre parent unifié [slug].
+ * ✅ RÉSOLU : Paramètre parent unifié [slug] pour la cohérence du routage.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -129,14 +129,18 @@ export default function TakeQuizPage() {
         <Card className="dark:bg-slate-800 rounded-3xl overflow-hidden shadow-xl">
             <CardContent className="p-8">
                 <h2 className="text-xl font-bold mb-8 text-white leading-snug">{currentQuestion?.text}</h2>
-                <RadioGroup onValueChange={(v) => handleAnswerSelect(parseInt(v, 10))} className="gap-4">
+                <div className="space-y-4">
                     {currentQuestion?.options.map((opt, i) => (
                         <div key={i} className="flex items-center space-x-3 p-4 bg-slate-900/50 rounded-xl border border-white/5">
-                            <RadioGroupItem value={i.toString()} id={`q-${i}`} />
-                            <label htmlFor={`q-${i}`} className="text-slate-300 font-medium cursor-pointer">{opt.text}</label>
+                            <RadioGroup onValueChange={(v) => handleAnswerSelect(parseInt(v, 10))}>
+                                <div className="flex items-center gap-2">
+                                    <RadioGroupItem value={i.toString()} id={`q-${i}`} />
+                                    <label htmlFor={`q-${i}`} className="text-slate-300 font-medium cursor-pointer">{opt.text}</label>
+                                </div>
+                            </RadioGroup>
                         </div>
                     ))}
-                </RadioGroup>
+                </div>
                 <div className="mt-10 flex justify-end">
                     {currentQuestionIndex < questions.length - 1 ? (
                         <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)} className="h-12 px-8 rounded-xl font-bold uppercase text-[10px] tracking-widest">Suivant</Button>
