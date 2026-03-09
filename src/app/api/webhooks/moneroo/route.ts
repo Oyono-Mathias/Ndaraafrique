@@ -100,14 +100,14 @@ export async function POST(req: Request) {
       // 4. LOGIQUE PARRAINAGE FORMATEUR (Réseau d'experts)
       const sponsorId = buyerData?.referredBy;
       
-      // ✅ SÉCURITÉ CEO : On vérifie que le parrain n'est pas l'acheteur
+      // ✅ SÉCURITÉ CEO : On vérifie que le parrain n'est pas l'acheteur (Anti-auto-parrainage)
       if (sponsorId && settings?.commercial?.referralEnabled && sponsorId !== userId) {
           const referralPerc = settings.commercial.referralPercentage || 5;
           const referralCommissionAmount = (amount * referralPerc) / 100;
 
           const sponsorRef = db.collection('users').doc(sponsorId);
           
-          // Enregistrement dans l'historique des commissions parrainage
+          // Enregistrement dans l'historique des commissions parrainage (referral_commissions)
           const historyRef = db.collection('referral_commissions').doc();
           batch.set(historyRef, {
               id: historyRef.id,
