@@ -21,7 +21,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   try {
     const db = getAdminDb();
-    // Le slug correspond à l'ID unique de la formation en base
     const courseDoc = await db.collection('courses').doc(slug).get();
     
     if (!courseDoc.exists) {
@@ -58,7 +57,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch (error) {
-    console.error("Metadata generation error:", error);
     return { title: 'Ndara Afrique - Excellence Panafricaine' };
   }
 }

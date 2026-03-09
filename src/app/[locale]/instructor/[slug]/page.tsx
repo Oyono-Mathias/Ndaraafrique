@@ -8,7 +8,7 @@ import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
  * @fileOverview Page serveur unifiée pour le profil public d'un instructeur.
- * Résout le conflit de routage Next.js en utilisant uniquement le paramètre [slug].
+ * Résout le conflit de routage en utilisant uniquement le paramètre [slug].
  * Gère le SEO et l'agrégation des données de l'expert.
  */
 
@@ -22,7 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   
   try {
     const db = getAdminDb();
-    // Le slug correspond à l'UID ou au pseudo de l'instructeur
+    // On cherche l'instructeur par son UID ou son username (le slug)
     const userDoc = await db.collection('users').doc(slug).get();
     
     if (!userDoc.exists) {
