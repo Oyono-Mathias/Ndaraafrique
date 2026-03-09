@@ -1,10 +1,9 @@
-
 'use client';
 
 /**
  * @fileOverview Dashboard Formateur Ndara Afrique.
- * ✅ PARRAINAGE 3.0 : Leaderboard Experts et Outils de recrutement.
- * ✅ SÉCURISATION : Libellés financiers conformes au mode "Anti-Pertes".
+ * ✅ PARRAINAGE 4.0 : Historique des commissions réseau intégré.
+ * ✅ SÉCURISATION : Libellés financiers conformes.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -24,7 +23,6 @@ import {
   Users, 
   ClipboardCheck, 
   TrendingUp, 
-  BookOpen, 
   Zap,
   Landmark,
   UserPlus,
@@ -34,14 +32,13 @@ import {
   UserCheck,
   ShieldCheck,
   Clock,
-  Facebook,
-  Twitter,
-  Linkedin,
   MessageCircle,
   Medal,
-  Link as LinkIcon
+  Link as LinkIcon,
+  History,
+  ArrowUpRight
 } from 'lucide-react';
-import type { AssignmentSubmission, Settings, NdaraUser } from '@/lib/types';
+import type { AssignmentSubmission, Settings, NdaraUser, ReferralCommission } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -49,6 +46,8 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 export default function InstructorDashboard() {
     const { currentUser: instructor, isUserLoading } = useRole();
@@ -58,6 +57,7 @@ export default function InstructorDashboard() {
 
     const [stats, setStats] = useState({ totalRevenue: 0, studentCount: 0, referralsCount: 0 });
     const [pendingSubmissions, setPendingSubmissions] = useState<AssignmentSubmission[]>([]);
+    const [referralHistory, setReferralHistory] = useState<ReferralCommission[]>([]);
     const [coursePerformance, setCoursePerformance] = useState<{title: string, revenue: number}[]>([]);
     const [isReferralEnabled, setIsReferralEnabled] = useState(false);
     const [leaderboard, setLeaderboard] = useState<NdaraUser[]>([]);
@@ -88,6 +88,19 @@ export default function InstructorDashboard() {
             }
         );
 
+        // Historique des commissions parrainage
+        const unsubRefCommissions = onSnapshot(
+            query(
+                collection(db, 'referral_commissions'), 
+                where('instructorId', '==', instructor.uid),
+                orderBy('timestamp', 'desc'),
+                limit(5)
+            ),
+            (snap) => {
+                setReferralHistory(snap.docs.map(d => ({ id: d.id, ...d.data() } as ReferralCommission)));
+            }
+        );
+
         // Leaderboard des Experts
         const leaderboardQuery = query(
             collection(db, 'users'),
@@ -114,7 +127,14 @@ export default function InstructorDashboard() {
             }
         );
 
-        return () => { unsubSettings(); unsubPayments(); unsubLeaderboard(); unsubReferrals(); unsubDevoirs(); };
+        return () => { 
+            unsubSettings(); 
+            unsubPayments(); 
+            unsubLeaderboard(); 
+            unsubReferrals(); 
+            unsubDevoirs(); 
+            unsubRefCommissions();
+        };
     }, [instructor?.uid, db]);
 
     const referralUrl = typeof window !== 'undefined' 
@@ -127,7 +147,6 @@ export default function InstructorDashboard() {
         
         switch(provider) {
             case 'wa': url = `https://wa.me/?text=${encodeURIComponent(text)}`; break;
-            case 'fb': url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralUrl)}`; break;
             default: 
                 navigator.clipboard.writeText(referralUrl);
                 toast({ title: "Lien de parrainage copié !" });
@@ -192,6 +211,45 @@ export default function InstructorDashboard() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* HISTORIQUE RÉCENT DES COMMISSIONS RÉSEAU */}
+                    <div className="space-y-4">
+                        <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
+                            <History className="h-4 w-4 text-primary" /> Historique du Réseau
+                        </h3>
+                        {referralHistory.length > 0 ? (
+                            <div className="grid gap-3">
+                                {referralHistory.map(comm => (
+                                    <Card key={comm.id} className="bg-slate-900/50 border border-slate-800 rounded-2xl overflow-hidden active:scale-[0.98] transition-all">
+                                        <CardContent className="p-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                                                    <ArrowUpRight className="h-4 w-4 text-emerald-500" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-bold text-slate-200 truncate">{comm.studentName}</p>
+                                                    <p className="text-[9px] text-slate-500 uppercase tracking-tighter truncate max-w-[150px]">
+                                                        {comm.courseTitle}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-black text-emerald-400">+{comm.commission.toLocaleString('fr-FR')} <span className="text-[8px] opacity-50">XOF</span></p>
+                                                <p className="text-[8px] font-bold text-slate-600 uppercase">
+                                                    {(comm.timestamp as any)?.toDate ? format((comm.timestamp as any).toDate(), 'dd/MM/yy', { locale: fr }) : '...'}
+                                                </p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="p-10 text-center border-2 border-dashed border-slate-800 rounded-[2rem] opacity-30">
+                                <History className="h-8 w-8 mx-auto mb-3" />
+                                <p className="text-[10px] font-black uppercase">Aucun gain réseau</p>
+                            </div>
+                        )}
+                    </div>
 
                     {/* LEADERBOARD EXPERTS */}
                     <div className="space-y-4">

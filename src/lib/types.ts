@@ -159,6 +159,18 @@ export interface NdaraUser {
   permissions?: { [key: string]: boolean };
 };
 
+export interface ReferralCommission {
+  id: string;
+  instructorId: string;
+  studentId: string;
+  studentName: string;
+  courseId: string;
+  courseTitle: string;
+  amount: number;
+  commission: number;
+  timestamp: Timestamp | FieldValue;
+}
+
 export interface AffiliateTransaction {
   id: string;
   affiliateId: string;
