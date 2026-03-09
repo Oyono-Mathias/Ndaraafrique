@@ -5,8 +5,8 @@ import CourseDetailClient from '@/components/courses/CourseDetailClient';
 import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
- * @fileOverview Page privée du lecteur de cours (Point d'entrée unifié).
- * ✅ RÉSOLU : Utilisation du paramètre unique [slug] pour éviter les conflits de build.
+ * @fileOverview Private course player page (Unified Entry Point).
+ * Standardized to use [slug] to avoid routing conflicts.
  */
 
 interface Props {

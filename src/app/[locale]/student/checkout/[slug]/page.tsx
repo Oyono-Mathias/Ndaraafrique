@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Page de paiement (Checkout) unifiée.
- * ✅ RÉSOLU : Utilisation du paramètre unique [slug] pour éviter les conflits Next.js.
+ * @fileOverview Unified checkout page.
+ * Standardized to use [slug] to avoid Next.js routing conflicts.
  */
 
 import { useState, useMemo, useEffect } from 'react';

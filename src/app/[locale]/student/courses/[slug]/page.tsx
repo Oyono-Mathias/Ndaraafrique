@@ -5,8 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
 
 /**
- * @fileOverview Pont de redirection vers le lecteur de cours unifié.
- * ✅ RÉSOLU : Redirige /[locale]/student/courses/[slug] vers /[locale]/courses/[slug].
+ * @fileOverview Redirection bridge to the unified course player.
+ * Resolves routing conflicts by ensuring only [slug] is used at the courses level.
  */
 export default function StudentCourseRedirect() {
   const router = useRouter();

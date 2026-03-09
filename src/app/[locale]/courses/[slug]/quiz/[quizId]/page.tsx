@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Interface de quiz sécurisée.
- * ✅ RÉSOLU : Paramètre parent unifié [slug] pour la cohérence du routage.
+ * @fileOverview Secure quiz interface.
+ * Standardized to use [slug] for parent course identifier.
  */
 
 import { useState, useEffect, useMemo } from 'react';
