@@ -1,4 +1,3 @@
-
 import { Metadata } from 'next';
 import { getAdminDb } from '@/firebase/admin';
 import type { Course } from '@/lib/types';
@@ -6,8 +5,8 @@ import CourseDetailClient from '@/components/courses/CourseDetailClient';
 import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
- * @fileOverview Page privée du lecteur de cours (Point d'entrée unique).
- * Paramètre unifié [slug] pour la stabilité du routage Next.js.
+ * @fileOverview Page privée du lecteur de cours (Point d'entrée unifié).
+ * ✅ RÉSOLU : Utilisation du paramètre unique [slug].
  */
 
 interface Props {

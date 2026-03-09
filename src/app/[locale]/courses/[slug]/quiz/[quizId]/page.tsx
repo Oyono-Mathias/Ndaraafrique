@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Interface de quiz sécurisée.
- * Paramètre parent unifié [slug].
+ * ✅ RÉSOLU : Paramètre parent unifié [slug].
  */
 
 import { useState, useEffect, useMemo } from 'react';

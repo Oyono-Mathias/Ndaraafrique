@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Page de paiement (Checkout) unifiée.
- * Paramètre [slug] pour la cohérence du routage.
+ * ✅ RÉSOLU : Paramètre [slug] pour la cohérence du routage.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,27 +10,17 @@ import { useParams, useRouter } from 'next/navigation';
 import { doc, getFirestore } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
-import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { 
   ArrowLeft, 
   Lock, 
   Loader2, 
-  ShieldCheck, 
-  Smartphone,
-  CreditCard,
-  MessageCircle,
-  CheckCircle2,
   ChevronRight,
-  Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { cn } from '@/lib/utils';
 import type { Course } from '@/lib/types';
 import { Card } from '@/components/ui/card';
-
-type PaymentMethod = 'momo' | 'card';
 
 export default function CheckoutPage() {
   const params = useParams();
@@ -41,25 +30,7 @@ export default function CheckoutPage() {
   const { toast } = useToast();
   const db = getFirestore();
 
-  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('momo');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [affiliateId, setAffiliateId] = useState<string | null>(null);
-
-  useEffect(() => {
-      if (typeof window !== 'undefined') {
-          const storedAff = localStorage.getItem('ndara_affiliate_id');
-          if (storedAff) {
-              try {
-                  const data = JSON.parse(storedAff);
-                  if (data.expiresAt > Date.now()) {
-                      setAffiliateId(data.id);
-                  }
-              } catch (e) {
-                  console.error("Affiliate parsing error:", e);
-              }
-          }
-      }
-  }, []);
 
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);

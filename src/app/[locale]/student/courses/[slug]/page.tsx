@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect } from 'react';
@@ -8,6 +7,7 @@ import { Loader2 } from 'lucide-react';
 /**
  * @fileOverview Pont de redirection vers le lecteur de cours unifié.
  * ✅ RÉSOLU : Redirige /[locale]/student/courses/[slug] vers /[locale]/courses/[slug].
+ * ✅ RÉSOLU : Paramètre [slug] pour éviter les conflits de build.
  */
 export default function StudentCourseRedirect() {
   const router = useRouter();
