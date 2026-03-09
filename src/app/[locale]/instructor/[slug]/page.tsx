@@ -1,4 +1,3 @@
-
 import { Metadata } from 'next';
 import { getAdminDb } from '@/firebase/admin';
 import type { NdaraUser } from '@/lib/types';
