@@ -3,7 +3,7 @@
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce et la sécurité des accès par rôle.
- * ✅ RÉSOLU : Redirection intelligente respectant le switchRole manuel.
+ * ✅ RÉSOLU : Ajout de /invite/ dans la liste des pages publiques.
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -87,6 +87,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales'];
     if (publicPaths.includes(cleanPath)) return true;
     if (cleanPath.startsWith('/verify/')) return true;
+    // ✅ Autoriser les liens d'invitation sans connexion
+    if (cleanPath.startsWith('/invite/')) return true;
+    if (cleanPath.startsWith('/ref/')) return true;
+    if (cleanPath.startsWith('/course/')) return true;
     
     // Profils publics des instructeurs
     const instructorPathRegex = /^\/instructor\/[^/]+$/;
@@ -111,20 +115,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }
 
     // 2. Utilisateur connecté
-    // On ne force PAS de redirection depuis la Landing Page ou les pages publiques
     if (cleanPath === '/' || cleanPath === '/search' || isPublicPage || cleanPath === '/account') return;
 
     // 3. Gestion des frontières de rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
-    // Si l'utilisateur essaie d'accéder à une zone qui ne correspond pas à son rôle ACTUEL
     if (role === 'student' && (isAdminArea || isInstructorArea)) {
         router.push(`/${locale}/student/dashboard`);
     } else if (role === 'instructor' && isAdminArea) {
         router.push(`/${locale}/instructor/dashboard`);
-    } else if (role === 'admin' && !isAdminArea && !isInstructorArea && cleanPath.startsWith('/student')) {
-        // Un admin peut aller partout, mais s'il est perdu dans student, on le laisse
     }
   }, [user, role, loading, cleanPath, router, mounted, isPublicPage, isAuthPage, locale]);
 

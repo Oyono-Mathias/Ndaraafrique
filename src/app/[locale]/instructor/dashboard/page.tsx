@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Dashboard Formateur Ndara Afrique.
- * ✅ PARRAINAGE 4.0 : Historique des commissions réseau intégré.
+ * ✅ PARRAINAGE 4.0 : Alias Invite & Partage Social étendu.
  * ✅ SÉCURISATION : Libellés financiers conformes.
  */
 
@@ -36,7 +36,10 @@ import {
   Medal,
   Link as LinkIcon,
   History,
-  ArrowUpRight
+  ArrowUpRight,
+  Facebook,
+  Linkedin,
+  Twitter
 } from 'lucide-react';
 import type { AssignmentSubmission, Settings, NdaraUser, ReferralCommission } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
@@ -137,22 +140,31 @@ export default function InstructorDashboard() {
         };
     }, [instructor?.uid, db]);
 
-    const referralUrl = typeof window !== 'undefined' 
-        ? `${window.location.origin}/${locale}/ref/${instructor?.uid}?code=${instructor?.referralCode || 'NDARA'}`
+    // ✅ NOUVEL ALIAS INVITE COURT
+    const inviteUrl = typeof window !== 'undefined' 
+        ? `${window.location.origin}/${locale}/invite/${instructor?.username}`
         : '';
 
     const handleShareReferral = (provider?: string) => {
         let url = '';
-        const text = `Rejoins l'élite des formateurs sur Ndara Afrique ! 🌍 Partage ton savoir et génère des revenus : ${referralUrl}`;
+        const text = `Rejoins l'élite des formateurs sur Ndara Afrique ! 🌍 Partage ton savoir et génère des revenus : ${inviteUrl}`;
         
         switch(provider) {
-            case 'wa': url = `https://wa.me/?text=${encodeURIComponent(text)}`; break;
+            case 'wa': 
+                url = `https://wa.me/?text=${encodeURIComponent(text)}`; 
+                break;
+            case 'fb':
+                url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(inviteUrl)}`;
+                break;
+            case 'li':
+                url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(inviteUrl)}`;
+                break;
             default: 
-                navigator.clipboard.writeText(referralUrl);
-                toast({ title: "Lien de parrainage copié !" });
+                navigator.clipboard.writeText(inviteUrl);
+                toast({ title: "Lien d'invitation copié !", description: "Utilisez cet alias court pour vos bios." });
                 return;
         }
-        window.open(url, '_blank');
+        if (url) window.open(url, '_blank');
     };
 
     if (isUserLoading || isLoading) {
@@ -195,17 +207,27 @@ export default function InstructorDashboard() {
                                 </div>
                             </div>
 
-                            <div className="space-y-3">
+                            <div className="space-y-4">
+                                <p className="text-[9px] font-black text-slate-500 uppercase text-center tracking-widest">Mon Alias d'Invitation</p>
                                 <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl flex items-center justify-between">
-                                    <span className="text-[10px] font-mono text-slate-500 truncate mr-4">{referralUrl}</span>
-                                    <Button size="icon" variant="ghost" onClick={() => handleShareReferral()} className="h-8 w-8 text-primary">
+                                    <span className="text-[10px] font-mono text-primary truncate mr-4">invite/{instructor?.username}</span>
+                                    <Button size="icon" variant="ghost" onClick={() => handleShareReferral()} className="h-8 w-8 text-slate-400 hover:text-white">
                                         <LinkIcon size={14} />
                                     </Button>
                                 </div>
-                                <div className="flex gap-2">
-                                    <Button onClick={() => handleShareReferral('wa')} className="flex-1 h-12 bg-[#25D366] text-white rounded-xl shadow-lg active:scale-90"><MessageCircle size={20}/></Button>
-                                    <Button onClick={() => handleShareReferral()} className="flex-[2] h-12 bg-primary text-white rounded-xl font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/30 gap-2">
-                                        <Share2 size={14} /> Partager mon lien
+                                
+                                <div className="grid grid-cols-4 gap-2">
+                                    <Button onClick={() => handleShareReferral('wa')} className="h-12 bg-[#25D366] hover:bg-[#25D366]/90 text-white rounded-xl shadow-lg transition-transform active:scale-90 p-0">
+                                        <MessageCircle size={20}/>
+                                    </Button>
+                                    <Button onClick={() => handleShareReferral('fb')} className="h-12 bg-[#1877F2] hover:bg-[#1877F2]/90 text-white rounded-xl shadow-lg transition-transform active:scale-90 p-0">
+                                        <Facebook size={20}/>
+                                    </Button>
+                                    <Button onClick={() => handleShareReferral('li')} className="h-12 bg-[#0A66C2] hover:bg-[#0A66C2]/90 text-white rounded-xl shadow-lg transition-transform active:scale-90 p-0">
+                                        <Linkedin size={20}/>
+                                    </Button>
+                                    <Button onClick={() => handleShareReferral()} className="h-12 bg-primary text-white rounded-xl shadow-lg transition-transform active:scale-90 p-0">
+                                        <Share2 size={20}/>
                                     </Button>
                                 </div>
                             </div>
