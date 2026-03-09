@@ -28,8 +28,7 @@ import {
   Linkedin, 
   Youtube,
   Award,
-  ShieldCheck,
-  MessageSquare
+  ShieldCheck
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -41,7 +40,7 @@ export default function PublicInstructorProfile({ instructorId, locale }: { inst
   const db = getFirestore();
 
   const [courses, setCourses] = useState<Course[]>([]);
-  const [stats, setStats] = useState({ totalStudents: 0, avgRating: 0, totalReviews: 0 });
+  const [stats, setStats] = useState({ totalStudents: 0, avgRating: 4.8, totalReviews: 0 });
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // 1. Charger le profil de l'instructeur
@@ -80,10 +79,10 @@ export default function PublicInstructorProfile({ instructorId, locale }: { inst
             const totalReviews = reviewsData.length;
             const avg = totalReviews > 0 
                 ? reviewsData.reduce((acc, curr) => acc + curr.rating, 0) / totalReviews 
-                : 4.8; // Valeur par défaut si nouveau
+                : 4.8;
 
             setStats({
-                totalStudents: studentsCount + (instructor?.uid ? 100 : 0), // Simulation d'impact historique
+                totalStudents: studentsCount + 100, // Simulation d'impact historique Ndara
                 avgRating: avg,
                 totalReviews: totalReviews
             });
@@ -96,7 +95,7 @@ export default function PublicInstructorProfile({ instructorId, locale }: { inst
     };
 
     fetchData();
-  }, [instructorId, db, instructor?.uid]);
+  }, [instructorId, db]);
 
   const handleShare = () => {
     const url = window.location.href;
