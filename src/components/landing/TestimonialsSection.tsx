@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Section des témoignages Ndara Afrique - 100% Réelle & Robuste.
- * ✅ RÉSOLU : Ne bloque plus l'interface si vide.
+ * ✅ RÉSOLU : Utilise la collection 'course_reviews' et la propriété 'studentId'.
  */
 
 import { useState, useEffect } from 'react';
@@ -68,9 +68,9 @@ export function TestimonialsSection() {
   useEffect(() => {
     setIsLoading(true);
     
-    // Requête simplifiée
+    // Requête sur la collection officielle des avis
     const q = query(
-        collection(db, 'reviews'), 
+        collection(db, 'course_reviews'), 
         orderBy('createdAt', 'desc'),
         limit(20)
     );
@@ -95,14 +95,14 @@ export function TestimonialsSection() {
                 return;
             }
 
-            const userIds = [...new Set(bestReviews.map(r => r.userId))];
+            const studentIds = [...new Set(bestReviews.map(r => r.studentId))];
             const usersMap = new Map<string, NdaraUser>();
 
-            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30))));
+            const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 30))));
             usersSnap.forEach(d => usersMap.set(d.id, d.data() as NdaraUser));
 
             const enriched = bestReviews.map(r => {
-                const user = usersMap.get(r.userId);
+                const user = usersMap.get(r.studentId);
                 return {
                     ...r,
                     userName: user?.fullName,
@@ -125,11 +125,11 @@ export function TestimonialsSection() {
   }, [db]);
 
   if (isLoading) {
-    return null; // On ne montre rien pendant le chargement pour éviter les skeletons vides
+    return null;
   }
 
   if (reviews.length === 0) {
-      return null; // Si vide, on n'affiche pas la section
+      return null;
   }
 
   return (
