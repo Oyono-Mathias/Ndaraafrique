@@ -15,9 +15,8 @@ interface CertificatePremiumProps {
 
 /**
  * @fileOverview Certificat de réussite premium Ndara Afrique.
- * Format A4 Paysage réel (1123px x 794px pour 96 DPI).
- * Signataire CEO : Oyono Mathias.
- * Signataire Formateur : Dynamique selon le cours.
+ * Format A4 Paysage réel (1123px x 794px).
+ * Esthétique vintage prestigieuse avec sceau de sécurité.
  */
 export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePremiumProps>(({
   studentName,
@@ -37,7 +36,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
         className
       )}
     >
-      {/* Texture de fond de sécurité */}
+      {/* Texture de fond de sécurité (Guilloché) */}
       <div className="absolute inset-0 opacity-[0.04] pointer-events-none">
         <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
           <pattern id="pattern-cert-final" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -51,7 +50,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
 
       <div className="relative h-full flex flex-col items-center justify-between p-16 text-center z-10">
         
-        {/* En-tête */}
+        {/* En-tête de Prestige */}
         <div className="space-y-4 pt-4">
           <div className="flex justify-center mb-2">
             <Award size={64} className="text-[#b8860b]" />
@@ -64,7 +63,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
           </p>
         </div>
 
-        {/* Corps du texte */}
+        {/* Corps de l'acte */}
         <div className="w-full flex flex-col items-center space-y-8">
           <p className="text-xl text-gray-600 italic font-serif">
             Ce document atteste officiellement que
@@ -75,16 +74,16 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
             </h2>
           </div>
           <p className="text-lg text-gray-600 max-w-2xl leading-relaxed">
-            a validé avec succès l'ensemble des modules de la formation de haut niveau :
+            a validé avec succès l'ensemble des modules théoriques et pratiques de la formation :
           </p>
           <h3 className="text-3xl font-bold text-gray-900 uppercase tracking-wide px-8 leading-tight">
             "{courseName}"
           </h3>
         </div>
 
-        {/* Pied de page : Signatures et Sceau */}
+        {/* Pied de page : Signatures et Sceau de Sécurité */}
         <div className="w-full grid grid-cols-3 gap-8 items-end mt-12 mb-4 px-8">
-          {/* Bloc Date et ID */}
+          {/* Bloc Informations de traçabilité */}
           <div className="text-left space-y-4 pb-2">
             <div>
                 <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">Délivré le</p>
@@ -92,11 +91,11 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
             </div>
             <div>
                 <p className="text-[10px] text-gray-400 uppercase font-black tracking-widest">ID de vérification</p>
-                <p className="font-mono text-[11px] text-[#b8860b] font-bold">{certificateId.toUpperCase()}</p>
+                <p className="font-mono text-[11px] text-[#b8860b] font-bold">{certificateId.substring(0, 16).toUpperCase()}</p>
             </div>
           </div>
 
-          {/* Sceau Officiel */}
+          {/* Sceau Officiel Embossé */}
           <div className="flex justify-center pb-4">
              <div className="w-32 h-32 border-[6px] border-double border-[#e5c185] rounded-full flex items-center justify-center p-1 bg-white/80 shadow-xl">
                 <div className="w-full h-full border-2 border-dashed border-[#e5c185] rounded-full flex flex-col items-center justify-center text-center">
@@ -109,9 +108,9 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
              </div>
           </div>
           
-          {/* Signatures */}
-          <div className="flex justify-end gap-16 pb-4">
-            {/* Signature CEO - Oyono Mathias */}
+          {/* Signatures Autographes */}
+          <div className="flex justify-end gap-12 pb-4">
+            {/* Signature CEO */}
             <div className="text-center space-y-2">
                <div className="h-14 w-40 border-b border-gray-300 flex items-end justify-center italic font-serif text-3xl text-gray-700 pb-1">
                   Mathias
@@ -120,7 +119,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
                <p className="text-[8px] font-bold uppercase text-[#CC7722] tracking-widest leading-none mt-1">CEO & FONDATEUR</p>
             </div>
             
-            {/* Signature Formateur Dynamique */}
+            {/* Signature Formateur */}
             <div className="text-center space-y-2">
                <div className="h-14 w-40 border-b border-gray-400 flex items-end justify-center italic font-serif text-2xl text-gray-700 pb-1">
                   {instructorName.split(' ')[0]}
@@ -133,7 +132,7 @@ export const CertificatePremium = React.forwardRef<HTMLDivElement, CertificatePr
       </div>
 
       <div className="absolute bottom-0 w-full bg-white/60 border-t border-gray-100 py-3 text-center text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em]">
-        Vérification en ligne : https://ndara-afrique.app/verify/{certificateId}
+        Vérification en ligne sur : https://ndara-afrique.web.app/verify/{certificateId}
       </div>
     </div>
   );
