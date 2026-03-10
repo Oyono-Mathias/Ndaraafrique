@@ -1,33 +1,30 @@
-
 import { Metadata } from 'next';
-import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import { getAdminDb } from '@/firebase/admin';
 import type { Course } from '@/lib/types';
 import CourseDetailClient from '@/components/courses/CourseDetailClient';
 
 /**
- * @fileOverview Page serveur pour les détails des cours.
- * Gère la génération dynamique des métadonnées Open Graph pour les réseaux sociaux.
+ * @fileOverview Page serveur pour les détails des cours (Ancienne route).
+ * Mise à jour pour utiliser 'slug' afin d'éviter les erreurs de build.
  */
 
 interface Props {
-  params: { courseId: string; locale: string };
+  params: { slug: string; locale: string };
 }
 
-// 🌐 Génération des métadonnées pour Facebook, WhatsApp, X, LinkedIn
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { courseId } = params;
+  const { slug, locale } = params;
   
   try {
     const db = getAdminDb();
-    const courseDoc = await db.collection('courses').doc(courseId).get();
+    const courseDoc = await db.collection('courses').doc(slug).get();
     
     if (!courseDoc.exists) {
       return { title: 'Formation non trouvée | Ndara Afrique' };
     }
 
     const course = courseDoc.data() as Course;
-    const shareUrl = `https://ndara-afrique.web.app/${params.locale}/courses/${courseId}`;
+    const shareUrl = `https://ndara-afrique.web.app/${locale}/courses/${slug}`;
 
     return {
       title: `${course.title} | Ndara Afrique`,
@@ -45,7 +42,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
             alt: course.title,
           },
         ],
-        locale: params.locale,
+        locale: locale,
         type: 'website',
       },
       twitter: {
@@ -56,7 +53,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       },
     };
   } catch (error) {
-    console.error("Metadata generation error:", error);
     return { title: 'Ndara Afrique - Excellence Panafricaine' };
   }
 }

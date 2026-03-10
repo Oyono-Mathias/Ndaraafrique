@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * @fileOverview Interface de quiz sécurisée pour les étudiants.
- * ✅ RÉSOLU : Suppression de l'import QuizAttempt erroné pour stabiliser le build.
+ * @fileOverview Interface de quiz sécurisée pour les étudiants (Ancienne route).
+ * Mise à jour pour utiliser 'slug' afin d'harmoniser le routage.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,12 +25,12 @@ import { Loader2, ArrowLeft, Award } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/hooks/use-toast';
 import type { Quiz, Question } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
 
 export default function TakeQuizPage() {
   const params = useParams();
-  const { courseId, quizId } = params;
+  const slug = params.slug as string;
+  const quizId = params.quizId as string;
   const router = useRouter();
   const { user } = useRole();
   const db = getFirestore();
@@ -56,19 +56,6 @@ export default function TakeQuizPage() {
     }
   }, [quiz, db, quizId]);
 
-  const isLoading = isQuizLoading || questions.length === 0;
-
-  const handleAnswerSelect = (optionIndex: number) => {
-    const currentQuestionId = questions[currentQuestionIndex].id;
-    setAnswers(prev => ({ ...prev, [currentQuestionId]: optionIndex }));
-  };
-
-  const handleNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
-    }
-  };
-
   const handleSubmit = async () => {
     if (!user || Object.keys(answers).length !== questions.length) {
       toast({ variant: 'destructive', title: 'Erreur', description: 'Veuillez répondre à toutes les questions.' });
@@ -77,22 +64,13 @@ export default function TakeQuizPage() {
     setIsSubmitting(true);
     let score = 0;
     questions.forEach(q => {
-      // @ts-ignore
       const correctIndex = q.options.findIndex(opt => opt.isCorrect);
-      if (answers[q.id] === correctIndex) {
-        score++;
-      }
+      if (answers[q.id] === correctIndex) score++;
     });
     const percentageScore = Math.round((score / questions.length) * 100);
     setFinalScore(percentageScore);
     
-    if (percentageScore >= 50) {
-        confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-        });
-    }
+    if (percentageScore >= 50) confetti({ particleCount: 150, spread: 70 });
 
     try {
       const attemptId = `${user.uid}_${quizId}`;
@@ -100,98 +78,69 @@ export default function TakeQuizPage() {
       await setDoc(attemptRef, {
         userId: user.uid,
         quizId,
-        courseId,
+        courseId: slug,
         answers,
         score: percentageScore,
         submittedAt: serverTimestamp(),
       });
     } catch (error) {
-      console.error("Error saving quiz attempt:", error);
-      toast({ variant: 'destructive', title: 'Erreur', description: 'Impossible de sauvegarder vos résultats.' });
+      console.error(error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const currentQuestion = questions[currentQuestionIndex];
-
-  if (isLoading) {
-    return <div className="flex h-full w-full items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  if (isQuizLoading || (questions.length === 0 && finalScore === null)) {
+    return <div className="flex h-screen w-full items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
   }
   
   if (finalScore !== null) {
       return (
-          <div className="flex flex-col items-center justify-center h-full p-4 bg-slate-950">
-              <Card className="w-full max-w-lg text-center dark:bg-slate-800 dark:border-slate-700">
+          <div className="flex flex-col items-center justify-center h-screen p-4 bg-slate-950">
+              <Card className="w-full max-w-lg text-center dark:bg-slate-800 rounded-[2.5rem]">
                   <CardHeader>
                       <Award className="mx-auto h-16 w-16 text-amber-500 mb-4" />
-                      <CardTitle className="text-2xl font-bold dark:text-white">Résultats du Quiz</CardTitle>
-                      <CardDescription className="dark:text-slate-400">{quiz?.title}</CardDescription>
+                      <CardTitle className="text-2xl font-bold dark:text-white">Résultats</CardTitle>
+                      <CardDescription>{quiz?.title}</CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                      <p className="text-6xl font-bold text-primary">{finalScore}%</p>
-                      <p className="text-muted-foreground">{finalScore >= 50 ? "Félicitations, vous avez réussi !" : "Vous pouvez faire mieux, réessayez !"}</p>
+                  <CardContent>
+                      <p className="text-6xl font-black text-primary">{finalScore}%</p>
                   </CardContent>
-                  <CardFooter className="flex-col gap-3">
-                      <Button onClick={() => router.push(`/courses/${courseId}`)} className="w-full">
-                          Retourner au cours
-                      </Button>
-                      {finalScore < 100 && (
-                          <Button variant="outline" onClick={() => {
-                            setFinalScore(null);
-                            setCurrentQuestionIndex(0);
-                            setAnswers({});
-                          }} className="w-full">
-                            Réessayer le quiz
-                          </Button>
-                      )}
+                  <CardFooter>
+                      <Button onClick={() => router.push(`/courses/${slug}`)} className="w-full h-14 rounded-2xl">Continuer</Button>
                   </CardFooter>
               </Card>
           </div>
       )
   }
 
+  const currentQuestion = questions[currentQuestionIndex];
+
   return (
-    <div className="flex flex-col h-full p-4 bg-slate-950">
+    <div className="flex flex-col h-screen p-4 bg-slate-950">
       <header className="flex items-center gap-2 mb-4">
-        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${courseId}`)} className="text-slate-400">
-          <ArrowLeft className="h-4 w-4 mr-2" /> Retour au cours
+        <Button variant="ghost" size="sm" onClick={() => router.push(`/courses/${slug}`)} className="text-slate-400">
+          <ArrowLeft className="h-4 w-4 mr-2" /> Retour
         </Button>
       </header>
-      <div className="w-full max-w-2xl mx-auto flex-1 flex flex-col">
-        <div className="text-center mb-4">
-          <h1 className="text-2xl font-bold text-white">{quiz?.title}</h1>
-          <p className="text-sm text-slate-400">Question {currentQuestionIndex + 1} sur {questions.length}</p>
-        </div>
-        <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="w-full h-2 mb-6" />
-        
-        <Card className="flex-1 flex flex-col dark:bg-slate-800 dark:border-slate-700">
-            <CardContent className="p-6 flex-1 flex flex-col justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold mb-6 dark:text-white">{currentQuestion?.text}</h2>
-                  <RadioGroup
-                    onValueChange={(value) => handleAnswerSelect(parseInt(value, 10))}
-                    value={answers[currentQuestion?.id]?.toString()}
-                    className="space-y-3"
-                  >
-                    {currentQuestion?.options.map((option, index) => (
-                      <div key={index} className="flex items-center space-x-3">
-                        <RadioGroupItem value={index.toString()} id={`q${currentQuestionIndex}-o${index}`} />
-                        <label htmlFor={`q${currentQuestionIndex}-o${index}`} className="font-normal text-base text-slate-200 cursor-pointer">{option.text}</label>
-                      </div>
+      <div className="w-full max-w-2xl mx-auto flex-1">
+        <Progress value={((currentQuestionIndex + 1) / questions.length) * 100} className="mb-6" />
+        <Card className="dark:bg-slate-800 rounded-3xl overflow-hidden shadow-xl">
+            <CardContent className="p-8">
+                <h2 className="text-xl font-bold mb-8 text-white">{currentQuestion?.text}</h2>
+                <RadioGroup onValueChange={(v) => setAnswers(prev => ({...prev, [currentQuestion.id]: parseInt(v)}))}>
+                    {currentQuestion?.options.map((opt, i) => (
+                        <div key={i} className="flex items-center space-x-3 p-4 bg-slate-900/50 rounded-xl mb-3 border border-white/5">
+                            <RadioGroupItem value={i.toString()} id={`q-${i}`} />
+                            <label htmlFor={`q-${i}`} className="text-slate-300 font-medium cursor-pointer">{opt.text}</label>
+                        </div>
                     ))}
-                  </RadioGroup>
-                </div>
-                <div className="flex justify-end items-center mt-6">
+                </RadioGroup>
+                <div className="mt-8 flex justify-end">
                     {currentQuestionIndex < questions.length - 1 ? (
-                        <Button onClick={handleNext} disabled={answers[currentQuestion?.id] === undefined}>
-                            Question suivante
-                        </Button>
+                        <Button onClick={() => setCurrentQuestionIndex(prev => prev + 1)}>Suivant</Button>
                     ) : (
-                        <Button onClick={handleSubmit} disabled={isSubmitting}>
-                            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : null}
-                            Terminer & Voir le résultat
-                        </Button>
+                        <Button onClick={handleSubmit} disabled={isSubmitting}>Terminer</Button>
                     )}
                 </div>
             </CardContent>
