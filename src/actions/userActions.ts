@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Actions serveur pour la gestion des membres Ndara Afrique.
- * Sécurisation des mutations de profil et synchronisation.
+ * ✅ RÉSOLU : Utilisation de 'course_reviews' pour la synchronisation des notes.
  */
 
 import { getAdminAuth, getAdminDb } from '@/firebase/admin';
@@ -33,7 +33,7 @@ export async function syncAllCourseStatsAction(adminId: string) {
 
         for (const courseDoc of coursesSnap.docs) {
             const courseId = courseDoc.id;
-            const reviewsSnap = await db.collection('reviews').where('courseId', '==', courseId).get();
+            const reviewsSnap = await db.collection('course_reviews').where('courseId', '==', courseId).get();
             
             if (!reviewsSnap.empty) {
                 const reviewsData = reviewsSnap.docs.map(d => d.data());
@@ -128,7 +128,6 @@ export async function repairAllCertificatesAction(adminId: string) {
 
     try {
         const db = getAdminDb();
-        // 1. Récupérer toutes les progressions terminées
         const progressSnap = await db.collection('course_progress').where('progressPercent', '==', 100).get();
         let count = 0;
         let batch = db.batch();

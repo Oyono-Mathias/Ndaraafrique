@@ -2,12 +2,11 @@
 
 /**
  * @fileOverview Vitrine publique d'une formation Ndara Afrique.
- * ✅ RÉSOLU : Affichage dynamique des avis avec résumé statistique.
- * ✅ RÉSOLU : Support du partage social et des badges de réassurance.
+ * ✅ RÉSOLU : Affichage dynamique des avis depuis 'course_reviews'.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { doc, getFirestore, collection, query, getDocs, orderBy, getCountFromServer, limit, where, onSnapshot } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
@@ -85,21 +84,21 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             }
             setLecturesMap(lMap);
 
-            // Charger les avis réels
-            const reviewsQuery = query(collection(db, 'reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(10));
+            // Charger les avis réels depuis 'course_reviews'
+            const reviewsQuery = query(collection(db, 'course_reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(10));
             const reviewsSnap = await getDocs(reviewsQuery);
-            const rawReviews = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as Review));
+            const rawReviews = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
 
             if (rawReviews.length > 0) {
-                const userIds = [...new Set(rawReviews.map(r => r.userId))];
-                const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', userIds.slice(0, 30))));
+                const studentIds = [...new Set(rawReviews.map(r => r.studentId))];
+                const usersSnap = await getDocs(query(collection(db, 'users'), where('uid', 'in', studentIds.slice(0, 30))));
                 const uMap = new Map();
                 usersSnap.forEach(d => uMap.set(d.id, d.data()));
 
                 setReviews(rawReviews.map(r => ({
                     ...r,
-                    userName: uMap.get(r.userId)?.fullName || 'Étudiant Ndara',
-                    userAvatar: uMap.get(r.userId)?.profilePictureURL
+                    userName: uMap.get(r.studentId)?.fullName || 'Étudiant Ndara',
+                    userAvatar: uMap.get(r.studentId)?.profilePictureURL
                 })));
             }
 
@@ -135,7 +134,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
   };
 
   const handleSocialShare = (platform: 'wa' | 'fb' | 'in' | 'copy') => {
-    const url = window.location.href;
+    const url = typeof window !== 'undefined' ? window.location.href : '';
     const text = `Découvrez cette formation sur Ndara Afrique : ${course?.title} 🚀`;
     switch (platform) {
       case 'wa': window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank'); break;
@@ -182,7 +181,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           </div>
         </div>
 
-        {/* Badges de Confiance */}
         <section className="grid grid-cols-3 gap-2">
           <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
             <ShieldCheck className="h-5 w-5 text-emerald-500" />
@@ -228,7 +226,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           </div>
         </section>
 
-        {/* Section Avis Améliorée */}
         <section className="space-y-8">
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
@@ -241,7 +238,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             {reviews.length > 0 ? (
                 <div className="grid gap-4">
                     {reviews.map(review => (
-                        <Card key={review.id} className="bg-slate-900 border-slate-800 rounded-[2rem] overflow-hidden shadow-xl hover:border-primary/30 transition-all duration-500 group">
+                        <Card key={review.id} className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-xl hover:border-primary/30 transition-all duration-500 group">
                             <CardContent className="p-6 space-y-4">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">

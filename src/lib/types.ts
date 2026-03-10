@@ -86,13 +86,13 @@ export interface NdaraUser {
   preferredLanguage?: 'fr' | 'en';
   countryCode?: string;
   countryName?: string;
-  rating?: number; // ✅ Added for Leaderboard pedagogical ranking
+  rating?: number;
   // --- ECONOMY ---
-  affiliateBalance?: number; // Available
-  pendingAffiliateBalance?: number; // Frozen (14 days)
+  affiliateBalance?: number; 
+  pendingAffiliateBalance?: number; 
   referralBalance?: number;
   referralCode?: string;
-  referredBy?: string; // UID of the instructor who invited this user
+  referredBy?: string; 
   affiliateStats?: {
       clicks: number;
       registrations: number; 
@@ -183,11 +183,11 @@ export interface AffiliateTransaction {
   commissionAmount: number;
   status: 'pending' | 'approved' | 'paid' | 'cancelled';
   createdAt: Timestamp | FieldValue;
-  unlockDate: Timestamp | FieldValue; // Target date for auto-approval
+  unlockDate: Timestamp | FieldValue; 
 }
 
 export interface CartItem {
-  id: string; // courseId
+  id: string; 
   courseId: string;
   title: string;
   price: number;
@@ -211,9 +211,9 @@ export interface Lecture {
   description?: string;
   order: number;
   type: 'video' | 'youtube' | 'text' | 'pdf';
-  contentUrl?: string; // For video & PDF
-  textContent?: string; // For text
-  duration?: number; // in minutes
+  contentUrl?: string; 
+  textContent?: string; 
+  duration?: number; 
   isFreePreview?: boolean;
   createdAt?: Timestamp | FieldValue;
   updatedAt?: Timestamp | FieldValue;
@@ -255,11 +255,9 @@ export interface Course {
     buyoutPrice?: number;
     isPlatformOwned?: boolean;
     originalInstructorId?: string;
-    // --- RESALE RIGHTS SYSTEM ---
     resaleRightsAvailable?: boolean;
     resaleRightsPrice?: number;
-    rightsChain?: string[]; // Track previous owners
-    // --- UI ATTR ---
+    rightsChain?: string[]; 
     thumbnailUrl?: string;
     imageUrl?: string;
     createdAt?: Timestamp | FieldValue;
@@ -281,7 +279,7 @@ export interface Course {
 }
 
 export interface CourseProgress {
-  id: string; // Composite ID like userId_courseId
+  id: string; 
   userId: string;
   courseId: string;
   courseTitle: string;
@@ -302,22 +300,22 @@ export interface Enrollment {
     instructorId: string;
     enrollmentDate: Timestamp | FieldValue;
     progress: number;
-    priceAtEnrollment: number; // Price when the user enrolled
-    status?: 'pending' | 'active'; // Added status for webhook management
+    priceAtEnrollment: number; 
+    status?: 'pending' | 'active'; 
     completedLessons?: string[];
     lastWatchedLesson?: string;
     lastAccessedAt?: Timestamp | FieldValue;
     expiresAt?: Timestamp | FieldValue;
     enrollmentType?: 'paid' | 'admin_grant' | 'free';
     transactionId?: string;
-    affiliateId?: string; // Track who referred the student for this sale
+    affiliateId?: string; 
 }
 
 export interface Review {
     id: string;
     courseId: string;
-    userId: string;
-    instructorId: string; // Keep track of the instructor for easier querying
+    studentId: string;
+    instructorId: string; 
     rating: number;
     comment: string;
     createdAt: Timestamp | FieldValue;
@@ -347,7 +345,6 @@ export interface CourseQuestion {
   status: 'answered' | 'pending';
   createdAt: Timestamp | FieldValue;
   answeredAt?: Timestamp | FieldValue;
-  // Denormalized data for easier display
   courseTitle: string;
   studentName: string;
   studentAvatarUrl?: string;
@@ -407,7 +404,6 @@ export interface Settings {
     currency: string;
     minPayoutThreshold: number;
     featuredCourseId?: string;
-    // --- COMMISSIONS SYSTÈMES ---
     affiliateEnabled: boolean;
     affiliatePercentage: number;
     affiliateCookieDurationDays: number;
@@ -471,7 +467,6 @@ export interface Settings {
       finalCtaSubtitle?: string;
       finalCtaButtonText?: string;
       finalCta_imageUrl?: string;
-      // Button visibility flags
       showHeroCta?: boolean;
       showHeroExplore?: boolean;
       showFinalCta?: boolean;
@@ -523,10 +518,10 @@ export interface Payout {
 
 export interface SecurityLog {
   id: string;
-  userId: string; // The user PERFORMING the action (e.g., admin UID)
-  targetId: string; // The user or entity being affected
+  userId: string; 
+  targetId: string; 
   eventType: 'suspicious_login' | 'failed_payment' | 'profile_change' | 'user_suspended' | 'user_reinstated' | 'course_approved' | 'course_rejected' | 'alert_resolved' | 'chat_blocked' | 'chat_unblocked';
-  details: string; // Human-readable description
+  details: string; 
   ipAddress?: string;
   timestamp: Timestamp | FieldValue;
   status?: 'open' | 'resolved';

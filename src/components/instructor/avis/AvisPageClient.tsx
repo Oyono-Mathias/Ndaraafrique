@@ -1,18 +1,22 @@
-
 'use client';
+
+/**
+ * @fileOverview Gestionnaire d'avis pour les formateurs.
+ * ✅ RÉSOLU : Utilise la collection 'course_reviews' et le champ 'studentId'.
+ */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, orderBy, getDocs, documentId } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Star, MessageSquare, Frown, BookOpen } from 'lucide-react';
+import { Star, MessageSquare, BookOpen } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import type { Review, Course, NdaraUser } from '@/lib/types';
+import type { Review, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 export function AvisPageClient() {
@@ -23,7 +27,7 @@ export function AvisPageClient() {
 
   // 1. Récupération des avis
   const reviewsQuery = useMemo(
-    () => currentUser ? query(collection(db, 'reviews'), where('instructorId', '==', currentUser.uid), orderBy('createdAt', 'desc')) : null,
+    () => currentUser ? query(collection(db, 'course_reviews'), where('instructorId', '==', currentUser.uid), orderBy('createdAt', 'desc')) : null,
     [db, currentUser]
   );
   const { data: rawReviews, isLoading: reviewsLoading } = useCollection<Review>(reviewsQuery);
@@ -34,7 +38,7 @@ export function AvisPageClient() {
     const enrichReviews = async () => {
       setIsLoading(true);
       try {
-        const studentIds = [...new Set(rawReviews.map(r => r.userId))];
+        const studentIds = [...new Set(rawReviews.map(r => r.studentId))];
         const courseIds = [...new Set(rawReviews.map(r => r.courseId))];
 
         const studentsMap = new Map<string, NdaraUser>();
@@ -52,7 +56,7 @@ export function AvisPageClient() {
 
         const enriched = rawReviews.map(r => ({
           ...r,
-          student: studentsMap.get(r.userId),
+          student: studentsMap.get(r.studentId),
           courseTitle: coursesMap.get(r.courseId) || 'Cours inconnu'
         }));
 
@@ -122,7 +126,7 @@ export function AvisPageClient() {
                 </p>
 
                 <p className="text-[10px] text-slate-600 font-bold uppercase tracking-tighter">
-                  Le {format((review.createdAt as any).toDate(), 'dd MMMM yyyy', { locale: fr })}
+                  Le {review.createdAt && typeof (review.createdAt as any).toDate === 'function' ? format((review.createdAt as any).toDate(), 'dd MMMM yyyy', { locale: fr }) : 'Récemment'}
                 </p>
               </div>
             </div>

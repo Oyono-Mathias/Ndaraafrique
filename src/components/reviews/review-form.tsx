@@ -2,15 +2,27 @@
 
 /**
  * @fileOverview Formulaire d'avis Ndara Afrique.
- * ✅ RÉSOLU : Met à jour dynamiquement la note moyenne et le compteur du cours dans Firestore.
- * ✅ SÉCURITÉ : Vérifie si l'utilisateur a déjà laissé un avis.
+ * ✅ RÉSOLU : Utilise la collection 'course_reviews' et le champ 'studentId'.
+ * ✅ RÉSOLU : Met à jour dynamiquement la note moyenne et le compteur du cours.
  */
 
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { getFirestore, addDoc, collection, serverTimestamp, getDoc, doc, updateDoc, getDocs, query, where, limit } from 'firebase/firestore';
+import { 
+    getFirestore, 
+    addDoc, 
+    collection, 
+    serverTimestamp, 
+    getDoc, 
+    doc, 
+    updateDoc, 
+    getDocs, 
+    query, 
+    where, 
+    limit 
+} from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -46,14 +58,13 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
     },
   });
 
-  // Vérifier si l'utilisateur a déjà laissé un avis
   useEffect(() => {
     const checkReview = async () => {
       if (!userId || !courseId) return;
       const q = query(
-        collection(db, 'reviews'),
+        collection(db, 'course_reviews'),
         where('courseId', '==', courseId),
-        where('userId', '==', userId),
+        where('studentId', '==', userId),
         limit(1)
       );
       const snap = await getDocs(q);
@@ -79,20 +90,20 @@ export function ReviewForm({ courseId, userId, onReviewSubmit }: ReviewFormProps
       
       const courseData = courseSnap.data() as Course;
 
-      // 1. Enregistrer le nouvel avis
+      // 1. Enregistrer le nouvel avis dans 'course_reviews'
       const reviewPayload = {
         courseId,
-        userId,
+        studentId: userId,
         instructorId: courseData.instructorId,
         rating: values.rating,
         comment: values.comment,
         createdAt: serverTimestamp(),
       };
       
-      await addDoc(collection(db, 'reviews'), reviewPayload);
+      await addDoc(collection(db, 'course_reviews'), reviewPayload);
 
-      // 2. RECULCULER LA MOYENNE (Pour que les cartes de cours s'actualisent)
-      const allReviewsQuery = query(collection(db, 'reviews'), where('courseId', '==', courseId));
+      // 2. RECULCULER LA MOYENNE
+      const allReviewsQuery = query(collection(db, 'course_reviews'), where('courseId', '==', courseId));
       const allReviewsSnap = await getDocs(allReviewsQuery);
       const reviews = allReviewsSnap.docs.map(d => d.data() as Review);
       
