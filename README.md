@@ -15,10 +15,17 @@ Bienvenue sur **Ndara Afrique**, la révolution de la formation en ligne conçue
 - **Communauté & Messagerie** : Annuaire des membres par filière et chat instantané sécurisé.
 
 ### 🛠️ Espace Administrateur (Pilotage Total)
-- **Souveraineté de Marque** : Changez le logo (hébergé sur Bunny CDN), le numéro WhatsApp de support et les réseaux sociaux en un clic.
+- **Souveraineté de Marque** : Changez le logo, le numéro WhatsApp de support et les réseaux sociaux en un clic.
 - **Contrôle de l'Accueil** : Activez ou désactivez les boutons de la Landing Page selon votre stratégie.
 - **Moteur Ndara IA** : Gérez les recommandations personnalisées pour chaque étudiant.
-- **Gestion Financière** : Suivi des transactions Moneroo et validation des retraits instructeurs.
+- **Gestion Financière** : Suivi des transactions Moneroo et validation des retraits.
+
+## 💰 Économie & Gains (Monétisation)
+Ndara Afrique permet de générer des revenus via 4 canaux :
+1. **Instructeurs** : Vente directe de cours avec reversement via Mobile Money.
+2. **Ambassadeurs** : Gains de commissions par l'affiliation (partage de liens de formation).
+3. **Bourse du Savoir** : Achat et vente de licences de revente (Marché Secondaire).
+4. **Buyout** : Option de rachat de contenus par la plateforme pour un cash-out immédiat.
 
 ## 🛠️ Stack Technique
 - **Framework** : Next.js 14 (App Router)
