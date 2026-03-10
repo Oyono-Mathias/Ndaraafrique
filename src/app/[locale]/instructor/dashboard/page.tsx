@@ -42,7 +42,8 @@ import {
   Linkedin,
   Twitter,
   ArrowRight,
-  PieChart
+  PieChart,
+  ShoppingCart
 } from 'lucide-react';
 import type { AssignmentSubmission, Settings, NdaraUser, ReferralCommission } from '@/lib/types';
 import { Card, CardContent } from "@/components/ui/card";
