@@ -27,7 +27,8 @@ import {
   X,
   ArrowLeftRight,
   Shield,
-  FileQuestion
+  FileQuestion,
+  Ticket
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,7 @@ export function InstructorSidebar({
       items: [
         { label: "Étudiants", icon: Users, href: "/instructor/students" },
         { label: "Revenus", icon: BadgeEuro, href: "/instructor/revenus" },
+        { label: "Coupons", icon: Ticket, href: "/instructor/coupons" },
         { label: "Certificats", icon: Award, href: "/instructor/certificats" },
       ]
     }

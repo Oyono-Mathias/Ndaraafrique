@@ -6,7 +6,7 @@ import { sendUserNotification } from '@/actions/notificationActions';
 /**
  * @fileOverview Webhook Moneroo mis à jour pour la sécurité financière Ndara.
  * ✅ ANTI-AUTO-PARRAINAGE : Rejette la commission si parrain == acheteur.
- * ✅ HISTORIQUE COMMISSIONS : Enregistre chaque gain dans 'referral_commissions'.
+ * ✅ COUPONS : Incrémente le compteur d'utilisation si metadata.couponId est présent.
  */
 
 export async function POST(req: Request) {
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     const { status, metadata, id: transactionId, amount } = body.data || {};
 
     if (status === 'successful') {
-      const { userId, courseId, affiliateId } = metadata || {};
+      const { userId, courseId, affiliateId, couponId } = metadata || {};
 
       if (!userId || !courseId) {
         return NextResponse.json({ error: 'Missing metadata' }, { status: 400 });
@@ -36,7 +36,15 @@ export async function POST(req: Request) {
       const buyerData = buyerDoc.data();
       const instructorId = courseData?.instructorId;
 
-      // 2. Création de l'inscription
+      // 2. Gestion du Coupon (Usage Tracking)
+      if (couponId) {
+          const couponRef = db.collection('course_coupons').doc(couponId);
+          batch.update(couponRef, {
+              usedCount: FieldValue.increment(1)
+          });
+      }
+
+      // 3. Création de l'inscription
       const enrollmentRef = db.collection('enrollments').doc(`${userId}_${courseId}`);
       batch.set(enrollmentRef, {
         studentId: userId,
@@ -49,10 +57,11 @@ export async function POST(req: Request) {
         priceAtEnrollment: amount || 0,
         transactionId: transactionId,
         affiliateId: affiliateId || null,
+        couponId: couponId || null,
         enrollmentType: 'paid'
       }, { merge: true });
 
-      // 3. LOGIQUE AMBASSADEUR SÉCURISÉE (PENDING 14 JOURS)
+      // 4. LOGIQUE AMBASSADEUR SÉCURISÉE (PENDING 14 JOURS)
       if (affiliateId && settings?.commercial?.affiliateEnabled && affiliateId !== userId) {
           const affiliateRef = db.collection('users').doc(affiliateId);
           const affDoc = await affiliateRef.get();
@@ -97,17 +106,15 @@ export async function POST(req: Request) {
           });
       }
 
-      // 4. LOGIQUE PARRAINAGE FORMATEUR (Réseau d'experts)
+      // 5. LOGIQUE PARRAINAGE FORMATEUR (Réseau d'experts)
       const sponsorId = buyerData?.referredBy;
       
-      // ✅ SÉCURITÉ CEO : On vérifie que le parrain n'est pas l'acheteur (Anti-auto-parrainage)
       if (sponsorId && settings?.commercial?.referralEnabled && sponsorId !== userId) {
           const referralPerc = settings.commercial.referralPercentage || 5;
           const referralCommissionAmount = (amount * referralPerc) / 100;
 
           const sponsorRef = db.collection('users').doc(sponsorId);
           
-          // Enregistrement dans l'historique des commissions parrainage (referral_commissions)
           const historyRef = db.collection('referral_commissions').doc();
           batch.set(historyRef, {
               id: historyRef.id,

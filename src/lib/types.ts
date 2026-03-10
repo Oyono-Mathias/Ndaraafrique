@@ -60,6 +60,20 @@ export interface PromoCode {
   expiresAt?: Timestamp | FieldValue;
 }
 
+export interface Coupon {
+  id: string;
+  code: string;
+  courseId: string;
+  courseTitle: string;
+  instructorId: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  maxUses: number;
+  usedCount: number;
+  expiresAt: Timestamp | FieldValue;
+  createdAt: Timestamp | FieldValue;
+}
+
 export interface FCMToken {
   tokens: string[];
   createdAt: Timestamp | FieldValue;
