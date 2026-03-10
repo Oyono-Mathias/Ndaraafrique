@@ -180,7 +180,7 @@ export default function StudentDashboardAndroid() {
                             </Button>
                         </div>
                     </CardContent>
-                </Card>
+              </Card>
 
                 {/* LEADERBOARD AMBASSADEURS */}
                 <div className="space-y-4">
@@ -189,12 +189,12 @@ export default function StudentDashboardAndroid() {
                     </h3>
                     <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-xl">
                         {leaderboard.map((user, idx) => (
-                            <div key={user.uid} className={cn("flex items-center justify-between p-4 border-b border-white/5 last:border-0", user.uid === currentUser.uid && "bg-primary/5")}>
+                            <div key={user.uid} className={cn("flex items-center justify-between p-4 border-b border-white/5 last:border-0", user.uid === currentUser?.uid && "bg-primary/5")}>
                                 <div className="flex items-center gap-3">
                                     <div className={cn("h-6 w-6 rounded-full flex items-center justify-center font-black text-[10px]", idx === 0 ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-500")}>
                                         {idx + 1}
                                     </div>
-                                    <span className="text-xs font-bold text-slate-200">{user.fullName} {user.uid === currentUser.uid && "(Moi)"}</span>
+                                    <span className="text-xs font-bold text-slate-200">{user.fullName} {user.uid === currentUser?.uid && "(Moi)"}</span>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-xs font-black text-white">{user.affiliateStats?.sales} <span className="text-[8px] text-slate-600 uppercase">Ventes</span></p>
