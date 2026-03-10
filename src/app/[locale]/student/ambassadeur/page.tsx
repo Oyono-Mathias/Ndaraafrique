@@ -31,7 +31,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
-import { requestPayout } from '@/actions/payoutActions';
+import { requestPayoutAction } from '@/actions/payoutActions';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -76,7 +76,11 @@ export default function AmbassadorPage() {
             return;
         }
         setIsSubmitting(true);
-        const result = await requestPayout({ instructorId: currentUser!.uid, amount: balance });
+        const result = await requestPayoutAction({ 
+            instructorId: currentUser!.uid, 
+            amount: balance,
+            method: 'mobile_money'
+        });
         if (result.success) toast({ title: "Demande envoyée !" });
         else toast({ variant: 'destructive', title: "Erreur", description: result.error });
         setIsSubmitting(false);
