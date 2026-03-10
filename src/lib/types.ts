@@ -86,6 +86,7 @@ export interface NdaraUser {
   preferredLanguage?: 'fr' | 'en';
   countryCode?: string;
   countryName?: string;
+  rating?: number; // ✅ Added for Leaderboard pedagogical ranking
   // --- ECONOMY ---
   affiliateBalance?: number; // Available
   pendingAffiliateBalance?: number; // Frozen (14 days)
