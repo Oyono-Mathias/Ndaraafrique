@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -12,6 +11,7 @@ import { getFirestore, collection, query, where, orderBy, limit, onSnapshot } fr
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Trophy, Medal, Users, TrendingUp, Star, Crown, ChevronRight, Share2 } from 'lucide-react';
