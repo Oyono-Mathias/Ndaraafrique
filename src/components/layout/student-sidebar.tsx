@@ -140,7 +140,7 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
         { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
         { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
         { href: "/student/devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
-        { href: "/student/liste-de-souhaits", icon: Heart, label: 'Favoris', id: 'sidebar-nav-wishlist' },
+        { href: "/student/wishlist", icon: Heart, label: 'Favoris', id: 'sidebar-nav-wishlist' },
       ],
     },
     {

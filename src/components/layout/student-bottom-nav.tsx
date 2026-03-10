@@ -16,14 +16,14 @@ import { useRole } from '@/context/RoleContext';
 
 /**
  * @fileOverview Barre de navigation mobile pour l'étudiant - Style Udemy Exact.
- * ✅ LABELS : Sélection, Rechercher, Mon apprentissage, Liste de souhaits, Compte.
+ * ✅ LABELS : Sélection, Rechercher, Mon apprentissage, Favoris, Compte.
  */
 
 const navItems = [
   { href: '/student/dashboard', icon: Star, label: 'Sélection' },
   { href: '/search', icon: Search, label: 'Rechercher' },
   { href: '/student/courses', icon: PlayCircle, label: 'Apprentissage' },
-  { href: '/student/liste-de-souhaits', icon: Heart, label: 'Souhaits' },
+  { href: '/student/wishlist', icon: Heart, label: 'Favoris' },
   { href: '/student/profile', icon: UserCircle, label: 'Compte' },
 ];
 

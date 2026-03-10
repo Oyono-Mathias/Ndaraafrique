@@ -2,12 +2,26 @@
 
 /**
  * @fileOverview Vitrine publique d'une formation Ndara Afrique.
- * ✅ RÉSOLU : Affichage dynamique des avis depuis 'course_reviews'.
+ * ✅ RÉSOLU : Système de favoris (wishlist) intégré avec ID userId_courseId.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { doc, getFirestore, collection, query, getDocs, orderBy, getCountFromServer, limit, where, onSnapshot } from 'firebase/firestore';
+import { 
+    doc, 
+    getFirestore, 
+    collection, 
+    query, 
+    getDocs, 
+    orderBy, 
+    getCountFromServer, 
+    limit, 
+    where, 
+    onSnapshot,
+    setDoc,
+    deleteDoc,
+    serverTimestamp
+} from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
 import { useRole } from '@/context/RoleContext';
 import Image from 'next/image';
@@ -29,14 +43,15 @@ import {
   Linkedin,
   Link as LinkIcon,
   MessageSquare,
-  MessageSquareQuote
+  MessageSquareQuote,
+  Heart
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
-import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -57,6 +72,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
   const [reviews, setReviews] = useState<EnrichedReview[]>([]);
   const [stats, setStats] = useState({ rating: 4.8, reviewCount: 0, studentCount: 0 });
   const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isWishlisted, setIsWishlisted] = useState(false);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -66,6 +82,16 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
 
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment } = useDoc<Enrollment>(enrollmentRef);
+
+  // Écouteur de la Wishlist
+  useEffect(() => {
+    if (!user?.uid || !courseId) return;
+    const wishId = `${user.uid}_${courseId}`;
+    const unsub = onSnapshot(doc(db, 'user_wishlist', wishId), (snap) => {
+        setIsWishlisted(snap.exists());
+    });
+    return () => unsub();
+  }, [user?.uid, courseId, db]);
 
   useEffect(() => {
     if (!courseId) return;
@@ -84,7 +110,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
             }
             setLecturesMap(lMap);
 
-            // Charger les avis réels depuis 'course_reviews'
             const reviewsQuery = query(collection(db, 'course_reviews'), where('courseId', '==', courseId), orderBy('createdAt', 'desc'), limit(10));
             const reviewsSnap = await getDocs(reviewsQuery);
             const rawReviews = reviewsSnap.docs.map(d => ({ id: d.id, ...d.data() } as any));
@@ -120,6 +145,30 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
 
     if (course) fetchData();
   }, [courseId, db, course]);
+
+  const toggleWishlist = async () => {
+    if (!user) {
+        router.push(`/${locale}/login?tab=register&redirect=${encodeURIComponent(pathname)}`);
+        return;
+    }
+    const wishId = `${user.uid}_${courseId}`;
+    const wishlistRef = doc(db, 'user_wishlist', wishId);
+    try {
+        if (isWishlisted) {
+            await deleteDoc(wishlistRef);
+            toast({ title: "Retiré des favoris" });
+        } else {
+            await setDoc(wishlistRef, {
+                userId: user.uid,
+                courseId: courseId,
+                createdAt: serverTimestamp()
+            });
+            toast({ title: "Ajouté aux favoris !" });
+        }
+    } catch (e) {
+        toast({ variant: 'destructive', title: "Erreur favoris" });
+    }
+  };
 
   const handleStartLearning = () => {
     if (!user) {
@@ -167,7 +216,20 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           <Badge className="bg-primary text-primary-foreground border-none font-black uppercase text-[10px] tracking-[0.1em] px-3 py-1 rounded-md">
               {course?.category}
           </Badge>
-          <h1 className="text-3xl font-black text-white leading-tight uppercase tracking-tight">{course?.title}</h1>
+          <div className="flex justify-between items-start gap-4">
+            <h1 className="text-3xl font-black text-white leading-tight uppercase tracking-tight flex-1">{course?.title}</h1>
+            <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={toggleWishlist}
+                className={cn(
+                    "h-12 w-12 rounded-full border-slate-800 transition-all",
+                    isWishlisted ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-slate-900 text-slate-400 hover:text-white"
+                )}
+            >
+                <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
+            </Button>
+          </div>
           <div className="flex flex-wrap items-center gap-6 text-xs font-bold text-slate-400">
             <div className="flex items-center gap-1.5">
               <Star className={cn("h-4 w-4", stats.rating > 0 ? "text-yellow-500 fill-yellow-500" : "text-slate-700")} />

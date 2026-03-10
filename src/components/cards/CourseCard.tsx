@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
- * ✅ RÉSOLU : Liens standardisés vers /courses/${slug}.
+ * ✅ RÉSOLU : Utilisation de la collection root 'user_wishlist' avec ID unique.
  */
 
 import Link from 'next/link';
@@ -40,25 +40,44 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
 
   useEffect(() => {
     if (!user?.uid || course.id.startsWith('demo')) return;
-    const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
-    const unsubWish = onSnapshot(wishlistRef, (snap) => setIsWishlisted(snap.exists()));
+    // Utilisation de l'ID unique userId_courseId pour la collection racine user_wishlist
+    const wishId = `${user.uid}_${course.id}`;
+    const wishlistRef = doc(db, 'user_wishlist', wishId);
+    
+    const unsubWish = onSnapshot(wishlistRef, (snap) => {
+        setIsWishlisted(snap.exists());
+    });
     return () => unsubWish();
   }, [user?.uid, course.id, db]);
 
   const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) { router.push(`/${locale}/login?tab=register`); return; }
-    const wishlistRef = doc(db, 'users', user.uid, 'wishlist', course.id);
+    
+    if (!user) { 
+        router.push(`/${locale}/login?tab=register`); 
+        return; 
+    }
+
+    const wishId = `${user.uid}_${course.id}`;
+    const wishlistRef = doc(db, 'user_wishlist', wishId);
+
     try {
       if (isWishlisted) { 
           await deleteDoc(wishlistRef); 
           toast({ title: "Retiré des favoris" }); 
       } else { 
-          await setDoc(wishlistRef, { courseId: course.id, addedAt: serverTimestamp() }); 
+          await setDoc(wishlistRef, { 
+              userId: user.uid,
+              courseId: course.id, 
+              createdAt: serverTimestamp() 
+          }); 
           toast({ title: "Ajouté aux favoris !" }); 
       }
-    } catch (error) { toast({ variant: 'destructive', title: "Erreur" }); }
+    } catch (error) { 
+        console.error("Wishlist Error:", error);
+        toast({ variant: 'destructive', title: "Erreur", description: "Impossible de modifier vos favoris." }); 
+    }
   };
 
   if (variant === 'list') {
@@ -93,7 +112,13 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
       <Link href={href} className="flex flex-col h-full active:scale-[0.98] transition-transform">
         <div className="relative aspect-video w-full rounded-xl overflow-hidden bg-slate-800 shadow-md mb-3">
             <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
-            <button onClick={toggleWishlist} className={cn("absolute top-2 right-2 p-2 rounded-full backdrop-blur-md border border-white/10 transition-all opacity-0 group-hover:opacity-100", isWishlisted ? "bg-primary text-white opacity-100" : "bg-black/40 text-white")}>
+            <button 
+                onClick={toggleWishlist} 
+                className={cn(
+                    "absolute top-2 right-2 p-2 rounded-full backdrop-blur-md border border-white/10 transition-all z-20", 
+                    isWishlisted ? "bg-primary text-white scale-110" : "bg-black/40 text-white opacity-0 group-hover:opacity-100"
+                )}
+            >
                 <Heart className={cn("h-3.5 w-3.5", isWishlisted && "fill-current")} />
             </button>
         </div>
