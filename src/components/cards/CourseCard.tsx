@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
- * ✅ RÉSOLU : Navigation corrigée avec préfixe de locale et distinction Public/Privé.
+ * ✅ RÉSOLU : Redirection systématique vers la page de détails (/course/ID) pour un parcours propre.
  */
 
 import Link from 'next/link';
@@ -33,10 +33,9 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   
   const [isWishlisted, setIsWishlisted] = useState(false);
   
-  // ✅ LOGIQUE DE NAVIGATION : Public vs Privé
-  const href = !user 
-    ? `/${locale}/course/${course.id}`
-    : `/${locale}/courses/${course.id}`;
+  // ✅ LOGIQUE DE NAVIGATION : On passe toujours par la page de détails publique
+  // La page de détails s'occupera de rediriger vers le lecteur si l'utilisateur est déjà inscrit.
+  const href = `/${locale}/course/${course.id}`;
 
   useEffect(() => {
     if (!user?.uid || !course.id) return;
@@ -122,7 +121,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             </button>
         </div>
         <div className="flex flex-col flex-1 space-y-1">
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 h-[2.5rem]">{course.title}</h3>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 h-[2.5rem] uppercase">{course.title}</h3>
             <p className="text-[11px] text-slate-500 truncate">{instructor?.fullName || 'Expert Ndara'}</p>
             <p className="font-black text-slate-900 dark:text-white mt-1">{course.price === 0 ? "OFFERT" : `${course.price.toLocaleString('fr-FR')} XOF`}</p>
         </div>
