@@ -7,7 +7,6 @@
  */
 
 import { useRole } from '@/context/RoleContext';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { 
     BookOpen, 
@@ -41,12 +40,12 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-// Chargement dynamique des composants pour la performance
-const ContinueLearning = dynamic(() => import('@/components/dashboards/ContinueLearning').then(mod => mod.ContinueLearning));
-const RecommendedCourses = dynamic(() => import('@/components/dashboards/RecommendedCourses').then(mod => mod.RecommendedCourses));
-const RecentActivity = dynamic(() => import('@/components/dashboards/RecentActivity').then(mod => mod.RecentActivity));
-const StatCard = dynamic(() => import('@/components/dashboard/StatCard').then(mod => mod.StatCard));
-const NewCoursesExplore = dynamic(() => import('@/components/dashboards/NewCoursesExplore').then(mod => mod.NewCoursesExplore));
+// Importation statique des composants pour éviter les erreurs de ChunkLoad
+import { ContinueLearning } from '@/components/dashboards/ContinueLearning';
+import { RecommendedCourses } from '@/components/dashboards/RecommendedCourses';
+import { RecentActivity } from '@/components/dashboards/RecentActivity';
+import { StatCard } from '@/components/dashboard/StatCard';
+import { NewCoursesExplore } from '@/components/dashboards/NewCoursesExplore';
 
 export default function StudentDashboardAndroid() {
   const { currentUser, isUserLoading } = useRole();
