@@ -404,10 +404,19 @@ export interface DesignSettings {
 export interface Settings {
   general: {
     siteName: string;
+    slogan?: string;
+    siteDescription?: string;
     logoUrl?: string;
-    loginBackgroundImage?: string;
+    logoMobileUrl?: string;
+    faviconUrl?: string;
+    socialShareImageUrl?: string;
     contactEmail: string;
     supportPhone?: string;
+    address?: string;
+    defaultLanguage?: string;
+    activeLanguages?: string[];
+    dateFormat?: string;
+    timezone?: string;
     facebookUrl?: string;
     linkedinUrl?: string;
     twitterUrl?: string;
@@ -417,17 +426,21 @@ export interface Settings {
     platformCommission: number;
     currency: string;
     minPayoutThreshold: number;
-    featuredCourseId?: string;
+    commissionFreezeDays?: number;
+    minPurchaseAmount?: number;
     affiliateEnabled: boolean;
     affiliatePercentage: number;
-    affiliateCookieDurationDays: number;
     referralEnabled: boolean;
     referralPercentage: number;
+    enableMobileMoney?: boolean;
+    enableCard?: boolean;
+    enableManualPayment?: boolean;
   };
   platform: {
-    announcementMessage?: string;
     maintenanceMode: boolean;
+    allowUserSignup?: boolean;
     allowInstructorSignup: boolean;
+    enableAiTutor?: boolean;
     allowCourseBuyout: boolean;
     allowResaleRights: boolean;
     allowTeacherToTeacherResale: boolean;
@@ -435,7 +448,11 @@ export interface Settings {
     enableInternalMessaging: boolean;
     allowYoutube?: boolean;
     allowBunny?: boolean;
-    bunnyLibraryId?: string;
+    videoPlayerType?: 'bunny' | 'youtube' | 'mixed';
+    maxUploadSize?: number;
+    allowedFormats?: string[];
+    maxVideoDuration?: number;
+    announcementMessage?: string;
   };
   pwa?: {
     appName: string;
@@ -444,6 +461,62 @@ export interface Settings {
     iconUrl: string;
     themeColor: string;
     backgroundColor: string;
+  };
+  email?: {
+    smtpHost?: string;
+    smtpPort?: number;
+    smtpUser?: string;
+    smtpPass?: string;
+    senderEmail?: string;
+    senderName?: string;
+    enableWelcomeEmail?: boolean;
+    enablePurchaseEmail?: boolean;
+    enableCertEmail?: boolean;
+    enableResetEmail?: boolean;
+    enableAnnouncementEmail?: boolean;
+  };
+  notifications?: {
+    enablePurchaseNotif?: boolean;
+    enableCertNotif?: boolean;
+    enableAssignmentNotif?: boolean;
+    enableAnnouncementNotif?: boolean;
+    enablePromoNotif?: boolean;
+    channelWeb?: boolean;
+    channelEmail?: boolean;
+    channelPush?: boolean;
+  };
+  seo?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    metaKeywords?: string;
+    socialTitle?: string;
+    socialDescription?: string;
+    socialImage?: string;
+  };
+  security?: {
+    admin2fa?: boolean;
+    maxLoginAttempts?: number;
+    blockSuspiciousIps?: boolean;
+    fraudRiskScoreThreshold?: number;
+    detectMultiAccount?: boolean;
+    blockVpn?: boolean;
+  };
+  ai?: {
+    enableTutor?: boolean;
+    enableGrading?: boolean;
+    enableAssistant?: boolean;
+    enableContentGeneration?: boolean;
+    maxDailyRequests?: number;
+    maxResponseTime?: number;
+    tokenQuota?: number;
+  };
+  gamification?: {
+    pointsPerLesson?: number;
+    pointsPerQuiz?: number;
+    pointsPerCert?: number;
+    enableBadgeFirstCourse?: boolean;
+    enableBadgeFiveCourses?: boolean;
+    enableBadgeTopStudent?: boolean;
   };
   design?: DesignSettings;
   legal: {
