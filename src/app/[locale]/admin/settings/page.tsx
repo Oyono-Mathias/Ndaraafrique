@@ -28,8 +28,6 @@ import {
   Loader2, 
   CheckCircle2,
   BadgeEuro,
-  ShieldCheck,
-  Smartphone,
   Wrench,
   Globe,
   Mail,
@@ -178,19 +176,6 @@ export default function AdminSettingsPage() {
     }
   };
 
-  const renderTabItem = (value: string, icon: any, label: string) => {
-    const Icon = icon;
-    return (
-      <TabsTrigger 
-        value={value} 
-        className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white"
-      >
-        <Icon size={14} />
-        <span className="hidden sm:inline">{label}</span>
-      </TabsTrigger>
-    );
-  };
-
   if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
 
   return (
@@ -207,21 +192,40 @@ export default function AdminSettingsPage() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-slate-900 border-slate-800 p-1 h-14 rounded-[1.5rem] mx-4 mb-8 overflow-x-auto no-scrollbar flex items-center justify-start gap-1">
-              {renderTabItem("general", Globe, "Général")}
-              {renderTabItem("platform", Wrench, "Plateforme")}
-              {renderTabItem("commercial", Landmark, "Commercial")}
-              {renderTabItem("affiliation", BadgeEuro, "Affiliation")}
-              {renderTabItem("email", Mail, "Emails")}
-              {renderTabItem("notifications", Bell, "Notifications")}
-              {renderTabItem("seo", Search, "SEO")}
-              {renderTabItem("security", Lock, "Sécurité")}
-              {renderTabItem("ai", Bot, "IA Mathias")}
-              {renderTabItem("gamification", Trophy, "Engagement")}
+              <TabsTrigger value="general" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Globe size={14} /> <span className="hidden sm:inline">Général</span>
+              </TabsTrigger>
+              <TabsTrigger value="platform" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Wrench size={14} /> <span className="hidden sm:inline">Plateforme</span>
+              </TabsTrigger>
+              <TabsTrigger value="commercial" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Landmark size={14} /> <span className="hidden sm:inline">Commercial</span>
+              </TabsTrigger>
+              <TabsTrigger value="affiliation" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <BadgeEuro size={14} /> <span className="hidden sm:inline">Affiliation</span>
+              </TabsTrigger>
+              <TabsTrigger value="email" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Mail size={14} /> <span className="hidden sm:inline">Emails</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Bell size={14} /> <span className="hidden sm:inline">Notifications</span>
+              </TabsTrigger>
+              <TabsTrigger value="seo" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Search size={14} /> <span className="hidden sm:inline">SEO</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Lock size={14} /> <span className="hidden sm:inline">Sécurité</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Bot size={14} /> <span className="hidden sm:inline">IA Mathias</span>
+              </TabsTrigger>
+              <TabsTrigger value="gamification" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+                <Trophy size={14} /> <span className="hidden sm:inline">Engagement</span>
+              </TabsTrigger>
             </TabsList>
 
             <main className="px-4 max-w-5xl mx-auto space-y-8">
                 
-                {/* 1. GÉNÉRAL */}
                 <TabsContent value="general" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Identité de Marque</CardTitle></CardHeader>
@@ -246,7 +250,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 2. PLATEFORME */}
                 <TabsContent value="platform" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Modes Système</CardTitle></CardHeader>
@@ -275,7 +278,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 3. COMMERCIAL */}
                 <TabsContent value="commercial" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-primary/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Économie Ndara</CardTitle></CardHeader>
@@ -295,7 +297,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 4. AFFILIATION */}
                 <TabsContent value="affiliation" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-emerald-500/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Règles Ambassadeurs</CardTitle></CardHeader>
@@ -318,7 +319,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 5. EMAILS */}
                 <TabsContent value="email" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Configuration SMTP</CardTitle></CardHeader>
@@ -333,7 +333,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 6. NOTIFICATIONS */}
                 <TabsContent value="notifications" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Canaux de Diffusion</CardTitle></CardHeader>
@@ -354,7 +353,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 7. SEO */}
                 <TabsContent value="seo" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Référencement Google</CardTitle></CardHeader>
@@ -369,7 +367,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 8. SÉCURITÉ */}
                 <TabsContent value="security" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-red-500/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Sécurisation & Fraude</CardTitle></CardHeader>
@@ -390,7 +387,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 9. AI MATHIAS */}
                 <TabsContent value="ai" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-primary/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Intelligence Mathias</CardTitle></CardHeader>
@@ -408,7 +404,6 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* 10. GAMIFICATION */}
                 <TabsContent value="gamification" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-amber-500/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Règles d'Engagement</CardTitle></CardHeader>
@@ -432,6 +427,7 @@ export default function AdminSettingsPage() {
                     Enregistrer les réglages
                 </Button>
             </div>
+          </Tabs>
         </form>
       </Form>
     </div>
