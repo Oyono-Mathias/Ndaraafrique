@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -24,13 +25,23 @@ interface AskQuestionModalProps {
   courseId: string;
   courseTitle: string;
   instructorId: string;
+  lessonId?: string;
+  lessonTitle?: string;
 }
 
 /**
  * @fileOverview Modal permettant à l'étudiant de poser une question au formateur.
  * Résilient : Enregistre la question même si la notification échoue.
  */
-export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, instructorId }: AskQuestionModalProps) {
+export function AskQuestionModal({ 
+    isOpen, 
+    onOpenChange, 
+    courseId, 
+    courseTitle, 
+    instructorId,
+    lessonId,
+    lessonTitle
+}: AskQuestionModalProps) {
   const { currentUser } = useRole();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,24 +68,38 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
     setIsSubmitting(true);
 
     try {
-      // 1. Enregistrement de la question (Priorité absolue)
-      await addDoc(collection(db, 'questions'), {
+      const isLessonQuestion = !!lessonId;
+      const collectionName = isLessonQuestion ? 'lesson_questions' : 'questions';
+
+      // 1. Enregistrement de la question
+      const payload: any = {
         courseId,
-        courseTitle,
         instructorId,
         studentId: currentUser.uid,
         studentName: currentUser.fullName,
         studentAvatarUrl: currentUser.profilePictureURL || '',
         questionText: values.questionText,
-        status: 'pending',
         createdAt: serverTimestamp(),
-      });
+      };
 
-      // 2. Notification de l'instructeur (Optionnelle, ne bloque pas si échec serveur)
+      if (isLessonQuestion) {
+          payload.lessonId = lessonId;
+          payload.lessonTitle = lessonTitle || '';
+          payload.replies = [];
+      } else {
+          payload.courseTitle = courseTitle;
+          payload.status = 'pending';
+      }
+
+      await addDoc(collection(db, collectionName), payload);
+
+      // 2. Notification de l'instructeur
       try {
           await sendUserNotification(instructorId, {
-            text: `Nouvelle question de ${currentUser.fullName} sur le cours "${courseTitle}".`,
-            link: `/instructor/questions-reponses`,
+            text: isLessonQuestion 
+                ? `Nouvelle question dans la leçon "${lessonTitle}" par ${currentUser.fullName}.`
+                : `Nouvelle question de ${currentUser.fullName} sur le cours "${courseTitle}".`,
+            link: isLessonQuestion ? `/instructor/questions-reponses` : `/instructor/questions-reponses`, // Could be improved with direct links
             type: 'info'
           });
       } catch (notifyError) {
@@ -102,10 +127,10 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
         <DialogHeader className="p-6 pb-0">
           <DialogTitle className="text-white flex items-center gap-2 uppercase tracking-tight font-black">
             <MessageSquare className="h-5 w-5 text-primary" />
-            Poser une question
+            {lessonId ? "Question sur la leçon" : "Poser une question"}
           </DialogTitle>
           <DialogDescription className="text-slate-400 text-xs font-medium">
-            Votre formateur vous répondra directement dans votre espace "Mes Questions".
+            {lessonId ? `Sujet : ${lessonTitle}` : "Votre formateur vous répondra directement dans votre espace."}
           </DialogDescription>
         </DialogHeader>
 
@@ -130,7 +155,7 @@ export function AskQuestionModal({ isOpen, onOpenChange, courseId, courseTitle, 
             />
             <DialogFooter className="pt-2">
               <Button type="submit" disabled={isSubmitting} className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all">
-                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                {isSubmitting ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Send className="mr-2 h-4 w-4" />}
                 Envoyer ma question
               </Button>
             </DialogFooter>

@@ -1,3 +1,4 @@
+
 'use server';
 
 import { getAdminDb } from '@/firebase/admin';
@@ -51,4 +52,47 @@ export async function answerQuestionAction({
     console.error('Error answering question:', error);
     return { success: false, error: 'Une erreur est survenue lors de la publication de la réponse.' };
   }
+}
+
+/**
+ * Répondre à une question spécifique à une leçon.
+ */
+export async function replyToLessonQuestion({
+    questionId,
+    instructorId,
+    instructorName,
+    message,
+    studentId
+}: {
+    questionId: string;
+    instructorId: string;
+    instructorName: string;
+    message: string;
+    studentId: string;
+}) {
+    try {
+        const db = getAdminDb();
+        const questionRef = db.collection('lesson_questions').doc(questionId);
+        
+        await questionRef.update({
+            replies: FieldValue.arrayUnion({
+                instructorId,
+                instructorName,
+                message,
+                createdAt: new Date(), // Using new Date() for array objects as FieldValue.serverTimestamp() doesn't work inside arrays
+            })
+        });
+
+        // Notifier l'étudiant
+        await sendUserNotification(studentId, {
+            text: `Votre formateur a répondu à votre question dans la leçon.`,
+            type: 'info',
+            link: `/student/courses/${(await questionRef.get()).data()?.courseId}`
+        });
+
+        return { success: true };
+    } catch (error: any) {
+        console.error("Error replying to lesson question:", error);
+        return { success: false, error: error.message };
+    }
 }
