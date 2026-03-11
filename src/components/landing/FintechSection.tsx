@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ShieldCheck, Smartphone, Zap, ArrowRight } from 'lucide-react';
@@ -5,6 +6,8 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useLocale } from 'next-intl';
 import Link from 'next/link';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { cn } from "@/lib/utils";
 
 const paymentMethods = [
     { name: 'Orange Money', color: 'bg-orange-500', text: 'text-orange-400', border: 'border-orange-500/50' },
@@ -14,6 +17,7 @@ const paymentMethods = [
 
 export function FintechSection() {
   const locale = useLocale();
+  const fintechImage = PlaceHolderImages.find(img => img.id === 'qwen-fintech-momo')?.imageUrl || '';
 
   return (
     <section className="py-24 md:py-32 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-slate-900 via-slate-900 to-primary/5 rounded-[4rem] border border-white/5 mx-4">
@@ -48,7 +52,7 @@ export function FintechSection() {
                     </div>
                     
                     <div className="flex items-center gap-6 pt-4">
-                        <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-2xl shadow-primary/20 group">
+                        <Button asChild size="lg" className="h-16 px-10 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 group">
                             <Link href={`/${locale}/search`}>
                                 Découvrir le catalogue
                                 <ArrowRight className="ml-3 h-5 w-5 group-hover:translate-x-2 transition-transform" />
@@ -69,12 +73,12 @@ export function FintechSection() {
                     <div className="relative z-10 max-w-md mx-auto">
                         <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full -z-10" />
                         <Image 
-                            src="https://image.qwenlm.ai/public_source/a41cae04-256c-40f4-9811-70794f88de4b/17796c6b0-aa50-449e-a64c-d39ca953a6aa.png" 
+                            src={fintechImage} 
                             alt="Transaction Ndara Mobile Money" 
                             width={500}
                             height={800}
                             className="w-full rounded-[3rem] shadow-[0_50px_100px_rgba(0,0,0,0.6)] border border-white/10"
-                            data-ai-hint="mobile money payment"
+                            data-ai-hint="mobile payment"
                         />
                     </div>
                     
@@ -93,5 +97,3 @@ export function FintechSection() {
     </section>
   );
 }
-
-import { cn } from "@/lib/utils";

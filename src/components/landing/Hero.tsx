@@ -1,3 +1,4 @@
+
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -5,9 +6,11 @@ import { ArrowRight, PlayCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useLocale } from 'next-intl';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export function Hero() {
   const locale = useLocale();
+  const heroImage = PlaceHolderImages.find(img => img.id === 'qwen-hero-student')?.imageUrl || '';
 
   return (
     <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
@@ -58,11 +61,11 @@ export function Hero() {
                     <div className="vintage-border p-3 bg-slate-900/50 backdrop-blur-sm relative z-10">
                         <div className="relative aspect-square w-full rounded-lg overflow-hidden shadow-2xl">
                             <Image 
-                                src="https://image.qwenlm.ai/public_source/a41cae04-256c-40f4-9811-70794f88de4b/1bed2b803-7d1c-4825-b024-208a81eaccbe.png" 
+                                src={heroImage} 
                                 alt="Étudiant Africain Ndara" 
                                 fill
                                 className="object-cover transition-transform duration-1000 hover:scale-110"
-                                data-ai-hint="african student learning"
+                                data-ai-hint="african student"
                                 priority
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/60 to-transparent" />

@@ -31,6 +31,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'ndara-assets.b-cdn.net',
       },
+      {
+        protocol: 'https',
+        hostname: 'image.qwenlm.ai',
+      },
     ],
   },
 };

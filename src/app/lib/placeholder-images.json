@@ -1,3 +1,4 @@
+
 {
   "placeholderImages": [
     {
@@ -71,6 +72,18 @@
       "description": "Étudiants en collaboration",
       "imageUrl": "https://ndara-assets.b-cdn.net/assets/students-collaboration.jpg",
       "imageHint": "students learning"
+    },
+    {
+      "id": "qwen-hero-student",
+      "description": "Étudiant Africain (Qwen Hero)",
+      "imageUrl": "https://image.qwenlm.ai/public_source/a41cae04-256c-40f4-9811-70794f88de4b/1bed2b803-7d1c-4825-b024-208a81eaccbe.png",
+      "imageHint": "african student"
+    },
+    {
+      "id": "qwen-fintech-momo",
+      "description": "Transaction Mobile Money (Qwen)",
+      "imageUrl": "https://image.qwenlm.ai/public_source/a41cae04-256c-40f4-9811-70794f88de4b/17796c6b0-aa50-449e-a64c-d39ca953a6aa.png",
+      "imageHint": "mobile payment"
     }
   ]
 }

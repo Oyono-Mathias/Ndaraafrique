@@ -20,6 +20,7 @@ const nextConfig = {
       { protocol: 'https', hostname: 'i.postimg.cc', pathname: '/**' },
       { protocol: 'https', hostname: 'upload.wikimedia.org', pathname: '/**' },
       { protocol: 'https', hostname: 'ndara-assets.b-cdn.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'image.qwenlm.ai', pathname: '/**' },
     ],
   },
   webpack: (config, { isServer }) => {
