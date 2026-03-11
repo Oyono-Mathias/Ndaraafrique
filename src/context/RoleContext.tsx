@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview RoleProvider Ndara Afrique.
- * Gère les rôles (étudiant, instructeur, admin) et les permissions.
- * ✅ SÉCURITÉ CEO : Accès total pour Mathias (salguienow@gmail.com).
+ * ✅ RÉSOLU : Navigation switchRole optimisée pour le routage i18n et sans-préfixe.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -32,7 +31,6 @@ interface RoleContextType {
 
 const RoleContext = createContext<RoleContextType | undefined>(undefined);
 
-// 🛡️ IDENTITÉ CEO NDARA
 const MASTER_ADMIN_EMAIL = 'salguienow@gmail.com';
 
 export function RoleProvider({ children }: { children: ReactNode }) {
@@ -57,7 +55,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     router.push(`/${locale}`);
   }, [db, router, locale]);
 
-  // 1. GESTION DE LA PRÉSENCE (isOnline)
   useEffect(() => {
     const auth = getAuth();
     
@@ -84,7 +81,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     };
   }, [db]);
 
-  // 2. SYNCHRONISATION DU PROFIL ET DES RÔLES
   useEffect(() => {
     if (isUserLoading) {
       setLoading(true);
@@ -110,7 +106,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             return;
           }
           
-          // 💎 VÉRIFICATION DROITS CEO & ADMIN
           const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || userData.role === 'admin';
           
           const roles: UserRole[] = ['student'];
@@ -136,7 +131,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           setCurrentUser(resolvedUser);
           setAvailableRoles(roles);
           
-          // Récupération du rôle de la session
           const savedRole = localStorage.getItem('ndaraafrique-role') as UserRole;
           if (savedRole && roles.includes(savedRole)) {
               setRole(savedRole);
@@ -145,7 +139,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
           }
 
         } else {
-            // Création automatique du document utilisateur s'il n'existe pas
             const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase();
             const newUserDoc = {
                 uid: user.uid,
@@ -172,25 +165,19 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     return () => unsubscribe();
   }, [user, isUserLoading, db, secureSignOut, toast, locale]);
 
-  /**
-   * Basculer entre les modes (Étudiant / Formateur / Admin)
-   */
   const switchRole = useCallback((newRole: UserRole) => {
-    // On vérifie si l'utilisateur a le droit d'utiliser ce rôle
     if (availableRoles.includes(newRole)) {
       setRole(newRole);
       localStorage.setItem('ndaraafrique-role', newRole);
       
-      // Détermination de la cible
       const target = newRole === 'admin' 
         ? '/admin' 
         : newRole === 'instructor' 
             ? '/instructor/dashboard' 
             : '/student/dashboard';
       
-      // Redirection propre avec gestion du préfixe locale
-      const finalPath = `/${locale}${target}`.replace(/\/fr\//, '/').replace(/\/fr$/, '/');
-      router.push(finalPath);
+      // ✅ Correction de la redirection propre
+      router.push(`/${locale}${target}`);
       
       toast({ title: `Mode ${newRole.toUpperCase()} activé` });
     } else {

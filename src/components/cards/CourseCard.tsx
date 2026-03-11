@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de la collection root 'user_wishlist' avec ID unique.
+ * ✅ RÉSOLU : Navigation corrigée avec préfixe de locale et distinction Public/Privé.
  */
 
 import Link from 'next/link';
@@ -16,7 +16,6 @@ import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } fro
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
-import { Badge } from '@/components/ui/badge';
 
 interface CourseCardProps {
   course: Course & { progress?: number; lastLessonId?: string };
@@ -34,13 +33,13 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   
   const [isWishlisted, setIsWishlisted] = useState(false);
   
+  // ✅ LOGIQUE DE NAVIGATION : Public vs Privé
   const href = !user 
-    ? `/${locale}/login?tab=register`
+    ? `/${locale}/course/${course.id}`
     : `/${locale}/courses/${course.id}`;
 
   useEffect(() => {
-    if (!user?.uid || course.id.startsWith('demo')) return;
-    // Utilisation de l'ID unique userId_courseId pour la collection racine user_wishlist
+    if (!user?.uid || !course.id) return;
     const wishId = `${user.uid}_${course.id}`;
     const wishlistRef = doc(db, 'user_wishlist', wishId);
     
@@ -85,7 +84,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
       <div className="group relative">
         <Link href={href} className="block w-full">
           <div className="bg-white dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden flex items-center p-3 hover:border-primary/50 transition-all">
-            <div className="relative h-20 w-32 shrink-0 rounded-lg overflow-hidden">
+            <div className="relative h-20 w-32 shrink-0 rounded-lg overflow-hidden bg-slate-800">
               <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
             </div>
             <div className="flex-1 ml-4 overflow-hidden">

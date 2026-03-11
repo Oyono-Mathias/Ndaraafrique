@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Barre latérale Étudiant Ndara Afrique.
- * ✅ AUDIT BOUTONS : switchRole opérationnel avec redirection.
- * ✅ DESIGN : Respect des standards Fintech.
+ * ✅ RÉSOLU : Navigation avec préfixe de locale systématique.
  */
 
 import Link from "next/link";
@@ -46,7 +45,12 @@ import { useLocale } from 'next-intl';
 const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled, highlight }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean, highlight?: boolean }) => {
   const pathname = usePathname() || '';
   const { toast } = useToast();
-  const isActive = (href === '/student/dashboard' && pathname.includes('/dashboard')) || (href !== '/student/dashboard' && pathname.startsWith(href));
+  
+  // Nettoyage pour comparer l'activité
+  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+  const cleanHref = href.replace(/^\/(en|fr)/, '') || '/';
+  
+  const isActive = (cleanHref === '/student/dashboard' && cleanPath.includes('/dashboard')) || (cleanHref !== '/student/dashboard' && cleanPath.startsWith(cleanHref));
   
   const handleClick = (e: React.MouseEvent) => {
     if (disabled) {
@@ -120,35 +124,35 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
     {
       label: "Personnel",
       items: [
-        { href: "/student/dashboard", icon: LayoutDashboard, label: "Tableau de Bord", id: 'sidebar-nav-dashboard' },
-        { href: "/search", icon: Search, label: "Catalogue", id: 'sidebar-nav-search' },
-        { href: "/student/courses", icon: BookOpen, label: 'Mes Formations', id: 'sidebar-nav-mes-formations' },
-        { href: "/student/tutor", icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
+        { href: `/${locale}/student/dashboard`, icon: LayoutDashboard, label: "Tableau de Bord", id: 'sidebar-nav-dashboard' },
+        { href: `/${locale}/search`, icon: Search, label: "Catalogue", id: 'sidebar-nav-search' },
+        { href: `/${locale}/student/courses`, icon: BookOpen, label: 'Mes Formations', id: 'sidebar-nav-mes-formations' },
+        { href: `/${locale}/student/tutor`, icon: Bot, label: 'Tuteur MATHIAS', id: 'sidebar-nav-tutor' },
       ],
     },
     {
       label: "Croissance",
       items: [
-        { href: "/student/ambassadeur", icon: BadgeEuro, label: "Gagner des XOF", id: 'sidebar-nav-ambassador', highlight: true },
-        { href: "/student/annuaire", icon: Users, label: 'Annuaire', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
-        { href: "/student/messages", icon: MessageSquare, label: 'Messagerie', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
+        { href: `/${locale}/student/ambassadeur`, icon: BadgeEuro, label: "Gagner des XOF", id: 'sidebar-nav-ambassador', highlight: true },
+        { href: `/${locale}/student/annuaire`, icon: Users, label: 'Annuaire', id: 'sidebar-nav-annuaire', disabled: !isProfileComplete },
+        { href: `/${locale}/student/messages`, icon: MessageSquare, label: 'Messagerie', id: 'sidebar-nav-messages', disabled: !isProfileComplete, count: unreadMessages },
       ]
     },
     {
       label: "Suivi",
       items: [
-        { href: "/student/results", icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
-        { href: "/student/mes-certificats", icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
-        { href: "/student/devoirs", icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
-        { href: "/student/wishlist", icon: Heart, label: 'Favoris', id: 'sidebar-nav-wishlist' },
+        { href: `/${locale}/student/results`, icon: Trophy, label: 'Mes Résultats', id: 'sidebar-nav-results' },
+        { href: `/${locale}/student/mes-certificats`, icon: Award, label: 'Mes Certificats', id: 'sidebar-nav-mes-certificats' },
+        { href: `/${locale}/student/devoirs`, icon: ClipboardCheck, label: 'Mes Devoirs', id: 'sidebar-nav-devoirs' },
+        { href: `/${locale}/student/wishlist`, icon: Heart, label: 'Favoris', id: 'sidebar-nav-wishlist' },
       ],
     },
     {
       label: "Compte",
       items: [
-        { href: "/account", icon: User, label: 'Mon Profil', id: 'sidebar-nav-account' },
-        { href: "/student/paiements", icon: CreditCard, label: 'Finances', id: 'sidebar-nav-paiements' },
-        { href: "/student/notifications", icon: Bell, label: 'Alertes', id: 'sidebar-nav-notifications', count: unreadNotifs },
+        { href: `/${locale}/account`, icon: User, label: 'Mon Profil', id: 'sidebar-nav-account' },
+        { href: `/${locale}/student/paiements`, icon: CreditCard, label: 'Finances', id: 'sidebar-nav-paiements' },
+        { href: `/${locale}/student/notifications`, icon: Bell, label: 'Alertes', id: 'sidebar-nav-notifications', count: unreadNotifs },
       ],
     },
   ];
@@ -202,7 +206,7 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
       <OnboardingGuide />
       <div className="w-full h-full bg-[#111827] border-r border-white/10 flex flex-col shadow-sm">
         <header className="p-4 border-b border-white/10">
-          <Link href="/student/dashboard" className="flex items-center gap-2" onClick={onLinkClick}>
+          <Link href={`/${locale}/student/dashboard`} className="flex items-center gap-2" onClick={onLinkClick}>
               <Image src="/logo.png" width={32} height={32} alt="Ndara Afrique Logo" className="rounded-full" />
               <span className="font-bold text-lg text-white tracking-tighter uppercase">Ndara <span className="text-primary">Afrique</span></span>
           </Link>
@@ -210,7 +214,7 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
         
         {!isProfileComplete && (
             <div className="p-4 space-y-2 border-b border-slate-800">
-                <Link href="/account" className="block text-center" onClick={onLinkClick}>
+                <Link href={`/${locale}/account`} className="block text-center" onClick={onLinkClick}>
                     <p className="text-sm font-semibold text-white leading-none">Complète ton profil</p>
                     <Progress value={profileProgress} className="h-1.5 mt-2" />
                     <p className="text-[10px] text-slate-500 mt-1 italic">Active l'annuaire & le chat !</p>
@@ -254,24 +258,22 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
           
           <div className="space-y-2">
             {isAdmin && (
-                <Button variant="secondary" type="button" className="w-full justify-center gap-2 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl" onClick={() => handleSwitchRole('admin')}>
-                    <Shield className="h-4 w-4" />
+                <button type="button" className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest h-11 rounded-xl transition-colors" onClick={() => handleSwitchRole('admin')}>
+                    <Shield className="h-4 w-4 text-amber-500" />
                     Cockpit Admin
-                </Button>
+                </button>
             )}
             
             {isInstructor ? (
-                <Button variant="outline" type="button" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white gap-2 font-black uppercase text-[10px] tracking-widest h-11 rounded-xl" onClick={() => handleSwitchRole('instructor')}>
+                <button type="button" className="w-full flex items-center justify-center gap-2 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-white font-black uppercase text-[10px] tracking-widest h-11 rounded-xl transition-colors" onClick={() => handleSwitchRole('instructor')}>
                     <ArrowLeftRight className="h-4 w-4 text-primary" />
                     Mode Formateur
-                </Button>
+                </button>
             ) : showInstructorSignup && (
-                <Button variant="outline" className="w-full justify-center bg-slate-800 border-slate-700 hover:bg-slate-700 text-white h-11 rounded-xl font-black uppercase text-[10px] tracking-widest" asChild onClick={onLinkClick}>
-                    <Link href="/devenir-instructeur">
-                        <Briefcase className="mr-2 h-4 w-4 text-primary" />
-                        Devenir Formateur
-                    </Link>
-                </Button>
+                <Link href={`/${locale}/devenir-instructeur`} className="w-full flex items-center justify-center gap-2 bg-primary/10 border border-primary/20 hover:bg-primary/20 text-primary font-black uppercase text-[10px] tracking-widest h-11 rounded-xl transition-colors" onClick={onLinkClick}>
+                    <Briefcase className="h-4 w-4" />
+                    Devenir Formateur
+                </Link>
             )}
           </div>
         </footer>

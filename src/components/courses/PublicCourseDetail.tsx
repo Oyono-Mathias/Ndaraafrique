@@ -2,7 +2,7 @@
 
 /**
  * @fileOverview Vitrine publique d'une formation Ndara Afrique.
- * ✅ RÉSOLU : Système de favoris (wishlist) intégré avec ID userId_courseId.
+ * ✅ RÉSOLU : Bouton "Commencer" redirige vers le checkout ou le lecteur avec le préfixe de locale.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -54,6 +54,7 @@ import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import Link from 'next/link';
 
 interface EnrichedReview extends Review {
     userName?: string;
@@ -83,7 +84,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
   const enrollmentRef = useMemo(() => (user && courseId) ? doc(db, 'enrollments', `${user.uid}_${courseId}`) : null, [user, courseId, db]);
   const { data: enrollment } = useDoc<Enrollment>(enrollmentRef);
 
-  // Écouteur de la Wishlist
   useEffect(() => {
     if (!user?.uid || !courseId) return;
     const wishId = `${user.uid}_${courseId}`;
@@ -176,7 +176,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
       return;
     }
     if (enrollment) {
-      router.push(`/${locale}/student/courses/${courseId}`);
+      router.push(`/${locale}/courses/${courseId}`);
     } else {
       router.push(`/${locale}/student/checkout/${courseId}`);
     }
@@ -321,7 +321,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
                                 </div>
                                 <div className="relative">
                                     <MessageSquareQuote className="absolute -left-2 -top-2 h-8 w-8 text-white/5 group-hover:text-primary/10 transition-colors" />
-                                    <p className="text-sm text-slate-400 italic leading-relaxed pl-4">
+                                    <p className="text-sm text-slate-400 italic leading-relaxed font-medium pl-4">
                                         "{review.comment}"
                                     </p>
                                 </div>
@@ -381,6 +381,8 @@ function PublicCourseSkeleton() {
     </div>
   );
 }
+
+import { MessageSquareQuote } from 'lucide-react';
 
 export default function PublicCourseDetail({ courseId, locale }: { courseId: string; locale: string }) {
   return (
