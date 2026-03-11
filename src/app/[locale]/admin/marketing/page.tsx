@@ -3,6 +3,7 @@
 /**
  * @fileOverview Centre de Marketing & Engagement Ndara Afrique.
  * Permet de piloter les campagnes de croissance et les automatisations.
+ * ✅ FIX : Ajout des imports manquants (cn, Badge, Button, Table, Tabs, Card).
  */
 
 import { useState } from 'react';
@@ -25,6 +26,7 @@ import {
     Zap
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { cn } from '@/lib/utils';
 
 const mockCampaigns = [
     { id: '1', name: 'Offre Spéciale Ramadan', type: 'Email', status: 'Active', sent: 1200, clicks: 450, conversions: 82 },
@@ -69,15 +71,15 @@ export default function AdminMarketingPage() {
                 <TabsContent value="campaigns" className="mt-8">
                     <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
                         <Table>
-                            <TableHeader>
+                            <thead>
                                 <TableRow className="border-slate-800 bg-slate-800/30">
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Nom de la Campagne</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Type</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Performance</TableHead>
-                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
-                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</TableHead>
+                                    <th className="text-[10px] font-black uppercase tracking-widest py-4 text-left px-4">Nom de la Campagne</th>
+                                    <th className="text-[10px] font-black uppercase tracking-widest text-left px-4">Type</th>
+                                    <th className="text-[10px] font-black uppercase tracking-widest text-left px-4">Performance</th>
+                                    <th className="text-[10px] font-black uppercase tracking-widest text-left px-4">Statut</th>
+                                    <th className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</th>
                                 </TableRow>
-                            </TableHeader>
+                            </thead>
                             <TableBody>
                                 {mockCampaigns.map(camp => (
                                     <TableRow key={camp.id} className="group border-slate-800 hover:bg-slate-800/20">
@@ -141,7 +143,7 @@ export default function AdminMarketingPage() {
     );
 }
 
-function AutomationCard({ title, desc, stats, isPrimary = false }: any) {
+function AutomationCard({ title, desc, stats, isPrimary = false }: { title: string, desc: string, stats: string, isPrimary?: boolean }) {
     return (
         <Card className={cn("bg-slate-900 border-slate-800 rounded-3xl overflow-hidden shadow-xl", isPrimary && "border-primary/20")}>
             <CardHeader className="p-6 border-b border-white/5">

@@ -176,7 +176,13 @@ export default function AdminSettingsPage() {
     }
   };
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-950">
+        <Loader2 className="h-10 w-10 animate-spin text-primary"/>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-700">
