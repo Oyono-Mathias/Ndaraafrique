@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Star, Quote, ShieldCheck } from 'lucide-react';
 import type { Review, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 interface EnrichedReview extends Review {
     userName?: string;
