@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * @fileOverview Barre latérale Administrateur Ndara Afrique.
- * ✅ RÉSOLU : Liens avec préfixe de locale.
+ * @fileOverview Barre latérale Administrateur Ndara Afrique v2.0.
+ * Architecture restructurée pour inclure Marketing, Gamification et Monitoring.
  */
 
 import Link from 'next/link';
@@ -27,7 +27,13 @@ import {
   History,
   Shield,
   Zap,
-  ArrowLeftRight
+  ArrowLeftRight,
+  Activity,
+  Target,
+  Mail,
+  Trophy,
+  Globe,
+  Share2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -89,8 +95,8 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
       items: [
         { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Dashboard" },
         { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Statistiques" },
+        { href: `/${locale}/admin/monitoring`, icon: Activity, label: "Monitoring" },
         { href: `/${locale}/admin/test-recommendations`, icon: Zap, label: "Moteur Ndara IA" },
-        { href: `/${locale}/admin/logs`, icon: History, label: "Journal d'Audit" },
         { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Assistant IA" },
       ]
     },
@@ -98,18 +104,27 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
       label: "Membres",
       items: [
         { href: `/${locale}/admin/users`, icon: Users, label: "Utilisateurs" },
-        { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
-        { href: `/${locale}/admin/investisseurs`, icon: Landmark, label: "Partenaires", countId: 'newLeads' },
+        { href: `/${locale}/admin/roles`, icon: Shield, label: "Rôles & Permissions" },
         { href: `/${locale}/admin/messages`, icon: MessageSquare, label: "Messagerie Centrale" },
+        { href: `/${locale}/admin/affiliates`, icon: Share2, label: "Ambassadeurs" },
       ]
     },
     {
       label: "PÉDAGOGIE",
       items: [
-        { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
         { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Catalogue Cours" },
+        { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
+        { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
         { href: `/${locale}/admin/templates`, icon: BookOpen, label: "Modèles d'images" },
         { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ / Savoir" },
+      ]
+    },
+    {
+      label: "Marketing & Growth",
+      items: [
+        { href: `/${locale}/admin/marketing`, icon: Target, label: "Campagnes" },
+        { href: `/${locale}/admin/emails`, icon: Mail, label: "Emails" },
+        { href: `/${locale}/admin/gamification`, icon: Trophy, label: "Gamification" },
       ]
     },
     {
@@ -122,10 +137,11 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
     {
       label: "Système",
       items: [
-        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Tickets Support", countId: 'openTickets' },
+        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Support", countId: 'openTickets' },
         { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel Accueil" },
+        { href: `/${locale}/admin/seo`, icon: Globe, label: "Gestion SEO" },
         { href: `/${locale}/admin/settings`, icon: Settings, label: "Configuration" },
-        { href: `/${locale}/admin/roles`, icon: Shield, label: "Permissions" },
+        { href: `/${locale}/admin/logs`, icon: History, label: "Logs d'Audit" },
       ]
     }
   ];
@@ -146,16 +162,11 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
     useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'support_tickets'), where('status', '==', 'ouvert')) : null, [db, currentUser])
   );
 
-  const { data: newLeads } = useCollection<any>(
-    useMemo(() => currentUser?.role === 'admin' ? query(collection(db, 'investor_leads'), where('status', '==', 'new')) : null, [db, currentUser])
-  );
-
   const counts = {
       pendingInstructors: pendingInstructors?.length || 0,
       pendingCourses: pendingCourses?.length || 0,
       pendingPayouts: pendingPayouts?.length || 0,
       openTickets: openTickets?.length || 0,
-      newLeads: newLeads?.length || 0,
   };
 
   const handleSwitch = (newRole: 'student' | 'instructor') => {
