@@ -1,94 +1,109 @@
 'use client';
 
+/**
+ * @fileOverview Gestionnaire d'Annonces (Client).
+ * Affiche l'historique des messages envoyés par le formateur.
+ */
+
 import { useState, useMemo } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy, limit } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import type { Course, Announcement } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { AnnouncementForm } from './AnnouncementForm';
-import { Frown, Megaphone } from 'lucide-react';
+import { Frown, History, Clock, BookOpen } from 'lucide-react';
 
-const AnnouncementCard = ({ announcement }: { announcement: Announcement }) => (
-  <Card className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-    <CardHeader>
-      <CardTitle className="text-base">{announcement.title}</CardTitle>
-      <CardDescription>
-        {(announcement.createdAt as any)?.toDate?.() 
-          ? format((announcement.createdAt as any).toDate(), 'd MMMM yyyy à HH:mm', { locale: fr }) 
-          : 'Date indisponible'}
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <p className="text-sm text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{announcement.message}</p>
-    </CardContent>
-  </Card>
-);
+const AnnouncementHistoryCard = ({ announcement }: { announcement: Announcement }) => {
+  const date = (announcement.createdAt as any)?.toDate?.() || new Date();
+  
+  return (
+    <Card className="bg-slate-900 border-slate-800 overflow-hidden rounded-[1.5rem] shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-500">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2 text-[9px] font-black text-primary uppercase tracking-widest mb-1">
+            <BookOpen className="h-3 w-3" />
+            {announcement.courseTitle || 'Formation'}
+        </div>
+        <CardTitle className="text-base font-bold text-white uppercase tracking-tight">{announcement.title}</CardTitle>
+        <CardDescription className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase">
+          <Clock className="h-3 w-3" />
+          {format(date, 'd MMMM yyyy à HH:mm', { locale: fr })}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <p className="text-sm text-slate-400 leading-relaxed font-medium italic border-l-2 border-slate-800 pl-4">
+            "{announcement.message}"
+        </p>
+      </CardContent>
+    </Card>
+  );
+};
 
 export function AnnouncementsClient() {
   const db = getFirestore();
   const { currentUser } = useRole();
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
+  // 1. Récupérer les cours pour le sélecteur
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid), where('status', '==', 'Published')) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  const announcementsQuery = useMemo(
-    () => selectedCourseId ? query(collection(db, `courses/${selectedCourseId}/announcements`), orderBy('createdAt', 'desc')) : null,
-    [db, selectedCourseId]
+  // 2. Récupérer l'historique des annonces de l'instructeur
+  const historyQuery = useMemo(
+    () => currentUser ? query(
+        collection(db, 'course_announcements'), 
+        where('instructorId', '==', currentUser.uid),
+        orderBy('createdAt', 'desc'),
+        limit(20)
+    ) : null,
+    [db, currentUser]
   );
-  const { data: announcements, isLoading: announcementsLoading } = useCollection<Announcement>(announcementsQuery);
+  const { data: history, isLoading: historyLoading } = useCollection<Announcement>(historyQuery);
 
   return (
-    <div className="grid lg:grid-cols-3 gap-8 items-start">
-      <div className="lg:col-span-1 space-y-4">
-        <h2 className="font-semibold text-lg text-slate-900 dark:text-white">1. Choisissez un cours</h2>
-        <Select onValueChange={setSelectedCourseId} disabled={coursesLoading}>
-          <SelectTrigger className="w-full h-11 text-base bg-white dark:bg-slate-800">
-            <SelectValue placeholder="Sélectionnez un cours..." />
-          </SelectTrigger>
-          <SelectContent>
-            {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
-          </SelectContent>
-        </Select>
-
-        {selectedCourseId && <AnnouncementForm courseId={selectedCourseId} />}
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      {/* --- FORMULAIRE --- */}
+      <div className="lg:col-span-1">
+        {coursesLoading ? (
+            <Skeleton className="h-96 w-full rounded-[2rem] bg-slate-900" />
+        ) : courses && courses.length > 0 ? (
+            <AnnouncementForm courses={courses} />
+        ) : (
+            <Card className="bg-slate-900/50 border-slate-800 border-dashed rounded-[2rem] p-8 text-center opacity-40">
+                <Frown className="h-12 w-12 mx-auto mb-4 text-slate-600" />
+                <p className="text-xs font-bold uppercase tracking-widest">Aucune formation publiée disponible pour annonces.</p>
+            </Card>
+        )}
       </div>
 
-      <div className="lg:col-span-2 space-y-4">
-        <h2 className="font-semibold text-lg text-slate-900 dark:text-white">2. Historique des annonces</h2>
-        {selectedCourseId ? (
-          announcementsLoading ? (
-            <div className="space-y-4">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
-            </div>
-          ) : announcements && announcements.length > 0 ? (
-            <div className="space-y-4 max-h-[70vh] overflow-y-auto pr-2">
-              {announcements.map(announcement => (
-                <AnnouncementCard key={announcement.id} announcement={announcement} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
-              <Megaphone className="mx-auto h-12 w-12 text-slate-400" />
-              <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Aucune annonce envoyée</h3>
-              <p className="mt-1 text-sm text-slate-500 dark:text-muted-foreground">Les messages envoyés à vos étudiants apparaîtront ici.</p>
-            </div>
-          )
+      {/* --- HISTORIQUE --- */}
+      <div className="lg:col-span-2 space-y-6">
+        <div className="flex items-center gap-2 text-slate-500 ml-2">
+            <History className="h-4 w-4" />
+            <h3 className="text-[10px] font-black uppercase tracking-[0.3em]">Historique des diffusions</h3>
+        </div>
+
+        {historyLoading ? (
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-[1.5rem] bg-slate-900" />)}
+          </div>
+        ) : history && history.length > 0 ? (
+          <div className="grid gap-4">
+            {history.map(item => (
+              <AnnouncementHistoryCard key={item.id} announcement={item} />
+            ))}
+          </div>
         ) : (
-          <div className="text-center py-20 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl">
-             <Frown className="mx-auto h-12 w-12 text-slate-400" />
-            <h3 className="mt-4 text-lg font-semibold text-slate-600 dark:text-slate-300">Aucun cours sélectionné</h3>
-            <p className="mt-1 text-sm text-slate-500 dark:text-muted-foreground">Veuillez d'abord sélectionner un cours.</p>
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-slate-900/20 rounded-[2.5rem] border-2 border-dashed border-slate-800/50 opacity-20">
+            <Megaphone className="h-16 w-16 text-slate-700 mb-4" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-600">Aucune annonce enregistrée</p>
           </div>
         )}
       </div>
