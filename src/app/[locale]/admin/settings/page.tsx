@@ -26,17 +26,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Settings as SettingsIcon, 
   Loader2, 
-  ImageIcon,
-  UploadCloud,
   CheckCircle2,
   BadgeEuro,
   ShieldCheck,
-  Percent,
   Smartphone,
   Wrench,
-  Youtube,
-  PlayCircle,
-  Palette,
   Globe,
   Mail,
   Bell,
@@ -44,18 +38,16 @@ import {
   Lock,
   Bot,
   Trophy,
-  Landmark,
-  Coins
+  Landmark
 } from 'lucide-react';
 import type { Settings } from '@/lib/types';
-import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 const settingsSchema = z.object({
   // 1. Général
-  siteName: z.string().min(2),
+  siteName: z.string().min(2, "Nom requis"),
   slogan: z.string().optional(),
-  contactEmail: z.string().email(),
+  contactEmail: z.string().email("Email invalide"),
   supportPhone: z.string().optional(),
   logoUrl: z.string().url().or(z.literal('')).optional(),
   logoMobileUrl: z.string().url().or(z.literal('')).optional(),
@@ -160,7 +152,7 @@ export default function AdminSettingsPage() {
     try {
       const result = await updateGlobalSettings({
         adminId: currentUser.uid,
-        targetDoc: activeTab, // On enregistre dans le document spécifique à l'onglet pour la propreté
+        targetDoc: activeTab,
         settings: {
           general: { siteName: values.siteName, slogan: values.slogan, contactEmail: values.contactEmail, supportPhone: values.supportPhone, logoUrl: values.logoUrl, logoMobileUrl: values.logoMobileUrl },
           platform: { maintenanceMode: values.maintenanceMode, allowUserSignup: values.allowUserSignup, allowInstructorSignup: values.allowInstructorSignup, videoPlayerType: values.videoPlayerType },
@@ -174,8 +166,11 @@ export default function AdminSettingsPage() {
         } as any
       });
 
-      if (result.success) toast({ title: "Configuration enregistrée !" });
-      else throw new Error(result.error);
+      if (result.success) {
+        toast({ title: "Configuration enregistrée !" });
+      } else {
+        throw new Error(result.error);
+      }
     } catch (e: any) {
       toast({ variant: 'destructive', title: "Erreur", description: e.message });
     } finally {
@@ -183,14 +178,20 @@ export default function AdminSettingsPage() {
     }
   };
 
-  if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
-
-  const TabItem = ({ value, icon: Icon, label }: { value: string, icon: any, label: string }) => (
-    <TabsTrigger value={value} className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
+  const renderTabItem = (value: string, icon: any, label: string) => {
+    const Icon = icon;
+    return (
+      <TabsTrigger 
+        value={value} 
+        className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white"
+      >
         <Icon size={14} />
         <span className="hidden sm:inline">{label}</span>
-    </TabsTrigger>
-  );
+      </TabsTrigger>
+    );
+  };
+
+  if (isLoading) return <div className="flex h-screen items-center justify-center bg-slate-950"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
 
   return (
     <div className="space-y-8 pb-32 animate-in fade-in duration-700">
@@ -206,16 +207,16 @@ export default function AdminSettingsPage() {
         <form onSubmit={form.handleSubmit(onSubmit)}>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-slate-900 border-slate-800 p-1 h-14 rounded-[1.5rem] mx-4 mb-8 overflow-x-auto no-scrollbar flex items-center justify-start gap-1">
-              <TabItem value="general" icon={Globe} label="Général" />
-              <TabItem value="platform" icon={Wrench} label="Plateforme" />
-              <TabItem value="commercial" icon={Landmark} label="Commercial" />
-              <TabItem value="affiliation" icon={BadgeEuro} label="Affiliation" />
-              <TabItem value="email" icon={Mail} label="Emails" />
-              <TabItem value="notifications" icon={Bell} label="Notifications" />
-              <TabItem value="seo" icon={Search} label="SEO" />
-              <TabItem value="security" icon={Lock} label="Sécurité" />
-              <TabItem value="ai" icon={Bot} label="IA Mathias" />
-              <TabItem value="gamification" icon={Trophy} label="Gamification" />
+              {renderTabItem("general", Globe, "Général")}
+              {renderTabItem("platform", Wrench, "Plateforme")}
+              {renderTabItem("commercial", Landmark, "Commercial")}
+              {renderTabItem("affiliation", BadgeEuro, "Affiliation")}
+              {renderTabItem("email", Mail, "Emails")}
+              {renderTabItem("notifications", Bell, "Notifications")}
+              {renderTabItem("seo", Search, "SEO")}
+              {renderTabItem("security", Lock, "Sécurité")}
+              {renderTabItem("ai", Bot, "IA Mathias")}
+              {renderTabItem("gamification", Trophy, "Engagement")}
             </TabsList>
 
             <main className="px-4 max-w-5xl mx-auto space-y-8">
@@ -317,7 +318,58 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
-                {/* AUTRES ONGLETS (STRUCTURE SIMILAIRE) */}
+                {/* 5. EMAILS */}
+                <TabsContent value="email" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Configuration SMTP</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="smtpHost" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Serveur SMTP</FormLabel><FormControl><Input {...field} placeholder="smtp.provider.com" className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="senderName" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Nom de l'expéditeur</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 6. NOTIFICATIONS */}
+                <TabsContent value="notifications" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Canaux de Diffusion</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-4">
+                            <FormField control={form.control} name="channelWeb" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950/50 rounded-2xl border border-white/5">
+                                    <FormLabel className="text-sm font-bold uppercase">Notifications Web (In-App)</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="channelEmail" render={({ field }) => (
+                                <FormItem className="flex items-center justify-between p-4 bg-slate-950/50 rounded-2xl border border-white/5">
+                                    <FormLabel className="text-sm font-bold uppercase">Alertes par Email</FormLabel>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 7. SEO */}
+                <TabsContent value="seo" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Référencement Google</CardTitle></CardHeader>
+                        <CardContent className="p-8 space-y-6">
+                            <FormField control={form.control} name="metaTitle" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre SEO (Accueil)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                            )}/>
+                            <FormField control={form.control} name="metaDescription" render={({ field }) => (
+                                <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Description SEO</FormLabel><FormControl><Textarea {...field} rows={4} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                {/* 8. SÉCURITÉ */}
                 <TabsContent value="security" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-red-500/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Sécurisation & Fraude</CardTitle></CardHeader>
@@ -338,6 +390,7 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
+                {/* 9. AI MATHIAS */}
                 <TabsContent value="ai" className="space-y-6">
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-primary/10 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Intelligence Mathias</CardTitle></CardHeader>
@@ -355,9 +408,20 @@ export default function AdminSettingsPage() {
                     </Card>
                 </TabsContent>
 
+                {/* 10. GAMIFICATION */}
+                <TabsContent value="gamification" className="space-y-6">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
+                        <CardHeader className="bg-amber-500/5 p-8 border-b border-white/5"><CardTitle className="text-xl font-bold uppercase tracking-tight">Règles d'Engagement</CardTitle></CardHeader>
+                        <CardContent className="p-8">
+                            <FormField control={form.control} name="pointsPerLesson" render={({ field }) => (
+                                <FormItem className="max-w-xs"><FormLabel className="text-[10px] font-black uppercase text-slate-500">XP gagnés par leçon</FormLabel><FormControl><Input type="number" {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl font-black text-primary" /></FormControl></FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
             </main>
 
-            {/* --- ACTION BAR FIXE (MOBILE) --- */}
             <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/90 backdrop-blur-xl border-t border-white/5 z-40 safe-area-pb md:relative md:bg-transparent md:border-none md:p-0 md:max-w-5xl md:mx-auto md:px-4">
                 <Button 
                     type="submit" 
@@ -365,7 +429,7 @@ export default function AdminSettingsPage() {
                     className="w-full h-16 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/30 active:scale-95 transition-all"
                 >
                     {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2"/> : <CheckCircle2 className="h-5 w-5 mr-2" />}
-                    Enregistrer les réglages {activeTab}
+                    Enregistrer les réglages
                 </Button>
             </div>
         </form>
