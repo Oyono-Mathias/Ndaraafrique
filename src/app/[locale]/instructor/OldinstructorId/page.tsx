@@ -1,22 +1,23 @@
 'use client';
 
-import { redirect, useParams } from 'next/navigation';
+import { useRouter, useParams } from 'next/navigation';
 import { useEffect } from 'react';
 
 /**
  * @fileOverview Route obsolète redirigeant vers la nouvelle route SEO [slug].
- * Cette redirection résout le conflit de noms de paramètres dynamiques dans Next.js.
+ * ✅ RÉSOLU : Utilisation de router.replace au lieu de redirect dans useEffect.
  */
 export default function InstructorIdRedirect() {
+    const router = useRouter();
     const params = useParams();
-    const instructorId = params.instructorId as string;
+    const instructorId = params.slug as string || params.instructorId as string;
     const locale = params.locale as string;
 
     useEffect(() => {
-        if (instructorId) {
-            redirect(`/${locale}/instructor/${instructorId}`);
+        if (instructorId && locale) {
+            router.replace(`/${locale}/instructor/${instructorId}`);
         }
-    }, [instructorId, locale]);
+    }, [instructorId, locale, router]);
 
     return null;
 }

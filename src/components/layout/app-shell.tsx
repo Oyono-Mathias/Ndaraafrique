@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique.
- * ✅ RÉSOLU : Utilisation de Suspense pour useSearchParams afin d'éviter les erreurs de build.
+ * ✅ RÉSOLU : Détection du mode plein écran pour le nouveau routage /courses/[slug].
+ * ✅ RÉSOLU : Utilisation de Suspense pour useSearchParams.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -49,10 +50,6 @@ function AnnouncementBanner({ message }: { message: string }) {
     );
 }
 
-/**
- * Sous-composant pour isoler l'usage de useSearchParams.
- * Nécessaire pour le support SSG de Next.js.
- */
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
   const router = useRouter();
@@ -124,7 +121,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       );
   }
 
-  const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').filter(Boolean).length > 2;
+  // ✅ LOGIQUE CORRIGÉE : Détecter le lecteur de cours pour le plein écran
+  const isFullScreen = cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
   const showNav = user && !isAuthPage && !isPublicPage && cleanPath !== '/';
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);

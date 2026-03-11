@@ -1,5 +1,10 @@
 "use client";
 
+/**
+ * @fileOverview Barre latérale Administrateur Ndara Afrique.
+ * ✅ RÉSOLU : Liens avec préfixe de locale.
+ */
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import Image from "next/image";
@@ -21,11 +26,8 @@ import {
   GalleryHorizontal,
   History,
   Shield,
-  ArrowLeftRight,
-  Library,
   Zap,
-  Handshake,
-  FolderLock
+  ArrowLeftRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCollection } from '@/firebase';
@@ -34,6 +36,7 @@ import { collection, query, where, getFirestore } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
 import { UserNav } from "@/components/layout/user-nav";
 import { Button } from "@/components/ui/button";
+import { useLocale } from 'next-intl';
 
 const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
   href: string, 
@@ -43,7 +46,9 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
   onClick: () => void 
 }) => {
   const pathname = usePathname() || '';
-  const isActive = href === '/admin' ? pathname === '/admin' : pathname.startsWith(href);
+  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+  const cleanHref = href.replace(/^\/(en|fr)/, '') || '/';
+  const isActive = cleanPath === cleanHref || (cleanHref !== '/admin' && cleanPath.startsWith(cleanHref));
 
   return (
     <Link
@@ -74,6 +79,7 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
 
 export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png", onLinkClick }: { siteName?: string, logoUrl?: string, onLinkClick: () => void }) {
   const db = getFirestore();
+  const locale = useLocale();
   const { currentUser, switchRole, availableRoles } = useRole();
   const isInstructor = availableRoles.includes('instructor');
 
@@ -81,45 +87,45 @@ export function AdminSidebar({ siteName = "Ndara Afrique", logoUrl = "/logo.png"
     {
       label: "Pilotage",
       items: [
-        { href: "/admin", icon: LayoutDashboard, label: "Dashboard" },
-        { href: "/admin/statistiques", icon: BarChart3, label: "Statistiques" },
-        { href: "/admin/test-recommendations", icon: Zap, label: "Moteur Ndara IA" },
-        { href: "/admin/logs", icon: History, label: "Journal d'Audit" },
-        { href: "/admin/assistant", icon: Sparkles, label: "Assistant IA" },
+        { href: `/${locale}/admin`, icon: LayoutDashboard, label: "Dashboard" },
+        { href: `/${locale}/admin/statistiques`, icon: BarChart3, label: "Statistiques" },
+        { href: `/${locale}/admin/test-recommendations`, icon: Zap, label: "Moteur Ndara IA" },
+        { href: `/${locale}/admin/logs`, icon: History, label: "Journal d'Audit" },
+        { href: `/${locale}/admin/assistant`, icon: Sparkles, label: "Assistant IA" },
       ]
     },
     {
       label: "Membres",
       items: [
-        { href: "/admin/users", icon: Users, label: "Utilisateurs" },
-        { href: "/admin/instructors", icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
-        { href: "/admin/investisseurs", icon: Handshake, label: "Partenaires", countId: 'newLeads' },
-        { href: "/admin/messages", icon: MessageSquare, label: "Messagerie Centrale" },
+        { href: `/${locale}/admin/users`, icon: Users, label: "Utilisateurs" },
+        { href: `/${locale}/admin/instructors`, icon: UserCheck, label: "Candidatures", countId: 'pendingInstructors' },
+        { href: `/${locale}/admin/investisseurs`, icon: Landmark, label: "Partenaires", countId: 'newLeads' },
+        { href: `/${locale}/admin/messages`, icon: MessageSquare, label: "Messagerie Centrale" },
       ]
     },
     {
       label: "PÉDAGOGIE",
       items: [
-        { href: "/admin/moderation", icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
-        { href: "/admin/courses", icon: BookOpen, label: "Catalogue Cours" },
-        { href: "/admin/templates", icon: Library, label: "Modèles d'images" },
-        { href: "/admin/faq", icon: MessageCircleQuestion, label: "FAQ / Savoir" },
+        { href: `/${locale}/admin/moderation`, icon: ShieldAlert, label: "Modération", countId: 'pendingCourses' },
+        { href: `/${locale}/admin/courses`, icon: BookOpen, label: "Catalogue Cours" },
+        { href: `/${locale}/admin/templates`, icon: BookOpen, label: "Modèles d'images" },
+        { href: `/${locale}/admin/faq`, icon: MessageCircleQuestion, label: "FAQ / Savoir" },
       ]
     },
     {
       label: "Finances",
       items: [
-        { href: "/admin/payments", icon: CreditCard, label: "Transactions" },
-        { href: "/admin/payouts", icon: Landmark, label: "Retraits", countId: 'pendingPayouts' },
+        { href: `/${locale}/admin/payments`, icon: CreditCard, label: "Transactions" },
+        { href: `/${locale}/admin/payouts`, icon: Landmark, label: "Retraits", countId: 'pendingPayouts' },
       ]
     },
     {
       label: "Système",
       items: [
-        { href: "/admin/support", icon: HelpCircle, label: "Tickets Support", countId: 'openTickets' },
-        { href: "/admin/carousel", icon: GalleryHorizontal, label: "Carrousel Accueil" },
-        { href: "/admin/settings", icon: Settings, label: "Configuration" },
-        { href: "/admin/roles", icon: Shield, label: "Permissions" },
+        { href: `/${locale}/admin/support`, icon: HelpCircle, label: "Tickets Support", countId: 'openTickets' },
+        { href: `/${locale}/admin/carousel`, icon: GalleryHorizontal, label: "Carrousel Accueil" },
+        { href: `/${locale}/admin/settings`, icon: Settings, label: "Configuration" },
+        { href: `/${locale}/admin/roles`, icon: Shield, label: "Permissions" },
       ]
     }
   ];

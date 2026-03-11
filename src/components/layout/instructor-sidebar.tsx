@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Barre latérale Instructeur Ndara Afrique.
- * ✅ AUDIT BOUTONS : type="button" et switchRole sécurisé.
- * ✅ DESIGN : Fintech/Udemy Style.
+ * ✅ RÉSOLU : Liens avec préfixe de locale.
+ * ✅ RÉSOLU : type="button" et switchRole sécurisé.
  */
 
 import React from 'react';
@@ -15,16 +15,12 @@ import {
   BookOpen, 
   Users, 
   MessageSquare, 
-  Settings,
-  PlusCircle,
   BadgeEuro,
   ClipboardCheck,
   Folder,
   Award,
   Megaphone,
   Star,
-  UserCircle,
-  X,
   ArrowLeftRight,
   Shield,
   FileQuestion,
@@ -34,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useRole } from "@/context/RoleContext";
 import { UserNav } from "@/components/layout/user-nav";
+import { useLocale } from 'next-intl';
 
 interface SidebarProps {
   siteName?: string;
@@ -43,7 +40,9 @@ interface SidebarProps {
 
 const SidebarItem = ({ href, icon: Icon, label, onClick }: { href: string, icon: React.ElementType, label: string, onClick: () => void }) => {
   const pathname = usePathname() || '';
-  const isActive = pathname.replace(/^\/(en|fr)/, '').startsWith(href);
+  const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
+  const cleanHref = href.replace(/^\/(en|fr)/, '') || '/';
+  const isActive = cleanPath.startsWith(cleanHref);
 
   return (
     <Link
@@ -75,32 +74,33 @@ export function InstructorSidebar({
 }: SidebarProps) {
   const { currentUser, switchRole, availableRoles } = useRole();
   const isAdmin = availableRoles.includes('admin');
+  const locale = useLocale();
 
   const groups = [
     {
       items: [
-        { label: "Dashboard", icon: LayoutDashboard, href: "/instructor/dashboard" },
-        { label: "Mes cours", icon: BookOpen, href: "/instructor/courses" },
-        { label: "Ressources", icon: Folder, href: "/instructor/ressources" },
+        { label: "Dashboard", icon: LayoutDashboard, href: `/${locale}/instructor/dashboard` },
+        { label: "Mes cours", icon: BookOpen, href: `/${locale}/instructor/courses` },
+        { label: "Ressources", icon: Folder, href: `/${locale}/instructor/ressources` },
       ]
     },
     {
       label: "PÉDAGOGIE",
       items: [
-        { label: "Devoirs", icon: ClipboardCheck, href: "/instructor/devoirs" },
-        { label: "Quiz", icon: FileQuestion, href: "/instructor/quiz" },
-        { label: "Questions", icon: MessageSquare, href: "/instructor/questions-reponses" },
-        { label: "Annonces", icon: Megaphone, href: "/instructor/annonces" },
-        { label: "Avis", icon: Star, href: "/instructor/avis" },
+        { label: "Devoirs", icon: ClipboardCheck, href: `/${locale}/instructor/devoirs` },
+        { label: "Quiz", icon: FileQuestion, href: `/${locale}/instructor/quiz` },
+        { label: "Questions", icon: MessageSquare, href: `/${locale}/instructor/questions-reponses` },
+        { label: "Annonces", icon: Megaphone, href: `/${locale}/instructor/annonces` },
+        { label: "Avis", icon: Star, href: `/${locale}/instructor/avis` },
       ]
     },
     {
       label: "PERFORMANCE",
       items: [
-        { label: "Étudiants", icon: Users, href: "/instructor/students" },
-        { label: "Revenus", icon: BadgeEuro, href: "/instructor/revenus" },
-        { label: "Coupons", icon: Ticket, href: "/instructor/coupons" },
-        { label: "Certificats", icon: Award, href: "/instructor/certificats" },
+        { label: "Étudiants", icon: Users, href: `/${locale}/instructor/students` },
+        { label: "Revenus", icon: BadgeEuro, href: `/${locale}/instructor/revenus` },
+        { label: "Coupons", icon: Ticket, href: `/${locale}/instructor/coupons` },
+        { label: "Certificats", icon: Award, href: `/${locale}/instructor/certificats` },
       ]
     }
   ];
@@ -128,7 +128,7 @@ export function InstructorSidebar({
         {groups.map((group, gIdx) => (
           <div key={gIdx} className="py-2">
             {group.label && (
-                <p className="px-4 text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                <p className="px-4 text-[10px] font-black text-slate-600 uppercase tracking-widest mb-2">
                     {group.label}
                 </p>
             )}
@@ -151,7 +151,7 @@ export function InstructorSidebar({
           <div className="space-y-2">
             {isAdmin && (
                 <Button variant="secondary" type="button" className="w-full justify-center gap-2 font-bold" onClick={handleSwitchToAdmin}>
-                    <Shield className="h-4 w-4" />
+                    <Shield className="h-4 w-4 text-amber-500" />
                     Mode Administrateur
                 </Button>
             )}
