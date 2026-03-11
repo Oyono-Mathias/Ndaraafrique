@@ -2,11 +2,10 @@
 
 /**
  * @fileOverview AppShell Ndara Afrique.
- * Gère le Mode Maintenance, la Bannière d'Annonce et la sécurité des accès par rôle.
- * ✅ RÉSOLU : Ajout de la barre de navigation mobile (Bottom Nav).
+ * ✅ RÉSOLU : Utilisation de Suspense pour useSearchParams afin d'éviter les erreurs de build.
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -50,13 +49,16 @@ function AnnouncementBanner({ message }: { message: string }) {
     );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+/**
+ * Sous-composant pour isoler l'usage de useSearchParams.
+ * Nécessaire pour le support SSG de Next.js.
+ */
+function AppShellInner({ children }: { children: React.ReactNode }) {
   const { role, loading, user, currentUser } = useRole();
   const router = useRouter();
   const locale = useLocale();
   const pathname = usePathname() || '';
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -66,7 +68,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   });
 
   useEffect(() => {
-    setMounted(true);
     const unsub = onSnapshot(doc(db, 'settings', 'global'), (snap) => {
         if (snap.exists()) {
             const data = snap.data();
@@ -96,7 +97,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [cleanPath]);
 
   useEffect(() => {
-    if (loading || !mounted) return;
+    if (loading) return;
     if (!user) {
       if (!isPublicPage && !isAuthPage) router.push(`/${locale}`);
       return;
@@ -111,14 +112,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } else if (role === 'instructor' && isAdminArea) {
         router.push(`/${locale}/instructor/dashboard`);
     }
-  }, [user, role, loading, cleanPath, router, mounted, isPublicPage, isAuthPage, locale]);
+  }, [user, role, loading, cleanPath, router, isPublicPage, isAuthPage, locale]);
 
-  if (loading || !mounted) return (
-    <div className="h-screen flex items-center justify-center bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary"/>
-    </div>
-  );
-  
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
         <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
@@ -136,10 +131,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
   return (
-    <>
-      <SplashScreen />
-      <OfflineBar />
-      <div className={cn("min-h-screen w-full bg-background text-foreground", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
+    <div className={cn("min-h-screen w-full bg-background text-foreground", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
         {showNav && !isFullScreen && (
           <aside className="hidden md:block h-screen sticky top-0 border-r border-border/50">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
@@ -166,6 +158,35 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {role === 'student' && showNav && !isFullScreen && <StudentBottomNav />}
         </div>
       </div>
+  );
+}
+
+export function AppShell({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return (
+    <div className="h-screen flex items-center justify-center bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+    </div>
+  );
+
+  return (
+    <>
+      <SplashScreen />
+      <OfflineBar />
+      <Suspense fallback={
+        <div className="h-screen flex items-center justify-center bg-slate-950">
+            <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+        </div>
+      }>
+        <AppShellInner>
+            {children}
+        </AppShellInner>
+      </Suspense>
     </>
   );
 }

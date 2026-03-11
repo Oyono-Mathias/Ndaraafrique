@@ -4,6 +4,8 @@ import { AppShell } from "@/components/layout/app-shell";
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, unstable_setRequestLocale } from 'next-intl/server';
 import { DynamicDesignManager } from "@/components/DynamicDesignManager";
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
  
 /**
  * @fileOverview Layout racine pour les routes internationalisées.
@@ -31,9 +33,15 @@ export default async function LocaleLayout({
       <RoleProvider>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <DynamicDesignManager />
-          <AppShell>
-            {children}
-          </AppShell>
+          <Suspense fallback={
+            <div className="h-screen flex items-center justify-center bg-slate-950">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          }>
+            <AppShell>
+              {children}
+            </AppShell>
+          </Suspense>
         </NextIntlClientProvider>
       </RoleProvider>
     </FirebaseClientProvider>

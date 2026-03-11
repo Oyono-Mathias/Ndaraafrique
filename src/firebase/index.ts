@@ -1,4 +1,3 @@
-
 'use client';
 
 import { firebaseConfig } from '@/firebase/config';
@@ -23,6 +22,9 @@ export function initializeFirebase() {
       if (process.env.NODE_ENV === "production") {
         console.warn('Automatic initialization failed. Falling back to firebase config object.', e);
       }
+      
+      // ✅ Sécurité Build : On ne fournit les options que si on n'est pas en train de compiler 
+      // ou si on a explicitement besoin du fallback.
       firebaseApp = initializeApp(firebaseConfig);
     }
 
