@@ -7,9 +7,9 @@
  */
 
 import React from 'react';
-import dynamic from 'next/dynamic';
 import { Hero } from '@/components/landing/Hero';
 import { Stats } from '@/components/landing/Stats';
+import { PopularCourses } from '@/components/landing/PopularCourses';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { FintechSection } from '@/components/landing/FintechSection';
 import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
@@ -25,24 +25,27 @@ export default function LandingPage() {
       
       <Navbar />
       
-      <main className="relative">
+      <main className="relative overflow-hidden">
         {/* 1. Hero Section (L'Éveil) */}
         <Hero />
 
         {/* 2. Trust Bar (Preuve Sociale Firestore) */}
         <Stats />
 
-        <div className="container mx-auto space-y-16">
-          {/* 3. Parcours Ndara (Feature Grid) */}
+        {/* 3. Popular Courses (Nouveau) */}
+        <PopularCourses />
+
+        <div className="container mx-auto space-y-12 md:space-y-24 px-4 sm:px-6">
+          {/* 4. Parcours Ndara (Feature Grid) */}
           <HowItWorks />
 
-          {/* 4. Liberté de Paiement (Fintech Section) */}
+          {/* 5. Liberté de Paiement (Fintech Section) */}
           <FintechSection />
 
-          {/* 5. Le Mur de la Sagesse (Testimonials) */}
+          {/* 6. Le Mur de la Sagesse (Testimonials) */}
           <TestimonialsSection />
 
-          {/* 6. L'Appel de l'Expertise (Final CTA) */}
+          {/* 7. L'Appel de l'Expertise (Final CTA) */}
           <InstructorCTASection />
         </div>
       </main>

@@ -3,6 +3,7 @@
 /**
  * @fileOverview Section Preuve Sociale (Trust Bar) Ndara Afrique.
  * Connectée aux données réelles de Firestore.
+ * ✅ RESPONSIVE : Grille 2x2 sur mobile, 1x4 sur desktop.
  */
 
 import { useEffect, useState } from 'react';
@@ -28,19 +29,19 @@ export function Stats() {
 
     const StatItem = ({ label, value }: { label: string, value: string | number }) => (
         <div className="flex flex-col items-center text-center space-y-2 group">
-            <div className="text-4xl md:text-5xl font-black gradient-text tracking-tighter transition-transform duration-500 group-hover:scale-110">
+            <div className="text-3xl md:text-5xl font-black gradient-text tracking-tighter transition-transform duration-500 group-hover:scale-110">
                 {value}
             </div>
-            <p className="text-[10px] md:text-xs font-black uppercase text-slate-500 tracking-[0.3em] group-hover:text-primary transition-colors">
+            <p className="text-[9px] md:text-xs font-black uppercase text-slate-500 tracking-[0.2em] md:tracking-[0.3em] group-hover:text-primary transition-colors">
                 {label}
             </p>
         </div>
     );
 
     return (
-        <section className="py-16 md:py-24 border-y border-white/5 bg-slate-900/20 backdrop-blur-sm">
+        <section className="py-12 md:py-24 border-y border-white/5 bg-slate-900/20 backdrop-blur-sm">
             <div className="container mx-auto px-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-12 lg:gap-16">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-4 md:gap-12 lg:gap-16">
                     <StatItem label="Ndara Inscrits" value={`${(stats.memberCount + 1200).toLocaleString('fr-FR')}+`} />
                     <StatItem label="Experts Certifiés" value="50+" />
                     <StatItem label="Taux de Réussite" value="99%" />
