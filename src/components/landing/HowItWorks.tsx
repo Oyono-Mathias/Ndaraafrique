@@ -1,119 +1,107 @@
-
 'use client';
 
-import { useState, useMemo } from 'react';
-import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { useDoc } from '@/firebase';
-import { doc, getFirestore } from 'firebase/firestore';
-import type { Settings } from '@/lib/types';
+import { Search, Wallet, Brain } from 'lucide-react';
 
 const steps = [
   {
-    id: 'step1',
-    icon: '1',
-    title: '1. Explorez & Choisissez',
-    description: 'Trouvez la formation idéale parmi un catalogue de cours conçus par les meilleurs experts du continent.',
-    imageId: 'browse-courses',
+    title: '1. Choisir',
+    description: 'Explorez notre catalogue de formations certifiantes adaptées à vos objectifs professionnels.',
+    icon: Search,
+    color: 'from-primary-500 to-primary-700',
+    accent: 'text-primary-500',
+    features: ['500+ formations', 'Tous niveaux', 'Certifications reconnues']
   },
   {
-    id: 'step2',
-    icon: '2',
-    title: '2. Payez avec votre mobile',
-    description: "Validez votre inscription en quelques secondes avec Orange Money, MTN MoMo ou Wave. C'est simple et 100% sécurisé.",
-    imageId: 'mobile-payment',
+    title: '2. Payer',
+    description: 'Réglez facilement avec Mobile Money. Orange, MTN, Wave - zéro complication.',
+    icon: Wallet,
+    color: 'from-emerald-500 to-emerald-700',
+    accent: 'text-emerald-500',
+    features: ['Mobile Money', 'Paiement sécurisé', 'Accès immédiat']
   },
   {
-    id: 'step3',
-    icon: '3',
-    title: '3. Apprenez & Réussissez',
-    description: 'Suivez les cours à votre rythme et obtenez une certification pour valoriser vos nouvelles compétences sur le marché du travail.',
-    imageId: 'certificate',
+    title: '3. Apprendre',
+    description: "Accédez à votre formation et bénéficiez de l'accompagnement personnalisé de l'IA Mathias.",
+    icon: Brain,
+    color: 'from-blue-500 to-blue-700',
+    accent: 'text-blue-500',
+    features: ['IA Mathias', 'Suivi personnalisé', 'Support 24/7']
   },
 ];
 
 export function HowItWorks() {
-  const [activeStep, setActiveStep] = useState(steps[0].id);
-
-  const db = getFirestore();
-  const settingsRef = useMemo(() => doc(db, 'settings', 'global'), [db]);
-  const { data: settings } = useDoc<Settings>(settingsRef);
-
-  const landingPageContent = settings?.content?.landingPage;
-
-  const stepsWithImages = steps.map((step, index) => {
-    const defaultImage = PlaceHolderImages.find(img => img.id === step.imageId);
-    let imageUrl = defaultImage?.imageUrl || '';
-    
-    if (landingPageContent) {
-        if (index === 0) imageUrl = landingPageContent.howItWorks_step1_imageUrl || imageUrl;
-        if (index === 1) imageUrl = landingPageContent.howItWorks_step2_imageUrl || imageUrl;
-        if (index === 2) imageUrl = landingPageContent.howItWorks_step3_imageUrl || imageUrl;
-    }
-    
-    return {
-        ...step,
-        imageUrl,
-        imageHint: defaultImage?.imageHint || '',
-    }
-  });
-
   return (
-    <section className="py-16 md:py-24">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl md:text-4xl font-extrabold text-white">
-          Apprendre n'a jamais été aussi simple
-        </h2>
-        <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-          En trois étapes claires, commencez votre parcours vers l'excellence et la réussite professionnelle.
-        </p>
-      </div>
+    <section id="explorer" className="py-24 md:py-32 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+            <div className="text-center mb-20 space-y-4">
+                <h2 className="text-4xl sm:text-6xl font-black uppercase tracking-tight">
+                    <span className="text-white">Comment ça </span>
+                    <span className="gradient-text">marche ?</span>
+                </h2>
+                <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto font-medium italic">
+                    Trois étapes simples pour transformer votre parcours d'apprentissage en réussite concrète.
+                </p>
+            </div>
+            
+            <div className="grid md:grid-cols-3 gap-8 lg:gap-12">
+                {steps.map((step, idx) => (
+                    <div 
+                        key={idx} 
+                        className="feature-card card-grain glassmorphism rounded-[2.5rem] p-10 flex flex-col items-start space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700"
+                        style={{ animationDelay: `${idx * 200}ms` }}
+                    >
+                        <div className={cn(
+                            "w-20 h-20 rounded-full flex items-center justify-center shadow-2xl relative",
+                            `bg-gradient-to-br ${step.color}`
+                        )}>
+                            <step.icon className="h-8 w-8 text-white" />
+                            <div className="absolute -bottom-2 -right-2 bg-white text-black h-8 w-8 rounded-full flex items-center justify-center font-black text-xs shadow-xl">
+                                0{idx + 1}
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                            <h3 className="text-2xl lg:text-3xl font-black text-white uppercase tracking-tight">{step.title}</h3>
+                            <p className="text-gray-400 leading-relaxed font-medium">
+                                {step.description}
+                            </p>
+                        </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-        <div className="relative h-80 lg:h-[450px] w-full lg:order-last">
-            {stepsWithImages.map(step => {
-                return (
-                    <div key={step.id} className={cn(
-                        "absolute inset-0 transition-opacity duration-500 ease-in-out",
-                        activeStep === step.id ? 'opacity-100' : 'opacity-0'
-                    )}>
-                        {step.imageUrl && (
-                            <Image
-                                src={step.imageUrl}
-                                alt={step.title}
-                                fill
-                                className="object-cover rounded-2xl shadow-2xl"
-                                data-ai-hint={step.imageHint}
-                                loading="lazy"
-                            />
-                        )}
+                        <ul className="space-y-4 w-full pt-4 border-t border-white/5">
+                            {step.features.map((feature, fIdx) => (
+                                <li key={fIdx} className="flex items-center space-x-3 group">
+                                    <div className={cn("h-5 w-5 rounded-full flex items-center justify-center bg-white/5 group-hover:bg-white/10 transition-colors", step.accent)}>
+                                        <CheckIcon className="h-3 w-3" />
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-gray-300">{feature}</span>
+                                </li>
+                            ))}
+                        </ul>
                     </div>
-                )
-            })}
+                ))}
+            </div>
         </div>
-        <div className="space-y-4 lg:order-first">
-          {steps.map(step => (
-            <button
-              key={step.id}
-              onClick={() => setActiveStep(step.id)}
-              className={cn(
-                'w-full p-6 text-left rounded-xl border-2 transition-all duration-300',
-                activeStep === step.id
-                  ? 'bg-primary/10 border-primary shadow-lg shadow-primary/10'
-                  : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
-              )}
-            >
-              <div className="flex items-start gap-4">
-                <div>
-                  <h3 className="font-bold text-white text-lg">{step.title}</h3>
-                  <p className="text-sm text-slate-400 mt-1">{step.description}</p>
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
     </section>
   );
 }
+
+function CheckIcon(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M20 6 9 17l-5-5" />
+        </svg>
+    )
+}
+
+import { cn } from "@/lib/utils";

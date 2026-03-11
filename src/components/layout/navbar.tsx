@@ -2,16 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation'; 
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { ArrowRight, Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
+import { useLocale } from 'next-intl';
 
 const NavLink = ({ href, children }: { href: string; children: React.ReactNode }) => (
   <SheetClose asChild>
-    <Link href={href} className="block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-slate-800">
+    <Link href={href} className="block px-4 py-3 rounded-lg text-base font-medium text-slate-200 hover:bg-slate-800/50 transition-colors">
       {children}
     </Link>
   </SheetClose>
@@ -19,89 +19,93 @@ const NavLink = ({ href, children }: { href: string; children: React.ReactNode }
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
+  const locale = useLocale();
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(window.scrollY > 10);
+      setScrolled(window.scrollY > 20);
     };
-
     window.addEventListener('scroll', handleScroll);
-    handleScroll();
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   return (
     <header
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
-        scrolled ? 'bg-slate-900/80 backdrop-blur-sm border-b border-slate-800' : 'bg-transparent'
+        'fixed top-0 left-0 right-0 z-50 transition-all duration-500 h-20 flex items-center',
+        scrolled ? 'bg-[#0f0f0f]/95 backdrop-blur-xl border-b border-white/10 shadow-2xl' : 'bg-transparent'
       )}
     >
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="flex items-center gap-3 group">
-          <Image src="/logo.png" alt="Ndara Afrique Logo" width={32} height={32} className="rounded-lg" />
-          <span className="text-xl font-bold text-white transition-colors group-hover:text-primary tracking-tighter">
-            Ndara Afrique
-          </span>
+      <div className="container mx-auto flex items-center justify-between px-4 sm:px-6 lg:px-8">
+        {/* Logo */}
+        <Link href={`/${locale}`} className="flex items-center space-x-3 group">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+            <span className="text-white font-bold text-lg">N</span>
+          </div>
+          <span className="text-xl font-bold gradient-text tracking-tighter">Ndara</span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-6 text-sm font-medium text-slate-300 md:flex">
-          <Link href="/search" className="transition-colors hover:text-white">
+        {/* Navigation (Desktop) */}
+        <nav className="hidden md:flex items-center space-x-10">
+          <Link href={`/${locale}/search`} className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full">
             Explorer
           </Link>
-          <Link href="/abonnements" className="transition-colors hover:text-white">
+          <Link href={`/${locale}/abonnements`} className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full">
             Tarifs
           </Link>
-           <Link href="/about" className="transition-colors hover:text-white">
+          <Link href={`/${locale}/investir`} className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full">
+            Investir
+          </Link>
+          <Link href={`/${locale}/about`} className="text-sm font-bold uppercase tracking-widest text-gray-300 hover:text-white transition-colors relative after:content-[''] after:absolute after:-bottom-1 after:left-0 after:w-0 after:h-0.5 after:bg-primary after:transition-all hover:after:w-full">
             À propos
           </Link>
         </nav>
 
-        {/* Mobile Navigation & CTA */}
-        <div className="flex items-center gap-2 md:hidden">
-            <Button asChild className="group h-9 text-xs">
-              <Link href="/login?tab=register">
-                S'inscrire
-              </Link>
-            </Button>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-9 w-9">
-                  <Menu className="h-5 w-5 text-white"/>
-                  <span className="sr-only">Ouvrir le menu</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="bg-slate-900 border-r-slate-800 w-[80%] max-w-[300px]">
-                  <nav className="flex flex-col p-4 pt-16 space-y-2">
-                     <NavLink href="/search">Explorer</NavLink>
-                     <NavLink href="/abonnements">Tarifs</NavLink>
-                     <NavLink href="/about">À propos</NavLink>
-                     <div className="pt-4">
+        {/* Buttons */}
+        <div className="flex items-center space-x-4">
+          <Button variant="ghost" asChild className="hidden md:flex rounded-full border border-primary/30 text-primary-400 hover:bg-primary/10 h-11 px-8 font-bold uppercase text-[10px] tracking-widest transition-all">
+            <Link href={`/${locale}/login`}>Connexion</Link>
+          </Button>
+          <Button asChild className="rounded-full bg-gradient-to-r from-primary-500 to-primary-600 text-white font-black uppercase text-[10px] tracking-widest h-11 px-8 hover:shadow-lg hover:shadow-primary/30 transition-all active:scale-95">
+            <Link href={`/${locale}/login?tab=register`}>Rejoindre</Link>
+          </Button>
+          
+          {/* Mobile Menu Button */}
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden text-white h-10 w-10">
+                <Menu className="h-6 w-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-[#0f0f0f] border-r-white/10 w-[85%] max-w-[320px] p-0">
+                <div className="flex flex-col h-full">
+                    <header className="p-6 border-b border-white/5 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                            <span className="text-white font-bold text-sm">N</span>
+                        </div>
+                        <span className="text-lg font-black gradient-text uppercase tracking-tight">Ndara Afrique</span>
+                    </header>
+                    <nav className="flex-1 p-6 space-y-2">
+                        <NavLink href={`/${locale}/search`}>Explorer</NavLink>
+                        <NavLink href={`/${locale}/abonnements`}>Tarifs</NavLink>
+                        <NavLink href={`/${locale}/investir`}>Investir</NavLink>
+                        <NavLink href={`/${locale}/about`}>À propos</NavLink>
+                    </nav>
+                    <footer className="p-6 border-t border-white/5 bg-slate-900/50">
                         <SheetClose asChild>
-                          <Button asChild className="w-full">
-                            <Link href="/login">Se connecter</Link>
-                          </Button>
+                            <Button asChild variant="outline" className="w-full h-12 rounded-xl mb-3 border-white/10 text-white font-bold uppercase text-[10px] tracking-widest">
+                                <Link href={`/${locale}/login`}>Se connecter</Link>
+                            </Button>
                         </SheetClose>
-                     </div>
-                  </nav>
-              </SheetContent>
-            </Sheet>
-        </div>
-
-        {/* Desktop CTA */}
-        <div className="hidden items-center gap-2 md:flex">
-          <Button variant="ghost" asChild className="text-slate-300 hover:text-white">
-            <Link href="/login">Se connecter</Link>
-          </Button>
-          <Button asChild className="group">
-            <Link href="/login?tab=register">
-              S'inscrire
-              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </Button>
+                        <SheetClose asChild>
+                            <Button asChild className="w-full h-12 rounded-xl bg-primary text-white font-black uppercase text-[10px] tracking-widest">
+                                <Link href={`/${locale}/login?tab=register`}>Créer un compte</Link>
+                            </Button>
+                        </SheetClose>
+                    </footer>
+                </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
     </header>
