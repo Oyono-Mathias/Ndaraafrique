@@ -10,9 +10,7 @@ import {
   UserCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useEffect, useState, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
-import { useRole } from '@/context/RoleContext';
+import { useMemo } from 'react';
 
 /**
  * @fileOverview Barre de navigation mobile pour l'étudiant - Style Udemy Exact.
@@ -29,8 +27,6 @@ const navItems = [
 
 export function StudentBottomNav() {
   const pathname = usePathname() || '';
-  const { user } = useRole();
-  const db = getFirestore();
 
   const cleanPath = useMemo(() => {
     return pathname.replace(/^\/(en|fr)/, '') || '/';

@@ -1,19 +1,19 @@
-
 'use client';
 
 /**
  * @fileOverview AppShell Ndara Afrique.
  * Gère le Mode Maintenance, la Bannière d'Annonce et la sécurité des accès par rôle.
- * ✅ RÉSOLU : Ajout de /leaderboard dans la liste des pages publiques.
+ * ✅ RÉSOLU : Ajout de la barre de navigation mobile (Bottom Nav).
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { StudentSidebar } from '@/components/layout/student-sidebar';
 import { InstructorSidebar } from '@/components/layout/instructor-sidebar';
 import { AdminSidebar } from '@/components/layout/admin-sidebar';
+import { StudentBottomNav } from '@/components/layout/student-bottom-nav';
 import { Button } from '@/components/ui/button';
 import { Wrench, PanelLeft, Loader2, Megaphone, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -55,6 +55,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const locale = useLocale();
   const pathname = usePathname() || '';
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -88,37 +89,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const publicPaths = ['/', '/login', '/register', '/about', '/abonnements', '/search', '/investir', '/cgu', '/mentions-legales', '/leaderboard'];
     if (publicPaths.includes(cleanPath)) return true;
     if (cleanPath.startsWith('/verify/')) return true;
-    // ✅ Autoriser les liens d'invitation sans connexion
     if (cleanPath.startsWith('/invite/')) return true;
     if (cleanPath.startsWith('/ref/')) return true;
     if (cleanPath.startsWith('/course/')) return true;
-    
-    // Profils publics des instructeurs
-    const instructorPathRegex = /^\/instructor\/[^/]+$/;
-    if (instructorPathRegex.test(cleanPath)) {
-        const privateSubRoutes = ['/dashboard', '/courses', '/students', '/revenus', '/annonces', '/avis', '/devoirs', '/questions-reponses', '/quiz', '/ressources', '/certificats'];
-        return !privateSubRoutes.some(sub => cleanPath.includes(sub));
-    }
-    
     return false;
   }, [cleanPath]);
 
-  // 🛡️ MOTEUR DE SÉCURITÉ ET REDIRECTION
   useEffect(() => {
     if (loading || !mounted) return;
-
-    // 1. Visiteur non connecté
     if (!user) {
-      if (!isPublicPage && !isAuthPage) {
-          router.push(`/${locale}`);
-      }
+      if (!isPublicPage && !isAuthPage) router.push(`/${locale}`);
       return;
     }
-
-    // 2. Utilisateur connecté
     if (cleanPath === '/' || cleanPath === '/search' || isPublicPage || cleanPath === '/account') return;
 
-    // 3. Gestion des frontières de rôle
     const isAdminArea = cleanPath.startsWith('/admin');
     const isInstructorArea = cleanPath.startsWith('/instructor');
 
@@ -140,14 +124,13 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
             <Wrench className="h-16 w-16 text-primary mb-4" />
             <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance Ndara</h1>
-            <p className="text-slate-500 mt-2 font-medium italic">Nous effectuons des mises à jour techniques. Nous revenons dans quelques instants.</p>
+            <p className="text-slate-500 mt-2 font-medium italic">Nous effectuons des mises à jour techniques.</p>
         </div>
       );
   }
 
-  const isLandingPage = cleanPath === '/';
-  const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').length > 3;
-  const showNav = user && !isAuthPage && !isPublicPage && !isLandingPage;
+  const isFullScreen = cleanPath.startsWith('/student/courses/') && cleanPath.split('/').filter(Boolean).length > 2;
+  const showNav = user && !isAuthPage && !isPublicPage && cleanPath !== '/';
   
   const handleSidebarLinkClick = () => setIsSheetOpen(false);
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
@@ -179,7 +162,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <div className="ml-auto"><Header /></div>
             </header>
           )}
-          <main className={cn(showNav && !isFullScreen ? "p-6" : "p-0")}>{children}</main>
+          <main className={cn(showNav && !isFullScreen ? "p-6 pb-24 md:pb-6" : "p-0")}>{children}</main>
+          {role === 'student' && showNav && !isFullScreen && <StudentBottomNav />}
         </div>
       </div>
     </>
