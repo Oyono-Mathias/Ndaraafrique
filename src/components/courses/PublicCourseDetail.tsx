@@ -345,7 +345,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
           <div className="grid grid-cols-4 gap-3">
             <Button variant="outline" className="h-14 rounded-2xl bg-emerald-500/10 border-emerald-500/20 text-emerald-500" onClick={() => handleSocialShare('wa')}><MessageSquare className="h-6 w-6" /></Button>
             <Button variant="outline" className="h-14 rounded-2xl bg-blue-600/10 border-blue-600/20 text-blue-400" onClick={() => handleSocialShare('fb')}><Facebook className="h-6 w-6" /></Button>
-            <Button variant="outline" className="h-14 rounded-2xl bg-blue-700/10 border-blue-700/20 text-blue-500" onClick={() => handleSocialShare('in')}><Linkedin className="h-6 w-6" /></Button>
+            <Button variant="outline" className="h-14 rounded-2xl bg-blue-700/10 border-blue-700/20 text-blue-700" onClick={() => handleSocialShare('in')}><Linkedin className="h-6 w-6" /></Button>
             <Button variant="outline" className="h-14 rounded-2xl bg-slate-800 border-slate-700 text-slate-400" onClick={() => handleSocialShare('copy')}><LinkIcon className="h-6 w-6" /></Button>
           </div>
         </section>
@@ -381,8 +381,6 @@ function PublicCourseSkeleton() {
     </div>
   );
 }
-
-import { MessageSquareQuote } from 'lucide-react';
 
 export default function PublicCourseDetail({ courseId, locale }: { courseId: string; locale: string }) {
   return (
