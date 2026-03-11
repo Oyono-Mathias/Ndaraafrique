@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Annuaire communautaire Ndara Afrique.
- * ✅ FILTRAGE : Affiche uniquement les membres ayant au moins un cours en commun.
- * ✅ TRI : En mémoire pour éviter les erreurs d'index Firestore.
+ * Permet aux étudiants de trouver leurs collègues de formation et de démarrer des échanges.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -17,7 +16,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MessageSquare, Loader2, Users, BookOpen } from 'lucide-react';
+import { Search, MessageSquare, Loader2, Users, BookOpen, GraduationCap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 export default function AnnuairePage() {
@@ -28,16 +27,16 @@ export default function AnnuairePage() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [isContacting, setIsContacting] = useState<string | null>(null);
-    const [commonMembers, setCommonMembers] = useState<NdaraUser[]>([]);
+    const [classmates, setClassmates] = useState<NdaraUser[]>([]);
     const [isLoadingData, setIsLoadingData] = useState(true);
 
     useEffect(() => {
         if (!currentUser?.uid) return;
 
-        const fetchCommonMembers = async () => {
+        const fetchClassmates = async () => {
             setIsLoadingData(true);
             try {
-                // 1. Trouver les cours de l'étudiant actuel
+                // 1. Récupérer les IDs des cours de l'utilisateur actuel
                 const myEnrollmentsSnap = await getDocs(query(
                     collection(db, 'enrollments'),
                     where('studentId', '==', currentUser.uid)
@@ -46,13 +45,12 @@ export default function AnnuairePage() {
                 const myCourseIds = myEnrollmentsSnap.docs.map(d => d.data().courseId);
 
                 if (myCourseIds.length === 0) {
-                    setCommonMembers([]);
+                    setClassmates([]);
                     setIsLoadingData(false);
                     return;
                 }
 
-                // 2. Trouver les autres inscrits dans ces mêmes cours
-                // On limite aux 10 premiers cours pour respecter la limite 'in' de Firestore
+                // 2. Trouver les autres inscrits dans ces mêmes cours (limité à 10 cours pour le 'in')
                 const othersEnrollmentsSnap = await getDocs(query(
                     collection(db, 'enrollments'),
                     where('courseId', 'in', myCourseIds.slice(0, 10)),
@@ -65,41 +63,34 @@ export default function AnnuairePage() {
                 )];
 
                 if (otherStudentIds.length === 0) {
-                    setCommonMembers([]);
+                    setClassmates([]);
                     setIsLoadingData(false);
                     return;
                 }
 
-                // 3. Récupérer les profils des collègues trouvés
+                // 3. Récupérer les profils des collègues
                 const usersSnap = await getDocs(query(
                     collection(db, 'users'),
                     where(documentId(), 'in', otherStudentIds.slice(0, 30))
                 ));
 
-                setCommonMembers(usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+                setClassmates(usersSnap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
             } catch (error) {
-                console.error("Error fetching common members:", error);
+                console.error("Error fetching classmates:", error);
             } finally {
                 setIsLoadingData(false);
             }
         };
 
-        fetchCommonMembers();
+        fetchClassmates();
     }, [currentUser?.uid, db]);
 
-    const filteredMembers = useMemo(() => {
-        let list = [...commonMembers];
-        
-        if (searchTerm) {
-            list = list.filter(m => 
-                m.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                m.careerGoals?.interestDomain?.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-        }
-
-        // Tri alphabétique en mémoire
-        return list.sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
-    }, [commonMembers, searchTerm]);
+    const filteredClassmates = useMemo(() => {
+        return classmates.filter(m => 
+            m.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            m.careerGoals?.interestDomain?.toLowerCase().includes(searchTerm.toLowerCase())
+        ).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
+    }, [classmates, searchTerm]);
 
     const handleContact = async (memberId: string) => {
         if (!currentUser) return;
@@ -118,12 +109,14 @@ export default function AnnuairePage() {
 
     return (
         <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
-            <header className="px-4 pt-8 space-y-4">
-                <div className="flex items-center gap-2 text-primary">
-                    <Users className="h-5 w-5" />
-                    <span className="text-[10px] font-black uppercase tracking-widest">Ma Communauté</span>
+            <header className="px-4 pt-8 space-y-6">
+                <div className="space-y-1">
+                    <div className="flex items-center gap-2 text-primary mb-2">
+                        <Users className="h-5 w-5" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em]">Réseau de Savoir</span>
+                    </div>
+                    <h1 className="text-3xl font-black text-white uppercase tracking-tight">Mes Collègues</h1>
                 </div>
-                <h1 className="text-3xl font-black text-white leading-tight">Mes collègues de <br/><span className="text-primary">formation</span></h1>
                 
                 <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-600" />
@@ -139,25 +132,26 @@ export default function AnnuairePage() {
             <div className="px-4 space-y-4">
                 {isLoading ? (
                     <div className="space-y-4">
-                        {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl bg-slate-900" />)}
+                        {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900 border border-slate-800" />)}
                     </div>
-                ) : filteredMembers.length > 0 ? (
-                    <div className="grid gap-4 animate-in fade-in duration-500">
-                        {filteredMembers.map(member => (
-                            <div key={member.uid} className="bg-slate-900/50 border border-slate-800 rounded-3xl p-4 flex items-center gap-4 group active:scale-95 transition-all">
-                                <Avatar className="h-16 w-16 border-2 border-slate-800 shadow-xl">
+                ) : filteredClassmates.length > 0 ? (
+                    <div className="grid gap-4 animate-in fade-in duration-700">
+                        {filteredClassmates.map(member => (
+                            <div key={member.uid} className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-5 flex items-center gap-4 group active:scale-[0.98] transition-all shadow-xl">
+                                <Avatar className="h-16 w-16 border-2 border-slate-800 shadow-2xl">
                                     <AvatarImage src={member.profilePictureURL} className="object-cover" />
-                                    <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{member.fullName?.charAt(0)}</AvatarFallback>
+                                    <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">{member.fullName?.charAt(0)}</AvatarFallback>
                                 </Avatar>
                                 <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-white text-base truncate">{member.fullName || 'Membre Ndara'}</h3>
-                                    <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase mt-1">
-                                        {member.careerGoals?.interestDomain || 'Étudiant'}
+                                    <h3 className="font-bold text-white text-base truncate">{member.fullName}</h3>
+                                    <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest mt-1">
+                                        <GraduationCap className="h-2.5 w-2.5 mr-1" />
+                                        {member.careerGoals?.interestDomain || 'Apprenant'}
                                     </Badge>
                                 </div>
                                 <Button 
                                     size="icon" 
-                                    className="h-12 w-12 rounded-2xl bg-slate-800 hover:bg-primary text-slate-400 hover:text-primary-foreground transition-all shadow-lg"
+                                    className="h-12 w-12 rounded-2xl bg-slate-800 hover:bg-primary text-slate-400 hover:text-white transition-all shadow-lg border-none"
                                     onClick={() => handleContact(member.uid)}
                                     disabled={isContacting === member.uid}
                                 >
@@ -167,9 +161,11 @@ export default function AnnuairePage() {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-20 text-center flex flex-col items-center opacity-30">
-                        <BookOpen className="h-16 w-16 mb-4 text-slate-600" />
-                        <p className="text-sm font-black uppercase tracking-widest text-slate-500 max-w-[250px]">Vous ne voyez ici que les membres qui suivent les mêmes cours que vous.</p>
+                    <div className="py-24 text-center flex flex-col items-center opacity-30 animate-in zoom-in duration-500">
+                        <Users className="h-16 w-16 mb-4 text-slate-600" />
+                        <p className="text-sm font-black uppercase tracking-widest text-slate-500 max-w-[250px] leading-relaxed">
+                            Inscrivez-vous à des formations pour rencontrer d'autres Ndara.
+                        </p>
                     </div>
                 )}
             </div>
