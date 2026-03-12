@@ -42,43 +42,33 @@ import type { Settings } from '@/lib/types';
 import { cn } from '@/lib/utils';
 
 const settingsSchema = z.object({
-  // 1. Général
   siteName: z.string().min(2, "Nom requis"),
   slogan: z.string().optional(),
   contactEmail: z.string().email("Email invalide"),
   supportPhone: z.string().optional(),
   logoUrl: z.string().url().or(z.literal('')).optional(),
   logoMobileUrl: z.string().url().or(z.literal('')).optional(),
-  // 2. Plateforme
   maintenanceMode: z.boolean().default(false),
   allowUserSignup: z.boolean().default(true),
   allowInstructorSignup: z.boolean().default(true),
   videoPlayerType: z.enum(['bunny', 'youtube', 'mixed']).default('mixed'),
-  // 3. Commercial
   platformCommission: z.coerce.number().min(0).max(100),
   minPayoutThreshold: z.coerce.number().min(1000),
   commissionFreezeDays: z.coerce.number().min(0),
   enableMobileMoney: z.boolean().default(true),
-  // 4. Affiliation
   affiliateEnabled: z.boolean().default(true),
   affiliatePercentage: z.coerce.number().min(0).max(50),
   cookieDuration: z.coerce.number().min(1),
-  // 5. Emails
   smtpHost: z.string().optional(),
   senderName: z.string().optional(),
-  // 6. Notifications
   channelWeb: z.boolean().default(true),
   channelEmail: z.boolean().default(true),
-  // 7. SEO
   metaTitle: z.string().optional(),
   metaDescription: z.string().optional(),
-  // 8. Sécurité
   admin2fa: z.boolean().default(false),
   blockVpn: z.boolean().default(false),
-  // 9. IA Mathias
   enableTutor: z.boolean().default(true),
   maxDailyRequests: z.coerce.number().min(1),
-  // 10. Gamification
   pointsPerLesson: z.coerce.number().min(0),
 });
 
@@ -99,7 +89,19 @@ export default function AdminSettingsPage() {
       maintenanceMode: false,
       platformCommission: 20,
       affiliatePercentage: 10,
-      videoPlayerType: 'mixed'
+      videoPlayerType: 'mixed',
+      allowUserSignup: true,
+      allowInstructorSignup: true,
+      enableMobileMoney: true,
+      affiliateEnabled: true,
+      cookieDuration: 30,
+      channelWeb: true,
+      channelEmail: true,
+      admin2fa: false,
+      blockVpn: false,
+      enableTutor: true,
+      maxDailyRequests: 50,
+      pointsPerLesson: 10
     }
   });
 
@@ -199,34 +201,34 @@ export default function AdminSettingsPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="bg-slate-900 border-slate-800 p-1 h-14 rounded-[1.5rem] mx-4 mb-8 overflow-x-auto no-scrollbar flex items-center justify-start gap-1">
               <TabsTrigger value="general" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Globe size={14} /> <span className="hidden sm:inline">Général</span>
+                <Globe size={14} /> <span>Général</span>
               </TabsTrigger>
               <TabsTrigger value="platform" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Wrench size={14} /> <span className="hidden sm:inline">Plateforme</span>
+                <Wrench size={14} /> <span>Plateforme</span>
               </TabsTrigger>
               <TabsTrigger value="commercial" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Landmark size={14} /> <span className="hidden sm:inline">Commercial</span>
+                <Landmark size={14} /> <span>Commercial</span>
               </TabsTrigger>
               <TabsTrigger value="affiliation" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <BadgeEuro size={14} /> <span className="hidden sm:inline">Affiliation</span>
+                <BadgeEuro size={14} /> <span>Affiliation</span>
               </TabsTrigger>
               <TabsTrigger value="email" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Mail size={14} /> <span className="hidden sm:inline">Emails</span>
+                <Mail size={14} /> <span>Emails</span>
               </TabsTrigger>
               <TabsTrigger value="notifications" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Bell size={14} /> <span className="hidden sm:inline">Notifications</span>
+                <Bell size={14} /> <span>Notifications</span>
               </TabsTrigger>
               <TabsTrigger value="seo" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Search size={14} /> <span className="hidden sm:inline">SEO</span>
+                <Search size={14} /> <span>SEO</span>
               </TabsTrigger>
               <TabsTrigger value="security" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Lock size={14} /> <span className="hidden sm:inline">Sécurité</span>
+                <Lock size={14} /> <span>Sécurité</span>
               </TabsTrigger>
               <TabsTrigger value="ai" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Bot size={14} /> <span className="hidden sm:inline">IA Mathias</span>
+                <Bot size={14} /> <span>IA Mathias</span>
               </TabsTrigger>
               <TabsTrigger value="gamification" className="py-3 px-6 font-black uppercase text-[10px] tracking-widest gap-2 rounded-xl data-[state=active]:bg-primary data-[state=active]:text-white">
-                <Trophy size={14} /> <span className="hidden sm:inline">Engagement</span>
+                <Trophy size={14} /> <span>Engagement</span>
               </TabsTrigger>
             </TabsList>
 
