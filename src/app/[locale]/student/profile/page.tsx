@@ -1,150 +1,300 @@
 'use client';
 
 /**
- * @fileOverview Profil Étudiant Android-First.
- * Priorise la simplicité, les statistiques et les paramètres de sécurité.
+ * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
+ * ✅ DESIGN QWEN : Avatar dégradé, badges premium et menu style Android Settings.
+ * ✅ FONCTIONNEL : Gestion du thème, langue et déconnexion sécurisée.
  */
 
+import { useState } from 'react';
 import { useRole } from '@/context/RoleContext';
+import { useRouter } from 'next/navigation';
+import { useLocale } from 'next-intl';
+import { useTheme } from 'next-themes';
+import { 
+    Settings, 
+    ShieldCheck, 
+    Rocket, 
+    Code, 
+    ChevronRight, 
+    UserCircle, 
+    Wallet, 
+    Lock, 
+    LifeBuoy, 
+    Languages, 
+    Moon, 
+    Bell, 
+    LogOut,
+    Check,
+    CheckCircle2,
+    Loader2
+} from 'lucide-react';
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { LogOut, User, Settings, ShieldCheck, Globe, Milestone, KeyRound, CheckCircle2, ChevronRight } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useToast } from '@/hooks/use-toast';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
 
-export default function StudentProfileAndroid() {
-  const { currentUser, secureSignOut } = useRole();
+export default function StudentProfilePage() {
+  const { currentUser, isUserLoading, secureSignOut } = useRole();
   const router = useRouter();
-  const { toast } = useToast();
+  const locale = useLocale();
+  const { theme, setTheme } = useTheme();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    await secureSignOut();
+  };
+
+  if (isUserLoading) {
+    return (
+        <div className="h-[80vh] flex items-center justify-center">
+            <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        </div>
+    );
+  }
 
   if (!currentUser) return null;
 
-  const handlePasswordReset = async () => {
-    const auth = getAuth();
-    if (!currentUser.email) return;
-    
-    try {
-        await sendPasswordResetEmail(auth, currentUser.email);
-        toast({ 
-            title: "Email envoyé !", 
-            description: "Consultez votre boîte mail pour réinitialiser votre mot de passe." 
-        });
-    } catch (error) {
-        toast({ 
-            variant: 'destructive', 
-            title: "Erreur", 
-            description: "Impossible d'envoyer l'email de réinitialisation." 
-        });
-    }
-  };
-
   return (
-    <div className="flex flex-col gap-8 pb-24 bg-slate-950 min-h-screen bg-grainy">
+    <div className="flex flex-col gap-0 pb-32 bg-ndara-bg min-h-screen relative">
+      <div className="grain-overlay" />
       
-      {/* --- HEADER PROFIL --- */}
-      <header className="flex flex-col items-center pt-12 px-4 gap-4 animate-in fade-in slide-in-from-top-4 duration-700">
-        <div className="relative">
-          <div className="absolute -inset-1 bg-gradient-to-tr from-primary to-blue-400 rounded-full blur opacity-20" />
-          <Avatar className="h-32 w-32 border-4 border-slate-900 shadow-2xl relative">
-            <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
-            <AvatarFallback className="bg-slate-800 text-4xl font-black text-slate-500 uppercase">
-                {currentUser.fullName?.charAt(0)}
-            </AvatarFallback>
-          </Avatar>
-          <Button 
-            size="icon" 
-            className="absolute bottom-1 right-1 h-9 w-9 rounded-full shadow-xl bg-primary hover:bg-primary/90 border-2 border-slate-950" 
-            onClick={() => router.push('/account')}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-black text-white uppercase tracking-tight">{currentUser.fullName}</h1>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-primary text-xs font-black uppercase tracking-widest">@{currentUser.username}</span>
-            <span className="h-1 w-1 rounded-full bg-slate-700" />
-            <span className="text-slate-500 text-xs font-bold uppercase">{currentUser.countryName || 'Ndara Member'}</span>
-          </div>
+      {/* --- HEADER --- */}
+      <header className="fixed top-0 w-full z-50 bg-ndara-bg/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
+        <div className="flex items-center justify-between px-6 py-4">
+            <h1 className="font-black text-xl text-white uppercase tracking-tight">Mon Profil</h1>
+            <Button variant="ghost" size="icon" className="rounded-full bg-ndara-surface text-slate-400" onClick={() => router.push('/account')}>
+                <Settings className="h-5 w-5" />
+            </Button>
         </div>
       </header>
 
-      <div className="px-4 space-y-6">
+      <main className="flex-1 px-6 pt-24 space-y-8 animate-in fade-in duration-700">
         
-        {/* --- STATUTS & BADGES --- */}
-        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
-            <Badge className="bg-primary/10 text-primary border-none text-[9px] font-black uppercase tracking-widest py-1.5 px-3 shrink-0">
-                <CheckCircle2 className="h-3 w-3 mr-1.5" /> Compte Vérifié
-            </Badge>
-            <Badge className="bg-slate-900 text-slate-400 border border-slate-800 text-[9px] font-black uppercase tracking-widest py-1.5 px-3 shrink-0">
-                Membre depuis {new Date(currentUser.createdAt as any)?.getFullYear() || 2024}
-            </Badge>
-        </div>
+        {/* --- PROFILE HEADER CARD --- */}
+        <Card className="bg-ndara-surface rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl relative">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
+            <CardContent className="p-8 text-center flex flex-col items-center relative z-10">
+                {/* Avatar with Gradient Border */}
+                <div className="relative mb-4">
+                    <div className="p-[3px] rounded-full bg-gradient-to-tr from-primary via-blue-500 to-purple-500">
+                        <Avatar className="h-24 w-24 border-4 border-ndara-surface shadow-2xl">
+                            <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
+                            <AvatarFallback className="bg-ndara-bg text-3xl font-black text-slate-500 uppercase">
+                                {currentUser.fullName?.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                    </div>
+                    <div className="absolute bottom-1 right-1 w-6 h-6 bg-primary rounded-full border-4 border-ndara-surface flex items-center justify-center shadow-lg">
+                        <Check className="text-ndara-bg h-3 w-3 stroke-[4px]" />
+                    </div>
+                </div>
 
-        {/* --- INFOS PARCOURS --- */}
-        <Card className="bg-slate-900/50 border-slate-800 rounded-3xl overflow-hidden shadow-xl">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
-              <Milestone className="h-4 w-4" /> Mon parcours
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-slate-950/50 rounded-2xl border border-white/5">
-              <p className="text-[9px] uppercase text-slate-600 font-black tracking-widest mb-1">Domaine d'intérêt</p>
-              <p className="text-sm font-bold text-slate-200">{currentUser.careerGoals?.interestDomain || 'Non défini'}</p>
-            </div>
-            <div className="p-4 bg-slate-950/50 rounded-2xl border border-white/5 flex justify-between items-center">
-              <div>
-                <p className="text-[9px] uppercase text-slate-600 font-black tracking-widest mb-1">Langue préférée</p>
-                <p className="text-sm font-bold text-slate-200 flex items-center gap-2">
-                    <Globe className="h-3.5 w-3.5 text-primary" /> 
-                    {currentUser.preferredLanguage === 'fr' ? 'Français' : 'English'}
-                </p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-slate-800" />
-            </div>
-          </CardContent>
+                <h2 className="font-black text-2xl text-white uppercase tracking-tight leading-none mb-1">
+                    {currentUser.fullName}
+                </h2>
+                <p className="text-primary font-bold text-sm tracking-widest mb-4">@{currentUser.username}</p>
+                
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
+                    <span className="text-lg">🇨🇫</span>
+                    <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
+                        {currentUser.countryName || 'Afrique'}
+                    </span>
+                </div>
+
+                {/* Badges Row */}
+                <div className="flex flex-wrap justify-center gap-2">
+                    <Badge className="bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                        <ShieldCheck className="h-3 w-3 mr-1.5" /> Vérifié
+                    </Badge>
+                    <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                        <Rocket className="h-3 w-3 mr-1.5" /> Pionnier
+                    </Badge>
+                    <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                        <Code className="h-3 w-3 mr-1.5" /> Apprenant
+                    </Badge>
+                </div>
+            </CardContent>
         </Card>
 
-        {/* --- ACTIONS SÉCURITÉ --- */}
-        <section className="space-y-3">
-            <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500 ml-2">Sécurité & Compte</h3>
-            <div className="grid gap-2">
-                <Button 
-                    variant="outline" 
-                    className="w-full justify-start h-16 bg-slate-900 border-slate-800 rounded-2xl text-slate-300 hover:bg-slate-800 group"
-                    onClick={handlePasswordReset}
-                >
-                    <div className="p-2.5 bg-slate-800 group-hover:bg-primary/10 rounded-xl mr-4 transition-colors">
-                        <KeyRound className="h-5 w-5 text-slate-500 group-hover:text-primary" />
-                    </div>
-                    <div className="text-left">
-                        <p className="text-sm font-bold">Changer mon mot de passe</p>
-                        <p className="text-[10px] text-slate-500 uppercase font-medium tracking-tighter">Recevoir un lien par email</p>
-                    </div>
-                </Button>
-
-                <Button 
-                    variant="destructive" 
-                    className="w-full justify-start h-16 rounded-2xl mt-4 shadow-xl active:scale-95 transition-all" 
-                    onClick={secureSignOut}
-                >
-                    <div className="p-2.5 bg-white/10 rounded-xl mr-4">
-                        <LogOut className="h-5 w-5" />
-                    </div>
-                    <span className="font-bold text-sm uppercase tracking-widest">Se déconnecter</span>
-                </Button>
-            </div>
+        {/* --- QUICK STATS --- */}
+        <section className="grid grid-cols-3 gap-3">
+            <StatBox label="Cours" value="12" color="text-primary" />
+            <StatBox label="Heures" value="48h" color="text-orange-400" />
+            <StatBox label="XP" value="2.4k" color="text-blue-400" />
         </section>
 
-        <div className="py-8 text-center">
-            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v1.0</p>
+        {/* --- ACCOUNT MANAGEMENT MENU --- */}
+        <div className="bg-ndara-surface rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+            <div className="px-6 py-4 border-b border-white/5 bg-white/5">
+                <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Gestion du Compte</h3>
+            </div>
+            
+            <div className="divide-y divide-white/5">
+                <MenuLink 
+                    icon={UserCircle} 
+                    label="Identité & Bio" 
+                    desc="Modifier votre profil" 
+                    color="bg-blue-500/10 text-blue-400"
+                    href="/account"
+                />
+                <MenuLink 
+                    icon={Wallet} 
+                    label="Historique Financier" 
+                    desc="Paiements et factures" 
+                    color="bg-emerald-500/10 text-emerald-400"
+                    href="/student/paiements"
+                />
+                <MenuLink 
+                    icon={Lock} 
+                    label="Sécurité du Compte" 
+                    desc="Mot de passe et 2FA" 
+                    color="bg-red-500/10 text-red-400"
+                    href="/forgot-password"
+                />
+                <MenuLink 
+                    icon={LifeBuoy} 
+                    label="Centre d'Assistance" 
+                    desc="FAQ et Support Ndara" 
+                    color="bg-purple-500/10 text-purple-400"
+                    href="/student/support"
+                />
+            </div>
         </div>
-      </div>
+
+        {/* --- PREFERENCES --- */}
+        <div className="bg-ndara-surface rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+            <div className="px-6 py-4 border-b border-white/5 bg-white/5">
+                <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Préférences</h3>
+            </div>
+            
+            <div className="p-6 space-y-6">
+                {/* Language Selector */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
+                            <Languages className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold text-white text-sm uppercase tracking-tight">Langue</span>
+                    </div>
+                    <Select defaultValue={locale}>
+                        <SelectTrigger className="w-32 h-10 bg-ndara-bg border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
+                            <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-ndara-surface border-white/10 text-white">
+                            <SelectItem value="fr" className="font-bold py-3 uppercase text-[10px]">Français</SelectItem>
+                            <SelectItem value="en" className="font-bold py-3 uppercase text-[10px]">English</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Theme Switch */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
+                            <Moon className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold text-white text-sm uppercase tracking-tight">Mode Sombre</span>
+                    </div>
+                    <Switch 
+                        checked={theme === 'dark'} 
+                        onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')} 
+                        className="data-[state=checked]:bg-primary"
+                    />
+                </div>
+
+                {/* Notifications Switch */}
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
+                            <Bell className="h-5 w-5" />
+                        </div>
+                        <span className="font-bold text-white text-sm uppercase tracking-tight">Alertes Push</span>
+                    </div>
+                    <Switch defaultChecked className="data-[state=checked]:bg-primary" />
+                </div>
+            </div>
+        </div>
+
+        {/* --- LOGOUT BUTTON --- */}
+        <AlertDialog>
+            <AlertDialogTrigger asChild>
+                <Button className="w-full h-16 rounded-[2rem] bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-red-500/20 active:scale-[0.98] transition-all gap-2 mb-12">
+                    <LogOut className="h-5 w-5" />
+                    Se Déconnecter
+                </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="bg-ndara-surface border-white/10 rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md mx-auto">
+                <AlertDialogHeader className="items-center text-center space-y-4">
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                        <LogOut size={40} />
+                    </div>
+                    <AlertDialogTitle className="text-2xl font-black text-white uppercase tracking-tight leading-none">Déconnexion ?</AlertDialogTitle>
+                    <AlertDialogDescription className="text-slate-400 text-sm font-medium leading-relaxed italic">
+                        "Mo ye ti sigi na yâ ti compte ti mo ?" <br/>Êtes-vous sûr de vouloir quitter votre session ?
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="mt-8 flex-col sm:flex-row gap-3">
+                    <AlertDialogCancel className="bg-ndara-bg border-white/10 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1 shadow-lg shadow-red-600/20">
+                        {isLoggingOut ? <Loader2 className="animate-spin" /> : "Oui, me déconnecter"}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+
+        <div className="pb-12 text-center">
+            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v2.0 • Innovation & Impact</p>
+        </div>
+      </main>
     </div>
   );
+}
+
+function StatBox({ label, value, color }: { label: string, value: string, color: string }) {
+    return (
+        <div className="bg-ndara-surface border border-white/5 rounded-[2rem] p-4 text-center shadow-xl active:scale-95 transition-transform">
+            <p className={cn("text-2xl font-black leading-none mb-2", color)}>{value}</p>
+            <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{label}</p>
+        </div>
+    );
+}
+
+function MenuLink({ icon: Icon, label, desc, color, href }: { icon: any, label: string, desc: string, color: string, href: string }) {
+    return (
+        <Link href={href} className="flex items-center justify-between p-5 hover:bg-white/5 active:scale-[0.98] transition-all group">
+            <div className="flex items-center gap-4">
+                <div className={cn("w-12 h-12 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110", color)}>
+                    <Icon className="h-6 w-6" />
+                </div>
+                <div>
+                    <p className="font-black text-white text-sm uppercase tracking-tight leading-none mb-1 group-hover:text-primary transition-colors">{label}</p>
+                    <p className="text-slate-500 text-[10px] font-medium">{desc}</p>
+                </div>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-700 group-hover:text-primary group-hover:translate-x-1 transition-all" />
+        </Link>
+    );
 }
