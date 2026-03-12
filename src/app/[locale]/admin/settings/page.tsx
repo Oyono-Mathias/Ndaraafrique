@@ -154,15 +154,52 @@ export default function AdminSettingsPage() {
         adminId: currentUser.uid,
         targetDoc: activeTab,
         settings: {
-          general: { siteName: values.siteName, slogan: values.slogan, contactEmail: values.contactEmail, supportPhone: values.supportPhone, logoUrl: values.logoUrl, logoMobileUrl: values.logoMobileUrl },
-          platform: { maintenanceMode: values.maintenanceMode, allowUserSignup: values.allowUserSignup, allowInstructorSignup: values.allowInstructorSignup, videoPlayerType: values.videoPlayerType },
-          commercial: { platformCommission: values.platformCommission, minPayoutThreshold: values.minPayoutThreshold, commissionFreezeDays: values.commissionFreezeDays, enableMobileMoney: values.enableMobileMoney, affiliateEnabled: values.affiliateEnabled, affiliatePercentage: values.affiliatePercentage, affiliateCookieDurationDays: values.cookieDuration },
-          email: { smtpHost: values.smtpHost, senderName: values.senderName },
-          notifications: { channelWeb: values.channelWeb, channelEmail: values.channelEmail },
-          seo: { metaTitle: values.metaTitle, metaDescription: values.metaDescription },
-          security: { admin2fa: values.admin2fa, blockVpn: values.blockVpn },
-          ai: { enableTutor: values.enableTutor, maxDailyRequests: values.maxDailyRequests },
-          gamification: { pointsPerLesson: values.pointsPerLesson },
+          general: { 
+            siteName: values.siteName, 
+            slogan: values.slogan, 
+            contactEmail: values.contactEmail, 
+            supportPhone: values.supportPhone, 
+            logoUrl: values.logoUrl, 
+            logoMobileUrl: values.logoMobileUrl 
+          },
+          platform: { 
+            maintenanceMode: values.maintenanceMode, 
+            allowUserSignup: values.allowUserSignup, 
+            allowInstructorSignup: values.allowInstructorSignup, 
+            videoPlayerType: values.videoPlayerType 
+          },
+          commercial: { 
+            platformCommission: values.platformCommission, 
+            minPayoutThreshold: values.minPayoutThreshold, 
+            commissionFreezeDays: values.commissionFreezeDays, 
+            enableMobileMoney: values.enableMobileMoney, 
+            affiliateEnabled: values.affiliateEnabled, 
+            affiliatePercentage: values.affiliatePercentage, 
+            affiliateCookieDurationDays: values.cookieDuration 
+          },
+          email: { 
+            smtpHost: values.smtpHost, 
+            senderName: values.senderName 
+          },
+          notifications: { 
+            channelWeb: values.channelWeb, 
+            channelEmail: values.channelEmail 
+          },
+          seo: { 
+            metaTitle: values.metaTitle, 
+            metaDescription: values.metaDescription 
+          },
+          security: { 
+            admin2fa: values.admin2fa, 
+            blockVpn: values.blockVpn 
+          },
+          ai: { 
+            enableTutor: values.enableTutor, 
+            maxDailyRequests: values.maxDailyRequests 
+          },
+          gamification: { 
+            pointsPerLesson: values.pointsPerLesson 
+          },
         } as any
       });
 
@@ -367,7 +404,7 @@ export default function AdminSettingsPage() {
                         <CardContent className="p-8 space-y-6">
                             <FormField control={form.control} name="metaTitle" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Titre SEO (Accueil)</FormLabel><FormControl><Input {...field} className="h-12 bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
-                            )}/>
+                                )}/>
                             <FormField control={form.control} name="metaDescription" render={({ field }) => (
                                 <FormItem><FormLabel className="text-[10px] font-black uppercase text-slate-500">Description SEO</FormLabel><FormControl><Textarea {...field} rows={4} className="bg-slate-950 border-slate-800 rounded-xl" /></FormControl></FormItem>
                             )}/>

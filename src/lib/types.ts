@@ -435,6 +435,7 @@ export interface Settings {
     enableMobileMoney?: boolean;
     enableCard?: boolean;
     enableManualPayment?: boolean;
+    affiliateCookieDurationDays?: number;
   };
   platform: {
     maintenanceMode: boolean;
