@@ -8,6 +8,7 @@
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { 
     doc, 
     getFirestore, 
@@ -317,7 +318,7 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
                                 </span>
                                 <div className="text-left">
                                     <h3 className="text-sm font-bold text-white uppercase tracking-tight">{section.title}</h3>
-                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-0.5">
                                         {(lecturesMap.get(section.id) || []).length} leçons
                                     </p>
                                 </div>
