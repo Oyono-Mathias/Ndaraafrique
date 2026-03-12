@@ -5,6 +5,7 @@
  * @fileOverview Dashboard Financier de l'Instructeur (Payout System v2).
  * ✅ CALCULS : Revenus Formations, Revenus Parrainage, Solde Disponible.
  * ✅ HISTORIQUE : Switch entre Retraits et Commissions entrantes.
+ * ✅ TYPAGE : Strict pour éviter les erreurs de build Vercel.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,7 +17,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { 
     Wallet, 
-    TrendingUp, 
     ArrowUpRight, 
     History, 
     Clock, 
@@ -26,9 +26,7 @@ import {
     Smartphone,
     CreditCard,
     BadgeEuro,
-    AlertCircle,
     Loader2,
-    ChevronRight,
     ArrowDownLeft
 } from 'lucide-react';
 import { requestPayoutAction } from '@/actions/payoutActions';
@@ -52,12 +50,17 @@ export default function InstructorRevenuePage() {
     const [isDialogOpen, setIsDriveOpen] = useState(false);
     const [payoutMethod, setPayoutMethod] = useState<'mobile_money' | 'bank_transfer'>('mobile_money');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [isLoadingData, setIsLoadingData] = useState(true);
+    
+    // États de chargement granulaires
+    const [loadingStates, setLoadingStates] = useState({
+        payments: true,
+        payouts: true,
+        commissions: true
+    });
 
     useEffect(() => {
         if (!instructor?.uid) return;
 
-        setIsLoadingData(true);
         const instructorId = instructor.uid;
 
         // 1. Écouter les revenus formations
@@ -65,6 +68,7 @@ export default function InstructorRevenuePage() {
             query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'Completed')),
             (snap) => {
                 setPayments(snap.docs.map(d => ({ id: d.id, ...d.data() } as Payment)));
+                setLoadingStates(prev => ({ ...prev, payments: false }));
             }
         );
 
@@ -73,6 +77,7 @@ export default function InstructorRevenuePage() {
             query(collection(db, 'payout_requests'), where('instructorId', '==', instructorId), orderBy('createdAt', 'desc'), limit(50)),
             (snap) => {
                 setPayoutRequests(snap.docs.map(d => ({ id: d.id, ...d.data() } as PayoutRequest)));
+                setLoadingStates(prev => ({ ...prev, payouts: false }));
             }
         );
 
@@ -81,7 +86,7 @@ export default function InstructorRevenuePage() {
             query(collection(db, 'affiliate_transactions'), where('affiliateId', '==', instructorId), orderBy('createdAt', 'desc'), limit(50)),
             (snap) => {
                 setCommissions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AffiliateTransaction)));
-                setIsLoadingData(false);
+                setLoadingStates(prev => ({ ...prev, commissions: false }));
             }
         );
 
@@ -93,22 +98,25 @@ export default function InstructorRevenuePage() {
     }, [instructor?.uid, db]);
 
     const stats = useMemo(() => {
-        const totalCoursesEarned = payments.reduce((acc, p) => acc + p.amount, 0);
-        const referralEarned = (instructor?.referralBalance || 0) + (instructor?.affiliateBalance || 0);
+        // Revenus directs (Ventes de ses propres cours)
+        const totalCoursesEarned = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
+        
+        // Gains déjà libérés (via cron job après 14j)
+        const affiliateAvailable = instructor?.affiliateBalance || 0;
+        const referralAvailable = instructor?.referralBalance || 0;
+        
+        // Somme des retraits déjà demandés (sauf ceux rejetés)
         const totalWithdrawn = payoutRequests
             .filter(p => p.status !== 'rejected')
-            .reduce((acc, p) => acc + p.amount, 0);
+            .reduce((acc, p) => acc + (p.amount || 0), 0);
         
-        const availableBalance = (totalCoursesEarned + referralEarned) - totalWithdrawn;
-        const pendingPayoutAmount = payoutRequests
-            .filter(p => p.status === 'pending' || p.status === 'approved')
-            .reduce((acc, p) => acc + p.amount, 0);
+        // Solde final = (Direct + Comms libérées) - Sorties
+        const availableBalance = (totalCoursesEarned + affiliateAvailable + referralAvailable) - totalWithdrawn;
 
         return {
             totalCoursesEarned,
-            referralEarned,
             availableBalance: Math.max(0, availableBalance),
-            pendingPayoutAmount
+            pendingAffiliate: instructor?.pendingAffiliateBalance || 0
         };
     }, [payments, payoutRequests, instructor]);
 
@@ -139,6 +147,8 @@ export default function InstructorRevenuePage() {
             setIsSubmitting(false);
         }
     };
+
+    const isLoadingData = loadingStates.payments || loadingStates.payouts || loadingStates.commissions;
 
     if (isUserLoading || isLoadingData) return <RevenueSkeleton />;
 
@@ -175,6 +185,21 @@ export default function InstructorRevenuePage() {
                     </div>
                 </Card>
 
+                <div className="grid grid-cols-1 gap-4">
+                    <Card className="bg-slate-900 border-slate-800 p-6 rounded-[2rem] flex items-center justify-between shadow-xl">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-amber-500/10 rounded-2xl text-amber-500">
+                                <Clock className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">En sécurisation</p>
+                                <p className="text-xl font-black text-white">{stats.pendingAffiliate.toLocaleString('fr-FR')} <span className="text-xs">XOF</span></p>
+                            </div>
+                        </div>
+                        <Badge variant="outline" className="border-slate-700 text-slate-500 text-[9px] uppercase font-black">Gel 14j</Badge>
+                    </Card>
+                </div>
+
                 <Tabs defaultValue="history" className="w-full">
                     <TabsList className="bg-slate-900 border-slate-800 p-1 h-12 rounded-2xl w-full">
                         <TabsTrigger value="history" className="flex-1 rounded-xl font-bold uppercase text-[10px] tracking-widest">Retraits</TabsTrigger>
@@ -204,20 +229,7 @@ export default function InstructorRevenuePage() {
                         </div>
                         {commissions.length > 0 ? (
                             <div className="grid gap-3">
-                                {commissions.map(comm => (
-                                    <Card key={comm.id} className="bg-slate-900 border-slate-800 rounded-2xl p-5 shadow-xl">
-                                        <div className="flex justify-between items-center">
-                                            <div className="flex-1 min-w-0 mr-4">
-                                                <p className="font-bold text-white text-sm truncate">{comm.courseTitle}</p>
-                                                <p className="text-[9px] text-slate-500 uppercase font-black tracking-tighter mt-1">Via {comm.buyerName}</p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-sm font-black text-emerald-400">+{comm.commissionAmount.toLocaleString('fr-FR')} XOF</p>
-                                                <Badge variant="outline" className="text-[8px] uppercase font-black border-slate-800 mt-1">{comm.status}</Badge>
-                                            </div>
-                                        </div>
-                                    </Card>
-                                ))}
+                                {commissions.map(comm => <TransactionItem key={comm.id} t={comm} />)}
                             </div>
                         ) : (
                             <div className="text-center py-16 bg-slate-900/20 rounded-[3rem] border-2 border-dashed border-slate-800/50 opacity-30">
@@ -267,6 +279,30 @@ export default function InstructorRevenuePage() {
                 </DialogContent>
             </Dialog>
         </div>
+    );
+}
+
+function TransactionItem({ t }: { t: AffiliateTransaction }) {
+    const statusConfig = {
+        pending: { label: 'Audit', color: 'text-amber-500 bg-amber-500/10' },
+        approved: { label: 'Prêt', color: 'text-emerald-500 bg-emerald-500/10' },
+        paid: { label: 'Versé', color: 'text-blue-500 bg-blue-500/10' },
+        cancelled: { label: 'Annulé', color: 'text-red-500 bg-red-500/10' },
+    }[t.status] || { label: t.status, color: 'bg-slate-800' };
+
+    return (
+        <Card className="bg-slate-900/50 border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-lg">
+            <div className="flex-1 min-w-0 mr-4">
+                <p className="font-bold text-white text-sm truncate">{t.courseTitle}</p>
+                <p className="text-[9px] text-slate-500 uppercase font-medium mt-0.5">Pour {t.buyerName}</p>
+            </div>
+            <div className="text-right shrink-0">
+                <p className="font-black text-white text-sm">+{t.commissionAmount.toLocaleString('fr-FR')} XOF</p>
+                <Badge className={cn("text-[8px] font-black uppercase border-none px-2 mt-1", statusConfig.color)}>
+                    {statusConfig.label}
+                </Badge>
+            </div>
+        </Card>
     );
 }
 
