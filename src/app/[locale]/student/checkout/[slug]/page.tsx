@@ -1,11 +1,12 @@
 'use client';
 
 /**
- * @fileOverview Tunnel de paiement unifié avec support des coupons.
- * Calcule dynamiquement les remises et sécurise la transaction.
+ * @fileOverview Tunnel de paiement unifié avec support des coupons et de l'affiliation.
+ * ✅ AFFILIATION : Récupère automatiquement l'ID de l'ambassadeur stocké en local.
+ * ✅ COUPONS : Calcule dynamiquement les remises.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { doc, getFirestore } from 'firebase/firestore';
 import { useDoc } from '@/firebase/firestore/use-doc';
@@ -19,7 +20,6 @@ import {
   ChevronRight,
   Ticket,
   CheckCircle2,
-  XCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { Course } from '@/lib/types';
@@ -39,9 +39,27 @@ export default function CheckoutPage() {
   const [couponCode, setCouponCode] = useState('');
   const [isValidating, setIsValidating] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<any | null>(null);
+  const [affiliateId, setAffiliateId] = useState<string | null>(null);
 
   const courseRef = useMemo(() => slug ? doc(db, 'courses', slug) : null, [db, slug]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
+
+  // ✅ RÉCUPÉRATION DE L'AFFILIÉ DEPUIS LE CACHE LOCAL (30 JOURS)
+  useEffect(() => {
+      if (typeof window === 'undefined') return;
+      const stored = localStorage.getItem('ndara_affiliate_id');
+      if (stored) {
+          try {
+              const data = JSON.parse(stored);
+              if (data.expiresAt > Date.now()) {
+                  setAffiliateId(data.id);
+                  console.log("🎯 Affiliate attribution confirmed for checkout:", data.id);
+              }
+          } catch (e) {
+              console.error("Affiliate cookie parse error");
+          }
+      }
+  }, []);
 
   const discountedPrice = useMemo(() => {
     if (!course) return 0;
@@ -73,61 +91,67 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     try {
-      // Simulation Moneroo avec injection du prix réduit
+      // Simulation Moneroo avec injection du prix réduit et de l'affilié
       await new Promise(resolve => setTimeout(resolve, 2000));
-      toast({ title: "Redirection Moneroo..." });
       
-      // Ici on passerait les métadonnées incluant le couponId pour le webhook
-      console.log("Paiement initié:", {
+      const paymentMetadata = {
+          userId: user.uid,
+          courseId: course.id,
           amount: discountedPrice,
           couponId: appliedCoupon?.id || null,
-          courseId: course.id
-      });
+          affiliateId: affiliateId || null // Crucial pour la commission
+      };
 
-      router.push(`/courses/${slug}`);
+      console.log("🚀 Initialisation Paiement Moneroo:", paymentMetadata);
+      
+      toast({ title: "Redirection Moneroo...", description: "Veuillez patienter pendant la sécurisation." });
+      
+      // En production, ici on redirige vers l'URL retournée par l'API Moneroo
+      // Pour ce prototype, on simule le succès du webhook
+      router.push(`/student/courses/${slug}`);
     } catch (error) {
-      toast({ variant: 'destructive', title: "Erreur technique" });
+      toast({ variant: 'destructive', title: "Erreur technique", description: "Impossible d'initier le paiement." });
     } finally {
       setIsProcessing(false);
     }
   };
 
-  if (courseLoading) return <div className="p-8"><Skeleton className="h-64 w-full rounded-3xl" /></div>;
+  if (courseLoading) return <div className="p-8"><Skeleton className="h-64 w-full rounded-[2.5rem] bg-slate-900" /></div>;
   if (!course) return <div className="p-8 text-center text-slate-400">Formation non trouvée.</div>;
 
   return (
-    <div className="min-h-screen bg-slate-950 pb-32 font-sans">
-      <header className="p-4 flex items-center gap-4 bg-slate-900/80 border-b border-slate-800 sticky top-0 z-30 backdrop-blur-xl">
+    <div className="min-h-screen bg-slate-950 pb-32 font-sans bg-grainy">
+      <header className="p-4 flex items-center gap-4 bg-slate-900/80 border-b border-white/5 sticky top-0 z-30 backdrop-blur-xl">
         <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-white">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-sm font-black uppercase tracking-[0.15em] text-white">Validation Ndara</h1>
+        <h1 className="text-xs font-black uppercase tracking-[0.2em] text-white">Validation de commande</h1>
       </header>
 
       <div className="p-4 max-w-md mx-auto space-y-8 mt-10 animate-in fade-in duration-700">
-        <Card className="bg-[#fdf6e3] text-slate-900 p-8 rounded-[2rem] shadow-2xl relative overflow-hidden border-none">
+        <Card className="bg-[#fdf6e3] text-slate-900 p-8 rounded-[2.5rem] shadow-2xl relative overflow-hidden border-none card-grain">
             <div className="space-y-6">
-                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 text-center">Facture Pro-forma</p>
+                <p className="text-[9px] font-black uppercase tracking-[0.3em] text-slate-400 text-center">Facture Ndara Afrique</p>
                 <h2 className="text-xl font-black uppercase leading-tight text-center">{course.title}</h2>
                 
                 <div className="border-t-2 border-dashed border-slate-300 pt-6 space-y-4">
                     <div className="flex justify-between items-center text-[10px] font-bold text-slate-500 uppercase">
-                        <span>Prix initial</span>
+                        <span>Prix normal</span>
                         <span>{course.price.toLocaleString('fr-FR')} XOF</span>
                     </div>
                     
                     {appliedCoupon && (
-                        <div className="flex justify-between items-center text-[10px] font-bold text-emerald-600 uppercase">
+                        <div className="flex justify-between items-center text-[10px] font-black text-emerald-600 uppercase">
                             <span>Remise ({appliedCoupon.code})</span>
                             <span>-{ (course.price - discountedPrice).toLocaleString('fr-FR') } XOF</span>
                         </div>
                     )}
 
                     <div className="pt-2 flex justify-between items-baseline">
-                        <span className="text-[10px] font-black uppercase">Net à payer</span>
+                        <span className="text-[10px] font-black uppercase">À payer</span>
                         <div className="text-right">
                             <p className="text-4xl font-black text-primary">{discountedPrice.toLocaleString('fr-FR')}</p>
-                            <p className="text-[9px] font-bold uppercase opacity-60">CFA (XOF)</p>
+                            <p className="text-[9px] font-bold uppercase opacity-60">FCFA (XOF)</p>
                         </div>
                     </div>
                 </div>
@@ -140,7 +164,7 @@ export default function CheckoutPage() {
             <div className="flex gap-2">
                 <div className="relative flex-1">
                     <Input 
-                        placeholder="Entrez votre code..." 
+                        placeholder="EX: BIENVENUE20" 
                         value={couponCode} 
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                         className="h-14 bg-slate-900 border-slate-800 rounded-2xl text-white pr-10"
@@ -173,10 +197,17 @@ export default function CheckoutPage() {
         </div>
 
         <div className="space-y-4">
-            <Button onClick={handlePayment} disabled={isProcessing} className="w-full h-16 rounded-2xl bg-primary text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20">
-                {isProcessing ? <Loader2 className="h-5 w-5 animate-spin"/> : <><Lock className="mr-2 h-4 w-4"/> Payer via Moneroo</>}
+            <Button 
+                onClick={handlePayment} 
+                disabled={isProcessing} 
+                className="w-full h-16 rounded-3xl bg-primary text-white font-black uppercase text-sm tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all"
+            >
+                {isProcessing ? <Loader2 className="h-6 w-6 animate-spin"/> : <><Lock className="mr-2 h-4 w-4"/> Payer par Mobile Money</>}
             </Button>
-            <p className="text-[9px] text-slate-600 text-center uppercase font-bold tracking-widest">Paiement 100% sécurisé via Mobile Money (OM, MTN, Wave)</p>
+            <div className="flex flex-col items-center gap-1.5 opacity-40">
+                <p className="text-[9px] text-white text-center uppercase font-black tracking-[0.2em]">Sécurisé par Moneroo v2.0</p>
+                {affiliateId && <p className="text-[8px] text-emerald-500 font-bold uppercase tracking-tighter">Attribution ambassadeur active</p>}
+            </div>
         </div>
       </div>
     </div>

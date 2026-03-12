@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -7,7 +6,7 @@
  */
 
 import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
+import { getFirestore, collection, query, where, onSnapshot, limit, getCountFromServer } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -27,15 +26,16 @@ import { useCollection } from '@/firebase';
 export default function AdminMonitoringPage() {
     const db = getFirestore();
     
-    // Écouter les utilisateurs en ligne
+    // 1. Écouter les utilisateurs en ligne (Réel)
     const onlineQuery = useMemo(() => query(collection(db, 'users'), where('isOnline', '==', true)), [db]);
     const { data: onlineUsers, isLoading: loadingOnline } = useCollection(onlineQuery);
 
-    // Écouter les derniers événements de tracking pour mesurer l'activité
-    const trackingQuery = useMemo(() => query(collection(db, 'tracking_events'), limit(100)), [db]);
+    // 2. Écouter l'activité globale (Événements récents)
+    const trackingQuery = useMemo(() => query(collection(db, 'tracking_events'), limit(50)), [db]);
     const { data: trackingEvents, isLoading: loadingTracking } = useCollection(trackingQuery);
 
-    const [uptime] = useState(99.98); // Mocké car dépend de l'hébergeur externe
+    // 3. Calculer l'uptime simulé (pour l'affichage UI uniquement)
+    const [uptime] = useState(99.98); 
     
     return (
         <div className="space-y-8 pb-20 animate-in fade-in duration-700">
@@ -49,10 +49,30 @@ export default function AdminMonitoringPage() {
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard title="Charge Active" value={`${trackingEvents?.length || 0} ev/m`} icon={Zap} isLoading={loadingTracking} />
-                <StatCard title="Sessions Live" value={(onlineUsers?.length || 0).toString()} icon={Users} isLoading={loadingOnline} />
-                <StatCard title="Usage CPU IA" value="14%" icon={Cpu} isLoading={false} />
-                <StatCard title="Disponibilité" value={`${uptime}%`} icon={Server} isLoading={false} />
+                <StatCard 
+                    title="Charge Active" 
+                    value={`${trackingEvents?.length || 0} req/m`} 
+                    icon={Zap} 
+                    isLoading={loadingTracking} 
+                />
+                <StatCard 
+                    title="Sessions Live" 
+                    value={(onlineUsers?.length || 0).toString()} 
+                    icon={Users} 
+                    isLoading={loadingOnline} 
+                />
+                <StatCard 
+                    title="Usage CPU IA" 
+                    value="14%" 
+                    icon={Cpu} 
+                    isLoading={false} 
+                />
+                <StatCard 
+                    title="Disponibilité" 
+                    value={`${uptime}%`} 
+                    icon={Server} 
+                    isLoading={false} 
+                />
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -88,7 +108,7 @@ export default function AdminMonitoringPage() {
                         <div className="pt-4 border-t border-white/5">
                             <div className="flex items-center gap-2 text-amber-500">
                                 <Clock size={14} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Dernier Job IA : Terminé</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">Dernière analyse : terminée</span>
                             </div>
                         </div>
                     </CardContent>

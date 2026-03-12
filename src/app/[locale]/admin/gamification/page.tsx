@@ -1,9 +1,8 @@
-
 'use client';
 
 /**
  * @fileOverview Centre de Gamification Ndara Afrique.
- * Branché sur la collection 'gamification_rules'.
+ * Branché sur la collection 'gamification_rules' (Raccordement Firestore final).
  */
 
 import { useState, useMemo } from 'react';
@@ -19,18 +18,18 @@ import {
     Trophy, 
     Medal, 
     Zap, 
-    Users, 
     Plus, 
     Star, 
     Award,
     Settings,
     Sparkles,
-    History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AdminGamificationPage() {
     const db = getFirestore();
+    
+    // Raccordement réel aux règles de gamification
     const rulesQuery = useMemo(() => query(collection(db, 'gamification_rules'), orderBy('updatedAt', 'desc')), [db]);
     const { data: rules, isLoading } = useCollection<any>(rulesQuery);
 
@@ -43,7 +42,7 @@ export default function AdminGamificationPage() {
                         <span className="text-[10px] font-black uppercase tracking-[0.3em]">Engagement & Rétention</span>
                     </div>
                     <h1 className="text-3xl font-black text-white uppercase tracking-tight">Gamification</h1>
-                    <p className="text-slate-400 text-sm font-medium mt-1">Transformez l'apprentissage en aventure.</p>
+                    <p className="text-slate-400 text-sm font-medium mt-1">Transformez l'apprentissage en aventure pour vos Ndara.</p>
                 </div>
                 <Button className="h-12 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-[10px] tracking-widest shadow-xl">
                     <Plus className="mr-2 h-4 w-4" /> Créer un Badge
@@ -53,10 +52,10 @@ export default function AdminGamificationPage() {
             <Tabs defaultValue="badges" className="w-full">
                 <TabsList className="bg-slate-900 border-slate-800 h-14 p-1 rounded-2xl w-full sm:w-auto">
                     <TabsTrigger value="badges" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
-                        <Award className="h-3.5 w-3.5" /> Badges
+                        <Award className="h-3.5 w-3.5" /> Catalogue Badges
                     </TabsTrigger>
                     <TabsTrigger value="xp" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
-                        <Zap className="h-3.5 w-3.5" /> Système XP
+                        <Zap className="h-3.5 w-3.5" /> Paramètres XP
                     </TabsTrigger>
                 </TabsList>
 
@@ -79,16 +78,16 @@ export default function AdminGamificationPage() {
                     <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
                             <CardTitle className="text-xl font-black text-white uppercase flex items-center gap-3">
-                                <Settings className="text-primary"/> Règles de Gains XP
+                                <Settings className="text-primary"/> Configuration de l'Algorithme XP
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="p-8 space-y-6">
-                            <XpRuleItem label="Terminer une leçon" value={10} />
-                            <XpRuleItem label="Finir une formation" value={100} />
-                            <XpRuleItem label="Réussir un Quiz (100%)" value={50} />
-                            <XpRuleItem label="Poser une question pertinente" value={5} />
+                            <XpRuleItem label="Terminer une leçon vidéo" value={10} />
+                            <XpRuleItem label="Valider une formation (100%)" value={100} />
+                            <XpRuleItem label="Succès Quiz (Score > 80%)" value={50} />
+                            <XpRuleItem label="Poser une question à Mathias" value={5} />
                             <Button className="w-full h-14 rounded-2xl bg-primary mt-4 font-black uppercase text-xs tracking-widest shadow-xl">
-                                Sauvegarder la configuration XP
+                                Sauvegarder les règles de scoring
                             </Button>
                         </CardContent>
                     </Card>
