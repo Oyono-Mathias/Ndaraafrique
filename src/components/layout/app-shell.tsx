@@ -1,9 +1,8 @@
 'use client';
 
 /**
- * @fileOverview AppShell Ndara Afrique.
- * ✅ RÉSOLU : Détection du mode plein écran pour le nouveau routage /courses/[slug].
- * ✅ RÉSOLU : Utilisation de Suspense pour useSearchParams.
+ * @fileOverview AppShell Ndara Afrique (Design Qwen Redesign).
+ * ✅ Grain Texture Overlay, Android-First Layout, Responsive Structure.
  */
 
 import React, { useState, useEffect, useMemo, Suspense } from 'react';
@@ -55,7 +54,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const locale = useLocale();
   const pathname = usePathname() || '';
-  const searchParams = useSearchParams();
   const db = getFirestore();
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
@@ -113,7 +111,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   if (siteSettings.maintenanceMode && currentUser?.role !== 'admin') {
       return (
-        <div className="h-screen flex flex-col items-center justify-center bg-slate-950 text-center p-6">
+        <div className="h-screen flex flex-col items-center justify-center bg-[#0f172a] text-center p-6">
             <Wrench className="h-16 w-16 text-primary mb-4" />
             <h1 className="text-2xl font-black text-white uppercase tracking-tight">Maintenance Ndara</h1>
             <p className="text-slate-500 mt-2 font-medium italic">Nous effectuons des mises à jour techniques.</p>
@@ -121,7 +119,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       );
   }
 
-  // ✅ LOGIQUE CORRIGÉE : Détecter le lecteur de cours pour le plein écran
   const isFullScreen = cleanPath.startsWith('/courses/') && cleanPath.split('/').filter(Boolean).length >= 2;
   const showNav = user && !isAuthPage && !isPublicPage && cleanPath !== '/';
   
@@ -129,30 +126,29 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const sidebarProps = { onLinkClick: handleSidebarLinkClick };
 
   return (
-    <div className={cn("min-h-screen w-full bg-background text-foreground", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
+    <div className={cn("min-h-screen w-full bg-[#0f172a] text-white", showNav && !isFullScreen && "md:grid md:grid-cols-[280px_1fr]")}>
+        {/* Grain Texture Layer */}
+        <div className="grain-overlay" />
+
         {showNav && !isFullScreen && (
-          <aside className="hidden md:block h-screen sticky top-0 border-r border-border/50">
+          <aside className="hidden md:block h-screen sticky top-0 border-r border-white/5">
              {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
           </aside>
         )}
-        <div className="flex flex-col flex-1">
+        <div className="flex flex-col flex-1 relative z-10">
           {siteSettings.announcementMessage && <AnnouncementBanner message={siteSettings.announcementMessage} />}
+          
           {showNav && !isFullScreen && (
-            <header className="flex h-16 items-center justify-between border-b border-border/50 px-4 bg-background/80 backdrop-blur-sm sticky top-0 z-30">
-              <div className="md:hidden">
-                <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
-                    <SheetTrigger asChild>
-                        <Button variant="outline" size="icon" className="bg-transparent border-border"><PanelLeft className="h-5 w-5 text-foreground" /></Button>
-                    </SheetTrigger>
-                    <SheetContent side="left" className="p-0 w-[300px] bg-background border-none">
-                        {role === 'admin' ? <AdminSidebar {...sidebarProps} /> : role === 'instructor' ? <InstructorSidebar {...sidebarProps} /> : <StudentSidebar {...sidebarProps} />}
-                    </SheetContent>
-                </Sheet>
-              </div>
-              <div className="ml-auto"><Header /></div>
-            </header>
+            <Header />
           )}
-          <main className={cn(showNav && !isFullScreen ? "p-6 pb-24 md:pb-6" : "p-0")}>{children}</main>
+
+          <main className={cn(
+            "flex-1",
+            showNav && !isFullScreen ? "pt-16 pb-20 md:p-6 md:pb-6" : "p-0"
+          )}>
+            {children}
+          </main>
+
           {role === 'student' && showNav && !isFullScreen && <StudentBottomNav />}
         </div>
       </div>
@@ -166,18 +162,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setMounted(true);
   }, []);
 
-  if (!mounted) return (
-    <div className="h-screen flex items-center justify-center bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-primary"/>
-    </div>
-  );
+  if (!mounted) return null;
 
   return (
     <>
       <SplashScreen />
       <OfflineBar />
       <Suspense fallback={
-        <div className="h-screen flex items-center justify-center bg-slate-950">
+        <div className="h-screen flex items-center justify-center bg-[#0f172a]">
             <Loader2 className="h-8 w-8 animate-spin text-primary"/>
         </div>
       }>
