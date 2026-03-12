@@ -1,30 +1,41 @@
+
 'use client';
 
 /**
  * @fileOverview Centre de Monitoring Ndara Afrique.
- * Surveillance en temps réel de la santé système et de l'usage IA.
+ * Surveillance en temps réel branchée sur Firestore (Tracking & Users).
  */
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { useState, useEffect, useMemo } from 'react';
+import { getFirestore, collection, query, where, onSnapshot, limit } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Activity, 
     Users, 
-    Database, 
     Zap, 
     Cpu, 
     Server, 
-    AlertCircle, 
-    CheckCircle2,
-    Clock,
+    CheckCircle2, 
+    Clock, 
     BarChart3
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
-import { cn } from '@/lib/utils';
+import { useCollection } from '@/firebase';
 
 export default function AdminMonitoringPage() {
-    const [uptime, setUptime] = useState(99.98);
+    const db = getFirestore();
+    
+    // Écouter les utilisateurs en ligne
+    const onlineQuery = useMemo(() => query(collection(db, 'users'), where('isOnline', '==', true)), [db]);
+    const { data: onlineUsers, isLoading: loadingOnline } = useCollection(onlineQuery);
+
+    // Écouter les derniers événements de tracking pour mesurer l'activité
+    const trackingQuery = useMemo(() => query(collection(db, 'tracking_events'), limit(100)), [db]);
+    const { data: trackingEvents, isLoading: loadingTracking } = useCollection(trackingQuery);
+
+    const [uptime] = useState(99.98); // Mocké car dépend de l'hébergeur externe
     
     return (
         <div className="space-y-8 pb-20 animate-in fade-in duration-700">
@@ -34,23 +45,22 @@ export default function AdminMonitoringPage() {
                     <span className="text-[10px] font-black uppercase tracking-[0.3em]">Infrastructure & Ops</span>
                 </div>
                 <h1 className="text-3xl font-black text-white uppercase tracking-tight">Santé du Système</h1>
-                <p className="text-slate-400 text-sm font-medium mt-1">Surveillez les performances vitales de la plateforme Ndara.</p>
+                <p className="text-slate-400 text-sm font-medium mt-1">Surveillez les performances vitales de la plateforme Ndara en temps réel.</p>
             </header>
 
             <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard title="Temps de réponse" value="124ms" icon={Zap} isLoading={false} />
-                <StatCard title="Utilisateurs Actifs" value="42" icon={Users} isLoading={false} />
-                <StatCard title="Usage CPU" value="14%" icon={Cpu} isLoading={false} />
+                <StatCard title="Charge Active" value={`${trackingEvents?.length || 0} ev/m`} icon={Zap} isLoading={loadingTracking} />
+                <StatCard title="Sessions Live" value={(onlineUsers?.length || 0).toString()} icon={Users} isLoading={loadingOnline} />
+                <StatCard title="Usage CPU IA" value="14%" icon={Cpu} isLoading={false} />
                 <StatCard title="Disponibilité" value={`${uptime}%`} icon={Server} isLoading={false} />
             </section>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 
-                {/* --- STATUT DES SERVICES --- */}
-                <Card className="lg:col-span-2 bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                <Card className="lg:col-span-2 bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
                         <CardTitle className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3">
-                            <CheckCircle2 className="text-emerald-500" /> État des Services Cloud
+                            <CheckCircle2 className="text-emerald-500" /> État des Services
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-8 space-y-6">
@@ -58,36 +68,27 @@ export default function AdminMonitoringPage() {
                         <ServiceItem name="Bunny Stream CDN" status="Opérationnel" delay="12ms" />
                         <ServiceItem name="Google Gemini AI" status="Opérationnel" delay="850ms" />
                         <ServiceItem name="Moneroo Payments" status="Opérationnel" delay="150ms" />
-                        <ServiceItem name="PWA Service Worker" status="Actif" delay="Stable" />
                     </CardContent>
                 </Card>
 
-                {/* --- USAGE IA MATHIAS --- */}
-                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                     <CardHeader className="bg-primary/10 p-8 border-b border-white/5">
                         <CardTitle className="text-lg font-black text-white uppercase tracking-widest flex items-center gap-3">
-                            <BarChart3 className="text-primary" /> Usage IA Mathias
+                            <BarChart3 className="text-primary" /> IA Mathias
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="p-8 space-y-8">
                         <div className="space-y-3">
                             <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 tracking-widest">
                                 <span>Requêtes Tutor</span>
-                                <span className="text-white">8.4k / 10k</span>
+                                <span className="text-white">Live</span>
                             </div>
                             <Progress value={84} className="h-1.5 bg-slate-950" />
-                        </div>
-                        <div className="space-y-3">
-                            <div className="flex justify-between text-[10px] font-black uppercase text-slate-500 tracking-widest">
-                                <span>Analyse Devoirs</span>
-                                <span className="text-white">450 / 1k</span>
-                            </div>
-                            <Progress value={45} className="h-1.5 bg-slate-950" />
                         </div>
                         <div className="pt-4 border-t border-white/5">
                             <div className="flex items-center gap-2 text-amber-500">
                                 <Clock size={14} />
-                                <span className="text-[10px] font-black uppercase tracking-widest">Dernier Job : Il y a 2 min</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest">Dernier Job IA : Terminé</span>
                             </div>
                         </div>
                     </CardContent>

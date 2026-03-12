@@ -1,3 +1,4 @@
+
 rules_version = '2';
 
 service cloud.firestore {
@@ -8,23 +9,23 @@ service cloud.firestore {
       return request.auth != null;
     }
     
+    function isAdmin() {
+      return isSignedIn() && (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin');
+    }
+
     function isOwner(userId) {
       return isSignedIn() && request.auth.uid == userId;
     }
 
-    // --- RÈGLES DE DÉVELOPPEMENT (DÉVERROUILLAGE) ---
-    match /{document=**} {
-      allow read, write: if isSignedIn();
-    }
-
-    // --- PROFIL UTILISATEUR ---
+    // --- UTILISATEURS ---
     match /users/{userId} {
-      allow read: if true; 
+      allow read: if isSignedIn(); // Permet la recherche pour la messagerie
       allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
       
       match /notifications/{notifId} {
-        allow create, read, update: if isOwner(userId);
+        allow read, update: if isOwner(userId);
+        allow create: if isAdmin();
       }
       
       match /chatHistory/{msgId} {
@@ -32,46 +33,77 @@ service cloud.firestore {
       }
     }
 
-    // --- LISTE DE SOUHAITS (FAVORIS) ---
-    match /user_wishlist/{wishId} {
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    // --- COURS ---
+    match /courses/{courseId} {
+      allow read: if true; // Public pour le catalogue
+      allow create: if isSignedIn(); // Formateurs
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.instructorId == request.auth.uid);
+      
+      match /{allSubcollections=**} {
+        allow read: if true;
+        allow write: if isAdmin() || (isSignedIn() && get(/databases/$(database)/documents/courses/$(courseId)).data.instructorId == request.auth.uid);
+      }
     }
 
-    // --- AVIS (REVIEWS) ---
+    // --- PAIEMENTS & RETRAITS ---
+    match /payments/{paymentId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      allow create: if false; // Uniquement via Webhook (Admin SDK)
+      allow update, delete: if isAdmin();
+    }
+
+    match /payout_requests/{payoutId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.instructorId == request.auth.uid);
+      allow create: if isSignedIn();
+      allow update, delete: if isAdmin();
+    }
+
+    // --- MESSAGERIE ---
+    match /chats/{chatId} {
+      allow read: if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);
+      allow create: if isSignedIn();
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid in resource.data.participants);
+      
+      match /messages/{messageId} {
+        allow read: if isAdmin() || (isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants);
+        allow create: if isSignedIn() && request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants;
+      }
+    }
+
+    // --- AUTRES COLLECTIONS ---
+    match /enrollments/{enrollId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.studentId == request.auth.uid) || (isSignedIn() && resource.data.instructorId == request.auth.uid);
+      allow write: if isAdmin();
+    }
+
+    match /user_wishlist/{wishId} {
+      allow read, write: if isSignedIn() && request.auth.uid == (resource == null ? request.resource.data.userId : resource.data.userId);
+    }
+
     match /course_reviews/{reviewId} {
       allow read: if true;
       allow create: if isSignedIn();
-      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.studentId;
+      allow update, delete: if isAdmin() || (isSignedIn() && resource.data.studentId == request.auth.uid);
     }
 
-    // --- QUESTIONS & RÉPONSES ---
-    match /questions/{questionId} {
+    match /support_tickets/{ticketId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
       allow create: if isSignedIn();
-      allow read: if isSignedIn() && (request.auth.uid == resource.data.studentId || request.auth.uid == resource.data.instructorId);
-      allow update: if isSignedIn() && request.auth.uid == resource.data.instructorId;
+      allow update: if isAdmin();
     }
 
-    // --- ACCÈS PUBLICS ---
     match /settings/{docId} {
       allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /admin_audit_logs/{logId} {
+      allow read, write: if isAdmin();
     }
     
-    match /faqs/{faqId} {
-      allow read: if true;
-    }
-
-    match /carousel_slides/{slideId} {
-      allow read: if true;
-    }
-
-    match /courses/{courseId} {
-      allow read: if true; 
-      
-      match /{allSubcollections=**} {
-        allow read: if true; 
-      }
+    match /tracking_events/{eventId} {
+      allow create: if true; // Permettre le tracking anonyme
+      allow read: if isAdmin();
     }
   }
 }

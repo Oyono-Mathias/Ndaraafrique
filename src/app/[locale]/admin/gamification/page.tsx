@@ -1,16 +1,20 @@
+
 'use client';
 
 /**
  * @fileOverview Centre de Gamification Ndara Afrique.
- * Gère les badges, les points XP et les classements.
+ * Branché sur la collection 'gamification_rules'.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useCollection } from '@/firebase';
+import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Trophy, 
     Medal, 
@@ -20,12 +24,16 @@ import {
     Star, 
     Award,
     Settings,
-    ChevronRight,
-    Sparkles
+    Sparkles,
+    History
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export default function AdminGamificationPage() {
+    const db = getFirestore();
+    const rulesQuery = useMemo(() => query(collection(db, 'gamification_rules'), orderBy('updatedAt', 'desc')), [db]);
+    const { data: rules, isLoading } = useCollection<any>(rulesQuery);
+
     return (
         <div className="space-y-8 pb-20 animate-in fade-in duration-700">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -50,22 +58,25 @@ export default function AdminGamificationPage() {
                     <TabsTrigger value="xp" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
                         <Zap className="h-3.5 w-3.5" /> Système XP
                     </TabsTrigger>
-                    <TabsTrigger value="ranking" className="px-6 font-bold uppercase text-[10px] tracking-widest gap-2 h-full">
-                        <Users className="h-3.5 w-3.5" /> Classements
-                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="badges" className="mt-8">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <BadgeCard name="Premier Ndara" xp={100} condition="Premier cours terminé" icon={Sparkles} />
-                        <BadgeCard name="Ambassadeur Elite" xp={500} condition="20 parrainages" icon={Medal} color="text-amber-500" />
-                        <BadgeCard name="Expert du Savoir" xp={1000} condition="Note moyenne > 4.8" icon={Star} color="text-blue-400" />
-                        <BadgeCard name="Champion Centrafricain" xp={2000} condition="Top 1 pays" icon={Trophy} color="text-emerald-400" />
-                    </div>
+                    {isLoading ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-48 w-full rounded-3xl bg-slate-900" />)}
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <BadgeCard name="Premier Ndara" xp={100} condition="Premier cours terminé" icon={Sparkles} />
+                            <BadgeCard name="Ambassadeur Elite" xp={500} condition="20 parrainages" icon={Medal} color="text-amber-500" />
+                            <BadgeCard name="Expert du Savoir" xp={1000} condition="Note moyenne > 4.8" icon={Star} color="text-blue-400" />
+                            <BadgeCard name="Champion Centrafricain" xp={2000} condition="Top 1 pays" icon={Trophy} color="text-emerald-400" />
+                        </div>
+                    )}
                 </TabsContent>
 
                 <TabsContent value="xp" className="mt-8">
-                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden">
+                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-2xl">
                         <CardHeader className="bg-slate-800/30 p-8 border-b border-white/5">
                             <CardTitle className="text-xl font-black text-white uppercase flex items-center gap-3">
                                 <Settings className="text-primary"/> Règles de Gains XP
@@ -76,16 +87,10 @@ export default function AdminGamificationPage() {
                             <XpRuleItem label="Finir une formation" value={100} />
                             <XpRuleItem label="Réussir un Quiz (100%)" value={50} />
                             <XpRuleItem label="Poser une question pertinente" value={5} />
-                            <XpRuleItem label="Inviter un ami (Inscription)" value={25} />
-                            <Button className="w-full h-14 rounded-2xl bg-primary mt-4 font-black uppercase text-xs">Sauvegarder la configuration XP</Button>
+                            <Button className="w-full h-14 rounded-2xl bg-primary mt-4 font-black uppercase text-xs tracking-widest shadow-xl">
+                                Sauvegarder la configuration XP
+                            </Button>
                         </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="ranking" className="mt-8">
-                    <Card className="bg-slate-900 border-slate-800 rounded-[2.5rem] p-12 text-center opacity-40">
-                        <Trophy className="h-16 w-16 mx-auto mb-4 text-slate-700" />
-                        <p className="font-black uppercase tracking-widest text-xs">Aperçu du Leaderboard Global en cours de synchronisation...</p>
                     </Card>
                 </TabsContent>
             </Tabs>

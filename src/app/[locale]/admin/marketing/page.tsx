@@ -1,40 +1,39 @@
+
 'use client';
 
 /**
  * @fileOverview Centre de Marketing & Engagement Ndara Afrique.
- * Permet de piloter les campagnes de croissance et les automatisations.
- * ✅ FIX : Ajout des imports manquants (cn, Badge, Button, Table, Tabs, Card).
+ * Branché sur la collection Firestore 'marketing_campaigns'.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { useCollection } from '@/firebase';
+import { getFirestore, collection, query, orderBy } from 'firebase/firestore';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
 import { 
     Target, 
     Mail, 
-    Bell, 
-    TrendingUp, 
     Plus, 
     MousePointer2, 
     Users, 
     CheckCircle2, 
-    Clock, 
     ArrowUpRight,
-    Zap
+    Zap,
+    History
 } from 'lucide-react';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { cn } from '@/lib/utils';
 
-const mockCampaigns = [
-    { id: '1', name: 'Offre Spéciale Ramadan', type: 'Email', status: 'Active', sent: 1200, clicks: 450, conversions: 82 },
-    { id: '2', name: 'Relance Paniers Abandonnés', type: 'Automation', status: 'Active', sent: 85, clicks: 32, conversions: 14 },
-    { id: '3', name: 'Nouveau cours AI - Notification', type: 'Push', status: 'Draft', sent: 0, clicks: 0, conversions: 0 },
-];
-
 export default function AdminMarketingPage() {
+    const db = getFirestore();
+    const campaignsQuery = useMemo(() => query(collection(db, 'marketing_campaigns'), orderBy('createdAt', 'desc')), [db]);
+    const { data: campaigns, isLoading } = useCollection<any>(campaignsQuery);
+
     return (
         <div className="space-y-8 pb-20 animate-in fade-in duration-700">
             <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
@@ -71,48 +70,64 @@ export default function AdminMarketingPage() {
                 <TabsContent value="campaigns" className="mt-8">
                     <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
                         <Table>
-                            <thead>
+                            <TableHeader>
                                 <TableRow className="border-slate-800 bg-slate-800/30">
-                                    <th className="text-[10px] font-black uppercase tracking-widest py-4 text-left px-4">Nom de la Campagne</th>
-                                    <th className="text-[10px] font-black uppercase tracking-widest text-left px-4">Type</th>
-                                    <th className="text-[10px] font-black uppercase tracking-widest text-left px-4">Performance</th>
-                                    <th className="text-[10px] font-black uppercase tracking-widest text-left px-4">Statut</th>
-                                    <th className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</th>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Nom de la Campagne</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Type</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Performance</TableHead>
+                                    <TableHead className="text-[10px] font-black uppercase tracking-widest">Statut</TableHead>
+                                    <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</TableHead>
                                 </TableRow>
-                            </thead>
+                            </TableHeader>
                             <TableBody>
-                                {mockCampaigns.map(camp => (
-                                    <TableRow key={camp.id} className="group border-slate-800 hover:bg-slate-800/20">
-                                        <TableCell>
-                                            <span className="font-bold text-sm text-white uppercase">{camp.name}</span>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="outline" className="text-[9px] border-slate-700 text-slate-400">{camp.type}</Badge>
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex gap-4">
-                                                <div>
-                                                    <p className="text-[10px] text-slate-500 font-bold uppercase">Clics</p>
-                                                    <p className="text-xs font-black text-white">{camp.clicks}</p>
+                                {isLoading ? (
+                                    [...Array(3)].map((_, i) => (
+                                        <TableRow key={i} className="border-slate-800"><TableCell colSpan={5}><Skeleton className="h-10 w-full bg-slate-800/50 rounded-xl"/></TableCell></TableRow>
+                                    ))
+                                ) : campaigns && campaigns.length > 0 ? (
+                                    campaigns.map(camp => (
+                                        <TableRow key={camp.id} className="group border-slate-800 hover:bg-slate-800/20">
+                                            <TableCell>
+                                                <span className="font-bold text-sm text-white uppercase">{camp.name}</span>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge variant="outline" className="text-[9px] border-slate-700 text-slate-400">{camp.type}</Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex gap-4">
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-500 font-bold uppercase">Clics</p>
+                                                        <p className="text-xs font-black text-white">{camp.clicks || 0}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-[10px] text-slate-500 font-bold uppercase">Conv.</p>
+                                                        <p className="text-xs font-black text-primary">{camp.conversions || 0}</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-[10px] text-slate-500 font-bold uppercase">Conv.</p>
-                                                    <p className="text-xs font-black text-primary">{camp.conversions}</p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge className={cn("text-[9px] font-black uppercase", camp.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-500')}>
-                                                {camp.status}
-                                            </Badge>
-                                        </TableCell>
-                                        <TableCell className="text-right pr-6">
-                                            <Button variant="ghost" size="sm" className="h-8 rounded-lg hover:bg-slate-800">
-                                                <ArrowUpRight className="h-4 w-4" />
-                                            </Button>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge className={cn(
+                                                    "text-[9px] font-black uppercase", 
+                                                    camp.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-slate-800 text-slate-500'
+                                                )}>
+                                                    {camp.status}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right pr-6">
+                                                <Button variant="ghost" size="sm" className="h-8 rounded-lg hover:bg-slate-800">
+                                                    <ArrowUpRight className="h-4 w-4" />
+                                                </Button>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-48 text-center opacity-20">
+                                            <History className="h-12 w-12 mx-auto mb-4" />
+                                            <p className="font-black uppercase text-xs">Aucune campagne enregistrée</p>
                                         </TableCell>
                                     </TableRow>
-                                ))}
+                                )}
                             </TableBody>
                         </Table>
                     </div>
