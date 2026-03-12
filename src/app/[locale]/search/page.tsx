@@ -1,64 +1,70 @@
 'use client';
 
 /**
- * @fileOverview Page de recherche Ndara Afrique - Style Udemy Exact.
- * ✅ AFFILIATION : Capture de l'affiliateId avec expiration 30 jours (Standard industry).
- * ✅ RÈGLE : Last-Click Attribution via localStorage.
+ * @fileOverview Page de recherche Ndara Afrique - Design Android-First V2.
+ * ✅ AFFILIATION : Capture de l'affiliateId avec persistence.
+ * ✅ FILTRES : Navigation par pilules (chips) horizontales.
  */
 
-import { useState, useEffect, useMemo } from 'react';
-import { getFirestore, collection, query, where, onSnapshot, getDocs, doc } from 'firebase/firestore';
+import { useState, useEffect, useMemo, Suspense } from 'react';
+import { getFirestore, collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { Input } from '@/components/ui/input';
-import { Search as SearchIcon, Frown, ChevronRight, TrendingUp, LayoutGrid, ArrowLeft, SlidersHorizontal, ShoppingCart, Loader2, BadgeEuro, Sparkles } from 'lucide-react';
+import { 
+    Search as SearchIcon, 
+    Frown, 
+    ArrowLeft, 
+    SlidersHorizontal, 
+    ShoppingCart, 
+    Loader2, 
+    BadgeEuro, 
+    Mic,
+    Leaf,
+    ChartLine,
+    Coins,
+    Cpu,
+    Code,
+    LayoutGrid
+} from 'lucide-react';
 import { CourseCard } from '@/components/cards/CourseCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useRole } from '@/context/RoleContext';
-import type { Course, NdaraUser, Settings } from '@/lib/types';
+import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
-
-const POPULAR_SEARCHES = [
-    "AgriTech", "FinTech", "Python", "Excel", "Marketing", "Élevage", "Commerce", "IA", "Design"
-];
 
 const CATEGORIES = [
-    { name: "Développement", color: "text-blue-400" },
-    { name: "Informatique et logiciels", color: "text-purple-400" },
-    { name: "Finance et comptabilité", color: "text-emerald-400" },
-    { name: "Productivité bureautique", color: "text-amber-400" },
-    { name: "Développement personnel", color: "text-rose-400" },
-    { name: "Design", color: "text-indigo-400" },
-    { name: "Mode de vie", color: "text-orange-400" }
+    { name: "AgriTech", icon: Leaf },
+    { name: "FinTech", icon: ChartLine },
+    { name: "Trading", icon: Coins },
+    { name: "Mécatronique", icon: Cpu },
+    { name: "Dév Web", icon: Code }
 ];
 
-export default function SearchPage() {
+function SearchPageContent() {
   const [searchTerm, setSearchTerm] = useState('');
   const [courses, setCourses] = useState<Course[]>([]);
   const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
   const [isLoading, setIsLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
-  const [showOnlyResale, setShowOnlyResale] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   
   const db = getFirestore();
   const router = useRouter();
   const { user } = useRole();
   const searchParams = useSearchParams();
 
-  // ✅ LOGIQUE AMBASSADEUR : Capturer l'affiliateId avec persistence 30 jours (Last Click wins)
+  // Attribution Ambassadeur
   useEffect(() => {
       const affId = searchParams.get('aff');
       if (affId && typeof window !== 'undefined') {
           const cookieData = {
               id: affId,
               timestamp: Date.now(),
-              expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 Jours réels
+              expiresAt: Date.now() + (30 * 24 * 60 * 60 * 1000)
           };
-          // Persistance locale pour que l'affilié reste crédité
           localStorage.setItem('ndara_affiliate_id', JSON.stringify(cookieData));
-          console.log("🚀 Affiliate ID Captured & Persisted (30 Days):", affId);
       }
   }, [searchParams]);
 
@@ -99,8 +105,8 @@ export default function SearchPage() {
   const filteredResults = useMemo(() => {
     let results = [...courses];
     
-    if (showOnlyResale) {
-        results = results.filter(c => c.resaleRightsAvailable === true);
+    if (selectedCategory !== 'all') {
+        results = results.filter(c => c.category === selectedCategory);
     }
 
     if (searchTerm.trim()) {
@@ -111,142 +117,137 @@ export default function SearchPage() {
     }
 
     return results;
-  }, [courses, searchTerm, showOnlyResale]);
+  }, [courses, searchTerm, selectedCategory]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 animate-in fade-in duration-700">
+    <div className="min-h-screen bg-ndara-bg pb-24 animate-in fade-in duration-700 relative">
+      <div className="grain-overlay" />
       
-      <header className="px-2 pt-4 pb-2 sticky top-0 bg-background/95 backdrop-blur-xl z-40 border-b border-border/50 flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full text-foreground hover:bg-accent">
-            <ArrowLeft className="h-6 w-6" />
-        </Button>
-        
-        <div className="relative flex-1">
-          <Input
-            placeholder="Rechercher une formation ou une licence..."
-            className="h-12 pl-4 pr-10 rounded-lg bg-card border-border shadow-sm text-base focus-visible:ring-primary/20"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-          <button 
-            onClick={() => setShowOnlyResale(!showOnlyResale)}
-            className={cn(
-                "absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-md transition-all flex items-center gap-1",
-                showOnlyResale ? "bg-amber-500 text-black shadow-lg" : "text-muted-foreground hover:text-primary"
-            )}
-            title="Afficher uniquement la Bourse du Savoir"
-          >
-            <BadgeEuro className="h-5 w-5" />
-            {showOnlyResale && <span className="text-[10px] font-black uppercase hidden sm:inline">Bourse Active</span>}
-          </button>
+      <header className="fixed top-0 w-full z-50 bg-ndara-bg/95 backdrop-blur-md safe-area-pt border-b border-white/5">
+        <div className="px-4 py-4 space-y-4">
+            {/* Title Bar */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-ndara-surface flex items-center justify-center text-gray-400 hover:text-white transition active:scale-90">
+                        <ArrowLeft className="h-5 w-5" />
+                    </button>
+                    <h1 className="font-black text-xl text-white uppercase tracking-tight">Recherche</h1>
+                </div>
+                {user && (
+                    <Link href="/student/cart" className="relative">
+                        <Button variant="ghost" size="icon" className="rounded-full bg-ndara-surface text-gray-400">
+                            <ShoppingCart className="h-5 w-5" />
+                            {cartCount > 0 && (
+                                <span className="absolute -top-0.5 -right-0.5 h-4 w-4 bg-red-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border-2 border-ndara-bg">
+                                    {cartCount}
+                                </span>
+                            )}
+                        </Button>
+                    </Link>
+                )}
+            </div>
+
+            {/* Search Input */}
+            <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <SearchIcon className="h-5 w-5 text-primary" />
+                </div>
+                <Input
+                    placeholder="Rechercher une formation..."
+                    className="h-14 pl-14 pr-12 rounded-[2rem] bg-ndara-surface border-white/5 text-white shadow-xl focus-visible:ring-primary/20"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <button className="absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white active:scale-90 transition-transform">
+                    <Mic className="h-4 w-4" />
+                </button>
+            </div>
         </div>
 
-        {user && (
-            <Link href="/student/cart" className="relative group">
-                <Button variant="ghost" size="icon" className="rounded-full text-foreground hover:bg-accent">
-                    <ShoppingCart className="h-6 w-6" />
-                    {cartCount > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center border-2 border-background animate-in zoom-in">
-                            {cartCount}
-                        </span>
+        {/* Category Chips */}
+        <div className="px-4 pb-4 overflow-hidden">
+            <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-1">
+                <button 
+                    onClick={() => setSelectedCategory('all')}
+                    className={cn(
+                        "flex-shrink-0 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
+                        selectedCategory === 'all' 
+                            ? "bg-primary text-ndara-bg border-primary shadow-lg shadow-primary/20" 
+                            : "bg-ndara-surface border-white/5 text-gray-400"
                     )}
-                </Button>
-            </Link>
-        )}
+                >
+                    Tout
+                </button>
+                {CATEGORIES.map(cat => (
+                    <button 
+                        key={cat.name}
+                        onClick={() => setSelectedCategory(cat.name)}
+                        className={cn(
+                            "flex-shrink-0 px-5 py-2.5 rounded-full border text-[10px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center gap-2",
+                            selectedCategory === cat.name 
+                                ? "bg-primary text-ndara-bg border-primary shadow-lg shadow-primary/20" 
+                                : "bg-ndara-surface border-white/5 text-gray-400"
+                        )}
+                    >
+                        <cat.icon className="h-3 w-3" />
+                        {cat.name}
+                    </button>
+                ))}
+            </div>
+        </div>
       </header>
 
-      <main className="px-4 pt-6">
-        {showOnlyResale && (
-            <div className="mb-8 p-6 bg-gradient-to-r from-amber-500/10 to-primary/10 border border-amber-500/20 rounded-3xl flex items-center justify-between animate-in slide-in-from-top-2 shadow-2xl">
-                <div className="flex items-center gap-4">
-                    <div className="p-3 bg-amber-500/20 rounded-2xl">
-                        <BadgeEuro className="h-8 w-8 text-amber-500" />
-                    </div>
-                    <div>
-                        <p className="text-lg font-black text-white uppercase tracking-tight">Bourse du Savoir</p>
-                        <p className="text-xs text-amber-500 font-bold uppercase tracking-widest">Affichage exclusif des licences de revente</p>
+      <main className="px-4 pt-56">
+        <div className="flex items-center justify-between mb-6 px-1">
+            <p className="text-[11px] font-black text-slate-500 uppercase tracking-widest">
+                <span className="text-white">{filteredResults.length}</span> formations trouvées
+            </p>
+            <button className="flex items-center gap-1.5 text-primary text-[10px] font-black uppercase tracking-widest bg-primary/5 px-3 py-1.5 rounded-xl border border-primary/10">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                FILTRES
+            </button>
+        </div>
+
+        {isLoading ? (
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+                <div key={i} className="flex gap-3 p-3 bg-ndara-surface/50 rounded-[2rem] border border-white/5">
+                    <Skeleton className="w-32 h-20 rounded-3xl bg-slate-800 shrink-0" />
+                    <div className="flex-1 space-y-2 py-1">
+                        <Skeleton className="h-4 w-3/4 bg-slate-800" />
+                        <Skeleton className="h-3 w-1/2 bg-slate-800" />
                     </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => setShowOnlyResale(false)} className="h-10 border-amber-500/30 text-amber-500 hover:bg-amber-500 hover:text-black font-black uppercase text-[10px]">
-                    Quitter le mode Bourse
-                </Button>
-            </div>
-        )}
-
-        {(searchTerm === '' && !showOnlyResale) ? (
-          <div className="space-y-10 animate-in slide-in-from-bottom-4 duration-700">
-            <section className="space-y-4">
-              <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-primary" />
-                Recherches populaires
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {POPULAR_SEARCHES.map(search => (
-                  <button
-                    key={search}
-                    onClick={() => setSearchTerm(search)}
-                    className="px-5 py-2.5 rounded-full border border-border bg-card hover:bg-primary hover:text-white hover:border-primary transition-all font-bold text-sm active:scale-95 shadow-sm"
-                  >
-                    {search}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            <section className="space-y-4">
-              <h2 className="text-xl font-black uppercase tracking-tight flex items-center gap-2">
-                <LayoutGrid className="h-5 w-5 text-primary" />
-                Parcourir les catégories
-              </h2>
-              <div className="grid gap-1">
-                {CATEGORIES.map(cat => (
-                  <button
-                    key={cat.name}
-                    onClick={() => setSearchTerm(cat.name)}
-                    className="flex items-center justify-between py-4 border-b border-border hover:bg-accent/50 px-2 rounded-lg transition-colors group"
-                  >
-                    <span className="font-bold text-base group-hover:text-primary transition-colors">{cat.name}</span>
-                    <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-transform group-hover:translate-x-1" />
-                  </button>
-                ))}
-              </div>
-            </section>
+            ))}
+          </div>
+        ) : filteredResults.length > 0 ? (
+          <div className="flex flex-col gap-4 animate-in slide-in-from-bottom-4 duration-700">
+            {filteredResults.map(course => (
+              <CourseCard 
+                key={course.id} 
+                course={course} 
+                instructor={instructorsMap.get(course.instructorId) || null}
+                variant="search-result" 
+              />
+            ))}
           </div>
         ) : (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[13px] font-black text-foreground uppercase tracking-[0.1em] flex items-center gap-2">
-                    {showOnlyResale && <Sparkles className="h-4 w-4 text-amber-500" />}
-                    {filteredResults.length} {showOnlyResale ? 'OPPORTUNITÉS' : 'RÉSULTATS'}
-                </h2>
-                {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
-            </div>
-
-            {isLoading ? (
-              <div className="space-y-4">
-                {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 w-full rounded-xl bg-card" />)}
-              </div>
-            ) : filteredResults.length > 0 ? (
-              <div className="flex flex-col gap-3">
-                {filteredResults.map(course => (
-                  <CourseCard 
-                    key={course.id} 
-                    course={course} 
-                    instructor={instructorsMap.get(course.instructorId) || null}
-                    variant="search-result" 
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-24 text-center opacity-40">
-                <Frown className="h-16 w-16 mb-4" />
-                <h3 className="text-xl font-black uppercase tracking-tight">Aucun résultat</h3>
-                <Button variant="link" onClick={() => { setSearchTerm(''); setShowOnlyResale(false); }} className="text-primary mt-2">Réinitialiser la recherche</Button>
-              </div>
-            )}
+          <div className="flex flex-col items-center justify-center py-32 text-center opacity-30 animate-in zoom-in duration-500">
+            <Frown className="h-16 w-16 mb-4 text-slate-600" />
+            <h3 className="text-xl font-black text-white uppercase tracking-tight">Aucun résultat</h3>
+            <p className="text-sm text-slate-500 mt-2">Essayez d'autres mots-clés ou parcourez les catégories.</p>
+            <Button variant="link" onClick={() => { setSearchTerm(''); setSelectedCategory('all'); }} className="text-primary mt-4 font-black uppercase text-[10px] tracking-widest">Réinitialiser</Button>
           </div>
         )}
       </main>
     </div>
   );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<div className="h-screen bg-ndara-bg flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <SearchPageContent />
+        </Suspense>
+    )
 }
