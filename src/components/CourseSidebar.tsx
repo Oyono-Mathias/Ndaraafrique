@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, CheckCircle, FileQuestion, PlayCircle, Lock, ChevronDown, ListChecks, GraduationCap } from 'lucide-react';
+import { ArrowLeft, CheckCircle, FileQuestion, PlayCircle, Lock, ChevronDown, ListChecks, GraduationCap, Clock } from 'lucide-react';
 import type { Course, Section, Lecture, Quiz } from '@/lib/types';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
