@@ -2,9 +2,9 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique V2 (Design Qwen + Firestore Real-time).
- * ✅ DESIGN : Immersion Android-First, Drawer latéral pour le programme.
- * ✅ TEMPS RÉEL : Progression et états synchronisés via onSnapshot.
+ * @fileOverview Lecteur de cours Ndara Afrique V2 (Design Qwen Immersif).
+ * ✅ DESIGN : Immersion totale, fond #050505, Drawer latéral Android.
+ * ✅ FONCTIONNEL : Progression temps réel, IA Mathias intégrée.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -45,7 +45,9 @@ import {
     X,
     ShieldCheck,
     Bookmark,
-    FileVideo
+    FileVideo,
+    FileText as FilePdf,
+    Sparkles
 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
@@ -57,7 +59,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 
 function CoursePlayerPageContent() {
@@ -187,7 +189,7 @@ function CoursePlayerPageContent() {
 
   const isLoading = isLoadingContent || courseLoading;
 
-  if (isLoading) return <div className="h-screen bg-slate-950 flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
+  if (isLoading) return <div className="h-screen bg-[#050505] flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
 
   const completedLessons = courseProgress?.completedLessons || [];
 
@@ -218,7 +220,7 @@ function CoursePlayerPageContent() {
       <div className="flex flex-col h-screen bg-[#050505] overflow-hidden font-sans relative">
         <div className="grain-overlay" />
         
-        {/* --- TOP BAR (Floating Overlay) --- */}
+        {/* --- TOP BAR --- */}
         <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-4 safe-area-pt">
             <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition active:scale-90">
                 <ArrowLeft className="h-5 w-5" />
@@ -229,8 +231,15 @@ function CoursePlayerPageContent() {
         </header>
 
         <main className="flex-1 flex flex-col min-h-0 relative z-10">
-            {/* --- VIDEO / CONTENT PLAYER --- */}
+            {/* --- VIDEO PLAYER --- */}
             <div className="bg-black relative aspect-video shadow-2xl overflow-hidden flex-shrink-0">
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-30">
+                    <div 
+                        className="h-full bg-primary transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.6)]" 
+                        style={{ width: `${courseProgress?.progressPercent || 0}%` }} 
+                    />
+                </div>
+
                 {activeLecture ? (
                     activeLecture.type === 'video' ? (
                         <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
@@ -248,24 +257,15 @@ function CoursePlayerPageContent() {
                         <Play className="h-12 w-12 animate-pulse" />
                     </div>
                 )}
-
-                {/* Progress Bar (Glow effect from Qwen) */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-30">
-                    <div 
-                        className="h-full bg-primary transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.6)]" 
-                        style={{ width: `${courseProgress?.progressPercent || 0}%` }} 
-                    />
-                </div>
             </div>
 
-            {/* --- SCROLLABLE CONTENT --- */}
+            {/* --- CONTENT --- */}
             <ScrollArea className="flex-1">
                 <div className="px-4 py-6 space-y-8 pb-32">
                     
-                    {/* Lesson Header */}
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
-                            <Badge className="bg-primary/20 text-primary border border-primary/30 font-black uppercase text-[10px] tracking-widest px-3 py-1 rounded-full animate-pulse" style={{ animationDuration: '3s' }}>
+                            <Badge className="bg-primary/20 text-primary border border-primary/30 font-black uppercase text-[10px] tracking-widest px-3 py-1 rounded-full certifying-badge">
                                 <ShieldCheck size={12} className="mr-1.5" />
                                 Certifiant
                             </Badge>
@@ -281,7 +281,6 @@ function CoursePlayerPageContent() {
                         </p>
                     </div>
 
-                    {/* Action Buttons (Massive Pills) */}
                     <div className="grid grid-cols-1 gap-3">
                         <Button 
                             onClick={handleMarkComplete}
@@ -290,7 +289,7 @@ function CoursePlayerPageContent() {
                                 "w-full h-16 rounded-[2rem] font-black uppercase text-xs tracking-[0.15em] transition-all shadow-xl active:scale-95",
                                 completedLessons.includes(activeLecture?.id || '') 
                                     ? "bg-emerald-500/10 text-emerald-500 border-none opacity-100" 
-                                    : "bg-primary text-slate-950"
+                                    : "bg-primary text-slate-950 hover:bg-primary/90"
                             )}
                         >
                             {completedLessons.includes(activeLecture?.id || '') ? (
@@ -309,8 +308,7 @@ function CoursePlayerPageContent() {
                         </Button>
                     </div>
 
-                    {/* Description Card */}
-                    <div className="bg-slate-900/50 border border-white/5 rounded-[2rem] p-6 space-y-4">
+                    <div className="bg-slate-900/50 border border-white/5 rounded-[2rem] p-6 space-y-4 shadow-xl">
                         <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">À propos de cette leçon</h2>
                         <div className="text-slate-400 text-sm leading-relaxed font-medium">
                             {activeLecture?.textContent ? (
@@ -321,24 +319,17 @@ function CoursePlayerPageContent() {
                         </div>
                     </div>
 
-                    {/* Lesson Options (Circular) */}
                     <div className="flex items-center justify-around gap-4 py-2">
                         <CircularOptionBtn icon={StickyNote} label="Notes" />
                         <CircularOptionBtn icon={Share2} label="Partager" />
                         <CircularOptionBtn icon={Download} label="Télécharger" />
                         <CircularOptionBtn icon={Bookmark} label="Favoris" />
                     </div>
-
-                    {/* Course Summary Widget */}
-                    <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-6 text-center space-y-2">
-                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Ndara Afrique Engine v2.0</p>
-                        <p className="text-xs text-slate-500 font-medium italic">"Le savoir est la clé de l'émergence."</p>
-                    </div>
                 </div>
             </ScrollArea>
         </main>
 
-        {/* --- CURRICULUM DRAWER --- */}
+        {/* --- DRAWER --- */}
         <div className={cn(
             "fixed inset-0 z-[100] transition-all duration-500",
             isCurriculumOpen ? "bg-black/80 backdrop-blur-sm opacity-100" : "opacity-0 pointer-events-none"
@@ -365,7 +356,7 @@ function CoursePlayerPageContent() {
                 </header>
 
                 <ScrollArea className="flex-1">
-                    <div className="p-2 space-y-6">
+                    <div className="p-2 space-y-6 pb-20">
                         {sections.map((section, idx) => (
                             <div key={section.id} className="space-y-1">
                                 <h3 className="px-4 py-2 font-black text-[10px] uppercase tracking-widest text-slate-500">
@@ -412,7 +403,7 @@ function CoursePlayerPageContent() {
 function CircularOptionBtn({ icon: Icon, label }: { icon: any, label: string }) {
     return (
         <button className="flex flex-col items-center gap-2 group active:scale-90 transition-transform">
-            <div className="w-14 h-14 bg-slate-900 border border-white/5 rounded-full flex items-center justify-center text-slate-500 group-hover:text-primary group-hover:border-primary/20 transition-colors shadow-lg">
+            <div className="w-14 h-14 bg-slate-900 border border-white/5 rounded-full flex items-center justify-center text-gray-500 group-hover:text-primary group-hover:border-primary/20 transition-colors shadow-lg">
                 <Icon className="h-6 w-6" />
             </div>
             <span className="text-[8px] font-black uppercase text-slate-600 tracking-widest">{label}</span>
