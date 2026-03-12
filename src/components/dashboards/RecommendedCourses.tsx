@@ -1,142 +1,95 @@
 'use client';
 
-/**
- * @fileOverview Section des recommandations personnalisées.
- * ✅ RÉSOLU : Affiche les recommandations réelles issues du moteur de scoring.
- * ✅ RÉSOLU : Bascule vers un état vide incitatif si aucune recommandation n'est prête.
- */
-
 import { useMemo, useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRole } from '@/context/RoleContext';
-import { collection, query, where, getFirestore, getDocs, doc } from 'firebase/firestore';
-import { useDoc } from '@/firebase/firestore/use-doc';
+import { collection, query, where, getFirestore, getDocs, doc, onSnapshot, limit } from 'firebase/firestore';
 import type { Course, NdaraUser, UserRecommendations } from '@/lib/types';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CourseCard } from '@/components/cards/CourseCard';
-import { Sparkles, ArrowRight } from 'lucide-react';
-import { Button } from '../ui/button';
-import { Carousel, CarouselContent, CarouselItem } from '@/components/ui/carousel';
-import { SectionHeader } from '../dashboard/SectionHeader';
+import { Star, Clock, Sparkles } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { useLocale } from 'next-intl';
+import { cn } from '@/lib/utils';
 
 export function RecommendedCourses() {
     const { currentUser, isUserLoading } = useRole();
     const db = getFirestore();
-    const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
-    const [isLoadingInstructors, setIsLoadingInstructors] = useState(true);
-
-    // Écouteur en temps réel sur le document de recommandations de l'utilisateur
-    const recommendationRef = useMemo(
-        () => (isUserLoading || !currentUser) 
-            ? null
-            : doc(db, 'recommended_courses', currentUser.uid),
-        [currentUser, isUserLoading, db]
-    );
-
-    const { data: recommendationDoc, isLoading: isRecsLoading } = useDoc<UserRecommendations>(recommendationRef);
-
-    const recommendedItems = useMemo(() => recommendationDoc?.courses || [], [recommendationDoc]);
+    const locale = useLocale();
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        if (recommendedItems.length === 0) {
-            setIsLoadingInstructors(false);
-            return;
-        }
-
-        const fetchInstructors = async () => {
-            setIsLoadingInstructors(true);
-            const instructorIds = [...new Set(recommendedItems.map(c => c.instructorId).filter(Boolean))];
-            if (instructorIds.length === 0) {
-                setIsLoadingInstructors(false);
-                return;
-            }
-            
-            const newInstructors = new Map<string, Partial<NdaraUser>>();
-            const idsToFetch = instructorIds.filter(id => !instructorsMap.has(id));
-
-            if (idsToFetch.length > 0) {
-                 const usersQuery = query(collection(db, 'users'), where('uid', 'in', idsToFetch.slice(0, 30)));
-                 const userSnapshots = await getDocs(usersQuery);
-                 userSnapshots.forEach(docSnap => {
-                    const userData = docSnap.data() as NdaraUser;
-                    newInstructors.set(userData.uid, { 
-                        uid: userData.uid,
-                        fullName: userData.fullName,
-                        profilePictureURL: userData.profilePictureURL,
-                    });
-                });
-            }
-            setInstructorsMap(prev => new Map([...prev, ...newInstructors]));
-            setIsLoadingInstructors(false);
-        };
-        
-        fetchInstructors();
-    }, [recommendedItems, db, instructorsMap]);
-
-    const finalIsLoading = isUserLoading || (recommendationRef !== null && (isRecsLoading || isLoadingInstructors));
-
-    if (finalIsLoading) {
-         return (
-             <section className="space-y-4">
-                <Skeleton className="h-6 w-1/3 rounded-full" />
-                <div className="flex gap-4 overflow-hidden">
-                    <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
-                    <Skeleton className="h-40 w-1/2 rounded-xl shrink-0" />
-                </div>
-            </section>
+        // En attendant que le moteur de recommandation IA produise des données,
+        // on affiche les derniers cours publiés.
+        const q = query(
+            collection(db, 'courses'),
+            where('status', '==', 'Published'),
+            limit(5)
         );
-    }
-    
-    if (recommendedItems.length === 0) {
+
+        const unsub = onSnapshot(q, (snap) => {
+            setCourses(snap.docs.map(d => ({ id: d.id, ...d.data() } as Course)));
+            setIsLoading(false);
+        });
+
+        return () => unsub();
+    }, [db]);
+
+    if (isLoading || isUserLoading) {
         return (
-            <section className="bg-primary/5 border border-primary/10 rounded-[2rem] p-8 text-center animate-in fade-in duration-700">
-                <div className="p-4 bg-primary/10 rounded-full inline-block mb-4">
-                    <Sparkles className="h-8 w-8 text-primary" />
+            <div className="space-y-4">
+                <Skeleton className="h-6 w-1/3 bg-slate-900" />
+                <div className="flex gap-4 overflow-hidden">
+                    <Skeleton className="h-40 w-60 rounded-[2rem] bg-slate-900 shrink-0" />
+                    <Skeleton className="h-40 w-60 rounded-[2rem] bg-slate-900 shrink-0" />
                 </div>
-                <h3 className="text-xl font-black text-foreground uppercase tracking-tight">Affinez vos goûts</h3>
-                <p className="text-muted-foreground text-sm mt-2 max-w-xs mx-auto leading-relaxed">
-                    Continuez d'explorer notre catalogue pour recevoir des conseils personnalisés par notre IA.
-                </p>
-                <Button asChild variant="outline" className="mt-6 border-primary/20 text-primary hover:bg-primary/5 rounded-xl h-11 px-8 font-bold uppercase text-[10px] tracking-widest">
-                    <Link href="/search">Explorer le catalogue</Link>
-                </Button>
-            </section>
+            </div>
         );
     }
-    
-    // Conversion des items de recommandation en objet Course compatible avec CourseCard
-    const coursesForCard: Course[] = recommendedItems.map(rec => ({
-        id: rec.courseId,
-        title: rec.title,
-        imageUrl: rec.coverImage,
-        price: rec.price,
-        instructorId: rec.instructorId,
-        description: '',
-        category: '',
-        status: 'Published'
-    }));
+
+    if (courses.length === 0) return null;
 
     return (
-        <section className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-700">
-            <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-foreground uppercase tracking-tight flex items-center gap-2">
-                    <div className="h-6 w-1.5 bg-primary rounded-full" />
-                    Recommandés pour vous
-                </h2>
-            </div>
-            <Carousel opts={{ align: "start", loop: false }} className="w-full">
-                <CarouselContent className="-ml-3">
-                    {coursesForCard.map(course => (
-                        <CarouselItem key={course.id} className="pl-3 basis-[48%] sm:basis-1/3 md:basis-1/4">
-                            <CourseCard 
-                                course={course} 
-                                instructor={instructorsMap.get(course.instructorId) || null}
-                                variant="grid" 
+        <section className="space-y-4">
+            <h2 className="text-sm font-black text-white uppercase tracking-widest px-1">Recommandés pour vous</h2>
+            
+            <div className="flex overflow-x-auto gap-4 pb-4 hide-scrollbar snap-x">
+                {courses.map(course => (
+                    <Link 
+                        key={course.id} 
+                        href={`/${locale}/course/${course.id}`}
+                        className="min-w-[240px] bg-slate-900 rounded-[2rem] border border-white/5 shadow-2xl overflow-hidden snap-center group active:scale-[0.98] transition-all"
+                    >
+                        <div className="h-32 bg-slate-800 relative overflow-hidden">
+                            <Image 
+                                src={course.imageUrl || ''} 
+                                alt={course.title} 
+                                fill 
+                                className="object-cover group-hover:scale-110 transition-transform duration-700" 
                             />
-                        </CarouselItem>
-                    ))}
-                </CarouselContent>
-            </Carousel>
+                            <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-[8px] font-black text-white border border-white/10 uppercase tracking-tighter">
+                                {course.category}
+                            </div>
+                        </div>
+                        <div className="p-4 space-y-2">
+                            <h4 className="font-bold text-white text-sm line-clamp-2 leading-tight uppercase tracking-tight">
+                                {course.title}
+                            </h4>
+                            <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold mt-2">
+                                <div className="flex items-center gap-1">
+                                    <Star size={10} className="text-yellow-500 fill-yellow-500" />
+                                    <span>{course.rating?.toFixed(1) || '4.8'}</span>
+                                </div>
+                                <span className="opacity-30">•</span>
+                                <div className="flex items-center gap-1">
+                                    <Clock size={10} />
+                                    <span>12h</span>
+                                </div>
+                            </div>
+                        </div>
+                    </Link>
+                ))}
+            </div>
         </section>
     );
 }
