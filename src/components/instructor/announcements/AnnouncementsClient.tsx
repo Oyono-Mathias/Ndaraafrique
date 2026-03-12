@@ -16,7 +16,7 @@ import { fr } from 'date-fns/locale';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { AnnouncementForm } from './AnnouncementForm';
-import { Frown, History, Clock, BookOpen } from 'lucide-react';
+import { Frown, History, Clock, BookOpen, Megaphone } from 'lucide-react';
 
 const AnnouncementHistoryCard = ({ announcement }: { announcement: Announcement }) => {
   const date = (announcement.createdAt as any)?.toDate?.() || new Date();
