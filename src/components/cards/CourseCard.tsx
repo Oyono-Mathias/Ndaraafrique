@@ -1,9 +1,11 @@
+
 'use client';
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
  * ✅ VARIANTS : Grid, List, Search-Result.
  * ✅ DESIGN : Android-first avec coins arrondis 2rem.
+ * ✅ UPDATE : Progress bar style Qwen avec effet glow.
  */
 
 import Link from 'next/link';
@@ -11,7 +13,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart, Users, Clock } from 'lucide-react';
+import { Star, Heart, Users, Clock, CheckCircle2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
@@ -81,14 +83,12 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     return (
         <Link href={href} className="course-card block active:scale-[0.98] transition-all">
             <div className="bg-ndara-surface rounded-[2rem] p-3 border border-white/5 flex gap-4 shadow-xl">
-                {/* Thumbnail 16:9 */}
                 <div className="w-32 h-20 rounded-[1.5rem] overflow-hidden flex-shrink-0 relative shadow-inner bg-slate-800">
                     <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
                     <div className="absolute bottom-1 right-1 bg-black/70 backdrop-blur-sm px-1.5 py-0.5 rounded text-[8px] font-black text-white uppercase tracking-tighter">
                         15h
                     </div>
                 </div>
-                {/* Content */}
                 <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                     <div>
                         <h3 className="font-black text-white text-[13px] leading-tight line-clamp-2 uppercase tracking-tight">
@@ -119,30 +119,55 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
-  // --- VARIANT: LIST (DRAWER / DASHBOARD) ---
+  // --- VARIANT: LIST (DRAWER / STUDENT DASHBOARD) ---
   if (variant === 'list') {
+    const isCompleted = course.progress === 100;
+    
     return (
       <div className="group relative">
-        <Link href={href} className="block w-full">
-          <div className="bg-ndara-surface border border-white/5 rounded-2xl overflow-hidden flex items-center p-3 hover:border-primary/50 transition-all shadow-lg active:scale-95">
-            <div className="relative h-16 w-24 shrink-0 rounded-xl overflow-hidden bg-slate-800">
+        <Link href={href} className="block w-full active:scale-[0.98] transition-transform">
+          <div className="bg-ndara-surface border border-white/5 rounded-[2rem] overflow-hidden flex items-center p-4 shadow-xl relative group">
+            {/* Thumbnail 1:1 Qwen Style */}
+            <div className="relative h-20 w-20 shrink-0 rounded-3xl overflow-hidden bg-slate-800 shadow-inner">
               <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
-            </div>
-            <div className="flex-1 ml-4 overflow-hidden">
-              <h3 className="font-black text-xs text-white truncate uppercase tracking-tight">{course.title}</h3>
-              <p className="text-[9px] text-slate-500 mt-1 truncate uppercase font-bold tracking-widest">{instructor?.fullName || 'Expert Ndara'}</p>
-              {course.progress !== undefined && (
-                  <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-1 bg-slate-800 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary shadow-[0_0_8px_rgba(16,185,129,0.5)]" style={{ width: `${course.progress}%` }} />
+              <div className="absolute inset-0 bg-black/20" />
+              {isCompleted && (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                          <CheckCircle2 className="h-5 w-5 text-ndara-bg" />
                       </div>
-                      <span className="text-[9px] font-black text-slate-500">{course.progress}%</span>
+                  </div>
+              )}
+            </div>
+
+            <div className="flex-1 ml-4 overflow-hidden flex flex-col justify-between py-1">
+              <div>
+                <h3 className="font-black text-sm text-white leading-tight line-clamp-2 uppercase tracking-tight">{course.title}</h3>
+                <p className="text-[10px] text-slate-500 mt-1 truncate uppercase font-bold tracking-widest">Par {instructor?.fullName || 'Expert Ndara'}</p>
+              </div>
+
+              {course.progress !== undefined && (
+                  <div className="mt-3">
+                      <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-slate-600 text-[9px] font-black uppercase tracking-tighter">
+                              {isCompleted ? 'STATUT' : 'PROGRESSION'}
+                          </span>
+                          <span className="text-primary text-[10px] font-black">
+                              {isCompleted ? 'TERMINÉ' : `${course.progress}%`}
+                          </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
+                          <div 
+                            className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_hsl(var(--primary))]" 
+                            style={{ width: `${course.progress}%` }} 
+                          />
+                      </div>
                   </div>
               )}
             </div>
           </div>
         </Link>
-        {actions && <div className="absolute top-2 right-2 flex gap-1">{actions}</div>}
+        {actions && <div className="absolute top-4 right-4 flex gap-1">{actions}</div>}
       </div>
     );
   }
