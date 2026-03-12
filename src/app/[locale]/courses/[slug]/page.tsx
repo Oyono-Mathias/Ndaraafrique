@@ -2,9 +2,9 @@
 'use client';
 
 /**
- * @fileOverview Lecteur de cours Ndara Afrique V2 (Qwen Integrated).
- * ✅ TEMPS RÉEL : Progression et questions synchronisées.
- * ✅ DESIGN : Immersion totale, Android-first, accents Ocre.
+ * @fileOverview Lecteur de cours Ndara Afrique V2 (Design Qwen + Firestore Real-time).
+ * ✅ DESIGN : Immersion Android-First, Drawer latéral pour le programme.
+ * ✅ TEMPS RÉEL : Progression et états synchronisés via onSnapshot.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -26,29 +26,44 @@ import {
 } from 'firebase/firestore';
 
 import { Skeleton } from '@/components/ui/skeleton';
-import { Loader2, Bot, Play, MessageSquare, Clock, Send, ShieldCheck, User, Reply, Sparkles, ChevronLeft } from 'lucide-react';
+import { 
+    Loader2, 
+    Bot, 
+    Play, 
+    MessageSquare, 
+    ArrowLeft, 
+    List, 
+    Download, 
+    CheckCircle2, 
+    Clock, 
+    FileText, 
+    Share2, 
+    StickyNote,
+    PlayCircle,
+    Lock,
+    ChevronRight,
+    X,
+    ShieldCheck
+} from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
 import { YoutubePlayer } from '@/components/ui/youtube-player';
 import { BunnyPlayer } from '@/components/ui/bunny-player';
 import type { Course, Section, Lecture, NdaraUser, CourseProgress, Quiz } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { CourseSidebar } from '@/components/CourseSidebar'; 
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { PdfViewerClient } from '@/components/ui/PdfViewerClient';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { replyToLessonQuestion } from '@/actions/qnaActions';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Progress } from '@/components/ui/progress';
+import Link from 'next/link';
 
 function CoursePlayerPageContent() {
   const { slug: courseId } = useParams();
   const searchParams = useSearchParams();
   const lessonIdFromUrl = searchParams.get('lesson');
   
-  const { user, currentUser, role } = useRole();
+  const { user, currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
   const router = useRouter();
@@ -58,11 +73,8 @@ function CoursePlayerPageContent() {
   const [activeLecture, setActiveLecture] = useState<Lecture | null>(null);
   const [showCertificateModal, setShowCertificateModal] = useState(false);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [isCurriculumOpen, setIsCurriculumOpen] = useState(false);
   const [isLoadingContent, setIsLoadingContent] = useState(true);
-  
-  const [lessonQuestions, setLessonQuestions] = useState<any[]>([]);
-  const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
-  const [isReplying, setIsReplying] = useState<string | null>(null);
 
   const courseRef = useMemo(() => courseId ? doc(db, 'courses', courseId as string) : null, [db, courseId]);
   const { data: course, isLoading: courseLoading } = useDoc<Course>(courseRef);
@@ -71,8 +83,17 @@ function CoursePlayerPageContent() {
   const { data: instructor } = useDoc<NdaraUser>(instructorRef);
 
   const progressRef = useMemo(() => user ? doc(db, 'course_progress', `${user.uid}_${courseId}`) : null, [user, db, courseId]);
-  const { data: courseProgress, isLoading: progressLoading } = useDoc<CourseProgress>(progressRef);
-  
+  const [courseProgress, setCourseProgress] = useState<CourseProgress | null>(null);
+
+  // Écouteur temps réel pour la progression
+  useEffect(() => {
+    if (!progressRef) return;
+    const unsub = onSnapshot(progressRef, (snap) => {
+        if (snap.exists()) setCourseProgress(snap.data() as CourseProgress);
+    });
+    return () => unsub();
+  }, [progressRef]);
+
   const quizzesQuery = useMemo(() => 
     courseId ? query(collectionGroup(db, 'quizzes'), where('courseId', '==', courseId)) : null, 
     [db, courseId]
@@ -102,9 +123,9 @@ function CoursePlayerPageContent() {
                 if (found) { startLecture = found; break; }
             }
         }
-        if (!startLecture && (courseProgress as any)?.lastLessonId) {
+        if (!startLecture && courseProgress?.lastLessonId) {
             for (const list of lMap.values()) {
-                const found = list.find((l: Lecture) => l.id === (courseProgress as any).lastLessonId);
+                const found = list.find((l: Lecture) => l.id === courseProgress.lastLessonId);
                 if (found) { startLecture = found; break; }
             }
         }
@@ -116,165 +137,264 @@ function CoursePlayerPageContent() {
       } catch (e) { console.error(e); } finally { setIsLoadingContent(false); }
     };
     fetchCurriculum();
-  }, [courseId, db, lessonIdFromUrl, (courseProgress as any)?.lastLessonId]);
-
-  useEffect(() => {
-      if (!activeLecture?.id) return;
-      const unsub = onSnapshot(query(collection(db, 'lesson_questions'), where('lessonId', '==', activeLecture.id), orderBy('createdAt', 'desc')), (snap) => {
-          setLessonQuestions(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
-      return () => unsub();
-  }, [activeLecture?.id, db]);
+  }, [courseId, db, lessonIdFromUrl, courseProgress?.lastLessonId]);
 
   const totalLecturesCount = useMemo(() => Array.from(lecturesMap.values()).reduce((acc, curr) => acc + curr.length, 0), [lecturesMap]);
 
   const handleMarkComplete = async () => {
     if (!user || !activeLecture || !course || !progressRef || totalLecturesCount === 0) return;
-    const completed = (courseProgress as any)?.completedLessons || [];
+    const completed = courseProgress?.completedLessons || [];
     if (!completed.includes(activeLecture.id)) {
       const updated = [...completed, activeLecture.id];
       const percent = Math.round((updated.length / totalLecturesCount) * 100);
       try {
-        await setDoc(progressRef, { userId: user.uid, courseId, courseTitle: course.title, courseCover: course.imageUrl || '', progressPercent: percent, completedLessons: updated, lastLessonId: activeLecture.id, lastLessonTitle: activeLecture.title, updatedAt: serverTimestamp() }, { merge: true });
-        await setDoc(doc(db, 'enrollments', `${user.uid}_${courseId}`), { progress: percent, lastAccessedAt: serverTimestamp() }, { merge: true });
-        toast({ title: "Leçon terminée !" });
+        await setDoc(progressRef, { 
+            userId: user.uid, 
+            courseId, 
+            courseTitle: course.title, 
+            courseCover: course.imageUrl || '', 
+            progressPercent: percent, 
+            completedLessons: updated, 
+            lastLessonId: activeLecture.id, 
+            lastLessonTitle: activeLecture.title, 
+            updatedAt: serverTimestamp() 
+        }, { merge: true });
+        
+        await setDoc(doc(db, 'enrollments', `${user.uid}_${courseId}`), { 
+            progress: percent, 
+            lastAccessedAt: serverTimestamp() 
+        }, { merge: true });
+        
+        toast({ title: "Leçon validée !" });
         if (percent >= 100) setShowCertificateModal(true);
       } catch (e) { toast({ variant: 'destructive', title: "Erreur progression" }); }
     }
   };
 
-  const handleReply = async (questionId: string, studentId: string) => {
-      const text = replyText[questionId];
-      if (!text?.trim() || !currentUser || isReplying) return;
-      setIsReplying(questionId);
-      const result = await replyToLessonQuestion({ questionId, instructorId: currentUser.uid, instructorName: currentUser.fullName, message: text, studentId });
-      if (result.success) { setReplyText(prev => ({ ...prev, [questionId]: '' })); toast({ title: "Réponse envoyée !" }); }
-      setIsReplying(null);
-  };
+  const currentLessonIndex = useMemo(() => {
+      if (!activeLecture) return 0;
+      let count = 0;
+      for (const section of sections) {
+          const sectionLectures = lecturesMap.get(section.id) || [];
+          const idx = sectionLectures.findIndex(l => l.id === activeLecture.id);
+          if (idx !== -1) return count + idx + 1;
+          count += sectionLectures.length;
+      }
+      return 0;
+  }, [sections, lecturesMap, activeLecture]);
 
-  const isLoading = isLoadingContent || courseLoading || progressLoading;
+  const isLoading = isLoadingContent || courseLoading;
 
   if (isLoading) return <div className="h-screen bg-slate-950 flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>;
 
-  const completedLessons = (courseProgress as any)?.completedLessons || [];
-  const isInstructor = role === 'instructor' || role === 'admin';
+  const completedLessons = courseProgress?.completedLessons || [];
 
   return (
     <>
-      <CertificateModal isOpen={showCertificateModal} onClose={() => setShowCertificateModal(false)} courseName={course?.title || ''} studentName={currentUser?.fullName || ''} instructorName={instructor?.fullName || 'Oyono Mathias'} completionDate={new Date()} certificateId={`${user?.uid}_${courseId}`} courseId={(courseId as string)} userId={user?.uid || ''} />
-      <AskQuestionModal isOpen={showQuestionModal} onOpenChange={setShowQuestionModal} courseId={(courseId as string)} courseTitle={course?.title || ''} instructorId={course?.instructorId || ''} lessonId={activeLecture?.id} lessonTitle={activeLecture?.title} />
+      <CertificateModal 
+        isOpen={showCertificateModal} 
+        onClose={() => setShowCertificateModal(false)} 
+        courseName={course?.title || ''} 
+        studentName={currentUser?.fullName || ''} 
+        instructorName={instructor?.fullName || 'Expert Ndara'} 
+        completionDate={new Date()} 
+        certificateId={`${user?.uid}_${courseId}`} 
+        courseId={(courseId as string)} 
+        userId={user?.uid || ''} 
+      />
+      
+      <AskQuestionModal 
+        isOpen={showQuestionModal} 
+        onOpenChange={setShowQuestionModal} 
+        courseId={(courseId as string)} 
+        courseTitle={course?.title || ''} 
+        instructorId={course?.instructorId || ''} 
+        lessonId={activeLecture?.id} 
+        lessonTitle={activeLecture?.title} 
+      />
 
-      <div className="flex flex-col h-screen bg-black overflow-hidden font-sans selection:bg-primary/30">
+      <div className="flex flex-col h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
         
-        {/* Barre de Progression Top */}
-        <div className="h-1 w-full bg-slate-900 z-[60]">
-            <div className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_hsl(var(--primary))]" style={{ width: `${(courseProgress as any)?.progressPercent || 0}%` }} />
-        </div>
+        {/* --- TOP BAR (Android Style) --- */}
+        <header className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-40 safe-area-pt">
+            <div className="flex items-center justify-between px-4 py-3">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => router.back()} className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition active:scale-90">
+                        <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                        <h1 className="font-black text-slate-900 dark:text-white text-xs uppercase truncate tracking-tight">{course?.title}</h1>
+                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Leçon {currentLessonIndex} / {totalLecturesCount}</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2">
+                    <button className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition relative group">
+                        <Download className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                        <span className="sr-only">Télécharger</span>
+                    </button>
+                    <button onClick={() => setIsCurriculumOpen(true)} className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition active:scale-90">
+                        <List className="h-5 w-5 text-slate-600 dark:text-slate-300" />
+                    </button>
+                </div>
+            </div>
+            {/* Barre de Progression Fine */}
+            <div className="h-1 bg-slate-100 dark:bg-slate-800">
+                <div className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_hsl(var(--primary))]" style={{ width: `${courseProgress?.progressPercent || 0}%` }} />
+            </div>
+        </header>
 
-        <main className="flex-1 flex flex-col min-h-0 bg-[#050505] overflow-y-auto custom-scrollbar relative">
-          
-          {/* Header Mobile / Navigation */}
-          <div className="lg:hidden p-4 flex items-center gap-4 bg-[#0a0a0a] border-b border-white/5 sticky top-0 z-[50]">
-              <Button variant="ghost" size="icon" onClick={() => router.back()} className="text-white"><ChevronLeft /></Button>
-              <h1 className="text-sm font-black uppercase truncate tracking-tight">{activeLecture?.title}</h1>
-          </div>
-
-          <div className="bg-black flex flex-col justify-center min-h-[40vh] lg:min-h-[65vh] relative group">
-            {activeLecture ? (
-              <div className="w-full max-w-6xl mx-auto lg:p-4">
-                {activeLecture.type === 'video' ? (
-                  <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
-                ) : activeLecture.type === 'youtube' ? (
-                  <YoutubePlayer url={activeLecture.contentUrl || ''} />
-                ) : activeLecture.type === 'pdf' ? (
-                  <div className="h-[75vh] w-full bg-slate-900 lg:rounded-2xl overflow-hidden shadow-2xl border border-white/5"><PdfViewerClient fileUrl={activeLecture.contentUrl || ''} /></div>
+        <main className="flex-1 overflow-y-auto no-scrollbar">
+            {/* --- VIDEO / CONTENT PLAYER --- */}
+            <div className="bg-black relative aspect-video shadow-2xl overflow-hidden">
+                {activeLecture ? (
+                    activeLecture.type === 'video' ? (
+                        <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
+                    ) : activeLecture.type === 'youtube' ? (
+                        <YoutubePlayer url={activeLecture.contentUrl || ''} />
+                    ) : activeLecture.type === 'pdf' ? (
+                        <div className="h-full w-full bg-slate-900"><PdfViewerClient fileUrl={activeLecture.contentUrl || ''} /></div>
+                    ) : (
+                        <div className="h-full flex items-center justify-center bg-slate-900 p-12 text-center text-slate-400">
+                            <div className="space-y-4">
+                                <FileText className="h-16 w-16 mx-auto opacity-20" />
+                                <p className="text-sm font-bold uppercase tracking-widest">Contenu textuel (Déroulez pour lire)</p>
+                            </div>
+                        </div>
+                    )
                 ) : (
-                  <div className="p-6 md:p-12 lg:p-20 text-slate-300 prose prose-invert max-w-4xl mx-auto animate-in fade-in duration-1000">
-                    <h2 className="text-4xl font-black text-white mb-10 border-b border-white/5 pb-8 uppercase tracking-tight">{activeLecture.title}</h2>
-                    <div className="text-lg leading-relaxed space-y-6" dangerouslySetInnerHTML={{ __html: activeLecture.textContent || '' }} />
-                  </div>
+                    <div className="h-full flex items-center justify-center text-slate-600">
+                        <Play className="h-12 w-12 animate-pulse" />
+                    </div>
                 )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center p-12 text-center text-slate-500">
-                <Play className="h-16 w-16 mb-4 opacity-20 animate-pulse" />
-                <h3 className="text-xl font-bold uppercase tracking-[0.3em]">Sélectionnez une leçon</h3>
-              </div>
-            )}
-          </div>
-
-          <div className="p-4 lg:p-8 bg-[#0a0a0a] border-y border-white/5 flex flex-col sm:flex-row justify-between items-center gap-6 sticky top-0 z-40 backdrop-blur-2xl">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                  <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                  <span className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">En cours de visionnage</span>
-              </div>
-              <h1 className="text-xl lg:text-3xl font-black text-white truncate uppercase tracking-tighter">{activeLecture?.title}</h1>
             </div>
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <Button variant="outline" className="h-14 rounded-2xl bg-slate-900 border-slate-800 text-slate-400 hover:text-white font-black uppercase text-[10px] tracking-widest transition-all" onClick={() => setShowQuestionModal(true)}><MessageSquare className="mr-2 h-4 w-4" /> Question</Button>
-              {activeLecture && (
-                <Button onClick={handleMarkComplete} disabled={completedLessons.includes(activeLecture.id)} className={cn("h-14 px-10 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-2xl shadow-primary/20", completedLessons.includes(activeLecture.id) ? "bg-green-500/10 text-green-500 border-green-500/20" : "bg-primary text-white active:scale-95")}>
-                  {completedLessons.includes(activeLecture.id) ? <ShieldCheck className="mr-2 h-4 w-4"/> : null}
-                  {completedLessons.includes(activeLecture.id) ? "Validée" : "Terminer la leçon"}
-                </Button>
-              )}
+
+            {/* --- LESSON INFO --- */}
+            <div className="bg-white dark:bg-slate-900 px-4 py-6 border-b border-slate-100 dark:border-white/5 space-y-6">
+                <div className="space-y-2">
+                    <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-snug">{activeLecture?.title}</h2>
+                    <div className="flex items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activeLecture?.duration || 15}:00</span>
+                        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-emerald-500" /> Certifiant</span>
+                    </div>
+                </div>
+
+                <div className="flex gap-3">
+                    <Button 
+                        onClick={handleMarkComplete}
+                        disabled={completedLessons.includes(activeLecture?.id || '')}
+                        className={cn(
+                            "flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl active:scale-95",
+                            completedLessons.includes(activeLecture?.id || '') 
+                                ? "bg-emerald-500/10 text-emerald-500 border-none opacity-100" 
+                                : "bg-primary text-white"
+                        )}
+                    >
+                        {completedLessons.includes(activeLecture?.id || '') ? <CheckCircle2 className="mr-2 h-4 w-4" /> : null}
+                        {completedLessons.includes(activeLecture?.id || '') ? "Terminé" : "Valider la leçon"}
+                    </Button>
+                    <Button variant="outline" onClick={() => setShowQuestionModal(true)} className="flex-1 h-14 rounded-2xl border-slate-200 dark:border-slate-800 font-black uppercase text-[10px] tracking-widest gap-2">
+                        <MessageSquare className="h-4 w-4" />
+                        Aide Mathias
+                    </Button>
+                </div>
             </div>
-          </div>
 
-          <div className="p-6 lg:p-16 max-w-4xl mx-auto w-full space-y-16 pb-32">
-              <header className="space-y-4">
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter flex items-center gap-4">
-                      <div className="p-3 bg-primary/10 rounded-2xl"><MessageSquare className="text-primary h-6 w-6" /></div>
-                      Discussions Live
-                  </h2>
-                  <p className="text-slate-500 text-lg font-medium italic">Interagissez avec vos collègues et votre formateur expert.</p>
-              </header>
+            {/* --- ABOUT LESSON --- */}
+            <div className="bg-white dark:bg-slate-950 p-6 space-y-8 pb-32">
+                <section className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase text-primary tracking-[0.3em]">À propos de cette leçon</h3>
+                    <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
+                        {activeLecture?.textContent ? (
+                            <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
+                        ) : (
+                            <p>Maîtrisez les concepts fondamentaux abordés dans ce module à travers cette session d'apprentissage Ndara.</p>
+                        )}
+                    </div>
+                </section>
 
-              <div className="space-y-8">
-                  {lessonQuestions.length > 0 ? (
-                      lessonQuestions.map(q => (
-                          <div key={q.id} className="bg-slate-900/40 border border-white/5 rounded-[2.5rem] p-8 space-y-8 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 hover:border-primary/20 transition-colors">
-                              <div className="flex items-start gap-5">
-                                  <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-xl"><AvatarImage src={q.studentAvatarUrl} className="object-cover" /><AvatarFallback className="bg-slate-800 text-slate-500 font-black">{q.studentName?.charAt(0)}</AvatarFallback></Avatar>
-                                  <div className="flex-1 min-w-0">
-                                      <div className="flex justify-between items-baseline mb-2">
-                                          <p className="font-black text-white text-base uppercase tracking-tight">{q.studentName}</p>
-                                          <span className="text-[10px] font-black uppercase text-slate-600 tracking-widest">{q.createdAt && (q.createdAt as any).toDate ? format((q.createdAt as any).toDate(), 'dd MMM HH:mm', { locale: fr }) : '...'}</span>
-                                      </div>
-                                      <p className="text-slate-300 text-base leading-relaxed italic font-medium">"{q.questionText}"</p>
-                                  </div>
-                              </div>
-                              {q.replies?.map((reply: any, idx: number) => (
-                                  <div key={idx} className="flex items-start gap-4 bg-primary/5 p-6 rounded-3xl border border-primary/10 ml-8 md:ml-12 shadow-inner">
-                                      <div className="p-3 bg-primary/20 rounded-2xl shrink-0"><Bot className="h-5 w-5 text-primary" /></div>
-                                      <div>
-                                          <p className="text-[10px] font-black text-primary uppercase tracking-[0.25em] mb-2">{reply.instructorName}</p>
-                                          <p className="text-slate-200 text-sm leading-relaxed font-medium">{reply.message}</p>
-                                      </div>
-                                  </div>
-                              ))}
-                              {isInstructor && (
-                                  <div className="pt-6 border-t border-white/5 flex gap-3 ml-8 md:ml-12">
-                                      <Input placeholder="Votre réponse d'expert..." className="h-14 bg-slate-950 border-white/10 rounded-2xl text-sm focus-visible:ring-primary/30" value={replyText[q.id] || ''} onChange={(e) => setReplyText(prev => ({ ...prev, [q.id]: e.target.value }))} />
-                                      <Button size="icon" className="h-14 w-14 rounded-2xl bg-primary text-white shadow-xl shadow-primary/20" disabled={isReplying === q.id || !replyText[q.id]?.trim()} onClick={() => handleReply(q.id, q.studentId)}>{isReplying === q.id ? <Loader2 className="h-5 w-5 animate-spin"/> : <Reply className="h-5 w-5" />}</Button>
-                                  </div>
-                              )}
-                          </div>
-                      ))
-                  ) : (
-                      <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-white/5 rounded-[3rem] opacity-30 flex flex-col items-center group hover:opacity-50 transition-opacity">
-                          <MessageSquare className="h-16 w-16 mb-6 text-slate-700" />
-                          <p className="text-lg font-black uppercase tracking-[0.3em] text-slate-500">Posez la première question</p>
-                      </div>
-                  )}
-              </div>
-          </div>
+                <section className="space-y-4">
+                    <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Options & Outils</h3>
+                    <div className="grid grid-cols-2 gap-3">
+                        <button className="flex flex-col items-center justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-2xl gap-2 active:scale-95 transition-all">
+                            <StickyNote className="h-5 w-5 text-slate-500" />
+                            <span className="text-[10px] font-bold uppercase text-slate-600">Prendre Note</span>
+                        </button>
+                        <button className="flex flex-col items-center justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-2xl gap-2 active:scale-95 transition-all">
+                            <Share2 className="h-5 w-5 text-slate-500" />
+                            <span className="text-[10px] font-bold uppercase text-slate-600">Partager</span>
+                        </button>
+                    </div>
+                </section>
+            </div>
         </main>
 
-        <aside className="w-full lg:w-[380px] flex-shrink-0 bg-[#0f0f0f] border-t lg:border-t-0 lg:border-l border-white/5 flex flex-col h-[50vh] lg:h-full z-[60] shadow-2xl">
-          <CourseSidebar course={course} sections={sections} lecturesMap={lecturesMap} quizzes={quizzes || []} activeLecture={activeLecture} onLessonClick={(l) => setActiveLecture(l)} completedLessons={completedLessons} />
-        </aside>
+        {/* --- CURRICULUM PANEL (Drawer) --- */}
+        <div className={cn(
+            "fixed inset-0 z-[100] transition-opacity duration-300",
+            isCurriculumOpen ? "bg-black/60 opacity-100" : "opacity-0 pointer-events-none"
+        )} onClick={() => setIsCurriculumOpen(false)} />
+        
+        <div className={cn(
+            "fixed top-0 right-0 h-screen w-full max-w-[380px] bg-white dark:bg-slate-900 z-[101] shadow-2xl transition-transform duration-500 ease-in-out",
+            isCurriculumOpen ? "translate-x-0" : "translate-x-full"
+        )}>
+            <div className="flex flex-col h-full">
+                <header className="p-6 border-b dark:border-white/5 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 safe-area-pt">
+                    <div>
+                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Programme</h2>
+                        <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">{courseProgress?.progressPercent || 0}% complété</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => setIsCurriculumOpen(false)} className="rounded-full h-10 w-10">
+                        <X className="h-6 w-6" />
+                    </Button>
+                </header>
+
+                <ScrollArea className="flex-1">
+                    <div className="p-2 space-y-6">
+                        {sections.map((section, idx) => (
+                            <div key={section.id} className="space-y-1">
+                                <div className="px-4 py-3 bg-slate-100/50 dark:bg-white/5 rounded-xl flex justify-between items-center">
+                                    <h3 className="font-black text-[10px] uppercase tracking-widest text-slate-500">
+                                        <span className="text-primary mr-2">0{idx+1}</span> {section.title}
+                                    </h3>
+                                </div>
+                                <div className="space-y-0.5 mt-1">
+                                    {(lecturesMap.get(section.id) || []).map(lecture => {
+                                        const isActive = activeLecture?.id === lecture.id;
+                                        const isDone = completedLessons.includes(lecture.id);
+                                        return (
+                                            <button 
+                                                key={lecture.id}
+                                                onClick={() => { setActiveLecture(lecture); setIsCurriculumOpen(false); }}
+                                                className={cn(
+                                                    "w-full text-left p-4 flex items-center gap-4 transition-all rounded-xl border-l-4",
+                                                    isActive ? "bg-primary/5 border-primary" : "border-transparent hover:bg-slate-50 dark:hover:bg-white/5"
+                                                )}
+                                            >
+                                                {isDone ? (
+                                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                                ) : (
+                                                    <PlayCircle className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-slate-300 dark:text-slate-700")} />
+                                                )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className={cn("text-sm font-bold truncate", isActive ? "text-primary" : "text-slate-700 dark:text-slate-300")}>{lecture.title}</p>
+                                                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-tighter mt-0.5">{lecture.duration || 10}:00 min</p>
+                                                </div>
+                                                {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </ScrollArea>
+                
+                <div className="p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900/80 text-center">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em]">Ndara Afrique Engine v2.0</p>
+                </div>
+            </div>
+        </div>
       </div>
     </>
   );
@@ -282,7 +402,7 @@ function CoursePlayerPageContent() {
 
 export default function CoursePlayerPage() {
   return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center bg-black"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+    <Suspense fallback={<div className="h-screen flex items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
       <CoursePlayerPageContent />
     </Suspense>
   );
