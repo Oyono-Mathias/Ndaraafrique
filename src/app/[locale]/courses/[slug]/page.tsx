@@ -43,7 +43,9 @@ import {
     Lock,
     ChevronRight,
     X,
-    ShieldCheck
+    ShieldCheck,
+    Bookmark,
+    FileVideo
 } from 'lucide-react';
 import { CertificateModal } from '@/components/modals/certificate-modal';
 import { AskQuestionModal } from '@/components/modals/ask-question-modal';
@@ -213,39 +215,22 @@ function CoursePlayerPageContent() {
         lessonTitle={activeLecture?.title} 
       />
 
-      <div className="flex flex-col h-screen bg-white dark:bg-slate-950 overflow-hidden font-sans">
+      <div className="flex flex-col h-screen bg-[#050505] overflow-hidden font-sans relative">
+        <div className="grain-overlay" />
         
-        {/* --- TOP BAR (Android Style) --- */}
-        <header className="bg-white dark:bg-slate-900 shadow-sm sticky top-0 z-40 safe-area-pt">
-            <div className="flex items-center justify-between px-4 py-3">
-                <div className="flex items-center gap-3">
-                    <button onClick={() => router.back()} className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition active:scale-90">
-                        <ArrowLeft className="h-5 w-5 text-slate-600 dark:text-slate-300" />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                        <h1 className="font-black text-slate-900 dark:text-white text-xs uppercase truncate tracking-tight">{course?.title}</h1>
-                        <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">Leçon {currentLessonIndex} / {totalLecturesCount}</p>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2">
-                    <button className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition relative group">
-                        <Download className="h-5 w-5 text-slate-600 dark:text-slate-300" />
-                        <span className="sr-only">Télécharger</span>
-                    </button>
-                    <button onClick={() => setIsCurriculumOpen(true)} className="w-10 h-10 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-center transition active:scale-90">
-                        <List className="h-5 w-5 text-slate-600 dark:text-slate-300" />
-                    </button>
-                </div>
-            </div>
-            {/* Barre de Progression Fine */}
-            <div className="h-1 bg-slate-100 dark:bg-slate-800">
-                <div className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_hsl(var(--primary))]" style={{ width: `${courseProgress?.progressPercent || 0}%` }} />
-            </div>
+        {/* --- TOP BAR (Floating Overlay) --- */}
+        <header className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between px-4 py-4 safe-area-pt">
+            <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition active:scale-90">
+                <ArrowLeft className="h-5 w-5" />
+            </button>
+            <button onClick={() => setIsCurriculumOpen(true)} className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center text-white hover:bg-black/60 transition active:scale-90">
+                <List className="h-5 w-5" />
+            </button>
         </header>
 
-        <main className="flex-1 overflow-y-auto no-scrollbar">
+        <main className="flex-1 flex flex-col min-h-0 relative z-10">
             {/* --- VIDEO / CONTENT PLAYER --- */}
-            <div className="bg-black relative aspect-video shadow-2xl overflow-hidden">
+            <div className="bg-black relative aspect-video shadow-2xl overflow-hidden flex-shrink-0">
                 {activeLecture ? (
                     activeLecture.type === 'video' ? (
                         <BunnyPlayer videoId={activeLecture.contentUrl || ''} />
@@ -255,10 +240,7 @@ function CoursePlayerPageContent() {
                         <div className="h-full w-full bg-slate-900"><PdfViewerClient fileUrl={activeLecture.contentUrl || ''} /></div>
                     ) : (
                         <div className="h-full flex items-center justify-center bg-slate-900 p-12 text-center text-slate-400">
-                            <div className="space-y-4">
-                                <FileText className="h-16 w-16 mx-auto opacity-20" />
-                                <p className="text-sm font-bold uppercase tracking-widest">Contenu textuel (Déroulez pour lire)</p>
-                            </div>
+                            <FileText className="h-16 w-16 mx-auto opacity-20" />
                         </div>
                     )
                 ) : (
@@ -266,85 +248,118 @@ function CoursePlayerPageContent() {
                         <Play className="h-12 w-12 animate-pulse" />
                     </div>
                 )}
-            </div>
 
-            {/* --- LESSON INFO --- */}
-            <div className="bg-white dark:bg-slate-900 px-4 py-6 border-b border-slate-100 dark:border-white/5 space-y-6">
-                <div className="space-y-2">
-                    <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-snug">{activeLecture?.title}</h2>
-                    <div className="flex items-center gap-4 text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                        <span className="flex items-center gap-1.5"><Clock className="h-3 w-3" /> {activeLecture?.duration || 15}:00</span>
-                        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3 w-3 text-emerald-500" /> Certifiant</span>
-                    </div>
-                </div>
-
-                <div className="flex gap-3">
-                    <Button 
-                        onClick={handleMarkComplete}
-                        disabled={completedLessons.includes(activeLecture?.id || '')}
-                        className={cn(
-                            "flex-1 h-14 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl active:scale-95",
-                            completedLessons.includes(activeLecture?.id || '') 
-                                ? "bg-emerald-500/10 text-emerald-500 border-none opacity-100" 
-                                : "bg-primary text-white"
-                        )}
-                    >
-                        {completedLessons.includes(activeLecture?.id || '') ? <CheckCircle2 className="mr-2 h-4 w-4" /> : null}
-                        {completedLessons.includes(activeLecture?.id || '') ? "Terminé" : "Valider la leçon"}
-                    </Button>
-                    <Button variant="outline" onClick={() => setShowQuestionModal(true)} className="flex-1 h-14 rounded-2xl border-slate-200 dark:border-slate-800 font-black uppercase text-[10px] tracking-widest gap-2">
-                        <MessageSquare className="h-4 w-4" />
-                        Aide Mathias
-                    </Button>
+                {/* Progress Bar (Glow effect from Qwen) */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-gray-800 z-30">
+                    <div 
+                        className="h-full bg-primary transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.6)]" 
+                        style={{ width: `${courseProgress?.progressPercent || 0}%` }} 
+                    />
                 </div>
             </div>
 
-            {/* --- ABOUT LESSON --- */}
-            <div className="bg-white dark:bg-slate-950 p-6 space-y-8 pb-32">
-                <section className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase text-primary tracking-[0.3em]">À propos de cette leçon</h3>
-                    <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-400 font-medium leading-relaxed">
-                        {activeLecture?.textContent ? (
-                            <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
-                        ) : (
-                            <p>Maîtrisez les concepts fondamentaux abordés dans ce module à travers cette session d'apprentissage Ndara.</p>
-                        )}
+            {/* --- SCROLLABLE CONTENT --- */}
+            <ScrollArea className="flex-1">
+                <div className="px-4 py-6 space-y-8 pb-32">
+                    
+                    {/* Lesson Header */}
+                    <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                            <Badge className="bg-primary/20 text-primary border border-primary/30 font-black uppercase text-[10px] tracking-widest px-3 py-1 rounded-full animate-pulse" style={{ animationDuration: '3s' }}>
+                                <ShieldCheck size={12} className="mr-1.5" />
+                                Certifiant
+                            </Badge>
+                            <span className="text-slate-500 text-[10px] font-black font-mono">
+                                {activeLecture?.duration || 15}:00 MIN
+                            </span>
+                        </div>
+                        <h1 className="text-2xl font-black text-white leading-tight uppercase tracking-tight">
+                            {activeLecture?.title}
+                        </h1>
+                        <p className="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">
+                            Section {sections.findIndex(s => lecturesMap.get(s.id)?.some(l => l.id === activeLecture?.id)) + 1} • Leçon {currentLessonIndex}
+                        </p>
                     </div>
-                </section>
 
-                <section className="space-y-4">
-                    <h3 className="text-[10px] font-black uppercase text-slate-500 tracking-[0.3em]">Options & Outils</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button className="flex flex-col items-center justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-2xl gap-2 active:scale-95 transition-all">
-                            <StickyNote className="h-5 w-5 text-slate-500" />
-                            <span className="text-[10px] font-bold uppercase text-slate-600">Prendre Note</span>
-                        </button>
-                        <button className="flex flex-col items-center justify-center p-4 bg-slate-100 dark:bg-slate-900 rounded-2xl gap-2 active:scale-95 transition-all">
-                            <Share2 className="h-5 w-5 text-slate-500" />
-                            <span className="text-[10px] font-bold uppercase text-slate-600">Partager</span>
-                        </button>
+                    {/* Action Buttons (Massive Pills) */}
+                    <div className="grid grid-cols-1 gap-3">
+                        <Button 
+                            onClick={handleMarkComplete}
+                            disabled={completedLessons.includes(activeLecture?.id || '')}
+                            className={cn(
+                                "w-full h-16 rounded-[2rem] font-black uppercase text-xs tracking-[0.15em] transition-all shadow-xl active:scale-95",
+                                completedLessons.includes(activeLecture?.id || '') 
+                                    ? "bg-emerald-500/10 text-emerald-500 border-none opacity-100" 
+                                    : "bg-primary text-slate-950"
+                            )}
+                        >
+                            {completedLessons.includes(activeLecture?.id || '') ? (
+                                <><CheckCircle2 className="mr-2 h-5 w-5" /> Leçon validée</>
+                            ) : (
+                                "Valider la leçon"
+                            )}
+                        </Button>
+                        <Button 
+                            variant="outline" 
+                            onClick={() => setShowQuestionModal(true)} 
+                            className="w-full h-16 rounded-[2rem] bg-slate-900 border-white/5 font-black uppercase text-xs tracking-[0.15em] text-white gap-2 shadow-lg active:scale-95"
+                        >
+                            <Bot className="h-5 w-5 text-primary" />
+                            Aide Mathias
+                        </Button>
                     </div>
-                </section>
-            </div>
+
+                    {/* Description Card */}
+                    <div className="bg-slate-900/50 border border-white/5 rounded-[2rem] p-6 space-y-4">
+                        <h2 className="text-[10px] font-black text-primary uppercase tracking-[0.3em]">À propos de cette leçon</h2>
+                        <div className="text-slate-400 text-sm leading-relaxed font-medium">
+                            {activeLecture?.textContent ? (
+                                <div dangerouslySetInnerHTML={{ __html: activeLecture.textContent }} />
+                            ) : (
+                                <p>Maîtrisez les concepts fondamentaux abordés dans ce module à travers cette session d'apprentissage Ndara.</p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Lesson Options (Circular) */}
+                    <div className="flex items-center justify-around gap-4 py-2">
+                        <CircularOptionBtn icon={StickyNote} label="Notes" />
+                        <CircularOptionBtn icon={Share2} label="Partager" />
+                        <CircularOptionBtn icon={Download} label="Télécharger" />
+                        <CircularOptionBtn icon={Bookmark} label="Favoris" />
+                    </div>
+
+                    {/* Course Summary Widget */}
+                    <div className="bg-primary/5 border border-primary/10 rounded-[2rem] p-6 text-center space-y-2">
+                        <p className="text-[9px] font-black text-primary uppercase tracking-[0.4em]">Ndara Afrique Engine v2.0</p>
+                        <p className="text-xs text-slate-500 font-medium italic">"Le savoir est la clé de l'émergence."</p>
+                    </div>
+                </div>
+            </ScrollArea>
         </main>
 
-        {/* --- CURRICULUM PANEL (Drawer) --- */}
+        {/* --- CURRICULUM DRAWER --- */}
         <div className={cn(
-            "fixed inset-0 z-[100] transition-opacity duration-300",
-            isCurriculumOpen ? "bg-black/60 opacity-100" : "opacity-0 pointer-events-none"
+            "fixed inset-0 z-[100] transition-all duration-500",
+            isCurriculumOpen ? "bg-black/80 backdrop-blur-sm opacity-100" : "opacity-0 pointer-events-none"
         )} onClick={() => setIsCurriculumOpen(false)} />
         
         <div className={cn(
-            "fixed top-0 right-0 h-screen w-full max-w-[380px] bg-white dark:bg-slate-900 z-[101] shadow-2xl transition-transform duration-500 ease-in-out",
+            "fixed top-0 right-0 h-screen w-full max-w-[320px] bg-slate-900 z-[101] border-l border-white/10 shadow-2xl transition-transform duration-500 ease-in-out",
             isCurriculumOpen ? "translate-x-0" : "translate-x-full"
         )}>
-            <div className="flex flex-col h-full">
-                <header className="p-6 border-b dark:border-white/5 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 safe-area-pt">
+            <div className="flex flex-col h-full safe-area-pt">
+                <header className="p-6 border-b border-white/5 flex items-center justify-between">
                     <div>
-                        <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Programme</h2>
-                        <p className="text-[10px] font-bold text-primary uppercase tracking-widest mt-1">{courseProgress?.progressPercent || 0}% complété</p>
+                        <h2 className="text-xl font-black text-white uppercase tracking-tight">Programme</h2>
+                        <div className="flex items-center gap-2 mt-1">
+                            <span className="text-primary text-[10px] font-black">{courseProgress?.progressPercent || 0}%</span>
+                            <div className="w-20 h-1 bg-slate-800 rounded-full overflow-hidden">
+                                <div className="h-full bg-primary" style={{ width: `${courseProgress?.progressPercent || 0}%` }} />
+                            </div>
+                        </div>
                     </div>
-                    <Button variant="ghost" size="icon" onClick={() => setIsCurriculumOpen(false)} className="rounded-full h-10 w-10">
+                    <Button variant="ghost" size="icon" onClick={() => setIsCurriculumOpen(false)} className="rounded-full h-10 w-10 text-slate-500">
                         <X className="h-6 w-6" />
                     </Button>
                 </header>
@@ -353,11 +368,9 @@ function CoursePlayerPageContent() {
                     <div className="p-2 space-y-6">
                         {sections.map((section, idx) => (
                             <div key={section.id} className="space-y-1">
-                                <div className="px-4 py-3 bg-slate-100/50 dark:bg-white/5 rounded-xl flex justify-between items-center">
-                                    <h3 className="font-black text-[10px] uppercase tracking-widest text-slate-500">
-                                        <span className="text-primary mr-2">0{idx+1}</span> {section.title}
-                                    </h3>
-                                </div>
+                                <h3 className="px-4 py-2 font-black text-[10px] uppercase tracking-widest text-slate-500">
+                                    Section {idx + 1}: {section.title}
+                                </h3>
                                 <div className="space-y-0.5 mt-1">
                                     {(lecturesMap.get(section.id) || []).map(lecture => {
                                         const isActive = activeLecture?.id === lecture.id;
@@ -367,18 +380,18 @@ function CoursePlayerPageContent() {
                                                 key={lecture.id}
                                                 onClick={() => { setActiveLecture(lecture); setIsCurriculumOpen(false); }}
                                                 className={cn(
-                                                    "w-full text-left p-4 flex items-center gap-4 transition-all rounded-xl border-l-4",
-                                                    isActive ? "bg-primary/5 border-primary" : "border-transparent hover:bg-slate-50 dark:hover:bg-white/5"
+                                                    "w-full text-left p-4 flex items-center gap-4 transition-all rounded-2xl border-l-4",
+                                                    isActive ? "bg-primary/10 border-primary" : "border-transparent hover:bg-white/5"
                                                 )}
                                             >
                                                 {isDone ? (
-                                                    <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                                                    <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
                                                 ) : (
-                                                    <PlayCircle className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-slate-300 dark:text-slate-700")} />
+                                                    <PlayCircle className={cn("h-5 w-5 shrink-0", isActive ? "text-primary" : "text-slate-700")} />
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className={cn("text-sm font-bold truncate", isActive ? "text-primary" : "text-slate-700 dark:text-slate-300")}>{lecture.title}</p>
-                                                    <p className="text-[9px] font-black uppercase text-slate-400 tracking-tighter mt-0.5">{lecture.duration || 10}:00 min</p>
+                                                    <p className={cn("text-sm font-bold truncate", isActive ? "text-white" : "text-slate-400")}>{lecture.title}</p>
+                                                    <p className="text-[9px] font-black uppercase text-slate-600 tracking-tighter mt-0.5">{lecture.duration || 10}:00</p>
                                                 </div>
                                                 {isActive && <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
                                             </button>
@@ -389,10 +402,6 @@ function CoursePlayerPageContent() {
                         ))}
                     </div>
                 </ScrollArea>
-                
-                <div className="p-6 border-t dark:border-white/5 bg-slate-50 dark:bg-slate-900/80 text-center">
-                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em]">Ndara Afrique Engine v2.0</p>
-                </div>
             </div>
         </div>
       </div>
@@ -400,9 +409,20 @@ function CoursePlayerPageContent() {
   );
 }
 
+function CircularOptionBtn({ icon: Icon, label }: { icon: any, label: string }) {
+    return (
+        <button className="flex flex-col items-center gap-2 group active:scale-90 transition-transform">
+            <div className="w-14 h-14 bg-slate-900 border border-white/5 rounded-full flex items-center justify-center text-slate-500 group-hover:text-primary group-hover:border-primary/20 transition-colors shadow-lg">
+                <Icon className="h-6 w-6" />
+            </div>
+            <span className="text-[8px] font-black uppercase text-slate-600 tracking-widest">{label}</span>
+        </button>
+    );
+}
+
 export default function CoursePlayerPage() {
   return (
-    <Suspense fallback={<div className="h-screen flex items-center justify-center bg-slate-950"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+    <Suspense fallback={<div className="h-screen flex items-center justify-center bg-[#050505]"><Loader2 className="h-10 w-10 animate-spin text-primary" /></div>}>
       <CoursePlayerPageContent />
     </Suspense>
   );
