@@ -376,6 +376,7 @@ export interface Notification {
 export interface Announcement {
   id: string;
   courseId: string;
+  courseTitle?: string;
   instructorId: string;
   title: string;
   message: string;
