@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * @fileOverview Client de chat pour le Tuteur MATHIAS.
- * Gère l'historique et l'interactivité en temps réel avec horodatage Firestore précis.
+ * @fileOverview Client de chat pour le Tuteur MATHIAS - Redesign WhatsApp Android.
+ * Gère l'historique et l'interactivité en temps réel avec une esthétique familière.
  */
 
 import { useState, useRef, useEffect, useMemo } from "react";
@@ -11,7 +11,23 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Bot, Send, Loader2, RefreshCw, ArrowLeft, MoreVertical, CheckCheck, Smile, Paperclip, Camera, Mic, Phone, Video, HelpCircle, Sparkles } from "lucide-react";
+import { 
+    Bot, 
+    Send, 
+    Loader2, 
+    RefreshCw, 
+    ArrowLeft, 
+    MoreVertical, 
+    Check,
+    CheckCheck, 
+    Smile, 
+    Paperclip, 
+    Camera, 
+    Mic, 
+    Phone, 
+    Video, 
+    Sparkles 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
 import { useRouter } from "next/navigation";
@@ -32,7 +48,6 @@ import {
 } from "firebase/firestore";
 import { format, isSameDay } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import Link from 'next/link';
 
 interface AiTutorMessage {
   id: string;
@@ -67,8 +82,14 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     sender: "ai", 
     text: "Bara ala ! Je suis MATHIAS, votre tuteur personnel. Je connais parfaitement nos formations et je suis là pour répondre à vos questions. Comment puis-je vous aider ?", 
     timestamp: new Date(),
-    error: false // ✅ Correction Build : Propriété explicite pour le type
+    error: false
   }), []);
+
+  const suggestions = [
+    "📊 Explique-moi le levier",
+    "💰 Comment calculer les profits ?",
+    "📚 Résumer la leçon 3"
+  ];
 
   useEffect(() => {
     if (!user) return;
@@ -132,9 +153,9 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
     if (initialQuery) setInput(initialQuery);
   }, [initialQuery]);
 
-  const handleSendMessage = async (e?: React.FormEvent) => {
+  const handleSendMessage = async (e?: React.FormEvent, customText?: string) => {
     if (e) e.preventDefault();
-    const messageToSend = input.trim();
+    const messageToSend = customText || input.trim();
     if (!messageToSend || isAiResponding || !user) return;
 
     setInput("");
@@ -170,29 +191,31 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
 
   return (
     <div className="flex flex-col h-full bg-[#0b141a] relative overflow-hidden">
-      {/* Pattern CSS Robuste */}
+      {/* WhatsApp Background Pattern */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none z-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:20px_20px]" />
 
       <header className="flex items-center p-2 border-b border-white/5 bg-[#111b21] z-30 shadow-md">
-        <Button variant="ghost" size="icon" className="mr-0 text-slate-300 h-10 w-8 rounded-full" onClick={() => router.push('/student/dashboard')}>
+        <Button variant="ghost" size="icon" className="mr-0 text-slate-300 h-10 w-8 rounded-full" onClick={() => router.back()}>
             <ArrowLeft className="h-6 w-6" />
         </Button>
         <div className="flex items-center gap-2 flex-1 overflow-hidden">
-          <Avatar className="h-9 w-9 border border-white/10">
-              <AvatarFallback className="bg-[#2a3942] text-primary font-black"><Bot className="h-6 w-6" /></AvatarFallback>
-          </Avatar>
+          <div className="relative">
+            <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#10b981] to-teal-600 flex items-center justify-center text-white font-black text-lg border-2 border-white/10">
+                <Bot className="h-6 w-6" />
+            </div>
+            <span className="absolute bottom-0 right-0 w-3 h-3 bg-[#10b981] rounded-full border-2 border-[#111b21] shadow-[0_0_10px_#10b981]"></span>
+          </div>
           <div className="flex flex-col overflow-hidden">
             <h2 className="font-bold text-sm text-white truncate leading-none uppercase tracking-widest">MATHIAS</h2>
-            <p className="text-[10px] text-emerald-500 font-bold flex items-center gap-1.5 uppercase tracking-tighter mt-1">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Tuteur Interactif
+            <p className="text-[#10b981] text-[10px] font-bold uppercase tracking-tighter mt-1">
+              En ligne
             </p>
           </div>
         </div>
         <div className="flex items-center gap-0">
             <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><Video className="h-5 w-5" /></Button>
             <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><Phone className="h-5 w-5" /></Button>
-            <Button variant="ghost" size="icon" className="text-slate-300 h-10 w-10"><MoreVertical className="h-5 w-5" /></Button>
+            <Button variant="ghost" size="icon" className="text-slate-400 h-10 w-10"><MoreVertical className="h-5 w-5" /></Button>
         </div>
       </header>
 
@@ -252,56 +275,58 @@ export function AiTutorClient({ initialQuery, initialContext }: AiTutorClientPro
           {isAiResponding && (
             <div className="flex flex-col items-start mb-1">
               <div className="px-3 py-2 bg-[#202c33] text-[#e9edef] text-[14.5px] rounded-lg rounded-tl-none flex items-center gap-3 shadow-sm border border-white/5">
-                <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-                <span className="italic opacity-70">réfléchit...</span>
+                <div className="flex gap-1">
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+                </div>
+                <span className="italic opacity-70 text-xs">Mathias réfléchit...</span>
               </div>
-            </div>
-          )}
-
-          {hasError && (
-            <div className="flex flex-col items-center gap-4 py-6 animate-in fade-in zoom-in duration-500">
-                <div className="bg-[#202c33] text-[#e9edef] p-4 rounded-xl border border-red-500/20 max-w-[80%] text-center">
-                    <p className="text-sm">Oups ! Mathias a du mal à se connecter. Tu peux réessayer ou contacter notre équipe humaine pour obtenir de l'aide.</p>
-                </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleSendMessage()} className="bg-transparent border-slate-700 text-slate-300 rounded-full h-9 px-4 hover:bg-slate-800">
-                        <RefreshCw className="h-3 w-3 mr-2" /> Réessayer
-                    </Button>
-                    <Button variant="secondary" size="sm" asChild className="rounded-full h-9 px-4 bg-primary text-primary-foreground font-bold">
-                        <Link href="/student/support">
-                            <HelpCircle className="h-3 w-3 mr-2" /> Support Client
-                        </Link>
-                    </Button>
-                </div>
             </div>
           )}
         </div>
       </ScrollArea>
 
-      <div className="p-2 bg-transparent safe-area-pb z-20 flex items-end gap-2">
-        <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md">
-            <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Smile className="h-6 w-6" /></Button>
+      {/* Quick Suggestions Chips */}
+      <div className="z-20 px-4 mb-2">
+        <div className="flex gap-2 overflow-x-auto hide-scrollbar pb-2">
+            {suggestions.map((suggestion, i) => (
+                <button 
+                    key={i}
+                    onClick={() => handleSendMessage(undefined, suggestion.substring(3))}
+                    className="flex-shrink-0 bg-[#1e293b]/80 backdrop-blur-sm border border-[#10b981]/30 text-[#10b981] text-[11px] font-bold px-4 py-2 rounded-full hover:bg-[#10b981]/20 transition whitespace-nowrap active:scale-95"
+                >
+                    {suggestion}
+                </button>
+            ))}
+        </div>
+      </div>
+
+      {/* Input Bar (Floating Pill) */}
+      <div className="p-2 bg-transparent safe-area-pb z-30 flex items-end gap-2">
+        <div className="flex-1 bg-[#2a3942] rounded-[24px] flex items-center px-3 py-1 min-h-[48px] shadow-md border border-white/5">
+            <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0 hover:bg-white/5 rounded-full"><Smile className="h-6 w-6" /></Button>
             <form onSubmit={handleSendMessage} className="flex-1 flex items-center">
                 <Input
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Posez votre question..."
+                    placeholder="Écrire un message..."
                     autoComplete="off"
                     disabled={isAiResponding}
                     className="flex-1 bg-transparent border-none text-white placeholder:text-[#8696a0] text-[16px] h-10 focus-visible:ring-0 shadow-none px-1"
                 />
             </form>
             <div className="flex items-center">
-                <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Paperclip className="h-5 w-5 -rotate-45" /></Button>
-                {!input.trim() && <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0"><Camera className="h-5 w-5" /></Button>}
+                <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0 hover:bg-white/5 rounded-full"><Paperclip className="h-5 w-5 -rotate-45" /></Button>
+                {!input.trim() && <Button variant="ghost" size="icon" className="text-[#8696a0] h-10 w-10 shrink-0 hover:bg-white/5 rounded-full"><Camera className="h-5 w-5" /></Button>}
             </div>
         </div>
         
         <Button 
-          onClick={handleSendMessage}
+          onClick={() => handleSendMessage()}
           disabled={isAiResponding} 
           className={cn(
-              "h-12 w-12 rounded-full shadow-lg shrink-0 flex items-center justify-center p-0 transition-all active:scale-90",
+              "h-12 w-12 rounded-full shadow-[0_0_15px_rgba(16,185,129,0.4)] shrink-0 flex items-center justify-center p-0 transition-all active:scale-90 border-none",
               "bg-[#00a884] hover:bg-[#00a884]/90"
           )}
         >
