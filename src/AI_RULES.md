@@ -13,3 +13,8 @@ NEW WORKFLOW (Qwen + AI Prototyper):
 9. AI Prototyper acts as the Integrator: converts Qwen's code into clean React/Next.js components.
 10. Ensure all integrated components follow the Android-first, Fintech, and Vintage aesthetic.
 11. Connect static designs to dynamic Firebase data and handle logic/authentication.
+
+ADMIN CONTROL & VITRINE COURSES:
+12. Static courses on the landing page (Hardcoded) must remain visible for prestige.
+13. Admin has the power to assign an instructor to manage these static courses via the "Assign Instructor" feature in the Admin Catalog.
+14. Rights and revenues of assigned courses transfer automatically to the selected instructor.
