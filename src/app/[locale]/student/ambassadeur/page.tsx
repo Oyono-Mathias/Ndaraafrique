@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -32,7 +31,8 @@ import {
     Linkedin,
     Medal,
     Copy,
-    Check
+    Check,
+    Sparkles
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from 'next-intl';
@@ -60,7 +60,7 @@ export default function AmbassadorPage() {
             where('affiliateId', '==', currentUser.uid),
             orderBy('createdAt', 'desc'),
             limit(10)
-        ), (snap) => setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AffiliateTransaction)));
+        ), (snap) => setTransactions(snap.docs.map(d => ({ id: d.id, ...d.data() } as AffiliateTransaction))));
 
         const unsubLeader = onSnapshot(query(
             collection(db, 'users'),

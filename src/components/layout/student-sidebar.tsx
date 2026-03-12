@@ -1,4 +1,3 @@
-
 "use client";
 
 /**
@@ -8,24 +7,20 @@
  */
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Image from "next/image";
 import { useRole } from "@/context/RoleContext";
-import { Button } from "@/components/ui/button";
 import {
   Award,
   Bot,
   ClipboardCheck,
   MessageSquare,
   Users,
-  User,
   Heart,
   Search,
-  Bell,
   Lock,
   LayoutDashboard,
   Trophy,
-  CreditCard,
   ArrowLeftRight,
   Shield,
   BookOpen,
@@ -43,7 +38,25 @@ import { useToast } from "@/hooks/use-toast";
 import type { CourseProgress } from "@/lib/types";
 import { useLocale } from 'next-intl';
 
-const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabled, highlight }: { href: string, icon: React.ElementType, label: string, unreadCount?: number, onClick: () => void, id?: string, disabled?: boolean, highlight?: boolean }) => {
+const SidebarItem = ({ 
+  href, 
+  icon: Icon, 
+  label, 
+  unreadCount, 
+  onClick, 
+  id, 
+  disabled, 
+  highlight 
+}: { 
+  href: string, 
+  icon: React.ElementType, 
+  label: string, 
+  unreadCount?: number, 
+  onClick: () => void, 
+  id?: string, 
+  disabled?: boolean, 
+  highlight?: boolean 
+}) => {
   const pathname = usePathname() || '';
   const { toast } = useToast();
   const locale = useLocale();
@@ -90,7 +103,7 @@ const SidebarItem = ({ href, icon: Icon, label, unreadCount, onClick, id, disabl
       </div>
       
       {unreadCount !== undefined && unreadCount > 0 ? (
-        <Badge className="bg-primary text-slate-950 h-5 px-1.5 text-[10px] font-black border-none unread-badge">{unreadCount}</Badge>
+        <Badge className="bg-primary text-slate-950 h-5 px-1.5 text-[10px] font-black border-none">{unreadCount}</Badge>
       ) : (
           !disabled && !isActive && <ChevronRight className="h-3 w-3 text-slate-700 group-hover:text-slate-500 transition-all" />
       )}
@@ -158,7 +171,7 @@ export function StudentSidebar({ onLinkClick }: { onLinkClick: () => void }) {
     });
 
     return () => { unsubChats(); unsubNotifs(); unsubProgress(); unsubSettings(); };
-  }, [user, db]);
+  }, [user?.uid, db]);
 
   return (
     <div className="w-full h-full bg-[#0f172a] border-r border-white/5 flex flex-col shadow-2xl relative overflow-hidden">
