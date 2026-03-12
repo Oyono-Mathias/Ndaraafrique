@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { ChartLine } from 'lucide-react';
 import Link from 'next/link';
 import { useLocale } from 'next-intl';
+import { cn } from "@/lib/utils";
 
 const CATEGORIES = [
     {
@@ -40,7 +41,7 @@ export function Categories() {
   const locale = useLocale();
 
   return (
-    <section id="categories" class="py-20 bg-white">
+    <section id="categories" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
                 <h2 className="text-3xl font-heading font-bold text-ndara-dark mb-4">Explorez par Secteur</h2>
@@ -52,7 +53,9 @@ export function Categories() {
                     <Link key={cat.title} href={`/${locale}/search?category=${cat.title}`} className="group">
                         <div className={cn(cat.bg, cat.bgHover, "rounded-2xl p-8 mb-4 flex items-center justify-center h-48 transition duration-300")}>
                             {cat.icon ? (
-                                <ChartLine size={64} className="text-indigo-500" />
+                                <div className="text-6xl text-indigo-500">
+                                    <ChartLine size={64} />
+                                </div>
                             ) : (
                                 <div className="relative h-32 w-full transition group-hover:scale-110 duration-300">
                                     <Image src={cat.img!} alt={cat.title} fill className="object-contain" />
@@ -68,5 +71,3 @@ export function Categories() {
     </section>
   );
 }
-
-import { cn } from "@/lib/utils";
