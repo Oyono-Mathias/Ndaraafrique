@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -88,7 +87,7 @@ function CoursePlayerPageContent() {
         const fetchedSections = sectionsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Section));
         setSections(fetchedSections);
 
-        const lMap = new Map();
+        const lMap = new Map<string, Lecture[]>();
         for (const section of fetchedSections) {
           const lSnap = await getDocs(query(collection(db, 'courses', courseId as string, 'sections', section.id, 'lectures'), orderBy('order')));
           lMap.set(section.id, lSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Lecture)));
@@ -98,13 +97,13 @@ function CoursePlayerPageContent() {
         let startLecture: Lecture | null = null;
         if (lessonIdFromUrl) {
             for (const list of lMap.values()) {
-                const found = list.find(l => l.id === lessonIdFromUrl);
+                const found = list.find((l: Lecture) => l.id === lessonIdFromUrl);
                 if (found) { startLecture = found; break; }
             }
         }
         if (!startLecture && (courseProgress as any)?.lastLessonId) {
             for (const list of lMap.values()) {
-                const found = list.find(l => l.id === (courseProgress as any).lastLessonId);
+                const found = list.find((l: Lecture) => l.id === (courseProgress as any).lastLessonId);
                 if (found) { startLecture = found; break; }
             }
         }
