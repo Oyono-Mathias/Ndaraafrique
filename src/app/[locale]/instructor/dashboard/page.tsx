@@ -148,7 +148,7 @@ export default function InstructorDashboard() {
 
     if (isUserLoading || isLoading) {
         return (
-            <div className="flex flex-col gap-8 p-4 bg-slate-950 min-h-screen">
+            <div className="flex flex-col gap-8 p-4 bg-[#050505] min-h-screen">
                 <Skeleton className="h-12 w-1/2 bg-slate-900 rounded-xl" />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-28 rounded-[2rem] bg-slate-900" />)}
@@ -159,7 +159,7 @@ export default function InstructorDashboard() {
     }
 
     return (
-        <div className="flex flex-col gap-10 pb-24 bg-slate-950 min-h-screen bg-grainy animate-in fade-in duration-700">
+        <div className="flex flex-col gap-10 pb-24 bg-[#050505] min-h-screen bg-grainy animate-in fade-in duration-700">
             
             {/* --- HEADER --- */}
             <header className="px-4 pt-8">
