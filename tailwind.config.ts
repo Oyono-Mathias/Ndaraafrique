@@ -17,7 +17,7 @@ export default {
     extend: {
       fontFamily: {
         sans: ["Inter", "var(--font-sans)", ...fontFamily.sans],
-        serif: ["var(--font-serif)", ...fontFamily.serif],
+        heading: ["Poppins", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -25,11 +25,11 @@ export default {
         ring: "hsl(var(--ring))",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
-        brand: {
-          dark: '#0f172a',
-          primary: '#10b981', // Emerald for growth/money
-          secondary: '#3b82f6', // Blue for tech
-          light: '#f8fafc',
+        ndara: {
+          orange: '#F97316',
+          dark: '#1E293B',
+          light: '#F8FAFC',
+          blue: '#0F172A'
         },
         primary: {
           DEFAULT: "hsl(var(--primary))",

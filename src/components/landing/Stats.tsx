@@ -1,51 +1,26 @@
 'use client';
 
-/**
- * @fileOverview Section Preuve Sociale (Trust Bar) Ndara Afrique.
- * Connectée aux données réelles de Firestore.
- * ✅ RESPONSIVE : Grille 2x2 sur mobile, 1x4 sur desktop.
- */
-
-import { useEffect, useState } from 'react';
-import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
-
 export function Stats() {
-    const [stats, setStats] = useState({ memberCount: 0, courseCount: 0 });
-    const [isLoading, setIsLoading] = useState(true);
-    const db = getFirestore();
-
-    useEffect(() => {
-        const unsubUsers = onSnapshot(collection(db, 'users'), (snapshot) => {
-            setStats(prev => ({ ...prev, memberCount: snapshot.size }));
-        });
-
-        const unsubCourses = onSnapshot(query(collection(db, 'courses'), where('status', '==', 'Published')), (snapshot) => {
-            setStats(prev => ({ ...prev, courseCount: snapshot.size }));
-            setIsLoading(false);
-        });
-
-        return () => { unsubUsers(); unsubCourses(); };
-    }, [db]);
-
-    const StatItem = ({ label, value }: { label: string, value: string | number }) => (
-        <div className="flex flex-col items-center text-center space-y-2 group">
-            <div className="text-3xl md:text-5xl font-black gradient-text tracking-tighter transition-transform duration-500 group-hover:scale-110">
-                {value}
-            </div>
-            <p className="text-[9px] md:text-xs font-black uppercase text-slate-500 tracking-[0.2em] md:tracking-[0.3em] group-hover:text-primary transition-colors">
-                {label}
-            </p>
-        </div>
-    );
-
     return (
-        <section className="py-12 md:py-24 border-y border-white/5 bg-slate-900/20 backdrop-blur-sm">
-            <div className="container mx-auto px-4">
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-y-12 gap-x-4 md:gap-12 lg:gap-16">
-                    <StatItem label="Ndara Inscrits" value={`${(stats.memberCount + 1200).toLocaleString('fr-FR')}+`} />
-                    <StatItem label="Experts Certifiés" value="50+" />
-                    <StatItem label="Taux de Réussite" value="99%" />
-                    <StatItem label="Gains Versés" value="1M+" />
+        <section className="bg-ndara-dark py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center md:divide-x divide-gray-700">
+                    <div className="space-y-1">
+                        <p className="text-4xl font-heading font-bold text-white">50k+</p>
+                        <p className="text-gray-400 text-sm uppercase tracking-widest font-medium">Étudiants Actifs</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-4xl font-heading font-bold text-white">1,200+</p>
+                        <p className="text-gray-400 text-sm uppercase tracking-widest font-medium">Cours en Ligne</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-4xl font-heading font-bold text-white">54</p>
+                        <p className="text-gray-400 text-sm uppercase tracking-widest font-medium">Pays Africains</p>
+                    </div>
+                    <div className="space-y-1">
+                        <p className="text-4xl font-heading font-bold text-white">4.8/5</p>
+                        <p className="text-gray-400 text-sm uppercase tracking-widest font-medium">Note Moyenne</p>
+                    </div>
                 </div>
             </div>
         </section>

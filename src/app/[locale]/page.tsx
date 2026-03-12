@@ -1,18 +1,18 @@
 import React from 'react';
 import { Hero } from '@/components/landing/Hero';
 import { Stats } from '@/components/landing/Stats';
+import { Categories } from '@/components/landing/Categories';
 import { PopularCourses } from '@/components/landing/PopularCourses';
-import { HowItWorks } from '@/components/landing/HowItWorks';
-import { FintechSection } from '@/components/landing/FintechSection';
-import { TestimonialsSection } from '@/components/landing/TestimonialsSection';
-import { InstructorCTASection } from '@/components/landing/InstructorCTASection';
+import { WhyUs } from '@/components/landing/WhyUs';
+import { CTASection } from '@/components/landing/CTASection';
 import { Navbar } from '@/components/layout/navbar';
 import { Footer } from '@/components/layout/footer';
 import { unstable_setRequestLocale } from 'next-intl/server';
 
 /**
- * @fileOverview Landing Page Ndara Afrique.
- * ✅ OPTIMISÉ : Composant Serveur pour le SSG et l'i18n.
+ * @fileOverview Landing Page Ndara Afrique V2.
+ * ✅ DESIGN QWEN : Intégration fidèle du code vitrine.
+ * ✅ I18N : Support du multilingue Next-Intl.
  */
 
 interface Props {
@@ -20,26 +20,19 @@ interface Props {
 }
 
 export default function LandingPage({ params: { locale } }: Props) {
-  // Nécessaire pour la génération de pages statiques avec next-intl
   unstable_setRequestLocale(locale);
 
   return (
-    <div className="min-h-screen bg-[#0f0f0f] text-white font-sans selection:bg-primary/30 relative">
-      <div className="fixed inset-0 bg-[linear-gradient(135deg,#0f0f0f_0%,#1a1a2e_50%,#16213e_100%)] -z-10" />
-      
+    <div className="min-h-screen bg-gray-50 text-gray-800 selection:bg-ndara-orange/30">
       <Navbar />
       
-      <main className="relative overflow-hidden">
+      <main className="smooth-scroll">
         <Hero />
         <Stats />
+        <Categories />
         <PopularCourses />
-
-        <div className="container mx-auto space-y-12 md:space-y-24 px-4 sm:px-6">
-          <HowItWorks />
-          <FintechSection />
-          <TestimonialsSection />
-          <InstructorCTASection />
-        </div>
+        <WhyUs />
+        <CTASection />
       </main>
 
       <Footer />
