@@ -2,8 +2,7 @@
 
 /**
  * @fileOverview Espace Ambassadeur Ndara Afrique V2.
- * ✅ SÉCURITÉ : Affiche les soldes En Attente vs Disponible.
- * ✅ VIRALITÉ : Compteur d'impact social.
+ * ✅ CENTRALISATION : Dashboard complet, Leaderboard et Bonus.
  */
 
 import { useRole } from '@/context/RoleContext';
@@ -26,14 +25,18 @@ import {
     ShieldCheck,
     Loader2,
     Clock,
-    History
+    History,
+    MessageCircle,
+    Facebook,
+    Twitter,
+    Linkedin,
+    Medal
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useLocale } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { requestPayoutAction } from '@/actions/payoutActions';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import type { NdaraUser } from '@/lib/types';
 
 export default function AmbassadorPage() {
     const { currentUser, isUserLoading } = useRole();
@@ -43,11 +46,13 @@ export default function AmbassadorPage() {
     
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [transactions, setTransactions] = useState<any[]>([]);
+    const [leaderboard, setLeaderboard] = useState<NdaraUser[]>([]);
     const [loadingTransactions, setLoadingTransactions] = useState(true);
 
     useEffect(() => {
         if (!currentUser?.uid) return;
 
+        // 1. Transactions d'affiliation
         const q = query(
             collection(db, 'affiliate_transactions'),
             where('affiliateId', '==', currentUser.uid),
@@ -60,13 +65,32 @@ export default function AmbassadorPage() {
             setLoadingTransactions(false);
         });
 
-        return () => unsub();
+        // 2. Leaderboard Ambassadeurs
+        const leaderboardQuery = query(
+            collection(db, 'users'),
+            where('affiliateStats.sales', '>', 0),
+            orderBy('affiliateStats.sales', 'desc'),
+            limit(5)
+        );
+        const unsubLeaderboard = onSnapshot(leaderboardQuery, (snap) => {
+            setLeaderboard(snap.docs.map(d => ({ uid: d.id, ...d.data() } as NdaraUser)));
+        });
+
+        return () => { unsub(); unsubLeaderboard(); };
     }, [currentUser?.uid, db]);
 
-    const handleShare = () => {
-        const url = `${window.location.origin}/${locale}/search?aff=${currentUser?.uid}`;
-        navigator.clipboard.writeText(url);
-        toast({ title: "Lien copié !", description: "Partagez ce lien pour gagner des commissions." });
+    const shareUrl = `${window.location.origin}/${locale}/search?aff=${currentUser?.uid}`;
+
+    const shareActions = [
+        { name: 'WhatsApp', icon: MessageCircle, color: 'bg-[#25D366]', url: `https://wa.me/?text=${encodeURIComponent("Rejoins-moi sur Ndara Afrique pour apprendre les compétences du futur ! 🚀 " + shareUrl)}` },
+        { name: 'Facebook', icon: Facebook, color: 'bg-[#1877F2]', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}` },
+        { name: 'X', icon: Twitter, color: 'bg-black', url: `https://twitter.com/intent/tweet?text=${encodeURIComponent("Ma quête du savoir commence sur Ndara Afrique. Rejoignez-nous !")}&url=${encodeURIComponent(shareUrl)}` },
+        { name: 'LinkedIn', icon: Linkedin, color: 'bg-[#0A66C2]', url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}` },
+    ];
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(shareUrl);
+        toast({ title: "Lien copié !", description: "Partage-le pour gagner des commissions." });
     };
 
     const handleWithdraw = async () => {
@@ -102,7 +126,7 @@ export default function AmbassadorPage() {
 
             <div className="px-4 space-y-6">
                 
-                {/* --- CARTE SOLDES DOUBLE FLUX --- */}
+                {/* --- CARTES SOLDES --- */}
                 <div className="grid grid-cols-1 gap-4">
                     <Card className="bg-primary p-8 rounded-[2.5rem] relative overflow-hidden shadow-2xl shadow-primary/20 border-none">
                         <div className="absolute -right-6 -top-6 h-32 w-32 bg-white/10 rounded-full blur-3xl" />
@@ -131,7 +155,7 @@ export default function AmbassadorPage() {
                                 <Clock className="h-6 w-6" />
                             </div>
                             <div>
-                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">En attente de validation</p>
+                                <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">En sécurisation</p>
                                 <p className="text-xl font-black text-white">{(currentUser?.pendingAffiliateBalance || 0).toLocaleString('fr-FR')} <span className="text-xs">XOF</span></p>
                             </div>
                         </div>
@@ -139,41 +163,63 @@ export default function AmbassadorPage() {
                     </Card>
                 </div>
 
-                {/* --- COMPTEUR D'IMPACT VIRAL --- */}
-                <section className="bg-gradient-to-r from-blue-600/20 to-primary/20 border border-white/5 rounded-[2.5rem] p-8 text-center space-y-4 shadow-2xl">
-                    <div className="flex justify-center -space-x-3">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="h-10 w-10 rounded-full border-2 border-slate-900 bg-slate-800 flex items-center justify-center overflow-hidden">
-                                <Users className="h-5 w-5 text-slate-500" />
-                            </div>
-                        ))}
-                        <div className="h-10 w-10 rounded-full border-2 border-slate-900 bg-primary flex items-center justify-center text-[10px] font-black text-white">
-                            +{stats.registrations}
-                        </div>
-                    </div>
-                    <h3 className="text-lg font-black text-white uppercase tracking-tight">Votre Impact Ndara</h3>
-                    <p className="text-slate-400 text-xs font-medium">Vous avez déjà aidé <span className="text-white font-bold">{stats.registrations} personnes</span> à rejoindre le mouvement du savoir en Afrique.</p>
-                </section>
-
-                {/* --- STATS DE TUNNEL --- */}
+                {/* --- TUNNEL DE CONVERSION --- */}
                 <section className="grid grid-cols-3 gap-3">
                     <StatBox icon={MousePointer2} label="Clics" value={stats.clicks} color="text-slate-400" />
                     <StatBox icon={Users} label="Inscrits" value={stats.registrations} color="text-blue-400" />
                     <StatBox icon={ShoppingCart} label="Ventes" value={stats.sales} color="text-emerald-400" />
                 </section>
 
-                {/* --- LIEN & ACTIONS --- */}
-                <div className="space-y-3">
-                    <Button onClick={handleShare} className="w-full h-16 bg-white text-slate-950 rounded-2xl font-black uppercase text-xs tracking-widest gap-3 shadow-xl active:scale-95 transition-all">
-                        <Share2 className="h-5 w-5" /> Copier mon lien viral
+                {/* --- PARTAGE VIRAL --- */}
+                <Card className="bg-slate-900 border-slate-800 rounded-[2rem] p-6 space-y-6">
+                    <p className="text-[9px] font-black text-slate-500 uppercase text-center tracking-widest">Partager mon lien viral</p>
+                    <div className="flex justify-between items-center gap-2">
+                        {shareActions.map(action => (
+                            <a key={action.name} href={action.url} target="_blank" rel="noopener noreferrer" className={cn("flex-1 h-12 rounded-xl flex items-center justify-center text-white shadow-lg active:scale-90 transition-transform", action.color)}>
+                                <action.icon size={20} />
+                            </a>
+                        ))}
+                    </div>
+                    <Button onClick={handleCopyLink} className="w-full h-14 bg-white text-slate-950 rounded-2xl font-black uppercase text-[10px] tracking-widest gap-2 shadow-xl">
+                        <Share2 size={16} /> Copier le lien
                     </Button>
+                </Card>
+
+                {/* --- LEADERBOARD --- */}
+                <div className="space-y-4">
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-500 flex items-center gap-2 px-1">
+                        <Medal className="h-4 w-4 text-primary" /> Bourse des Ambassadeurs
+                    </h3>
+                    <div className="bg-slate-900 border border-slate-800 rounded-[2rem] overflow-hidden shadow-xl">
+                        {leaderboard.map((user, idx) => (
+                            <div key={user.uid} className={cn("flex items-center justify-between p-4 border-b border-white/5 last:border-0", user.uid === currentUser?.uid && "bg-primary/5")}>
+                                <div className="flex items-center gap-3">
+                                    <div className={cn("h-6 w-6 rounded-full flex items-center justify-center font-black text-[10px]", idx === 0 ? "bg-yellow-500 text-black" : "bg-slate-800 text-slate-500")}>
+                                        {idx + 1}
+                                    </div>
+                                    <span className="text-xs font-bold text-slate-200 truncate max-w-[150px]">{user.fullName}</span>
+                                </div>
+                                <p className="text-xs font-black text-white">{user.affiliateStats?.sales} <span className="text-[8px] text-slate-600 uppercase">Ventes</span></p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* --- PALIERS BONUS --- */}
+                <div className="bg-slate-900/50 border border-slate-800 rounded-[2rem] p-6 space-y-4">
+                    <h3 className="text-[10px] font-black uppercase text-primary tracking-[0.3em]">Objectifs de Gains</h3>
+                    <div className="space-y-4">
+                        <BonusTier label="5 Ventes" bonus="+2%" current={stats.sales} target={5} />
+                        <BonusTier label="20 Ventes" bonus="+5%" current={stats.sales} target={20} />
+                        <BonusTier label="50 Ventes" bonus="+10%" current={stats.sales} target={50} />
+                    </div>
                 </div>
 
                 {/* --- DERNIÈRES TRANSACTIONS --- */}
                 <section className="space-y-4">
                     <div className="flex items-center gap-2 text-slate-500 ml-2">
                         <History className="h-4 w-4" />
-                        <h3 className="text-[10px] font-black uppercase tracking-widest">Historique de mes ventes</h3>
+                        <h3 className="text-[10px] font-black uppercase tracking-widest">Dernières Commissions</h3>
                     </div>
                     {loadingTransactions ? (
                         <Skeleton className="h-24 w-full rounded-3xl bg-slate-900" />
@@ -188,14 +234,13 @@ export default function AmbassadorPage() {
                     )}
                 </section>
 
-                {/* --- RÈGLES DE SÉCURITÉ --- */}
                 <div className="p-6 bg-slate-900/30 border border-slate-800 rounded-3xl space-y-4">
                     <div className="flex items-center gap-2 text-slate-500">
                         <ShieldCheck className="h-4 w-4" />
                         <h4 className="text-[10px] font-black uppercase tracking-widest">Sécurisation Ndara</h4>
                     </div>
                     <p className="text-[10px] text-slate-500 leading-relaxed italic">
-                        "Pour protéger la plateforme, vos gains sont gelés pendant 14 jours. Passé ce délai de garantie contre les remboursements, ils deviennent payables."
+                        "Les commissions sont gelées pendant 14 jours par sécurité avant d'être transférées vers votre solde disponible."
                     </p>
                 </div>
 
@@ -206,17 +251,17 @@ export default function AmbassadorPage() {
 
 function TransactionItem({ t }: any) {
     const statusConfig = {
-        pending: { label: 'En sécurisation', color: 'text-amber-500 bg-amber-500/10' },
-        approved: { label: 'Disponible', color: 'text-emerald-500 bg-emerald-500/10' },
-        paid: { label: 'Payé', color: 'text-blue-500 bg-blue-500/10' },
+        pending: { label: 'Audit', color: 'text-amber-500 bg-amber-500/10' },
+        approved: { label: 'Prêt', color: 'text-emerald-500 bg-emerald-500/10' },
+        paid: { label: 'Versé', color: 'text-blue-500 bg-blue-500/10' },
         cancelled: { label: 'Annulé', color: 'text-red-500 bg-red-500/10' },
     }[t.status as string] || { label: t.status, color: 'bg-slate-800' };
 
     return (
-        <Card className="bg-slate-900/50 border-slate-800 rounded-2xl p-4 flex items-center justify-between">
+        <Card className="bg-slate-900/50 border-slate-800 rounded-2xl p-4 flex items-center justify-between shadow-lg">
             <div className="flex-1 min-w-0 mr-4">
                 <p className="font-bold text-white text-sm truncate">{t.courseTitle}</p>
-                <p className="text-[9px] text-slate-500 uppercase font-medium mt-0.5">Par {t.buyerName}</p>
+                <p className="text-[9px] text-slate-500 uppercase font-medium mt-0.5">Pour {t.buyerName}</p>
             </div>
             <div className="text-right shrink-0">
                 <p className="font-black text-white text-sm">+{t.commissionAmount.toLocaleString('fr-FR')} XOF</p>
@@ -234,6 +279,21 @@ function StatBox({ icon: Icon, label, value, color }: any) {
             <Icon className={cn("h-4 w-4 mx-auto mb-1", color)} />
             <p className="text-xl font-black text-white">{value}</p>
             <p className="text-[8px] font-black uppercase text-slate-600 tracking-tighter">{label}</p>
+        </div>
+    );
+}
+
+function BonusTier({ label, bonus, current, target }: any) {
+    const progress = Math.min(100, (current / target) * 100);
+    return (
+        <div className="space-y-1.5">
+            <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
+                <span className={cn(current >= target ? "text-emerald-500" : "text-slate-500")}>{label} ({bonus})</span>
+                <span className="text-slate-600">{current}/{target}</span>
+            </div>
+            <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden border border-white/5">
+                <div className={cn("h-full transition-all duration-1000", current >= target ? "bg-emerald-500" : "bg-primary")} style={{ width: `${progress}%` }} />
+            </div>
         </div>
     );
 }
