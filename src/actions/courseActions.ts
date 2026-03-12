@@ -5,6 +5,52 @@ import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 import type { Course, NdaraUser, Settings } from '@/lib/types';
 
 /**
+ * Assigner ou changer l'instructeur d'un cours (Action Admin).
+ * Permet à Mathias de donner le contrôle d'un cours "en dur" à un expert.
+ */
+export async function assignInstructorToCourseAction({
+    courseId,
+    newInstructorId,
+    adminId
+}: {
+    courseId: string;
+    newInstructorId: string;
+    adminId: string;
+}) {
+    try {
+        const db = getAdminDb();
+        const batch = db.batch();
+        const courseRef = db.collection('courses').doc(courseId);
+        const courseDoc = await courseRef.get();
+
+        if (!courseDoc.exists) return { success: false, error: 'Cours introuvable.' };
+        
+        const oldInstructorId = courseDoc.data()?.instructorId;
+
+        // Mise à jour de l'instructeur
+        batch.update(courseRef, {
+            instructorId: newInstructorId,
+            updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        // Journalisation dans l'audit stratégique
+        batch.set(db.collection('admin_audit_logs').doc(), {
+            adminId,
+            eventType: 'course.moderation',
+            target: { id: courseId, type: 'course' },
+            details: `Le cours "${courseDoc.data()?.title}" a été réattribué. Nouvel instructeur: ${newInstructorId} (Ancien: ${oldInstructorId})`,
+            timestamp: FieldValue.serverTimestamp(),
+        });
+
+        await batch.commit();
+        return { success: true };
+    } catch (e: any) {
+        console.error("ASSIGN_INSTRUCTOR_ERROR:", e);
+        return { success: false, error: e.message };
+    }
+}
+
+/**
  * Activer ou désactiver les droits de revente pour un cours (Action du propriétaire).
  * Si Ndara possède le cours, c'est l'admin qui agit. 
  * Si un formateur possède le cours, il peut le faire si le Marché Libre est activé.

@@ -3,6 +3,7 @@
 /**
  * @fileOverview Table de gestion des cours pour les administrateurs.
  * ✅ DESIGN : Miniatures rectangulaires arrondies (rounded-lg).
+ * ✅ NOUVEAU : Option de réattribution d'instructeur.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -26,7 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Search, Edit, Trash2, Loader2, Eye, ShieldCheck, Clock, Archive, BookOpen } from 'lucide-react';
+import { MoreHorizontal, Search, Edit, Trash2, Loader2, Eye, ShieldCheck, Clock, Archive, BookOpen, UserPlus } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useRole } from '@/context/RoleContext';
@@ -35,6 +36,7 @@ import { useRouter } from 'next/navigation';
 import { updateCourseStatusByAdmin, deleteCourseByAdmin } from '@/actions/courseActions';
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import Image from 'next/image';
+import { AssignInstructorModal } from './AssignInstructorModal';
 
 const getStatusVariant = (status: Course['status']) => {
   switch (status) {
@@ -45,7 +47,15 @@ const getStatusVariant = (status: Course['status']) => {
   }
 };
 
-const CourseRow = ({ course, instructor }: { course: Course; instructor?: Partial<NdaraUser> }) => {
+const CourseRow = ({ 
+    course, 
+    instructor,
+    onAssignClick 
+}: { 
+    course: Course; 
+    instructor?: Partial<NdaraUser>;
+    onAssignClick: (course: Course) => void;
+}) => {
     const { currentUser: adminUser } = useRole();
     const { toast } = useToast();
     const router = useRouter();
@@ -128,7 +138,12 @@ const CourseRow = ({ course, instructor }: { course: Course; instructor?: Partia
                                 <span className="font-bold text-xs uppercase tracking-tight">Éditer le contenu</span>
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem onClick={() => router.push(`/courses/${course.id}`)} className="cursor-pointer gap-2 py-2.5">
+                            <DropdownMenuItem onClick={() => onAssignClick(course)} className="cursor-pointer gap-2 py-2.5 text-primary">
+                                <UserPlus className="h-4 w-4" />
+                                <span className="font-bold text-xs uppercase tracking-tight">Assigner l'expert</span>
+                            </DropdownMenuItem>
+
+                            <DropdownMenuItem onClick={() => router.push(`/course/${course.id}`)} className="cursor-pointer gap-2 py-2.5">
                                 <Eye className="h-4 w-4 text-blue-400" />
                                 <span className="font-bold text-xs uppercase tracking-tight">Aperçu public</span>
                             </DropdownMenuItem>
@@ -193,6 +208,9 @@ export function CoursesTable() {
     const [instructorsMap, setInstructorsMap] = useState<Map<string, Partial<NdaraUser>>>(new Map());
     const [instructorsLoading, setInstructorsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    
+    const [selectedCourseForAssign, setSelectedCourseForAssign] = useState<Course | null>(null);
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
 
     useEffect(() => {
         if (coursesLoading || !courses) return;
@@ -234,10 +252,21 @@ export function CoursesTable() {
         );
     }, [courses, searchTerm]);
 
+    const handleOpenAssign = (course: Course) => {
+        setSelectedCourseForAssign(course);
+        setIsAssignModalOpen(true);
+    };
+
     const isLoading = coursesLoading || instructorsLoading;
 
     return (
         <div className="space-y-6">
+            <AssignInstructorModal 
+                isOpen={isAssignModalOpen} 
+                onOpenChange={setIsAssignModalOpen} 
+                course={selectedCourseForAssign} 
+            />
+
             <div className="relative max-w-sm">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500" />
                 <Input
@@ -266,7 +295,12 @@ export function CoursesTable() {
                             ))
                         ) : filteredCourses.length > 0 ? (
                             filteredCourses.map(course => (
-                                <CourseRow key={course.id} course={course} instructor={instructorsMap.get(course.instructorId)} />
+                                <CourseRow 
+                                    key={course.id} 
+                                    course={course} 
+                                    instructor={instructorsMap.get(course.instructorId)}
+                                    onAssignClick={handleOpenAssign}
+                                />
                             ))
                         ) : (
                             <TableRow>
