@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Vitrine publique d'une formation Ndara Afrique.
- * ✅ RÉSOLU : Bouton "Commencer" redirige vers le checkout ou le lecteur avec le préfixe de locale.
+ * @fileOverview Vitrine publique d'une formation Ndara Afrique V2.
+ * ✅ DESIGN QWEN : Immersion Android-First, Header dégradé, Barre de confiance.
+ * ✅ ACTIONS : Inscription redirigeant vers checkout ou lecteur avec préfixe locale.
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
@@ -35,26 +36,30 @@ import {
   ArrowLeft, 
   Loader2, 
   ChevronRight,
-  Share2,
   Award,
   Lock,
   RotateCcw,
-  Facebook,
-  Linkedin,
-  Link as LinkIcon,
-  MessageSquare,
   MessageSquareQuote,
-  Heart
+  Heart,
+  Clock,
+  Shield,
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent } from '@/components/ui/card';
+import { 
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import type { Course, Section, Lecture, NdaraUser, Enrollment, Review } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import Link from 'next/link';
 
 interface EnrichedReview extends Review {
     userName?: string;
@@ -182,20 +187,6 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
     }
   };
 
-  const handleSocialShare = (platform: 'wa' | 'fb' | 'in' | 'copy') => {
-    const url = typeof window !== 'undefined' ? window.location.href : '';
-    const text = `Découvrez cette formation sur Ndara Afrique : ${course?.title} 🚀`;
-    switch (platform) {
-      case 'wa': window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank'); break;
-      case 'fb': window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank'); break;
-      case 'in': window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`, '_blank'); break;
-      case 'copy':
-        navigator.clipboard.writeText(url);
-        toast({ title: "Lien copié !" });
-        break;
-    }
-  };
-
   if (courseLoading || isUserLoading) return <PublicCourseSkeleton />;
   if (!course) return <div className="p-20 text-center text-slate-500">Formation non trouvée.</div>;
 
@@ -203,180 +194,236 @@ function CourseDetailContent({ courseId, locale }: { courseId: string; locale: s
 
   return (
     <div className="min-h-screen bg-slate-950 pb-32">
-      <div className="relative aspect-video w-full bg-slate-900 overflow-hidden shadow-2xl">
-        <Button variant="ghost" size="icon" className="absolute top-4 left-4 z-30 bg-black/40 backdrop-blur-md rounded-full text-white" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <Image src={course?.imageUrl || ''} alt={course?.title} fill className="object-cover opacity-60" priority />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
-      </div>
-
-      <div className="px-4 -mt-6 relative z-10 space-y-12 max-w-2xl mx-auto">
-        <div className="space-y-4">
-          <Badge className="bg-primary text-primary-foreground border-none font-black uppercase text-[10px] tracking-[0.1em] px-3 py-1 rounded-md">
-              {course?.category}
-          </Badge>
-          <div className="flex justify-between items-start gap-4">
-            <h1 className="text-3xl font-black text-white leading-tight uppercase tracking-tight flex-1">{course?.title}</h1>
-            <Button 
-                variant="outline" 
-                size="icon" 
-                onClick={toggleWishlist}
-                className={cn(
-                    "h-12 w-12 rounded-full border-slate-800 transition-all",
-                    isWishlisted ? "bg-primary text-white border-primary shadow-lg shadow-primary/20" : "bg-slate-900 text-slate-400 hover:text-white"
-                )}
-            >
-                <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
-            </Button>
-          </div>
-          <div className="flex flex-wrap items-center gap-6 text-xs font-bold text-slate-400">
-            <div className="flex items-center gap-1.5">
-              <Star className={cn("h-4 w-4", stats.rating > 0 ? "text-yellow-500 fill-yellow-500" : "text-slate-700")} />
-              <span className="text-white text-sm">{stats.rating.toFixed(1)}</span>
-              <span className="opacity-50">({stats.reviewCount} avis)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Users className="h-4 w-4 text-primary" />
-              <span className="text-white">{stats.studentCount || 100}+ inscrits</span>
-            </div>
-          </div>
+      {/* --- IMMERSIVE HEADER --- */}
+      <header className="relative h-64 flex-shrink-0">
+        <div className="absolute inset-0">
+            <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" priority />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent" />
         </div>
 
-        <section className="grid grid-cols-3 gap-2">
-          <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
-            <ShieldCheck className="h-5 w-5 text-emerald-500" />
-            <p className="text-[8px] font-black uppercase text-slate-300">Paiement Sécurisé</p>
-          </div>
-          <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
-            <RotateCcw className="h-5 w-5 text-blue-400" />
-            <p className="text-[8px] font-black uppercase text-slate-300">Garantie 7j</p>
-          </div>
-          <div className="flex flex-col items-center text-center p-4 bg-slate-900/50 border border-slate-800 rounded-2xl space-y-2">
-            <Award className="h-5 w-5 text-amber-500" />
-            <p className="text-[8px] font-black uppercase text-slate-300">Certifié Ndara</p>
-          </div>
-        </section>
+        {/* Floating Controls */}
+        <button 
+            onClick={() => router.back()} 
+            className="absolute top-12 left-4 w-12 h-12 bg-slate-900/80 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-white/20 transition z-30"
+        >
+            <ArrowLeft className="h-5 w-5" />
+        </button>
 
-        <section className="space-y-4">
-          <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-            <div className="h-6 w-1.5 bg-primary rounded-full" />
-            Programme
-          </h2>
-          <div className="space-y-3">
-            {sections.map((section, idx) => (
-                <div key={section.id} className="bg-slate-900/40 border border-slate-800/50 rounded-2xl overflow-hidden">
-                    <div className="p-4 bg-slate-800/30 border-b border-white/5 flex items-center justify-between">
-                        <h3 className="font-bold text-sm text-slate-200">
-                            <span className="text-primary opacity-60 mr-2 font-mono">{String(idx + 1).padStart(2, '0')}</span> 
-                            {section.title}
-                        </h3>
-                    </div>
-                    <ul className="divide-y divide-white/5">
-                        {(lecturesMap.get(section.id) || []).map(lecture => (
-                            <li key={lecture.id} className="p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    {lecture.isFreePreview ? <PlayCircle className="h-4 w-4 text-emerald-500" /> : <Lock className="h-4 w-4 text-slate-700" />}
-                                    <span className="text-xs font-medium text-slate-400">{lecture.title}</span>
-                                </div>
-                                {lecture.duration && <span className="text-[10px] text-slate-600 font-bold">{lecture.duration}m</span>}
-                            </li>
-                        ))}
-                    </ul>
+        <button 
+            onClick={toggleWishlist}
+            className={cn(
+                "absolute top-12 right-4 w-12 h-12 bg-slate-900/80 backdrop-blur-md rounded-full flex items-center justify-center transition z-30",
+                isWishlisted ? "text-red-500" : "text-white"
+            )}
+        >
+            <Heart className={cn("h-5 w-5", isWishlisted && "fill-current")} />
+        </button>
+
+        {/* Play Overlay */}
+        <div className="absolute inset-0 flex items-center justify-center z-20">
+            <div className="w-16 h-16 bg-primary/90 rounded-full flex items-center justify-center text-white shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                <PlayCircle className="h-8 w-8 ml-1" />
+            </div>
+        </div>
+      </header>
+
+      <main className="px-4 -mt-8 relative z-10 max-w-2xl mx-auto space-y-10">
+        {/* --- INFO CARD --- */}
+        <div className="bg-slate-950 rounded-t-[2rem] pt-6 space-y-4">
+            <Badge className="bg-primary/20 text-primary border border-primary/30 font-black uppercase text-[9px] tracking-widest px-3 py-1.5 rounded-full">
+                {course.category}
+            </Badge>
+            
+            <h1 className="text-3xl font-black text-white leading-tight uppercase tracking-tight">
+                {course.title}
+            </h1>
+
+            <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
+                <div className="flex items-center gap-1.5 text-yellow-500">
+                    <Star className="h-4 w-4 fill-current" />
+                    <span className="text-white text-sm font-black">{stats.rating.toFixed(1)}</span>
+                    <span className="opacity-50 font-medium">({stats.reviewCount} avis)</span>
                 </div>
-            ))}
-          </div>
+                <span className="opacity-20">•</span>
+                <div className="flex items-center gap-1.5">
+                    <Users className="h-4 w-4 text-primary" />
+                    <span className="text-white">{stats.studentCount || 100} élèves</span>
+                </div>
+            </div>
+        </div>
+
+        {/* --- TRUST BAR --- */}
+        <section className="grid grid-cols-3 gap-3">
+            <div className="bg-slate-900 border border-white/5 p-4 rounded-3xl text-center space-y-3 shadow-xl">
+                <div className="w-10 h-10 rounded-full bg-green-500/10 flex items-center justify-center mx-auto text-green-400">
+                    <Lock className="h-5 w-5" />
+                </div>
+                <p className="text-[8px] font-black uppercase text-slate-500 leading-tight">Paiement Sécurisé</p>
+            </div>
+            <div className="bg-slate-900 border border-white/5 p-4 rounded-3xl text-center space-y-3 shadow-xl">
+                <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center mx-auto text-blue-400">
+                    <Shield className="h-5 w-5" />
+                </div>
+                <p className="text-[8px] font-black uppercase text-slate-500 leading-tight">Garantie 7 Jours</p>
+            </div>
+            <div className="bg-slate-900 border border-white/5 p-4 rounded-3xl text-center space-y-3 shadow-xl">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto text-primary">
+                    <Award className="h-5 w-5" />
+                </div>
+                <p className="text-[8px] font-black uppercase text-slate-500 leading-tight">Certifié Ndara</p>
+            </div>
         </section>
 
-        <section className="space-y-8">
-            <div className="flex items-center justify-between">
+        {/* --- INSTRUCTOR --- */}
+        {instructor && (
+            <Link href={`/${locale}/instructor/${instructor.uid}`} className="flex items-center gap-4 p-4 bg-slate-900 border border-white/5 rounded-[2rem] active:scale-95 transition-all group shadow-xl">
+                <Avatar className="h-14 w-14 border-2 border-primary/30">
+                    <AvatarImage src={instructor.profilePictureURL} className="object-cover" />
+                    <AvatarFallback className="bg-slate-800 text-slate-500 font-bold">{instructor.fullName?.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Expert Formateur</p>
+                    <h3 className="text-base font-black text-white uppercase tracking-tight group-hover:text-primary transition-colors">{instructor.fullName}</h3>
+                    <p className="text-[10px] text-slate-400 font-medium italic">{instructor.careerGoals?.currentRole || 'Expert Ndara'}</p>
+                </div>
+                <ChevronRight className="h-5 w-5 text-slate-700 group-hover:text-primary transition-colors" />
+            </Link>
+        )}
+
+        {/* --- DESCRIPTION --- */}
+        <section className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                <Info className="h-5 w-5 text-primary" />
+                DESCRIPTION
+            </h2>
+            <div className="prose prose-invert prose-sm max-w-none text-slate-400 leading-relaxed font-medium">
+                <p>{course.description}</p>
+            </div>
+        </section>
+
+        {/* --- PROGRAMME --- */}
+        <section className="space-y-4">
+            <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
+                <PlayCircle className="h-5 w-5 text-primary" />
+                PROGRAMME
+            </h2>
+            <Accordion type="single" collapsible className="space-y-3">
+                {sections.map((section, idx) => (
+                    <AccordionItem key={section.id} value={section.id} className="bg-slate-900 border border-white/5 rounded-[1.5rem] overflow-hidden">
+                        <AccordionTrigger className="px-5 py-4 hover:no-underline hover:bg-white/5">
+                            <div className="flex items-center gap-4">
+                                <span className="text-2xl font-black text-primary opacity-30 font-mono">
+                                    {String(idx + 1).padStart(2, '0')}
+                                </span>
+                                <div className="text-left">
+                                    <h3 className="text-sm font-bold text-white uppercase tracking-tight">{section.title}</h3>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5">
+                                        {(lecturesMap.get(section.id) || []).length} leçons
+                                    </p>
+                                </div>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-5 pb-4 space-y-2 bg-slate-950/50">
+                            {(lecturesMap.get(section.id) || []).map(lecture => (
+                                <div key={lecture.id} className="flex items-center justify-between py-3 border-b border-white/5 last:border-0">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        {lecture.isFreePreview ? <PlayCircle size={14} className="text-emerald-500" /> : <Lock size={14} className="text-slate-700" />}
+                                        <span className="text-xs font-medium text-slate-400 truncate">{lecture.title}</span>
+                                    </div>
+                                    {lecture.duration && <span className="text-[10px] text-slate-600 font-black">{lecture.duration}m</span>}
+                                </div>
+                            ))}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        </section>
+
+        {/* --- REVIEWS --- */}
+        <section className="space-y-6">
+            <div className="flex items-center justify-between px-1">
                 <h2 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                    <div className="h-6 w-1.5 bg-primary rounded-full" />
-                    Ce qu'en disent les Ndara
+                    <Star className="h-5 w-5 text-primary" />
+                    AVIS ÉTUDIANTS
                 </h2>
-                <Badge variant="outline" className="text-slate-500 border-slate-800">{stats.reviewCount} avis</Badge>
+                <Badge variant="outline" className="text-slate-500 border-slate-800 uppercase font-black text-[9px]">{stats.reviewCount} retours</Badge>
             </div>
 
             {reviews.length > 0 ? (
-                <div className="grid gap-4">
+                <div className="space-y-4">
                     {reviews.map(review => (
-                        <Card key={review.id} className="bg-slate-900 border-slate-800 rounded-[2.5rem] overflow-hidden shadow-xl hover:border-primary/30 transition-all duration-500 group">
-                            <CardContent className="p-6 space-y-4">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <Avatar className="h-10 w-10 border border-white/5">
-                                            <AvatarImage src={review.userAvatar} />
-                                            <AvatarFallback className="bg-slate-800 text-[10px] font-bold text-slate-500">{review.userName?.charAt(0)}</AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="text-sm font-bold text-white leading-none">{review.userName}</p>
-                                            <p className="text-[9px] font-black text-primary uppercase tracking-widest mt-1">Étudiant Vérifié</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-0.5 bg-slate-950/50 px-2 py-1 rounded-lg">
+                        <div key={review.id} className="bg-slate-900/50 border border-white/5 rounded-3xl p-5 space-y-4 shadow-xl">
+                            <div className="flex items-center gap-3">
+                                <Avatar className="h-10 w-10 border border-white/5">
+                                    <AvatarImage src={review.userAvatar} />
+                                    <AvatarFallback className="bg-slate-800 text-[10px] font-black">{review.userName?.charAt(0)}</AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1">
+                                    <h4 className="text-sm font-bold text-white">{review.userName}</h4>
+                                    <div className="flex items-center gap-0.5 text-yellow-500">
                                         {[...Array(5)].map((_, i) => (
-                                            <Star key={i} size={10} className={cn(i < review.rating ? "text-yellow-500 fill-yellow-500" : "text-slate-800")} />
+                                            <Star key={i} size={10} className={cn("fill-current", i >= review.rating && "text-slate-800 fill-none")} />
                                         ))}
                                     </div>
                                 </div>
-                                <div className="relative">
-                                    <MessageSquareQuote className="absolute -left-2 -top-2 h-8 w-8 text-white/5 group-hover:text-primary/10 transition-colors" />
-                                    <p className="text-sm text-slate-400 italic leading-relaxed font-medium pl-4">
-                                        "{review.comment}"
-                                    </p>
-                                </div>
-                                <p className="text-[9px] text-slate-600 font-bold uppercase text-right">
-                                    Le {(review.createdAt as any)?.toDate ? format((review.createdAt as any).toDate(), 'dd MMM yyyy', { locale: fr }) : 'récemment'}
-                                </p>
-                            </CardContent>
-                        </Card>
+                                <span className="text-[9px] font-black text-slate-600 uppercase">
+                                    {review.createdAt ? format((review.createdAt as any).toDate(), 'dd MMM', { locale: fr }) : '---'}
+                                </span>
+                            </div>
+                            <p className="text-sm text-slate-400 leading-relaxed italic">"{review.comment}"</p>
+                        </div>
                     ))}
                 </div>
             ) : (
-                <div className="py-12 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[2rem] opacity-30">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-slate-600" />
-                    <p className="text-sm font-black uppercase tracking-widest">Aucun avis pour le moment</p>
+                <div className="py-12 text-center bg-slate-900/20 rounded-[2rem] border-2 border-dashed border-slate-800 opacity-20">
+                    <p className="text-xs font-black uppercase tracking-widest">Aucun avis pour le moment</p>
                 </div>
             )}
         </section>
+      </main>
 
-        <section className="space-y-4 pb-8">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 ml-1">Partager cette formation</h2>
-          <div className="grid grid-cols-4 gap-3">
-            <Button variant="outline" className="h-14 rounded-2xl bg-emerald-500/10 border-emerald-500/20 text-emerald-500" onClick={() => handleSocialShare('wa')}><MessageSquare className="h-6 w-6" /></Button>
-            <Button variant="outline" className="h-14 rounded-2xl bg-blue-600/10 border-blue-600/20 text-blue-400" onClick={() => handleSocialShare('fb')}><Facebook className="h-6 w-6" /></Button>
-            <Button variant="outline" className="h-14 rounded-2xl bg-blue-700/10 border-blue-700/20 text-blue-700" onClick={() => handleSocialShare('in')}><Linkedin className="h-6 w-6" /></Button>
-            <Button variant="outline" className="h-14 rounded-2xl bg-slate-800 border-slate-700 text-slate-400" onClick={() => handleSocialShare('copy')}><LinkIcon className="h-6 w-6" /></Button>
-          </div>
-        </section>
-      </div>
-
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-slate-950/95 backdrop-blur-2xl border-t border-slate-800 z-50 safe-area-pb">
+      {/* --- FIXED ACTION BAR --- */}
+      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-slate-900/95 backdrop-blur-xl border-t border-white/5 z-50 safe-area-pb shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
         <div className="max-w-md mx-auto flex items-center justify-between gap-4">
-          <div className="flex flex-col">
-            <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-0.5">Accès Permanent</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black text-white">{course.price === 0 ? "OFFERT" : (course.price || 0).toLocaleString('fr-FR')}</span>
-              {course.price !== 0 && <span className="text-[10px] font-black text-primary">XOF</span>}
+            <div className="flex flex-col">
+                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Accès Permanent</p>
+                <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-primary">
+                        {course.price === 0 ? "OFFERT" : `${course.price.toLocaleString('fr-FR')}`}
+                    </span>
+                    {course.price !== 0 && <span className="text-[10px] font-black text-primary uppercase">XOF</span>}
+                    {course.originalPrice && (
+                        <span className="text-xs text-slate-600 line-through font-bold">
+                            {course.originalPrice.toLocaleString('fr-FR')}
+                        </span>
+                    )}
+                </div>
             </div>
-          </div>
-          <Button onClick={handleStartLearning} className={cn("flex-1 h-14 rounded-xl text-sm font-black uppercase tracking-wider shadow-xl", isEnrolled ? "bg-white text-slate-950" : "bg-primary text-primary-foreground")}>
-            {isEnrolled ? "Reprendre" : "S'inscrire"} <ChevronRight className="ml-2 h-4 w-5" />
-          </Button>
+            <Button 
+                onClick={handleStartLearning} 
+                className="flex-1 h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95"
+            >
+                {isEnrolled ? "REPRENDRE" : "S'INSCRIRE MAINTENANT"}
+                <ChevronRight className="ml-2 h-4 w-4" />
+            </Button>
         </div>
-      </div>
+      </footer>
     </div>
   );
 }
 
 function PublicCourseSkeleton() {
   return (
-    <div className="min-h-screen bg-slate-950 space-y-8 pb-32">
-      <Skeleton className="w-full aspect-video bg-slate-900 rounded-none" />
+    <div className="min-h-screen bg-slate-950 space-y-8">
+      <Skeleton className="w-full h-64 rounded-none" />
       <div className="px-4 space-y-6 max-w-2xl mx-auto">
-        <Skeleton className="h-12 w-3/4 bg-slate-900 rounded-xl" />
-        <Skeleton className="h-20 w-full bg-slate-900 rounded-2xl" />
-        <Skeleton className="h-64 w-full bg-slate-900 rounded-2xl" />
+        <Skeleton className="h-12 w-3/4 rounded-2xl" />
+        <div className="grid grid-cols-3 gap-3">
+            <Skeleton className="h-20 rounded-3xl" />
+            <Skeleton className="h-20 rounded-3xl" />
+            <Skeleton className="h-20 rounded-3xl" />
+        </div>
+        <Skeleton className="h-64 w-full rounded-[2rem]" />
       </div>
     </div>
   );
