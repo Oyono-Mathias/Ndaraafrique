@@ -4,7 +4,7 @@
  * @fileOverview Dashboard Financier de l'Instructeur V2 (Design Qwen Fintech Elite).
  * ✅ CALCULS : Revenus Formations, Revenus Parrainage, Solde Disponible.
  * ✅ DESIGN : Carte bancaire virtuelle Elite avec scintillement et Historique épuré.
- * ✅ RÉSOLU : Ajout des imports manquants DialogClose et ShoppingCart.
+ * ✅ RÉSOLU : Importations DialogClose et ShoppingCart pour le build Vercel.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -38,7 +38,6 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 
 export default function InstructorRevenuePage() {
@@ -250,7 +249,7 @@ export default function InstructorRevenuePage() {
                                     <Badge className={cn(
                                         "text-[8px] font-black uppercase border-none px-2 py-0.5 h-4 rounded-full",
                                         item.status === 'Completed' || item.status === 'paid' ? "bg-emerald-500/10 text-emerald-500" :
-                                        item.status === 'pending' || item.status === 'approved' ? "bg-amber-500/10 text-amber-500" :
+                                        item.status === 'pending' || item.status === 'approved' ? "bg-amber-500/10 text-amber-400" :
                                         "bg-red-500/10 text-red-500"
                                     )}>
                                         {item.status === 'Completed' || item.status === 'paid' ? 'Succès' : item.status === 'pending' ? 'Audit' : item.status === 'approved' ? 'Prêt' : 'Rejeté'}

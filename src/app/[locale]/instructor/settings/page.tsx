@@ -296,7 +296,7 @@ export default function InstructorSettingsPage() {
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-ndara-bg via-ndara-bg to-transparent z-40 safe-area-pb">
                 <Button 
                     type="submit" 
-                    disabled={isSaving}
+                    disabled={isSaving} 
                     className="w-full h-16 rounded-[2.5rem] bg-gradient-to-r from-primary to-emerald-600 text-slate-950 font-black uppercase text-sm tracking-[0.15em] shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-95 transition-all animate-pulse-glow border-none"
                 >
                     {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <><CheckCircle2 className="mr-3 h-5 w-5" /> ENREGISTRER LES RÉGLAGES</>}
