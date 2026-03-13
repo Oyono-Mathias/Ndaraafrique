@@ -25,7 +25,7 @@ import {
     CreditCard,
     Loader2,
     ArrowDown,
-    ShoppingCart,
+    ShoppingBag,
     Download,
     Wifi,
     Check
@@ -36,7 +36,7 @@ import type { Payment, PayoutRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Input } from '@/components/ui/input';
 
