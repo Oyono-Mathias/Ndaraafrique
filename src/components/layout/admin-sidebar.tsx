@@ -1,5 +1,4 @@
-
-"use client";
+'use client';
 
 /**
  * @fileOverview Barre latérale Administrateur Ndara Afrique.
@@ -40,7 +39,6 @@ import {
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useCollection } from '@/firebase';
 import { useMemo, useState, useEffect } from 'react';
 import { collection, query, where, getFirestore, onSnapshot } from "firebase/firestore";
 import { Badge } from "@/components/ui/badge";
@@ -53,12 +51,26 @@ interface AdminSidebarProps {
   onLinkClick: () => void;
 }
 
-const SidebarItem = ({ href, icon: Icon, label, count, onClick }: { 
+interface NavItem {
+  href: string;
+  icon: React.ElementType;
+  label: string;
+  badge?: string;
+  countId?: string;
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+const SidebarItem = ({ href, icon: Icon, label, count, onClick, badge }: { 
   href: string, 
   icon: React.ElementType, 
   label: string, 
   count?: number, 
-  onClick: () => void 
+  onClick: () => void,
+  badge?: string
 }) => {
   const pathname = usePathname() || '';
   const cleanPath = pathname.replace(/^\/(en|fr)/, '') || '/';
@@ -90,14 +102,20 @@ const SidebarItem = ({ href, icon: Icon, label, count, onClick }: {
                 {label}
             </span>
         </div>
-        {count !== undefined && count > 0 && (
-            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/20 animate-pulse">
-                <span className="text-white text-[9px] font-black">{count}</span>
-            </div>
-        )}
-        {!count && !isActive && (
-            <ChevronRight size={14} className="text-slate-700 group-hover:text-slate-500 transition-all" />
-        )}
+        
+        <div className="flex items-center gap-2">
+            {badge && (
+                <Badge className="bg-primary/20 text-primary border-none text-[8px] font-black uppercase px-2 py-0.5">{badge}</Badge>
+            )}
+            {count !== undefined && count > 0 && (
+                <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center shadow-lg shadow-red-500/20 animate-pulse">
+                    <span className="text-white text-[9px] font-black">{count}</span>
+                </div>
+            )}
+            {!count && !isActive && (
+                <ChevronRight size={14} className="text-slate-700 group-hover:text-slate-500 transition-all" />
+            )}
+        </div>
     </Link>
   );
 };
@@ -127,7 +145,7 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
     return () => { unsubInstructors(); unsubCourses(); unsubPayouts(); unsubTickets(); };
   }, [db, currentUser]);
 
-  const groups = [
+  const groups: NavGroup[] = [
     {
       label: "COCKPIT",
       items: [
@@ -235,7 +253,8 @@ export function AdminSidebar({ onLinkClick, siteName, logoUrl }: AdminSidebarPro
                     href={item.href} 
                     icon={item.icon} 
                     label={item.label}
-                    count={(counts as any)[item.countId || '']}
+                    badge={item.badge}
+                    count={item.countId ? (counts as any)[item.countId] : undefined}
                     onClick={onLinkClick}
                 />
                 ))}
