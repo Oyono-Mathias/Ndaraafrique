@@ -132,7 +132,6 @@ export default function InstructorDashboard() {
         <div className="flex flex-col gap-0 pb-32 bg-[#0f172a] min-h-screen relative overflow-hidden font-sans">
             <div className="grain-overlay" />
             
-            {/* --- HEADER --- */}
             <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md safe-area-pt border-b border-white/5">
                 <div className="px-6 py-6 flex items-center justify-between">
                     <div>
@@ -154,9 +153,7 @@ export default function InstructorDashboard() {
 
             <main className="flex-1 overflow-y-auto pt-32 px-6 space-y-8 animate-in fade-in duration-700">
 
-                {/* --- FINANCIAL KPIs --- */}
                 <div className="grid grid-cols-1 gap-4">
-                    {/* Main Balance Card */}
                     <Link href="/instructor/revenus" className="block group active:scale-[0.98] transition-all">
                         <Card className="bg-gradient-to-br from-[#10b981] to-[#047857] rounded-[2.5rem] p-6 border-none shadow-2xl shadow-[#10b981]/20 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10 group-hover:scale-110 transition-transform duration-700" />
@@ -181,7 +178,6 @@ export default function InstructorDashboard() {
                         </Card>
                     </Link>
 
-                    {/* Secondary Stats */}
                     <div className="grid grid-cols-2 gap-4">
                         <Card className="bg-[#1e293b] rounded-[2rem] p-5 border border-[#10b981]/20 shadow-xl active:scale-[0.98] transition-all">
                             <div className="flex items-center gap-3 mb-3">
@@ -207,7 +203,6 @@ export default function InstructorDashboard() {
                     </div>
                 </div>
 
-                {/* --- CASHFLOW CHART --- */}
                 <Card className="bg-[#1e293b] rounded-[2.5rem] p-6 border border-white/5 shadow-2xl overflow-hidden">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-black text-white text-xs uppercase tracking-[0.2em]">Trésorerie</h3>
@@ -249,7 +244,6 @@ export default function InstructorDashboard() {
                     </div>
                 </Card>
 
-                {/* --- URGENCIES: TO GRADE --- */}
                 <section className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 flex items-center gap-2">
@@ -275,7 +269,7 @@ export default function InstructorDashboard() {
                                         <h4 className="font-black text-white text-sm truncate uppercase tracking-tight">{sub.studentName}</h4>
                                         <p className="text-slate-500 text-[10px] font-medium truncate italic">"{sub.assignmentTitle}"</p>
                                         <p className="text-slate-600 text-[8px] font-black uppercase tracking-tighter mt-1 flex items-center gap-1">
-                                            <History size={10} /> Remis il y a peu
+                                            <History size={10} /> Remis récemment
                                         </p>
                                     </div>
                                     <Button asChild className="h-10 px-5 rounded-2xl bg-[#10b981] hover:bg-emerald-600 text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-lg border-none">
@@ -292,10 +286,9 @@ export default function InstructorDashboard() {
                     </div>
                 </section>
 
-                {/* --- QUICK ACTIONS --- */}
                 <div className="grid grid-cols-2 gap-4 pb-12">
                     <Link href="/instructor/courses/create" className="block group active:scale-95 transition-all">
-                        <Card className="bg-[#1e293b] rounded-[2rem] p-6 border border-white/5 flex flex-col items-center justify-center gap-4 shadow-xl group-hover:border-primary/30">
+                        <Card className="bg-[#1e293b] rounded-[2rem] p-6 border border-white/5 flex flex-col items-center justify-center gap-4 shadow-xl group-hover:border-[#10b981]/30">
                             <div className="w-14 h-14 rounded-3xl bg-[#10b981]/10 flex items-center justify-center text-[#10b981] group-hover:bg-[#10b981] group-hover:text-slate-950 transition-all shadow-inner">
                                 <Video size={24} />
                             </div>

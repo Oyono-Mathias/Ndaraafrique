@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { requestPayoutAction } from '@/actions/payoutActions';
 import { useToast } from '@/hooks/use-toast';
-import type { Payment, PayoutRequest, AffiliateTransaction } from '@/lib/types';
+import type { Payment, PayoutRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -124,7 +124,6 @@ export default function InstructorRevenuePage() {
         }
     };
 
-    // Combiner et trier l'historique
     const historyItems = useMemo(() => {
         const p = payments.map(item => ({ 
             id: item.id, 
@@ -147,11 +146,11 @@ export default function InstructorRevenuePage() {
 
     const isLoadingData = loadingStates.payments || loadingStates.payouts;
 
-    if (isUserLoading || isLoadingData) return <RevenueSkeleton />;
+    if (isUserLoading || isLoadingData) return <div className="p-6 space-y-8 pt-12"><Skeleton className="h-10 w-1/2 bg-slate-900" /><Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" /></div>;
 
     return (
         <div className="flex flex-col gap-8 pb-32 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
-            <div className="grain-overlay" />
+            <div className="grain-overlay opacity-[0.04]" />
 
             <header className="px-6 pt-8">
                 <div className="flex items-center justify-between mb-2">
@@ -165,16 +164,14 @@ export default function InstructorRevenuePage() {
 
             <main className="px-6 space-y-8 animate-in fade-in duration-700">
                 
-                {/* --- KPI SECTION --- */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Mon Portefeuille</h2>
-                        <span className="text-primary text-[10px] font-black uppercase flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" /> Actif
+                        <span className="text-[#10b981] text-[10px] font-black uppercase flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-[#10b981] rounded-full animate-pulse" /> Actif
                         </span>
                     </div>
 
-                    {/* Virtual Elite Card */}
                     <div className="virtual-card rounded-[2.5rem] p-8 shadow-2xl relative z-10 active:scale-[0.98] transition-all cursor-pointer group" onClick={() => setIsDialogOpen(true)}>
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-10">
@@ -202,17 +199,16 @@ export default function InstructorRevenuePage() {
                         </div>
                     </div>
 
-                    <Button onClick={() => setIsDialogOpen(true)} className="w-full h-16 rounded-[2.5rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all">
+                    <Button onClick={() => setIsDialogOpen(true)} className="w-full h-16 rounded-[2.5rem] bg-[#10b981] hover:bg-[#10b981]/90 text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl shadow-[#10b981]/20 active:scale-95 transition-all">
                         <Landmark className="mr-2 h-5 w-5" />
                         Demander un Virement
                     </Button>
                 </div>
 
-                {/* --- TRANSACTION HISTORY --- */}
                 <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-6 shadow-2xl">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Historique des flux</h3>
-                        <Button variant="ghost" className="text-primary text-[10px] font-black uppercase h-8 px-3 rounded-xl hover:bg-primary/5">VOIR TOUT</Button>
+                        <Button variant="ghost" className="text-[#10b981] text-[10px] font-black uppercase h-8 px-3 rounded-xl hover:bg-[#10b981]/5">VOIR TOUT</Button>
                     </div>
                     
                     <div className="space-y-4">
@@ -221,7 +217,7 @@ export default function InstructorRevenuePage() {
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
                                         "w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 shadow-inner",
-                                        item.type === 'sale' ? "bg-primary/10 text-primary" : "bg-amber-500/10 text-amber-500"
+                                        item.type === 'sale' ? "bg-[#10b981]/10 text-[#10b981]" : "bg-amber-500/10 text-amber-500"
                                     )}>
                                         {item.type === 'sale' ? <ShoppingCart size={18} /> : <ArrowUpRight size={18} />}
                                     </div>
@@ -233,7 +229,7 @@ export default function InstructorRevenuePage() {
                                 <div className="text-right shrink-0">
                                     <p className={cn(
                                         "font-black text-sm mb-1",
-                                        item.amount > 0 ? "text-primary" : "text-white"
+                                        item.amount > 0 ? "text-[#10b981]" : "text-white"
                                     )}>
                                         {item.amount > 0 ? `+${item.amount.toLocaleString()}` : item.amount.toLocaleString()} F
                                     </p>
@@ -258,7 +254,6 @@ export default function InstructorRevenuePage() {
 
             </main>
 
-            {/* --- WITHDRAW MODAL --- */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="bg-slate-900 border-white/5 rounded-t-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
                     <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -270,7 +265,7 @@ export default function InstructorRevenuePage() {
                     <div className="p-8 space-y-6">
                         <div className="bg-slate-950 rounded-3xl p-6 border border-white/5 text-center shadow-inner">
                             <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Montant transférable</p>
-                            <p className="text-3xl font-black text-primary">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</p>
+                            <p className="text-3xl font-black text-[#10b981]">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</p>
                         </div>
 
                         <div className="space-y-3">
@@ -278,21 +273,21 @@ export default function InstructorRevenuePage() {
                             <RadioGroup value={payoutMethod} onValueChange={(v: any) => setPayoutMethod(v)} className="grid grid-cols-1 gap-3">
                                 <label className={cn(
                                     "flex items-center justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer",
-                                    payoutMethod === 'mobile_money' ? "border-primary bg-primary/5" : "border-slate-800 bg-slate-950/50"
+                                    payoutMethod === 'mobile_money' ? "border-[#10b981] bg-[#10b981]/5" : "border-slate-800 bg-slate-950/50"
                                 )}>
                                     <div className="flex items-center gap-4">
-                                        <Smartphone className={cn("h-6 w-6", payoutMethod === 'mobile_money' ? "text-primary" : "text-slate-500")} />
+                                        <Smartphone className={cn("h-6 w-6", payoutMethod === 'mobile_money' ? "text-[#10b981]" : "text-slate-500")} />
                                         <div className="text-left"><p className="text-sm font-black text-white uppercase tracking-tight">Mobile Money</p><p className="text-[9px] text-slate-500 font-bold uppercase">Auto & Sécurisé</p></div>
                                     </div>
                                     <RadioGroupItem value="mobile_money" className="sr-only" />
-                                    {payoutMethod === 'mobile_money' && <CheckCircle2 className="h-5 w-5 text-primary" />}
+                                    {payoutMethod === 'mobile_money' && <CheckCircle2 className="h-5 w-5 text-[#10b981]" />}
                                 </label>
                                 <label className={cn(
                                     "flex items-center justify-between p-5 rounded-2xl border-2 transition-all cursor-pointer opacity-50",
-                                    payoutMethod === 'bank_transfer' ? "border-primary bg-primary/5" : "border-slate-800 bg-slate-950/50"
+                                    payoutMethod === 'bank_transfer' ? "border-[#10b981] bg-[#10b981]/5" : "border-slate-800 bg-slate-950/50"
                                 )}>
                                     <div className="flex items-center gap-4">
-                                        <CreditCard className={cn("h-6 w-6", payoutMethod === 'bank_transfer' ? "text-primary" : "text-slate-500")} />
+                                        <CreditCard className={cn("h-6 w-6", payoutMethod === 'bank_transfer' ? "text-[#10b981]" : "text-slate-500")} />
                                         <div className="text-left"><p className="text-sm font-black text-white uppercase tracking-tight">Virement</p><p className="text-[9px] text-slate-500 font-bold uppercase">Standard Bancaire</p></div>
                                     </div>
                                     <RadioGroupItem value="bank_transfer" className="sr-only" />
@@ -305,26 +300,13 @@ export default function InstructorRevenuePage() {
                         <Button 
                             onClick={handleRequestWithdrawal}
                             disabled={isSubmitting || stats.availableBalance < 5000}
-                            className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-sm tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95"
+                            className="w-full h-16 rounded-[2rem] bg-[#10b981] hover:bg-[#10b981]/90 text-slate-950 font-black uppercase text-sm tracking-widest shadow-xl shadow-[#10b981]/20 transition-all active:scale-95"
                         >
                             {isSubmitting ? <Loader2 className="animate-spin mr-2 h-5 w-5"/> : "Confirmer le retrait"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
-        </div>
-    );
-}
-
-function RevenueSkeleton() {
-    return (
-        <div className="p-6 space-y-8 pt-12">
-            <Skeleton className="h-10 w-1/2 bg-slate-900" />
-            <Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" />
-            <div className="space-y-4">
-                <Skeleton className="h-20 w-full rounded-3xl bg-slate-900" />
-                <Skeleton className="h-20 w-full rounded-3xl bg-slate-900" />
-            </div>
         </div>
     );
 }

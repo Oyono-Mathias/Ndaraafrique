@@ -88,7 +88,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     }
   };
 
-  // --- VARIANT: INSTRUCTOR (ELITE DESIGN) ---
   if (variant === 'instructor') {
     const isPublished = course.status === 'Published';
     const isPending = course.status === 'Pending Review';
@@ -96,7 +95,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     
     return (
         <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 flex flex-col gap-4 shadow-xl active:scale-[0.98] transition-all group">
-            {/* Thumbnail */}
             <div className="w-full aspect-video rounded-[1.5rem] overflow-hidden relative bg-slate-800 shadow-inner">
                 {course.imageUrl ? (
                     <Image src={course.imageUrl} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -118,7 +116,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 </div>
             </div>
 
-            {/* Info */}
             <div>
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{course.category}</span>
@@ -127,7 +124,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 </div>
                 <h3 className="font-black text-white text-base leading-tight mb-4 line-clamp-2 uppercase tracking-tight">{course.title}</h3>
                 
-                {/* Stats */}
                 <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-slate-600" />
@@ -139,9 +135,8 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                     </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center gap-3 pt-4 border-t border-white/5">
-                    <Button asChild className="flex-1 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all border-none active:scale-95 shadow-lg">
+                    <Button asChild className="flex-1 h-12 rounded-2xl bg-[#10b981]/10 text-[#10b981] hover:bg-[#10b981] hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all border-none active:scale-95 shadow-lg">
                         <Link href={`/${locale}/instructor/courses/edit/${course.id}`}>
                             <Pencil className="mr-2 h-3.5 w-3.5" /> Éditer
                         </Link>
@@ -153,7 +148,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
-  // --- VARIANT: SEARCH RESULT (HORIZONTAL) ---
   if (variant === 'search-result') {
     return (
         <Link href={href} className="course-card block active:scale-[0.98] transition-all">
@@ -181,7 +175,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                                 <span className="text-[9px] font-bold">{(course.participantsCount || 0).toLocaleString()}</span>
                             </div>
                         </div>
-                        <span className="text-primary text-[13px] font-black uppercase">
+                        <span className="text-[#10b981] text-[13px] font-black uppercase">
                             {course.price === 0 ? 'Offert' : `${(course.price / 1000).toFixed(0)}K XOF`}
                         </span>
                     </div>
@@ -191,7 +185,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
-  // --- VARIANT: LIST (STUDENT DASHBOARD) ---
   if (variant === 'list') {
     const isCompleted = course.progress === 100;
     
@@ -204,7 +197,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
               <div className="absolute inset-0 bg-black/20" />
               {isCompleted && (
                   <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                      <div className="w-10 h-10 bg-[#10b981] rounded-full flex items-center justify-center shadow-lg">
                           <CheckCircle2 className="h-5 w-5 text-[#0f172a]" />
                       </div>
                   </div>
@@ -223,13 +216,13 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                           <span className="text-slate-600 text-[9px] font-black uppercase tracking-tighter">
                               {isCompleted ? 'STATUT' : 'PROGRESSION'}
                           </span>
-                          <span className="text-primary text-[10px] font-black">
+                          <span className="text-[#10b981] text-[10px] font-black">
                               {isCompleted ? 'TERMINÉ' : `${course.progress}%`}
                           </span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-800/50 rounded-full overflow-hidden border border-white/5">
                           <div 
-                            className="h-full bg-primary transition-all duration-1000 shadow-[0_0_10px_hsl(var(--primary))]" 
+                            className="h-full bg-[#10b981] transition-all duration-1000 shadow-[0_0_10px_#10b981]" 
                             style={{ width: `${course.progress}%` }} 
                           />
                       </div>
@@ -243,7 +236,6 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     );
   }
 
-  // --- VARIANT: GRID (DEFAULT) ---
   return (
     <div className="group h-full">
       <Link href={href} className="flex flex-col h-full active:scale-[0.98] transition-transform">
@@ -254,7 +246,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 onClick={toggleWishlist} 
                 className={cn(
                     "absolute top-3 right-3 p-2 rounded-full backdrop-blur-md border border-white/10 transition-all z-20", 
-                    isWishlisted ? "bg-primary text-white scale-110 shadow-glow" : "bg-black/40 text-white opacity-0 group-hover:opacity-100"
+                    isWishlisted ? "bg-[#10b981] text-white scale-110 shadow-glow" : "bg-black/40 text-white opacity-0 group-hover:opacity-100"
                 )}
             >
                 <Heart className={cn("h-3.5 w-3.5", isWishlisted && "fill-current")} />
@@ -270,7 +262,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                     <Star className="h-2.5 w-2.5 text-yellow-500 fill-yellow-500" />
                     <span className="text-[10px] font-black text-slate-300">{course.rating ? course.rating.toFixed(1) : '---'}</span>
                 </div>
-                <p className="text-sm font-black text-primary uppercase">
+                <p className="text-sm font-black text-[#10b981] uppercase">
                     {course.price === 0 ? "Offert" : `${(course.price / 1000).toFixed(0)}K XOF`}
                 </p>
             </div>
