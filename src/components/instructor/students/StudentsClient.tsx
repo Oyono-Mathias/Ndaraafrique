@@ -1,5 +1,11 @@
 'use client';
 
+/**
+ * @fileOverview Annuaire des Étudiants - Design Elite Forest & Wealth.
+ * ✅ DESIGN : Cartes propres avec barres de progression émeraude.
+ * ✅ FONCTIONNEL : Filtres par cours et contact direct.
+ */
+
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
 import { getFirestore, collection, query, where, getDocs, documentId } from 'firebase/firestore';
@@ -12,11 +18,10 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, MessageSquare, Loader2, BookOpen, Clock, Users, Filter } from 'lucide-react';
+import { Search, MessageSquare, Loader2, BookOpen, Clock, Users, Filter, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EnrichedEnrollment extends Enrollment {
@@ -121,18 +126,8 @@ export function StudentsClient() {
   const isLoading = isUserLoading || coursesLoading || enrollmentsLoading || relatedDataLoading;
 
   return (
-    <div className="flex flex-col gap-8 animate-in fade-in duration-700">
+    <div className="flex flex-col gap-8 animate-in fade-in duration-700 pb-20">
         <header className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="font-black text-2xl text-white uppercase tracking-tight">Mes Étudiants</h1>
-                    <p className="text-primary text-[10px] font-black uppercase tracking-widest mt-1">Communauté Active ({filteredData.length})</p>
-                </div>
-                <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full bg-slate-900 border border-white/5 text-slate-500">
-                    <Filter size={18} />
-                </Button>
-            </div>
-
             <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
                     <Search className="h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
@@ -150,18 +145,18 @@ export function StudentsClient() {
                     <button 
                         onClick={() => setCourseFilter('all')}
                         className={cn(
-                            "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                            "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
                             courseFilter === 'all' ? "bg-primary text-slate-950 shadow-lg" : "bg-slate-900 border border-white/5 text-slate-500"
                         )}
                     >
-                        Tout le monde
+                        Tous les Ndara
                     </button>
                     {courses?.map(c => (
                         <button 
                             key={c.id}
                             onClick={() => setCourseFilter(c.id)}
                             className={cn(
-                                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-95",
                                 courseFilter === c.id ? "bg-primary text-slate-950 shadow-lg" : "bg-slate-900 border border-white/5 text-slate-500"
                             )}
                         >
@@ -173,6 +168,8 @@ export function StudentsClient() {
         </header>
 
         <main className="space-y-4">
+            <h2 className="font-black text-slate-500 text-[10px] uppercase tracking-[0.3em] px-1">Membres Actifs ({filteredData.length})</h2>
+            
             {isLoading ? (
                 <div className="space-y-4">
                     {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900" />)}
@@ -180,29 +177,32 @@ export function StudentsClient() {
             ) : filteredData.length > 0 ? (
                 <div className="grid gap-4">
                     {filteredData.map(item => (
-                        <div key={item.id} className="bg-slate-900 border border-white/5 rounded-[2rem] p-4 flex items-center gap-4 shadow-xl active:scale-[0.98] transition-all group">
-                            <div className="relative">
-                                <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-2xl">
-                                    <AvatarImage src={item.student?.profilePictureURL} />
+                        <div key={item.id} className="touch-btn bg-slate-900 border border-white/5 rounded-[2rem] p-4 flex items-center gap-4 shadow-xl active:scale-[0.98] transition-all group">
+                            <div className="relative flex-shrink-0">
+                                <Avatar className="h-14 w-14 border-2 border-white/10 shadow-2xl">
+                                    <AvatarImage src={item.student?.profilePictureURL} className="object-cover" />
                                     <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
                                         {item.student?.fullName?.charAt(0)}
                                     </AvatarFallback>
                                 </Avatar>
                                 {item.student?.isOnline && (
-                                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-slate-950 shadow-lg animate-pulse" />
+                                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-slate-900 shadow-lg animate-pulse" />
                                 )}
                             </div>
                             
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center justify-between mb-1">
-                                    <h3 className="font-black text-white text-[15px] truncate uppercase tracking-tight">{item.student?.fullName}</h3>
+                                    <h3 className="font-black text-white text-[15px] truncate uppercase tracking-tight leading-none">{item.student?.fullName}</h3>
                                     <span className="text-primary text-[10px] font-black">{item.progress}%</span>
                                 </div>
-                                <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden mb-2">
-                                    <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${item.progress}%` }} />
+                                <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-2">
+                                    <div 
+                                        className="h-full bg-gradient-to-r from-primary to-teal-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)] transition-all duration-1000" 
+                                        style={{ width: `${item.progress}%` }} 
+                                    />
                                 </div>
-                                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest truncate">
-                                    Formation : {item.course?.title}
+                                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest truncate italic">
+                                    {item.course?.title}
                                 </p>
                             </div>
 
@@ -210,7 +210,7 @@ export function StudentsClient() {
                                 size="icon" 
                                 onClick={() => handleContact(item.studentId)}
                                 disabled={isContacting === item.studentId}
-                                className="h-12 w-12 rounded-2xl bg-primary/10 hover:bg-primary text-primary hover:text-slate-950 border border-primary/20 shrink-0"
+                                className="h-12 w-12 rounded-full bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 shrink-0 shadow-lg transition-all"
                             >
                                 {isContacting === item.studentId ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare size={20} />}
                             </Button>
