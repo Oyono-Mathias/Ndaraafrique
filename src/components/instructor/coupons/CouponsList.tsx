@@ -4,13 +4,17 @@ import { useRole } from '@/context/RoleContext';
 import { deleteCouponAction } from '@/actions/couponActions';
 import { useToast } from '@/hooks/use-toast';
 import type { Coupon } from '@/lib/types';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Trash2, TrendingUp, Users, Calendar, Ticket } from 'lucide-react';
+import { Trash2, Tag, Ticket, Users, Clock, MoreVertical } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function CouponsList({ coupons }: { coupons: Coupon[] }) {
   const { currentUser } = useRole();
@@ -25,67 +29,90 @@ export function CouponsList({ coupons }: { coupons: Coupon[] }) {
 
   if (coupons.length === 0) {
     return (
-      <div className="py-20 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[2.5rem] opacity-30">
-        <Ticket className="h-12 w-12 mx-auto mb-4" />
-        <p className="font-black uppercase tracking-widest text-xs">Aucun coupon actif</p>
+      <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
+        <Ticket className="h-16 w-16 mx-auto mb-4" />
+        <p className="font-black uppercase tracking-widest text-xs">Zéro code promotionnel</p>
       </div>
     );
   }
 
   return (
-    <div className="border rounded-[2rem] bg-slate-900/50 border-slate-800 overflow-hidden shadow-2xl">
-      <Table>
-        <TableHeader>
-          <TableRow className="border-slate-800 bg-slate-800/30">
-            <TableHead className="text-[10px] font-black uppercase tracking-widest py-4">Code</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest">Réduction</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest">Usage</TableHead>
-            <TableHead className="text-[10px] font-black uppercase tracking-widest">Expire le</TableHead>
-            <TableHead className="text-right text-[10px] font-black uppercase tracking-widest pr-6">Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {coupons.map((coupon) => {
-            const isExpired = (coupon.expiresAt as any)?.toDate?.() < new Date();
-            const isFull = coupon.usedCount >= coupon.maxUses;
+    <div className="space-y-4">
+      {coupons.map((coupon) => {
+        const isExpired = (coupon.expiresAt as any)?.toDate?.() < new Date();
+        const usagePercent = Math.min(100, (coupon.usedCount / coupon.maxUses) * 100);
 
-            return (
-              <TableRow key={coupon.id} className="group border-slate-800 hover:bg-slate-800/20">
-                <TableCell>
-                  <div className="flex flex-col">
-                    <span className="font-black text-primary text-sm">{coupon.code}</span>
-                    <span className="text-[9px] text-slate-500 uppercase tracking-tighter truncate max-w-[150px]">{coupon.courseTitle}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <Badge variant="secondary" className="font-black text-[9px] uppercase border-none bg-slate-800">
-                    {coupon.discountType === 'percentage' ? `-${coupon.discountValue}%` : `-${coupon.discountValue} XOF`}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 h-1 w-12 bg-slate-800 rounded-full overflow-hidden">
-                        <div className="h-full bg-primary" style={{ width: `${(coupon.usedCount / coupon.maxUses) * 100}%` }} />
+        return (
+          <div 
+            key={coupon.id} 
+            className={cn(
+                "vintage-ticket rounded-3xl p-6 flex flex-col gap-4 shadow-xl active:scale-[0.98] transition-all group",
+                isExpired && "opacity-60 grayscale"
+            )}
+          >
+            <div className="flex justify-between items-start">
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-1">
+                        <span className="font-black text-white text-xl tracking-[0.2em]">{coupon.code}</span>
+                        <span className={cn(
+                            "text-[8px] font-black uppercase px-2 py-0.5 rounded-md border",
+                            isExpired ? "bg-slate-800 text-slate-500 border-slate-700" : "bg-primary/10 text-primary border-primary/30"
+                        )}>
+                            {isExpired ? "Expiré" : "Actif"}
+                        </span>
                     </div>
-                    <span className={cn("text-[10px] font-bold", isFull ? "text-red-400" : "text-slate-400")}>
-                        {coupon.usedCount}/{coupon.maxUses}
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell className="text-[10px] font-bold text-slate-500 uppercase">
-                  {format((coupon.expiresAt as any).toDate(), 'dd MMM yyyy', { locale: fr })}
-                  {isExpired && <span className="ml-2 text-red-500 text-[8px] font-black tracking-widest">(EXPIRÉ)</span>}
-                </TableCell>
-                <TableCell className="text-right pr-6">
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(coupon.code)} className="text-slate-600 hover:text-red-500 h-8 w-8">
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
+                    <p className="text-slate-400 text-xs font-medium italic line-clamp-1">"{coupon.courseTitle}"</p>
+                </div>
+                
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-white/5 text-slate-500">
+                            <MoreVertical size={18} />
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="bg-slate-900 border-slate-800 text-slate-300">
+                        <DropdownMenuItem onClick={() => handleDelete(coupon.code)} className="text-red-500 gap-2 font-bold uppercase text-[10px] tracking-widest">
+                            <Trash2 size={14} /> Supprimer le coupon
+                        </DropdownMenuItem>
+                    </DropdownMenuContent>
+                </DropdownMenu>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                        <Tag size={14} />
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">Remise</p>
+                        <p className="text-sm font-black text-white">
+                            {coupon.discountType === 'percentage' ? `-${coupon.discountValue}%` : `-${coupon.discountValue} F`}
+                        </p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-400">
+                        <Users size={14} />
+                    </div>
+                    <div>
+                        <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest leading-none mb-1">Usage</p>
+                        <p className="text-sm font-black text-white">{coupon.usedCount}/{coupon.maxUses}</p>
+                    </div>
+                </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+                <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden border border-white/5">
+                    <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${usagePercent}%` }} />
+                </div>
+                <div className="flex items-center gap-1.5 text-[9px] font-black text-slate-600 uppercase tracking-widest">
+                    <Clock size={10} />
+                    Expire le {format((coupon.expiresAt as any).toDate(), 'dd MMM yyyy', { locale: fr })}
+                </div>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
