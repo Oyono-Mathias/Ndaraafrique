@@ -37,7 +37,7 @@ import type { Payment, PayoutRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
 export default function InstructorRevenuePage() {
@@ -143,22 +143,28 @@ export default function InstructorRevenuePage() {
     };
 
     const historyItems = useMemo(() => {
-        const p = payments.map(item => ({ 
-            id: item.id, 
-            type: 'sale', 
-            title: `Vente: ${item.courseTitle || 'Formation'}`, 
-            amount: item.amount, 
-            date: (item.date as any)?.toDate?.() || new Date(),
-            status: 'Completed' 
-        }));
-        const pr = payoutRequests.map(item => ({ 
-            id: item.id, 
-            type: 'payout', 
-            title: `Retrait Mobile Money`, 
-            amount: -item.amount, 
-            date: (item.createdAt as any)?.toDate?.() || new Date(),
-            status: item.status 
-        }));
+        const p = payments.map(item => {
+            const date = (item.date as any)?.toDate ? (item.date as any).toDate() : new Date();
+            return { 
+                id: item.id, 
+                type: 'sale', 
+                title: `Vente: ${item.courseTitle || 'Formation'}`, 
+                amount: item.amount, 
+                date,
+                status: 'Completed' 
+            };
+        });
+        const pr = payoutRequests.map(item => {
+            const date = (item.createdAt as any)?.toDate ? (item.createdAt as any).toDate() : new Date();
+            return { 
+                id: item.id, 
+                type: 'payout', 
+                title: `Retrait Mobile Money`, 
+                amount: -item.amount, 
+                date,
+                status: item.status 
+            };
+        });
         return [...p, ...pr].sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [payments, payoutRequests]);
 

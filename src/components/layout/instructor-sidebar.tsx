@@ -27,7 +27,8 @@ import {
   ChevronRight,
   LogOut,
   X,
-  Target
+  Target,
+  Landmark
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
