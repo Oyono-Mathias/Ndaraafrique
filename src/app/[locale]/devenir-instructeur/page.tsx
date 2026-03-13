@@ -39,7 +39,8 @@ import {
   X,
   Send,
   Zap,
-  Coins
+  Coins,
+  ArrowLeft
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -95,9 +96,9 @@ export default function DevenirInstructeurPage() {
             <h1 className="text-3xl font-black text-white uppercase tracking-tight">Accès Activé</h1>
             <p className="text-slate-400 font-medium leading-relaxed">Votre compte expert est opérationnel. Commencez à bâtir votre académie dès maintenant.</p>
         </div>
-        <Button onClick={() => router.push('/instructor/dashboard')} className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
+        <button onClick={() => router.push('/instructor/dashboard')} className="w-full h-16 rounded-[2rem] bg-primary text-slate-950 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
           Aller au Dashboard Formateur
-        </Button>
+        </button>
       </div>
     );
   }
@@ -148,13 +149,13 @@ export default function DevenirInstructeurPage() {
             </div>
 
             <div className="mt-10 flex gap-3 w-full max-w-sm">
-                <Button variant="outline" onClick={() => router.push('/student/dashboard')} className="flex-1 h-14 rounded-2xl border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest">
+                <button onClick={() => router.push('/student/dashboard')} className="flex-1 h-14 rounded-2xl border border-white/5 bg-slate-900 text-slate-400 font-black uppercase text-[10px] tracking-widest">
                     RETOUR
-                </Button>
-                <Button onClick={() => router.push('/student/support')} className="flex-1 h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
+                </button>
+                <button onClick={() => router.push('/student/support')} className="flex-1 h-14 rounded-2xl bg-primary text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
                     <Headset className="mr-2 h-4 w-4" />
                     SUPPORT
-                </Button>
+                </button>
             </div>
         </div>
       </div>
@@ -192,7 +193,7 @@ export default function DevenirInstructeurPage() {
       {/* --- HEADER --- */}
       <header className="px-6 pt-12 pb-8 space-y-6 relative z-10">
         <div className="flex items-center justify-between">
-            <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500">
+            <button onClick={() => router.back()} className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-slate-500 active:scale-90 transition-transform">
                 <ArrowLeft className="h-5 w-5" />
             </button>
             <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary to-blue-600 shadow-lg animate-pulse-glow">
@@ -313,9 +314,9 @@ export default function DevenirInstructeurPage() {
                         </div>
                     </div>
 
-                    <Button type="submit" disabled={isSubmitting} className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98] mt-6">
+                    <button type="submit" disabled={isSubmitting} className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/20 transition-all active:scale-[0.98] mt-6 flex items-center justify-center gap-2">
                         {isSubmitting ? <Loader2 className="h-6 w-6 animate-spin" /> : <>Envoyer ma candidature <Send className="ml-2 h-4 w-4" /></>}
-                    </Button>
+                    </button>
                 </form>
             </Form>
         </section>
