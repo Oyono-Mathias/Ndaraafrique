@@ -1,193 +1,128 @@
-
 'use client';
+
+/**
+ * @fileOverview Gestionnaire de corrections Android-First.
+ */
 
 import { useState, useMemo, useEffect } from 'react';
 import { useCollection } from '@/firebase';
-import { getFirestore, collection, query, where } from 'firebase/firestore';
+import { getFirestore, collection, query, where, orderBy } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Edit, Frown, ClipboardCheck, PlusCircle, ArrowRight } from 'lucide-react';
+import { ClipboardCheck, Loader2, Clock, History, ChevronRight } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { GradingModal } from './GradingModal';
 import type { AssignmentSubmission, Course } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import Link from 'next/link';
 
 export function AssignmentsClient() {
   const db = getFirestore();
   const { currentUser } = useRole();
-  const [courseFilter, setCourseFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('submitted');
+  const [statusFilter, setStatusFilter] = useState<'submitted' | 'graded'>('submitted');
   const [selectedSubmission, setSelectedSubmission] = useState<AssignmentSubmission | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Récupérer les cours pour le filtre
-  const coursesQuery = useMemo(
-    () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
-    [db, currentUser]
-  );
-  const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
-
-  // Récupérer toutes les soumissions de devoirs (Tri manuel)
+  // Récupérer toutes les soumissions (Tri en mémoire pour stabilité)
   const submissionsQuery = useMemo(
     () => currentUser ? query(collection(db, 'devoirs'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
-  const { data: rawSubmissions, isLoading: submissionsLoading } = useCollection<AssignmentSubmission>(submissionsQuery);
+  const { data: rawSubmissions, isLoading } = useCollection<AssignmentSubmission>(submissionsQuery);
 
   const filteredSubmissions = useMemo(() => {
     if (!rawSubmissions) return [];
-    
-    // Tri manuel par date
-    const sorted = [...rawSubmissions].sort((a, b) => {
+    return [...rawSubmissions]
+      .filter(sub => sub.status === statusFilter)
+      .sort((a, b) => {
         const dateA = (a.submittedAt as any)?.toDate?.() || new Date(0);
         const dateB = (b.submittedAt as any)?.toDate?.() || new Date(0);
         return dateB.getTime() - dateA.getTime();
-    });
-
-    return sorted.filter(sub => {
-      const courseMatch = courseFilter === 'all' || sub.courseId === courseFilter;
-      const statusMatch = statusFilter === 'all' || sub.status === statusFilter;
-      return courseMatch && statusMatch;
-    });
-  }, [rawSubmissions, courseFilter, statusFilter]);
+      });
+  }, [rawSubmissions, statusFilter]);
 
   const handleGradeClick = (submission: AssignmentSubmission) => {
     setSelectedSubmission(submission);
     setIsModalOpen(true);
   };
-  
-  const isLoading = coursesLoading || submissionsLoading;
 
   return (
-    <>
+    <div className="flex flex-col gap-8 animate-in fade-in duration-700">
       <GradingModal submission={selectedSubmission} isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
       
-      <div className="flex justify-end mb-6">
-          <Button asChild className="h-12 rounded-xl bg-slate-900 border-slate-800 hover:bg-slate-800 text-white font-bold gap-2">
-              <Link href="/instructor/courses">
-                  <PlusCircle className="h-4 w-4 text-primary" />
-                  Créer un devoir (via l'éditeur de cours)
-                  <ArrowRight className="h-4 w-4 ml-1 opacity-50" />
-              </Link>
-          </Button>
-      </div>
-
-      <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
-        <CardContent className="p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
-            <div className="space-y-1.5 w-full sm:w-[250px]">
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Formation</label>
-                <Select value={courseFilter} onValueChange={setCourseFilter}>
-                <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl">
-                    <SelectValue placeholder="Filtrer par cours..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Toutes mes formations</SelectItem>
-                    {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
-                </SelectContent>
-                </Select>
-            </div>
-            
-            <div className="space-y-1.5 w-full sm:w-[180px]">
-                <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">État</label>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl">
-                    <SelectValue placeholder="Statut..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">Tous les devoirs</SelectItem>
-                    <SelectItem value="submitted">À corriger</SelectItem>
-                    <SelectItem value="graded">Déjà notés</SelectItem>
-                </SelectContent>
-                </Select>
-            </div>
-          </div>
-          
-          <div className="border rounded-2xl border-slate-200 dark:border-slate-800 overflow-hidden bg-slate-50/30 dark:bg-black/20">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/50">
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Apprenant</TableHead>
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest hidden md:table-cell">Cours</TableHead>
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Soumission</TableHead>
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest text-center">Note</TableHead>
-                  <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full bg-slate-200 dark:bg-slate-800" /></TableCell></TableRow>
-                  ))
-                ) : filteredSubmissions.length > 0 ? (
-                  filteredSubmissions.map(sub => (
-                    <TableRow key={sub.id} className="hover:bg-slate-100/50 dark:hover:bg-slate-800/30 border-slate-200 dark:border-slate-800">
-                      <TableCell>
-                        <div className="flex items-center gap-3">
-                           <Avatar className="h-9 w-9 border border-slate-200 dark:border-slate-700">
-                               <AvatarImage src={sub.studentAvatarUrl}/>
-                               <AvatarFallback className="bg-slate-200 dark:bg-slate-800 text-slate-500 font-bold">{sub.studentName.charAt(0)}</AvatarFallback>
-                           </Avatar>
-                           <div className="flex flex-col">
-                               <span className="font-bold text-sm text-slate-900 dark:text-white">{sub.studentName}</span>
-                               <span className="text-[10px] text-slate-500 md:hidden truncate max-w-[120px]">{sub.courseTitle}</span>
-                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-slate-400 text-xs hidden md:table-cell font-medium">
-                        {sub.courseTitle}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-slate-500 text-xs">
-                        {(sub.submittedAt as any)?.toDate?.() 
-                          ? formatDistanceToNow((sub.submittedAt as any).toDate(), { locale: fr, addSuffix: true }) 
-                          : 'Récemment'}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        {sub.status === 'graded' ? (
-                            <Badge className={cn(
-                                "font-black text-[10px] border-none",
-                                (sub.grade || 0) >= 10 ? "bg-green-500/10 text-green-500" : "bg-amber-500/10 text-amber-500"
-                            )}>
-                                {sub.grade}/20
-                            </Badge>
-                        ) : (
-                            <Badge variant="outline" className="text-[9px] font-black text-slate-400 border-slate-200 dark:border-slate-700">EN ATTENTE</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleGradeClick(sub)}
-                            className="h-9 px-4 rounded-xl font-bold text-primary hover:bg-primary/10"
-                        >
-                          <Edit className="mr-2 h-3.5 w-3.5" />
-                          {sub.status === 'graded' ? 'Réviser' : 'Noter'}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow><TableCell colSpan={5} className="h-64 text-center">
-                     <div className="flex flex-col items-center justify-center gap-3 opacity-30">
-                        <ClipboardCheck className="h-16 w-16 text-slate-400" />
-                        <p className="font-black uppercase text-xs tracking-widest">Aucun devoir à traiter</p>
-                      </div>
-                  </TableCell></TableRow>
+      <header className="flex flex-col gap-6">
+        <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+            <button 
+                onClick={() => setStatusFilter('submitted')}
+                className={cn(
+                    "flex-shrink-0 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                    statusFilter === 'submitted' ? "bg-primary text-slate-950 shadow-lg" : "bg-slate-900 border border-white/5 text-slate-500"
                 )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
-    </>
+            >
+                À Corriger ({rawSubmissions?.filter(s => s.status === 'submitted').length || 0})
+            </button>
+            <button 
+                onClick={() => setStatusFilter('graded')}
+                className={cn(
+                    "flex-shrink-0 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                    statusFilter === 'graded' ? "bg-primary text-slate-950 shadow-lg" : "bg-slate-900 border border-white/5 text-slate-500"
+                )}
+            >
+                Historique Noté
+            </button>
+        </div>
+      </header>
+
+      <main className="space-y-4">
+        {isLoading ? (
+            <div className="space-y-4">
+                {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900" />)}
+            </div>
+        ) : filteredSubmissions.length > 0 ? (
+            <div className="grid gap-4">
+                {filteredSubmissions.map(sub => (
+                    <div key={sub.id} className="bg-slate-900 border border-white/5 rounded-[2rem] p-4 flex items-center gap-4 shadow-xl active:scale-[0.98] transition-all group">
+                        <Avatar className="h-14 w-14 border-2 border-white/10 shadow-lg">
+                            <AvatarImage src={sub.studentAvatarUrl} />
+                            <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                                {sub.studentName?.charAt(0)}
+                            </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                                <h3 className="font-black text-white text-[15px] truncate uppercase tracking-tight">{sub.studentName}</h3>
+                                {statusFilter === 'submitted' && (
+                                    <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.5)]" />
+                                )}
+                            </div>
+                            <p className="text-slate-400 text-xs font-medium truncate italic leading-relaxed">"{sub.assignmentTitle}"</p>
+                            <div className="flex items-center gap-2 mt-2">
+                                <History size={10} className="text-slate-600" />
+                                <span className="text-[9px] font-black text-slate-600 uppercase">
+                                    Remis {(sub.submittedAt as any)?.toDate ? formatDistanceToNow((sub.submittedAt as any).toDate(), { locale: fr, addSuffix: true }) : 'récemment'}
+                                </span>
+                            </div>
+                        </div>
+
+                        <Button 
+                            onClick={() => handleGradeClick(sub)}
+                            className="h-12 px-6 rounded-2xl bg-primary text-slate-950 font-black uppercase text-[10px] tracking-widest shadow-lg active:scale-90 transition-transform"
+                        >
+                            {statusFilter === 'graded' ? 'Réviser' : 'Noter'}
+                        </Button>
+                    </div>
+                ))}
+            </div>
+        ) : (
+            <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
+                <ClipboardCheck className="h-16 w-16 mx-auto mb-4 text-slate-700" />
+                <p className="font-black uppercase tracking-widest text-xs">Tout est à jour !</p>
+            </div>
+        )}
+      </main>
+    </div>
   );
 }

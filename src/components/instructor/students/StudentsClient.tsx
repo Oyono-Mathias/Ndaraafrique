@@ -11,15 +11,12 @@ import type { Enrollment, NdaraUser, Course } from '@/lib/types';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Search, Users, MessageSquare, Loader2, BookOpen, Clock } from 'lucide-react';
+import { Search, MessageSquare, Loader2, BookOpen, Clock, Users, Filter } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface EnrichedEnrollment extends Enrollment {
@@ -37,14 +34,12 @@ export function StudentsClient() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isContacting, setIsContacting] = useState<string | null>(null);
 
-  // 1. Récupérer les cours de l'instructeur
   const coursesQuery = useMemo(
     () => currentUser ? query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
   );
   const { data: courses, isLoading: coursesLoading } = useCollection<Course>(coursesQuery);
 
-  // 2. Récupérer les inscriptions (Trié manuellement pour éviter les problèmes d'index/missing fields)
   const enrollmentsQuery = useMemo(
     () => currentUser ? query(collection(db, 'enrollments'), where('instructorId', '==', currentUser.uid)) : null,
     [db, currentUser]
@@ -63,21 +58,12 @@ export function StudentsClient() {
 
     const enrichData = async () => {
         setRelatedDataLoading(true);
-        
-        // Tri manuel par date en mémoire pour garantir l'affichage même si les dates sont manquantes
-        const sortedEnrollments = [...rawEnrollments].sort((a, b) => {
-            const dateA = (a.enrollmentDate as any)?.toDate?.() || new Date(0);
-            const dateB = (b.enrollmentDate as any)?.toDate?.() || new Date(0);
-            return dateB.getTime() - dateA.getTime();
-        });
-
-        const studentIds = [...new Set(sortedEnrollments.map(e => e.studentId))];
-        const courseIds = [...new Set(sortedEnrollments.map(e => e.courseId))];
+        const studentIds = [...new Set(rawEnrollments.map(e => e.studentId))];
+        const courseIds = [...new Set(rawEnrollments.map(e => e.courseId))];
 
         const studentsMap = new Map<string, Partial<NdaraUser>>();
         const coursesMap = new Map<string, Partial<Course>>();
 
-        // Fetch students
         if (studentIds.length > 0) {
             for (let i = 0; i < studentIds.length; i += 30) {
                 const chunk = studentIds.slice(i, i + 30);
@@ -86,7 +72,6 @@ export function StudentsClient() {
             }
         }
         
-        // Fetch courses details
         if (courseIds.length > 0) {
             for (let i = 0; i < courseIds.length; i += 30) {
                 const chunk = courseIds.slice(i, i + 30);
@@ -95,11 +80,15 @@ export function StudentsClient() {
             }
         }
         
-        const newEnrichedData = sortedEnrollments.map(e => ({
+        const newEnrichedData = rawEnrollments.map(e => ({
             ...e,
             student: studentsMap.get(e.studentId),
             course: coursesMap.get(e.courseId)
-        }));
+        })).sort((a, b) => {
+            const dateA = (a.enrollmentDate as any)?.toDate?.() || new Date(0);
+            const dateB = (b.enrollmentDate as any)?.toDate?.() || new Date(0);
+            return dateB.getTime() - dateA.getTime();
+        });
         
         setEnrichedEnrollments(newEnrichedData);
         setRelatedDataLoading(false);
@@ -123,7 +112,7 @@ export function StudentsClient() {
         const chatId = await startChat(currentUser.uid, studentId);
         router.push(`/student/messages?chatId=${chatId}`);
     } catch (error: any) {
-        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de démarrer la conversation." });
+        toast({ variant: 'destructive', title: 'Erreur', description: "Impossible de démarrer la discussion." });
     } finally {
         setIsContacting(null);
     }
@@ -132,114 +121,109 @@ export function StudentsClient() {
   const isLoading = isUserLoading || coursesLoading || enrollmentsLoading || relatedDataLoading;
 
   return (
-    <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden">
-      <CardContent className="p-6 space-y-6">
-        
-        <div className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="relative flex-1 w-full">
-             <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Rechercher</label>
-             <div className="relative mt-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input
-                    placeholder="Nom de l'étudiant..."
-                    className="pl-10 h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl"
+    <div className="flex flex-col gap-8 animate-in fade-in duration-700">
+        <header className="flex flex-col gap-6">
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="font-black text-2xl text-white uppercase tracking-tight">Mes Étudiants</h1>
+                    <p className="text-primary text-[10px] font-black uppercase tracking-widest mt-1">Communauté Active ({filteredData.length})</p>
+                </div>
+                <Button variant="ghost" size="icon" className="w-10 h-10 rounded-full bg-slate-900 border border-white/5 text-slate-500">
+                    <Filter size={18} />
+                </Button>
+            </div>
+
+            <div className="relative group">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                    <Search className="h-3.5 w-3.5 text-slate-500 group-focus-within:text-primary transition-colors" />
+                </div>
+                <Input 
+                    placeholder="Chercher un apprenant..." 
+                    className="h-14 pl-14 bg-slate-900 border-none rounded-[2rem] text-white placeholder:text-slate-600 focus-visible:ring-primary/20 shadow-inner"
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                 />
-             </div>
-          </div>
-          <div className="w-full sm:w-[250px]">
-            <label className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Par Formation</label>
-            <Select value={courseFilter} onValueChange={setCourseFilter} disabled={isLoading}>
-                <SelectTrigger className="h-12 bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 rounded-xl mt-1">
-                    <SelectValue placeholder="Choisir un cours..." />
-                </SelectTrigger>
-                <SelectContent>
-                <SelectItem value="all">Toutes mes formations</SelectItem>
-                {courses?.map(course => <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>)}
-                </SelectContent>
-            </Select>
-          </div>
-        </div>
+            </div>
 
-        <div className="border rounded-2xl border-slate-200 dark:border-slate-800 overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="border-slate-200 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/50">
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Apprenant</TableHead>
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest hidden lg:table-cell">Cours suivi</TableHead>
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest hidden md:table-cell">Inscription</TableHead>
-                  <TableHead className="font-black uppercase text-[10px] tracking-widest">Progression</TableHead>
-                  <TableHead className="text-right font-black uppercase text-[10px] tracking-widest">Action</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  [...Array(5)].map((_, i) => (
-                    <TableRow key={i}><TableCell colSpan={5}><Skeleton className="h-10 w-full bg-slate-200 dark:bg-slate-800" /></TableCell></TableRow>
-                  ))
-                ) : filteredData.length > 0 ? (
-                  filteredData.map(item => (
-                    <TableRow key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 border-slate-200 dark:border-slate-800">
-                      <TableCell>
-                         <div className="flex items-center gap-3">
-                           <Avatar className="h-10 w-10 border border-slate-200 dark:border-slate-700 shadow-sm">
-                               <AvatarImage src={item.student?.profilePictureURL}/>
-                               <AvatarFallback className="bg-slate-200 dark:bg-slate-800 font-bold">{item.student?.fullName?.charAt(0)}</AvatarFallback>
-                           </Avatar>
-                           <div className="flex flex-col">
-                               <span className="font-bold text-sm text-slate-900 dark:text-white">{item.student?.fullName || 'Utilisateur'}</span>
-                               <span className="text-[10px] text-slate-500 font-medium">@{item.student?.username}</span>
-                           </div>
+            <div className="overflow-x-auto hide-scrollbar">
+                <div className="flex gap-2">
+                    <button 
+                        onClick={() => setCourseFilter('all')}
+                        className={cn(
+                            "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                            courseFilter === 'all' ? "bg-primary text-slate-950 shadow-lg" : "bg-slate-900 border border-white/5 text-slate-500"
+                        )}
+                    >
+                        Tout le monde
+                    </button>
+                    {courses?.map(c => (
+                        <button 
+                            key={c.id}
+                            onClick={() => setCourseFilter(c.id)}
+                            className={cn(
+                                "flex-shrink-0 px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest transition-all",
+                                courseFilter === c.id ? "bg-primary text-slate-950 shadow-lg" : "bg-slate-900 border border-white/5 text-slate-500"
+                            )}
+                        >
+                            {c.title}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </header>
+
+        <main className="space-y-4">
+            {isLoading ? (
+                <div className="space-y-4">
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-[2rem] bg-slate-900" />)}
+                </div>
+            ) : filteredData.length > 0 ? (
+                <div className="grid gap-4">
+                    {filteredData.map(item => (
+                        <div key={item.id} className="bg-slate-900 border border-white/5 rounded-[2rem] p-4 flex items-center gap-4 shadow-xl active:scale-[0.98] transition-all group">
+                            <div className="relative">
+                                <Avatar className="h-14 w-14 border-2 border-primary/20 shadow-2xl">
+                                    <AvatarImage src={item.student?.profilePictureURL} />
+                                    <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                                        {item.student?.fullName?.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                {item.student?.isOnline && (
+                                    <div className="absolute bottom-0 right-0 w-4 h-4 bg-primary rounded-full border-2 border-slate-950 shadow-lg animate-pulse" />
+                                )}
+                            </div>
+                            
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between mb-1">
+                                    <h3 className="font-black text-white text-[15px] truncate uppercase tracking-tight">{item.student?.fullName}</h3>
+                                    <span className="text-primary text-[10px] font-black">{item.progress}%</span>
+                                </div>
+                                <div className="w-full h-1 bg-slate-950 rounded-full overflow-hidden mb-2">
+                                    <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${item.progress}%` }} />
+                                </div>
+                                <p className="text-slate-500 text-[9px] font-bold uppercase tracking-widest truncate">
+                                    Formation : {item.course?.title}
+                                </p>
+                            </div>
+
+                            <Button 
+                                size="icon" 
+                                onClick={() => handleContact(item.studentId)}
+                                disabled={isContacting === item.studentId}
+                                className="h-12 w-12 rounded-2xl bg-primary/10 hover:bg-primary text-primary hover:text-slate-950 border border-primary/20 shrink-0"
+                            >
+                                {isContacting === item.studentId ? <Loader2 className="h-5 w-5 animate-spin" /> : <MessageSquare size={20} />}
+                            </Button>
                         </div>
-                      </TableCell>
-                       <TableCell className="text-slate-600 dark:text-slate-400 text-xs hidden lg:table-cell font-medium">
-                           <div className="flex items-center gap-2">
-                               <BookOpen className="h-3 w-3 text-primary" />
-                               <span className="truncate max-w-[200px]">{item.course?.title}</span>
-                           </div>
-                       </TableCell>
-                       <TableCell className="text-slate-500 dark:text-slate-500 text-xs hidden md:table-cell">
-                        <div className="flex items-center gap-1.5">
-                            <Clock className="h-3 w-3" />
-                            {item.enrollmentDate ? format((item.enrollmentDate as any).toDate(), 'd MMM yyyy', { locale: fr }) : 'N/A'}
-                        </div>
-                       </TableCell>
-                       <TableCell>
-                        <div className="space-y-1.5 w-32">
-                           <div className="flex justify-between items-center text-[9px] font-black text-slate-500 uppercase tracking-tighter">
-                               <span>{item.progress}%</span>
-                               {item.progress === 100 && <span className="text-green-500">Terminé</span>}
-                           </div>
-                           <Progress value={item.progress} className="h-1.5 bg-slate-200 dark:bg-slate-800" indicatorClassName={cn(item.progress === 100 ? "bg-green-500" : "bg-primary")} />
-                        </div>
-                       </TableCell>
-                       <TableCell className="text-right">
-                         <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => handleContact(item.studentId || '')} 
-                            disabled={isContacting === item.studentId}
-                            className="h-9 px-4 rounded-xl font-bold text-primary hover:bg-primary/10"
-                         >
-                            {isContacting === item.studentId ? <Loader2 className="h-4 w-4 animate-spin"/> : <MessageSquare className="mr-2 h-4 w-4"/>}
-                            Contacter
-                         </Button>
-                       </TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow><TableCell colSpan={5} className="h-64 text-center">
-                     <div className="flex flex-col items-center justify-center gap-3 opacity-30">
-                        <Users className="h-16 w-16 text-slate-400" />
-                        <p className="font-black uppercase text-xs tracking-widest">Aucun étudiant trouvé</p>
-                      </div>
-                  </TableCell></TableRow>
-                )}
-              </TableBody>
-            </Table>
-        </div>
-      </CardContent>
-    </Card>
+                    ))}
+                </div>
+            ) : (
+                <div className="py-24 text-center bg-slate-900/20 border-2 border-dashed border-slate-800 rounded-[3rem] opacity-20">
+                    <Users className="h-16 w-16 mx-auto mb-4 text-slate-700" />
+                    <p className="font-black uppercase tracking-widest text-xs">Aucun apprenant trouvé</p>
+                </div>
+            )}
+        </main>
+    </div>
   );
 }
