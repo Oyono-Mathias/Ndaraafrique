@@ -25,7 +25,7 @@ import {
     CreditCard,
     Loader2,
     ArrowDown,
-    ShoppingBag,
+    ShoppingCart,
     Download,
     Wifi,
     Check
@@ -276,47 +276,29 @@ export default function InstructorRevenuePage() {
                     </DialogHeader>
                     
                     <div className="p-8 space-y-6">
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">Montant à retirer (XOF)</label>
-                                <Input 
-                                    type="number" 
-                                    placeholder="Ex: 500000" 
-                                    value={withdrawAmount}
-                                    onChange={(e) => setWithdrawAmount(e.target.value)}
-                                    className="h-14 bg-ndara-bg border-white/10 rounded-2xl text-white font-black text-xl px-6 focus-visible:border-ndara-emerald transition shadow-inner" 
-                                />
-                            </div>
+                        <div className="bg-ndara-bg rounded-3xl p-5 border border-white/5 text-center">
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Montant transférable</p>
+                            <p className="text-3xl font-black text-primary">{(currentUser?.affiliateBalance || 0).toLocaleString('fr-FR')} FCFA</p>
+                        </div>
 
-                            <div className="space-y-3">
-                                <label className="block text-gray-400 text-[10px] font-black uppercase tracking-widest mb-2 ml-1">Méthode de versement</label>
-                                <div className="grid grid-cols-3 gap-2">
-                                    <button 
-                                        onClick={() => setPayoutMethod('mobile_money')}
-                                        className={cn(
-                                            "rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 border-2",
-                                            payoutMethod === 'mobile_money' ? "bg-orange-500/10 border-ndara-orange text-orange-400" : "bg-ndara-bg border-white/5 text-slate-500 opacity-50 grayscale"
-                                        )}
-                                    >
-                                        <Smartphone size={24} />
-                                        <span className="text-[9px] font-black uppercase">Momo</span>
-                                    </button>
-                                    <button 
-                                        onClick={() => setPayoutMethod('bank_transfer')}
-                                        className={cn(
-                                            "rounded-2xl p-4 flex flex-col items-center gap-2 transition-all active:scale-95 border-2",
-                                            payoutMethod === 'bank_transfer' ? "bg-blue-500/10 border-blue-500 text-blue-400" : "bg-ndara-bg border-white/5 text-slate-500 opacity-50 grayscale"
-                                        )}
-                                    >
-                                        <Landmark size={24} />
-                                        <span className="text-[9px] font-black uppercase">Virement</span>
-                                    </button>
-                                    <div className="rounded-2xl p-4 flex flex-col items-center gap-2 bg-ndara-bg border border-white/5 text-slate-700 opacity-20 cursor-not-allowed">
-                                        <CreditCard size={24} />
-                                        <span className="text-[9px] font-black uppercase">Crypto</span>
-                                    </div>
-                                </div>
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Méthode de versement</label>
+                            <div className="grid grid-cols-3 gap-2">
+                                <ProviderBtn active={withdrawMethod === 'orange'} onClick={() => setWithdrawMethod('orange')} label="Orange" color="bg-orange-500" />
+                                <ProviderBtn active={withdrawMethod === 'mtn'} onClick={() => setWithdrawMethod('mtn')} label="MTN" color="bg-yellow-500" />
+                                <ProviderBtn active={withdrawMethod === 'wave'} onClick={() => setWithdrawMethod('wave')} label="Wave" color="bg-blue-500" />
                             </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Numéro de téléphone</label>
+                            <Input 
+                                type="tel" 
+                                placeholder="+236 ..." 
+                                value={phoneValue}
+                                onChange={(e) => setPhoneValue(e.target.value)}
+                                className="h-14 bg-ndara-bg border-white/5 rounded-2xl text-white font-mono text-lg" 
+                            />
                         </div>
                     </div>
 
@@ -336,6 +318,23 @@ export default function InstructorRevenuePage() {
                 </DialogContent>
             </Dialog>
         </div>
+    );
+}
+
+function ProviderBtn({ active, onClick, label, color }: any) {
+    return (
+        <button 
+            onClick={onClick}
+            className={cn(
+                "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95 gap-1",
+                active ? "border-primary bg-primary/5" : "border-transparent bg-slate-900 grayscale opacity-50"
+            )}
+        >
+            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-[10px]", color)}>
+                {label.charAt(0)}
+            </div>
+            <span className="text-[8px] font-black text-white uppercase">{label}</span>
+        </button>
     );
 }
 
