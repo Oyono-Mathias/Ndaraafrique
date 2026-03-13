@@ -2,9 +2,8 @@
 
 /**
  * @fileOverview Carte de cours Ndara Afrique.
- * ✅ VARIANTS : Grid, List, Search-Result.
+ * ✅ VARIANTS : Grid, List, Search-Result, Instructor.
  * ✅ DESIGN : Android-first avec coins arrondis 2rem.
- * ✅ DYNAMIQUE : Suppression des fallback statiques (4.8, 450).
  */
 
 import Link from 'next/link';
@@ -12,17 +11,28 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { Course, NdaraUser } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Star, Heart, Users, Clock, CheckCircle2 } from 'lucide-react';
+import { 
+    Star, 
+    Heart, 
+    Users, 
+    Clock, 
+    CheckCircle2, 
+    Image as ImageIcon,
+    Pencil,
+    FileText
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { useRole } from '@/context/RoleContext';
 import { useLocale } from 'next-intl';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 interface CourseCardProps {
   course: Course & { progress?: number; lastLessonId?: string };
   instructor: Partial<NdaraUser> | null;
-  variant?: 'grid' | 'list' | 'search-result'; 
+  variant?: 'grid' | 'list' | 'search-result' | 'instructor'; 
   actions?: React.ReactNode;
 }
 
@@ -76,6 +86,70 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
         toast({ variant: 'destructive', title: "Erreur favoris" }); 
     }
   };
+
+  // --- VARIANT: INSTRUCTOR (VERTICAL LIST) ---
+  if (variant === 'instructor') {
+    const isPublished = course.status === 'Published';
+    const isPending = course.status === 'Pending Review';
+    
+    return (
+        <div className="bg-ndara-surface rounded-[2.5rem] p-4 border border-white/5 flex flex-col gap-4 shadow-xl active:scale-[0.98] transition-all group">
+            {/* Thumbnail */}
+            <div className="w-full aspect-video rounded-[2rem] overflow-hidden relative bg-slate-800 shadow-inner">
+                {course.imageUrl ? (
+                    <Image src={course.imageUrl} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
+                ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-700">
+                        <ImageIcon size={48} className="opacity-20" />
+                    </div>
+                )}
+                <div className="absolute top-3 right-3">
+                    <Badge className={cn(
+                        "font-black text-[9px] uppercase border-none px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md",
+                        isPublished ? "bg-emerald-500/20 text-emerald-400" : 
+                        isPending ? "bg-amber-500/20 text-amber-400" : 
+                        "bg-slate-800/80 text-slate-400"
+                    )}>
+                        {isPublished ? <CheckCircle2 size={10} /> : isPending ? <Clock size={10} /> : <FileText size={10} />}
+                        {isPublished ? 'Publié' : isPending ? 'En Examen' : 'Brouillon'}
+                    </Badge>
+                </div>
+            </div>
+
+            {/* Info */}
+            <div className="px-1">
+                <div className="flex items-center gap-2 mb-1">
+                    <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{course.category}</span>
+                    <span className="text-slate-700 text-[10px]">•</span>
+                    <span className="text-slate-500 text-[10px] font-bold uppercase tracking-tighter">Formation Expert</span>
+                </div>
+                <h3 className="font-black text-white text-base leading-tight mb-4 line-clamp-2 uppercase tracking-tight">{course.title}</h3>
+                
+                {/* Stats */}
+                <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-1.5">
+                        <Users className="h-3.5 w-3.5 text-slate-600" />
+                        <span className="text-slate-400 text-xs font-black uppercase">{(course.participantsCount || 0).toLocaleString()} Ndara</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                        <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
+                        <span className="text-white text-xs font-black">{course.rating ? course.rating.toFixed(1) : '---'}</span>
+                    </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 pt-4 border-t border-white/5">
+                    <Button asChild className="flex-1 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all border-none active:scale-95">
+                        <Link href={`/${locale}/instructor/courses/edit/${course.id}`}>
+                            <Pencil className="mr-2 h-3.5 w-3.5" /> Éditer
+                        </Link>
+                    </Button>
+                    {actions}
+                </div>
+            </div>
+        </div>
+    );
+  }
 
   // --- VARIANT: SEARCH RESULT (HORIZONTAL) ---
   if (variant === 'search-result') {

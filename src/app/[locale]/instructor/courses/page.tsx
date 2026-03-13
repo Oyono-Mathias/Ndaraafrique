@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Liste des cours du formateur (Format Liste Unifié).
- * ✅ SÉCURITÉ : Empêche la suppression si un rachat est en cours ou acté.
+ * @fileOverview Liste des cours du formateur (Design Elite Forest & Wealth).
+ * ✅ SÉCURITÉ : Empêche la suppression si un rachat est en cours.
+ * ✅ DESIGN : Android-First avec header immersif et bouton sticky.
  */
 
 import { useState, useMemo, useEffect } from 'react';
@@ -11,11 +12,12 @@ import { getFirestore, collection, query, where, onSnapshot, doc, deleteDoc } fr
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Search, BookOpen, Edit3, Trash2, ShoppingCart, Lock } from 'lucide-react';
+import { PlusCircle, Search, SlidersHorizontal, BookOpen, Trash2, ShoppingCart, Loader2 } from 'lucide-react';
 import type { Course } from '@/lib/types';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import { CourseCard } from '@/components/cards/CourseCard';
+import { useLocale } from 'next-intl';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,6 +34,7 @@ export default function InstructorCoursesPage() {
   const { currentUser } = useRole();
   const db = getFirestore();
   const { toast } = useToast();
+  const locale = useLocale();
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,7 +43,6 @@ export default function InstructorCoursesPage() {
     if (!currentUser?.uid) return;
 
     setIsLoading(true);
-    // On ne récupère que les cours dont l'utilisateur est encore PROPRIÉTAIRE
     const q = query(collection(db, 'courses'), where('instructorId', '==', currentUser.uid));
 
     const unsubscribe = onSnapshot(q, (snap) => {
@@ -69,95 +71,117 @@ export default function InstructorCoursesPage() {
           await deleteDoc(doc(db, 'courses', courseId));
           toast({ title: "Formation supprimée" });
       } catch (error) {
-          toast({ variant: 'destructive', title: "Erreur" });
+          toast({ variant: 'destructive', title: "Erreur lors de la suppression" });
       }
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-24">
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-foreground uppercase tracking-tight">Mon Catalogue</h1>
-          <p className="text-muted-foreground text-sm font-medium">Gérez vos formations et suivez vos élèves.</p>
+    <div className="flex flex-col gap-0 pb-40 bg-[#0f172a] min-h-screen relative font-sans">
+      <div className="grain-overlay opacity-[0.03]" />
+
+      {/* --- HEADER IMMERSIF --- */}
+      <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md safe-area-pt border-b border-white/5">
+        <div className="px-6 py-6">
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="font-black text-2xl text-white tracking-tight uppercase">Mon Catalogue</h1>
+                <button className="w-10 h-10 rounded-full bg-[#1e293b] flex items-center justify-center text-slate-400 hover:text-white transition active:scale-90">
+                    <SlidersHorizontal className="h-5 w-5" />
+                </button>
+            </div>
+
+            {/* Search Bar Style Qwen */}
+            <div className="relative group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-500 group-focus-within:text-primary transition-colors" />
+                <Input 
+                    placeholder="Rechercher un cours..." 
+                    className="h-14 pl-12 bg-[#1e293b] border-white/5 rounded-[2rem] text-white placeholder:text-slate-600 focus-visible:ring-primary/30 shadow-xl"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
         </div>
-        <Button asChild className="h-12 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase text-[10px] tracking-widest shadow-xl shadow-primary/20">
-            <Link href="/instructor/courses/create">
-                <Plus className="mr-2 h-4 w-4" /> Créer un cours
-            </Link>
-        </Button>
       </header>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input 
-          placeholder="Filtrer mes cours..." 
-          className="h-12 pl-12 rounded-xl"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-      </div>
+      {/* --- MAIN CONTENT --- */}
+      <main className="flex-1 pt-48 px-6 space-y-6 animate-in fade-in duration-700">
+        
+        {isLoading ? (
+            <div className="space-y-6">
+                {[...Array(2)].map((_, i) => (
+                    <div key={i} className="space-y-4">
+                        <Skeleton className="aspect-video w-full rounded-[2.5rem] bg-slate-900 border border-white/5" />
+                        <Skeleton className="h-4 w-3/4 bg-slate-900" />
+                    </div>
+                ))}
+            </div>
+        ) : filteredCourses.length > 0 ? (
+            <div className="grid gap-6">
+                {filteredCourses.map(course => (
+                    <CourseCard 
+                        key={course.id} 
+                        course={course} 
+                        instructor={currentUser}
+                        variant="instructor"
+                        actions={
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <button 
+                                        disabled={course.buyoutStatus === 'requested'}
+                                        className="w-12 h-12 bg-red-500/10 text-red-500 rounded-2xl flex items-center justify-center hover:bg-red-500 hover:text-white transition active:scale-90 disabled:opacity-30"
+                                    >
+                                        <Trash2 className="h-5 w-5" />
+                                    </button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent className="bg-[#1e293b] border-white/10 rounded-[2.5rem] p-8 max-w-[90%] mx-auto">
+                                    <AlertDialogHeader className="items-center text-center space-y-4">
+                                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
+                                            <Trash2 size={32} />
+                                        </div>
+                                        <AlertDialogTitle className="text-xl font-black text-white uppercase tracking-tight">Supprimer ?</AlertDialogTitle>
+                                        <AlertDialogDescription className="text-slate-400 font-medium leading-relaxed italic">
+                                            "Mo ye ti lungula formation so ?" <br/>Cette action est irréversible. Toutes les données seront perdues.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter className="mt-8 gap-3">
+                                        <AlertDialogCancel className="bg-[#0f172a] border-white/5 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">Annuler</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDeleteCourse(course.id)} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1 shadow-lg shadow-red-600/20">
+                                            Supprimer
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        }
+                    />
+                ))}
+            </div>
+        ) : (
+            <div className="flex flex-col items-center justify-center py-20 px-8 text-center bg-slate-900/20 rounded-[3rem] border-2 border-dashed border-white/5 animate-in zoom-in duration-500">
+                <div className="p-8 bg-slate-800/50 rounded-full mb-6">
+                    <BookOpen className="h-16 w-16 text-slate-700" />
+                </div>
+                <h3 className="text-2xl font-black text-white uppercase tracking-tight">Catalogue vide</h3>
+                <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium italic">
+                    "Le savoir se partage." <br/>Créez votre première formation pour inspirer la communauté.
+                </p>
+                <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-slate-950 rounded-[2rem] h-16 px-8 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
+                    <Link href={`/${locale}/instructor/courses/create`} className="flex items-center gap-2">
+                        <PlusCircle className="h-5 w-5" />
+                        Créer mon cours
+                    </Link>
+                </Button>
+            </div>
+        )}
+      </main>
 
-      {isLoading ? (
-        <div className="space-y-4">
-          {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-2xl" />)}
-        </div>
-      ) : filteredCourses.length > 0 ? (
-        <div className="grid gap-4 animate-in fade-in duration-700">
-          {filteredCourses.map(course => {
-            // ✅ SÉCURITÉ CEO : On bloque la suppression si un rachat est demandé
-            const isBuyoutRequested = course.buyoutStatus === 'requested';
-            
-            return (
-              <CourseCard 
-                  key={course.id} 
-                  course={course} 
-                  instructor={null}
-                  variant="list"
-                  actions={
-                      <div className="flex gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-background/80 backdrop-blur-sm shadow-sm" asChild>
-                              <Link href={`/instructor/courses/edit/${course.id}`}><Edit3 className="h-3.5 w-3.5" /></Link>
-                          </Button>
-                          
-                          {isBuyoutRequested ? (
-                              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-primary/10 text-primary cursor-help" title="Rachat en cours d'audit - Suppression verrouillée">
-                                  <ShoppingCart className="h-3.5 w-3.5" />
-                              </Button>
-                          ) : (
-                              <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                      <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white shadow-sm">
-                                          <Trash2 className="h-3.5 w-3.5" />
-                                      </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent className="bg-slate-900 border-slate-800 rounded-[2rem]">
-                                      <AlertDialogHeader>
-                                          <AlertDialogTitle className="text-white font-black uppercase tracking-tight">Supprimer ?</AlertDialogTitle>
-                                          <AlertDialogDescription className="text-slate-400">Voulez-vous vraiment supprimer "{course.title}" ? Cette action est irréversible.</AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter className="p-6 pt-0">
-                                          <AlertDialogCancel className="bg-slate-800 border-none rounded-xl font-bold uppercase text-[10px]">Annuler</AlertDialogCancel>
-                                          <AlertDialogAction onClick={() => handleDeleteCourse(course.id)} className="bg-red-600 font-bold uppercase text-[10px] rounded-xl">Supprimer</AlertDialogAction>
-                                      </AlertDialogFooter>
-                                  </AlertDialogContent>
-                              </AlertDialog>
-                          )}
-                      </div>
-                  }
-              />
-            )
-          })}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/20 rounded-[3rem] border-2 border-dashed border-border animate-in zoom-in duration-500">
-          <BookOpen className="h-16 w-16 text-muted-foreground mb-6 opacity-20" />
-          <h3 className="text-xl font-black uppercase tracking-tight">Votre catalogue est vide</h3>
-          <p className="text-sm text-muted-foreground mt-2 max-w-[250px] mx-auto">Partagez votre expertise avec la communauté Ndara Afrique.</p>
-          <Button asChild className="mt-8 rounded-xl h-12 px-8 font-black uppercase text-[10px] tracking-widest shadow-xl">
-              <Link href="/instructor/courses/create">Lancer mon premier cours</Link>
+      {/* --- STICKY ACTION BUTTON --- */}
+      <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-[#0f172a] via-[#0f172a] to-transparent z-40 safe-area-pb">
+          <Button asChild className="w-full h-16 rounded-[2rem] bg-gradient-to-r from-primary to-emerald-600 text-slate-950 font-black uppercase text-sm tracking-widest shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-95 transition-all">
+              <Link href={`/${locale}/instructor/courses/create`} className="flex items-center gap-3">
+                  <PlusCircle className="h-6 w-6" />
+                  Nouvelle Formation
+              </Link>
           </Button>
-        </div>
-      )}
+      </div>
     </div>
   );
 }
