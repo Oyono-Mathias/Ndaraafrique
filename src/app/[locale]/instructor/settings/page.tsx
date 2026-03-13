@@ -4,6 +4,7 @@
  * @fileOverview Réglages Expert Ndara Afrique - Design Elite Forest & Wealth.
  * ✅ DESIGN : Immersion totale, texture grainée, navigation par pilules.
  * ✅ FONCTIONNEL : Pilotage IA Mathias, Finance Mobile Money et Alertes.
+ * ✅ BUILD : Correction des imports Badge et Link.
  */
 
 import { useState, useEffect } from 'react';

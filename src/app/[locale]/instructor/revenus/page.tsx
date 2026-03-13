@@ -4,7 +4,7 @@
  * @fileOverview Dashboard Financier de l'Instructeur V2 (Design Qwen Fintech Elite).
  * ✅ CALCULS : Revenus Formations, Revenus Parrainage, Solde Disponible.
  * ✅ DESIGN : Carte bancaire virtuelle Elite avec scintillement et Historique épuré.
- * ✅ RÉSOLU : Importations DialogClose et ShoppingCart pour le build Vercel.
+ * ✅ BUILD : Correction des imports DialogClose et ShoppingCart.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -242,9 +242,9 @@ export default function InstructorRevenuePage() {
                                 <div className="text-right shrink-0">
                                     <p className={cn(
                                         "font-black text-sm mb-1",
-                                        item.amount > 0 ? "text-ndara-emerald" : "text-white"
+                                        item.amount > 0 ? `+${item.amount.toLocaleString()}` : item.amount.toLocaleString()
                                     )}>
-                                        {item.amount > 0 ? `+${item.amount.toLocaleString()}` : item.amount.toLocaleString()} F
+                                        {item.amount.toLocaleString()} F
                                     </p>
                                     <Badge className={cn(
                                         "text-[8px] font-black uppercase border-none px-2 py-0.5 h-4 rounded-full",
