@@ -6,6 +6,7 @@ import {
   LayoutDashboard, 
   BookOpen, 
   Users, 
+  Landmark,
   BadgeEuro,
   User
 } from 'lucide-react';
@@ -16,6 +17,7 @@ import { useLocale } from 'next-intl';
 /**
  * @fileOverview Barre de navigation mobile pour l'instructeur.
  * ✅ RÉSOLU : Ajout du préfixe locale pour la navigation.
+ * ✅ NOUVEAU : Accès direct à l'Ambassadeur.
  */
 
 export function InstructorBottomNav() {
@@ -29,8 +31,8 @@ export function InstructorBottomNav() {
   const navItems = [
     { href: `/${locale}/instructor/dashboard`, icon: LayoutDashboard, label: 'Accueil', path: '/instructor/dashboard' },
     { href: `/${locale}/instructor/courses`, icon: BookOpen, label: 'Mes cours', path: '/instructor/courses' },
-    { href: `/${locale}/instructor/students`, icon: Users, label: 'Étudiants', path: '/instructor/students' },
-    { href: `/${locale}/instructor/revenus`, icon: BadgeEuro, label: 'Finance', path: '/instructor/revenus' },
+    { href: `/${locale}/student/ambassadeur`, icon: BadgeEuro, label: 'Ambassadeur', path: '/student/ambassadeur' },
+    { href: `/${locale}/instructor/revenus`, icon: Landmark, label: 'Finance', path: '/instructor/revenus' },
     { href: `/${locale}/account`, icon: User, label: 'Profil', path: '/account' },
   ];
 

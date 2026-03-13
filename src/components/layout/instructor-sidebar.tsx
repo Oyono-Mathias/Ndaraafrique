@@ -1,4 +1,3 @@
-
 'use client';
 
 /**
@@ -27,7 +26,8 @@ import {
   Ticket,
   ChevronRight,
   LogOut,
-  X
+  X,
+  Target
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRole } from "@/context/RoleContext";
@@ -93,12 +93,19 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
       ]
     },
     {
+      label: "CROISSANCE",
+      items: [
+        { label: "Ambassadeur", icon: BadgeEuro, href: `/${locale}/student/ambassadeur` },
+        { label: "Coupons", icon: Ticket, href: `/${locale}/instructor/coupons` },
+        { label: "Annonces", icon: Megaphone, href: `/${locale}/instructor/annonces` },
+      ]
+    },
+    {
       label: "PÉDAGOGIE",
       items: [
         { label: "Devoirs", icon: ClipboardCheck, href: `/${locale}/instructor/devoirs` },
         { label: "Quiz", icon: FileQuestion, href: `/${locale}/instructor/quiz` },
         { label: "Questions", icon: MessageSquare, href: `/${locale}/instructor/questions-reponses` },
-        { label: "Annonces", icon: Megaphone, href: `/${locale}/instructor/annonces` },
         { label: "Avis", icon: Star, href: `/${locale}/instructor/avis` },
       ]
     },
@@ -106,8 +113,7 @@ export function InstructorSidebar({ onLinkClick, siteName, logoUrl }: SidebarPro
       label: "RÉSULTATS",
       items: [
         { label: "Étudiants", icon: Users, href: `/${locale}/instructor/students` },
-        { label: "Finances", icon: BadgeEuro, href: `/${locale}/instructor/revenus` },
-        { label: "Coupons", icon: Ticket, href: `/${locale}/instructor/coupons` },
+        { label: "Finances", icon: Landmark, href: `/${locale}/instructor/revenus` },
         { label: "Diplômes", icon: Award, href: `/${locale}/instructor/certificats` },
       ]
     }

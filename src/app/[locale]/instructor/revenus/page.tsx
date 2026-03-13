@@ -1,10 +1,10 @@
 'use client';
 
 /**
- * @fileOverview Dashboard Financier de l'Instructeur V2 (Design Qwen Fintech Elite).
- * ✅ CALCULS : Revenus Formations, Revenus Parrainage, Solde Disponible.
- * ✅ DESIGN : Carte bancaire virtuelle Elite avec scintillement et Historique épuré.
- * ✅ BUILD : Correction des imports DialogClose et ShoppingCart.
+ * @fileOverview Dashboard Financier de l'Instructeur V3 (Design Qwen Fintech Elite).
+ * ✅ CALCULS : (Ventes Cours + Commissions Ambassadeur) - Retraits Approuvés.
+ * ✅ FONCTIONNEL : Retraits Mobile Money avec sélecteur d'opérateur.
+ * ✅ HISTORIQUE : Fusion des ventes et des demandes de retrait (payout_requests).
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -25,11 +25,11 @@ import {
     Smartphone,
     CreditCard,
     Loader2,
-    ArrowDown,
     ShoppingCart,
     Download,
     Wifi,
-    Check
+    Check,
+    AlertCircle
 } from 'lucide-react';
 import { requestPayoutAction } from '@/actions/payoutActions';
 import { useToast } from '@/hooks/use-toast';
@@ -37,7 +37,7 @@ import type { Payment, PayoutRequest } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 
 export default function InstructorRevenuePage() {
@@ -47,7 +47,7 @@ export default function InstructorRevenuePage() {
 
     const [payments, setPayments] = useState<Payment[]>([]);
     const [payoutRequests, setPayoutRequests] = useState<PayoutRequest[]>([]);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [isWithdrawModalOpen, setIsWithdrawModalOpen] = useState(false);
     const [withdrawMethod, setWithdrawMethod] = useState<'orange' | 'mtn' | 'wave'>('orange');
     const [withdrawAmount, setWithdrawAmount] = useState<string>('');
     const [phoneValue, setPhoneValue] = useState('');
@@ -63,6 +63,7 @@ export default function InstructorRevenuePage() {
 
         const instructorId = instructor.uid;
 
+        // 1. Écouter les ventes de cours
         const unsubPayments = onSnapshot(
             query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'Completed')),
             (snap) => {
@@ -71,6 +72,7 @@ export default function InstructorRevenuePage() {
             }
         );
 
+        // 2. Écouter les demandes de retrait (Payouts)
         const unsubPayouts = onSnapshot(
             query(collection(db, 'payout_requests'), where('instructorId', '==', instructorId), orderBy('createdAt', 'desc'), limit(50)),
             (snap) => {
@@ -85,17 +87,21 @@ export default function InstructorRevenuePage() {
         };
     }, [instructor?.uid, db]);
 
+    // ✅ CALCUL DU SOLDE RÉEL
     const stats = useMemo(() => {
-        const totalCoursesEarned = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
-        const affiliateAvailable = instructor?.affiliateBalance || 0;
-        const totalWithdrawn = payoutRequests
+        const totalSalesEarned = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
+        const ambassadorAvailable = instructor?.affiliateBalance || 0;
+        
+        // Total des retraits déjà payés ou en attente (bloque le solde)
+        const totalPayouts = payoutRequests
             .filter(p => p.status !== 'rejected')
             .reduce((acc, p) => acc + (p.amount || 0), 0);
         
-        const availableBalance = (totalCoursesEarned + affiliateAvailable) - totalWithdrawn;
+        const availableBalance = (totalSalesEarned + ambassadorAvailable) - totalPayouts;
 
         return {
-            totalCoursesEarned,
+            totalSalesEarned,
+            ambassadorAvailable,
             availableBalance: Math.max(0, availableBalance)
         };
     }, [payments, payoutRequests, instructor]);
@@ -124,7 +130,7 @@ export default function InstructorRevenuePage() {
 
             if (result.success) {
                 toast({ title: "Demande envoyée !", description: "Votre retrait sera traité sous 48h." });
-                setIsDialogOpen(false);
+                setIsWithdrawModalOpen(false);
                 setWithdrawAmount('');
             } else {
                 toast({ variant: 'destructive', title: "Erreur", description: result.error });
@@ -142,32 +148,30 @@ export default function InstructorRevenuePage() {
             type: 'sale', 
             title: `Vente: ${item.courseTitle || 'Formation'}`, 
             amount: item.amount, 
-            date: (item.date as any)?.toDate() || new Date(),
+            date: (item.date as any)?.toDate?.() || new Date(),
             status: 'Completed' 
         }));
         const pr = payoutRequests.map(item => ({ 
             id: item.id, 
             type: 'payout', 
-            title: `Virement Mobile Money`, 
+            title: `Retrait Mobile Money`, 
             amount: -item.amount, 
-            date: (item.createdAt as any)?.toDate() || new Date(),
+            date: (item.createdAt as any)?.toDate?.() || new Date(),
             status: item.status 
         }));
         return [...p, ...pr].sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [payments, payoutRequests]);
 
-    const isLoadingData = loadingStates.payments || loadingStates.payouts;
-
-    if (isUserLoading || isLoadingData) return <RevenueSkeleton />;
+    if (isUserLoading) return <RevenueSkeleton />;
 
     return (
-        <div className="flex flex-col gap-8 pb-32 bg-ndara-bg min-h-screen relative overflow-hidden bg-grainy">
+        <div className="flex flex-col gap-8 pb-32 bg-[#0f172a] min-h-screen relative overflow-hidden bg-grainy">
             <div className="grain-overlay opacity-[0.04]" />
 
-            <header className="fixed top-0 w-full max-w-md z-50 bg-ndara-bg/95 backdrop-blur-md safe-area-pt border-b border-white/5">
+            <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md safe-area-pt border-b border-white/5">
                 <div className="px-6 py-6 flex items-center justify-between">
                     <h1 className="font-black text-2xl text-white tracking-wide uppercase">Trésorerie</h1>
-                    <button className="w-10 h-10 rounded-full bg-ndara-surface flex items-center justify-center text-gray-400 hover:text-white transition active:scale-95 shadow-xl border border-white/5" onClick={() => toast({ title: "Génération du relevé..." })}>
+                    <button className="w-10 h-10 rounded-full bg-slate-900 flex items-center justify-center text-gray-400 hover:text-white transition shadow-xl" onClick={() => toast({ title: "Génération du relevé..." })}>
                         <Download size={18} />
                     </button>
                 </div>
@@ -179,58 +183,65 @@ export default function InstructorRevenuePage() {
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Mon Portefeuille</h2>
-                        <span className="text-ndara-emerald text-[10px] font-black uppercase flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-ndara-emerald rounded-full animate-pulse" /> Actif
+                        <span className="text-[#10b981] text-[10px] font-black uppercase flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-[#10b981] rounded-full animate-pulse" /> Actif
                         </span>
                     </div>
 
-                    <div className="virtual-card rounded-[2.5rem] p-8 shadow-2xl relative z-10 active:scale-[0.98] transition-all cursor-pointer group" onClick={() => setIsDialogOpen(true)}>
+                    <div 
+                        className="virtual-card rounded-[2.5rem] p-8 shadow-2xl relative z-10 active:scale-[0.98] transition-all cursor-pointer group"
+                        onClick={() => setIsWithdrawModalOpen(true)}
+                    >
                         <div className="relative z-10">
                             <div className="flex justify-between items-start mb-10">
                                 <div>
                                     <p className="text-emerald-100 text-[10px] font-black uppercase tracking-[0.25em] mb-1">Solde Disponible</p>
-                                    <h2 className="text-white font-black text-4xl tracking-tight drop-shadow-md">
+                                    <h2 className="text-white font-black text-4xl tracking-tight">
                                         {stats.availableBalance.toLocaleString('fr-FR')} <span className="text-lg font-bold">FCFA</span>
                                     </h2>
                                 </div>
                                 <div className="text-right">
                                     <p className="text-emerald-100 text-[10px] font-black uppercase tracking-widest mb-1">Ndara Elite</p>
-                                    <Wifi className="text-white/70 h-8 w-8 mt-2 rotate-90 drop-shadow-md" />
+                                    <Wifi className="text-white/70 h-8 w-8 mt-2 rotate-90" />
                                 </div>
                             </div>
                             
                             <div className="flex items-center justify-between">
                                 <div>
-                                    <p className="text-emerald-200 text-[9px] font-bold uppercase mb-1 tracking-wider">Titulaire</p>
-                                    <p className="text-white font-black text-sm uppercase tracking-widest drop-shadow-md">{instructor?.fullName}</p>
+                                    <p className="text-emerald-200 text-[9px] font-bold uppercase mb-1 tracking-wider">Expert Titulaire</p>
+                                    <p className="text-white font-black text-sm uppercase tracking-widest">{instructor?.fullName || '---'}</p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <CreditCard className="text-white h-8 w-8 opacity-90 drop-shadow-md" />
+                                    <CreditCard className="text-white h-8 w-8 opacity-90" />
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <Button onClick={() => setIsDialogOpen(true)} className="w-full h-16 rounded-[2.5rem] bg-ndara-emerald hover:bg-emerald-400 text-ndara-bg font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all animate-pulse-glow border-none">
+                    <Button onClick={() => setIsWithdrawModalOpen(true)} className="w-full h-16 rounded-[2.5rem] bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 animate-pulse-glow border-none">
                         <Landmark className="mr-2 h-5 w-5" />
-                        Demander un Virement
+                        Effectuer un Retrait
                     </Button>
                 </div>
 
                 {/* --- TRANSACTION HISTORY --- */}
-                <div className="bg-ndara-surface border border-white/5 rounded-[2.5rem] p-6 shadow-2xl">
+                <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-6 shadow-2xl">
                     <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Historique des flux</h3>
-                        <Button variant="ghost" className="text-ndara-emerald text-[10px] font-black uppercase h-8 px-3 rounded-xl hover:bg-emerald-500/5 transition">VOIR TOUT</Button>
+                        <h3 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Journal des flux</h3>
+                        <div className="p-2 bg-slate-950 rounded-lg">
+                            <History size={14} className="text-slate-600" />
+                        </div>
                     </div>
                     
                     <div className="space-y-4">
-                        {historyItems.length > 0 ? historyItems.map(item => (
-                            <div key={item.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all active:scale-[0.98] group">
+                        {loadingStates.payments || loadingStates.payouts ? (
+                            [...Array(3)].map((_, i) => <Skeleton key={i} className="h-16 w-full rounded-2xl bg-slate-800" />)
+                        ) : historyItems.length > 0 ? historyItems.map(item => (
+                            <div key={item.id} className="flex items-center justify-between p-3 rounded-2xl hover:bg-white/5 transition-all group">
                                 <div className="flex items-center gap-4">
                                     <div className={cn(
-                                        "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-inner transition-all group-hover:scale-110",
-                                        item.amount > 0 ? "bg-ndara-emerald/10 text-ndara-emerald" : "bg-red-500/10 text-red-400"
+                                        "w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-inner",
+                                        item.amount > 0 ? "bg-emerald-500/10 text-[#10b981]" : "bg-red-500/10 text-red-400"
                                     )}>
                                         {item.type === 'sale' ? <ShoppingCart size={20} /> : <ArrowUpRight size={20} />}
                                     </div>
@@ -244,7 +255,7 @@ export default function InstructorRevenuePage() {
                                         "font-black text-sm mb-1",
                                         item.amount > 0 ? `+${item.amount.toLocaleString()}` : item.amount.toLocaleString()
                                     )}>
-                                        {item.amount.toLocaleString()} F
+                                        {Math.abs(item.amount).toLocaleString()} F
                                     </p>
                                     <Badge className={cn(
                                         "text-[8px] font-black uppercase border-none px-2 py-0.5 h-4 rounded-full",
@@ -258,7 +269,7 @@ export default function InstructorRevenuePage() {
                             </div>
                         )) : (
                             <div className="py-12 text-center opacity-20">
-                                <History size={40} className="mx-auto mb-3" />
+                                <AlertCircle size={40} className="mx-auto mb-3 text-slate-600" />
                                 <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Aucun mouvement</p>
                             </div>
                         )}
@@ -267,23 +278,23 @@ export default function InstructorRevenuePage() {
 
             </main>
 
-            {/* --- WITHDRAWAL MODAL --- */}
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-ndara-surface border-t border-white/5 rounded-t-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem] animate-in slide-in-from-bottom duration-300">
+            {/* --- WITHDRAWAL DIALOG --- */}
+            <Dialog open={isWithdrawModalOpen} onOpenChange={setIsWithdrawModalOpen}>
+                <DialogContent className="bg-slate-900 border-white/5 rounded-t-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
                     <div className="w-12 h-1 bg-gray-600 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
                     <DialogHeader className="p-8 pb-4">
-                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Demander un Virement</DialogTitle>
-                        <DialogDescription className="text-gray-400 font-medium italic">Solde disponible : <span className="text-ndara-emerald font-bold">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</span></DialogDescription>
+                        <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight">Retrait Mobile Money</DialogTitle>
+                        <DialogDescription className="text-gray-400 font-medium italic">Retirez vos gains vers votre compte personnel.</DialogDescription>
                     </DialogHeader>
                     
                     <div className="p-8 space-y-6">
                         <div className="bg-slate-950 rounded-3xl p-5 border border-white/5 text-center">
-                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Montant transférable</p>
-                            <p className="text-3xl font-black text-primary">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</p>
+                            <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest mb-1">Disponible pour virement</p>
+                            <p className="text-3xl font-black text-[#10b981]">{stats.availableBalance.toLocaleString('fr-FR')} FCFA</p>
                         </div>
 
                         <div className="space-y-3">
-                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Méthode de versement</label>
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Fournisseur</label>
                             <div className="grid grid-cols-3 gap-2">
                                 <ProviderBtn active={withdrawMethod === 'orange'} onClick={() => setWithdrawMethod('orange')} label="Orange" color="bg-orange-500" />
                                 <ProviderBtn active={withdrawMethod === 'mtn'} onClick={() => setWithdrawMethod('mtn')} label="MTN" color="bg-yellow-500" />
@@ -301,16 +312,27 @@ export default function InstructorRevenuePage() {
                                 className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-mono text-lg" 
                             />
                         </div>
+
+                        <div className="space-y-3">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Montant à retirer</label>
+                            <Input 
+                                type="number" 
+                                placeholder="5000" 
+                                value={withdrawAmount}
+                                onChange={(e) => setWithdrawAmount(e.target.value)}
+                                className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-black text-xl" 
+                            />
+                        </div>
                     </div>
 
-                    <DialogFooter className="p-8 bg-slate-950/50 border-t border-white/5 safe-area-pb flex gap-3">
+                    <DialogFooter className="p-8 bg-slate-950/50 border-t border-white/5 flex gap-3">
                         <DialogClose asChild>
                             <Button variant="ghost" className="flex-1 h-14 rounded-2xl font-bold text-slate-500 uppercase text-[10px] tracking-widest">Annuler</Button>
                         </DialogClose>
                         <Button 
                             onClick={handleRequestWithdrawal}
-                            disabled={isSubmitting || !phoneValue || stats.availableBalance < 5000}
-                            className="flex-1 h-14 rounded-2xl bg-ndara-emerald hover:bg-emerald-400 text-ndara-bg font-black uppercase text-[10px] tracking-widest shadow-xl transition-all"
+                            disabled={isSubmitting || !phoneValue || !withdrawAmount || stats.availableBalance < 5000}
+                            className="flex-1 h-14 rounded-2xl bg-[#10b981] hover:bg-[#34d399] text-[#0f172a] font-black uppercase text-[10px] tracking-widest shadow-xl transition-all"
                         >
                             {isSubmitting ? <Loader2 className="animate-spin mr-2 h-4 w-4"/> : <Check size={16} className="mr-2" />}
                             Confirmer
@@ -328,7 +350,7 @@ function ProviderBtn({ active, onClick, label, color }: any) {
             onClick={onClick}
             className={cn(
                 "flex flex-col items-center justify-center p-3 rounded-2xl border-2 transition-all active:scale-95 gap-1",
-                active ? "border-primary bg-primary/5" : "border-transparent bg-slate-900 grayscale opacity-50"
+                active ? "border-[#10b981] bg-[#10b981]/5" : "border-transparent bg-slate-950 grayscale opacity-50"
             )}
         >
             <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white font-black text-[10px]", color)}>
@@ -341,7 +363,7 @@ function ProviderBtn({ active, onClick, label, color }: any) {
 
 function RevenueSkeleton() {
     return (
-        <div className="p-6 space-y-8 pt-32">
+        <div className="p-6 space-y-8 pt-32 bg-[#0f172a] min-h-screen">
             <Skeleton className="h-10 w-1/2 bg-slate-900" />
             <Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" />
             <div className="space-y-4">
