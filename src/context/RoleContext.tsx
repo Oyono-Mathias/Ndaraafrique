@@ -2,7 +2,8 @@
 
 /**
  * @fileOverview RoleProvider Ndara Afrique.
- * ✅ RÉSOLU : Navigation switchRole optimisée pour le routage i18n et sans-préfixe.
+ * ✅ GÉOLOCALISATION : Détection automatique du pays via IP.
+ * ✅ RÉSOLU : Navigation switchRole optimisée pour le routage i18n.
  */
 
 import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
@@ -55,6 +56,23 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     router.push(`/${locale}`);
   }, [db, router, locale]);
 
+  // 🌍 DÉTECTION GÉOGRAPHIQUE AUTO
+  const detectGeoLocation = useCallback(async (userId: string) => {
+    try {
+        const res = await fetch('https://ipapi.co/json/');
+        const data = await res.json();
+        if (data.country_name && data.country) {
+            const userRef = doc(db, 'users', userId);
+            await updateDoc(userRef, {
+                countryName: data.country_name,
+                countryCode: data.country
+            });
+        }
+    } catch (e) {
+        console.warn("Geolocation auto-detect failed, using defaults.");
+    }
+  }, [db]);
+
   useEffect(() => {
     const auth = getAuth();
     
@@ -104,6 +122,11 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             await secureSignOut();
             toast({ variant: 'destructive', title: 'Compte suspendu' });
             return;
+          }
+
+          // ✅ AUTO-DETECT SI PAYS MANQUANT
+          if (!userData.countryCode || !userData.countryName) {
+              detectGeoLocation(user.uid);
           }
           
           const isMasterAdmin = user.email?.toLowerCase() === MASTER_ADMIN_EMAIL.toLowerCase() || userData.role === 'admin';
@@ -155,6 +178,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
                 lastSeen: serverTimestamp(),
             };
             await setDoc(userDocRef, newUserDoc).catch(() => {});
+            detectGeoLocation(user.uid);
         }
         setLoading(false);
     }, (error) => {
@@ -163,7 +187,7 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     });
 
     return () => unsubscribe();
-  }, [user, isUserLoading, db, secureSignOut, toast, locale]);
+  }, [user, isUserLoading, db, secureSignOut, toast, locale, detectGeoLocation]);
 
   const switchRole = useCallback((newRole: UserRole) => {
     if (availableRoles.includes(newRole)) {
@@ -176,7 +200,6 @@ export function RoleProvider({ children }: { children: ReactNode }) {
             ? '/instructor/dashboard' 
             : '/student/dashboard';
       
-      // ✅ Correction de la redirection propre
       router.push(`/${locale}${target}`);
       
       toast({ title: `Mode ${newRole.toUpperCase()} activé` });

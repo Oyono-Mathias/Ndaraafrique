@@ -2,8 +2,8 @@
 
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
- * ✅ RÉSOLU : Données 100% dynamiques (plus de compteurs en dur).
- * ✅ FONCTIONNEL : Gestion du thème, langue et déconnexion sécurisée.
+ * ✅ RÉSOLU : Données 100% dynamiques.
+ * ✅ GÉO : Rendu du drapeau dynamique basé sur le code ISO du pays.
  */
 
 import { useState, useEffect, useMemo } from 'react';
@@ -30,7 +30,8 @@ import {
     Check,
     Loader2,
     Trophy,
-    Star
+    Star,
+    MapPin
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -57,6 +58,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from '@/lib/utils';
+import { africanCountries } from '@/lib/countries';
 
 export default function StudentProfilePage() {
   const { currentUser, isUserLoading, secureSignOut, user } = useRole();
@@ -68,18 +70,15 @@ export default function StudentProfilePage() {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [counters, setCounters] = useState({ enrollments: 0, certificates: 0, reviews: 0 });
 
-  // 🔄 RÉCUPÉRATION DES COMPTEURS RÉELS
   useEffect(() => {
     if (!user?.uid) return;
 
-    // Compter les inscriptions
     const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', user.uid)), (snap) => {
         const total = snap.size;
         const certs = snap.docs.filter(d => d.data().progress === 100).length;
         setCounters(prev => ({ ...prev, enrollments: total, certificates: certs }));
     });
 
-    // Compter les avis laissés
     const unsubReviews = onSnapshot(query(collection(db, 'course_reviews'), where('studentId', '==', user.uid)), (snap) => {
         setCounters(prev => ({ ...prev, reviews: snap.size }));
     });
@@ -91,6 +90,12 @@ export default function StudentProfilePage() {
     setIsLoggingOut(true);
     await secureSignOut();
   };
+
+  const countryEmoji = useMemo(() => {
+      if (!currentUser?.countryCode) return "🌍";
+      const country = africanCountries.find(c => c.code === currentUser.countryCode);
+      return country?.emoji || "🌍";
+  }, [currentUser?.countryCode]);
 
   if (isUserLoading) {
     return (
@@ -106,7 +111,7 @@ export default function StudentProfilePage() {
     <div className="flex flex-col gap-0 pb-32 bg-[#0f172a] min-h-screen relative">
       <div className="grain-overlay" />
       
-      <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
+      <header className="fixed top-0 w-full max-w-md z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-6 py-4">
             <h1 className="font-black text-xl text-white uppercase tracking-tight">Mon Profil</h1>
             <Button variant="ghost" size="icon" className="rounded-full bg-slate-900 text-slate-400" onClick={() => router.push('/account')}>
@@ -139,10 +144,10 @@ export default function StudentProfilePage() {
                 </h2>
                 <p className="text-primary font-bold text-sm tracking-widest mb-4">@{currentUser.username}</p>
                 
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
-                    <span className="text-lg">🇨🇫</span>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6 shadow-inner">
+                    <span className="text-lg">{countryEmoji}</span>
                     <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
-                        {currentUser.countryName || 'Membre Ndara'}
+                        {currentUser.countryName || 'Explorateur Ndara'}
                     </span>
                 </div>
 
