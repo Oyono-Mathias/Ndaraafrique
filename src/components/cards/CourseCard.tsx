@@ -19,7 +19,8 @@ import {
     CheckCircle2, 
     Image as ImageIcon,
     Pencil,
-    FileText
+    FileText,
+    Trash2
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, serverTimestamp } from 'firebase/firestore';
@@ -87,15 +88,16 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     }
   };
 
-  // --- VARIANT: INSTRUCTOR (VERTICAL LIST) ---
+  // --- VARIANT: INSTRUCTOR (ELITE DESIGN) ---
   if (variant === 'instructor') {
     const isPublished = course.status === 'Published';
     const isPending = course.status === 'Pending Review';
+    const isDraft = course.status === 'Draft';
     
     return (
-        <div className="bg-ndara-surface rounded-[2.5rem] p-4 border border-white/5 flex flex-col gap-4 shadow-xl active:scale-[0.98] transition-all group">
+        <div className="bg-[#1e293b] rounded-[2rem] p-4 border border-white/5 flex flex-col gap-4 shadow-xl active:scale-[0.98] transition-all group">
             {/* Thumbnail */}
-            <div className="w-full aspect-video rounded-[2rem] overflow-hidden relative bg-slate-800 shadow-inner">
+            <div className="w-full aspect-video rounded-[1.5rem] overflow-hidden relative bg-slate-800 shadow-inner">
                 {course.imageUrl ? (
                     <Image src={course.imageUrl} alt={course.title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" />
                 ) : (
@@ -106,9 +108,9 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 <div className="absolute top-3 right-3">
                     <Badge className={cn(
                         "font-black text-[9px] uppercase border-none px-3 py-1 rounded-full flex items-center gap-1.5 shadow-lg backdrop-blur-md",
-                        isPublished ? "bg-emerald-500/20 text-emerald-400" : 
-                        isPending ? "bg-amber-500/20 text-amber-400" : 
-                        "bg-slate-800/80 text-slate-400"
+                        isPublished ? "bg-[#10b981]/20 text-[#10b981] border border-[#10b981]/30" : 
+                        isPending ? "bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30" : 
+                        "bg-slate-800/80 text-slate-400 border border-slate-700"
                     )}>
                         {isPublished ? <CheckCircle2 size={10} /> : isPending ? <Clock size={10} /> : <FileText size={10} />}
                         {isPublished ? 'Publié' : isPending ? 'En Examen' : 'Brouillon'}
@@ -117,7 +119,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
             </div>
 
             {/* Info */}
-            <div className="px-1">
+            <div>
                 <div className="flex items-center gap-2 mb-1">
                     <span className="text-primary text-[10px] font-black uppercase tracking-[0.2em]">{course.category}</span>
                     <span className="text-slate-700 text-[10px]">•</span>
@@ -129,7 +131,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 <div className="flex items-center justify-between mb-5">
                     <div className="flex items-center gap-1.5">
                         <Users className="h-3.5 w-3.5 text-slate-600" />
-                        <span className="text-slate-400 text-xs font-black uppercase">{(course.participantsCount || 0).toLocaleString()} Ndara</span>
+                        <span className="text-slate-400 text-xs font-black uppercase">{(course.participantsCount || 0).toLocaleString()} élèves</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                         <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500" />
@@ -138,8 +140,8 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center gap-2 pt-4 border-t border-white/5">
-                    <Button asChild className="flex-1 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all border-none active:scale-95">
+                <div className="flex items-center gap-3 pt-4 border-t border-white/5">
+                    <Button asChild className="flex-1 h-12 rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-slate-950 font-black uppercase text-[10px] tracking-widest transition-all border-none active:scale-95 shadow-lg">
                         <Link href={`/${locale}/instructor/courses/edit/${course.id}`}>
                             <Pencil className="mr-2 h-3.5 w-3.5" /> Éditer
                         </Link>
@@ -155,7 +157,7 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
   if (variant === 'search-result') {
     return (
         <Link href={href} className="course-card block active:scale-[0.98] transition-all">
-            <div className="bg-ndara-surface rounded-[2rem] p-3 border border-white/5 flex gap-4 shadow-xl">
+            <div className="bg-[#1e293b] rounded-[2rem] p-3 border border-white/5 flex gap-4 shadow-xl">
                 <div className="w-32 h-20 rounded-[1.5rem] overflow-hidden flex-shrink-0 relative shadow-inner bg-slate-800">
                     <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
                 </div>
@@ -196,14 +198,14 @@ export function CourseCard({ course, instructor, variant = 'grid', actions }: Co
     return (
       <div className="group relative">
         <Link href={href} className="block w-full active:scale-[0.98] transition-transform">
-          <div className="bg-ndara-surface border border-white/5 rounded-[2rem] overflow-hidden flex items-center p-4 shadow-xl relative group">
+          <div className="bg-[#1e293b] border border-white/5 rounded-[2rem] overflow-hidden flex items-center p-4 shadow-xl relative group">
             <div className="relative h-20 w-20 shrink-0 rounded-3xl overflow-hidden bg-slate-800 shadow-inner">
               <Image src={course.imageUrl || ''} alt={course.title} fill className="object-cover" />
               <div className="absolute inset-0 bg-black/20" />
               {isCompleted && (
                   <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                          <CheckCircle2 className="h-5 w-5 text-ndara-bg" />
+                          <CheckCircle2 className="h-5 w-5 text-[#0f172a]" />
                       </div>
                   </div>
               )}

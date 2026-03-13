@@ -163,7 +163,7 @@ export default function InstructorCoursesPage() {
                 <p className="text-slate-500 text-sm mt-3 leading-relaxed max-w-[220px] mx-auto font-medium italic">
                     "Le savoir se partage." <br/>Créez votre première formation pour inspirer la communauté.
                 </p>
-                <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-slate-950 rounded-[2rem] h-16 px-8 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95">
+                <Button asChild className="mt-8 bg-primary hover:bg-primary/90 text-slate-950 rounded-[2rem] h-16 px-8 font-black uppercase text-xs tracking-widest shadow-xl shadow-primary/20 transition-all active:scale-95 group">
                     <Link href={`/${locale}/instructor/courses/create`} className="flex items-center gap-2">
                         <PlusCircle className="h-5 w-5" />
                         Créer mon cours
