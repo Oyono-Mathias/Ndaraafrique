@@ -59,6 +59,7 @@ export default function InstructorRevenuePage() {
 
         const instructorId = instructor.uid;
 
+        // 1. Écouter les paiements (Ventes directes)
         const unsubPayments = onSnapshot(
             query(collection(db, 'payments'), where('instructorId', '==', instructorId), where('status', '==', 'Completed')),
             (snap) => {
@@ -67,6 +68,7 @@ export default function InstructorRevenuePage() {
             }
         );
 
+        // 2. Écouter les demandes de retrait (Payouts)
         const unsubPayouts = onSnapshot(
             query(collection(db, 'payout_requests'), where('instructorId', '==', instructorId), orderBy('createdAt', 'desc'), limit(50)),
             (snap) => {
@@ -82,12 +84,18 @@ export default function InstructorRevenuePage() {
     }, [instructor?.uid, db]);
 
     const stats = useMemo(() => {
+        // Revenus des formations
         const totalCoursesEarned = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
+        
+        // Revenus d'affiliation (si applicable)
         const affiliateAvailable = instructor?.affiliateBalance || 0;
+        
+        // Total déjà retiré ou en cours
         const totalWithdrawn = payoutRequests
             .filter(p => p.status !== 'rejected')
             .reduce((acc, p) => acc + (p.amount || 0), 0);
         
+        // Solde final disponible
         const availableBalance = (totalCoursesEarned + affiliateAvailable) - totalWithdrawn;
 
         return {
@@ -146,7 +154,7 @@ export default function InstructorRevenuePage() {
 
     const isLoadingData = loadingStates.payments || loadingStates.payouts;
 
-    if (isUserLoading || isLoadingData) return <div className="p-6 space-y-8 pt-12"><Skeleton className="h-10 w-1/2 bg-slate-900" /><Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" /></div>;
+    if (isUserLoading || isLoadingData) return <RevenueSkeleton />;
 
     return (
         <div className="flex flex-col gap-8 pb-32 bg-slate-950 min-h-screen relative overflow-hidden bg-grainy">
@@ -164,6 +172,7 @@ export default function InstructorRevenuePage() {
 
             <main className="px-6 space-y-8 animate-in fade-in duration-700">
                 
+                {/* --- ELITE VIRTUAL CARD --- */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between px-1">
                         <h2 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Mon Portefeuille</h2>
@@ -205,6 +214,7 @@ export default function InstructorRevenuePage() {
                     </Button>
                 </div>
 
+                {/* --- TRANSACTION HISTORY --- */}
                 <div className="bg-slate-900 border border-white/5 rounded-[2.5rem] p-6 shadow-2xl">
                     <div className="flex items-center justify-between mb-6">
                         <h3 className="font-black text-white text-[10px] uppercase tracking-[0.3em]">Historique des flux</h3>
@@ -254,6 +264,7 @@ export default function InstructorRevenuePage() {
 
             </main>
 
+            {/* --- WITHDRAWAL MODAL --- */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogContent className="bg-slate-900 border-white/5 rounded-t-[2.5rem] p-0 overflow-hidden sm:max-w-md fixed bottom-0 top-auto translate-y-0 sm:relative sm:rounded-[2.5rem]">
                     <div className="w-12 h-1.5 bg-slate-800 rounded-full mx-auto mt-4 mb-2 sm:hidden" />
@@ -307,6 +318,19 @@ export default function InstructorRevenuePage() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+        </div>
+    );
+}
+
+function RevenueSkeleton() {
+    return (
+        <div className="p-6 space-y-8 pt-12">
+            <Skeleton className="h-10 w-1/2 bg-slate-900" />
+            <Skeleton className="h-56 w-full rounded-[2.5rem] bg-slate-900" />
+            <div className="space-y-4">
+                <Skeleton className="h-20 w-full rounded-2xl bg-slate-900" />
+                <Skeleton className="h-20 w-full rounded-2xl bg-slate-900" />
+            </div>
         </div>
     );
 }
