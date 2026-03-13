@@ -2,15 +2,16 @@
 
 /**
  * @fileOverview Mon Profil - Espace Personnel Étudiant Ndara Afrique.
- * ✅ DESIGN QWEN : Avatar dégradé, badges premium et menu style Android Settings.
+ * ✅ RÉSOLU : Données 100% dynamiques (plus de compteurs en dur).
  * ✅ FONCTIONNEL : Gestion du thème, langue et déconnexion sécurisée.
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRole } from '@/context/RoleContext';
 import { useRouter } from 'next/navigation';
 import { useLocale } from 'next-intl';
 import { useTheme } from 'next-themes';
+import { getFirestore, collection, query, where, onSnapshot } from 'firebase/firestore';
 import Link from 'next/link';
 import { 
     Settings, 
@@ -27,8 +28,9 @@ import {
     Bell, 
     LogOut,
     Check,
-    CheckCircle2,
-    Loader2
+    Loader2,
+    Trophy,
+    Star
 } from 'lucide-react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -57,11 +59,33 @@ import {
 import { cn } from '@/lib/utils';
 
 export default function StudentProfilePage() {
-  const { currentUser, isUserLoading, secureSignOut } = useRole();
+  const { currentUser, isUserLoading, secureSignOut, user } = useRole();
   const router = useRouter();
   const locale = useLocale();
   const { theme, setTheme } = useTheme();
+  const db = getFirestore();
+  
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [counters, setCounters] = useState({ enrollments: 0, certificates: 0, reviews: 0 });
+
+  // 🔄 RÉCUPÉRATION DES COMPTEURS RÉELS
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Compter les inscriptions
+    const unsubEnroll = onSnapshot(query(collection(db, 'enrollments'), where('studentId', '==', user.uid)), (snap) => {
+        const total = snap.size;
+        const certs = snap.docs.filter(d => d.data().progress === 100).length;
+        setCounters(prev => ({ ...prev, enrollments: total, certificates: certs }));
+    });
+
+    // Compter les avis laissés
+    const unsubReviews = onSnapshot(query(collection(db, 'course_reviews'), where('studentId', '==', user.uid)), (snap) => {
+        setCounters(prev => ({ ...prev, reviews: snap.size }));
+    });
+
+    return () => { unsubEnroll(); unsubReviews(); };
+  }, [user?.uid, db]);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -70,7 +94,7 @@ export default function StudentProfilePage() {
 
   if (isUserLoading) {
     return (
-        <div className="h-[80vh] flex items-center justify-center">
+        <div className="h-screen flex items-center justify-center bg-[#0f172a]">
             <Loader2 className="h-10 w-10 animate-spin text-primary" />
         </div>
     );
@@ -79,14 +103,13 @@ export default function StudentProfilePage() {
   if (!currentUser) return null;
 
   return (
-    <div className="flex flex-col gap-0 pb-32 bg-ndara-bg min-h-screen relative">
+    <div className="flex flex-col gap-0 pb-32 bg-[#0f172a] min-h-screen relative">
       <div className="grain-overlay" />
       
-      {/* --- HEADER --- */}
-      <header className="fixed top-0 w-full z-50 bg-ndara-bg/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
+      <header className="fixed top-0 w-full z-50 bg-[#0f172a]/95 backdrop-blur-md border-b border-white/5 safe-area-pt">
         <div className="flex items-center justify-between px-6 py-4">
             <h1 className="font-black text-xl text-white uppercase tracking-tight">Mon Profil</h1>
-            <Button variant="ghost" size="icon" className="rounded-full bg-ndara-surface text-slate-400" onClick={() => router.push('/account')}>
+            <Button variant="ghost" size="icon" className="rounded-full bg-slate-900 text-slate-400" onClick={() => router.push('/account')}>
                 <Settings className="h-5 w-5" />
             </Button>
         </div>
@@ -94,22 +117,20 @@ export default function StudentProfilePage() {
 
       <main className="flex-1 px-6 pt-24 space-y-8 animate-in fade-in duration-700">
         
-        {/* --- PROFILE HEADER CARD --- */}
-        <Card className="bg-ndara-surface rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl relative">
+        <Card className="bg-slate-900 rounded-[2.5rem] border-white/5 overflow-hidden shadow-2xl relative">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
             <CardContent className="p-8 text-center flex flex-col items-center relative z-10">
-                {/* Avatar with Gradient Border */}
                 <div className="relative mb-4">
                     <div className="p-[3px] rounded-full bg-gradient-to-tr from-primary via-blue-500 to-purple-500">
-                        <Avatar className="h-24 w-24 border-4 border-ndara-surface shadow-2xl">
+                        <Avatar className="h-24 w-24 border-4 border-slate-900 shadow-2xl">
                             <AvatarImage src={currentUser.profilePictureURL} className="object-cover" />
-                            <AvatarFallback className="bg-ndara-bg text-3xl font-black text-slate-500 uppercase">
+                            <AvatarFallback className="bg-slate-800 text-3xl font-black text-slate-500 uppercase">
                                 {currentUser.fullName?.charAt(0)}
                             </AvatarFallback>
                         </Avatar>
                     </div>
-                    <div className="absolute bottom-1 right-1 w-6 h-6 bg-primary rounded-full border-4 border-ndara-surface flex items-center justify-center shadow-lg">
-                        <Check className="text-ndara-bg h-3 w-3 stroke-[4px]" />
+                    <div className="absolute bottom-1 right-1 w-6 h-6 bg-primary rounded-full border-4 border-slate-900 flex items-center justify-center shadow-lg">
+                        <Check className="text-slate-950 h-3 w-3 stroke-[4px]" />
                     </div>
                 </div>
 
@@ -121,18 +142,19 @@ export default function StudentProfilePage() {
                 <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-6">
                     <span className="text-lg">🇨🇫</span>
                     <span className="text-slate-300 text-[10px] font-black uppercase tracking-widest">
-                        {currentUser.countryName || 'Afrique'}
+                        {currentUser.countryName || 'Membre Ndara'}
                     </span>
                 </div>
 
-                {/* Badges Row */}
                 <div className="flex flex-wrap justify-center gap-2">
                     <Badge className="bg-primary/20 text-primary border border-primary/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
                         <ShieldCheck className="h-3 w-3 mr-1.5" /> Vérifié
                     </Badge>
-                    <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
-                        <Rocket className="h-3 w-3 mr-1.5" /> Pionnier
-                    </Badge>
+                    {currentUser.role === 'admin' && (
+                        <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
+                            <Rocket className="h-3 w-3 mr-1.5" /> Fondateur
+                        </Badge>
+                    )}
                     <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-full px-3 py-1 text-[9px] font-black uppercase tracking-widest">
                         <Code className="h-3 w-3 mr-1.5" /> Apprenant
                     </Badge>
@@ -140,15 +162,14 @@ export default function StudentProfilePage() {
             </CardContent>
         </Card>
 
-        {/* --- QUICK STATS --- */}
+        {/* --- DYNAMIC STATS --- */}
         <section className="grid grid-cols-3 gap-3">
-            <StatBox label="Cours" value="12" color="text-primary" />
-            <StatBox label="Heures" value="48h" color="text-orange-400" />
-            <StatBox label="XP" value="2.4k" color="text-blue-400" />
+            <StatBox label="Cours" value={counters.enrollments.toString()} color="text-primary" />
+            <StatBox label="Diplômes" value={counters.certificates.toString()} color="text-orange-400" />
+            <StatBox label="Avis" value={counters.reviews.toString()} color="text-blue-400" />
         </section>
 
-        {/* --- ACCOUNT MANAGEMENT MENU --- */}
-        <div className="bg-ndara-surface rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+        <div className="bg-slate-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
             <div className="px-6 py-4 border-b border-white/5 bg-white/5">
                 <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Gestion du Compte</h3>
             </div>
@@ -164,7 +185,7 @@ export default function StudentProfilePage() {
                 <MenuLink 
                     icon={Wallet} 
                     label="Historique Financier" 
-                    desc="Paiements et factures" 
+                    desc="Paiements et gains" 
                     color="bg-emerald-500/10 text-emerald-400"
                     href="/student/paiements"
                 />
@@ -185,14 +206,12 @@ export default function StudentProfilePage() {
             </div>
         </div>
 
-        {/* --- PREFERENCES --- */}
-        <div className="bg-ndara-surface rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
+        <div className="bg-slate-900 rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl">
             <div className="px-6 py-4 border-b border-white/5 bg-white/5">
                 <h3 className="text-slate-500 text-[10px] font-black uppercase tracking-[0.3em]">Préférences</h3>
             </div>
             
             <div className="p-6 space-y-6">
-                {/* Language Selector */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
@@ -201,17 +220,16 @@ export default function StudentProfilePage() {
                         <span className="font-bold text-white text-sm uppercase tracking-tight">Langue</span>
                     </div>
                     <Select defaultValue={locale}>
-                        <SelectTrigger className="w-32 h-10 bg-ndara-bg border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
+                        <SelectTrigger className="w-32 h-10 bg-slate-950 border-white/10 rounded-full text-[10px] font-black uppercase tracking-widest text-primary">
                             <SelectValue />
                         </SelectTrigger>
-                        <SelectContent className="bg-ndara-surface border-white/10 text-white">
+                        <SelectContent className="bg-slate-900 border-white/10 text-white">
                             <SelectItem value="fr" className="font-bold py-3 uppercase text-[10px]">Français</SelectItem>
                             <SelectItem value="en" className="font-bold py-3 uppercase text-[10px]">English</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
-                {/* Theme Switch */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
@@ -226,7 +244,6 @@ export default function StudentProfilePage() {
                     />
                 </div>
 
-                {/* Notifications Switch */}
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 rounded-2xl bg-slate-800 flex items-center justify-center text-slate-400">
@@ -239,7 +256,6 @@ export default function StudentProfilePage() {
             </div>
         </div>
 
-        {/* --- LOGOUT BUTTON --- */}
         <AlertDialog>
             <AlertDialogTrigger asChild>
                 <Button className="w-full h-16 rounded-[2rem] bg-gradient-to-br from-red-500 to-red-700 hover:from-red-600 hover:to-red-800 text-white font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-red-500/20 active:scale-[0.98] transition-all gap-2 mb-12">
@@ -247,7 +263,7 @@ export default function StudentProfilePage() {
                     Se Déconnecter
                 </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent className="bg-ndara-surface border-white/10 rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md mx-auto">
+            <AlertDialogContent className="bg-slate-900 border-white/10 rounded-[2.5rem] p-8 max-w-[90%] sm:max-w-md mx-auto">
                 <AlertDialogHeader className="items-center text-center space-y-4">
                     <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500">
                         <LogOut size={40} />
@@ -258,7 +274,7 @@ export default function StudentProfilePage() {
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter className="mt-8 flex-col sm:flex-row gap-3">
-                    <AlertDialogCancel className="bg-ndara-bg border-white/10 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">Annuler</AlertDialogCancel>
+                    <AlertDialogCancel className="bg-slate-950 border-white/10 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1">Annuler</AlertDialogCancel>
                     <AlertDialogAction onClick={handleLogout} className="bg-red-600 hover:bg-red-700 text-white rounded-2xl h-14 font-black uppercase text-[10px] tracking-widest flex-1 shadow-lg shadow-red-600/20">
                         {isLoggingOut ? <Loader2 className="animate-spin" /> : "Oui, me déconnecter"}
                     </AlertDialogAction>
@@ -267,7 +283,7 @@ export default function StudentProfilePage() {
         </AlertDialog>
 
         <div className="pb-12 text-center">
-            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v2.0 • Innovation & Impact</p>
+            <p className="text-[9px] font-black text-slate-700 uppercase tracking-[0.4em]">Ndara Afrique v2.4 • Innovation & Impact</p>
         </div>
       </main>
     </div>
@@ -276,7 +292,7 @@ export default function StudentProfilePage() {
 
 function StatBox({ label, value, color }: { label: string, value: string, color: string }) {
     return (
-        <div className="bg-ndara-surface border border-white/5 rounded-[2rem] p-4 text-center shadow-xl active:scale-95 transition-transform">
+        <div className="bg-slate-900 border border-white/5 rounded-[2rem] p-4 text-center shadow-xl active:scale-95 transition-transform">
             <p className={cn("text-2xl font-black leading-none mb-2", color)}>{value}</p>
             <p className="text-[8px] font-black text-slate-600 uppercase tracking-widest">{label}</p>
         </div>
