@@ -1,8 +1,9 @@
 'use client';
 
 /**
- * @fileOverview Réglages Formateur - Centre de pilotage Pédagogique et Financier.
- * Ce profil privé est différent du profil public car il se concentre sur les outils de gestion.
+ * @fileOverview Réglages Expert Ndara Afrique - Design Elite Forest & Wealth.
+ * ✅ DESIGN : Immersion totale, texture grainée, navigation par pilules.
+ * ✅ FONCTIONNEL : Pilotage IA Mathias, Finance Mobile Money et Alertes.
  */
 
 import { useState, useEffect } from 'react';
@@ -13,16 +14,33 @@ import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
 import { updateUserProfileAction } from '@/actions/userActions';
 import Link from 'next/link';
+import { getFirestore, doc, onSnapshot } from 'firebase/firestore';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Loader2, Bot, Bell, Landmark, CheckCircle2, UserCircle, ShieldCheck, ChevronRight } from 'lucide-react';
+import { 
+    Loader2, 
+    Bot, 
+    Bell, 
+    Landmark, 
+    CheckCircle2, 
+    UserCircle, 
+    ShieldCheck, 
+    ChevronRight,
+    Smartphone,
+    Brain,
+    Feather,
+    Robot,
+    Lock,
+    ExternalLink,
+    HelpCircle
+} from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 
 const instructorSettingsSchema = z.object({
   aiAssistanceEnabled: z.boolean().default(true),
@@ -35,6 +53,7 @@ const instructorSettingsSchema = z.object({
 export default function InstructorSettingsPage() {
   const { currentUser, isUserLoading } = useRole();
   const { toast } = useToast();
+  const db = getFirestore();
   const [isSaving, setIsSaving] = useState(false);
 
   const form = useForm<z.infer<typeof instructorSettingsSchema>>({
@@ -80,7 +99,7 @@ export default function InstructorSettingsPage() {
       });
 
       if (result.success) {
-        toast({ title: "Configuration enregistrée !" });
+        toast({ title: "Réglages enregistrés !" });
       } else {
         throw new Error(result.error);
       }
@@ -91,158 +110,225 @@ export default function InstructorSettingsPage() {
     }
   };
 
-  if (isUserLoading) return <div className="h-screen flex items-center justify-center bg-[#0f172a]"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
+  if (isUserLoading) return <div className="h-screen flex items-center justify-center bg-ndara-bg"><Loader2 className="h-10 w-10 animate-spin text-primary"/></div>;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-10 pb-32 animate-in fade-in duration-700 min-h-screen bg-[#0f172a] p-6 relative">
-      <div className="grain-overlay opacity-[0.03]" />
+    <div className="max-w-md mx-auto min-h-screen bg-ndara-bg relative flex flex-col font-sans">
+      <div className="grain-overlay" />
       
-      <header className="flex flex-col gap-1 pt-8 text-center sm:text-left relative z-10">
-        <div className="flex items-center justify-center sm:justify-start gap-3 text-primary mb-2">
-            <UserCircle className="h-8 w-8" />
-            <span className="text-[11px] font-black uppercase tracking-[0.4em]">Profil de Gestion</span>
+      {/* --- HEADER --- */}
+      <header className="fixed top-0 w-full max-w-md z-50 bg-ndara-bg/95 backdrop-blur-md safe-area-pt border-b border-white/5">
+        <div className="px-6 py-6 flex items-center justify-between">
+            <h1 className="font-black text-xl text-white tracking-wide uppercase">Configuration</h1>
+            <button className="w-10 h-10 rounded-full bg-ndara-surface flex items-center justify-center text-gray-400 hover:text-white transition active:scale-90">
+                <HelpCircle size={20} />
+            </button>
         </div>
-        <h1 className="text-4xl font-black text-white uppercase tracking-tight">Configuration Expert</h1>
       </header>
 
-      {/* --- IDENTITÉ RÉSUMÉE (DIFFÉRENTE DE L'ÉTUDIANT) --- */}
-      <Card className="bg-slate-900 border-white/5 rounded-[2.5rem] p-6 shadow-2xl relative overflow-hidden z-10">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-10 -mt-10" />
-          <div className="flex items-center gap-6 relative z-10">
-              <div className="relative flex-shrink-0">
-                  <Avatar className="h-20 w-20 border-4 border-[#0f172a] shadow-xl">
-                      <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
-                      <AvatarFallback className="bg-slate-800 text-2xl font-black text-slate-500 uppercase">
-                          {currentUser?.fullName?.charAt(0)}
-                      </AvatarFallback>
-                  </Avatar>
-                  <div className="absolute -bottom-1 -right-1 bg-primary p-1.5 rounded-full border-4 border-slate-900 shadow-xl">
-                      <ShieldCheck className="h-3 w-3 text-slate-950" />
-                  </div>
-              </div>
-              <div>
-                  <h2 className="text-xl font-black text-white uppercase tracking-tight">{currentUser?.fullName}</h2>
-                  <p className="text-primary font-bold text-xs uppercase tracking-widest mt-1">Academy Owner</p>
-                  <Link href={`/instructor/${currentUser?.uid}`} className="text-slate-500 text-[10px] font-bold uppercase tracking-widest mt-3 flex items-center gap-1.5 hover:text-white transition">
-                      Voir mon profil public <ChevronRight size={12} />
-                  </Link>
-              </div>
-          </div>
-      </Card>
+      <main className="flex-1 overflow-y-auto hide-scrollbar pt-32 pb-40 px-6 space-y-8">
+        
+        {/* --- IDENTITY CARD --- */}
+        <div className="bg-ndara-surface rounded-4xl p-5 border border-white/5 flex items-center gap-4 shadow-2xl animate-in fade-in slide-in-from-top-4 duration-700">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-primary/30 flex-shrink-0">
+                <Avatar className="h-full w-full">
+                    <AvatarImage src={currentUser?.profilePictureURL} className="object-cover" />
+                    <AvatarFallback className="bg-slate-800 text-slate-500 font-black uppercase">
+                        {currentUser?.fullName?.charAt(0)}
+                    </AvatarFallback>
+                </Avatar>
+            </div>
+            <div className="flex-1 min-w-0">
+                <h2 className="font-bold text-white text-base truncate uppercase tracking-tight">{currentUser?.fullName}</h2>
+                <p className="text-slate-500 text-[10px] font-black uppercase tracking-widest">{currentUser?.careerGoals?.currentRole || 'Expert Ndara'}</p>
+            </div>
+            <Link href={`/instructor/${currentUser?.uid}`} className="text-primary text-[10px] font-black uppercase tracking-widest hover:text-emerald-400 transition flex items-center gap-1.5 active:scale-90">
+                PROFIL <ExternalLink size={12} />
+            </Link>
+        </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 relative z-10">
-          <Tabs defaultValue="finance" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-slate-950/50 border border-white/5 h-14 p-1 rounded-2xl mb-8 shadow-xl">
-                <TabsTrigger value="finance" className="rounded-xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-slate-950">Finance & IA</TabsTrigger>
-                <TabsTrigger value="notifications" className="rounded-xl font-black uppercase text-[10px] tracking-widest data-[state=active]:bg-primary data-[state=active]:text-slate-950">Préférences</TabsTrigger>
-            </TabsList>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <Tabs defaultValue="finance" className="w-full">
+                {/* --- TAB SWITCHER --- */}
+                <TabsList className="flex p-1 bg-ndara-surface rounded-[1.5rem] mb-8 border border-white/5 h-14">
+                    <TabsTrigger value="finance" className="flex-1 rounded-2xl text-[10px] font-black uppercase tracking-widest data-[state=active]:bg-primary/10 data-[state=active]:text-primary transition-all">
+                        Finance & IA
+                    </TabsTrigger>
+                    <TabsTrigger value="preferences" className="flex-1 rounded-2xl text-slate-500 data-[state=active]:text-primary data-[state=active]:bg-primary/10 text-[10px] font-black uppercase tracking-widest transition-all">
+                        Préférences
+                    </TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="finance" className="space-y-6 m-0 animate-in slide-in-from-bottom-2 duration-500">
-                <Card className="bg-slate-900 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                    <CardHeader className="bg-emerald-500/10 border-b border-white/5 p-8">
-                        <CardTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                            <Landmark className="text-emerald-500"/> Retraits Mobile Money
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8">
+                {/* --- FINANCE & IA --- */}
+                <TabsContent value="finance" className="space-y-6 m-0 animate-in fade-in duration-500">
+                    <div className="bg-ndara-surface rounded-4xl p-6 border border-white/5 shadow-xl">
+                        <h3 className="font-black text-white text-xs uppercase tracking-widest mb-6 flex items-center gap-3">
+                            <Landmark className="text-primary h-4 w-4" /> RETRAITS MOBILE MONEY
+                        </h3>
                         <FormField
                             control={form.control}
                             name="mobileMoneyNumber"
                             render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Numéro Orange / MTN / Wave</FormLabel>
-                                <FormControl><Input {...field} value={field.value ?? ''} placeholder="+236..." className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-black text-xl px-6" /></FormControl>
+                            <FormItem className="space-y-4">
+                                <div>
+                                    <FormLabel className="block text-slate-500 text-[9px] font-black uppercase tracking-[0.2em] mb-3 ml-1">Numéro de compte (Orange / MTN / Wave)</FormLabel>
+                                    <FormControl>
+                                        <div className="relative">
+                                            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-primary opacity-50"><Smartphone size={18}/></div>
+                                            <Input {...field} value={field.value ?? ''} placeholder="+236..." className="h-14 pl-12 bg-ndara-bg border-white/5 rounded-[1.5rem] text-white font-black text-lg focus-visible:ring-primary/20" />
+                                        </div>
+                                    </FormControl>
+                                </div>
                                 <FormMessage />
                             </FormItem>
                             )}
                         />
-                    </CardContent>
-                </Card>
+                    </div>
 
-                <Card className="bg-slate-900 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                    <CardHeader className="bg-primary/5 border-b border-white/5 p-8">
-                        <CardTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                            <Bot className="text-primary"/> Copilote MATHIAS
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-8">
-                        <FormField
-                            control={form.control}
-                            name="aiAssistanceEnabled"
-                            render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-6 bg-slate-950/50 rounded-3xl border border-white/5 shadow-inner">
-                                <div className="space-y-1">
-                                    <FormLabel className="text-sm font-black text-white uppercase">Correction Assistée</FormLabel>
-                                    <p className="text-[10px] text-slate-500 font-medium italic">L'IA pré-note vos devoirs complexes.</p>
-                                </div>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                            </FormItem>
-                            )}
-                        />
+                    <div className="bg-ndara-surface rounded-4xl p-6 border border-white/5 shadow-xl">
+                        <h3 className="font-black text-white text-xs uppercase tracking-widest mb-2 flex items-center gap-3">
+                            <Bot className="text-primary h-4 w-4" /> CO-PILOTE MATHIAS
+                        </h3>
+                        <p className="text-slate-500 text-[10px] font-medium italic mb-6 leading-relaxed">
+                            Définissez le degré d'autonomie de l'IA pour la correction et la structuration.
+                        </p>
+                        
                         <FormField
                             control={form.control}
                             name="aiInterventionLevel"
                             render={({ field }) => (
-                            <FormItem>
-                                <FormLabel className="text-[10px] font-black uppercase text-slate-500 tracking-widest ml-1">Niveau d'intervention</FormLabel>
-                                <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
-                                <FormControl><SelectTrigger className="h-14 bg-slate-950 border-white/5 rounded-2xl text-white font-bold px-6 shadow-inner"><SelectValue placeholder="Choisir" /></SelectTrigger></FormControl>
-                                <SelectContent className="bg-slate-900 border-white/10 text-white">
-                                    <SelectItem value="low" className="font-bold py-3 uppercase text-[10px]">Faible (Conseiller)</SelectItem>
-                                    <SelectItem value="medium" className="font-bold py-3 uppercase text-[10px]">Moyen (Analyste)</SelectItem>
-                                    <SelectItem value="high" className="font-bold py-3 uppercase text-[10px]">Élevé (Correcteur)</SelectItem>
-                                </SelectContent>
-                                </Select>
+                            <FormItem className="space-y-3">
+                                <FormControl>
+                                    <div className="grid gap-3">
+                                        <AiLevelOption 
+                                            value="low" 
+                                            currentValue={field.value} 
+                                            onChange={field.onChange}
+                                            icon={Feather}
+                                            label="Faible"
+                                            desc="Assistant de rédaction simple"
+                                            color="text-blue-400"
+                                            bgColor="bg-blue-500/10"
+                                        />
+                                        <AiLevelOption 
+                                            value="medium" 
+                                            currentValue={field.value} 
+                                            onChange={field.onChange}
+                                            icon={Robot}
+                                            label="Moyen"
+                                            desc="Analyste pédagogique actif"
+                                            color="text-primary"
+                                            bgColor="bg-primary/10"
+                                            isRecommended
+                                        />
+                                        <AiLevelOption 
+                                            value="high" 
+                                            currentValue={field.value} 
+                                            onChange={field.onChange}
+                                            icon={Brain}
+                                            label="Élevé"
+                                            desc="Correcteur autonome complet"
+                                            color="text-purple-400"
+                                            bgColor="bg-purple-500/10"
+                                        />
+                                    </div>
+                                </FormControl>
                             </FormItem>
                             )}
                         />
-                    </CardContent>
-                </Card>
-            </TabsContent>
+                    </div>
+                </TabsContent>
 
-            <TabsContent value="notifications" className="space-y-6 m-0 animate-in slide-in-from-bottom-2 duration-500">
-                <Card className="bg-slate-900 border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                    <CardHeader className="p-8 border-b border-white/5 bg-slate-800/30">
-                        <CardTitle className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-3">
-                            <Bell className="text-primary"/> Alertes Événementielles
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-8 space-y-4">
-                        <FormField
-                            control={form.control}
-                            name="notifyEnrollment"
-                            render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-5 bg-slate-950/50 rounded-3xl border border-white/5 shadow-inner">
-                                <FormLabel className="text-xs font-black text-white uppercase tracking-wider">Nouvelles Inscriptions</FormLabel>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                            </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="notifyPayout"
-                            render={({ field }) => (
-                            <FormItem className="flex items-center justify-between p-5 bg-slate-950/50 rounded-3xl border border-white/5 shadow-inner">
-                                <FormLabel className="text-xs font-black text-white uppercase tracking-wider">Suivi des Virements</FormLabel>
-                                <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
-                            </FormItem>
-                            )}
-                        />
-                    </CardContent>
-                </Card>
-            </TabsContent>
-          </Tabs>
+                {/* --- PRÉFÉRENCES --- */}
+                <TabsContent value="preferences" className="space-y-6 m-0 animate-in fade-in duration-500">
+                    <div className="bg-ndara-surface rounded-4xl p-6 border border-white/5 shadow-xl">
+                        <h3 className="font-black text-white text-xs uppercase tracking-widest mb-6 flex items-center gap-3">
+                            <Bell className="text-primary h-4 w-4" /> ALERTES ÉVÉNEMENTIELLES
+                        </h3>
+                        <div className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="notifyEnrollment"
+                                render={({ field }) => (
+                                <FormItem className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-white text-sm uppercase tracking-tight">Ventes directes</p>
+                                        <p className="text-[10px] text-slate-500 font-medium">À chaque nouvelle inscription</p>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                                </FormItem>
+                                )}
+                            />
+                            <div className="h-px bg-white/5" />
+                            <FormField
+                                control={form.control}
+                                name="notifyPayout"
+                                render={({ field }) => (
+                                <FormItem className="flex items-center justify-between">
+                                    <div>
+                                        <p className="font-bold text-white text-sm uppercase tracking-tight">Suivi Financier</p>
+                                        <p className="text-[10px] text-slate-500 font-medium">Audit et virements validés</p>
+                                    </div>
+                                    <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} className="data-[state=checked]:bg-primary" /></FormControl>
+                                </FormItem>
+                                )}
+                            />
+                        </div>
+                    </div>
 
-          <Button 
-            type="submit" 
-            disabled={isSaving} 
-            className="w-full h-16 rounded-[2rem] bg-primary hover:bg-primary/90 text-slate-950 font-black uppercase text-xs tracking-[0.2em] shadow-2xl shadow-primary/30 transition-all active:scale-[0.98] mb-12"
-          >
-              {isSaving ? <Loader2 className="h-5 w-5 animate-spin mr-2"/> : <><CheckCircle2 className="mr-2 h-5 w-5"/> Enregistrer les réglages</>}
-          </Button>
-        </form>
-      </Form>
+                    <div className="bg-ndara-surface rounded-4xl p-6 border border-white/5 shadow-xl">
+                        <h3 className="font-black text-white text-xs uppercase tracking-widest mb-6 flex items-center gap-3">
+                            <Lock className="text-primary h-4 w-4" /> CONFIDENTIALITÉ
+                        </h3>
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-bold text-white text-sm uppercase tracking-tight">Visibilité Publique</p>
+                                <p className="text-[10px] text-slate-500 font-medium">Afficher mon académie aux Ndara</p>
+                            </div>
+                            <Switch defaultChecked className="data-[state=checked]:bg-primary" />
+                        </div>
+                    </div>
+                </TabsContent>
+            </Tabs>
+
+            {/* --- STICKY SAVE BAR --- */}
+            <div className="fixed bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-ndara-bg via-ndara-bg to-transparent z-40 safe-area-pb">
+                <Button 
+                    type="submit" 
+                    disabled={isSaving}
+                    className="w-full h-16 rounded-[2.5rem] bg-gradient-to-r from-primary to-emerald-600 text-slate-950 font-black uppercase text-sm tracking-[0.15em] shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-95 transition-all animate-pulse-glow border-none"
+                >
+                    {isSaving ? <Loader2 className="h-6 w-6 animate-spin" /> : <><CheckCircle2 className="mr-3 h-5 w-5" /> ENREGISTRER LES RÉGLAGES</>}
+                </Button>
+            </div>
+          </form>
+        </Form>
+      </main>
     </div>
   );
+}
+
+function AiLevelOption({ value, currentValue, onChange, icon: Icon, label, desc, color, bgColor, isRecommended }: any) {
+    const isActive = currentValue === value;
+    return (
+        <label className={cn(
+            "flex items-center justify-between p-4 rounded-[1.5rem] border-2 transition-all active:scale-[0.98] cursor-pointer group",
+            isActive ? "border-primary bg-primary/5 shadow-lg shadow-primary/5" : "border-white/5 bg-ndara-bg opacity-60 grayscale hover:opacity-100"
+        )}>
+            <div className="flex items-center gap-4">
+                <div className={cn("w-10 h-10 rounded-2xl flex items-center justify-center transition-colors shadow-inner", bgColor, color)}>
+                    <Icon size={20} />
+                </div>
+                <div className="flex flex-col">
+                    <span className={cn("text-sm font-black uppercase tracking-tight", isActive ? "text-white" : "text-slate-400")}>{label}</span>
+                    <span className="text-[9px] text-slate-500 font-medium uppercase tracking-widest">{desc}</span>
+                </div>
+            </div>
+            <div className="flex items-center gap-3">
+                {isRecommended && <Badge className="bg-primary text-slate-950 border-none font-black text-[7px] uppercase px-1.5 h-4">TOP</Badge>}
+                <input type="radio" name="ai-level" checked={isActive} onChange={() => onChange(value)} className="w-5 h-5 accent-primary cursor-pointer" />
+            </div>
+        </label>
+    );
 }
