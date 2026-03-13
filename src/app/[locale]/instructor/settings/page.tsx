@@ -34,7 +34,6 @@ import {
     Smartphone,
     Brain,
     Feather,
-    Robot,
     Lock,
     ExternalLink,
     HelpCircle
@@ -215,7 +214,7 @@ export default function InstructorSettingsPage() {
                                             value="medium" 
                                             currentValue={field.value} 
                                             onChange={field.onChange}
-                                            icon={Robot}
+                                            icon={Bot}
                                             label="Moyen"
                                             desc="Analyste pédagogique actif"
                                             color="text-primary"
